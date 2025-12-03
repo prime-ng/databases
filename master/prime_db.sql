@@ -192,6 +192,25 @@ CREATE TABLE IF NOT EXISTS `sys_users` (
   UNIQUE KEY `uq_single_super_admin` (`super_admin_flag`),
 ) ENGINE=InnoDB AUTO_INCREMENT=33 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+/* Optional triggers to prevent deleting/demoting super admin (you already used triggers for sessions) */
+DELIMITER $$
+CREATE TRIGGER trg_users_prevent_delete_super BEFORE DELETE ON users
+FOR EACH ROW
+BEGIN
+  IF OLD.is_super_admin = 1 THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Super Admin cannot be deleted';
+  END IF;
+END$$
+
+CREATE TRIGGER trg_users_prevent_update_super BEFORE UPDATE ON users
+FOR EACH ROW
+BEGIN
+  IF OLD.is_super_admin = 1 AND NEW.is_super_admin = 0 THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Super Admin cannot be demoted';
+  END IF;
+END$$
+DELIMITER ;
+
 CREATE TABLE IF NOT EXISTS `sys_settings` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
   `description` varchar(255) NULL,    -- Here we will describe the use of the variable
@@ -246,16 +265,6 @@ CREATE TABLE IF NOT EXISTS `sys_media` (
 
 -- For MultiLingual Support
 -- ------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS `sys_menu_translations` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  `menu_id` BIGINT UNSIGNED NOT NULL,
-  `language_id` BIGINT UNSIGNED NOT NULL,
-  `translated_title` VARCHAR(150) NOT NULL,
-  `translated_description` VARCHAR(255) DEFAULT NULL,
-  UNIQUE KEY `uq_menu_lang` (`menu_id`,`language_id`),
-  CONSTRAINT `fk_menu_translation_menuId` FOREIGN KEY (`menu_id`) REFERENCES `sys_menus` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_menu_translation_langId` FOREIGN KEY (`language_id`) REFERENCES `sys_languages` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `sys_masters_translations` (
   `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -568,22 +577,16 @@ CREATE TABLE IF NOT EXISTS `bil_tenant_invoicing_audit_logs` (
 -- ----------------------------------------------------------------------------------------------------------
 -- Change Log
 -- ----------------------------------------------------------------------------------------------------------
--- Change Field   - Table(bil_tenant_invoice) - 
---                   `status` ENUM('PENDING','PARTIAL','PAID','OVERDUE','CANCELLED') NOT NULL DEFAULT 'PENDING',
---                   `status` VARCHAR(20) NOT NULL DEFAULT 'PENDING',        -- Will be catered from 'dropdown' Table
--- Change Field   - Table (bil_tenant_invoice_payments) -
---                   `mode` ENUM('ONLINE','BANK_TRANSFER','CASH','CHEQUE','UPI','OTHERS') DEFAULT 'ONLINE',
---                   `mode` VARCHAR(20) NOT NULL DEFAULT 'ONLINE',   -- Will be populated from 'dropdown' Table
--- Change Field   - Table (bil_tensnt_invoice_payments) -
---                   `payment_status` ENUM('INITIATED','SUCCESS','FAILED','REFUNDED') DEFAULT 'SUCCESS',
---                   `payment_status` VARCHAR(20) NOT NULL DEFAULT 'SUCCESS',
--- Change Field   - Table (sch_tenant_plan_jnt) -
---                   `status` enum('ACTIVE','SUSPENDED','CANCELED','EXPIRED') NOT NULL DEFAULT 'ACTIVE',
--- Add New Field  - Table(prm_tenant_plan_jnt) -
---                   New Field(automatic_billing)
--- Add New Table  - Table(prm_tenant_plan_billing_schedule)
--- 
--- Remove Table   - Table(bil_tenant_invoicing_items) - Require fields moved to Table (bil_tenant_invoices)
+--
+--
+--
+--
+--
+--
+--
+--
+--
+--
 --
 --
 --
