@@ -81,8 +81,10 @@ CREATE TABLE tpt_route (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP NULL DEFAULT NULL,
+    UNIQUE KEY uq_route_code (code),
+    UNIQUE KEY uq_route_name (name),
+    CONSTRAINT fk_route_shiftId FOREIGN KEY (shift_id) REFERENCES tpt_shift (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 
 
 CREATE TABLE tpt_pickup_points (
@@ -99,7 +101,9 @@ CREATE TABLE tpt_pickup_points (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP NULL DEFAULT NULL,
-    FOREIGN KEY (route_id) REFERENCES transport_route(id)
+    UNIQUE KEY uq_route_code (code),
+    UNIQUE KEY uq_route_name (name),
+    CONSTRAINT fk_pickupPoint_shiftId FOREIGN KEY (shift_id) REFERENCES tpt_shift (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
@@ -140,11 +144,11 @@ CREATE TABLE tpt_driver_route_vehicle_jnt (
     created_at timestamp NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at timestamp NULL DEFAULT NULL,
-    FOREIGN KEY (fk_routeVehicle_shiftId) REFERENCES tpt_route(id),
-    FOREIGN KEY (fk_routeVehicle_routeId) REFERENCES tpt_route(id),
-    FOREIGN KEY (fk_routeVehicle_vehicleId) REFERENCES tpt_vehicle(id),
-    FOREIGN KEY (fk_routeVehicle_driverId) REFERENCES tpt_driver_helpr(id),
-    FOREIGN KEY (fk_routeVehicle_helperId) REFERENCES tpt_driver_helpr(id)
+    CONSTRAINT fk_routeVehicle_shiftId FOREIGN KEY (shift_id) REFERENCES tpt_shift (id) ON DELETE CASCADE
+    CONSTRAINT fk_routeVehicle_routeId FOREIGN KEY (route_id) REFERENCES tpt_route (id) ON DELETE CASCADE
+    CONSTRAINT fk_routeVehicle_vehicleId FOREIGN KEY (vehicle_id) REFERENCES tpt_vehicle (id) ON DELETE CASCADE
+    CONSTRAINT fk_routeVehicle_driverId FOREIGN KEY (driver_id) REFERENCES tpt_driver_helpr (id) ON DELETE CASCADE
+    CONSTRAINT fk_routeVehicle_helperId FOREIGN KEY (helper_id) REFERENCES tpt_driver_helpr (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- This table will captur record for every Route for entire Academic Session
