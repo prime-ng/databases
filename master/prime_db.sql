@@ -535,7 +535,7 @@ CREATE TABLE IF NOT EXISTS `bil_tenant_invoices` (
 
 CREATE TABLE IF NOT EXISTS `bil_tenant_invoicing_modules_jnt` (
   `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  `tenant_invoice_id` BIGINT UNSIGNED NOT NULL,   -- FK
+  `tenant_invoice_id` BIGINT UNSIGNED NOT NULL,   -- fk to (bil_tenant_invoices)
   `module_id` BIGINT UNSIGNED DEFAULT NULL,      -- FK
   UNIQUE KEY `uq_tenantInvModule_orgInvId_moduleId` (`tenant_invoicing_id`, `module_id`),
   CONSTRAINT `fk_tenantInvModule_invoicingId` FOREIGN KEY (`tenant_invoice_id`) REFERENCES `bil_tenant_invoice` (`id`) ON DELETE CASCADE,
@@ -544,12 +544,13 @@ CREATE TABLE IF NOT EXISTS `bil_tenant_invoicing_modules_jnt` (
 
 CREATE TABLE IF NOT EXISTS `bil_tenant_invoicing_payments` (
   `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  `tenant_invoice_id` BIGINT UNSIGNED NOT NULL,    -- fk
+  `tenant_invoice_id` BIGINT UNSIGNED NOT NULL,    -- fk to (bil_tenant_invoices)
   `payment_date` DATE NOT NULL,
   `transaction_id` VARCHAR(100) DEFAULT NULL,
   `mode` VARCHAR(20) NOT NULL DEFAULT 'ONLINE',      -- use dropdown table ('ONLINE','BANK_TRANSFER','CASH','CHEQUE')
   `mode_other` VARCHAR(20) DEFAULT NULL,
   `amount_paid` DECIMAL(14,2) NOT NULL,
+  `consolidated_amount` DECIMAL(14,2) NULL,      -- If Consolidated Payment then only this will be stored else Null.
   `currency` CHAR(3) NOT NULL DEFAULT 'INR',
   `payment_status` NOT NULL VARCHAR(20) DEFAULT 'SUCCESS',  -- use dropdown table ('INITIATED','SUCCESS','FAILED')
   `gateway_response` JSON DEFAULT NULL,
@@ -563,11 +564,12 @@ CREATE TABLE IF NOT EXISTS `bil_tenant_invoicing_payments` (
 -- Note - Below table will have multiple records for every billing. 1 Record for every action.
 CREATE TABLE IF NOT EXISTS `bil_tenant_invoicing_audit_logs` (
   `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  `tenant_invoicing_id` BIGINT UNSIGNED NOT NULL,
-  `action_date` date not NULL,
-  `action_type` VARCHAR(20) NOT NULL DEFAULT 'PENDING',  -- use dropdown table ('PENDING','GENERATED','RENEWED','PAID')
-  `performed_by` BIGINT UNSIGNED DEFAULT NULL,  -- which user perform the ation
-  `notes` TEXT DEFAULT NULL,
+  `tenant_invoicing_id` BIGINT UNSIGNED NOT NULL,        -- fk to (bil_tenant_invoices)
+  `action_date` TIMESTAMP not NULL,
+  `action_type` VARCHAR(20) NOT NULL DEFAULT 'PENDING',  -- use dropdown table ('Not Billed','Bill Generated','Overdue','Notice Sent','Fully Paid')
+  `performed_by` BIGINT UNSIGNED DEFAULT NULL,           -- which user perform the ation
+  `event_info` JSON DEFAULT NULL,
+  `notes` VARCHAR(500) DEFAULT NULL,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT `fk_audit_billing` FOREIGN KEY (`tenant_invoicing_id`) REFERENCES `bil_tenant_invoicing` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_audit_user` FOREIGN KEY (`performed_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
@@ -577,6 +579,10 @@ CREATE TABLE IF NOT EXISTS `bil_tenant_invoicing_audit_logs` (
 -- ----------------------------------------------------------------------------------------------------------
 -- Change Log
 -- ----------------------------------------------------------------------------------------------------------
+-- Add New Field  - Table(bil_tenant_invoicing_payments)    - Field(consolidated_amount)
+-- Change Filed   - Table(bil_tenant_invoicing_audit_logs)  - Field(notes) (Make it Varchar(500) from text)
+-- Add New Field  - Table(bil_tenant_invoicing_audit_logs)  - Field(event_info)
+-- Change Filed   - Table(bil_tenant_invoicing_audit_logs)  - Field(action_date) Change Date -> timestamp
 --
 --
 --

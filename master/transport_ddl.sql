@@ -151,6 +151,8 @@ CREATE TABLE tpt_driver_route_vehicle_jnt (
     CONSTRAINT fk_routeVehicle_helperId FOREIGN KEY (helper_id) REFERENCES tpt_driver_helpr (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+
+
 -- This table will captur record for every Route for entire Academic Session
 CREATE TABLE tpt_route_scheduler_jnt (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
