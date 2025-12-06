@@ -155,7 +155,7 @@ CREATE TABLE IF NOT EXISTS `sys_modules` (
   CONSTRAINT chk_isSubModule_parentId CHECK ((is_sub_module = 1 AND parent_id IS NOT NULL) OR (is_sub_module = 0 AND parent_id IS NULL))
 ) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `sys_menu_model_jnt` (
+CREATE TABLE IF NOT EXISTS `sys_menu_module_jnt` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
   `menu_id` bigint unsigned NOT NULL,
   `module_id` bigint unsigned NOT NULL,
@@ -366,7 +366,7 @@ CREATE TABLE IF NOT EXISTS `prm_plans` (
   `version` int unsigned NOT NULL DEFAULT '0',
   `name` varchar(100) NOT NULL,
   `description` varchar(255) DEFAULT NULL,
-  `billing_cycle_id` SMALLINT NOT NULL,           -- Default billing Cycle
+  `billing_cycle_id` SMALLINT NOT NULL,           -- Default billing Cycle (This need to be json Type)
   `price_monthly` decimal(12,2) DEFAULT NULL,     -- For Same Plan we may charge different for Monthly payment/Quaterly/Yearly
   `price_quarterly` decimal(12,2) DEFAULT NULL,   -- For Same Plan we may charge different for Monthly payment/Quaterly/Yearly
   `price_yearly` decimal(12,2) DEFAULT NULL,      -- For Same Plan we may charge different for Monthly payment/Quaterly/Yearly
@@ -481,6 +481,7 @@ CREATE TABLE prm_tenant_plan_billing_schedule (
     CONSTRAINT fk_tenantPlanBillSched_cycle FOREIGN KEY (billing_cycle_id) REFERENCES prm_billing_cycles(id) ON DELETE RESTRICT,
     CONSTRAINT fk_tenantPlanBillSched_invId FOREIGN KEY (generated_invoice_id) REFERENCES bil_tenant_invoices(id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 
 -- Tenant Invoicing
 -- ------------------------------------------------------------

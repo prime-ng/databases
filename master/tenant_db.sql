@@ -283,27 +283,11 @@ CREATE TABLE IF NOT EXISTS `sch_organizations` (
   CONSTRAINT fk_organizations_cityId FOREIGN KEY (city_id) REFERENCES glb_cities (id) ON DELETE RESTRICT
 ) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `sch_org_role_jnt` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `org_id` INT UNSIGNED NOT NULL,    -- which school owns this role
-  `role_id` INT UNSIGNED NOT NULL,
-  `created_at` timestamp NULL DEFAULT NULL,
-  `updated_at` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_orgRole_orgId_roleId` (`org_id`,`role_id`),
-  CONSTRAINT `fk_orgRole_orgId` FOREIGN KEY (`org_id`) REFERENCES `sch_organizations` (`id`) ON DELETE RESTRICT
-) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-
-
-
-
 
 -- ========================================================================================================
 
 CREATE TABLE IF NOT EXISTS `sch_org_academic_sessions_jnt` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `org_id` bigint unsigned NOT NULL,
   `academic_sessions_id` bigint unsigned NOT NULL,  -- Added New
   `short_name` varchar(10) NOT NULL,
   `name` varchar(50) NOT NULL,
@@ -324,7 +308,6 @@ CREATE TABLE IF NOT EXISTS `sch_org_academic_sessions_jnt` (
 
 CREATE TABLE IF NOT EXISTS `sch_board_organization_jnt` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `org_id` bigint unsigned NOT NULL,
   `org_academic_sessions_id` bigint unsigned NOT NULL,  -- Added New
   `board_id` bigint unsigned NOT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
@@ -335,21 +318,9 @@ CREATE TABLE IF NOT EXISTS `sch_board_organization_jnt` (
   CONSTRAINT `fk_boardOrg_orgId` FOREIGN KEY (`org_id`) REFERENCES `sch_organizations` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `sch_org_role_jnt` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `org_id` INT UNSIGNED NOT NULL,    -- which school owns this role
-  `role_id` INT UNSIGNED NOT NULL,
-  `created_at` timestamp NULL DEFAULT NULL,
-  `updated_at` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_orgRole_orgId_roleId` (`org_id`,`role_id`),
-  CONSTRAINT `fk_orgRole_orgId` FOREIGN KEY (`org_id`) REFERENCES `sch_organizations` (`id`) ON DELETE RESTRICT
-) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 
 CREATE TABLE IF NOT EXISTS `sch_classes` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `org_id` bigint unsigned NOT NULL,
   `name` varchar(50) NOT NULL,                -- e.g. 'Grade 1' or 'Class 10'
   `short_name` varchar(10) DEFAULT NULL,      -- e.g. 'G1' or '10A'
   `ordinal` tinyint DEFAULT NULL,        -- This is signed tinyint to have (-3,-2,-1,0,1,2,3,4,5,6,7,8,9,10,11,12)
@@ -368,7 +339,6 @@ CREATE TABLE IF NOT EXISTS `sch_classes` (
 
 CREATE TABLE IF NOT EXISTS `sch_sections` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `org_id` bigint unsigned NOT NULL,
   `name` varchar(20) NOT NULL,            -- e.g. 'A', 'B'
   `ordinal` tinyint unsigned DEFAULT 1,   -- will have sequence order for Sections
   `code` CHAR(1) NOT NULL,         -- e.g., 'A','B','C','D' and so on (This will be used for Timetable)
@@ -385,7 +355,6 @@ CREATE TABLE IF NOT EXISTS `sch_sections` (
 
 CREATE TABLE IF NOT EXISTS `sch_class_section_jnt` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `org_id` bigint unsigned NOT NULL,    -- fk
   `class_id` int unsigned NOT NULL,     -- fk
   `section_id` int unsigned NOT NULL,   -- fk
   `class_secton_code` char(5) NOT NULL,       -- Combination of class Code + section Code i.e. '8th_A', '10h_B'  
@@ -397,7 +366,7 @@ CREATE TABLE IF NOT EXISTS `sch_class_section_jnt` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_classSection_orgId_classId_sectionId` (`org_id`,`class_id`,`section_id`),
+  UNIQUE KEY `uq_classSection_orgId_classId_sectionId` (`class_id`,`section_id`),
   UNIQUE KEY `uq_lassSection_orgId_code` (`org_id`,`class_secton_code`),
   CONSTRAINT `fk_classSection_orgId` FOREIGN KEY (`org_id`) REFERENCES `sch_organizations` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_classSection_classId` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE CASCADE,
@@ -409,7 +378,6 @@ CREATE TABLE IF NOT EXISTS `sch_class_section_jnt` (
 -- subject_type will represent what type of subject it is - Major, Minor, Core, Main, Optional etc.
 CREATE TABLE IF NOT EXISTS `sch_subject_types` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `org_id` bigint unsigned NOT NULL,
   `short_name` varchar(20) NOT NULL,  -- 'MAJOR','MINOR','OPTIONAL'
   `name` varchar(50) NOT NULL,
   `code` char(3) NOT NULL,         -- 'MAJ','MIN','OPT','ACT','SPO'
@@ -425,7 +393,6 @@ CREATE TABLE IF NOT EXISTS `sch_subject_types` (
 
 CREATE TABLE IF NOT EXISTS `sch_study_formats` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `org_id` bigint unsigned NOT NULL,  -- Lacture, Lab
   `short_name` varchar(20) NOT NULL,
   `name` varchar(50) NOT NULL,
   `code` CHAR(3) NOT NULL,         -- e.g., 'LAC','LAB','ACT','ART' and so on (This will be used for Timetable)
@@ -441,7 +408,6 @@ CREATE TABLE IF NOT EXISTS `sch_study_formats` (
 
 CREATE TABLE IF NOT EXISTS `sch_subjects` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `org_id` bigint unsigned NOT NULL,
   `short_name` varchar(20) NOT NULL,
   `name` varchar(50) NOT NULL,
   `code` CHAR(3) NOT NULL,         -- e.g., 'SCI','MTH','SST','ENG' and so on (This will be used for Timetable)
@@ -451,7 +417,7 @@ CREATE TABLE IF NOT EXISTS `sch_subjects` (
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_subjects_orgId_shortName` (`org_id`, `short_name`),
-  UNIQUE KEY `uq_subjects_orgId_code` (`org_id`, `code`),
+  UNIQUE KEY `uq_subjects_orgId_code` (`code`),
   CONSTRAINT `fk_subjects_orgId` FOREIGN KEY (`org_id`) REFERENCES `sch_organizations` (`id`) ON DELETE CASCADE,
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -460,7 +426,6 @@ CREATE TABLE IF NOT EXISTS `sch_subjects` (
 -- Removed 'short_name' as we can use `sub_stdformat_code`
 CREATE TABLE IF NOT EXISTS `sch_subject_study_format_jnt` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `org_id` bigint unsigned NOT NULL,                -- FK
   `subject_id` bigint unsigned NOT NULL,            -- FK
   `study_format_id` int unsigned NOT NULL,          -- FK
   `name` varchar(50) NOT NULL,
@@ -477,11 +442,10 @@ CREATE TABLE IF NOT EXISTS `sch_subject_study_format_jnt` (
   CONSTRAINT `fk_subStudyFormat_studyFormatId` FOREIGN KEY (`study_format_id`) REFERENCES `sch_study_formats` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=54 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- There will be a Variable in 'sch_settings' table named 'SubjectGroup_Used_For_All_Sections' (Subj_Group_will_be_used_for_all_sections_of_a_class)
+-- There will be a Variable in 'sys_settings' table named 'SubjectGroup_Used_For_All_Sections' (Subj_Group_will_be_used_for_all_sections_of_a_class)
 -- if above variable is True then section_id will be Nul in below table and
 CREATE TABLE IF NOT EXISTS `sch_subject_study_format_class_subj_types_jnt` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `org_id` bigint unsigned NOT NULL,                    -- FK
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,                  -- FK
   `subject_Study_format_id` bigint unsigned NOT NULL,   -- FK
   `class_id` int NOT NULL,                              -- FK
   `section_id` int NULL,                                -- FK (Section can be null if Group will be used for all sectons)
@@ -512,7 +476,6 @@ CREATE TABLE IF NOT EXISTS `sch_subject_study_format_class_subj_types_jnt` (
 -- Every Group will eb avalaible accross sections for a particuler class
 CREATE TABLE IF NOT EXISTS `sch_subject_groups` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `org_id` bigint unsigned NOT NULL,              -- FK
   `class_id` int NOT NULL,                        -- FK
   `section_id` int NULL,                          -- FK (Section can be null if Group will be used for all sectons)
   `short_name` varchar(30) NOT NULL,              -- 7th Science, 7th Commerce, 7th-A Science etc.
@@ -546,7 +509,6 @@ CREATE TABLE IF NOT EXISTS `sch_subject_group_subject_jnt` (
 
 CREATE TABLE IF NOT EXISTS `sch_rooms_type` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `org_id` bigint unsigned NOT NULL,             -- FK
   `code` CHAR(7) NOT NULL,                       -- e.g., 'SCI_LAB','BIO_LAB','CRI_GRD','TT_ROOM','BDM_CRT'
   `short_name` varchar(30) NOT NULL,             -- e.g., 'Science Lab','Biology Lab','Cricket Ground','Table Tanis Room','Badminton Court'
   `name` varchar(100) NOT NULL,
@@ -563,7 +525,6 @@ CREATE TABLE IF NOT EXISTS `sch_rooms_type` (
 
 CREATE TABLE IF NOT EXISTS `sch_buildings` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `org_id` bigint unsigned NOT NULL,            -- FK
   `code` char(2) NOT NULL,                      -- 2 digits code (10,11,12) 
   `short_name` varchar(30) NOT NULL,            -- e.g., 'Junior Wing','Primary Wing','Middle Wing','Senior Wing','Administration Wings'
   `name` varchar(50) NOT NULL,                  -- Detailed Name of the Building
@@ -580,7 +541,6 @@ CREATE TABLE IF NOT EXISTS `sch_buildings` (
 -- Room Coding format is - 2 Digit for Buildings(10-99), 1 Digit-Building Floor(G,F,S,T,F / A,B,C,D,E), & Last 3 Character defin Class+Section (09A,10A,12B)
 CREATE TABLE IF NOT EXISTS `sch_rooms` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `org_id` bigint unsigned NOT NULL,     -- FK
   `building_id` int unsigned NOT NULL,   -- FK
   `room_type_id` int NOT NULL,           -- FK
   `code` CHAR(7) NOT NULL,               -- e.g., '11G-10A','12F-11A','11S-12A' and so on (This will be used for Timetable)
@@ -604,7 +564,6 @@ CREATE TABLE IF NOT EXISTS `sch_rooms` (
 
 CREATE TABLE IF NOT EXISTS `sch_teachers` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `org_id` bigint unsigned NOT NULL,              -- FK
   `user_id` BIGINT UNSIGNED NOT NULL,
   `joining_date` DATE NOT NULL,
   `total_experience_years` DECIMAL(4,1) DEFAULT NULL,       -- Total teaching experience
@@ -628,7 +587,6 @@ CREATE TABLE IF NOT EXISTS `sch_teachers` (
 
 CREATE TABLE IF NOT EXISTS `sch_teachers_profile` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `org_id` BIGINT UNSIGNED NOT NULL,
   `teacher_id` BIGINT UNSIGNED NOT NULL,
   `subject_id` BIGINT UNSIGNED NOT NULL,
   `study_format_id` BIGINT UNSIGNED NOT NULL,
@@ -660,7 +618,6 @@ CREATE TABLE IF NOT EXISTS `sch_teachers_profile` (
 
 CREATE TABLE IF NOT EXISTS `std_students` (
   `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  `org_id` bigint unsigned NOT NULL,
   `user_id` bigint unsigned NOT NULL,          -- FK to sch_user
   `parent_id` bigint unsigned NOT NULL,        -- FK to sch_user
   `aadhar_id` VARCHAR(20) NOT NULL,            -- always permanent identity
@@ -782,7 +739,6 @@ CREATE TABLE IF NOT EXISTS zst_student_sessions_jnt (
 -- This will also be used to assign Subjects to the Students as a Combo.
 CREATE TABLE IF NOT EXISTS `tim_class_groups` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `org_id` bigint unsigned NOT NULL,                     -- FK
   `subject_study_format_id` bigint unsigned NOT NULL,    -- FK
   `class_section_id` json NOT NULL,                      -- FK
   `subject_type_id` int unsigned NOT NULL,               -- FK
@@ -805,7 +761,6 @@ CREATE TABLE IF NOT EXISTS `tim_class_groups` (
 -- It will answer - which all classes can be combined for a particuler Subject + StudyFormat
 CREATE TABLE IF NOT EXISTS `tim_class_groups` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `org_id` bigint unsigned NOT NULL,
   `class_section_id` int unsigned NOT NULL,  -- FK
   `subject_id` bigint unsigned NOT NULL,     -- FK
   `study_format_id` int unsigned NOT NULL,
@@ -836,7 +791,6 @@ CREATE TABLE IF NOT EXISTS `tim_teacher_constraint` (
 
 CREATE TABLE IF NOT EXISTS `tim_class_sub_group` (
   `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  `org_id` BIGINT UNSIGNED NOT NULL,
   `subject_id` BIGINT UNSIGNED NOT NULL,       -- Math, Sci
   `study_format_id` int unsigned NOT NULL,     -- Lecture, Lab
   `class_section_id` int unsigned NOT NULL,
@@ -871,3 +825,22 @@ CREATE TABLE IF NOT EXISTS `sch_period_definitions` (
 
 
 
+CREATE TABLE IF NOT EXISTS `sch_lessons` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(50) NOT NULL,                -- e.g. 'Grade 1' or 'Class 10'
+  `code` varchar(7) DEFAULT NULL,      -- e.g. '9th_SCI', '8TH_MAT' (Auto Generate on the basis of Class & Subject Code)
+  `class_id` BIGINT UNSIGNED NOT NULL,         -- FK to sch_classes 
+  `subject_id` bigint unsigned NOT NULL,       -- FK to sch_subjects  
+  `ordinal` tinyint DEFAULT NULL,        -- This is signed tinyint to have (1,2,3,4,5....10) lessons in a subject for a class 
+  `description` text DEFAULT NULL,
+  `duration` int unsigned NULL,    -- No of Periods required to complete this lesson
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_lesson_classId_SubjectId_name` (`class_id`,'subject_id','name'),
+  UNIQUE KEY `uq_lesson_classId_SubjectId_ordinal` (`class_id`,'subject_id',`ordinal`),
+  CONSTRAINT `fk_lesson_classId` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE CASCADE
+  CONSTRAINT `fk_lesson_subjectId` FOREIGN KEY (`subject_id`) REFERENCES `sch_subjects` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
