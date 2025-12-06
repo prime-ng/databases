@@ -10,6 +10,8 @@ CREATE VIEW glb_countries  AS SELECT * FROM global_master.glb_countries;
 CREATE VIEW glb_states     AS SELECT * FROM global_master.glb_states;
 CREATE VIEW glb_districts  AS SELECT * FROM global_master.glb_districts;
 CREATE VIEW glb_cities     AS SELECT * FROM global_master.glb_cities;
+CREATE VIEW glb_academic_sessions  AS SELECT * FROM global_master.glb_districts;
+CREATE VIEW glb_boards     AS SELECT * FROM global_master.glb_cities;
 
 -- ------------------------------------------------------------
 -- System Tables
@@ -27,7 +29,7 @@ CREATE TABLE IF NOT EXISTS `sys_languages` (
 
 CREATE TABLE IF NOT EXISTS `sys_menus` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `parent_id` bigint unsigned DEFAULT NULL,     -- FK
+  `parent_id` bigint unsigned DEFAULT NULL,     -- FK to self
   `is_category` tinyint(1) NOT NULL DEFAULT '0',
   `code` varchar(60) NOT NULL,
   `slug` VARCHAR(150) NOT NULL,
@@ -53,7 +55,7 @@ CREATE TABLE IF NOT EXISTS `sys_permissions` (
   `name` varchar(100) NOT NULL,
   `guard_name` varchar(255) NOT NULL,  -- used by Laravel routing
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
-  `created_at` timestamp NULL DEFAULT NULL,  -- we dont have is_active, why?
+  `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_permissions_shortName_guardName` (`short_name`,`guard_name`),
@@ -71,7 +73,7 @@ CREATE TABLE IF NOT EXISTS `sys_roles` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_roles_name_guardName` (`name`,`guard_name`)
+  UNIQUE KEY `uq_roles_name_guardName` (`name`,`guard_name`),
   UNIQUE KEY `uq_roles_name_guardName` (`short_name`,`guard_name`)
 ) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -163,8 +165,28 @@ CREATE TABLE IF NOT EXISTS `sys_users` (
   UNIQUE KEY `uq_users_shortName` (`short_name`),
   UNIQUE KEY `uq_users_email` (`email`),
   UNIQUE KEY `uq_users_mobileNo` (`mobile_no`),
-  UNIQUE KEY `uq_single_super_admin` (`super_admin_flag`),
+  UNIQUE KEY `uq_single_super_admin` (`super_admin_flag`)
 ) ENGINE=InnoDB AUTO_INCREMENT=33 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+/* Optional triggers to prevent deleting/demoting super admin (you already used triggers for sessions) */
+DELIMITER $$
+CREATE TRIGGER trg_users_prevent_delete_super BEFORE DELETE ON users
+FOR EACH ROW
+BEGIN
+  IF OLD.is_super_admin = 1 THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Super Admin cannot be deleted';
+  END IF;
+END$$
+
+CREATE TRIGGER trg_users_prevent_update_super BEFORE UPDATE ON users
+FOR EACH ROW
+BEGIN
+  IF OLD.is_super_admin = 1 AND NEW.is_super_admin = 0 THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Super Admin cannot be demoted';
+  END IF;
+END$$
+DELIMITER ;
+
 
 CREATE TABLE IF NOT EXISTS `sys_settings` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
@@ -176,7 +198,7 @@ CREATE TABLE IF NOT EXISTS `sys_settings` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_settings_key` (`key`),
+  UNIQUE KEY `uq_settings_key` (`key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `sys_dropdown_table` (
@@ -189,7 +211,7 @@ CREATE TABLE IF NOT EXISTS `sys_dropdown_table` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_dropdownTable_org_ordinal_key` (`ordinal`,`key`),
+  UNIQUE KEY `uq_dropdownTable_ordinal_key` (`ordinal`,`key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `sys_media` (
@@ -279,7 +301,7 @@ CREATE TABLE IF NOT EXISTS `sch_organizations` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `chk_org_singleRecord` (`flg_single_record`)
+  UNIQUE KEY `chk_org_singleRecord` (`flg_single_record`),
   CONSTRAINT fk_organizations_cityId FOREIGN KEY (city_id) REFERENCES glb_cities (id) ON DELETE RESTRICT
 ) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -295,27 +317,25 @@ CREATE TABLE IF NOT EXISTS `sch_org_academic_sessions_jnt` (
   `end_date` date NOT NULL,
   `is_current` tinyint(1) NOT NULL DEFAULT '0',
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
-  `current_flag` bigint GENERATED ALWAYS AS ((case when (`is_current` = 1) then `org_id` else NULL end)) STORED,
+  `current_flag` tinyint(1) GENERATED ALWAYS AS ((case when (`is_current` = 1) then '1' else NULL end)) STORED,
   `deleted_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_orgAcademicSession_orgId_shortName` (`org_id`,`short_name`),
+  UNIQUE KEY `uq_orgAcademicSession_shortName` (`short_name`),
   UNIQUE KEY `uq_orgAcademicSession_currentFlag` (`current_flag`),
-  CONSTRAINT `fk_orgAcademicSession_sessionId` FOREIGN KEY (`academic_sessions_id`) REFERENCES `glb_academic_sessions` (`id`) ON DELETE CASCADE,  -- Added New
-  CONSTRAINT `fk_orgAcademicSession_orgId` FOREIGN KEY (`org_id`) REFERENCES `sch_organizations` (`id`) ON DELETE CASCADE  -- ON DELETE RESTRICT
+  CONSTRAINT `fk_orgAcademicSession_sessionId` FOREIGN KEY (`academic_sessions_id`) REFERENCES `glb_academic_sessions` (`id`) ON DELETE CASCADE  -- Added New
 ) ENGINE=InnoDB AUTO_INCREMENT=30 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `sch_board_organization_jnt` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `org_academic_sessions_id` bigint unsigned NOT NULL,  -- Added New
+  `academic_sessions_id` bigint unsigned NOT NULL,
   `board_id` bigint unsigned NOT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   CONSTRAINT `fk_boardOrg_boardId` FOREIGN KEY (`board_id`) REFERENCES `glb_boards` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_boardOrg_academicSessionId` FOREIGN KEY (`academic_sessions_id`) REFERENCES `sch_org_academic_sessions_jnt` (`id`) ON DELETE CASCADE,  -- Added New
-  CONSTRAINT `fk_boardOrg_orgId` FOREIGN KEY (`org_id`) REFERENCES `sch_organizations` (`id`) ON DELETE CASCADE
+  CONSTRAINT `fk_boardOrg_academicSessionId` FOREIGN KEY (`academic_sessions_id`) REFERENCES `sch_org_academic_sessions_jnt` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
@@ -330,11 +350,10 @@ CREATE TABLE IF NOT EXISTS `sch_classes` (
   `updated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_classes_orgId_shortName` (`org_id`,`short_name`),
-  UNIQUE KEY `uq_classes_orgId_code` (`org_id`, `code`),
-  UNIQUE KEY `uq_classes_orgId_name` (`org_id`,`name`),
-  UNIQUE KEY `uq_classes_orgId_ordinal` (`org_id`,`ordinal`),
-  CONSTRAINT `fk_classes_orgId` FOREIGN KEY (`org_id`) REFERENCES `sch_organizations` (`id`) ON DELETE CASCADE
+  UNIQUE KEY `uq_classes_shortName` (`short_name`),
+  UNIQUE KEY `uq_classes_code` (`code`),
+  UNIQUE KEY `uq_classes_name` (`name`),
+  UNIQUE KEY `uq_classes_ordinal` (`ordinal`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `sch_sections` (
@@ -347,10 +366,9 @@ CREATE TABLE IF NOT EXISTS `sch_sections` (
   `updated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_sections_orgId_name` (`org_id`,`name`),
-  UNIQUE KEY `uq_sections_orgId_code` (`org_id`, `code`),
-  UNIQUE KEY `uq_sections_orgId_ordinal` (`org_id`,`ordinal`),
-  CONSTRAINT `fk_sections_orgId` FOREIGN KEY (`org_id`) REFERENCES `sch_organizations` (`id`) ON DELETE CASCADE
+  UNIQUE KEY `uq_sections_name` (`name`),
+  UNIQUE KEY `uq_sections_code` (`code`),
+  UNIQUE KEY `uq_sections_ordinal` (`ordinal`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `sch_class_section_jnt` (
@@ -366,12 +384,11 @@ CREATE TABLE IF NOT EXISTS `sch_class_section_jnt` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_classSection_orgId_classId_sectionId` (`class_id`,`section_id`),
-  UNIQUE KEY `uq_lassSection_orgId_code` (`org_id`,`class_secton_code`),
-  CONSTRAINT `fk_classSection_orgId` FOREIGN KEY (`org_id`) REFERENCES `sch_organizations` (`id`) ON DELETE CASCADE,
+  UNIQUE KEY `uq_classSection_classId_sectionId` (`class_id`,`section_id`),
+  UNIQUE KEY `uq_lassSection_code` (`class_secton_code`),
   CONSTRAINT `fk_classSection_classId` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_classSection_sectionId` FOREIGN KEY (`section_id`) REFERENCES `sch_sections` (`id`) ON DELETE CASCADE
-  CONSTRAINT `fk_classSection_sclassTeacherId` FOREIGN KEY (`class_teacher_id`) REFERENCES `sch_users` (`id`) ON DELETE CASCADE
+  CONSTRAINT `fk_classSection_sectionId` FOREIGN KEY (`section_id`) REFERENCES `sch_sections` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_classSection_sclassTeacherId` FOREIGN KEY (`class_teacher_id`) REFERENCES `sch_users` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_classSection_AssClassTeacherId` FOREIGN KEY (`assistance_class_teacher_id`) REFERENCES `sch_users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=300 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -386,9 +403,8 @@ CREATE TABLE IF NOT EXISTS `sch_subject_types` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_subjectTypes_orgId_shortName` (`org_id`, `short_name`),
-  UNIQUE KEY `uq_subjectTypes_orgId_code` (`org_id`, `code`),
-  CONSTRAINT `fk_subjectTypes_orgId` FOREIGN KEY (`org_id`) REFERENCES `sch_organizations` (`id`) ON DELETE CASCADE
+  UNIQUE KEY `uq_subjectTypes_shortName` (`short_name`),
+  UNIQUE KEY `uq_subjectTypes_code` (`code`)
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `sch_study_formats` (
@@ -401,9 +417,8 @@ CREATE TABLE IF NOT EXISTS `sch_study_formats` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_studyFormats_orgId_shortName` (`org_id`,`short_name`),
-  UNIQUE KEY `uq_studyFormats_orgId_code` (`org_id`, `code`),
-  CONSTRAINT `fk_studyFormats_orgId` FOREIGN KEY (`org_id`) REFERENCES `sch_organizations` (`id`) ON DELETE CASCADE
+  UNIQUE KEY `uq_studyFormats_shortName` (`short_name`),
+  UNIQUE KEY `uq_studyFormats_code` (`code`)
 ) ENGINE=InnoDB AUTO_INCREMENT=78 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `sch_subjects` (
@@ -416,9 +431,8 @@ CREATE TABLE IF NOT EXISTS `sch_subjects` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_subjects_orgId_shortName` (`org_id`, `short_name`),
-  UNIQUE KEY `uq_subjects_orgId_code` (`code`),
-  CONSTRAINT `fk_subjects_orgId` FOREIGN KEY (`org_id`) REFERENCES `sch_organizations` (`id`) ON DELETE CASCADE,
+  UNIQUE KEY `uq_subjects_shortName` (`short_name`),
+  UNIQUE KEY `uq_subjects_code` (`code`)
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- subject_study_format is grouping for different streams like Sci-10 Lacture, Arts-10 Activity, Core-10
@@ -435,9 +449,8 @@ CREATE TABLE IF NOT EXISTS `sch_subject_study_format_jnt` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_subStudyFormat_orgId_subjectId_stFormat` (`org_id`,`subject_id`,`study_format_id`),
-  UNIQUE KEY `uq_subStudyFormat_orgId_subStdformatCode` (`org_id`,`sub_stdformat_code`),
-  CONSTRAINT `fk_subStudyFormat_orgId` FOREIGN KEY (`org_id`) REFERENCES `sch_organizations` (`id`) ON DELETE CASCADE,
+  UNIQUE KEY `uq_subStudyFormat_subjectId_stFormat` (`subject_id`,`study_format_id`),
+  UNIQUE KEY `uq_subStudyFormat_subStdformatCode` (`sub_stdformat_code`),
   CONSTRAINT `fk_subStudyFormat_subjectId` FOREIGN KEY (`subject_id`) REFERENCES `sch_subjects` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_subStudyFormat_studyFormatId` FOREIGN KEY (`study_format_id`) REFERENCES `sch_study_formats` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=54 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -458,13 +471,12 @@ CREATE TABLE IF NOT EXISTS `sch_subject_study_format_class_subj_types_jnt` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_subStdFmtClsSubjTyp_orgId_subStdFmt_cls_Sec_SubTyp` (`org_id`,`subject_Study_format_id`,`class_id`,`section_id`,`subject_type_id`),
-  UNIQUE KEY `uq_subStdFmtClsSubjTyp_orgId_subStdformatCode` (`org_id`,`clas_subj_stdformat_Subjtyp_code`),
-  CONSTRAINT `fk_subStdFmtClsSubjTyp_orgId` FOREIGN KEY (`org_id`) REFERENCES `sch_organizations` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_subStdFmtClsSubjTyp_subjStudyFormatId` FOREIGN KEY (`subject_Study_format_id`) REFERENCES `sch_subject_study_format_jnt` (`id`) ON DELETE CASCADE
+  UNIQUE KEY `uq_subStdFmtClsSubjTyp_subStdFmt_cls_Sec_SubTyp` (`subject_Study_format_id`,`class_id`,`section_id`,`subject_type_id`),
+  UNIQUE KEY `uq_subStdFmtClsSubjTyp_subStdformatCode` (`clas_subj_stdformat_Subjtyp_code`),
+  CONSTRAINT `fk_subStdFmtClsSubjTyp_subjStudyFormatId` FOREIGN KEY (`subject_Study_format_id`) REFERENCES `sch_subject_study_format_jnt` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_subStdFmtClsSubjTyp_classId` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_subStdFmtClsSubjTyp_sectionId` FOREIGN KEY (`section_id`) REFERENCES `sch_sections` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_subStdFmtClsSubjTyp_subTypeId` FOREIGN KEY (`subject_type_id`) REFERENCES `sch_subject_types` (`id`) ON DELETE CASCADE
+  CONSTRAINT `fk_subStdFmtClsSubjTyp_subTypeId` FOREIGN KEY (`subject_type_id`) REFERENCES `sch_subject_types` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_subStdFmtClsSubjTyp_roomTypeId` FOREIGN KEY (`rooms_type_id`) REFERENCES `sch_rooms_type` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=54 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 -- Added rooms_type_id field & FK for it.
@@ -485,11 +497,10 @@ CREATE TABLE IF NOT EXISTS `sch_subject_groups` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_subjectGroups_orgId_shortName` (`org_id`,`short_name`),
-  UNIQUE KEY `uq_subjectGroups_orgId_name` (`org_id`,`class_id`,`name`),
-  CONSTRAINT `fk_subGroups_org_id` FOREIGN KEY (`org_id`) REFERENCES `sch_organizations` (`id`) ON DELETE CASCADE
+  UNIQUE KEY `uq_subjectGroups_shortName` (`short_name`),
+  UNIQUE KEY `uq_subjectGroups_name` (`class_id`,`name`),
   CONSTRAINT `fk_subGroups_classId` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_subGroups_sectionId` FOREIGN KEY (`section_id`) REFERENCES `sch_sections` (`id`) ON DELETE NULL,
+  CONSTRAINT `fk_subGroups_sectionId` FOREIGN KEY (`section_id`) REFERENCES `sch_sections` (`id`) ON DELETE NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=54 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `sch_subject_group_subject_jnt` (
@@ -502,8 +513,8 @@ CREATE TABLE IF NOT EXISTS `sch_subject_group_subject_jnt` (
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_subjGrpSubj_subjGrpId_subjStdFmtClsSubTyp` (`subject_group_id`,`subj_stdformat_class_subjtypes_id`),
-  CONSTRAINT `fk_subjGrpSubj_subjectGroupId` FOREIGN KEY (`subject_group_id`) REFERENCES `sch_subject_groups` (`id`) ON DELETE CASCADE
-  CONSTRAINT `fk_subjGrpSubj_subjStdFmtClsSubTyp` FOREIGN KEY (`subj_stdformat_class_subjtypes_id`) REFERENCES `sch_subject_study_format_class_subj_types_jnt` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_subjGrpSubj_subjectGroupId` FOREIGN KEY (`subject_group_id`) REFERENCES `sch_subject_groups` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_subjGrpSubj_subjStdFmtClsSubTyp` FOREIGN KEY (`subj_stdformat_class_subjtypes_id`) REFERENCES `sch_subject_study_format_class_subj_types_jnt` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=54 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
@@ -518,9 +529,8 @@ CREATE TABLE IF NOT EXISTS `sch_rooms_type` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_roomType_orgId_code` (`org_id`,`code`),
-  UNIQUE KEY `uq_roomType_orgId_shortName` (`org_id`,`short_name`),
-  CONSTRAINT `fk_roomType_orgId` FOREIGN KEY (`org_id`) REFERENCES `sch_organizations` (`id`) ON DELETE CASCADE
+  UNIQUE KEY `uq_roomType_code` (`code`),
+  UNIQUE KEY `uq_roomType_shortName` (`short_name`)
 ) ENGINE=InnoDB AUTO_INCREMENT=188 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `sch_buildings` (
@@ -533,9 +543,8 @@ CREATE TABLE IF NOT EXISTS `sch_buildings` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_buildings_code` (`org_id`,`code`),
-  UNIQUE KEY `uq_buildings_name` (`org_id`,`short_name`),
-  CONSTRAINT `fk_buildings_orgId` FOREIGN KEY (`org_id`) REFERENCES `sch_organizations` (`id`) ON DELETE CASCADE
+  UNIQUE KEY `uq_buildings_code` (`code`),
+  UNIQUE KEY `uq_buildings_name` (`short_name`)
 ) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Room Coding format is - 2 Digit for Buildings(10-99), 1 Digit-Building Floor(G,F,S,T,F / A,B,C,D,E), & Last 3 Character defin Class+Section (09A,10A,12B)
@@ -554,9 +563,8 @@ CREATE TABLE IF NOT EXISTS `sch_rooms` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_rooms_orgId_code` (`org_id`,`code`),
-  UNIQUE KEY `uq_rooms_orgId_shortName` (`org_id`,`short_name`),
-  CONSTRAINT `fk_rooms_orgId` FOREIGN KEY (`org_id`) REFERENCES `sch_organizations` (`id`) ON DELETE CASCADE,
+  UNIQUE KEY `uq_rooms_code` (`code`),
+  UNIQUE KEY `uq_rooms_shortName` (`short_name`),
   CONSTRAINT `fk_rooms_buildingId` FOREIGN KEY (`building_id`) REFERENCES `sch_buildings` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_rooms_roomTypeId` FOREIGN KEY (`room_type_id`) REFERENCES `sch_rooms_type` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=188 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -604,8 +612,7 @@ CREATE TABLE IF NOT EXISTS `sch_teachers_profile` (
   `created_at` TIMESTAMP NULL DEFAULT NULL,
   `updated_at` TIMESTAMP NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_teachersProfile_orgId_teacher` (`org_id`,`teacher_id`,`subject_id`,`study_format_id`),
-  CONSTRAINT `fk_teachersProfile_orgId` FOREIGN KEY (`org_id`) REFERENCES `sch_organizations` (`id`) ON DELETE CASCADE,
+  UNIQUE KEY `uq_teachersProfile_teacher` (`teacher_id`,`subject_id`,`study_format_id`),
   CONSTRAINT `fk_teachersProfile_teacherId` FOREIGN KEY (`teacher_id`) REFERENCES `teachers` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_teachersProfile_subjectId` FOREIGN KEY (`subject_id`) REFERENCES `subjects` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_teachersProfile_studyFormatId` FOREIGN KEY (`study_format_id`) REFERENCES `sch_study_formats` (`id`) ON DELETE CASCADE,
@@ -639,8 +646,7 @@ CREATE TABLE IF NOT EXISTS `std_students` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_student_orgId_aadharId` (`org_id`,`aadhar_id`),
-  CONSTRAINT `uq_student_orgId` FOREIGN KEY (`org_id`) REFERENCES `sch_organizations` (`id`) ON DELETE CASCADE,
+  UNIQUE KEY `uq_student_aadharId` (`aadhar_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=188 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `std_student_detail` (
@@ -689,10 +695,10 @@ CREATE TABLE IF NOT EXISTS `std_student_detail` (
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   CONSTRAINT `fk_studentDetail_studentId` FOREIGN KEY (`student_id`) REFERENCES `std_students` (`id`) ON DELETE RESTRICT,
-  CONSTRAINT `fk_studentDetail_cityId` FOREIGN KEY (`city_id`) REFERENCES `glb_cities` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `fk_studentDetail_cityId` FOREIGN KEY (`city_id`) REFERENCES `glb_cities` (`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB AUTO_INCREMENT=188 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS zst_student_sessions_jnt (
+CREATE TABLE IF NOT EXISTS `zst_student_sessions_jnt` (
   `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   `student_id` BIGINT UNSIGNED NOT NULL,            -- FK
   `admission_no` VARCHAR(50) NOT NULL,
@@ -702,8 +708,6 @@ CREATE TABLE IF NOT EXISTS zst_student_sessions_jnt (
   `default_mobile` ENUM('Father','Mother','Guardian','All') NOT NULL, DEFAULT 'Mother',
   `default_email` ENUM('Father','Mother','Guardian','All') NOT NULL, DEFAULT 'Mother',
   `academic_sessions_id` bigint unsigned NOT NULL,  -- FK - sch_org_academic_sessions_jnt
-  -- `class_id` BIGINT UNSIGNED NOT NULL,              -- FK - sch_classes
-  -- `section_id` BIGINT UNSIGNED NOT NULL,            -- FK - sch_sections
   `class_section_id` INT UNSIGNED NOT NULL,         -- FK (Instead of selecting Class & Section, we will be using Class+Section)
   `subject_group_id` BIGINT UNSIGNED NOT NULL,      -- FK - sch_subject_groups
   `session_status_id` BIGINT UNSIGNED DEFAULT NULL, -- FK - gl_dropdown_table
@@ -720,7 +724,7 @@ CREATE TABLE IF NOT EXISTS zst_student_sessions_jnt (
   CONSTRAINT `fk_studentSessions_studentId` FOREIGN KEY (`student_id`) REFERENCES `std_students` (`id`) ON DELETE RESTRICT,
   CONSTRAINT `fk_studentSessions_academicSession` FOREIGN KEY (`academic_sessions_id`) REFERENCES `sch_org_academic_sessions_jnt` (`id`) ON DELETE RESTRICT,
   CONSTRAINT `fk_studentSessions_classId` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE RESTRICT,
-  CONSTRAINT `fk_studentSessions_sectionId` FOREIGN KEY (`section_id`) REFERENCES `sch_org_groups` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `fk_studentSessions_sectionId` FOREIGN KEY (`section_id`) REFERENCES `sch_sections` (`id`) ON DELETE RESTRICT,
   CONSTRAINT `fk_studentSessions_subjGroupId` FOREIGN KEY (`subject_group_id`) REFERENCES `sch_subject_groups` (`id`) ON DELETE RESTRICT,
   CONSTRAINT `fk_studentSessions_sessionStatusId` FOREIGN KEY (`session_status_id`) REFERENCES `gl_dropdown_table` (`id`) ON DELETE RESTRICT,
   CONSTRAINT `fk_studentSessions_reasonQuit` FOREIGN KEY (`reason_quit`) REFERENCES `gl_dropdown_table` (`id`) ON DELETE RESTRICT
@@ -750,11 +754,10 @@ CREATE TABLE IF NOT EXISTS `tim_class_groups` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_subGroups_orgId_shortName` (`org_id`,`short_name`),
-  UNIQUE KEY `uq_subGroups_orgId_classGroupCode` (`org_id`,`class_group_code`),
+  UNIQUE KEY `uq_subGroups_shortName` (`short_name`),
+  UNIQUE KEY `uq_subGroups_classGroupCode` (`class_group_code`),
   CONSTRAINT `fk_subGroups_subject_format_id` FOREIGN KEY (`subject_study_format_id`) REFERENCES `sch_subject_study_format_jnt` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_subGroups_class_section_id` FOREIGN KEY (`class_section_id`) REFERENCES `sch_class_section_jnt` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_subGroups_org_id` FOREIGN KEY (`org_id`) REFERENCES `sch_organizations` (`id`) ON DELETE CASCADE
+  CONSTRAINT `fk_subGroups_class_section_id` FOREIGN KEY (`class_section_id`) REFERENCES `sch_class_section_jnt` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=54 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Combination of (class, section, subject, study_format). This will help to combine classes for Optioal Subjects
@@ -772,8 +775,7 @@ CREATE TABLE IF NOT EXISTS `tim_class_groups` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_cls_grps_org_section_sub_studyformat` (`org_id`,`class_section_id`,`subject_id`,`study_format_id`),
-  CONSTRAINT `fk_cls_grps_org_id` FOREIGN KEY (`org_id`) REFERENCES `sch_organizations` (`id`) ON DELETE CASCADE,
+  UNIQUE KEY `uq_cls_grps_section_sub_studyformat` (`class_section_id`,`subject_id`,`study_format_id`),
   CONSTRAINT `fk_cls_grps_class_section_id` FOREIGN KEY (`class_section_id`) REFERENCES `class_section` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_cls_grps_subject_id` FOREIGN KEY (`subject_id`) REFERENCES `subjects` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_cls_grps_study_format_id` FOREIGN KEY (`study_format_id`) REFERENCES `study_formats` (`id`) ON DELETE CASCADE
@@ -802,8 +804,7 @@ CREATE TABLE IF NOT EXISTS `tim_class_sub_group` (
   `is_active` TINYINT(1) DEFAULT 1,
   `created_at` TIMESTAMP NULL DEFAULT NULL,
   `updated_at` TIMESTAMP NULL DEFAULT NULL,
-  UNIQUE KEY `uq_sub_comb_group_org_subj_name` (`org_id`,`subject_id`,`group_name`),
-  CONSTRAINT `fk_sub_comb_group_org` FOREIGN KEY (`org_id`) REFERENCES `sch_organizations` (`id`) ON DELETE CASCADE,
+  UNIQUE KEY `uq_sub_comb_group_subj_name` (`subject_id`,`group_name`),
   CONSTRAINT `fk_sub_comb_group_subj` FOREIGN KEY (`subject_id`) REFERENCES `subjects` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_sub_comb_group_study_format` FOREIGN KEY (`study_format_id`) REFERENCES `study_formats` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -811,7 +812,6 @@ CREATE TABLE IF NOT EXISTS `tim_class_sub_group` (
 
 CREATE TABLE IF NOT EXISTS `sch_period_definitions` (
   `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  `org_id` BIGINT UNSIGNED NOT NULL,
   `code` VARCHAR(1) NOT NULL,         -- e.g., '1','2','3' and so on (This will be used for Timetable)
   `short_name` VARCHAR(10) NOT NULL,  -- e.g., "Period-1 / P-1,P2"
   `name` VARCHAR(50) NOT NULL,        -- e.g., "Lunch Break, Prayer, Class"
@@ -819,11 +819,12 @@ CREATE TABLE IF NOT EXISTS `sch_period_definitions` (
   `end_time` TIME NOT NULL,
   `is_break` TINYINT(1) DEFAULT 0,
   `sort_order` TINYINT UNSIGNED DEFAULT 1,
-  `is_active` TINYINT(1) DEFAULT 1,
-  FOREIGN KEY (`org_id`) REFERENCES `sch_organizations` (`id`) ON DELETE CASCADE
+  `is_active` TINYINT(1) DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-
+-- -------------------------------------------------------------------------
+-- Syllabus Module
+-- -------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `sch_lessons` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
@@ -841,6 +842,6 @@ CREATE TABLE IF NOT EXISTS `sch_lessons` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_lesson_classId_SubjectId_name` (`class_id`,'subject_id','name'),
   UNIQUE KEY `uq_lesson_classId_SubjectId_ordinal` (`class_id`,'subject_id',`ordinal`),
-  CONSTRAINT `fk_lesson_classId` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE CASCADE
+  CONSTRAINT `fk_lesson_classId` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_lesson_subjectId` FOREIGN KEY (`subject_id`) REFERENCES `sch_subjects` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
