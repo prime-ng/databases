@@ -39,40 +39,14 @@ CREATE VIEW glb_states    AS SELECT * FROM global_master.glb_states;
 CREATE VIEW glb_districts AS SELECT * FROM global_master.glb_districts;
 CREATE VIEW glb_cities    AS SELECT * FROM global_master.glb_cities;
 
+CREATE VIEW glb_languages AS SELECT * FROM global_master.glb_languages;
+CREATE VIEW glb_menus AS SELECT * FROM global_master.glb_menus;
+CREATE VIEW glb_modules AS SELECT * FROM global_master.glb_modules;
+CREATE VIEW glb_menu_model_jnt AS SELECT * FROM global_master.glb_menu_model_jnt;
+CREATE VIEW glb_translations AS SELECT * FROM global_master.glb_translations;
 
 -- System Tables
 -- ------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS `sys_languages` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  `code` VARCHAR(10) NOT NULL,                  -- ISO code: en, hi, fr, ar
-  `name` VARCHAR(50) NOT NULL,                  -- English, Hindi, French...
-  `native_name` VARCHAR(50) DEFAULT NULL,       -- "हिन्दी", "Français"
-  `direction` ENUM('LTR','RTL') DEFAULT 'LTR',  -- Left to Rght / Right to Left
-  `is_active` TINYINT(1) DEFAULT 1,
-  UNIQUE KEY `uq_languages_code` (`code`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE IF NOT EXISTS `sys_menus` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `parent_id` bigint unsigned DEFAULT NULL,     -- FK
-  `is_category` tinyint(1) NOT NULL DEFAULT '0',
-  `code` varchar(60) NOT NULL,
-  `slug` VARCHAR(150) NOT NULL,
-  `title` varchar(100) NOT NULL,
-  `description` varchar(255) DEFAULT NULL,
-  `icon` varchar(150) DEFAULT NULL,
-  `route` varchar(255) DEFAULT NULL,
-  `sort_order` int unsigned NOT NULL,
-  `visible_by_default` tinyint(1) NOT NULL DEFAULT '1',
-  `is_active` tinyint(1) NOT NULL DEFAULT '1',
-  `deleted_at` timestamp NULL DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT NULL,
-  `updated_at` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_menus_code` (`code`),
-  CONSTRAINT `fk_menus_parentId` FOREIGN KEY (`parent_id`) REFERENCES `prm_menus` (`id`) ON DELETE RESTRICT,
-  CONSTRAINT `chk_is_category_parentId` CHECK ((((`is_category` = 1) and (`parent_id` is NULL)) or (`is_category` = 0)))
-) ENGINE=InnoDB AUTO_INCREMENT=29 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `sys_permissions` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
@@ -127,41 +101,6 @@ CREATE TABLE IF NOT EXISTS `sys_model_has_roles_jnt` (
   PRIMARY KEY (`role_id`,`model_id`,`model_type`),
   KEY `idx_modelHasRoles_modelId_modelType` (`model_id`,`model_type`),
   CONSTRAINT `fk_modelHasRoles_roleId` FOREIGN KEY (`role_id`) REFERENCES `sys_roles` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE IF NOT EXISTS `sys_modules` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `parent_id` bigint unsigned DEFAULT NULL,    -- fk to self
-  `name` varchar(50) NOT NULL,
-  `version` tinyint NOT NULL DEFAULT '1',
-  `is_sub_module` tinyint(1) NOT NULL DEFAULT '0',    -- kept for CONSTRAINT `chk_isSubModule_parentId`
-  `description` varchar(500) DEFAULT NULL,
-  `is_core` tinyint(1) NOT NULL DEFAULT '0',
-  `default_visible` tinyint(1) NOT NULL DEFAULT '1',
-  `available_perm_view` tinyint(1) NOT NULL DEFAULT '1',
-  `available_perm_add` tinyint(1) NOT NULL DEFAULT '1',
-  `available_perm_edit` tinyint(1) NOT NULL DEFAULT '1',
-  `available_perm_delete` tinyint(1) NOT NULL DEFAULT '1',
-  `available_perm_export` tinyint(1) NOT NULL DEFAULT '1',
-  `available_perm_import` tinyint(1) NOT NULL DEFAULT '1',
-  `available_perm_print` tinyint(1) NOT NULL DEFAULT '1',
-  `is_active` tinyint(1) NOT NULL DEFAULT '1',
-  `deleted_at` timestamp NULL DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT NULL,
-  `updated_at` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_module_parentId_name_version` (`parent_id`,`name`,`version`),
-  CONSTRAINT `fk_module_parentId` FOREIGN KEY (`parent_id`) REFERENCES `sys_modules` (`id`) ON DELETE RESTRICT,
-  CONSTRAINT chk_isSubModule_parentId CHECK ((is_sub_module = 1 AND parent_id IS NOT NULL) OR (is_sub_module = 0 AND parent_id IS NULL))
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE IF NOT EXISTS `sys_menu_module_jnt` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `menu_id` bigint unsigned NOT NULL,
-  `module_id` bigint unsigned NOT NULL,
-  PRIMARY KEY (`id`),
-  CONSTRAINT `fk_menuModel_menuId` FOREIGN KEY (`menu_id`) REFERENCES `sys_menus` (`id`)  ON DELETE RESTRICT,
-  CONSTRAINT `fk_menuModel_moduleId` FOREIGN KEY (`module_id`) REFERENCES `sys_modules` (`id`)  ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `sys_users` (
@@ -262,24 +201,28 @@ CREATE TABLE IF NOT EXISTS `sys_media` (
   KEY `idx_media_orderColumn` (`order_column`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-
--- For MultiLingual Support
--- ------------------------------------------------------------------
-
-CREATE TABLE IF NOT EXISTS `sys_masters_translations` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  `model_type` VARCHAR(190) NOT NULL,   -- Laravel morph type (e.g., 'App\\Models\\Menu')
-  `model_id` BIGINT UNSIGNED NOT NULL,  -- The actual record ID in that model
-  `language_code` VARCHAR(10) NOT NULL, -- e.g., 'en', 'hi', 'fr'
-  `field_name` VARCHAR(100) NOT NULL,   -- e.g., 'name', 'description', 'title'
-  `translated_value` TEXT NOT NULL,     -- the actual translation
-  UNIQUE KEY `uq_mastersTrans_modelType_modelId_lang_field` (`model_type`, `model_id`, `language_code`, `field_name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS `sys_activity_logs` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `subject_type` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `subject_id` bigint unsigned NOT NULL,
+  `user_id` bigint unsigned NOT NULL,
+  `event` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `properties` json DEFAULT NULL,
+  `ip_address` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `user_agent` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `sys_activity_logs_subject_type_subject_id_index` (`subject_type`,`subject_id`),
+  KEY `sys_activity_logs_user_id_foreign` (`user_id`),
+  KEY `sys_activity_logs_created_at_user_id_index` (`created_at`,`user_id`),
+  CONSTRAINT `sys_activity_logs_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `sys_users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 -- Tenant Creation
 -- ------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS prm_tenant_groups (
+CREATE TABLE IF NOT EXISTS `prm_tenant_groups` (
   id bigint unsigned NOT NULL AUTO_INCREMENT,
   code VARCHAR(20) NOT NULL,
   short_name varchar(50) NOT NULL,
@@ -299,7 +242,7 @@ CREATE TABLE IF NOT EXISTS prm_tenant_groups (
   CONSTRAINT fk_tenantGroups_cityId FOREIGN KEY (city_id) REFERENCES glb_cities (id) ON DELETE RESTRICT
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS prm_tenant (
+CREATE TABLE IF NOT EXISTS `prm_tenant` (
   id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   tenant_group_id bigint unsigned NOT NULL,
   code VARCHAR(20) NOT NULL,
@@ -330,7 +273,7 @@ CREATE TABLE IF NOT EXISTS prm_tenant (
   CONSTRAINT fk_tenantGroups_cityId FOREIGN KEY (city_id) REFERENCES glb_cities (id) ON DELETE RESTRICT
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS prm_tenant_domains (
+CREATE TABLE IF NOT EXISTS `prm_tenant_domains` (
   id BIGINT AUTO_INCREMENT PRIMARY KEY,
   tenant_id BIGINT NOT NULL,
   domain VARCHAR(255) NOT NULL,
@@ -462,24 +405,24 @@ CREATE TABLE IF NOT EXISTS `prm_tenant_plan_module_jnt` (
   CONSTRAINT `fk_moduleTenantPlan_tenantPlanId` FOREIGN KEY (`tenant_plan_id`) REFERENCES `prm_tenant_plan_jnt` (`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- This Table will have entries for the plan validity date range within the current Academic Session (1st April to 31st March).
-CREATE TABLE prm_tenant_plan_billing_schedule (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    tenant_plan_id BIGINT UNSIGNED NOT NULL,
-    tenant_id BIGINT UNSIGNED NOT NULL,
-    billing_cycle_id SMALLINT UNSIGNED NOT NULL,
-    schedule_billing_date DATE NOT NULL,
-    billing_start_date DATE NOT NULL,
-    billing_end_date DATE NOT NULL,
-    bill_generated TINYINT(1) NOT NULL DEFAULT 0,
-    generated_invoice_id BIGINT UNSIGNED DEFAULT NULL,  -- Fk to bil_tenant_invoices
-    is_active tinyint(1) NOT NULL DEFAULT '1',
-    created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT fk_tenantPlanBillSched_planId FOREIGN KEY (tenant_plan_id) REFERENCES prm_tenant_plan_jnt(id) ON DELETE CASCADE,
-    CONSTRAINT fk_tenantPlanBillSched_tenant FOREIGN KEY (tenant_id) REFERENCES prm_tenant(id) ON DELETE CASCADE,
-    CONSTRAINT fk_tenantPlanBillSched_cycle FOREIGN KEY (billing_cycle_id) REFERENCES prm_billing_cycles(id) ON DELETE RESTRICT,
-    CONSTRAINT fk_tenantPlanBillSched_invId FOREIGN KEY (generated_invoice_id) REFERENCES bil_tenant_invoices(id) ON DELETE RESTRICT
+-- This Table will have entries for the plan validity date range within the current Academic Session (1st April to 31st March)
+CREATE TABLE IF NOT EXISTS `prm_tenant_plan_billing_schedule` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `tenant_plan_id` BIGINT UNSIGNED NOT NULL,
+    `tenant_id` BIGINT UNSIGNED NOT NULL,
+    `billing_cycle_id` SMALLINT UNSIGNED NOT NULL,
+    `schedule_billing_date` DATE NOT NULL,
+    `billing_start_date` DATE NOT NULL,
+    `billing_end_date` DATE NOT NULL,
+    `bill_generated` TINYINT(1) NOT NULL DEFAULT `0`,
+    `generated_invoice_id` BIGINT UNSIGNED DEFAULT NULL,  -- Fk to bil_tenant_invoices
+    `is_active` tinyint(1) NOT NULL DEFAULT '1',
+    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT `fk_tenantPlanBillSched_planId` FOREIGN KEY (`tenant_plan_id`) REFERENCES `prm_tenant_plan_jnt`(`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_tenantPlanBillSched_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `prm_tenant`(`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_tenantPlanBillSched_cycle` FOREIGN KEY (`billing_cycle_id`) REFERENCES `prm_billing_cycles`(`id`) ON DELETE RESTRICT,
+    CONSTRAINT `fk_tenantPlanBillSched_invId` FOREIGN KEY (`generated_invoice_id`) REFERENCES `bil_tenant_invoices`(`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
@@ -574,6 +517,16 @@ CREATE TABLE IF NOT EXISTS `bil_tenant_invoicing_audit_logs` (
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT `fk_audit_billing` FOREIGN KEY (`tenant_invoicing_id`) REFERENCES `bil_tenant_invoicing` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_audit_user` FOREIGN KEY (`performed_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `bil_tenant_email_schedules` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `invoice_id` bigint unsigned NOT NULL,
+  `schedule_time` timestamp NOT NULL,
+  `status` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 

@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS `glb_academic_sessions` (
   `start_date` date NOT NULL,
   `end_date` date NOT NULL,
   `is_current` tinyint(1) NOT NULL DEFAULT '1',
-  `current_flag` bigint GENERATED ALWAYS AS ((case when (`is_current` = 1) then `1` else NULL end)) STORED,
+  `current_flag` tinyint(1) GENERATED ALWAYS AS ((case when (`is_current` = 1) then `1` else NULL end)) STORED,
   `deleted_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,

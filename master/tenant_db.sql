@@ -13,41 +13,16 @@ CREATE VIEW glb_cities     AS SELECT * FROM global_master.glb_cities;
 CREATE VIEW glb_academic_sessions  AS SELECT * FROM global_master.glb_districts;
 CREATE VIEW glb_boards     AS SELECT * FROM global_master.glb_cities;
 
+CREATE VIEW glb_languages AS SELECT * FROM global_master.glb_languages;
+CREATE VIEW glb_menus AS SELECT * FROM global_master.glb_menus;
+CREATE VIEW glb_modules AS SELECT * FROM global_master.glb_modules;
+CREATE VIEW glb_menu_model_jnt AS SELECT * FROM global_master.glb_menu_model_jnt;
+CREATE VIEW glb_translations AS SELECT * FROM global_master.glb_translations;
+
 -- ------------------------------------------------------------
 -- System Tables
 -- ------------------------------------------------------------
 
-CREATE TABLE IF NOT EXISTS `sys_languages` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  `code` VARCHAR(10) NOT NULL,                  -- ISO code: en, hi, fr, ar
-  `name` VARCHAR(50) NOT NULL,                  -- English, Hindi, French...
-  `native_name` VARCHAR(50) DEFAULT NULL,       -- "हिन्दी", "Français"
-  `direction` ENUM('LTR','RTL') DEFAULT 'LTR',  -- Left to Rght / Right to Left
-  `is_active` TINYINT(1) DEFAULT 1,
-  UNIQUE KEY `uq_languages_code` (`code`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE IF NOT EXISTS `sys_menus` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `parent_id` bigint unsigned DEFAULT NULL,     -- FK to self
-  `is_category` tinyint(1) NOT NULL DEFAULT '0',
-  `code` varchar(60) NOT NULL,
-  `slug` VARCHAR(150) NOT NULL,
-  `title` varchar(100) NOT NULL,
-  `description` varchar(255) DEFAULT NULL,
-  `icon` varchar(150) DEFAULT NULL,
-  `route` varchar(255) DEFAULT NULL,
-  `sort_order` int unsigned NOT NULL,
-  `visible_by_default` tinyint(1) NOT NULL DEFAULT '1',
-  `is_active` tinyint(1) NOT NULL DEFAULT '1',
-  `deleted_at` timestamp NULL DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT NULL,
-  `updated_at` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_menus_code` (`code`),
-  CONSTRAINT `fk_menus_parentId` FOREIGN KEY (`parent_id`) REFERENCES `prm_menus` (`id`) ON DELETE RESTRICT,
-  CONSTRAINT `chk_is_category_parentId` CHECK ((((`is_category` = 1) and (`parent_id` is NULL)) or (`is_category` = 0)))
-) ENGINE=InnoDB AUTO_INCREMENT=29 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `sys_permissions` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
@@ -104,40 +79,6 @@ CREATE TABLE IF NOT EXISTS `sys_model_has_roles_jnt` (
   CONSTRAINT `fk_modelHasRoles_roleId` FOREIGN KEY (`role_id`) REFERENCES `sys_roles` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `sys_modules` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `parent_id` bigint unsigned DEFAULT NULL,    -- fk to self
-  `name` varchar(50) NOT NULL,
-  `version` tinyint NOT NULL DEFAULT '1',
-  `is_sub_module` tinyint(1) NOT NULL DEFAULT '0',    -- kept for CONSTRAINT `chk_isSubModule_parentId`
-  `description` varchar(500) DEFAULT NULL,
-  `is_core` tinyint(1) NOT NULL DEFAULT '0',
-  `default_visible` tinyint(1) NOT NULL DEFAULT '1',
-  `available_perm_view` tinyint(1) NOT NULL DEFAULT '1',
-  `available_perm_add` tinyint(1) NOT NULL DEFAULT '1',
-  `available_perm_edit` tinyint(1) NOT NULL DEFAULT '1',
-  `available_perm_delete` tinyint(1) NOT NULL DEFAULT '1',
-  `available_perm_export` tinyint(1) NOT NULL DEFAULT '1',
-  `available_perm_import` tinyint(1) NOT NULL DEFAULT '1',
-  `available_perm_print` tinyint(1) NOT NULL DEFAULT '1',
-  `is_active` tinyint(1) NOT NULL DEFAULT '1',
-  `deleted_at` timestamp NULL DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT NULL,
-  `updated_at` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_module_parentId_name_version` (`parent_id`,`name`,`version`),
-  CONSTRAINT `fk_module_parentId` FOREIGN KEY (`parent_id`) REFERENCES `sys_modules` (`id`) ON DELETE RESTRICT,
-  CONSTRAINT chk_isSubModule_parentId CHECK ((is_sub_module = 1 AND parent_id IS NOT NULL) OR (is_sub_module = 0 AND parent_id IS NULL))
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE IF NOT EXISTS `sys_menu_model_jnt` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `menu_id` bigint unsigned NOT NULL,
-  `module_id` bigint unsigned NOT NULL,
-  PRIMARY KEY (`id`),
-  CONSTRAINT `fk_menuModel_menuId` FOREIGN KEY (`menu_id`) REFERENCES `sys_menus` (`id`)  ON DELETE RESTRICT,
-  CONSTRAINT `fk_menuModel_moduleId` FOREIGN KEY (`module_id`) REFERENCES `sys_modules` (`id`)  ON DELETE RESTRICT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `sys_users` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
@@ -156,6 +97,7 @@ CREATE TABLE IF NOT EXISTS `sys_users` (
   `last_login_at` datetime DEFAULT NULL,
   `super_admin_flag` tinyint GENERATED ALWAYS AS ((case when (`is_super_admin` = 1) then 1 else NULL end)) STORED,
   `remember_token` varchar(100) DEFAULT NULL,
+  `prefered_language` bigint unsigned NOT NULL,    -- fk to glb_languages
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
@@ -165,7 +107,8 @@ CREATE TABLE IF NOT EXISTS `sys_users` (
   UNIQUE KEY `uq_users_shortName` (`short_name`),
   UNIQUE KEY `uq_users_email` (`email`),
   UNIQUE KEY `uq_users_mobileNo` (`mobile_no`),
-  UNIQUE KEY `uq_single_super_admin` (`super_admin_flag`)
+  UNIQUE KEY `uq_single_super_admin` (`super_admin_flag`),
+  CONSTRAINT `fk_users_language` FOREIGN KEY (`prefered_language`) REFERENCES `glb_languages` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=33 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 /* Optional triggers to prevent deleting/demoting super admin (you already used triggers for sessions) */
@@ -243,26 +186,17 @@ CREATE TABLE IF NOT EXISTS `sys_media` (
 
 -- For MultiLingual Support
 -- ------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS `sys_menu_translations` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  `menu_id` BIGINT UNSIGNED NOT NULL,
-  `language_id` BIGINT UNSIGNED NOT NULL,
-  `translated_title` VARCHAR(150) NOT NULL,
-  `translated_description` VARCHAR(255) DEFAULT NULL,
-  UNIQUE KEY `uq_menu_lang` (`menu_id`,`language_id`),
-  CONSTRAINT `fk_menu_translation_menuId` FOREIGN KEY (`menu_id`) REFERENCES `sys_menus` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_menu_translation_langId` FOREIGN KEY (`language_id`) REFERENCES `sys_languages` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Old_Tables - Need to be verified
+-- CREATE TABLE IF NOT EXISTS `sys_masters_translations` (
+--   `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+--   `model_type` VARCHAR(190) NOT NULL,   -- Laravel morph type (e.g., 'App\\Models\\Menu')
+--   `model_id` BIGINT UNSIGNED NOT NULL,  -- The actual record ID in that model
+--   `language_code` VARCHAR(10) NOT NULL, -- e.g., 'en', 'hi', 'fr'
+--   `field_name` VARCHAR(100) NOT NULL,   -- e.g., 'name', 'description', 'title'
+--   `translated_value` TEXT NOT NULL,     -- the actual translation
+--   UNIQUE KEY `uq_mastersTrans_modelType_modelId_lang_field` (`model_type`, `model_id`, `language_code`, `field_name`)
+-- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `sys_masters_translations` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  `model_type` VARCHAR(190) NOT NULL,   -- Laravel morph type (e.g., 'App\\Models\\Menu')
-  `model_id` BIGINT UNSIGNED NOT NULL,  -- The actual record ID in that model
-  `language_code` VARCHAR(10) NOT NULL, -- e.g., 'en', 'hi', 'fr'
-  `field_name` VARCHAR(100) NOT NULL,   -- e.g., 'name', 'description', 'title'
-  `translated_value` TEXT NOT NULL,     -- the actual translation
-  UNIQUE KEY `uq_mastersTrans_modelType_modelId_lang_field` (`model_type`, `model_id`, `language_code`, `field_name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 
