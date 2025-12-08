@@ -46,9 +46,9 @@ CREATE TABLE IF NOT EXISTS `sch_topics` (
   `lesson_id` INT UNSIGNED NOT NULL,          -- FK -> sch_lessons.id
   `class_id` INT UNSIGNED NOT NULL,           -- FK -> sch_classes.id (redundant for fast queries)
   `subject_id` BIGINT UNSIGNED NOT NULL,      -- FK -> sch_subjects.id (redundant)
-  `name` VARCHAR(255) NOT NULL,
+  `name` VARCHAR(150) NOT NULL,
   `short_name` VARCHAR(50) DEFAULT NULL,
-  `ordinal` SMALLINT UNSIGNED DEFAULT NULL,
+  `ordinal` SMALLINT UNSIGNED DEFAULT NULL,   -- order within parent topic or lesson
   `level` TINYINT UNSIGNED NOT NULL DEFAULT 0, -- 0=root topic, 1=sub-topic, 2+=deeper levels (if needed)
   `description` TEXT DEFAULT NULL,
   `duration_minutes` INT UNSIGNED DEFAULT NULL, -- approximate teaching time
@@ -81,7 +81,7 @@ CREATE TABLE IF NOT EXISTS `sch_competencies` (
   `subject_id` BIGINT UNSIGNED NOT NULL,
   `description` TEXT DEFAULT NULL,
   `parent_competency_id` BIGINT UNSIGNED DEFAULT NULL,  -- hierarchical competencies
-  `competency_type` ENUM('KNOWLEDGE','SKILL','ATTITUDE','VALUE') DEFAULT 'KNOWLEDGE',
+  `competency_type` VARCHAR(20) NOT NULL,  --FK - Fom Dropdown table  e.g., 'KNOWLEDGE','SKILL','ATTITUDE'
   `nep_alignment` VARCHAR(100) DEFAULT NULL,  -- Reference to NEP 2020 framework
   `is_active` TINYINT(1) DEFAULT 1,
   `created_at` TIMESTAMP NULL DEFAULT NULL,
@@ -102,6 +102,13 @@ CREATE TABLE IF NOT EXISTS `sch_topic_competency_jnt` (
   CONSTRAINT `fk_tc_topic` FOREIGN KEY (`topic_id`) REFERENCES `sch_topics` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_tc_competency` FOREIGN KEY (`competency_id`) REFERENCES `sch_competencies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+
+
+
+
+
 
 
 -- -------------------------------------------------------------------------

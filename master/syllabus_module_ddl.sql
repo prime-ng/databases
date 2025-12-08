@@ -5,10 +5,10 @@
 
 CREATE TABLE IF NOT EXISTS `sch_lessons` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `name` varchar(50) NOT NULL,                -- e.g. 'Grade 1' or 'Class 10'
-  `code` varchar(7) DEFAULT NULL,      -- e.g. '9th_SCI', '8TH_MAT' (Auto Generate on the basis of Class & Subject Code)
-  `class_id` BIGINT UNSIGNED NOT NULL,         -- FK to sch_classes 
-  `subject_id` bigint unsigned NOT NULL,       -- FK to sch_subjects  
+  `name` varchar(50) NOT NULL,                -- e.g. 'Lesson 1' or 'Class 10'
+  `code` varchar(7) DEFAULT NULL,             -- e.g. '9th_SCI', '8TH_MAT' (Auto Generate on the basis of Class & Subject Code)
+  `class_id` BIGINT UNSIGNED NOT NULL,        -- FK to sch_classes 
+  `subject_id` bigint unsigned NOT NULL,      -- FK to sch_subjects  
   `ordinal` tinyint DEFAULT NULL,        -- This is signed tinyint to have (1,2,3,4,5....10) lessons in a subject for a class 
   `description` text DEFAULT NULL,
   `duration` int unsigned NULL,    -- No of Periods required to complete this lesson

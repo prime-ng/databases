@@ -755,27 +755,3 @@ CREATE TABLE IF NOT EXISTS `sch_period_definitions` (
   `sort_order` TINYINT UNSIGNED DEFAULT 1,
   `is_active` TINYINT(1) DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- -------------------------------------------------------------------------
--- Syllabus Module
--- -------------------------------------------------------------------------
-
-CREATE TABLE IF NOT EXISTS `sch_lessons` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `name` varchar(50) NOT NULL,                -- e.g. 'Grade 1' or 'Class 10'
-  `code` varchar(7) DEFAULT NULL,      -- e.g. '9th_SCI', '8TH_MAT' (Auto Generate on the basis of Class & Subject Code)
-  `class_id` BIGINT UNSIGNED NOT NULL,         -- FK to sch_classes 
-  `subject_id` bigint unsigned NOT NULL,       -- FK to sch_subjects  
-  `ordinal` tinyint DEFAULT NULL,        -- This is signed tinyint to have (1,2,3,4,5....10) lessons in a subject for a class 
-  `description` text DEFAULT NULL,
-  `duration` int unsigned NULL,    -- No of Periods required to complete this lesson
-  `is_active` tinyint(1) NOT NULL DEFAULT 1,
-  `created_at` timestamp NULL DEFAULT NULL,
-  `updated_at` timestamp NULL DEFAULT NULL,
-  `deleted_at` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_lesson_classId_SubjectId_name` (`class_id`,'subject_id','name'),
-  UNIQUE KEY `uq_lesson_classId_SubjectId_ordinal` (`class_id`,'subject_id',`ordinal`),
-  CONSTRAINT `fk_lesson_classId` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_lesson_subjectId` FOREIGN KEY (`subject_id`) REFERENCES `sch_subjects` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
