@@ -19,13 +19,13 @@ CREATE TABLE IF NOT EXISTS `tpt_vehicle` (
     `model` VARCHAR(50),
     `manufacturer` VARCHAR(50),
     `vehicle_type` VARCHAR(20) NOT NULL,           -- fk to sys_dropdown_table ('BUS','VAN','CAR')
-    `fuel_type` VARCHAR(20) NOT NULL,
+    `fuel_type` VARCHAR(20) NOT NULL,           -- fk to sys_dropdown_table ('Diesel','Petrol','CNG','Electric')
     `capacity` INT UNSIGNED NOT NULL DEFAULT 40,
-    `ownership_type` VARCHAR(20) NOT NULL,
+    `ownership_type` VARCHAR(20) NOT NULL,          -- fk to sys_dropdown_table ('Owned','Leased','Rented')
     `fitness_valid_upto` DATE,
     `insurance_valid_upto` DATE,
     `pollution_valid_upto` DATE,
-    `gps_device_id` VARCHAR(50),
+    `gps_device_id` VARCHAR(50),               -- optional GPS device identifier
     `is_active` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -34,14 +34,16 @@ CREATE TABLE IF NOT EXISTS `tpt_vehicle` (
     UNIQUE KEY `uq_vehicle_registration_no` (`registration_no`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Old table name 'tpt_driver_helpr'
 CREATE TABLE IF NOT EXISTS `tpt_personnel` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `user_id` BIGINT UNSIGNED DEFAULT NULL,      -- FK to sys_users (optional)
     `name` VARCHAR(100) NOT NULL,
     `phone` VARCHAR(30) DEFAULT NULL,
-    `id_type` VARCHAR(20) DEFAULT NULL,
+    `id_type` VARCHAR(20) DEFAULT NULL,      -- fk ('Aadhaar','PAN','Passport','Other')
     `id_no` VARCHAR(100) DEFAULT NULL,
-    `role` ENUM('Driver','Helper','Both') NOT NULL DEFAULT 'Driver',
+--    `role` ENUM('Driver','Helper','Both') NOT NULL DEFAULT 'Driver',
+    `role` VARCHAR(20) NOT NULL,               -- fk ('Driver','Helper','Other')
     `license_no` VARCHAR(50) DEFAULT NULL,
     `license_valid_upto` DATE DEFAULT NULL,
     `assigned_vehicle_id` BIGINT UNSIGNED DEFAULT NULL,
@@ -96,9 +98,9 @@ CREATE TABLE IF NOT EXISTS `tpt_pickup_points` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `code` VARCHAR(50) NOT NULL,
     `name` VARCHAR(200) NOT NULL,
-    `latitude` DECIMAL(10,6) DEFAULT NULL,
-    `longitude` DECIMAL(10,6) DEFAULT NULL,
-    `location` POINT DEFAULT NULL,
+    `latitude` DECIMAL(10,6) DEFAULT NULL,      -- Latitude of the pickup/drop point
+    `longitude` DECIMAL(10,6) DEFAULT NULL,     -- Longitude of the pickup/drop point
+    `location` POINT DEFAULT NULL,                -- Spatial point (latitude, longitude)
     `total_distance` DECIMAL(7,2) DEFAULT NULL,
     `estimated_time` INT DEFAULT NULL,            -- Time in Minutes
     `stop_type` ENUM('Pickup','Drop','Both') NOT NULL DEFAULT 'Both',
@@ -120,7 +122,7 @@ CREATE TABLE IF NOT EXISTS `tpt_pickup_points_route_jnt` (
     `shift_id` BIGINT UNSIGNED NOT NULL,
     `route_id` BIGINT UNSIGNED NOT NULL,
     `pickup_point_id` BIGINT UNSIGNED NOT NULL,
-    `ordinal` SMALLINT UNSIGNED NOT NULL DEFAULT 1,
+    `ordinal` SMALLINT UNSIGNED NOT NULL DEFAULT 1,     -- Order of the stop in the route
     `total_distance` DECIMAL(7,2) DEFAULT NULL,
     `estimated_time` INT DEFAULT NULL,
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
@@ -159,7 +161,6 @@ CREATE TABLE IF NOT EXISTS `tpt_driver_route_vehicle_jnt` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Prevent overlapping assignments for same vehicle/driver on same shift+route should be enforced at app or via triggers
-
 CREATE TABLE IF NOT EXISTS `tpt_route_scheduler_jnt` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `scheduled_date` DATE NOT NULL,
@@ -178,6 +179,13 @@ CREATE TABLE IF NOT EXISTS `tpt_route_scheduler_jnt` (
     CONSTRAINT `fk_sched_driver` FOREIGN KEY (`driver_id`) REFERENCES `tpt_personnel`(`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_sched_helper` FOREIGN KEY (`helper_id`) REFERENCES `tpt_personnel`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4_COLLATE=utf8mb4_unicode_ci;
+
+
+
+
+
+
+
 
 
 -- =======================================================================
