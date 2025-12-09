@@ -182,12 +182,6 @@ CREATE TABLE IF NOT EXISTS `tpt_route_scheduler_jnt` (
 
 
 
-
-
-
-
-
-
 -- =======================================================================
 -- TRIPS
 -- Use canonical trip table `tpt_trip` and link to scheduler

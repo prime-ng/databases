@@ -147,7 +147,7 @@ CREATE TABLE IF NOT EXISTS `sys_settings` (
 CREATE TABLE IF NOT EXISTS `sys_dropdown_table` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `ordinal` tinyint unsigned NOT NULL,
-  `key` varchar(50) NOT NULL,
+  `key` varchar(150) NOT NULL,
   `value` varchar(100) NOT NULL,
   `type` ENUM('String','Integer','Decimal', 'Date', 'Datetime', 'Time', 'Boolean') NOT NULL DEFAULT 'String',
   `is_active` TINYINT(1) DEFAULT 1,
