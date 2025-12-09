@@ -15,7 +15,7 @@
 -- SECTION 1: CORE SYLLABUS STRUCTURE
 -- -------------------------------------------------------------------------
 
-CREATE TABLE IF NOT EXISTS `sch_lessons` (
+CREATE TABLE IF NOT EXISTS `slb_lessons` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `name` varchar(50) NOT NULL,                -- e.g. 'Lesson 1' or 'Chapter 10'
   `code` varchar(7) DEFAULT NULL,             -- e.g. '9th_SCI', '8TH_MAT' (Auto Generate on the basis of Class & Subject Code)
@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS `sch_lessons` (
 -- SECTION 2: HIERARCHICAL TOPICS & SUB-TOPICS (via parent_id)
 -- -------------------------------------------------------------------------
 
-CREATE TABLE IF NOT EXISTS `sch_topics` (
+CREATE TABLE IF NOT EXISTS `slb_topics` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `parent_id` BIGINT UNSIGNED DEFAULT NULL,   -- FK to self (NULL for root topics, set to parent topic_id for sub-topics)
   `lesson_id` INT UNSIGNED NOT NULL,          -- FK -> sch_lessons.id
@@ -62,8 +62,8 @@ CREATE TABLE IF NOT EXISTS `sch_topics` (
   KEY `idx_topic_parent_id` (`parent_id`),
   KEY `idx_topic_lesson_id` (`lesson_id`),
   KEY `idx_topic_level` (`level`),
-  CONSTRAINT `fk_topic_parent_id` FOREIGN KEY (`parent_id`) REFERENCES `sch_topics` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_topic_lesson` FOREIGN KEY (`lesson_id`) REFERENCES `sch_lessons` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_topic_parent_id` FOREIGN KEY (`parent_id`) REFERENCES `slb_topics` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_topic_lesson` FOREIGN KEY (`lesson_id`) REFERENCES `slb_lessons` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_topic_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_topic_subject` FOREIGN KEY (`subject_id`) REFERENCES `sch_subjects` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -73,7 +73,7 @@ CREATE TABLE IF NOT EXISTS `sch_topics` (
 -- SECTION 3: COMPETENCY FRAMEWORK (NEP 2020 ALIGNMENT)
 -- -------------------------------------------------------------------------
 
-CREATE TABLE IF NOT EXISTS `sch_competencies` (
+CREATE TABLE IF NOT EXISTS `slb_competencies` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `code` VARCHAR(50) NOT NULL,
   `name` VARCHAR(255) NOT NULL,
@@ -91,33 +91,26 @@ CREATE TABLE IF NOT EXISTS `sch_competencies` (
   KEY `idx_comp_parent` (`parent_competency_id`),
   CONSTRAINT `fk_comp_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_comp_subject` FOREIGN KEY (`subject_id`) REFERENCES `sch_subjects` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_comp_parent` FOREIGN KEY (`parent_competency_id`) REFERENCES `sch_competencies` (`id`) ON DELETE SET NULL
+  CONSTRAINT `fk_comp_parent` FOREIGN KEY (`parent_competency_id`) REFERENCES `slb_competencies` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Link topics to competencies
-CREATE TABLE IF NOT EXISTS `sch_topic_competency_jnt` (
+CREATE TABLE IF NOT EXISTS `slb_topic_competency_jnt` (
   `topic_id` BIGINT UNSIGNED NOT NULL,
   `competency_id` BIGINT UNSIGNED NOT NULL,
   PRIMARY KEY (`topic_id`,`competency_id`),
-  CONSTRAINT `fk_tc_topic` FOREIGN KEY (`topic_id`) REFERENCES `sch_topics` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_tc_competency` FOREIGN KEY (`competency_id`) REFERENCES `sch_competencies` (`id`) ON DELETE CASCADE
+  CONSTRAINT `fk_tc_topic` FOREIGN KEY (`topic_id`) REFERENCES `slb_topics` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_tc_competency` FOREIGN KEY (`competency_id`) REFERENCES `slb_competencies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-
-
-
-
-
-
 
 
 -- -------------------------------------------------------------------------
 -- SECTION 4: QUESTION TAXONOMIES (NEP / BLOOM etc.) - REFERENCE DATA
 -- -------------------------------------------------------------------------
 
-CREATE TABLE IF NOT EXISTS `gl_question_bloom` (
+CREATE TABLE IF NOT EXISTS `slb_question_bloom` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `code` VARCHAR(20) NOT NULL,   -- e.g. 'REMEMBER','UNDERSTAND','APPLY','ANALYZE','EVALUATE','CREATE'
+  `code` VARCHAR(20) NOT NULL,   -- e.g. 'REMEMBERING','UNDERSTANDING','APPLYING','ANALYZING','EVALUATING','CREATING'
   `name` VARCHAR(100) NOT NULL,
   `description` TEXT DEFAULT NULL,
   `bloom_level` TINYINT UNSIGNED DEFAULT NULL, -- 1-6 for Bloom's revised taxonomy
@@ -125,7 +118,7 @@ CREATE TABLE IF NOT EXISTS `gl_question_bloom` (
   UNIQUE KEY `uq_bloom_code` (`code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `gl_question_cognitive_domain` (
+CREATE TABLE IF NOT EXISTS `slb_cognitive_skill` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `code` VARCHAR(20) NOT NULL,  -- e.g. 'COG-KNOWLEDGE','COG-SKILL','COG-UNDERSTANDING'
   `name` VARCHAR(100) NOT NULL,
@@ -134,7 +127,7 @@ CREATE TABLE IF NOT EXISTS `gl_question_cognitive_domain` (
   UNIQUE KEY `uq_cog_code` (`code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `gl_question_time_specificity` (
+CREATE TABLE IF NOT EXISTS `slb_ques_type_specificity` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `code` VARCHAR(20) NOT NULL,  -- e.g. 'IN_CLASS','HOMEWORK','SUMMATIVE','FORMATIVE'
   `name` VARCHAR(100) NOT NULL,
@@ -142,7 +135,7 @@ CREATE TABLE IF NOT EXISTS `gl_question_time_specificity` (
   UNIQUE KEY `uq_timeSpec_code` (`code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `gl_question_complexity` (
+CREATE TABLE IF NOT EXISTS `slb_complexity_level` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `code` VARCHAR(20) NOT NULL,  -- e.g. 'EASY','MEDIUM','DIFFICULT'
   `name` VARCHAR(50) NOT NULL,
@@ -151,7 +144,7 @@ CREATE TABLE IF NOT EXISTS `gl_question_complexity` (
   UNIQUE KEY `uq_complex_code` (`code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `gl_question_types` (
+CREATE TABLE IF NOT EXISTS `slb_question_types` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `code` VARCHAR(30) NOT NULL,  -- e.g. 'MCQ_SINGLE','MCQ_MULTI','SHORT_ANSWER','LONG_ANSWER','MATCH','NUMERIC','FILL_BLANK','CODING'
   `name` VARCHAR(100) NOT NULL,
@@ -161,6 +154,13 @@ CREATE TABLE IF NOT EXISTS `gl_question_types` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_qtype_code` (`code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+
+
+
+
+
 
 
 -- -------------------------------------------------------------------------
@@ -182,10 +182,10 @@ CREATE TABLE IF NOT EXISTS `sch_questions` (
   `reference_material` TEXT DEFAULT NULL,     -- e.g., book section, web link
   `marks` DECIMAL(5,2) DEFAULT 1.00,
   `negative_marks` DECIMAL(5,2) DEFAULT 0.00,
-  `difficulty_id` INT UNSIGNED DEFAULT NULL,  -- gl_question_complexity.id
-  `bloom_id` INT UNSIGNED DEFAULT NULL,       -- gl_question_bloom.id
-  `cognitive_domain_id` INT UNSIGNED DEFAULT NULL, -- gl_question_cognitive_domain.id
-  `time_specificity_id` INT UNSIGNED DEFAULT NULL, -- gl_question_time_specificity.id
+  `complexity_level_id` INT UNSIGNED DEFAULT NULL,  -- slb_complexity_level.id
+  `bloom_id` INT UNSIGNED DEFAULT NULL,       -- slb_bloom_taxonomy.id
+  `cognitive_skill_id` INT UNSIGNED DEFAULT NULL, -- slb_cognitive_skill.id
+  `ques_type_specificity_id` INT UNSIGNED DEFAULT NULL, -- slb_ques_type_specificity.id
   `estimated_time_seconds` INT UNSIGNED DEFAULT NULL, -- avg time to answer
   `tags` JSON DEFAULT NULL,                   -- array of tag strings or ids
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
@@ -195,21 +195,21 @@ CREATE TABLE IF NOT EXISTS `sch_questions` (
   `updated_at` TIMESTAMP NULL DEFAULT NULL,
   `deleted_at` TIMESTAMP NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
-  KEY `idx_q_topic` (`topic_id`),
-  KEY `idx_q_competency` (`competency_id`),
-  KEY `idx_q_class_subject` (`class_id`,`subject_id`),
-  KEY `idx_q_difficulty_bloom` (`difficulty_id`,`bloom_id`),
-  KEY `idx_q_active` (`is_active`),
-  CONSTRAINT `fk_q_topic` FOREIGN KEY (`topic_id`) REFERENCES `sch_topics` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `fk_q_competency` FOREIGN KEY (`competency_id`) REFERENCES `sch_competencies` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `fk_q_lesson` FOREIGN KEY (`lesson_id`) REFERENCES `sch_lessons` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `fk_q_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `fk_q_subject` FOREIGN KEY (`subject_id`) REFERENCES `sch_subjects` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `fk_q_type` FOREIGN KEY (`question_type_id`) REFERENCES `gl_question_types` (`id`) ON DELETE RESTRICT,
-  CONSTRAINT `fk_q_difficulty` FOREIGN KEY (`difficulty_id`) REFERENCES `gl_question_complexity` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `fk_q_bloom` FOREIGN KEY (`bloom_id`) REFERENCES `gl_question_bloom` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `fk_q_cog` FOREIGN KEY (`cognitive_domain_id`) REFERENCES `gl_question_cognitive_domain` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `fk_q_timeSpec` FOREIGN KEY (`time_specificity_id`) REFERENCES `gl_question_time_specificity` (`id`) ON DELETE SET NULL
+  KEY `idx_ques_topic` (`topic_id`),
+  KEY `idx_ques_competency` (`competency_id`),
+  KEY `idx_ques_class_subject` (`class_id`,`subject_id`),
+  KEY `idx_ques_complexity_bloom` (`complexity_level_id`,`bloom_id`),
+  KEY `idx_ques_active` (`is_active`),
+  CONSTRAINT `fk_ques_topic` FOREIGN KEY (`topic_id`) REFERENCES `sch_topics` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_ques_competency` FOREIGN KEY (`competency_id`) REFERENCES `sch_competencies` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_ques_lesson` FOREIGN KEY (`lesson_id`) REFERENCES `sch_lessons` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_ques_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_ques_subject` FOREIGN KEY (`subject_id`) REFERENCES `sch_subjects` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_ques_type` FOREIGN KEY (`question_type_id`) REFERENCES `gl_question_types` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `fk_ques_complexity` FOREIGN KEY (`complexity_level_id`) REFERENCES `slb_complexity_level` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_ques_bloom` FOREIGN KEY (`bloom_id`) REFERENCES `slb_bloom_taxonomy` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_ques_cog` FOREIGN KEY (`cognitive_skill_id`) REFERENCES `slb_cognitive_skill` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_ques_timeSpec` FOREIGN KEY (`ques_type_specificity_id`) REFERENCES `slb_ques_type_specificity` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
@@ -286,9 +286,10 @@ CREATE TABLE IF NOT EXISTS `sch_question_pools` (
   `description` TEXT DEFAULT NULL,
   `subject_id` BIGINT UNSIGNED NOT NULL,
   `class_id` INT UNSIGNED NOT NULL,
-  `difficulty_filter` JSON DEFAULT NULL,      -- ["EASY","MEDIUM","DIFFICULT"]
+  `complexity_filter` JSON DEFAULT NULL,      -- ["EASY","MEDIUM","DIFFICULT"]
   `bloom_filter` JSON DEFAULT NULL,           -- ["REMEMBER","UNDERSTAND","APPLY"]
-  `cognitive_filter` JSON DEFAULT NULL,       -- Filter by cognitive domain
+  `cognitive_filter` JSON DEFAULT NULL,       -- Filter by cognitive skills
+  `ques_type_specificity_filter` JSON DEFAULT NULL, -- e.g., ["IN_CLASS","HOMEWORK"]
   `min_questions` INT UNSIGNED DEFAULT NULL,  -- Minimum pool size
   `is_active` TINYINT(1) DEFAULT 1,
   `created_at` TIMESTAMP NULL DEFAULT NULL,
@@ -656,18 +657,22 @@ CREATE TABLE IF NOT EXISTS `sch_audit_log` (
 
 CREATE TABLE IF NOT EXISTS `sch_question_index` (
   `question_id` BIGINT UNSIGNED NOT NULL PRIMARY KEY,
-  `class_id` INT UNSIGNED DEFAULT NULL,
-  `subject_id` BIGINT UNSIGNED DEFAULT NULL,
-  `lesson_id` INT UNSIGNED DEFAULT NULL,
-  `topic_id` BIGINT UNSIGNED DEFAULT NULL,
-  `competency_id` BIGINT UNSIGNED DEFAULT NULL,
-  `difficulty_id` INT UNSIGNED DEFAULT NULL,
-  `bloom_id` INT UNSIGNED DEFAULT NULL,
-  `cognitive_domain_id` INT UNSIGNED DEFAULT NULL,
-  `tags` JSON DEFAULT NULL,
+  `class_id` INT UNSIGNED DEFAULT NULL,           -- sch_classes.id
+  `subject_id` BIGINT UNSIGNED DEFAULT NULL,      -- sch_subjects.id
+  `lesson_id` INT UNSIGNED DEFAULT NULL,          -- denormalized for faster filtering
+  `topic_id` BIGINT UNSIGNED DEFAULT NULL,        -- sch_topics.id
+  `competency_id` BIGINT UNSIGNED DEFAULT NULL,   -- sch_competencies.id
+  `complexity_level_id` INT UNSIGNED DEFAULT NULL,      -- slb_complexity_level.id
+  `bloom_id` INT UNSIGNED DEFAULT NULL,           -- slb_bloom_taxonomy.id
+  `cognitive_skill_id` INT UNSIGNED DEFAULT NULL, -- slb_cognitive_skill.id
+  `question_type_id` INT UNSIGNED DEFAULT NULL,   -- gl_question_types.id
+  `marks` DECIMAL(5,2) DEFAULT NULL,              -- marks allocated
+  `negative_marks` DECIMAL(5,2) DEFAULT NULL,     -- negative marks
+  `estimated_time_seconds` INT UNSIGNED DEFAULT NULL,  -- estimated time to answer
+  `tags` JSON DEFAULT NULL,                       -- array of tag strings or ids
   `last_updated` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   KEY `idx_qi_class_subject` (`class_id`,`subject_id`),
-  KEY `idx_qi_difficulty` (`difficulty_id`),
+  KEY `idx_qi_complexity` (`complexity_level_id`),
   KEY `idx_qi_bloom` (`bloom_id`),
   CONSTRAINT `fk_qi_question` FOREIGN KEY (`question_id`) REFERENCES `sch_questions` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4_COLLATE=utf8mb4_unicode_ci;
