@@ -5,6 +5,7 @@
 -- tim - Timetable Module
 -- sch - School Setup
 -- std - Student Management
+-- slb - Syllabus & Curriculum Management
 -- exm - Exam Management
 -- quz - Quiz & Assessment Management
 -- qns - Questiona Creation & Management

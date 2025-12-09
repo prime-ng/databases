@@ -108,11 +108,11 @@ CREATE TABLE IF NOT EXISTS `slb_topic_competency_jnt` (
 -- SECTION 4: QUESTION TAXONOMIES (NEP / BLOOM etc.) - REFERENCE DATA
 -- -------------------------------------------------------------------------
 
-CREATE TABLE IF NOT EXISTS `slb_question_bloom` (
+CREATE TABLE IF NOT EXISTS `slb_bloom_taxonomy` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `code` VARCHAR(20) NOT NULL,   -- e.g. 'REMEMBERING','UNDERSTANDING','APPLYING','ANALYZING','EVALUATING','CREATING'
   `name` VARCHAR(100) NOT NULL,
-  `description` TEXT DEFAULT NULL,
+  `description` VARCHAR(255) DEFAULT NULL,
   `bloom_level` TINYINT UNSIGNED DEFAULT NULL, -- 1-6 for Bloom's revised taxonomy
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_bloom_code` (`code`)
@@ -120,19 +120,24 @@ CREATE TABLE IF NOT EXISTS `slb_question_bloom` (
 
 CREATE TABLE IF NOT EXISTS `slb_cognitive_skill` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `bloom_id` INT UNSIGNED DEFAULT NULL,       -- slb_bloom_taxonomy.id
   `code` VARCHAR(20) NOT NULL,  -- e.g. 'COG-KNOWLEDGE','COG-SKILL','COG-UNDERSTANDING'
   `name` VARCHAR(100) NOT NULL,
-  `description` TEXT DEFAULT NULL,
+  `description` VARCHAR(255) DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_cog_code` (`code`)
+  UNIQUE KEY `uq_cog_code` (`code`),
+  CONSTRAINT `fk_cog_bloom` FOREIGN KEY (`bloom_id`) REFERENCES `slb_bloom_taxonomy` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `slb_ques_type_specificity` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `cognitive_skill_id` INT UNSIGNED DEFAULT NULL, -- slb_cognitive_skill.id
   `code` VARCHAR(20) NOT NULL,  -- e.g. 'IN_CLASS','HOMEWORK','SUMMATIVE','FORMATIVE'
   `name` VARCHAR(100) NOT NULL,
+  `description` VARCHAR(255) DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_timeSpec_code` (`code`)
+  UNIQUE KEY `uq_quesTypeSps_code` (`code`),
+  CONSTRAINT `fk_quesTypeSps_cognitive` FOREIGN KEY (`cognitive_skill_id`) REFERENCES `slb_cognitive_skill` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `slb_complexity_level` (
@@ -149,7 +154,7 @@ CREATE TABLE IF NOT EXISTS `slb_question_types` (
   `code` VARCHAR(30) NOT NULL,  -- e.g. 'MCQ_SINGLE','MCQ_MULTI','SHORT_ANSWER','LONG_ANSWER','MATCH','NUMERIC','FILL_BLANK','CODING'
   `name` VARCHAR(100) NOT NULL,
   `has_options` TINYINT(1) NOT NULL DEFAULT 0,
-  `auto_gradable` TINYINT(1) NOT NULL DEFAULT 1, -- Can this type be auto-graded?
+  `auto_gradable` TINYINT(1) NOT NULL DEFAULT 1, -- Can this type be auto-graded (Can System Marked Automatically?)?
   `description` TEXT DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_qtype_code` (`code`)
