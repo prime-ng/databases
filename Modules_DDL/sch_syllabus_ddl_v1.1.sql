@@ -682,7 +682,6 @@ CREATE TABLE IF NOT EXISTS `sch_question_index` (
   CONSTRAINT `fk_qi_question` FOREIGN KEY (`question_id`) REFERENCES `sch_questions` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4_COLLATE=utf8mb4_unicode_ci;
 
-
 -- =====================================================================
 -- END OF SYLLABUS MANAGEMENT MODULE - ENHANCED VERSION
 -- =====================================================================
