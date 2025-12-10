@@ -147,11 +147,11 @@ Database Table: slb_topic_competency_jnt
 │ ─────────────────────────────────────────────────────────────
 │ Mapped Competencies: 3
 │
-│ ☐ │ Code         │ Competency Name      │ Type   │ Mapped │ Actions│
+│ ☐  │ Code         │ Competency Name      │ Type   │ Mapped │ Actions│
 │ ───┼──────────────┼──────────────────────┼────────┼────────┼────────│
-│ ☐ │ COMP-ENG-001 │ Grammar Mastery      │ SKILL  │ Today  │ View ✕ │
-│ ☐ │ COMP-ENG-003 │ Parts of Speech      │ SKILL  │ Dec 8  │ View ✕ │
-│ ☐ │ COMP-ENG-004 │ Tenses               │ SKILL  │ Dec 7  │ View ✕ │
+│ ☐  │ COMP-ENG-001 │ Grammar Mastery      │ SKILL  │ Today  │ View ✕ │
+│ ☐  │ COMP-ENG-003 │ Parts of Speech      │ SKILL  │ Dec 8  │ View ✕ │
+│ ☐  │ COMP-ENG-004 │ Tenses               │ SKILL  │ Dec 7  │ View ✕ │
 │
 │ [+ Add Competency] [Unmap Selected] [View All in Bank]
 │
