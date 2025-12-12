@@ -37,14 +37,14 @@ CREATE TABLE IF NOT EXISTS `tpt_vehicle` (
     `registration_no` VARCHAR(30) NOT NULL,
     `model` VARCHAR(50),
     `manufacturer` VARCHAR(50),
-    `vehicle_type` VARCHAR(20) NOT NULL,           -- fk to sys_dropdown_table ('BUS','VAN','CAR')
-    `fuel_type` VARCHAR(20) NOT NULL,
+    `vehicle_type` VARCHAR(20) NOT NULL,        -- fk to sys_dropdown_table ('BUS','VAN','CAR')
+    `fuel_type` VARCHAR(20) NOT NULL,           -- fk to sys_dropdown_table ('Diesel','Petrol','CNG','Electric')
     `capacity` INT UNSIGNED NOT NULL DEFAULT 40,
-    `ownership_type` VARCHAR(20) NOT NULL,
+    `ownership_type` VARCHAR(20) NOT NULL,      -- fk to sys_dropdown_table ('Owned','Leased','Rented')
     `fitness_valid_upto` DATE,
     `insurance_valid_upto` DATE,
     `pollution_valid_upto` DATE,
-    `gps_device_id` VARCHAR(50),
+    `gps_device_id` VARCHAR(50),                -- FK to GPS device table if exists
     `is_active` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

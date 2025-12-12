@@ -1,6 +1,5 @@
 -- =======================================================================
 -- TRANSPORT MODULE ENHANCED (v1.2) for MySQL 8.x
--- Purpose: Blue-Green enhancement (In-DB RENAME strategy)
 -- Strategy: Create staging objects, backfill from v1, verify, then atomic RENAME TABLE swap.
 --
 -- KEY ENHANCEMENTS:
@@ -34,17 +33,17 @@ SET FOREIGN_KEY_CHECKS = 0;
 CREATE TABLE IF NOT EXISTS `tpt_vehicle` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `vehicle_no` VARCHAR(20) NOT NULL,
-    `registration_no` VARCHAR(30) NOT NULL,
-    `model` VARCHAR(50),
-    `manufacturer` VARCHAR(50),
-    `vehicle_type` VARCHAR(20) NOT NULL,           -- fk to sys_dropdown_table ('BUS','VAN','CAR')
-    `fuel_type` VARCHAR(20) NOT NULL,
-    `capacity` INT UNSIGNED NOT NULL DEFAULT 40,
-    `ownership_type` VARCHAR(20) NOT NULL,
-    `fitness_valid_upto` DATE,
-    `insurance_valid_upto` DATE,
-    `pollution_valid_upto` DATE,
-    `gps_device_id` VARCHAR(50),
+    `registration_no` VARCHAR(30) NOT NULL,         -- Unique govt registration number
+    `model` VARCHAR(50),                            -- Vehicle model
+    `manufacturer` VARCHAR(50),                     -- Vehicle manufacturer 
+    `vehicle_type` VARCHAR(20) NOT NULL,            -- fk to sys_dropdown_table ('BUS','VAN','CAR')
+    `fuel_type` VARCHAR(20) NOT NULL,               -- fk to sys_dropdown_table ('Diesel','Petrol','CNG','Electric')
+    `capacity` INT UNSIGNED NOT NULL DEFAULT 40,    -- Seating capacity
+    `ownership_type` VARCHAR(20) NOT NULL,          -- fk to sys_dropdown_table ('Owned','Leased','Rented')
+    `fitness_valid_upto` DATE,                      -- Fitness certificate expiry date
+    `insurance_valid_upto` DATE,                    -- Insurance expiry date
+    `pollution_valid_upto` DATE,                    -- Pollution certificate expiry date
+    `gps_device_id` VARCHAR(50),                    -- Installed GPS device identifier
     `is_active` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -58,13 +57,13 @@ CREATE TABLE IF NOT EXISTS `tpt_personnel` (
     `user_id` BIGINT UNSIGNED DEFAULT NULL,
     `name` VARCHAR(100) NOT NULL,
     `phone` VARCHAR(30) DEFAULT NULL,
-    `id_type` VARCHAR(20) DEFAULT NULL,
-    `id_no` VARCHAR(100) DEFAULT NULL,
-    `role` VARCHAR(20) NOT NULL,
-    `license_no` VARCHAR(50) DEFAULT NULL,
-    `license_valid_upto` DATE DEFAULT NULL,
-    `assigned_vehicle_id` BIGINT UNSIGNED DEFAULT NULL,
-    `driving_exp_months` SMALLINT UNSIGNED DEFAULT NULL,
+    `id_type` VARCHAR(20) DEFAULT NULL,         -- e.g., 'Aadhaar','Passport','DriverLicense'
+    `id_no` VARCHAR(100) DEFAULT NULL,          -- Govt issued ID number
+    `role` VARCHAR(20) NOT NULL,                -- fk to sys_role ('Driver','Helper','Conductor')
+    `license_no` VARCHAR(50) DEFAULT NULL,      -- Driver's license number
+    `license_valid_upto` DATE DEFAULT NULL,                 -- License expiry date
+    `assigned_vehicle_id` BIGINT UNSIGNED DEFAULT NULL,     -- fk to tpt_vehicle
+    `driving_exp_months` SMALLINT UNSIGNED DEFAULT NULL,    -- Total driving experience in months
     `address` VARCHAR(512) DEFAULT NULL,
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -78,8 +77,8 @@ CREATE TABLE IF NOT EXISTS `tpt_shift` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `code` VARCHAR(20) NOT NULL,
     `name` VARCHAR(100) NOT NULL,
-    `effective_from` DATE NOT NULL,
-    `effective_to` DATE NOT NULL,
+    `effective_from` DATE NOT NULL,     --  Shift validity period
+    `effective_to` DATE NOT NULL,       --  Shift validity period
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -99,8 +98,8 @@ CREATE TABLE IF NOT EXISTS `tpt_route` (
     `name` VARCHAR(200) NOT NULL,
     `description` VARCHAR(500) DEFAULT NULL,
     `pickup_drop` ENUM('Pickup','Drop','Both') NOT NULL DEFAULT 'Both',
-    `shift_id` BIGINT UNSIGNED NOT NULL,
-    `route_geometry` LINESTRING SRID 4326 DEFAULT NULL,
+    `shift_id` BIGINT UNSIGNED NOT NULL,        -- fk to tpt_shift
+    `route_geometry` LINESTRING SRID 4326 DEFAULT NULL,     -- WGS84 route path
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -115,11 +114,11 @@ CREATE TABLE IF NOT EXISTS `tpt_pickup_points` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `code` VARCHAR(50) NOT NULL,
     `name` VARCHAR(200) NOT NULL,
-    `latitude` DECIMAL(10,7) DEFAULT NULL,
-    `longitude` DECIMAL(10,7) DEFAULT NULL,
-    `location` POINT NOT NULL SRID 4326,
-    `total_distance` DECIMAL(7,2) DEFAULT NULL,
-    `estimated_time` INT DEFAULT NULL,
+    `latitude` DECIMAL(10,7) DEFAULT NULL,      -- WGS84 latitude
+    `longitude` DECIMAL(10,7) DEFAULT NULL,     -- WGS84 longitude
+    `location` POINT NOT NULL SRID 4326,        -- WGS84 spatial point
+    `total_distance` DECIMAL(7,2) DEFAULT NULL, -- Distance from route start in KM
+    `estimated_time` INT DEFAULT NULL,          -- Estimated time from route start in minutes
     `stop_type` ENUM('Pickup','Drop','Both') NOT NULL DEFAULT 'Both',
     `shift_id` BIGINT UNSIGNED NOT NULL,
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
@@ -251,9 +250,9 @@ CREATE TABLE IF NOT EXISTS `tpt_driver_attendance` (
     `driver_id` BIGINT UNSIGNED NOT NULL,
     `check_in_time` DATETIME NOT NULL,
     `check_out_time` DATETIME DEFAULT NULL,
-    `geo_lat` DECIMAL(10,7) DEFAULT NULL,
-    `geo_lng` DECIMAL(10,7) DEFAULT NULL,
-    `via_app` TINYINT(1) NOT NULL DEFAULT 1,
+    `geo_lat` DECIMAL(10,7) DEFAULT NULL,       -- Location of check-in
+    `geo_lng` DECIMAL(10,7) DEFAULT NULL,       -- Location of check-in
+    `via_app` TINYINT(1) NOT NULL DEFAULT 1,    -- 1=App, 0=Manual
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `deleted_at` TIMESTAMP NULL DEFAULT NULL,
     CONSTRAINT `fk_da_driver` FOREIGN KEY (`driver_id`) REFERENCES `tpt_personnel`(`id`) ON DELETE CASCADE

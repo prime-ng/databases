@@ -10,13 +10,13 @@
 This document provides detailed UI/UX specifications for the **Topic-Competency Mapping Module**, enabling curriculum managers to link Topics (`slb_topics`) to Competencies (`slb_competencies`) via the join table `slb_topic_competency_jnt`. Covers mapping dashboard, bulk operations, CSV import/export, job management, analytics, and integrations.
 
 ### 1.2 User Roles & Permissions
-| Role         | Map | Unmap | Bulk Map | CSV Import | CSV Export | Analytics | Audit |
-|--------------|-----|-------|----------|-----------|-----------|-----------|-------|
-| Super Admin  |  ✓  |   ✓   |    ✓     |     ✓     |     ✓     |     ✓     |   ✓   |
-| School Admin |  ✓  |   ✓   |    ✓     |     ✗     |     ✗     |     ✓     |   ✗   |
-| Curriculum Manager |  ✓  |   ✓   |    ✓     |     ✓     |     ✓     |     ✓     |   ✓   |
-| Teacher      |  ✓  |   ✗   |    ✗     |     ✗     |     ✗     |     ✓     |   ✗   |
-| QA / Auditor |  ✗  |   ✗   |    ✗     |     ✗     |     ✗     |     ✓     |   ✓   |
+| Role               | Map | Unmap | Bulk Map | CSV Import | CSV Export | Analytics | Audit |
+|--------------------|-----|-------|----------|------------|------------|-----------|-------|
+| Super Admin        |  ✓  |   ✓   |    ✓     |      ✓     |      ✓     |     ✓     |   ✓   |
+| School Admin       |  ✓  |   ✓   |    ✓     |      ✗     |      ✗     |     ✓     |   ✗   |
+| Curriculum Manager |  ✓  |   ✓   |    ✓     |      ✓     |      ✓     |     ✓     |   ✓   |
+| Teacher            |  ✓  |   ✗   |    ✗     |      ✗     |      ✗     |     ✓     |   ✗   |
+| QA / Auditor       |  ✗  |   ✗   |    ✗     |      ✗     |      ✗     |     ✓     |   ✓   |
 
 ### 1.3 Data Context
 
@@ -38,56 +38,56 @@ Database Table: slb_topic_competency_jnt
 
 #### 2.1.1 Page Layout (Three-Column)
 
-```
+
 ┌────────────────────────────────────────────────────────────────────────────────────┐
 │ CURRICULUM MAPPINGS > TOPICS ↔ COMPETENCIES                                        │
 ├────────────────────────────────────────────────────────────────────────────────────┤
-│                                                                                     │
-│ ┌─────────────────────────┬────────────────────┬─────────────────────────────┐    │
-│ │ TOPIC SELECTOR          │ ACTIONS            │ COMPETENCY SELECTOR         │    │
-│ │ (Left Pane)             │ (Middle)           │ (Right Pane)                │    │
-│ ├─────────────────────────┼────────────────────┼─────────────────────────────┤    │
-│ │                         │                    │                             │    │
-│ │ CLASS: [9th ▼]          │                    │ TYPE: [All ▼]              │    │
-│ │ SUBJECT: [English ▼]    │   SELECTED:        │ NEP: [Select ▼]            │    │
-│ │ LESSON: [Lesson 1 ▼]    │   Topics: 2        │ STATUS: [Active ▼]         │    │
-│ │ SEARCH: [________]      │   Competencies: 1  │ SEARCH: [________]         │    │
-│ │                         │                    │                             │    │
-│ │ ▼ Grammar Basics (0)    │   [Map →]          │ ▼ SKILL (12)               │    │
-│ │ ├─ Parts of Speech (✓)  │                    │  • Grammar Mastery (✓)     │    │
-│ │ ├─ Verb Tenses (✓)      │   [← Unmap]        │  • Parts of Speech (✓)     │    │
-│ │ └─ Sentence Structure    │                    │  • Listening Skills        │    │
-│ │                         │   [Import CSV]     │  • Speaking Skills         │    │
-│ │ Comprehension (0)       │   [Export CSV]     │                             │    │
-│ │ ├─ Reading Practice     │   [Analytics]      │ ▶ KNOWLEDGE (8)            │    │
-│ │ └─ Listening Skills     │                    │                             │    │
-│ │                         │                    │ ▶ ATTITUDE (5)             │    │
-│ │                         │                    │                             │    │
-│ │ [Tree View]             │                    │ [Selected Competencies:    │    │
-│ │ [+ New Topic]           │                    │  • Grammar Mastery]        │    │
-│ │                         │                    │                             │    │
-│ └─────────────────────────┴────────────────────┴─────────────────────────────┘    │
-│                                                                                     │
-│ MAPPING PREVIEW PANEL (Below)                                                     │
-│ ┌─────────────────────────────────────────────────────────────────────────────┐   │
-│ │ Current Mappings for Selected Items:                                        │   │
-│ │                                                                              │   │
-│ │ Topic: Grammar Basics (Lesson 1)                                           │   │
-│ │ └─ Mapped Competencies: Grammar Mastery, Parts of Speech                   │   │
-│ │                                                                              │   │
-│ │ Topic: Parts of Speech (Lesson 1)                                          │   │
-│ │ └─ Mapped Competencies: Grammar Mastery, Parts of Speech                   │   │
-│ │                                                                              │   │
-│ │ Competency: Grammar Mastery                                                │   │
-│ │ └─ Mapped Topics: Grammar Basics, Parts of Speech, Verb Tenses            │   │
-│ └─────────────────────────────────────────────────────────────────────────────┘   │
-│                                                                                     │
-│ MAPPING SUMMARY (Bottom)                                                          │
-│ Total Mappings: 15 | Topics Mapped: 8/12 | Competencies Mapped: 18/25           │
-│ Coverage: 67% | Gaps: 4 topics unmapped | Unused: 7 competencies                │
-│                                                                                     │
+│                                                                                    │
+│ ┌─────────────────────────┬────────────────────┬──────────────────────────────┐    │
+│ │ TOPIC SELECTOR          │ ACTIONS            │ COMPETENCY SELECTOR          │    │
+│ │ (Left Pane)             │ (Middle)           │ (Right Pane)                 │    │
+│ ├─────────────────────────┼────────────────────┼──────────────────────────────┤    │
+│ │                         │                    │                              │    │
+│ │ CLASS: [9th ▼]          │                    │ TYPE: [All ▼]                │    │
+│ │ SUBJECT: [English ▼]    │   SELECTED:        │ NEP: [Select ▼]              │    │
+│ │ LESSON: [Lesson 1 ▼]    │   Topics: 2        │ STATUS: [Active ▼]           │    │
+│ │ SEARCH: [________]      │   Competencies: 1  │ SEARCH: [________]           │    │
+│ │                         │                    │                              │    │
+│ │ ▼ Grammar Basics (0)    │   [Map →]          │ ▼ SKILL (12)                 │    │
+│ │ ├─ Parts of Speech (✓)  │                    │  • Grammar Mastery (✓)       │    │
+│ │ ├─ Verb Tenses (✓)      │   [← Unmap]        │  • Parts of Speech (✓)       │    │
+│ │ └─ Sentence Structure    │                    │  • Listening Skills         │    │
+│ │                         │   [Import CSV]     │  • Speaking Skills           │    │
+│ │ Comprehension (0)       │   [Export CSV]     │                              │    │
+│ │ ├─ Reading Practice     │   [Analytics]      │ ▶ KNOWLEDGE (8)              │    │
+│ │ └─ Listening Skills     │                    │                              │    │
+│ │                         │                    │ ▶ ATTITUDE (5)               │    │
+│ │                         │                    │                              │    │
+│ │ [Tree View]             │                    │ [Selected Competencies:      │    │
+│ │ [+ New Topic]           │                    │  • Grammar Mastery]          │    │
+│ │                         │                    │                              │    │
+│ └─────────────────────────┴────────────────────┴──────────────────────────────┘    │
+│                                                                                    │
+│ MAPPING PREVIEW PANEL (Below)                                                      │
+│ ┌─────────────────────────────────────────────────────────────────────────────┐    │
+│ │ Current Mappings for Selected Items:                                        │    │
+│ │                                                                             │    │
+│ │ Topic: Grammar Basics (Lesson 1)                                            │    │
+│ │ └─ Mapped Competencies: Grammar Mastery, Parts of Speech                    │    │
+│ │                                                                             │    │
+│ │ Topic: Parts of Speech (Lesson 1)                                           │    │
+│ │ └─ Mapped Competencies: Grammar Mastery, Parts of Speech                    │    │
+│ │                                                                             │    │
+│ │ Competency: Grammar Mastery                                                 │    │
+│ │ └─ Mapped Topics: Grammar Basics, Parts of Speech, Verb Tenses              │    │
+│ └─────────────────────────────────────────────────────────────────────────────┘    │
+│                                                                                    │
+│ MAPPING SUMMARY (Bottom)                                                           │
+│ Total Mappings: 15 | Topics Mapped: 8/12 | Competencies Mapped: 18/25              │
+│ Coverage: 67% | Gaps: 4 topics unmapped | Unused: 7 competencies                   │
+│                                                                                    │
 └────────────────────────────────────────────────────────────────────────────────────┘
-```
+
 
 #### 2.1.2 Components & Interactions
 
@@ -137,21 +137,21 @@ Database Table: slb_topic_competency_jnt
 #### 2.2.1 Layout
 
 ```
-┌──────────────────────────────────────────────────────────────┐
-│ TOPIC DETAIL > Grammar Basics              [Edit] [More]     │
-├──────────────────────────────────────────────────────────────┤
-│ [Overview] [Sub-Topics] [Questions] [Competencies] [Activity]│
-├──────────────────────────────────────────────────────────────┤
-│
-│ TAB: COMPETENCIES (Linked Competencies)
-│ ─────────────────────────────────────────────────────────────
-│ Mapped Competencies: 3
-│
-│ ☐ │ Code         │ Competency Name      │ Type   │ Mapped │ Actions│
-│ ───┼──────────────┼──────────────────────┼────────┼────────┼────────│
-│ ☐ │ COMP-ENG-001 │ Grammar Mastery      │ SKILL  │ Today  │ View ✕ │
-│ ☐ │ COMP-ENG-003 │ Parts of Speech      │ SKILL  │ Dec 8  │ View ✕ │
-│ ☐ │ COMP-ENG-004 │ Tenses               │ SKILL  │ Dec 7  │ View ✕ │
+┌──────────────────────────────────────────────────────────────────────┐
+│ TOPIC DETAIL > Grammar Basics                          [Edit] [More] │
+├──────────────────────────────────────────────────────────────────────┤
+│ [Overview] [Sub-Topics] [Questions] [Competencies] [Activity]        │
+├──────────────────────────────────────────────────────────────────────┤
+│                                                                      |
+│ TAB: COMPETENCIES (Linked Competencies)                              |
+│ ─────────────────────────────────────────────────────────────────────|
+│ Mapped Competencies: 3                                               |
+│                                                                      |
+│ ☐ │ Code          │ Competency Name      │ Type   │ Mapped │ Actions │
+│ ──┼───────────────┼──────────────────────┼────────┼────────┼─────────│
+│ ☐ │ COMP-ENG-001  │ Grammar Mastery      │ SKILL  │ Today  │ View ✕  │
+│ ☐ │ COMP-ENG-003  │ Parts of Speech      │ SKILL  │ Dec 8  │ View ✕  │
+│ ☐ │ COMP-ENG-004  │ Tenses               │ SKILL  │ Dec 7  │ View ✕  │
 │
 │ [+ Add Competency] [Unmap Selected] [View All in Bank]
 │
@@ -159,7 +159,7 @@ Database Table: slb_topic_competency_jnt
 │ Search: [_________________]  [Search]
 │ Suggestions: Grammar Mastery (already mapped) | Writing Skills | ...
 │
-└──────────────────────────────────────────────────────────────┘
+└──────────────────────────────────────────────────────────────────────┘
 ```
 
 **Behaviors:**

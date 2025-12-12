@@ -77,7 +77,7 @@ CREATE TABLE IF NOT EXISTS `slb_competencies` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `code` VARCHAR(50) NOT NULL,
   `name` VARCHAR(255) NOT NULL,
-  `class_id` INT UNSIGNED NOT NULL,
+  `class_id` INT UNSIGNED NOT NULL,   -- FK to sch_classes.id
   `subject_id` BIGINT UNSIGNED NOT NULL,
   `description` TEXT DEFAULT NULL,
   `parent_competency_id` BIGINT UNSIGNED DEFAULT NULL,  -- hierarchical competencies
