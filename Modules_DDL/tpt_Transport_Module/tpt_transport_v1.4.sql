@@ -75,7 +75,7 @@ CREATE TABLE IF NOT EXISTS `tpt_personnel` (
 
 CREATE TABLE IF NOT EXISTS `tpt_shift` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `code` VARCHAR(20) NOT NULL,
+    `code` VARCHAR(20) NOT NULL,        --  Shift code e.g., 'MORNING', 'AFTERNOON'
     `name` VARCHAR(100) NOT NULL,
     `effective_from` DATE NOT NULL,     --  Shift validity period
     `effective_to` DATE NOT NULL,       --  Shift validity period
@@ -202,16 +202,17 @@ CREATE TABLE IF NOT EXISTS `tpt_route_scheduler_jnt` (
 
 CREATE TABLE IF NOT EXISTS `tpt_trip` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `trip_date` DATE NOT NULL,
-    `pickup_route_id` BIGINT UNSIGNED DEFAULT NULL,
-    `route_id` BIGINT UNSIGNED NOT NULL,
-    `vehicle_id` BIGINT UNSIGNED NOT NULL,
-    `driver_id` BIGINT UNSIGNED NOT NULL,
-    `helper_id` BIGINT UNSIGNED DEFAULT NULL,
-    `trip_type` ENUM('Morning','Afternoon','Evening','Custom') DEFAULT 'Morning',
-    `start_time` DATETIME DEFAULT NULL,
-    `end_time` DATETIME DEFAULT NULL,
-    `status` ENUM('Scheduled','Ongoing','Completed','Cancelled') NOT NULL DEFAULT 'Scheduled',
+    `trip_date` DATE NOT NULL,                      -- Date of the trip
+    `pickup_route_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to 'tpt_route' for pickup
+    `route_id` BIGINT UNSIGNED NOT NULL,            -- FK to 'tpt_route' for drop
+    `vehicle_id` BIGINT UNSIGNED NOT NULL,          -- FK to 'tpt_vehicle'
+    `driver_id` BIGINT UNSIGNED NOT NULL,           -- FK to 'tpt_personnel' for driver
+    `helper_id` BIGINT UNSIGNED DEFAULT NULL,       -- FK to 'tpt_personnel' for helper
+    `trip_type` BIGINT UNSIGNED DEFAULT NULL,       -- FK to 'tpt_shift' for trip type
+    `start_time` DATETIME DEFAULT NULL,             -- Actual start time
+    `end_time` DATETIME DEFAULT NULL,               -- Actual end time
+    `status` VARCHAR(20) NOT NULL DEFAULT 'Scheduled', -- fk to sys_dropdown_table
+    `remarks` VARCHAR(512) DEFAULT NULL,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at` TIMESTAMP NULL DEFAULT NULL,
@@ -219,7 +220,9 @@ CREATE TABLE IF NOT EXISTS `tpt_trip` (
     KEY `idx_trip_vehicle` (`vehicle_id`),
     CONSTRAINT `fk_trip_route` FOREIGN KEY (`route_id`) REFERENCES `tpt_route`(`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_trip_vehicle` FOREIGN KEY (`vehicle_id`) REFERENCES `tpt_vehicle`(`id`) ON DELETE RESTRICT,
-    CONSTRAINT `fk_trip_driver` FOREIGN KEY (`driver_id`) REFERENCES `tpt_personnel`(`id`) ON DELETE RESTRICT
+    CONSTRAINT `fk_trip_driver` FOREIGN KEY (`driver_id`) REFERENCES `tpt_personnel`(`id`) ON DELETE RESTRICT,
+    CONSTRAINT `fk_trip_driver` FOREIGN KEY (`helper_id`) REFERENCES `tpt_personnel`(`id`) ON DELETE RESTRICT,
+    CONSTRAINT `fk_trip_tripType` FOREIGN KEY (`trip_type`) REFERENCES `tpt_shift`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
@@ -265,8 +268,8 @@ CREATE TABLE IF NOT EXISTS `tpt_driver_attendance` (
 
 CREATE TABLE IF NOT EXISTS `tpt_student_allocation_jnt` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `student_session_id` BIGINT UNSIGNED NOT NULL,
-    `route_id` BIGINT UNSIGNED NOT NULL,
+    `student_session_id` BIGINT UNSIGNED NOT NULL,  -- FK to 'std_student_sessions_jnt'
+    `route_id` BIGINT UNSIGNED NOT NULL,            -- FK to 'tpt_route'
     `pickup_stop_id` BIGINT UNSIGNED NOT NULL,
     `drop_stop_id` BIGINT UNSIGNED NOT NULL,
     `fare` DECIMAL(10,2) NOT NULL,
@@ -280,30 +283,69 @@ CREATE TABLE IF NOT EXISTS `tpt_student_allocation_jnt` (
     CONSTRAINT `fk_sa_drop` FOREIGN KEY (`drop_stop_id`) REFERENCES `tpt_pickup_points`(`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+11  Route -2    Pickpoint - 21  Fare 500.00 01/04/2025  
+11  Route -4    Pickpoint - 12  Fare 700.00 01/10/2025
 
 -- =======================================================================
 -- TRANSPORT FEE
 -- =======================================================================
 
-CREATE TABLE IF NOT EXISTS `tpt_fee_master` (
+-- define fines based on delay days
+CREATE TABLE IF NOT EXISTS `tpt_fine_master` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `academic_sessions_id` BIGINT UNSIGNED NOT NULL,      -- fk to acad_session
-    `month` TINYINT NOT NULL,
-    `amount` DECIMAL(10,2) NOT NULL,
-    `due_date` DATE NOT NULL,
-    `fine_amount` DECIMAL(10,2) DEFAULT 0.00,
+    `std_academic_sessions_id` BIGINT UNSIGNED NOT NULL,    -- FK to 'std_academic_sessions'
+    `fine_from_days` TINYINT DEFAULT 0,
+    `fine_to_days` TINYINT DEFAULT 0,
+    `fine_type` ENUM('Fixed','Percentage') DEFAULT 'Fixed',
+    `fine_rate` DECIMAL(5,2) DEFAULT 0.00,
+    `Remark` VARCHAR(512) DEFAULT NULL,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `deleted_at` TIMESTAMP NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- generate Invoice on 1st of every month for the month
+-- Example: fine_from_days - 1  fine_to_days - 5  fine_type - 'Fixed'  fine_rate - 50.00
+CREATE TABLE IF NOT EXISTS `tpt_fee_master` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `std_academic_sessions_id` BIGINT UNSIGNED NOT NULL,    -- FK to 'std_academic_sessions'
+    `month` DATE NOT NULL,
+    `amount` DECIMAL(10,2) NOT NULL,
+    `due_date` DATE NOT NULL,
+    `fine_amount` DECIMAL(10,2) DEFAULT 0.00,
+    `total_amount` DECIMAL(10,2) NOT NULL,
+    `Remark` VARCHAR(512) DEFAULT NULL,
+    `status` VARCHAR(20) NOT NULL DEFAULT 'Pending',  -- FK - to sys_dropdown_table       e.g. 'Paid','Pending','Overdue'
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- link fines to fee master
+CREATE TABLE IF NOT EXISTS `tpt_fee_fine_detail` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `fee_master_id` BIGINT UNSIGNED NOT NULL,    -- FK to 'tpt_fee_master'
+    `fine_master_id` BIGINT UNSIGNED NOT NULL,   -- FK to 'tpt_fine_master'
+    `fine_days` TINYINT DEFAULT 0,
+    `fine_type` ENUM('Fixed','Percentage') DEFAULT 'Fixed',
+    `fine_rate` DECIMAL(5,2) DEFAULT 0.00,
+    `fine_amount` DECIMAL(10,2) DEFAULT 0.00,
+    `Remark` VARCHAR(512) DEFAULT NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL
+    CONSTRAINT `fk_fc_master` FOREIGN KEY (`fee_master_id`) REFERENCES `tpt_fee_master`(`id`) ON DELETE RESTRICT
+    CONSTRAINT `fk_fc_fine_master` FOREIGN KEY (`fine_master_id`) REFERENCES `tpt_fine_master`(`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Example: fee_master_id - 1  fine_days - 5  fine_type - 'Percentage'  fine_rate - 2.00
+
+-- record fee payment against student allocation
 CREATE TABLE IF NOT EXISTS `tpt_fee_collection` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `student_allocation_id` BIGINT UNSIGNED NOT NULL,
     `fee_master_id` BIGINT UNSIGNED NOT NULL,
-    `paid_amount` DECIMAL(10,2) NOT NULL,
     `payment_date` DATE NOT NULL,
-    `payment_mode` ENUM('Cash','UPI','Card','Bank','Cheque') NOT NULL,
-    `status` ENUM('Paid','Partial','Pending') NOT NULL DEFAULT 'Paid',
+    `total_delay_days` INT DEFAULT 0,
+    `paid_amount` DECIMAL(10,2) NOT NULL,
+    `payment_mode`  VARCHAR(20) NOT NULL, -- FK - to sys_dropdown_table       e.g. 'Cash','Card','Online'
+    `status` VARCHAR(20) NOT NULL,        -- FK - to sys_dropdown_table       e.g. 'Paid','Pending','Overdue'
     `remarks` VARCHAR(512) DEFAULT NULL,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `deleted_at` TIMESTAMP NULL DEFAULT NULL,
@@ -544,3 +586,21 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- =======================================================================
 -- END OF SCRIPT
 -- =======================================================================  
+
+
+-- ---------------------------------------------------------------------------------------------------------------------------
+-- Change Log
+-- ---------------------------------------------------------------------------------------------------------------------------
+-- v1.0 - Initial version
+-- v1.1 - Added ML / Feature Store tables
+-- v1.2 - Added Student Event Log and Trip Incidents tables
+-- v1.3 - Added Notification Log and Audit Log tables
+-- v1.4 - Added Fuel & Maintenance tables
+-- ---------------------------------------------------------------------------------------------------------------------------
+-- Change Filed Type - Table (tpt_trip) - Change column 'trip_type' ENUM('Morning','Afternoon','Evening','Custom') DEFAULT 'Morning') to FK to tpt_shift
+-- ALTER TABLE `tpt_trip` MODIFY COLUMN `trip_type` BIGINT UNSIGNED DEFAULT NULL;
+-- Add foreign key constraint
+-- ALTER TABLE `tpt_trip` ADD CONSTRAINT `fk_trip_tripType` FOREIGN KEY (`trip_type`) REFERENCES `tpt_shift`(`id`) ON DELETE SET NULL;
+-- ALTER TABLE `tpt_trip` MODIFY COLUMN `status` VARCHAR(20) NOT NULL DEFAULT 'Scheduled';
+-- ALTER TABLE `tpt_trip` ADD COLUMN `remarks` VARCHAR(512) DEFAULT NULL,
+-- ----------------------------------------------------------------------------------------------------------------------------- 
