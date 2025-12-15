@@ -287,7 +287,7 @@ CREATE TABLE IF NOT EXISTS `tpt_student_allocation_jnt` (
 
 CREATE TABLE IF NOT EXISTS `tpt_fee_master` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `session_id` BIGINT UNSIGNED NOT NULL,
+    `academic_sessions_id` BIGINT UNSIGNED NOT NULL,      -- fk to acad_session
     `month` TINYINT NOT NULL,
     `amount` DECIMAL(10,2) NOT NULL,
     `due_date` DATE NOT NULL,
