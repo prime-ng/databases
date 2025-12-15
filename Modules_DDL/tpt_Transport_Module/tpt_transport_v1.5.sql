@@ -1,26 +1,6 @@
 -- =======================================================================
--- TRANSPORT MODULE ENHANCED (v1.2) for MySQL 8.x
--- Strategy: Create staging objects, backfill from v1, verify, then atomic RENAME TABLE swap.
---
--- KEY ENHANCEMENTS:
--- 1. Soft Deletes: Added `deleted_at` TIMESTAMP column to all core tables for safe deletion
--- 2. SRID = 4326: All spatial columns (POINT, LINESTRING) use WGS84 coordinates for interoperability
--- 3. Spatial Indexes: Added SPATIAL INDEX on geometry columns for fast geo-queries
--- 4. Telemetry Indexes: Added composite indexes on (trip_id, log_time) and (vehicle_id, log_time)
--- 5. No Partition Clauses: As requested, no PARTITION BY clauses (add later via ALTER as needed)
--- 6. No org_id: Tenant isolation via separate database per tenant
---
--- BLUE-GREEN SWAP EXAMPLE (run after backfill & verification):
---   START TRANSACTION;
---   RENAME TABLE tpt_vehicle TO tpt_vehicle_old,
---                tpt_vehicle_staging TO tpt_vehicle,
---                tpt_vehicle_old TO tpt_vehicle_staging_old;
---   RENAME TABLE tpt_personnel TO tpt_personnel_old,
---                tpt_personnel_staging TO tpt_personnel,
---                tpt_personnel_old TO tpt_personnel_staging_old;
---   -- ... repeat for all tables ...
---   COMMIT;
---
+-- TRANSPORT MODULE ENHANCED (v1.5) for MySQL 8.x
+-- Strategy: Took backup from v1.4, verify, then Enhance.
 -- =======================================================================
 
 SET NAMES utf8mb4;
@@ -112,6 +92,7 @@ CREATE TABLE IF NOT EXISTS `tpt_route` (
 
 CREATE TABLE IF NOT EXISTS `tpt_pickup_points` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `shift_id` BIGINT UNSIGNED NOT NULL,
     `code` VARCHAR(50) NOT NULL,
     `name` VARCHAR(200) NOT NULL,
     `latitude` DECIMAL(10,7) DEFAULT NULL,      -- WGS84 latitude
@@ -120,7 +101,6 @@ CREATE TABLE IF NOT EXISTS `tpt_pickup_points` (
     `total_distance` DECIMAL(7,2) DEFAULT NULL, -- Distance from route start in KM
     `estimated_time` INT DEFAULT NULL,          -- Estimated time from route start in minutes
     `stop_type` ENUM('Pickup','Drop','Both') NOT NULL DEFAULT 'Both',
-    `shift_id` BIGINT UNSIGNED NOT NULL,
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -131,14 +111,23 @@ CREATE TABLE IF NOT EXISTS `tpt_pickup_points` (
     CONSTRAINT `fk_pickupPoint_shiftId` FOREIGN KEY (`shift_id`) REFERENCES `tpt_shift`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Junction table to link pickup points to routes. It will have separate entries for Pickup and Drop points.
+-- Table 'sch_settings' has a Variable named 'Allow_only_one_side_transport_charges' to indicate if fare is for one side
+-- If School allow Fare only for one side, then 'estimated_fare' can be used only for one side.
+
+ only and will be NULL for other side.
 CREATE TABLE IF NOT EXISTS `tpt_pickup_points_route_jnt` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `shift_id` BIGINT UNSIGNED NOT NULL,
-    `route_id` BIGINT UNSIGNED NOT NULL,
-    `pickup_point_id` BIGINT UNSIGNED NOT NULL,
+    `shift_id` BIGINT UNSIGNED NOT NULL,            -- fk to tpt_shift
+    `route_id` BIGINT UNSIGNED NOT NULL,            -- fk to tpt_route
+    `pickup_drop` ENUM('Pickup','Drop') NOT NULL DEFAULT 'Pickup',
+    `pickup_point_id` BIGINT UNSIGNED NOT NULL,     -- fk to tpt_pickup_points
     `ordinal` SMALLINT UNSIGNED NOT NULL DEFAULT 1,
     `total_distance` DECIMAL(7,2) DEFAULT NULL,
     `estimated_time` INT DEFAULT NULL,
+    `pickup_fare` DECIMAL(10,2) DEFAULT NULL,  -- Estimated fare to this point
+    `drop_fare` DECIMAL(10,2) DEFAULT NULL,    -- Estimated fare from this point
+    `both_side_fare` DECIMAL(10,2) DEFAULT NULL, -- Estimated fare for both side to this point
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -162,6 +151,7 @@ CREATE TABLE IF NOT EXISTS `tpt_driver_route_vehicle_jnt` (
     `vehicle_id` BIGINT UNSIGNED NOT NULL,
     `driver_id` BIGINT UNSIGNED NOT NULL,
     `helper_id` BIGINT UNSIGNED DEFAULT NULL,
+    `pickup_drop` ENUM('Pickup','Drop','Both') NOT NULL DEFAULT 'Both',
     `effective_from` DATE NOT NULL,
     `effective_to` DATE DEFAULT NULL,
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
@@ -203,8 +193,8 @@ CREATE TABLE IF NOT EXISTS `tpt_route_scheduler_jnt` (
 CREATE TABLE IF NOT EXISTS `tpt_trip` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `trip_date` DATE NOT NULL,                      -- Date of the trip
-    `pickup_route_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to 'tpt_route' for pickup
     `route_id` BIGINT UNSIGNED NOT NULL,            -- FK to 'tpt_route' for drop
+    `pickup_drop` ENUM('Pickup','Drop') NOT NULL DEFAULT 'Pickup',
     `vehicle_id` BIGINT UNSIGNED NOT NULL,          -- FK to 'tpt_vehicle'
     `driver_id` BIGINT UNSIGNED NOT NULL,           -- FK to 'tpt_personnel' for driver
     `helper_id` BIGINT UNSIGNED DEFAULT NULL,       -- FK to 'tpt_personnel' for helper
@@ -603,4 +593,15 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- ALTER TABLE `tpt_trip` ADD CONSTRAINT `fk_trip_tripType` FOREIGN KEY (`trip_type`) REFERENCES `tpt_shift`(`id`) ON DELETE SET NULL;
 -- ALTER TABLE `tpt_trip` MODIFY COLUMN `status` VARCHAR(20) NOT NULL DEFAULT 'Scheduled';
 -- ALTER TABLE `tpt_trip` ADD COLUMN `remarks` VARCHAR(512) DEFAULT NULL,
+-- ALTER TABLE `tpt_trip` MODIFY COLUMN `pickup_route_id` - Make it 'pickup_drop' ENUM('Pickup','Drop') NOT NULL DEFAULT 'Pickup',
 -- ----------------------------------------------------------------------------------------------------------------------------- 
+-- ALTER TABLE `tpt_pickup_points_route_jnt` ADD COLUMN `pickup_drop` ENUM('Pickup','Drop') NOT NULL DEFAULT 'Pickup' AFTER `route_id`;
+-- Reason of adding above col. is to differentiate between pickup and drop points in same route. Ordinal will be unique per pickup/drop type.
+-- -----------------------------------------------------------------------------------------------------------------------------
+-- Alter Table 'tpt_pickup_points_route_jnt' Add column 'pickup_fare' DECIMAL(10,2) DEFAULT NULL AFTER 'estimated_time';
+-- Alter Table 'tpt_pickup_points_route_jnt' Add column 'drop_fare' DECIMAL(10,2) DEFAULT NULL AFTER 'pickup_fare';
+-- Alter Table 'tpt_pickup_points_route_jnt' Add column 'both_side_fare' DECIMAL(10,2) DEFAULT NULL AFTER 'drop_fare';
+-- Reason: To store estimated fare to/from each pickup point in a particuler route. Routes have different Path hence fare may vary for same pickup point in different routes.
+-- Reason: Student may opt for pickup only OR drop only OR both side OR different Pickup & Drop Point transport. Fare needs to be stored accordingly.
+-- -----------------------------------------------------------------------------------------------------------------------------
+-- Alter Table 'tpt_driver_route_vehicle_jnt' Add column 'pickup_drop' ENUM('Pickup','Drop','Both') NOT NULL DEFAULT 'Both' AFTER 'helper_id';
