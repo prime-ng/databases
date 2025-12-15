@@ -659,7 +659,7 @@ CREATE TABLE IF NOT EXISTS `zst_student_sessions_jnt` (
 
 
 
-
+-- Change Log
 -- ===========================================================================================================================================
 -- Change table Name - Table (sch_subject_study_format_class_subj_types_jnt) to (sch_class_groups_jnt)
 -- Change the condition implemented into Screen Design of table (sch_subject_study_format_class_subj_types_jnt)

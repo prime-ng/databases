@@ -110,7 +110,7 @@ CREATE TABLE `tim_period_set_period` (
 CREATE TABLE `tim_class_mode_rule` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `class_id` BIGINT UNSIGNED NOT NULL,                      -- FK to sch_class
-  `mode_id` BIGINT UNSIGNED NOT NULL,                       -- FK to tim_timetable_mode
+  `tt_mode_id` BIGINT UNSIGNED NOT NULL,                       -- FK to tim_timetable_mode
   `period_set_id` BIGINT UNSIGNED NOT NULL,                 -- FK to tim_period_set
   `allow_teaching_periods` TINYINT(1) NOT NULL DEFAULT 1,   -- Whether teaching periods are allowed in this mode for the class
   `allow_exam_periods` TINYINT(1) NOT NULL DEFAULT 0,       -- Whether exam periods are allowed in this mode for the class

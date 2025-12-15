@@ -2,7 +2,7 @@
 -- -------------------------------------------------------------------
 -- sys - System Configuration
 -- glb - Global Masters
--- tim - Timetable Module
+-- tt  - Timetable Module
 -- sch - School Setup
 -- std - Student Management
 -- slb - Syllabus & Curriculum Management
