@@ -398,7 +398,7 @@ CREATE TABLE IF NOT EXISTS `tpt_driver_attendance` (
     `driver_id` BIGINT UNSIGNED NOT NULL,   -- fk to tpt_personnel
     `scan_time` DATETIME NOT NULL,          
     `attendance_type` ENUM('IN','OUT') NOT NULL,
-    `scan_method` ENUM('QR','RFID','NFC','Manual') NOT NULL,
+    `scan_method` ENUM('QR','RFID','NFC','Manual') NOT NULL,        
     `device_id` BIGINT UNSIGNED NOT NULL,
     `latitude` DECIMAL(10,6) NULL,      
     `longitude` DECIMAL(10,6) NULL,
@@ -428,7 +428,7 @@ CREATE TABLE IF NOT EXISTS `transport_driver_attendance_daily` (
     `driver_id` BIGINT UNSIGNED NOT NULL,
     `attendance_date` DATE NOT NULL,
     `first_in_time` DATETIME NULL,      
-    `last_out_time` DATETIME NULL,
+    `last_out_time` DATETIME NULL,      -- 
     `total_work_minutes` INT NULL,
     `attendance_status` ENUM('Present','Absent','Half-Day','Late') NOT NULL,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
