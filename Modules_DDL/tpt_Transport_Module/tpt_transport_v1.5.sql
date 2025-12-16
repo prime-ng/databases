@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS `tpt_vehicle` (
     `vehicle_type` VARCHAR(20) NOT NULL,            -- fk to sys_dropdown_table ('BUS','VAN','CAR')
     `fuel_type` VARCHAR(20) NOT NULL,               -- fk to sys_dropdown_table ('Diesel','Petrol','CNG','Electric')
     `capacity` INT UNSIGNED NOT NULL DEFAULT 40,    -- Seating capacity
+    `max_capacity` INT UNSIGNED NOT NULL DEFAULT 40, -- Maximum allowed capacity including standing
     `ownership_type` VARCHAR(20) NOT NULL,          -- fk to sys_dropdown_table ('Owned','Leased','Rented')
     `fitness_valid_upto` DATE,                      -- Fitness certificate expiry date
     `insurance_valid_upto` DATE,                    -- Insurance expiry date
@@ -31,15 +32,27 @@ CREATE TABLE IF NOT EXISTS `tpt_vehicle` (
     UNIQUE KEY `uq_vehicle_vehicleNo` (`vehicle_no`),
     UNIQUE KEY `uq_vehicle_registration_no` (`registration_no`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Conditions:
+-- 1. vehicle_no and registration_no must be unique.
+-- 2. fitness_valid_upto, insurance_valid_upto, pollution_valid_upto must be future dates when adding new vehicle.
+-- 3. capacity must be positive integer.
+-- 4. gps_device_id is optional, can be null.
+-- 5. is_active indicates if vehicle is currently in service.
+-- 6. deleted_at is for soft delete.
+-- 7. new Variable in Table 'sch_settings' named 'Allow_extra_student_in_vehicale_beyond_capacity' to indicate if school allow extra students beyond vehicle capacity.
+-- 8. App logic to enforce capacity checks during student allocation based on 'Allow_extra_student_in_vehicale_beyond_capacity' setting.
 
 CREATE TABLE IF NOT EXISTS `tpt_personnel` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `user_id` BIGINT UNSIGNED DEFAULT NULL,
+    `driver_code` VARCHAR(30) NOT NULL,
+    `qr_token` VARCHAR(100) NOT NULL,
+    `id_card_type` ENUM('QR','RFID','NFC','Barcode') NOT NULL DEFAULT 'QR',
     `name` VARCHAR(100) NOT NULL,
     `phone` VARCHAR(30) DEFAULT NULL,
-    `id_type` VARCHAR(20) DEFAULT NULL,         -- e.g., 'Aadhaar','Passport','DriverLicense'
+    `id_type` VARCHAR(20) DEFAULT NULL,         -- FK to sys_dropdown_table e.g., 'Aadhaar','Passport','DriverLicense'
     `id_no` VARCHAR(100) DEFAULT NULL,          -- Govt issued ID number
-    `role` VARCHAR(20) NOT NULL,                -- fk to sys_role ('Driver','Helper','Conductor')
+    `role` VARCHAR(20) NOT NULL,                -- fk to sys_role ('Driver','Helper','Conductor','Substitute Driver','Substitute Helper')
     `license_no` VARCHAR(50) DEFAULT NULL,      -- Driver's license number
     `license_valid_upto` DATE DEFAULT NULL,                 -- License expiry date
     `assigned_vehicle_id` BIGINT UNSIGNED DEFAULT NULL,     -- fk to tpt_vehicle
@@ -52,6 +65,31 @@ CREATE TABLE IF NOT EXISTS `tpt_personnel` (
     CONSTRAINT `fk_personnel_user` FOREIGN KEY (`user_id`) REFERENCES `sys_users`(`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_personnel_vehicle` FOREIGN KEY (`assigned_vehicle_id`) REFERENCES `tpt_vehicle`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Conditions:
+-- 1. user_id is optional, can be null for non-system users (e.g., external drivers/helpers).
+-- 2. role must be one of the predefined roles in sys_role table.
+-- 3. Some users may have multiple roles (e.g., Driver + Helper).
+-- 4. Some user whose primary Role belongs to some other department (e.g., Staff) may also be regitered as Driver/Helper to be used in emergency(Driver/helper absent) situations.
+-- 5. In case of absence of dedicated Driver/Helper personnel, other Staff regitered as temporarily Driver/Helper can be assigned.
+-- 6. id_type and id_no are optional, can be null.
+-- 7. license_no and license_valid_upto are mandatory for role='Driver'.
+-- 8. assigned_vehicle_id is optional, can be null if not currently assigned.
+-- 9. is_active indicates if personnel is currently employed/active.
+-- 10. deleted_at is for soft delete.
+-- 11. App logic to ensure that a vehicle can have only one active Driver and one active Helper assigned at any given time.
+-- 12. App logic to ensure that a Driver or Helper cannot be assigned to more than one vehicle at the same time.
+-- 13. App logic to validate license_valid_upto when assigning Driver to a vehicle.
+-- 14. App logic to prevent assigning personnel marked as inactive.
+-- 15. App logic to handle temporary assignments of other Staff as Driver/Helper during emergencies.
+-- 16. QR token generation and management to be handled at application level.
+-- 17. id_card_type indicates the type of identification card used for personnel.
+-- 18. combination of driver_code and role must be unique.
+-- 19. license_no must be unique among Drivers.
+-- 20. phone number should be unique if provided.
+-- 21. one user_id can be used in multipale personnel records for different roles.
+-- 22. assigned_vehicle_id can be same for multiple personnel records if they are not active at the same time.
+-- 23. App logic to manage active assignments and ensure no conflicts.
+-- 
 
 CREATE TABLE IF NOT EXISTS `tpt_shift` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -66,6 +104,11 @@ CREATE TABLE IF NOT EXISTS `tpt_shift` (
     UNIQUE KEY `uq_shift_code` (`code`),
     UNIQUE KEY `uq_shift_name` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Conditions:
+-- 1. code and name must be unique.
+-- 2. effective_from must be less than effective_to.
+-- 3. is_active indicates if shift is currently in use.
+-- 4. deleted_at is for soft delete.
 
 
 -- =======================================================================
@@ -74,11 +117,11 @@ CREATE TABLE IF NOT EXISTS `tpt_shift` (
 
 CREATE TABLE IF NOT EXISTS `tpt_route` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `code` VARCHAR(50) NOT NULL,
-    `name` VARCHAR(200) NOT NULL,
+    `code` VARCHAR(50) NOT NULL,        -- Route code
+    `name` VARCHAR(200) NOT NULL,       -- Route name
     `description` VARCHAR(500) DEFAULT NULL,
     `pickup_drop` ENUM('Pickup','Drop','Both') NOT NULL DEFAULT 'Both',
-    `shift_id` BIGINT UNSIGNED NOT NULL,        -- fk to tpt_shift
+    `shift_id` BIGINT UNSIGNED NOT NULL,                    -- fk to 'tpt_shift'
     `route_geometry` LINESTRING SRID 4326 DEFAULT NULL,     -- WGS84 route path
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -89,7 +132,13 @@ CREATE TABLE IF NOT EXISTS `tpt_route` (
     SPATIAL INDEX `sp_idx_route_geometry` (`route_geometry`),
     CONSTRAINT `fk_route_shiftId` FOREIGN KEY (`shift_id`) REFERENCES `tpt_shift`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Conditions:
+-- 1. code and name must be unique.
+-- 2. route_geometry is optional, can be null initially.
+-- 3. is_active indicates if route is currently in use.
+-- 4. deleted_at is for soft delete.
 
+-- -----------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `tpt_pickup_points` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `shift_id` BIGINT UNSIGNED NOT NULL,
@@ -97,7 +146,7 @@ CREATE TABLE IF NOT EXISTS `tpt_pickup_points` (
     `name` VARCHAR(200) NOT NULL,
     `latitude` DECIMAL(10,7) DEFAULT NULL,      -- WGS84 latitude
     `longitude` DECIMAL(10,7) DEFAULT NULL,     -- WGS84 longitude
-    `location` POINT NOT NULL SRID 4326,        -- WGS84 spatial point
+    `location` POINT NOT NULL SRID 4326,        -- WGS84 spatial point e.g., POINT(longitude latitude)
     `total_distance` DECIMAL(7,2) DEFAULT NULL, -- Distance from route start in KM
     `estimated_time` INT DEFAULT NULL,          -- Estimated time from route start in minutes
     `stop_type` ENUM('Pickup','Drop','Both') NOT NULL DEFAULT 'Both',
@@ -110,12 +159,18 @@ CREATE TABLE IF NOT EXISTS `tpt_pickup_points` (
     SPATIAL INDEX `sp_idx_pickup_location` (`location`),
     CONSTRAINT `fk_pickupPoint_shiftId` FOREIGN KEY (`shift_id`) REFERENCES `tpt_shift`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Conditions:
+-- 1. code and name must be unique.
+-- 2. latitude and longitude are optional, can be null if location point is provided.
+-- 3. location is mandatory, cannot be null.
+-- 4. is_active indicates if pickup point is currently in use.
+-- 5. deleted_at is for soft delete.
 
+-- -----------------------------------------------------------------------
 -- Junction table to link pickup points to routes. It will have separate entries for Pickup and Drop points.
--- Table 'sch_settings' has a Variable named 'Allow_only_one_side_transport_charges' to indicate if fare is for one side
--- If School allow Fare only for one side, then 'estimated_fare' can be used only for one side.
-
- only and will be NULL for other side.
+-- Table 'sch_settings' has a Variable named 'Allow_only_one_side_transport_charges' to indicate if school allow one side fare.
+-- Table 'sch_settings' has a Variable named 'Allow_different_pickup_and_drop_point' to indicate if school allow different pickup & drop fare.
+-- If 'Allow_only_one_side_transport_charges' OR 'Allow_different_pickup_and_drop_point' is true, then app logic will enforce appropriate validations.
 CREATE TABLE IF NOT EXISTS `tpt_pickup_points_route_jnt` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `shift_id` BIGINT UNSIGNED NOT NULL,            -- fk to tpt_shift
@@ -127,7 +182,7 @@ CREATE TABLE IF NOT EXISTS `tpt_pickup_points_route_jnt` (
     `estimated_time` INT DEFAULT NULL,
     `pickup_fare` DECIMAL(10,2) DEFAULT NULL,  -- Estimated fare to this point
     `drop_fare` DECIMAL(10,2) DEFAULT NULL,    -- Estimated fare from this point
-    `both_side_fare` DECIMAL(10,2) DEFAULT NULL, -- Estimated fare for both side to this point
+    `both_side_fare` DECIMAL(10,2) DEFAULT NOT NULL, -- Estimated fare for both side to this point
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -138,7 +193,14 @@ CREATE TABLE IF NOT EXISTS `tpt_pickup_points_route_jnt` (
     CONSTRAINT `fk_pickupPointRoute_routeId` FOREIGN KEY (`route_id`) REFERENCES `tpt_route`(`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_pickupPointRoute_pickupPointId` FOREIGN KEY (`pickup_point_id`) REFERENCES `tpt_pickup_points`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
+-- Conditions:
+-- 1. combination of shift_id, pickup_point_id, route_id must be unique.
+-- 2. ordinal indicates the sequence of the pickup point in the route.
+-- 3. If 'Allow_only_one_side_transport_charges' or 'Allow_different_pickup_and_drop_point' is true,  is true, then only one of pickup_fare or drop_fare should be set.
+-- 4. both_side_fare is mandatory, cannot be null.
+-- 5. This table will have separate entries for Pickup and Drop points for same pickup_point_id on same route.
+-- 6. is_active indicates if the pickup point is currently in use for the route.
+-- 7. deleted_at is for soft delete.
 
 -- =======================================================================
 -- ROUTE SCHEDULE & DRIVER ASSIGNMENT
@@ -165,40 +227,88 @@ CREATE TABLE IF NOT EXISTS `tpt_driver_route_vehicle_jnt` (
     CONSTRAINT `fk_routeVehicle_helperId` FOREIGN KEY (`helper_id`) REFERENCES `tpt_personnel`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+DELIMITER $$
+CREATE TRIGGER `trg_driver_route_vehicle_unique_assignment`
+BEFORE INSERT ON `tpt_driver_route_vehicle_jnt`
+FOR EACH ROW
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM `tpt_driver_route_vehicle_jnt`
+        WHERE `shift_id` = NEW.`shift_id`
+          AND `route_id` = NEW.`route_id`
+          AND `vehicle_id` = NEW.`vehicle_id`
+          AND `driver_id` = NEW.`driver_id`
+          AND (
+              (NEW.`effective_to` IS NULL AND (`effective_to` IS NULL OR `effective_to` >= NEW.`effective_from`))
+              OR
+              (NEW.`effective_to` IS NOT NULL AND (
+                  (`effective_from` <= NEW.`effective_to` AND `effective_to` >= NEW.`effective_from`)
+              ))
+          )
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Overlapping assignment for the same shift, route, vehicle, and driver.';
+    END IF;
+END$$
+
+-- Conditions:
+-- 1. combination of shift_id, route_id, vehicle_id, driver_id must be unique.
+-- 2. effective_from must be less than effective_to if effective_to is not null.
+-- 3. One Driver / Helper can be assigned to multiple vehicles/routes on same shift for different date ranges,but not overlapping date ranges.
+-- 4. A Vehicle can have different Drivers / Helpers on same shift for different date ranges but not overlapping date ranges.
+-- 5. A Driver / Helper can be assigned to different Vehicles on same shift for different date ranges but not overlapping date ranges.
+-- 6. pickup_drop indicates if the assignment is for Pickup, Drop or Both.
+-- 7. is_active indicates if the assignment is currently active.
+-- 8. deleted_at is for soft delete.
+
+-- -----------------------------------------------------------------------
+
 -- Prevent overlapping assignments for same vehicle/driver on same shift+route should be enforced at app or via triggers
 CREATE TABLE IF NOT EXISTS `tpt_route_scheduler_jnt` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `scheduled_date` DATE NOT NULL,
     `shift_id` BIGINT UNSIGNED NOT NULL,
     `route_id` BIGINT UNSIGNED NOT NULL,
-    `vehicle_id` BIGINT UNSIGNED DEFAULT NULL,
-    `driver_id` BIGINT UNSIGNED DEFAULT NULL,
+    `vehicle_id` BIGINT UNSIGNED NOT NULL,
+    `driver_id` BIGINT UNSIGNED NOT NULL,
     `helper_id` BIGINT UNSIGNED DEFAULT NULL,
+    `pickup_drop` ENUM('Pickup','Drop') NOT NULL DEFAULT 'Pickup',
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    UNIQUE KEY `uq_route_scheduler_schedDate_shift_route` (`scheduled_date`,`shift_id`,`route_id`),
+    UNIQUE KEY `uq_route_scheduler_vehicle_schedDate_shift` (`vehicle_id`,`scheduled_date`,`shift_id`),
+    UNIQUE KEY `uq_route_scheduler_driver_schedDate_shift` (`driver_id`,`scheduled_date`,`shift_id`),
+    UNIQUE KEY `uq_route_scheduler_helper_schedDate_shift` (`helper_id`,`scheduled_date`,`shift_id`),
     CONSTRAINT `fk_sched_shift` FOREIGN KEY (`shift_id`) REFERENCES `tpt_shift`(`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_sched_route` FOREIGN KEY (`route_id`) REFERENCES `tpt_route`(`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_sched_vehicle` FOREIGN KEY (`vehicle_id`) REFERENCES `tpt_vehicle`(`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_sched_driver` FOREIGN KEY (`driver_id`) REFERENCES `tpt_personnel`(`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_sched_helper` FOREIGN KEY (`helper_id`) REFERENCES `tpt_personnel`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
+-- Conditions:
+-- 1. A Route can not be scheduled more than once on same date for same shift.
+-- 2. A Vehicle can not be scheduled for more than one route on same date for same shift.
+-- 3. A Driver can not be scheduled for more than one route on same date for same shift.
+-- 4. A Helper can not be scheduled for more than one route on same date for same shift.
+-- 5. pickup_drop indicates if the schedule is for Pickup or Drop.
+-- 6. This table will be pre-populated based on entries in 'tpt_driver_route_vehicle_jnt' for the date range.
+-- 7. App logic or DB triggers should prevent overlapping assignments for same vehicle/driver on same shift+route.
+-- 6. is_active indicates if the schedule is currently active.
+-- 7. deleted_at is for soft delete.
 
 -- =======================================================================
 -- TRIPS
 -- =======================================================================
-
+-- 'tpt_route_scheduler_jnt' will be used to get schedule details for trip creation, whereas 'tpt_trip' will store actual trip details.
 CREATE TABLE IF NOT EXISTS `tpt_trip` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `trip_date` DATE NOT NULL,                      -- Date of the trip
-    `route_id` BIGINT UNSIGNED NOT NULL,            -- FK to 'tpt_route' for drop
-    `pickup_drop` ENUM('Pickup','Drop') NOT NULL DEFAULT 'Pickup',
+    `route_scheduler_id` BIGINT UNSIGNED NOT NULL,  -- FK to 'tpt_route_scheduler_jnt' for getting schedule details
     `vehicle_id` BIGINT UNSIGNED NOT NULL,          -- FK to 'tpt_vehicle'
     `driver_id` BIGINT UNSIGNED NOT NULL,           -- FK to 'tpt_personnel' for driver
     `helper_id` BIGINT UNSIGNED DEFAULT NULL,       -- FK to 'tpt_personnel' for helper
-    `trip_type` BIGINT UNSIGNED DEFAULT NULL,       -- FK to 'tpt_shift' for trip type
     `start_time` DATETIME DEFAULT NULL,             -- Actual start time
     `end_time` DATETIME DEFAULT NULL,               -- Actual end time
     `status` VARCHAR(20) NOT NULL DEFAULT 'Scheduled', -- fk to sys_dropdown_table
@@ -214,7 +324,12 @@ CREATE TABLE IF NOT EXISTS `tpt_trip` (
     CONSTRAINT `fk_trip_driver` FOREIGN KEY (`helper_id`) REFERENCES `tpt_personnel`(`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_trip_tripType` FOREIGN KEY (`trip_type`) REFERENCES `tpt_shift`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
+-- Conditions:
+-- 1. route_scheduler_id links to tpt_route_scheduler_jnt to get schedule details.
+-- 2. vehicle_id, driver_id, helper_id are being captured to accomodate any change from scheduled assignment (e.e, substitute driver or vehicle).
+-- 3. status indicates current status of the trip (Scheduled, In-Progress, Completed, Cancelled).
+-- 4. is_active indicates if the trip is currently active.
+-- 5. deleted_at is for soft delete.
 
 -- =======================================================================
 -- LIVE TRIP STATUS
@@ -232,7 +347,14 @@ CREATE TABLE IF NOT EXISTS `tpt_live_trip` (
     CONSTRAINT `fk_live_trip` FOREIGN KEY (`trip_id`) REFERENCES `tpt_trip`(`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_live_current_stop` FOREIGN KEY (`current_stop_id`) REFERENCES `tpt_pickup_points`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
+-- Conditions:
+-- 1. trip_id links to tpt_trip to get trip details.
+-- 2. current_stop_id indicates the last reached pickup point.
+-- 3. eta indicates estimated time of arrival at next stop.
+-- 4. reached_flag indicates if the vehicle has reached the current stop.
+-- 5. emergency_flag indicates if there is an emergency situation.
+-- 6. last_update captures the last update timestamp.
+-- 7. deleted_at is for soft delete.
 
 -- =======================================================================
 -- DRIVER ATTENDANCE
@@ -250,7 +372,40 @@ CREATE TABLE IF NOT EXISTS `tpt_driver_attendance` (
     `deleted_at` TIMESTAMP NULL DEFAULT NULL,
     CONSTRAINT `fk_da_driver` FOREIGN KEY (`driver_id`) REFERENCES `tpt_personnel`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Conditions:
+-- 1. driver_id links to tpt_personnel to get driver details.
+-- 2. check_in_time and check_out_time capture attendance timings.
+-- 3. geo_lat and geo_lng capture location of check-in.
+-- 4. via_app indicates if attendance was marked via app or manually.
+-- 5. deleted_at is for soft delete.
 
+-- =======================================================================
+-- Attendance can be done from at School Gate, Depot, Mobile App; hence Devices must be tracked for security & audit
+Devices must be tracked for security & audit
+CREATE TABLE transport_attendance_device (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    device_code VARCHAR(50) NOT NULL UNIQUE,
+    device_name VARCHAR(100) NOT NULL,
+    device_type ENUM('Mobile','Scanner','Tablet','Gate') NOT NULL,
+    location VARCHAR(150) NULL,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Conditions:
+-- 1. device_code must be unique.
+-- 2. is_active indicates if device is currently in use.
+-- 3. location is optional, can be null.
+-- 4. created_at captures the creation timestamp.
+-- 5. App logic to manage device assignments and usage.
+-- 6. deleted_at is for soft delete.
+-- 7. This table can be used to track devices used for attendance marking.
+-- 8. device_type indicates the type of device being used.
+-- 9. App logic to ensure only active devices are used for attendance marking.
+-- 10. App logic to link attendance records to specific devices if needed.
+-- 11. App logic to manage device lifecycle (activation, deactivation, replacement).
+-- 12. App logic to generate reports based on device usage and attendance patterns.
+-- 13. App logic to maintain a history of device assignments and usage for auditing purposes.
+--
 
 -- =======================================================================
 -- STUDENT ALLOCATION
@@ -581,11 +736,10 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- ---------------------------------------------------------------------------------------------------------------------------
 -- Change Log
 -- ---------------------------------------------------------------------------------------------------------------------------
--- v1.0 - Initial version
--- v1.1 - Added ML / Feature Store tables
--- v1.2 - Added Student Event Log and Trip Incidents tables
--- v1.3 - Added Notification Log and Audit Log tables
--- v1.4 - Added Fuel & Maintenance tables
+-- Data Points for 'sch_settings' Table:
+-- -------------------------------------
+-- Add a Key Value paid in Table 'sch_settings' with Variable named 'Allow_only_one_side_transport_charges' to indicate if school allow one side fare.
+-- Add a Key Value paid in Table 'sch_settings' with Variable named 'Allow_different_pickup_and_drop_point' to indicate if school allow different pickup & drop fare.
 -- ---------------------------------------------------------------------------------------------------------------------------
 -- Change Filed Type - Table (tpt_trip) - Change column 'trip_type' ENUM('Morning','Afternoon','Evening','Custom') DEFAULT 'Morning') to FK to tpt_shift
 -- ALTER TABLE `tpt_trip` MODIFY COLUMN `trip_type` BIGINT UNSIGNED DEFAULT NULL;
@@ -594,6 +748,11 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- ALTER TABLE `tpt_trip` MODIFY COLUMN `status` VARCHAR(20) NOT NULL DEFAULT 'Scheduled';
 -- ALTER TABLE `tpt_trip` ADD COLUMN `remarks` VARCHAR(512) DEFAULT NULL,
 -- ALTER TABLE `tpt_trip` MODIFY COLUMN `pickup_route_id` - Make it 'pickup_drop' ENUM('Pickup','Drop') NOT NULL DEFAULT 'Pickup',
+-- Alter Table 'tpt_trip' Add Column 'route_scheduler_id' BIGINT UNSIGNED NOT NULL AFTER 'trip_date';
+-- Add foreign key constraint
+-- ALTER TABLE `tpt_trip` ADD CONSTRAINT `fk_trip_route` FOREIGN KEY (`route_scheduler_id`) REFERENCES `tpt_route_scheduler_jnt`(`id`) ON DELETE RESTRICT;
+-- Reason: To link trip to route schedule for getting shift, route, vehicle, driver, helper & pickup/drop info.
+-- Alter Table 'tpt_trip' Drop Column 'route_id', 'pickup_drop', 'trip_type'. These are now derivable from route_scheduler_id.
 -- ----------------------------------------------------------------------------------------------------------------------------- 
 -- ALTER TABLE `tpt_pickup_points_route_jnt` ADD COLUMN `pickup_drop` ENUM('Pickup','Drop') NOT NULL DEFAULT 'Pickup' AFTER `route_id`;
 -- Reason of adding above col. is to differentiate between pickup and drop points in same route. Ordinal will be unique per pickup/drop type.
@@ -605,3 +764,8 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- Reason: Student may opt for pickup only OR drop only OR both side OR different Pickup & Drop Point transport. Fare needs to be stored accordingly.
 -- -----------------------------------------------------------------------------------------------------------------------------
 -- Alter Table 'tpt_driver_route_vehicle_jnt' Add column 'pickup_drop' ENUM('Pickup','Drop','Both') NOT NULL DEFAULT 'Both' AFTER 'helper_id';
+-- Reason: To differentiate between Pickup/Drop/Both side assignments for same route in a shift.
+-- -----------------------------------------------------------------------------------------------------------------------------
+-- Add Table 'tpt_vehicle' Add column 'max_capacity' INT DEFAULT NULL AFTER 'registration_number';
+-- Reason: To store Maximum allowed capacity including standing beyond seating capacity of vehicle.
+-- -----------------------------------------------------------------------------------------------------------------------------

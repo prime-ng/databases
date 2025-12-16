@@ -14,6 +14,23 @@ Growth: low cardinality (one row per tenant)
 --   name VARCHAR(255) NOT NULL
 -- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+
+CREATE TABLE IF NOT EXISTS tt_school_timing_profile (
+  sch_profile_id INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  profile_name   VARCHAR(100) NOT NULL,       -- e.g., Summer Standard
+  short_name     VARCHAR(20)  NULL,           -- e.g., SUMMER_STD
+  description    VARCHAR(200) NULL,
+  is_active      TINYINT(1)   NOT NULL DEFAULT 1,
+  is_deleted     TINYINT(1)   NOT NULL DEFAULT 0,
+  created_at     TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+  updated_at     TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  deleted_at     TIMESTAMP    NULL,
+  UNIQUE KEY uq_sch_profile_name (profile_name),
+  UNIQUE KEY uq_sch_profile_short (short_name),
+  KEY idx_sch_profile_active_deleted (is_active, is_deleted)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
 -- TIMING & CALENDAR
 CREATE TABLE IF NOT EXISTS tt_days (
   day_id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
