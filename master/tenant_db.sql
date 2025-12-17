@@ -148,7 +148,7 @@ CREATE TABLE IF NOT EXISTS `sys_settings` (
 
 -- Dropdown Table to store various dropdown values used across the system
 CREATE TABLE IF NOT EXISTS `sys_dropdown_table` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
   `ordinal` tinyint unsigned NOT NULL,
   `key` varchar(150) NOT NULL,
   `value` varchar(100) NOT NULL,
