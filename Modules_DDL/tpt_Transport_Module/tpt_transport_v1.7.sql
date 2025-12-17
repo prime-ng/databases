@@ -1,5 +1,5 @@
 -- =======================================================================
--- TRANSPORT MODULE ENHANCED (v1.5) for MySQL 8.x
+-- TRANSPORT MODULE ENHANCED (working) for MySQL 8.x
 -- Strategy: Took backup from v1.4, verify, then Enhance.
 -- =======================================================================
 
@@ -44,8 +44,8 @@ CREATE TABLE IF NOT EXISTS `tpt_vehicle` (
 
 CREATE TABLE IF NOT EXISTS `tpt_personnel` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `user_qr_id` BIGINT UNSIGNED DEFAULT NULL,  -- User code Auto generated (This will be used to generate QR token) 
-    `qr_token` VARCHAR(100) NOT NULL,       -- QR token Auto generated using user_code
+    `user_id` BIGINT UNSIGNED DEFAULT NULL,
+    `user_code` VARCHAR(30) NOT NULL,     -- User code Auto generated (This will be used to generate QR token)    `qr_token` VARCHAR(100) NOT NULL,       -- QR token Auto generated using user_code
     `id_card_type` ENUM('QR','RFID','NFC','Barcode') NOT NULL DEFAULT 'QR',
     `name` VARCHAR(100) NOT NULL,
     `phone` VARCHAR(30) DEFAULT NULL,
@@ -305,7 +305,7 @@ CREATE TABLE IF NOT EXISTS `tpt_route_scheduler_jnt` (
     -- 9. deleted_at is for soft delete.
 
 -- =======================================================================
--- TRIPS
+-- TRIPS (will be creted by background service on Weekly/Monthly basis)
 -- =======================================================================
 -- 'tpt_route_scheduler_jnt' will be used to get schedule details for trip creation, whereas 'tpt_trip' will store actual trip details.
 CREATE TABLE IF NOT EXISTS `tpt_trip` (
@@ -336,31 +336,42 @@ CREATE TABLE IF NOT EXISTS `tpt_trip` (
     -- 4. is_active indicates if the trip is currently active.
     -- 5. deleted_at is for soft delete.
 
+
 -- =======================================================================
 -- LIVE TRIP STATUS
 -- =======================================================================
 -- Table to track live status of trips including current stop, ETA, and emergency situations.
 -- This table needs to be filled and updated in real-time by GPS tracking system or mobile app. No Entry Screen needed.
-CREATE TABLE IF NOT EXISTS `tpt_live_trip` (
+CREATE TABLE IF NOT EXISTS `tpt_trip_stop_detail` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `trip_id` BIGINT UNSIGNED NOT NULL,                 -- FK to 'tpt_trip'
-    `current_stop_id` BIGINT UNSIGNED DEFAULT NULL,     -- FK to 'tpt_pickup_points'
-    `eta` DATETIME DEFAULT NULL,                        -- Estimated time of arrival at next stop
+    `stop_id` BIGINT UNSIGNED DEFAULT NULL,             -- FK to 'tpt_pickup_points'
+    `pickup_drop` ENUM('Pickup','Drop') NOT NULL DEFAULT 'Pickup',
+    `sch_arrival_time` DATETIME DEFAULT NULL,          -- Scheduled time of arrival at next stop
+    `sch_departure_time` DATETIME DEFAULT NULL,         -- Scheduled time of departure from next stop
     `reached_flag` TINYINT(1) NOT NULL DEFAULT 0,       -- 1=Reached current stop, 0=Not yet reached
+    `reaching_time` TIMESTAMP DEFAULT NULL,             -- Time when the vehicle reached the current stop
+    `leaving_time` TIMESTAMP DEFAULT NULL,              -- Time when the vehicle left the current stop
     `emergency_flag` TINYINT(1) DEFAULT 0,              -- 1=Emergency situation, 0=Normal
-    `last_update` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `emergency_time` TIMESTAMP DEFAULT NULL,            -- Time when the emergency situation was triggered
+    `emergency_remarks` VARCHAR(512) DEFAULT NULL,      -- Remarks for emergency situation
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `updated_by` BIGINT UNSIGNED DEFAULT NULL,           -- FK to 'tpt_personnel'
     `deleted_at` TIMESTAMP NULL DEFAULT NULL,
-    CONSTRAINT `fk_live_trip` FOREIGN KEY (`trip_id`) REFERENCES `tpt_trip`(`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_live_current_stop` FOREIGN KEY (`current_stop_id`) REFERENCES `tpt_pickup_points`(`id`) ON DELETE SET NULL
+    CONSTRAINT `fk_trip_stop_detail_trip` FOREIGN KEY (`trip_id`) REFERENCES `tpt_trip`(`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_trip_stop_detail_stop` FOREIGN KEY (`stop_id`) REFERENCES `tpt_pickup_points`(`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_trip_stop_detail_updated_by` FOREIGN KEY (`updated_by`) REFERENCES `tpt_personnel`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 -- Conditions:
     -- 1. trip_id links to tpt_trip to get trip details.
-    -- 2. current_stop_id indicates the last reached pickup point.
-    -- 3. eta indicates estimated time of arrival at next stop.
-    -- 4. reached_flag indicates if the vehicle has reached the current stop.
-    -- 5. emergency_flag indicates if there is an emergency situation.
-    -- 6. last_update captures the last update timestamp.
-    -- 7. deleted_at is for soft delete.
+    -- 2. stop_id indicates the last reached pickup point.
+    -- 3. sch_arriving_time indicates scheduled time of arrival at next stop.
+    -- 4. sch_departing_time indicates scheduled time of departure from next stop.
+    -- 5. reached_flag indicates if the vehicle has reached the current stop.
+    -- 6. emergency_flag indicates if there is an emergency situation.
+    -- 7. last_update captures the last update timestamp.
+    -- 8. deleted_at is for soft delete.
 
 -- =======================================================================
 -- DRIVER ATTENDANCE
@@ -672,11 +683,12 @@ CREATE TABLE IF NOT EXISTS `tpt_vehicle_fuel_log` (
     `date` DATE NOT NULL,
     `quantity` DECIMAL(10,3) NOT NULL,
     `cost` DECIMAL(12,2) NOT NULL,
-    `fuel_type` ENUM('Diesel','Petrol','CNG','Electric') NOT NULL,
+    `fuel_type` BIGINT UNSIGNED NOT NULL,   -- FK to 'sys_dropdown_table'
     `odometer_reading` BIGINT UNSIGNED DEFAULT NULL,
     `remarks` VARCHAR(512) DEFAULT NULL,
     `status` ENUM('Approved','Pending','Rejected') NOT NULL DEFAULT 'Pending',
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at` TIMESTAMP NULL DEFAULT NULL,
     CONSTRAINT `fk_vfl_vehicle` FOREIGN KEY (`vehicle_id`) REFERENCES `tpt_vehicle`(`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_vfl_driver` FOREIGN KEY (`driver_id`) REFERENCES `tpt_personnel`(`id`) ON DELETE SET NULL
@@ -728,58 +740,35 @@ CREATE TABLE IF NOT EXISTS `tpt_vehicle_maintenance` (
     CONSTRAINT `fk_vm_approvedBy` FOREIGN KEY (`approved_by`) REFERENCES `sys_users`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-
--- Working on Further tables. You will those get soon
-
-
-
-SET FOREIGN_KEY_CHECKS = 1;
-
 -- =======================================================================
--- END OF SCRIPT
--- =======================================================================  
+-- TRIP INCIDENTS & ALERTS
+-- =======================================================================
+
+CREATE TABLE IF NOT EXISTS `tpt_trip_incidents` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `trip_id` BIGINT UNSIGNED NOT NULL,
+    `incident_time` TIMESTAMP NOT NULL,
+    `incident_type` BIGINT UNSIGNED NOT NULL,  -- FK to sys_dropdown_table e.g. 'Accident', 'Breakdown', 'Fire', 'Theft', 'Tire Flat', 'Other'
+    `severity` ENUM('LOW','MEDIUM','HIGH') DEFAULT 'MEDIUM',
+    `latitude` DECIMAL(10,7) DEFAULT NULL,
+    `longitude` DECIMAL(10,7) DEFAULT NULL,
+    `description` VARCHAR(512) DEFAULT NULL,
+    `status` BIGINT UNSIGNED DEFAULT NULL,  -- FK to sys_dropdown_table e.g. 'Resolved', 'Pending', 'Investigating', 'Raised'
+    `raised_by` BIGINT UNSIGNED DEFAULT NULL,  -- FK to sys_users
+    `raised_to` BIGINT UNSIGNED DEFAULT NULL,  -- FK to sys_users
+    `raised_at` TIMESTAMP NULL DEFAULT NULL,
+    `resolved_at` TIMESTAMP NULL DEFAULT NULL,
+    `resolved_by` BIGINT UNSIGNED DEFAULT NULL,  -- FK to sys_users
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    CONSTRAINT `fk_ti_trip` FOREIGN KEY (`trip_id`) REFERENCES `tpt_trip`(`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_ti_raisedBy` FOREIGN KEY (`raised_by`) REFERENCES `sys_users`(`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_ti_raisedTo` FOREIGN KEY (`raised_to`) REFERENCES `sys_users`(`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_ti_resolvedBy` FOREIGN KEY (`resolved_by`) REFERENCES `sys_users`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 
+-- --------------------------------------------------------------------------------------------------------
 
-
--- ---------------------------------------------------------------------------------------------------------------------------
--- Change Log
--- ---------------------------------------------------------------------------------------------------------------------------
--- Data Points for 'sch_settings' Table:
--- -------------------------------------
--- Add a Key Value paid in Table 'sch_settings' with Variable named 'Allow_only_one_side_transport_charges' to indicate if school allow one side fare.
--- Add a Key Value paid in Table 'sch_settings' with Variable named 'Allow_different_pickup_and_drop_point' to indicate if school allow different pickup & drop fare.
--- ---------------------------------------------------------------------------------------------------------------------------
--- Change Filed Type - Table (tpt_trip) - Change column 'trip_type' ENUM('Morning','Afternoon','Evening','Custom') DEFAULT 'Morning') to FK to tpt_shift
--- ALTER TABLE `tpt_trip` MODIFY COLUMN `trip_type` BIGINT UNSIGNED DEFAULT NULL;
--- Add foreign key constraint
--- ALTER TABLE `tpt_trip` ADD CONSTRAINT `fk_trip_tripType` FOREIGN KEY (`trip_type`) REFERENCES `tpt_shift`(`id`) ON DELETE SET NULL;
--- ALTER TABLE `tpt_trip` MODIFY COLUMN `status` VARCHAR(20) NOT NULL DEFAULT 'Scheduled';
--- ALTER TABLE `tpt_trip` ADD COLUMN `remarks` VARCHAR(512) DEFAULT NULL,
--- ALTER TABLE `tpt_trip` MODIFY COLUMN `pickup_route_id` - Make it 'pickup_drop' ENUM('Pickup','Drop') NOT NULL DEFAULT 'Pickup',
--- Alter Table 'tpt_trip' Add Column 'route_scheduler_id' BIGINT UNSIGNED NOT NULL AFTER 'trip_date';
--- Add foreign key constraint
--- ALTER TABLE `tpt_trip` ADD CONSTRAINT `fk_trip_route` FOREIGN KEY (`route_scheduler_id`) REFERENCES `tpt_route_scheduler_jnt`(`id`) ON DELETE RESTRICT;
--- Reason: To link trip to route schedule for getting shift, route, vehicle, driver, helper & pickup/drop info.
--- Alter Table 'tpt_trip' Drop Column 'route_id', 'pickup_drop', 'trip_type'. These are now derivable from route_scheduler_id.
--- ----------------------------------------------------------------------------------------------------------------------------- 
--- ALTER TABLE `tpt_pickup_points_route_jnt` ADD COLUMN `pickup_drop` ENUM('Pickup','Drop') NOT NULL DEFAULT 'Pickup' AFTER `route_id`;
--- Reason of adding above col. is to differentiate between pickup and drop points in same route. Ordinal will be unique per pickup/drop type.
--- -----------------------------------------------------------------------------------------------------------------------------
--- Alter Table 'tpt_pickup_points_route_jnt' Add column 'pickup_fare' DECIMAL(10,2) DEFAULT NULL AFTER 'estimated_time';
--- Alter Table 'tpt_pickup_points_route_jnt' Add column 'drop_fare' DECIMAL(10,2) DEFAULT NULL AFTER 'pickup_fare';
--- Alter Table 'tpt_pickup_points_route_jnt' Add column 'both_side_fare' DECIMAL(10,2) DEFAULT NULL AFTER 'drop_fare';
--- Reason: To store estimated fare to/from each pickup point in a particuler route. Routes have different Path hence fare may vary for same pickup point in different routes.
--- Reason: Student may opt for pickup only OR drop only OR both side OR different Pickup & Drop Point transport. Fare needs to be stored accordingly.
--- -----------------------------------------------------------------------------------------------------------------------------
--- Alter Table 'tpt_driver_route_vehicle_jnt' Add column 'pickup_drop' ENUM('Pickup','Drop','Both') NOT NULL DEFAULT 'Both' AFTER 'helper_id';
--- Reason: To differentiate between Pickup/Drop/Both side assignments for same route in a shift.
--- -----------------------------------------------------------------------------------------------------------------------------
--- Add Table 'tpt_vehicle' Add column 'max_capacity' INT DEFAULT NULL AFTER 'registration_number';
--- Reason: To store Maximum allowed capacity including standing beyond seating capacity of vehicle.
--- -----------------------------------------------------------------------------------------------------------------------------
--- Add Table 'tpt_driver_route_vehicle_jnt' Add column 'total_students' INT DEFAULT NULL AFTER 'registration_number';
--- Reason: To store total number of students assigned to a route in a shift.
--- -----------------------------------------------------------------------------------------------------------------------------
---

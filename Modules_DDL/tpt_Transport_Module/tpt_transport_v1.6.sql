@@ -1,6 +1,5 @@
 -- =======================================================================
--- TRANSPORT MODULE ENHANCED (v1.5) for MySQL 8.x
--- Strategy: Took backup from v1.4, verify, then Enhance.
+-- TRANSPORT MODULE ENHANCED (v1.6) for MySQL 8.x
 -- =======================================================================
 
 SET NAMES utf8mb4;
