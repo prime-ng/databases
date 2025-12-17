@@ -10,8 +10,8 @@ CREATE VIEW glb_countries  AS SELECT * FROM global_master.glb_countries;
 CREATE VIEW glb_states     AS SELECT * FROM global_master.glb_states;
 CREATE VIEW glb_districts  AS SELECT * FROM global_master.glb_districts;
 CREATE VIEW glb_cities     AS SELECT * FROM global_master.glb_cities;
-CREATE VIEW glb_academic_sessions  AS SELECT * FROM global_master.glb_districts;
-CREATE VIEW glb_boards     AS SELECT * FROM global_master.glb_cities;
+CREATE VIEW glb_academic_sessions  AS SELECT * FROM global_master.glb_academic_sessions;
+CREATE VIEW glb_boards     AS SELECT * FROM global_master.glb_boards;
 
 CREATE VIEW glb_languages AS SELECT * FROM global_master.glb_languages;
 CREATE VIEW glb_menus AS SELECT * FROM global_master.glb_menus;
@@ -69,7 +69,7 @@ CREATE TABLE IF NOT EXISTS `sys_model_has_permissions_jnt` (
   `model_id` bigint unsigned NOT NULL,        -- E.g., User ID
   PRIMARY KEY (`permission_id`,`model_id`,`model_type`),
   KEY `idx_modelHasPermissions_modelId_modelType` (`model_id`,`model_type`),
-  CONSTRAINT `fk_odelHasPermissions_permissionId` FOREIGN KEY (`permission_id`) REFERENCES `sys_permissions` (`id`) ON DELETE CASCADE
+  CONSTRAINT `fk_modelHasPermissions_permissionId` FOREIGN KEY (`permission_id`) REFERENCES `sys_permissions` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Junction Tables for Polymorphic Many-to-Many Relationships
@@ -307,11 +307,11 @@ CREATE TABLE IF NOT EXISTS `sch_class_section_jnt` (
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_classSection_classId_sectionId` (`class_id`,`section_id`),
-  UNIQUE KEY `uq_lassSection_code` (`class_secton_code`),
+  UNIQUE KEY `uq_classSection_code` (`class_secton_code`),
   CONSTRAINT `fk_classSection_classId` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_classSection_sectionId` FOREIGN KEY (`section_id`) REFERENCES `sch_sections` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_classSection_sclassTeacherId` FOREIGN KEY (`class_teacher_id`) REFERENCES `sch_users` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_classSection_AssClassTeacherId` FOREIGN KEY (`assistance_class_teacher_id`) REFERENCES `sch_users` (`id`) ON DELETE CASCADE
+  CONSTRAINT `fk_classSection_classTeacherId` FOREIGN KEY (`class_teacher_id`) REFERENCES `sch_users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_classSection_assistanceClassTeacherId` FOREIGN KEY (`assistance_class_teacher_id`) REFERENCES `sch_users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=300 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- subject_type will represent what type of subject it is - Major, Minor, Core, Main, Optional etc.
@@ -547,7 +547,7 @@ CREATE TABLE IF NOT EXISTS `sch_teachers_profile` (
 -- ==================================================================================
 
 CREATE TABLE IF NOT EXISTS `std_students` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `id` BIGINT UNSIGNED AUTO_INCREMENT,
   `user_id` bigint unsigned NOT NULL,          -- FK to sch_user
   `parent_id` bigint unsigned NOT NULL,        -- FK to sch_user
   `aadhar_id` VARCHAR(20) NOT NULL,            -- always permanent identity
@@ -558,7 +558,7 @@ CREATE TABLE IF NOT EXISTS `std_students` (
   `first_name` VARCHAR(100) NOT NULL,
   `middle_name` VARCHAR(100) DEFAULT NULL,
   `last_name` VARCHAR(100) DEFAULT NULL,
-  `gender` ENUM('Male','Female','Transgender','Prefer Not to Say') NOT NULL, DEFAULT 'Male',
+  `gender` ENUM('Male','Female','Transgender','Prefer Not to Say') NOT NULL DEFAULT 'Male',
   `dob` DATE NOT NULL,
   `blood_group` ENUM('A+','A-','B+','B-','AB+','AB-','O+','O-') NOT NULL,
   `photo` VARCHAR(255) DEFAULT NULL,
@@ -599,7 +599,7 @@ CREATE TABLE IF NOT EXISTS `std_student_detail` (
   `mother_occupation` varchar(20) DEFAULT NULL,
   `mother_email` varchar(100) DEFAULT NULL,
   `mother_pic` varchar(200) NOT NULL,
-  `guardian_is` ENUM('Father','Mother','Other') NOT NULL, DEFAULT 'Father',
+  `guardian_is` ENUM('Father','Mother','Other') NOT NULL DEFAULT 'Father',
   `guardian_name` varchar(50) DEFAULT NULL,
   `guardian_relation` varchar(100) DEFAULT NULL,
   `guardian_relationship_proof_id` varchar(50) DEFAULT NULL,  -- for non-biological guardians
@@ -621,23 +621,23 @@ CREATE TABLE IF NOT EXISTS `std_student_detail` (
   CONSTRAINT `fk_studentDetail_cityId` FOREIGN KEY (`city_id`) REFERENCES `glb_cities` (`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB AUTO_INCREMENT=188 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `zst_student_sessions_jnt` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS `std_student_sessions_jnt` (
+  `id` BIGINT UNSIGNED AUTO_INCREMENT,
   `student_id` BIGINT UNSIGNED NOT NULL,            -- FK
+  `academic_sessions_id` bigint unsigned NOT NULL,  -- FK - sch_org_academic_sessions_jnt
   `admission_no` VARCHAR(50) NOT NULL,
   `roll_no` INT DEFAULT NULL,
   `admission_date` DATE DEFAULT NULL,
   `registration_no` VARCHAR(50) DEFAULT NULL,
-  `default_mobile` ENUM('Father','Mother','Guardian','All') NOT NULL, DEFAULT 'Mother',
-  `default_email` ENUM('Father','Mother','Guardian','All') NOT NULL, DEFAULT 'Mother',
-  `academic_sessions_id` bigint unsigned NOT NULL,  -- FK - sch_org_academic_sessions_jnt
+  `default_mobile` ENUM('Father','Mother','Guardian','All') NOT NULL DEFAULT 'Mother',
+  `default_email` ENUM('Father','Mother','Guardian','All') NOT NULL DEFAULT 'Mother',
   `class_section_id` INT UNSIGNED NOT NULL,         -- FK (Instead of selecting Class & Section, we will be using Class+Section)
   `subject_group_id` BIGINT UNSIGNED NOT NULL,      -- FK - sch_subject_groups
-  `session_status_id` BIGINT UNSIGNED DEFAULT NULL, -- FK - gl_dropdown_table
+  `session_status_id` BIGINT UNSIGNED DEFAULT NULL, -- FK - gl_dropdown_table (Status of the Student in the Session)
   `is_current` TINYINT(1) DEFAULT 1,  -- Only one session can be current at a time for one student
   `current_flag` bigint GENERATED ALWAYS AS ((case when (`is_current` = 1) then `student_id` else NULL end)) STORED,
   `leaving_date` DATE DEFAULT NULL,
-  `reason_quit` int NULL,                       -- FK to `gl_dropdown_table`
+  `reason_quit` int NULL,                       -- FK to `gl_dropdown_table` (Reason for leaving the Session)
   `dis_note` text NOT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
@@ -646,11 +646,10 @@ CREATE TABLE IF NOT EXISTS `zst_student_sessions_jnt` (
   UNIQUE KEY `uq_studentSessions_currentFlag` (`current_flag`)
   CONSTRAINT `fk_studentSessions_studentId` FOREIGN KEY (`student_id`) REFERENCES `std_students` (`id`) ON DELETE RESTRICT,
   CONSTRAINT `fk_studentSessions_academicSession` FOREIGN KEY (`academic_sessions_id`) REFERENCES `sch_org_academic_sessions_jnt` (`id`) ON DELETE RESTRICT,
-  CONSTRAINT `fk_studentSessions_classId` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE RESTRICT,
-  CONSTRAINT `fk_studentSessions_sectionId` FOREIGN KEY (`section_id`) REFERENCES `sch_sections` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `fk_studentSessions_classSectionId` FOREIGN KEY (`class_section_id`) REFERENCES `sch_classes_sections_jnt` (`id`) ON DELETE RESTRICT,
   CONSTRAINT `fk_studentSessions_subjGroupId` FOREIGN KEY (`subject_group_id`) REFERENCES `sch_subject_groups` (`id`) ON DELETE RESTRICT,
-  CONSTRAINT `fk_studentSessions_sessionStatusId` FOREIGN KEY (`session_status_id`) REFERENCES `gl_dropdown_table` (`id`) ON DELETE RESTRICT,
-  CONSTRAINT `fk_studentSessions_reasonQuit` FOREIGN KEY (`reason_quit`) REFERENCES `gl_dropdown_table` (`id`) ON DELETE RESTRICT
+  CONSTRAINT `fk_studentSessions_sessionStatusId` FOREIGN KEY (`session_status_id`) REFERENCES `sys_dropdown_table` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `fk_studentSessions_reasonQuit` FOREIGN KEY (`reason_quit`) REFERENCES `sys_dropdown_table` (`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB AUTO_INCREMENT=188 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
