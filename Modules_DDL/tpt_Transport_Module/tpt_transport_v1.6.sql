@@ -45,8 +45,8 @@ CREATE TABLE IF NOT EXISTS `tpt_vehicle` (
 CREATE TABLE IF NOT EXISTS `tpt_personnel` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `user_id` BIGINT UNSIGNED DEFAULT NULL,
-    `driver_code` VARCHAR(30) NOT NULL,
-    `qr_token` VARCHAR(100) NOT NULL,
+    `user_code` VARCHAR(30) NOT NULL,     -- User code Auto generated (This will be used to generate QR token)
+    `qr_token` VARCHAR(100) NOT NULL,       -- QR token Auto generated using user_code
     `id_card_type` ENUM('QR','RFID','NFC','Barcode') NOT NULL DEFAULT 'QR',
     `name` VARCHAR(100) NOT NULL,
     `phone` VARCHAR(30) DEFAULT NULL,
@@ -220,6 +220,7 @@ CREATE TABLE IF NOT EXISTS `tpt_driver_route_vehicle_jnt` (
     `pickup_drop` ENUM('Pickup','Drop','Both') NOT NULL DEFAULT 'Both',
     `effective_from` DATE NOT NULL,             -- Assignment validity period
     `effective_to` DATE DEFAULT NULL,           -- Assignment validity period
+    `total_students` INT NOT NULL DEFAULT 0,    -- Total number of students assigned to this route
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -238,8 +239,10 @@ CREATE TABLE IF NOT EXISTS `tpt_driver_route_vehicle_jnt` (
 -- 5. A Vehicle can have different Drivers / Helpers on same shift for different date ranges but not overlapping date ranges.
 -- 6. A Driver / Helper can be assigned to different Vehicles on same shift for different date ranges but not overlapping date ranges.
 -- 7. pickup_drop indicates if the assignment is for Pickup, Drop or Both.
--- 8. is_active indicates if the assignment is currently active.
--- 9. deleted_at is for soft delete.
+-- 8. total_students indicates the total number of students assigned to this route. check if the total students assigned to a route is not greater than the capacity of the vehicle.
+-- 9. App logic to enforce capacity checks during Bus allocation based on 'Allow_extra_student_in_vehicale_beyond_capacity' setting.
+-- 10. is_active indicates if the assignment is currently active.
+-- 11. deleted_at is for soft delete.
 
 -- Trigger to enforce unique assignment of driver/vehicle/route/shift with non-overlapping date ranges
 DELIMITER $$
@@ -365,8 +368,49 @@ CREATE TABLE IF NOT EXISTS `tpt_live_trip` (
 -- DRIVER ATTENDANCE
 -- =======================================================================
 
+-- ATTENDANCE FLOW (QR-based)
+        -- Driver scans QR
+        --     ↓
+        -- App validates qr_token
+        --     ↓
+        -- Device authorization check
+        --     ↓
+        -- Log attendance event
+        --     ↓
+        -- Update daily summary
+        --     ↓
+        -- Notify Transport Incharge (optional)
+
+-- SECURITY & ANTI-FRAUD DESIGN (IMPORTANT)
+    -- - Unique qr_token per driver to prevent cloning.
+    -- - Device authorization to ensure only registered devices can log attendance.
+    -- - Geo-fencing to validate location of attendance scans. (Optional)
+    -- - Time-based checks to prevent rapid multiple scans. (Optional)
+    -- - Regular audits of attendance logs to identify anomalies. (Optional)
+    -- - Alerts for suspicious activities (e.g., multiple failed scans, out-of-area scans). (Optional)
+    -- - Data encryption for sensitive information (e.g., qr_token, location data). (Optional)
+    -- - Access controls to restrict who can view or modify attendance records. (Optional)
+    -- - Comprehensive logging of all attendance-related actions for audit trails. (Optional)
+
+--  QR Token Rules:
+--      Token ≠ Driver ID (This will be used to generate QR token)
+--      Rotate token if card is lost
+--      Expire QR if driver is inactive
+
+-- Attendance Validation Logic:
+--      Check for duplicate scans within a short time frame. (Reject duplicate IN within X minutes) 
+--      Validate scan location against predefined geo-fences. (Geo-fence validation (optional)
+--      Ensure scans occur during valid time windows (e.g., shift hours).
+--      Cross-check against driver assignments to prevent unauthorized attendance logging.
+--      Flag and review any anomalies detected during validation. Block scan from unauthorized device
+--      Maintain audit logs for all validation checks performed. 
+
+
+
 -- Attendance can be done from at School Gate, Depot, Mobile App; hence Devices must be tracked for security & audit
 -- Devices must be tracked for security & audit
+
+
 CREATE TABLE IF NOT EXISTS `tpt_attendance_device` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `device_code` VARCHAR(50) NOT NULL UNIQUE,
@@ -390,53 +434,23 @@ CREATE TABLE IF NOT EXISTS `tpt_attendance_device` (
 -- 11. App logic to manage device lifecycle (activation, deactivation, replacement).
 -- 12. App logic to generate reports based on device usage and attendance patterns.
 -- 13. App logic to maintain a history of device assignments and usage for auditing purposes.
---
 
--- Event-Based Attendance Logging. Allows: Multiple scans, Fraud detection, Late entry detection
+-- Daily Attendance Summary for Performance Optimization. ERP dashboards & payroll reports need fast daily status.
 CREATE TABLE IF NOT EXISTS `tpt_driver_attendance` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `driver_id` BIGINT UNSIGNED NOT NULL,   -- fk to tpt_personnel
-    `scan_time` DATETIME NOT NULL,          
-    `attendance_type` ENUM('IN','OUT') NOT NULL,
-    `scan_method` ENUM('QR','RFID','NFC','Manual') NOT NULL,
-    `device_id` BIGINT UNSIGNED NOT NULL,
-    `latitude` DECIMAL(10,6) NULL,      
-    `longitude` DECIMAL(10,6) NULL,
-    `scan_status` ENUM('Valid','Duplicate','Rejected') NOT NULL DEFAULT 'Valid',
-    `remarks` VARCHAR(255) NULL,    
-    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT `fk_da_driver` FOREIGN KEY (`driver_id`) REFERENCES `tpt_personnel`(`id`) ON DELETE CASCADE,
-    CONSTRAINT `FK_da_device` FOREIGN KEY (`device_id`) REFERENCES `tpt_attendance_device`(`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
--- Conditions:
--- 1. driver_id links to transport_driver to get driver details.
--- 2. device_id links to transport_attendance_device to get device details.
--- 3. scan_time captures the timestamp of the scan.
--- 4. attendance_type indicates if the scan is for check-in or check-out.
--- 5. scan_method indicates the method used for scanning.
--- 6. latitude and longitude capture the location of the scan.
--- 7. scan_status indicates if the scan was valid, duplicate, or rejected.
--- 8. remarks is optional, can be null.
--- 9. created_at captures the creation timestamp.
--- 10. App logic to validate scans and prevent duplicates.
--- 11. App logic to generate reports based on attendance patterns and device usage.
--- 12. App logic to manage attendance records and ensure data integrity.
-
--- OPTIONAL: Daily Attendance Summary for Performance Optimization. ERP dashboards & payroll reports need fast daily status.
-CREATE TABLE IF NOT EXISTS `transport_driver_attendance_daily` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `driver_id` BIGINT UNSIGNED NOT NULL,
     `attendance_date` DATE NOT NULL,
-    `first_in_time` DATETIME NULL,      
-    `last_out_time` DATETIME NULL,
-    `total_work_minutes` INT NULL,
-    `attendance_status` ENUM('Present','Absent','Half-Day','Late') NOT NULL,
+    `first_in_time` DATETIME NULL,              --  First check-in time of the day
+    `last_out_time` DATETIME NULL,              --  Last check-out time of the day
+    `total_work_minutes` INT NULL,              --  Total work minutes of the day
+    `attendance_status` ENUM('Present','Absent','Half-Day','Late') NOT NULL,    --  Attendance status of the day    
+    `via_app` TINYINT(1) NOT NULL DEFAULT 1,    -- 1=App, 0=Manual
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE KEY `uq_driver_day` (`driver_id`, `attendance_date`),
-    FOREIGN KEY (`driver_id`) REFERENCES `transport_driver`(`id`)
+    FOREIGN KEY (`driver_id`) REFERENCES `tpt_personnel`(`id`) ON DELETE CASCADE,
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 -- Conditions:
--- 1. driver_id links to transport_driver to get driver details.
+-- 1. driver_id links to tpt_personnel to get driver details.
 -- 2. attendance_date captures the date of attendance.
 -- 3. first_in_time captures the first check-in time of the day.
 -- 4. last_out_time captures the last check-out time of the day.
@@ -448,42 +462,36 @@ CREATE TABLE IF NOT EXISTS `transport_driver_attendance_daily` (
 -- 10. App logic to generate daily, weekly, monthly attendance reports.
 -- 11. App logic to handle exceptions like missing in/out times or overlapping scans.
 
--- ATTENDANCE FLOW (QR-based)
-        -- Driver scans QR
-        --     ↓
-        -- App validates qr_token
-        --     ↓
-        -- Device authorization check
-        --     ↓
-        -- Log attendance event
-        --     ↓
-        -- Update daily summary
-        --     ↓
-        -- Notify Transport Incharge (optional)
 
--- SECURITY & ANTI-FRAUD DESIGN (IMPORTANT)
-    -- - Unique qr_token per driver to prevent cloning.
-    -- - Device authorization to ensure only registered devices can log attendance.
-    -- - Geo-fencing to validate location of attendance scans.
-    -- - Time-based checks to prevent rapid multiple scans.
-    -- - Regular audits of attendance logs to identify anomalies.
-    -- - Alerts for suspicious activities (e.g., multiple failed scans, out-of-area scans).
-    -- - Data encryption for sensitive information (e.g., qr_token, location data).
-    -- - Access controls to restrict who can view or modify attendance records.
-    -- - Comprehensive logging of all attendance-related actions for audit trails.
-
---  QR Token Rules:
---      Token ≠ Driver ID
---      Rotate token if card is lost
---      Expire QR if driver is inactive
-
--- Attendance Validation Logic:
---      Check for duplicate scans within a short time frame. (Reject duplicate IN within X minutes)
---      Validate scan location against predefined geo-fences. (Geo-fence validation (optional)
---      Ensure scans occur during valid time windows (e.g., shift hours).
---      Cross-check against driver assignments to prevent unauthorized attendance logging.
---      Flag and review any anomalies detected during validation. Block scan from unauthorized device
---      Maintain audit logs for all validation checks performed. 
+-- Event-Based Attendance Logging. Allows: Multiple scans, Fraud detection, Late entry detection
+CREATE TABLE IF NOT EXISTS `tpt_driver_attendance_log` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `attendance_id` BIGINT UNSIGNED NOT NULL,   -- fk to tpt_driver_attendance
+    `scan_time` DATETIME NOT NULL,          
+    `attendance_type` ENUM('IN','OUT') NOT NULL,
+    `scan_method` ENUM('QR','RFID','NFC','Manual') NOT NULL,        
+    `device_id` BIGINT UNSIGNED NOT NULL,
+    `latitude` DECIMAL(10,6) NULL,      
+    `longitude` DECIMAL(10,6) NULL,
+    `scan_status` ENUM('Valid','Duplicate','Rejected') NOT NULL DEFAULT 'Valid',
+    `remarks` VARCHAR(255) NULL,    
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT `fk_da_attendance` FOREIGN KEY (`attendance_id`) REFERENCES `tpt_driver_attendance`(`id`) ON DELETE CASCADE,
+    CONSTRAINT `FK_da_device` FOREIGN KEY (`device_id`) REFERENCES `tpt_attendance_device`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Conditions:
+-- 1. driver_id links to tpt_personnel to get driver details.
+-- 2. device_id links to tpt_attendance_device to get device details.
+-- 3. scan_time captures the timestamp of the scan.
+-- 4. attendance_type indicates if the scan is for check-in or check-out.
+-- 5. scan_method indicates the method used for scanning.
+-- 6. latitude and longitude capture the location of the scan.
+-- 7. scan_status indicates if the scan was valid, duplicate, or rejected.
+-- 8. remarks is optional, can be null.
+-- 9. created_at captures the creation timestamp.
+-- 10. App logic to validate scans and prevent duplicates.
+-- 11. App logic to generate reports based on attendance patterns and device usage.
+-- 12. App logic to manage attendance records and ensure data integrity.
 
 
 
@@ -503,6 +511,7 @@ CREATE TABLE IF NOT EXISTS `tpt_student_allocation_jnt` (
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    CONSTRAINT `fk_sa_studentSession` FOREIGN KEY (`student_session_id`) REFERENCES `std_student_sessions_jnt`(`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_sa_route` FOREIGN KEY (`route_id`) REFERENCES `tpt_route`(`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_sa_pickup` FOREIGN KEY (`pickup_stop_id`) REFERENCES `tpt_pickup_points`(`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_sa_drop` FOREIGN KEY (`drop_stop_id`) REFERENCES `tpt_pickup_points`(`id`) ON DELETE RESTRICT
@@ -513,7 +522,7 @@ conditions:
 -- 3. pickup_stop_id and drop_stop_id link to tpt_pickup_points to get stop details.
 -- 4. fare indicates the transport fare for the student.
 -- 5. effective_from indicates the start date of the allocation.
--- 6. active_status indicates if the allocation is currently active.
+-- 6. active_status indicates if the allocation is currently active. only one allocation can be active for a student_session_id.
 -- 7. deleted_at is for soft delete.
 -- 8. App logic to ensure that pickup_stop_id and drop_stop_id belong to the selected route_id.
 -- 9. App logic to prevent duplicate active allocations for the same student_session_id.
@@ -543,24 +552,30 @@ CREATE TABLE IF NOT EXISTS `tpt_fine_master` (
 
 -- generate Invoice on 1st of every month for the month
 -- Example: fine_from_days - 1  fine_to_days - 5  fine_type - 'Fixed'  fine_rate - 50.00
-CREATE TABLE IF NOT EXISTS `tpt_fee_master` (
+-- old table name - tpt_fee_master
+CREATE TABLE IF NOT EXISTS `tpt_student_fee_detail` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `std_academic_sessions_id` BIGINT UNSIGNED NOT NULL,    -- FK to 'std_academic_sessions'
     `month` DATE NOT NULL,
     `amount` DECIMAL(10,2) NOT NULL,
-    `due_date` DATE NOT NULL,
     `fine_amount` DECIMAL(10,2) DEFAULT 0.00,
     `total_amount` DECIMAL(10,2) NOT NULL,
+    `due_date` DATE NOT NULL,
     `Remark` VARCHAR(512) DEFAULT NULL,
     `status` VARCHAR(20) NOT NULL DEFAULT 'Pending',  -- FK - to sys_dropdown_table       e.g. 'Paid','Pending','Overdue'
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `deleted_at` TIMESTAMP NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- conditions:
+-- 1. tpt_student_fee_detail_id will have only one record for the same month.
+-- 2. Multipal tpt_studnt_fee_collection_id can be linked to the same tpt_student_fee_detail_id.
+
 
 -- link fines to fee master
-CREATE TABLE IF NOT EXISTS `tpt_fee_fine_detail` (
+-- old table name - tpt_fee_fine_detail
+CREATE TABLE IF NOT EXISTS `tpt_student_fine_detail` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `fee_master_id` BIGINT UNSIGNED NOT NULL,    -- FK to 'tpt_fee_master'
+    `student_fee_detail_id` BIGINT UNSIGNED NOT NULL,    -- FK to 'tpt_student_fee_detail'
     `fine_master_id` BIGINT UNSIGNED NOT NULL,   -- FK to 'tpt_fine_master'
     `fine_days` TINYINT DEFAULT 0,
     `fine_type` ENUM('Fixed','Percentage') DEFAULT 'Fixed',
@@ -568,28 +583,63 @@ CREATE TABLE IF NOT EXISTS `tpt_fee_fine_detail` (
     `fine_amount` DECIMAL(10,2) DEFAULT 0.00,
     `Remark` VARCHAR(512) DEFAULT NULL,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    `deleted_at` TIMESTAMP NULL DEFAULT NULL
-    CONSTRAINT `fk_fc_master` FOREIGN KEY (`fee_master_id`) REFERENCES `tpt_fee_master`(`id`) ON DELETE RESTRICT
-    CONSTRAINT `fk_fc_fine_master` FOREIGN KEY (`fine_master_id`) REFERENCES `tpt_fine_master`(`id`) ON DELETE RESTRICT
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    CONSTRAINT `fk_sf_master` FOREIGN KEY (`student_fee_detail_id`) REFERENCES `tpt_student_fee_detail`(`id`) ON DELETE RESTRICT,
+    CONSTRAINT `fk_sf_fine_master` FOREIGN KEY (`fine_master_id`) REFERENCES `tpt_fine_master`(`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
--- Example: fee_master_id - 1  fine_days - 5  fine_type - 'Percentage'  fine_rate - 2.00
+-- Example: fee_master_id - 1  fine_days - 5  fine_type - 'Percentage'  fine_rate - 2.00    fine_amount - 10.00 
+-- conditions:
+-- 1. student_fee_detail_id links to tpt_student_fee_detail to get fee details.
+-- 2. fine_master_id links to tpt_fine_master to get fine details.
+
 
 -- record fee payment against student allocation
-CREATE TABLE IF NOT EXISTS `tpt_fee_collection` (
+-- old table name - tpt_fee_collection
+CREATE TABLE IF NOT EXISTS `tpt_student_fee_collection` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `student_allocation_id` BIGINT UNSIGNED NOT NULL,
-    `fee_master_id` BIGINT UNSIGNED NOT NULL,
+    `student_fee_detail_id` BIGINT UNSIGNED NOT NULL,    -- FK to 'tpt_student_fee_detail'
     `payment_date` DATE NOT NULL,
     `total_delay_days` INT DEFAULT 0,
     `paid_amount` DECIMAL(10,2) NOT NULL,
     `payment_mode`  VARCHAR(20) NOT NULL, -- FK - to sys_dropdown_table       e.g. 'Cash','Card','Online'
     `status` VARCHAR(20) NOT NULL,        -- FK - to sys_dropdown_table       e.g. 'Paid','Pending','Overdue'
+    `reconciled` TINYINT(1) NOT NULL DEFAULT 0,     -- 1 - Reconciled, 0 - Not Reconciled
     `remarks` VARCHAR(512) DEFAULT NULL,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `deleted_at` TIMESTAMP NULL DEFAULT NULL,
-    CONSTRAINT `fk_fc_allocation` FOREIGN KEY (`student_allocation_id`) REFERENCES `tpt_student_allocation_jnt`(`id`) ON DELETE RESTRICT,
+    CONSTRAINT `fk_fc_fee_detail` FOREIGN KEY (`student_fee_detail_id`) REFERENCES `tpt_student_fee_detail`(`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_fc_master` FOREIGN KEY (`fee_master_id`) REFERENCES `tpt_fee_master`(`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------------------------------------------------
+-- Table to capture all Payment related activities across modules (Transport, Hostel, Tuition, etc.)
+-- --------------------------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `std_student_pay_log` (
+  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `student_id` BIGINT UNSIGNED NOT NULL,              -- FK to std_students
+  `academic_session_id` BIGINT UNSIGNED NOT NULL,     -- FK to sch_org_academic_sessions_jnt (Mandatory for session-scoped filtering)
+  `module_name` VARCHAR(50) NOT NULL,                 -- e.g. 'Transport', 'Tuition', 'Hostel', 'Library'
+  `activity_type` VARCHAR(50) NOT NULL,               -- e.g. 'Invoice Generated', 'Payment Received', 'Payment Overdue', 'Reminder Sent', 'Part Payment'
+  `amount` DECIMAL(10,2) DEFAULT NULL,                -- Amount involved in the activity (if any)
+  `log_date` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `reference_id` BIGINT UNSIGNED DEFAULT NULL,        -- ID of the related record (Polymorphic Reference to the source record (e.g. Invoice ID or Collection ID))
+  `reference_table` VARCHAR(100) DEFAULT NULL,        -- Table name of the reference record (e.g. 'tpt_student_fee_detail', 'tpt_student_fee_collection')
+  `description` VARCHAR(512) DEFAULT NULL,                    -- Detailed description or remarks
+  `triggered_by` BIGINT UNSIGNED DEFAULT NULL,        -- FK to sys_users (User who performed the action, NULL for System/Job)
+  `is_system_generated` TINYINT(1) DEFAULT 0,         -- 1 = Auto-generated by System (e.g. daily job), 0 = Manual Action
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+  KEY `idx_payLog_student` (`student_id`),
+  KEY `idx_payLog_module` (`module_name`),
+  KEY `idx_payLog_date` (`log_date`),
+  KEY `idx_payLog_reference` (`reference_table`, `reference_id`),
+  KEY `idx_payLog_trigger` (`triggered_by`),
+  CONSTRAINT `fk_payLog_studentId` FOREIGN KEY (`student_id`) REFERENCES `std_students` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_payLog_sessionId` FOREIGN KEY (`academic_session_id`) REFERENCES `sch_org_academic_sessions_jnt` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_payLog_triggeredBy` FOREIGN KEY (`triggered_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
 
 
 -- =======================================================================
@@ -862,3 +912,7 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- Add Table 'tpt_vehicle' Add column 'max_capacity' INT DEFAULT NULL AFTER 'registration_number';
 -- Reason: To store Maximum allowed capacity including standing beyond seating capacity of vehicle.
 -- -----------------------------------------------------------------------------------------------------------------------------
+-- Add Table 'tpt_driver_route_vehicle_jnt' Add column 'total_students' INT DEFAULT NULL AFTER 'registration_number';
+-- Reason: To store total number of students assigned to a route in a shift.
+-- -----------------------------------------------------------------------------------------------------------------------------
+--
