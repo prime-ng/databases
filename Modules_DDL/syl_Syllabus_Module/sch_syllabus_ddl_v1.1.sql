@@ -75,7 +75,7 @@ CREATE TABLE IF NOT EXISTS `slb_topics` (
 
 CREATE TABLE IF NOT EXISTS `slb_competencies` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `code` VARCHAR(50) NOT NULL,
+  `code` VARCHAR(50) NOT NULL,      -- Auto generated e.g. 
   `name` VARCHAR(255) NOT NULL,
   `class_id` INT UNSIGNED NOT NULL,   -- FK to sch_classes.id
   `subject_id` BIGINT UNSIGNED NOT NULL,

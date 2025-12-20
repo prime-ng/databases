@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS `tpt_vehicle` (
 CREATE TABLE IF NOT EXISTS `tpt_personnel` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `user_id` BIGINT UNSIGNED DEFAULT NULL,
-    `user_code` VARCHAR(30) NOT NULL,     -- User code Auto generated (This will be used to generate QR token)    `qr_token` VARCHAR(100) NOT NULL,       -- QR token Auto generated using user_code
+    `user_qr_code` VARCHAR(30) NOT NULL,     -- User code Auto generated (This will be used to generate QR token)    `qr_token` VARCHAR(100) NOT NULL,       -- QR token Auto generated using user_code
     `id_card_type` ENUM('QR','RFID','NFC','Barcode') NOT NULL DEFAULT 'QR',
     `name` VARCHAR(100) NOT NULL,
     `phone` VARCHAR(30) DEFAULT NULL,
