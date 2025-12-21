@@ -42,6 +42,10 @@ CREATE TABLE IF NOT EXISTS `tpt_vehicle` (
 -- 7. new Variable in Table 'sch_settings' named 'Allow_extra_student_in_vehicale_beyond_capacity' to indicate if school allow extra students beyond vehicle capacity.
 -- 8. App logic to enforce capacity checks during student allocation based on 'Allow_extra_student_in_vehicale_beyond_capacity' setting.
 
+---start shailesh--
+--this table validation and migration changes complete
+---end shailesh--
+
 CREATE TABLE IF NOT EXISTS `tpt_personnel` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `user_id` BIGINT UNSIGNED DEFAULT NULL,
@@ -91,6 +95,54 @@ CREATE TABLE IF NOT EXISTS `tpt_personnel` (
 -- 23. App logic to manage active assignments and ensure no conflicts.
 -- 
 
+--shailesh--
+-- Below are the ones already handled in your request validation / logic:
+
+-- user_id optional
+
+-- role restricted (via driver_helper mapping)
+
+--  multiple roles per user supported
+
+--  staff can also be Driver/Helper
+
+--  emergency assignment allowed
+
+--  id_type & id_no optional
+
+--  license mandatory for Driver
+
+-- assigned_vehicle_id optional
+
+--  is_active handled
+
+-- soft delete respected
+
+-- only one active Driver/Helper per vehicle
+
+--  personnel cannot be assigned to multiple vehicles (edit-safe)
+
+--  license expiry validation
+
+--  inactive personnel cannot be assigned
+
+-- emergency role handled logically
+
+-- id_card_type validation
+
+--  driver_code + role unique
+
+-- license_no unique among drivers
+
+--  phone unique
+
+-- one user_id can have multiple roles
+
+--  same vehicle allowed for inactive records
+
+-- Implemented: 18 / 23
+-- end implemnt --
+
 CREATE TABLE IF NOT EXISTS `tpt_shift` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `code` VARCHAR(20) NOT NULL,        --  Shift code e.g., 'MORNING', 'AFTERNOON'
@@ -110,6 +162,9 @@ CREATE TABLE IF NOT EXISTS `tpt_shift` (
 -- 3. is_active indicates if shift is currently in use.
 -- 4. deleted_at is for soft delete.
 
+--shailesh --
+-- this all validation implemnted 
+--shailesh --
 
 -- =======================================================================
 -- ROUTES & STOPS with SRID=4326
@@ -137,6 +192,11 @@ CREATE TABLE IF NOT EXISTS `tpt_route` (
 -- 2. route_geometry is optional, can be null initially.
 -- 3. is_active indicates if route is currently in use.
 -- 4. deleted_at is for soft delete.
+
+
+--shailesh --
+-- this all validation implemnted 
+--shailesh --
 
 -- -----------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `tpt_pickup_points` (
@@ -166,11 +226,15 @@ CREATE TABLE IF NOT EXISTS `tpt_pickup_points` (
 -- 4. is_active indicates if pickup point is currently in use.
 -- 5. deleted_at is for soft delete.
 
+--not any changes new becuse already exist--
+
 -- -----------------------------------------------------------------------
 -- Junction table to link pickup points to routes. It will have separate entries for Pickup and Drop points.
 -- Table 'sch_settings' has a Variable named 'Allow_only_one_side_transport_charges' to indicate if school allow one side fare.
 -- Table 'sch_settings' has a Variable named 'Allow_different_pickup_and_drop_point' to indicate if school allow different pickup & drop fare.
 -- If 'Allow_only_one_side_transport_charges' OR 'Allow_different_pickup_and_drop_point' is true, then app logic will enforce appropriate validations.
+
+
 CREATE TABLE IF NOT EXISTS `tpt_pickup_points_route_jnt` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `shift_id` BIGINT UNSIGNED NOT NULL,            -- fk to tpt_shift
