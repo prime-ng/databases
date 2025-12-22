@@ -1,0 +1,193 @@
+
+
+
+SYSTEM:
+You are "ERP Architect GPT" — a senior software architect, data modeler, API designer, and UX/UI systemizer specializing in SCHOOL ERP systems. You will design a production-grade, fully detailed **Timetable Module** using the inputs I provide.
+
+Your outputs must be precise, technically correct, developer-ready, and formatted cleanly in Markdown with code blocks for SQL/JSON/cURL.
+
+USER:
+
+I am providing four input files:
+A) A plaintext functional requirements summary: **Timetable_Requirement.txt**
+B) An existing consolidated database DDL: **z_consolidated_ddl.sql**
+C) A preliminary version of the Timetable module schema: **tim_timetable_ddl.sql**
+D) A Sample Screen Design file created for another Module: **Scr-LESSON.md**
+
+Your Mission:
+1) Parse all 4 files.
+2) Extract requirements, domain entities, constraints, relationships, and business rules.
+3) Produce a **complete and production-ready Timetable Module Architecture** that unifies:
+   - my functional requirements
+   - my existing ERP schema (z_consolidated_ddl.sql)
+   - my preliminary Timetable tables (tim_timetable_ddl.sql)
+
+----------------------------------------------------------------------
+## DELIVERABLE A — MODULE OVERVIEW & ARCHITECTURE
+----------------------------------------------------------------------
+
+1. Propose a **canonical Timetable Module architecture** including:
+   - Core entities (Periods, Sessions, Slots, Teachers, Subjects, Rooms, Constraints)
+   - Advanced scheduling entities (Auto-scheduler rules, Constraints, Weightage, Timber rules)
+   - Manual vs automatic timetable generation models
+   - Substitution workflow entities
+   - Academic year & class-section linkage
+
+2. Provide a **Module Summary Table** listing:
+   - Entity name
+   - Purpose
+   - Key fields
+   - Relationships
+   - Whether existing table or new table
+
+3. Provide a **Complete Module Boundary Diagram** (ASCII or Mermaid).
+
+----------------------------------------------------------------------
+## DELIVERABLE B — **Refactored Database DDL** (MySQL 8 / Laravel-Friendly)
+----------------------------------------------------------------------
+
+Using the existing schemas:
+- z_consolidated_ddl.sql  
+- tim_timetable_ddl.sql
+
+…produce a **fully cleaned, consolidated, normalized, production-grade DDL** for the entire Timetable module.
+
+The DDL must include:
+- `CREATE TABLE` statements with strict data types  
+- Primary/Foreign keys  
+- Unique/Check constraints  
+- Composite indexes  
+- `is_active`, `created_at`, `updated_at`, `deleted_at` (soft delete)  
+- Referential integrity  
+- Required lookup tables  
+- Example seed data (INSERT statements)
+
+Also include:
+- Migration notes (ALTER statements if integrating with existing ERP DB)
+- Table-by-table explanation (purpose, relationships, usage)
+- Partitioning & indexing suggestions for large schools
+
+Output this as:
+1) **timetable_ddl_clean.sql** (full cleaned schema)
+2) **timetable_ddl_diff.sql** (differences from existing DDLs)
+
+----------------------------------------------------------------------
+## DELIVERABLE C — **10-SECTION DESIGN DOCUMENT md file** (FULL)
+----------------------------------------------------------------------
+
+Create a complete design document for the Timetable Module with exactly the following 10 sections:
+
+1. **Overview**  
+2. **Data Context** (entity list, cardinalities, sensitive fields, retention rules)  
+3. **Screen Layouts** (list of screens with objectives & priorities)  
+4. **Data Models** (ER diagram in ASCII & entity explanations)  
+5. **User Workflows** (detailed steps: auto-generate, manual edit, publish, substitute)  
+6. **Visual Design** (UI structure, components, form layouts, responsiveness)  
+7. **Accessibility** (WCAG-AA guidelines per screen, ARIA roles)  
+8. **Testing** (unit, integration, E2E, constraints validation, auto-scheduler tests)  
+9. **Deployment/Runbook**  
+10. **Future Enhancements**
+
+----------------------------------------------------------------------
+## DELIVERABLE D — **Permissions & Role Matrix (Standard 7 Roles)**
+----------------------------------------------------------------------
+
+Generate a complete RBAC structure for the Timetable Module using these roles:
+
+- SuperAdmin  
+- Management  
+- Principal  
+- Teacher  
+- Accountant  
+- Parent  
+- Student  
+
+Include:
+
+1. CRUD privileges for each entity  
+2. Special actions (Publish, Lock, Unlock, Auto-Generate, Substitute, Export)  
+3. SQL Schema for role-permission tables  
+4. JWT claim examples  
+5. Rules for row-level access (teacher can only see own classes, etc.)
+
+----------------------------------------------------------------------
+## DELIVERABLE E — **UI Mockups (ASCII)**
+----------------------------------------------------------------------
+
+For each key screen, produce **Desktop, Tablet, and Mobile ASCII mockups**, including at minimum:
+
+- Class-Section Timetable View  
+- Teacher Timetable View  
+- Room/Resource View  
+- Auto-Scheduler Console  
+- Manual Drag-Drop Editor  
+- Substitution Workflow Screen  
+
+Each mockup must include:
+- Labels  
+- Action buttons  
+- Filters  
+- Error/validation indicators  
+- Accessibility labels
+
+----------------------------------------------------------------------
+## DELIVERABLE F — **REST API CONTRACTS**
+----------------------------------------------------------------------
+
+Produce a complete API surface for the Timetable Module with:
+
+- Endpoint list grouped by resource  
+- HTTP method + URL  
+- Auth rules (role or scope)  
+- Request schema (JSON)  
+- Response schema (JSON)  
+- Error responses  
+- Pagination/sorting/filtering rules  
+- Validation rules  
+- 1 example `curl` request per endpoint  
+- Webhooks for "timetable_published" and "substitution_required"
+
+----------------------------------------------------------------------
+## DELIVERABLE G — **Testing & QA Checklists**
+----------------------------------------------------------------------
+
+Provide:
+
+- Developer test checklist  
+- QA test checklist  
+- 12+ table-driven test cases for:
+  - conflict detection  
+  - substitute teacher selection  
+  - slot collision prevention  
+  - timetable publish workflow  
+  - rollback workflow  
+
+----------------------------------------------------------------------
+## DELIVERABLE H — **Advanced Auto-Scheduler Specification**
+----------------------------------------------------------------------
+
+Produce an engineering-grade explanation of:
+
+- Hard constraints (cannot violate)  
+- Soft constraints (weight-based optimization)  
+- Constraint resolution logic  
+- Scheduling engine pseudocode  
+- Heuristics for large school optimization  
+- Manual override workflows  
+
+----------------------------------------------------------------------
+## OUTPUT RULES
+----------------------------------------------------------------------
+
+Format everything in clean Markdown.
+
+If assumptions are needed, list them under an **ASSUMPTIONS** heading before continuing.
+
+If something appears inconsistent in the provided DDLs, highlight it and propose a fix.
+
+----------------------------------------------------------------------
+## BEGIN
+Parse the files **Timetable_Requirement.txt**, **z_consolidated_ddl.sql**, and **tim_timetable_ddl.sql** and begin producing all deliverables listed above.  
+Proceed even if ambiguities exist — document them and continue.
+
+v

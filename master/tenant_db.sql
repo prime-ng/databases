@@ -146,19 +146,63 @@ CREATE TABLE IF NOT EXISTS `sys_settings` (
   UNIQUE KEY `uq_settings_key` (`key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Ths Table will capture the detail of which Field of Which Table fo Which Databse Type, I can create a Dropdown in sys_dropdown_table of?
+-- This will help us to make sure we can only create create a Dropdown in sys_dropdown_table whcih has been configured by Developer.
+CREATE TABLE IF NOT EXISTS `sys_dropdown_needs` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `db_type` varchar(50) NOT NULL,
+  `table_name` varchar(150) NOT NULL,
+  `column_name` varchar(150) NOT NULL,
+  `is_active` TINYINT(1) DEFAULT 1,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_dropdownNeeds_ordinal_key` (`ordinal`,`key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Dropdown Table to store various dropdown values used across the system
+-- Enhanced sys_dropdown_table to accomodate Menu Detail (Category,Main Menu, Sub-Menu ID) for Easy identification.
 CREATE TABLE IF NOT EXISTS `sys_dropdown_table` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `menu_category` varchar(150) NOT NULL,
+  `main_menu` varchar(150) NOT NULL,
+  `sub_menu` varchar(150) NOT NULL,
   `ordinal` tinyint unsigned NOT NULL,
-  `key` varchar(150) NOT NULL,
+  `key` varchar(160) NOT NULL,      -- Key will be Combination of DB Type + Table Name + Column Name (e.g. 'tenant_db.cmp_complaint_actions.action_type)
   `value` varchar(100) NOT NULL,
   `type` ENUM('String','Integer','Decimal', 'Date', 'Datetime', 'Time', 'Boolean') NOT NULL DEFAULT 'String',
+  `additional_info` JSON DEFAULT NULL,  -- This will store additional information about the dropdown value
   `is_active` TINYINT(1) DEFAULT 1,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_dropdownTable_ordinal_key` (`ordinal`,`key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- conditions:
+-- 1. When we go to create a New Dropdown, It will show 3 Dropdowns to select from.
+--    a. DB Type (this will come from sys_dropdown_needs.db_type)
+--    b. Table Name (this will come from sys_dropdown_needs.table_name)
+--    c. Column Name (this will come from sys_dropdown_needs.column_name)
+-- 2. System will check if the Dropdown Need is already configured in sys_dropdown_needs table.
+-- 3. If not, Developer need to create a new Dropdown Need as per the need.
+-- 4. If yes, System will use the existing Dropdown Need.
+
+-- ---------------------------------------------------------------------------------------------
+-- below is Old `sys_dropdown_table` Table. I have Enhanced it to accomodate Menu Details (Category,Main Menu, Sub-Menu) for Easy identification.
+-- CREATE TABLE IF NOT EXISTS `sys_dropdown_table` (
+--   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+--   `ordinal` tinyint unsigned NOT NULL,
+--   `key` varchar(150) NOT NULL,
+--   `value` varchar(100) NOT NULL,
+--   `type` ENUM('String','Integer','Decimal', 'Date', 'Datetime', 'Time', 'Boolean') NOT NULL DEFAULT 'String',
+--   `is_active` TINYINT(1) DEFAULT 1,
+--   `created_at` timestamp NULL DEFAULT NULL,
+--   `updated_at` timestamp NULL DEFAULT NULL,
+--   PRIMARY KEY (`id`),
+--   UNIQUE KEY `uq_dropdownTable_ordinal_key` (`ordinal`,`key`)
+-- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- ---------------------------------------------------------------------------------------------
+
 
 -- Table to store media files associated with various models (e.g., users, posts)
 CREATE TABLE IF NOT EXISTS `sys_media` (
@@ -674,3 +718,6 @@ CREATE TABLE IF NOT EXISTS `std_student_sessions_jnt` (
 -- Update Constraint Name in Table (sch_subject_group_subject_jnt) - 'fk_subjGrpSubj_classSubjStdFmtSubjtypId' to 'fk_subjGrpSubj_classGroup'
 -- updated Foreign Key Reference in Table (sch_subject_group_subject_jnt) - 'sch_subject_study_format_class_subj_types_jnt' to 'sch_class_groups_jnt'
 -- ===========================================================================================================================================
+-- Changed on 2025-12-21
+-- Enhanced `sys_dropdown_table` to accomodate Menu Details (Category,Main Menu, Sub-Menu) for Easy identification. 
+-- Added New table `sys_dropdown_needs` to capture Dropdown Needs for Easy identification. 

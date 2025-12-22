@@ -51,21 +51,21 @@ Database Table: slb_topics
 ┌────────────────────────────────────────────────────────────────────────────────────┐
 │ SYLLABUS MANAGEMENT > LESSONS > TOPICS                                             │
 ├────────────────────────────────────────────────────────────────────────────────────┤
-│   [_____________________________________________________] [Search]  [+ New Topic]   │
+│   [_____________________________________________________] [Search]  [+ New Topic]  │
 ├────────────────────────────────────────────────────────────────────────────────────┤
-│ CLASS: [Dropdown ▼]    SUBJECT: [Dropdown ▼]    LESSON: [Read-only]    [Filter]   │
+│ CLASS: [Dropdown ▼]    SUBJECT: [Dropdown ▼]    LESSON: [Read-only]    [Filter]    │
 │ STATUS: [All ▼]                                                                    │
 ├────────────────────────────────────────────────────────────────────────────────────┤
-│ ☐ │ Topic Name     │ Level │ Ordinal │ Duration │ Children │ Questions │ Actions │
+│ ☐ │ Topic Name     │ Level │ Ordinal │ Duration │ Children │ Questions │ Actions   │
 │────────────────────────────────────────────────────────────────────────────────────│
-│ ☐ │ Grammar Basics │  0    │    1    │ 90 min   │    2     │    12     │ + # -   │
-│ ☐ │ Comprehension  │  0    │    2    │ 120 min  │    1     │     8     │ + # -   │
-│ ☐ │ Writing Skills │  0    │    3    │ 60 min   │    0     │     4     │ + # -   │
-│   │ ...            │ ...   │  ...    │   ...    │   ...    │    ...    │  ...    │
+│ ☐ │ Grammar Basics │  0    │    1    │ 90 min   │    2     │    12     │ + # -     │
+│ ☐ │ Comprehension  │  0    │    2    │ 120 min  │    1     │     8     │ + # -     │
+│ ☐ │ Writing Skills │  0    │    3    │ 60 min   │    0     │     4     │ + # -     │
+│   │ ...            │ ...   │  ...    │   ...    │   ...    │    ...    │  ...      │
 │────────────────────────────────────────────────────────────────────────────────────│
 │ Showing 1-10 of 15 topics                                          [< 1 2 >]       │
-│                                                                                     │
-│ [View Hierarchy] [Export Topics] [⋯ Bulk Actions]                                 │
+│                                                                                    │
+│ [View Hierarchy] [Export Topics] [⋯ Bulk Actions]                                  │
 └────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
