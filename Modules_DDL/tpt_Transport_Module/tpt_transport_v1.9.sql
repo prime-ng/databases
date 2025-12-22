@@ -10,9 +10,34 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- VEHICLE, DRIVER, HELPER, SHIFT
 -- =======================================================================
 
+CREATE TABLE IF NOT EXISTS `tpt_vendor` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `vendor_short_name` VARCHAR(50) NOT NULL,
+    `vendor_name` VARCHAR(100) NOT NULL,
+    `aggrement_start_date` DATE NOT NULL,
+    `aggrement_end_date` DATE NOT NULL,
+    `contact_no` VARCHAR(30) NOT NULL,
+    `contact_person` VARCHAR(100) NOT NULL,
+    `email` VARCHAR(100) NOT NULL,
+    `address` VARCHAR(512) NOT NULL,
+    `is_active` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    UNIQUE KEY `uq_vendor_name` (`vendor_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- conditions:
+    -- 1. vendor_name must be unique.
+    -- 2. Aggrement file will be stored in sys_media_table.
+    -- 3. contact_no must be valid phone number.
+    -- 4. email must be valid email address.
+    -- 5. address must be valid address.
+    -- 6. is_active indicates if vendor is currently active.
+    
+
 CREATE TABLE IF NOT EXISTS `tpt_vehicle` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `vehicle_no` VARCHAR(20) NOT NULL,
+    `vehicle_no` VARCHAR(20) NOT NULL,              -- Vehicle number(Vehicle Identification Number (VIN)/Chassis Number: A unique 17-character code stamped on the vehicle's chassis)
     `registration_no` VARCHAR(30) NOT NULL,         -- Unique govt registration number
     `model` VARCHAR(50),                            -- Vehicle model
     `manufacturer` VARCHAR(50),                     -- Vehicle manufacturer 
@@ -21,16 +46,20 @@ CREATE TABLE IF NOT EXISTS `tpt_vehicle` (
     `capacity` INT UNSIGNED NOT NULL DEFAULT 40,    -- Seating capacity
     `max_capacity` INT UNSIGNED NOT NULL DEFAULT 40, -- Maximum allowed capacity including standing
     `ownership_type` VARCHAR(20) NOT NULL,          -- fk to sys_dropdown_table ('Owned','Leased','Rented')
+    `vendor_id` BIGINT UNSIGNED NOT NULL,            -- fk to tpt_vendor
     `fitness_valid_upto` DATE,                      -- Fitness certificate expiry date
     `insurance_valid_upto` DATE,                    -- Insurance expiry date
     `pollution_valid_upto` DATE,                    -- Pollution certificate expiry date
+    `vehicle_emission_class` VARCHAR(20),           -- Vehicle emission class e.g. 'BS IV', 'BS V', 'BS VI'
+    `fire_extinguisher_valid_upto` DATE,            -- Fire extinguisher expiry date
     `gps_device_id` VARCHAR(50),                    -- Installed GPS device identifier
     `is_active` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at` TIMESTAMP NULL DEFAULT NULL,
     UNIQUE KEY `uq_vehicle_vehicleNo` (`vehicle_no`),
-    UNIQUE KEY `uq_vehicle_registration_no` (`registration_no`)
+    UNIQUE KEY `uq_vehicle_registration_no` (`registration_no`),
+    CONSTRAINT `fk_vehicle_vendor` FOREIGN KEY (`vendor_id`) REFERENCES `tpt_vendor`(`id`) ON DELETE CASCADE    
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 -- Conditions:
     -- 1. vehicle_no and registration_no must be unique.
@@ -41,6 +70,30 @@ CREATE TABLE IF NOT EXISTS `tpt_vehicle` (
     -- 6. deleted_at is for soft delete.
     -- 7. new Variable in Table 'sch_settings' named 'Allow_extra_student_in_vehicale_beyond_capacity' to indicate if school allow extra students beyond vehicle capacity.
     -- 8. App logic to enforce capacity checks during student allocation based on 'Allow_extra_student_in_vehicale_beyond_capacity' setting.
+
+CREATE TABLE IF NOT EXISTS `tpt_vendor_vehicle_jnt` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `vendor_id` BIGINT UNSIGNED NOT NULL,
+    `vehicle_id` BIGINT UNSIGNED NOT NULL,
+    `aggrement_start_date` DATE NOT NULL,
+    `aggrement_end_date` DATE NOT NULL,
+--    `aggrement_file` VARCHAR(255) NOT NULL,
+    `charge_type` VARCHAR(20) NOT NULL DEFAULT 'Fixed', -- 'Fixed', 'Km_Basis', 'Hybrid'
+    `monthly_fixed_charge` DECIMAL(10, 2) DEFAULT 0.00,
+    `rate_per_km` DECIMAL(10, 2) DEFAULT 0.00,
+    `rate_per_month` DECIMAL(10, 2) DEFAULT 0.00,
+    `is_active` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    CONSTRAINT `fk_vendor_vehicle_jnt_vendor` FOREIGN KEY (`vendor_id`) REFERENCES `tpt_vendor`(`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_vendor_vehicle_jnt_vehicle` FOREIGN KEY (`vehicle_id`) REFERENCES `tpt_vehicle`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+ 
+
+-- =======================================================================
+-- PERSONNEL (Transport Staff)
+-- =======================================================================
 
 CREATE TABLE IF NOT EXISTS `tpt_personnel` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -56,6 +109,7 @@ CREATE TABLE IF NOT EXISTS `tpt_personnel` (
     `license_valid_upto` DATE DEFAULT NULL,                 -- License expiry date
     `assigned_vehicle_id` BIGINT UNSIGNED DEFAULT NULL,     -- fk to tpt_vehicle
     `driving_exp_months` SMALLINT UNSIGNED DEFAULT NULL,    -- Total driving experience in months
+    `police_verification_done` TINYINT(1) NOT NULL DEFAULT 0,     -- Police verification done or not
     `address` VARCHAR(512) DEFAULT NULL,
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -724,7 +778,16 @@ Create Table if not EXISTS `tpt_daily_vehicle_inspection_log` (
     `lights_condition_ok` TINYINT(1) NOT NULL DEFAULT 0,
     `brakes_condition_ok` TINYINT(1) NOT NULL DEFAULT 0,
     `engine_condition_ok` TINYINT(1) NOT NULL DEFAULT 0,
-    `battery_condition_ok` TINYINT(1) NOT NULL DEFAULT 0,    
+    `battery_condition_ok` TINYINT(1) NOT NULL DEFAULT 0,
+    `fire_extinguisher_condition_ok` TINYINT(1) NOT NULL DEFAULT 0,
+    `first_aid_kit_condition_ok` TINYINT(1) NOT NULL DEFAULT 0,
+    `seat_belts_condition_ok` TINYINT(1) NOT NULL DEFAULT 0,
+    `headlights_condition_ok` TINYINT(1) NOT NULL DEFAULT 0,
+    `tailights_condition_ok` TINYINT(1) NOT NULL DEFAULT 0,
+    `wipers_condition_ok` TINYINT(1) NOT NULL DEFAULT 0,
+    `mirrors_condition_ok` TINYINT(1) NOT NULL DEFAULT 0,
+    `steering_wheel_condition_ok` TINYINT(1) NOT NULL DEFAULT 0,
+    `emergency_tools_condition_ok` TINYINT(1) NOT NULL DEFAULT 0,
     `cleanliness_ok` TINYINT(1) NOT NULL DEFAULT 0,
     `any_issues_found` TINYINT(1) NOT NULL DEFAULT 0,
     `issues_description` VARCHAR(512) DEFAULT NULL,
@@ -739,6 +802,9 @@ Create Table if not EXISTS `tpt_daily_vehicle_inspection_log` (
     CONSTRAINT `fk_dvil_driver` FOREIGN KEY (`driver_id`) REFERENCES `tpt_personnel`(`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_dvil_inspectedBy` FOREIGN KEY (`inspected_by`) REFERENCES `sys_users`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Conditions:
+-- 1. Approval will be done using "Action" Button
+-- 2. Variable "tpt_vehicle_inspection_approved_by" in 'sch_settings' table will be used to store the Role ID of the persons who can approve the daily vehicle inspection logs  (Multiple Role IDs can be separated by comma)
 
 Create Table if not EXISTS `tpt_vehicle_service_log` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -868,3 +934,10 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- Alter table 'tpt_live_trip' to add some columns 'reaching_time', 'leaving_time', 'emergency_flag', 'emergency_time', 'emergency_remarks'
 -- Reason: To track live status of trips including current stop, ETA, and emergency situations.
 -- -----------------------------------------------------------------------------------------------------------------------------
+Changes in v1.8:
+1. Add column 'police_verification_done' to 'tpt_driver' table to track if police verification is done or not.
+2. Need to capture Police Verification Certificate & Police Verification Report in sys_media table.
+3. Column 'vehicle_no' to 'tpt_vehicle' table to store Vehicle Identification Number (VIN)/Chassis Number: A unique 17-character code stamped on the vehicle's chassis.
+4. Add column 'fire_extinguisher_valid_upto' to 'tpt_vehicle' table to store Fire Extinguisher Expiry Date.
+5. Add column 'police_verification_done' to 'tpt_personnel' table to store whether Police Verification is done or not.
+
