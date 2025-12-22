@@ -1,0 +1,138 @@
+
+
+
+
+Prompt: 
+
+I need you to act as a Principal Systems Architect to refine and expand my School ERP Syllabus & Exam Management module. I am using PHP (Laravel) + MySQL.
+
+1. Hierarchy Refinement: Review my attached schema (databases/Modules_DDL/syl_Syllabus_Module/sch_syllabus_ddl_v1.1.sql). I need a robust hierarchical structure: Class -> Subject -> Lesson -> Topic -> Sub-topic -> Mini Topic -> Sub-Mini Topic -> Micro Topic -> Sub-Micro Topic.
+
+  - Requirement: Implement this using a recursive relationship or a 'Materialized Path' approach to allow for unlimited nesting if needed.
+  - Analytics Hook: Ensure each level has a unique identifier for performance tracking.
+  - Topics will be allignwith competencies & sub-competencies.
+
+2. NEP 2020 & Question Bank: Design a questions table that strictly follows NEP 2020 guidelines. Every question must be categorized by:
+
+  - Bloom’s Taxonomy: (Remember, Understand, Apply, Analyze, Evaluate, Create).
+  - Cognitive Level: (Lower Order, Middle Order, Higher Order).
+  - Question Time Specificity: Estimated time to solve.
+  - Complexity Level: (Easy, Medium, Hard, Challenge).
+  - Question Type: (MCQ, MSQ, Descriptive, Assertion-Reasoning, Case-study based).
+
+3. Assessment Engine: Create the logic for Quizzes, Assessments, and Exams(Online / Offline).
+
+  - Linking: How are these assigned to Sections and Students?
+  - Teacher will update the status of the completion of the teaching on Topics / sub-topics.
+  - Once Teacher will update the status of the completion of the teaching on Topics / sub-topics, the Quiz (whcih will be already created by the Teacher) will be automatically assigned to the Students.
+  - System will also capture the time taken by the Student to complete the Quiz and Status of the Quiz (Completed / Incomplete).
+  - System will capture all small detail of the Student's attempt on the Quiz whcih will be used later for analytics & Prediction.
+  - All type of behavioural data will be captured. Whcih also may used to generate the report of the Student's performance and also can be considered for final result card.
+  - System will capture all diffrent parameter to understand student's confidence level and will also cature which all topics/sub-topics are weak and he need assistance for the same.
+  - System will provide Recommendation to the student as per their performance level ( e.g., 'You need to focus on Algebra, Geometry, and Statistics').
+  - System will provide Text & Video based Recommendation to the student as per their performance level ( e.g., 'You need to focus on Algebra, Geometry, and Statistics').
+  - System will provide Recommendation to the Teacher as per their performance level ( e.g., 'You need to focus on Algebra, Geometry, and Statistics').
+  - Attempt Tracking: Design the student_attempts and student_responses tables to capture granular data for analytics (e.g., time spent per question).
+  - System will also the analysis why Student is strugling in some topics and provide the reason for the same by finding the pattern in the data. e.g. he missed or having low understanding on the base topic (from previous class) because of which he is unable to perform well in the current topic.
+
+Theese are the some key features of the Syllabus & Exam Management Module but there are many more features which are not mentioned here.
+
+4. Deliverables Needed:
+
+    a. Schema Design:
+    - Enhanced DDL: Optimized MySQL SQL code with proper indexes and Foreign Keys.
+    - Data Dictionary: A complete breakdown of every table and column purpose.
+
+    b. UI Designs:
+    - ASCII Screen Designs:
+        - Syllabus Manager: A tree-view interface to manage lessons and topics.
+        - Exam Analytics Dashboard: An ASCII wireframe showing performance insights (e.g., 'Class performance by Bloom's Level').
+
+    c. Report Design: Detail the logic for a 'Student Gap Analysis Report' (identifying which specific topics a student is weak in based on exam performance).
+
+5. Thinking Instructions:
+
+  - Ensure Multi-tenancy (tenant_id) is present in all tables.
+  - Think through the 'Reporting' requirements: How will we efficiently query 'Average score in "Algebra" for Grade 10 across the entire school'? Suggest necessary summary tables or views if the raw data is too heavy.
+
+Please output the schema first, followed by the UI designs and report logic.
+First only provide the schema design. Once I will confirm the schema design that no enhancement is required then only I will ask you to provide the UI designs and report logic.
+
+Save all the files in a folder named "Syllabus_Exam_Module" in the "databases/Working/" directory.
+
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------
+
+Why this prompt is effective for your specific needs:
+Recursive Hierarchy: By mentioning "Materialized Path," you're signaling to the agent to avoid the "N+1" query problem common in Laravel when fetching nested topics (e.g., fetching a sub-topic shouldn't require 5 separate database hits).
+
+NEP 2020 Compliance: It explicitly lists the required metadata for questions, ensuring your database can generate the "Cognitive Reports" required by modern educational boards.
+
+Performance Analytics: Most developers forget the "Analytics" part until the end. This prompt forces the agent to design the attempts table now so you can calculate "Time vs. Accuracy" later.
+
+Next Step in Antigravity
+Once Claude Opus generates this schema:
+
+Run the DDL in your Antigravity terminal to create the tables.
+
+Ask for "Laravel Migration & Models": You can then say: "Great, now generate the Laravel Migrations and the Eloquent Models with all relationships defined for this schema."
+
+-------------------------------------------------------------------------------------------------------------------
+
+I need you to act as a Principal Systems Architect to analyze and refine (if Required) my School ERP Syllabus & Exam Management module. I am using PHP (Laravel) + MySQL.
+
+1. Hierarchy Refinement: Review my attached schema (sch_syllabus_ddl_v1.3.sql).  
+
+  - Requirement: I want to capture the Syllabus in a hierarchical manner. So that if some student is not able to perform well in some topics then we can provide the recommendation to the student as per their performance level ( e.g., 'You need to focus on Algebra, Geometry, and Statistics').
+  - Also I want to capture the Syllabus in a hierarchical manner. So that if some student is not able to perform well in some topics then we can check the base topic (from previous class) because of which he is unable to perform well in the current topic. 
+  - Analytics Hook: Ensure each level has a unique identifier for performance tracking.
+  - Topics will be allignwith competencies & sub-competencies.
+
+2. NEP 2020 & Question Bank: Design a questions table that strictly follows NEP 2020 guidelines. Every question must be categorized by:
+
+  - Bloom’s Taxonomy: (Remember, Understand, Apply, Analyze, Evaluate, Create).
+  - Cognitive Level: (Lower Order, Middle Order, Higher Order).
+  - Question Time Specificity: Estimated time to solve.
+  - Complexity Level: (Easy, Medium, Hard, Challenge).
+  - Question Type: (MCQ, MSQ, Descriptive, Assertion-Reasoning, Case-study based).
+
+3. Assessment Engine: Create the logic for Quizzes, Assessments, and Exams(Online / Offline).
+
+  - Linking: How are these assigned to Sections and Students?
+  - Teacher will update the status of the completion of the teaching on Topics / sub-topics.
+  - Once Teacher will update the status of the completion of the teaching on Topics / sub-topics, the Quiz (whcih will be already created by the Teacher) will be automatically assigned to the Students.
+  - System will also capture the time taken by the Student to complete the Quiz and Status of the Quiz (Completed / Incomplete).
+  - System will capture all small detail of the Student's attempt on the Quiz whcih will be used later for analytics & Prediction.
+  - All type of behavioural data will be captured. Whcih also may used to generate the report of the Student's performance and also can be considered for final result card.
+  - System will capture all diffrent parameter to understand student's confidence level and will also cature which all topics/sub-topics are weak and he need assistance for the same.
+  - System will provide Recommendation to the student as per their performance level ( e.g., 'You need to focus on Algebra, Geometry, and Statistics').
+  - System will provide Text & Video based Recommendation to the student as per their performance level ( e.g., 'You need to focus on Algebra, Geometry, and Statistics').
+  - System will provide Recommendation to the Teacher as per their performance level ( e.g., 'You need to focus on Algebra, Geometry, and Statistics').
+  - Attempt Tracking: Design the student_attempts and student_responses tables to capture granular data for analytics (e.g., time spent per question).
+  - System will also the analysis why Student is strugling in some topics and provide the reason for the same by finding the pattern in the data. e.g. he missed or having low understanding on the base topic (from previous class) because of which he is unable to perform well in the current topic.
+
+Theese are the some key features of the Syllabus & Exam Management Module but there are many more features which are not mentioned here.
+
+4. Deliverables Needed:
+
+    a. Schema Design:
+    - Enhanced DDL: Optimized MySQL SQL code with proper indexes and Foreign Keys.
+    - Data Dictionary: A complete breakdown of every table and column purpose.
+
+    b. UI Designs:
+    - ASCII Screen Designs:
+        - Syllabus Manager: A tree-view interface to manage lessons and topics.
+        - Exam Analytics Dashboard: An ASCII wireframe showing performance insights (e.g., 'Class performance by Bloom's Level').
+
+    c. Report Design: Detail the logic for a 'Student Gap Analysis Report' (identifying which specific topics a student is weak in based on exam performance).
+
+5. Thinking Instructions:
+
+  - Ensure Multi-tenancy (tenant_id) is present in all tables.
+  - Think through the 'Reporting' requirements: How will we efficiently query 'Average score in "Algebra" for Grade 10 across the entire school'? Suggest necessary summary tables or views if the raw data is too heavy.
+
+Please output the schema first, followed by the UI designs and report logic.
+First only provide the schema design. Once I will confirm the schema design that no enhancement is required then only I will ask you to provide the UI designs and report logic.
+
+Save all the files in a folder named "Syllabus_Exam_Module" in the "databases/Working/" directory.

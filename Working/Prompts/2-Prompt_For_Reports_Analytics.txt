@@ -1,0 +1,297 @@
+Below is a production-grade, copy-paste ready MASTER PROMPT designed specifically for your School ERP Transport Module, keeping in mind that:
+
+   - You are building a new-generation ERP from scratch
+   - Transport has Standard + Advanced (Analytics & Prediction) layers
+   - You will provide two SQL files:
+     - tpt_transport_work.sql → Final Transport Module tables
+     - tenant_db.sql → All other already-built ERP tables
+
+You want: 
+
+   - Exhaustive list of Reports
+   - Advanced Analytics & Predictive Insights
+   - Data feasibility check
+   - New table recommendations (only if truly required)
+Enterprise-level output suitable for FRD / Analytics Design Doc
+
+This prompt is tuned for GPT-4.1 Mini / GPT-4o Mini and similar reasoning-capable models.
+
+✅ MASTER PROMPT — Transport Reports & Advanced Analytics Designer
+
+--------------------------------------------------------------------------------------------------------------------------------------------------
+
+You are a Senior Data Architect, Transport Operations Analyst, and AI Analytics Consultant
+with 15+ years of experience in School ERP systems, Fleet Management, and Predictive Analytics.
+
+I am building a next-generation AI-enabled School ERP from scratch.
+I will provide you with TWO SQL files:
+
+1) tpt_transport_work.sql
+   → This contains the FINAL and COMPLETE database schema for the Transport Module
+     (routes, stops, vehicles, drivers, attendants, student allocation, attendance,
+      fuel, maintenance, GPS/logs if any, fees, trips, schedules, etc.)
+
+2) tenant_db.sql
+   → This contains all OTHER ERP tables already developed or under development
+     (students, parents, staff, sessions, classes, sections, finance, attendance,
+      HR, geography, holidays, calendar, permissions, etc.)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+YOUR OBJECTIVE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Analyze BOTH SQL files deeply and design an ENTERPRISE-GRADE "Transport Reports & Advanced Analytics Framework".
+
+You must base everything STRICTLY on:
+✔ data that already exists
+✔ relationships across transport + other ERP modules
+✔ real operational use-cases of school transport departments
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DELIVERABLES (MANDATORY)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------
+SECTION 1 — DATA UNDERSTANDING
+------------------------------------
+1. Identify all major Transport data domains:
+   - Fleet & Vehicles
+   - Routes & Stops
+   - Students & Staff allocation
+   - Driver / Attendant operations
+   - Attendance (student & staff)
+   - Trips, schedules, shifts
+   - Fuel, maintenance, breakdowns
+   - Transport fees & billing linkage
+   - GPS / distance / time logs (if present)
+
+2. Identify cross-module data dependencies from tenant_db.sql
+   (students, staff, sessions, calendar, finance, geography, etc.)
+
+------------------------------------
+SECTION 2 — STANDARD OPERATIONAL REPORTS
+------------------------------------
+Create a COMPLETE list of **Standard Transport Reports**.
+
+For EACH report provide:
+- Report Name
+- Report Category
+- Primary Tables Used
+- Key Filters (date, route, vehicle, session, class, stop, etc.)
+- Output Columns
+- Frequency (Daily / Monthly / On-Demand)
+- Intended User Role (Transport Head, Driver, Helper, Admin, Accountant, Principal, Teacher, Student, Parents)
+- What all permissions those roles have from list of permissions (View, Add, Edit, Delete, Print, Export, Import)
+
+
+Examples (but do NOT limit yourself to these):
+- Route-wise Student Allocation
+- Vehicle Occupancy Report
+- Driver Attendance Report
+- Stop-wise Pickup List
+- Transport Fee Collection vs Allocation
+- Vehicle Utilization Summary
+- Maintenance Due Report
+
+------------------------------------
+SECTION 3 — ADVANCED ANALYTICS & KPI DASHBOARDS
+------------------------------------
+Design **Advanced Analytics & KPI Metrics**.
+
+For EACH metric or dashboard:
+- Metric / Insight Name
+- Business Question it Answers
+- Calculation Logic (conceptual)
+- Tables & Fields Used
+- Visualization Type (chart, heatmap, trend, KPI tile)
+- Decision Enabled
+
+Cover areas like:
+- Route efficiency
+- Vehicle under-utilization
+- Driver performance & reliability
+- Attendance irregularities
+- Cost per student / per route
+- Fuel efficiency (if data exists)
+- Maintenance cost trends
+- Posibility of Leakage in the system
+
+------------------------------------
+SECTION 4 — PREDICTIVE & AI-DRIVEN ANALYTICS
+------------------------------------
+Design **Predictive / AI-ready analytics**, such as:
+- Route demand forecasting
+- Route Suggestion to make any Route more Efficient / Profitable
+- Vehicle capacity forecasting
+- Driver absenteeism risk
+- Breakdown probability
+- Transport cost prediction per session
+- Student transport churn (opt-in / opt-out risk)
+
+For EACH prediction:
+- Prediction Objective
+- Required Historical Data
+- Features involved
+- ML readiness level (Low / Medium / High)
+- Whether current schema is sufficient (Yes/No)
+
+------------------------------------
+SECTION 5 — GAP ANALYSIS & NEW TABLE SUGGESTIONS
+------------------------------------
+ONLY if required, suggest **new tables or fields**.
+
+For each suggestion:
+- Why existing data is insufficient
+- New Table Name
+- Columns with data types
+- FK relationships
+- Whether it is:
+  - Mandatory
+  - Optional (Advanced Analytics only)
+  - Phase-2 enhancement
+
+DO NOT suggest tables unless there is a strong analytical justification.
+
+------------------------------------
+SECTION 6 — REPORT ↔ ROLE MAPPING
+------------------------------------
+Map each Report / Dashboard to:
+- Transport Head
+- School Admin
+- Principal
+- Accountant
+- Management
+
+------------------------------------
+SECTION 7 — FUTURE-READY ANALYTICS ARCHITECTURE
+------------------------------------
+Propose:
+- Star-schema or reporting views (if needed)
+- Pre-aggregated summary tables (if helpful)
+- Real-time vs batch analytics split
+- AI/ML data pipeline readiness
+
+------------------------------------
+SECTION 8 — FINAL SUMMARY
+------------------------------------
+Provide:
+- Total number of Standard Reports
+- Total number of Advanced Analytics
+- Total number of Predictive Insights
+- Whether current schema is:
+  - Fully sufficient
+  - Sufficient with minor additions
+  - Needs structural enhancement
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+IMPORTANT CONSTRAINTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✔ Do NOT assume imaginary columns
+✔ Do NOT redesign existing tables
+✔ Base everything on actual schema
+✔ Be explicit, structured, and enterprise-ready
+✔ Use professional ERP terminology
+✔ Output should be suitable for:
+  - FRD
+  - Analytics Design Document
+  - BI Dashboard Planning
+
+When ready, wait for me to upload:
+1) tpt_transport_work.sql
+2) tenant_db.sql
+
+
+--------------------------------------------------------------------------------------------------------------------------------------------------
+
+🎯 Why this prompt will work extremely well for you
+  - Matches your ERP-architect mindset
+  - Forces schema-driven analytics (no hallucination)
+  - Produces actionable reports + AI roadmap
+  - Separates Standard vs Advanced vs Predictive
+  - Identifies only necessary DB changes
+  - Output can be directly used in:
+    - FRD
+    - SRS
+    - BI dashboard planning
+    - Client demos
+
+If you want, next I can:
+  - Create separate prompts for:
+    - Only Predictive Analytics
+    - Only Management Dashboards
+    - Only SQL View / Materialized View generation
+  - Convert output into Excel / PPT / FRD template
+  - Align analytics with NEP-2020 & CBSE compliance
+
+Just tell me 👍
+
+
+
+
+
+==================================================================================================================================================
+Promt for Antigrevity Chat Agent
+--------------------------------
+
+
+I am developing the Transport Module for a School ERP using PHP 8.x + Laravel 11 and MySQL.
+
+Context Files Provided:
+  - @tpt_transport_v1.8.sql: Contains schema for vehicles, routes, drivers, and fuel.
+  - @tenant_db.sql: Contains core school data (students, classes, guardians, and multi-tenant IDs).
+  - @Report_from_AI.txt: The detailed logic for each required report.
+
+Task: Act as a Principal Laravel Architect. Analyze the provided DDLs and the requirements document to generate a complete reporting system. For each report, follow these implementation steps:
+
+
+
+
+
+Thinking Step: > - Examine the MySQL DDLs. If there are missing indexes required for high-performance reporting (e.g., on date columns or vehicle_id), suggest a Laravel Migration to add them.
+
+Output Structure:
+
+DELIVERABLE — Report Design Document (sections per report)
+  1. Overview — scope, responsibilities, owners, cross-module interactions.
+  2. Screen Layouts — list of screens with Report Filters, and with purpose (Report, Print, PDF).
+  3. Data Models — ER diagram in ASCII + table-to-field mapping and rationales.
+  4. User Workflows — step-by-step happy path + alternatives + error handling for each key workflow.
+  5. Visual Design — component list (header, table, forms, filters) and spacing/layout guidelines; include accessibility notes.
+  6. Accessibility — WCAG AA checklist items for each screen; keyboard flows and ARIA roles.
+  7. Testing — unit, integration, E2E, contract tests, security tests; provide sample test-cases and test-data.
+  8. Deployment/Runbook — configuration, environment variables, startup sequence, backup and restore steps.
+ 10. Future Enhancements — 6 short actionable ideas, with complexity tags (low/med/high).
+ 11. Include Button in Visual Design to generate PDF and Print.
+
+Apart from all above including other details, which you find usefull to provide to developer to develop the reports.
+
+Save All output in resources/views/reports/transport
+
+
+
+----------------------------------------------------------------------------------------------------------------------
+
+Save all Backend logic in app/Services/Transport and app/Http/Controllers/Api.
+
+Save views in resources/views/reports/transport.
+
+Create a routes/api.php or web.php snippet for these new endpoints.
+
+Start by outlining the schema relationships you see between the Transport DDL and the Tenant DDL to confirm your understanding."
+
+
+
+Eloquent & Logic: > 
+  - Write a dedicated Service Class (App\Services\Transport\ReportService) to handle the business logic.
+  - Use Laravel Query Builder or Eloquent (with eager loading) for data retrieval.
+  - Ensure every query is scoped by tenant_id to maintain multi-tenancy security.
+
+API/Controller: > 
+  - Create a TransportReportController with methods for each report.
+  - Use API Resources to format the JSON output for the frontend.
+
+Frontend (Blade/Livewire/Vue): > 
+  - Provide a Laravel Blade view using Tailwind CSS.
+
+  Implement a 'Print/PDF' layout using a library like barryvdh/laravel-dompdf logic.

@@ -1,5 +1,5 @@
 -- =====================================================================
--- SYLLABUS & EXAM MANAGEMENT MODULE - ENHANCED VERSION 2.0
+-- SYLLABUS & EXAM MANAGEMENT MODULE - ENHANCED VERSION 1.2
 -- FILE 1: CORE HIERARCHY STRUCTURE (Materialized Path)
 -- =====================================================================
 -- 
@@ -21,14 +21,14 @@ CREATE TABLE IF NOT EXISTS `slb_lessons` (
   `academic_session_id` BIGINT UNSIGNED NOT NULL, -- FK to sch_org_academic_sessions_jnt
   `class_id` INT UNSIGNED NOT NULL,               -- FK to sch_classes
   `subject_id` BIGINT UNSIGNED NOT NULL,          -- FK to sch_subjects
-  `code` VARCHAR(20) NOT NULL,                    -- e.g., '9TH_SCI_L01' (Auto-generated)
+  `code` VARCHAR(20) NOT NULL,                    -- e.g., '9TH_SCI_L01' (Auto-generated) It will be combination of class code, subject code and lesson code 
   `name` VARCHAR(150) NOT NULL,                   -- e.g., 'Chapter 1: Matter in Our Surroundings'
   `short_name` VARCHAR(50) DEFAULT NULL,          -- e.g., 'Matter Around Us'
   `ordinal` SMALLINT UNSIGNED NOT NULL,           -- Sequence order within subject
   `description` VARCHAR(255) DEFAULT NULL,
   `learning_objectives` JSON DEFAULT NULL,        -- Array of learning objectives e.g. [{"objective": "Objective 1"}, {"objective": "Objective 2"}]
   `prerequisites` JSON DEFAULT NULL,              -- Array of prerequisite lesson IDs e.g. [1, 2, 3]
-  `estimated_periods` SMALLINT UNSIGNED DEFAULT NULL,  -- No. of periods to complete
+  `estimated_periods` SMALLINT UNSIGNED DEFAULT NULL,  -- No. of periods to complete the Lesson
   `weightage_percent` DECIMAL(5,2) DEFAULT NULL,  -- Weightage in final exam (e.g., 8.5%)
   `nep_alignment` VARCHAR(100) DEFAULT NULL,      -- NEP 2020 reference code e.g. 'NEP_2020_01'
   `resources_json` JSON DEFAULT NULL,             -- [{type, url, title}] e.g. [{"type": "video", "url": "https://example.com/video.mp4", "title": "Video 1"}, {"type": "pdf", "url": "https://example.com/pdf.pdf", "title": "PDF 1"}]
@@ -72,9 +72,8 @@ CREATE TABLE IF NOT EXISTS `slb_topics` (
   `path` VARCHAR(500) NOT NULL,                   -- e.g., '/1/5/23/' (ancestor path)
   `path_names` VARCHAR(2000) DEFAULT NULL,        -- e.g., 'Algebra > Linear Equations > Solving Methods'
   `level` TINYINT UNSIGNED NOT NULL DEFAULT 0,    -- Depth in hierarchy (0=root)
-  `level_name` VARCHAR(50) NOT NULL,              -- 'Topic', 'Sub-topic', 'Mini Topic', etc.
   -- Core topic information
-  `code` VARCHAR(50) NOT NULL,                    -- e.g., '9TH_SCI_L01_TOP01_SUB02_MIN01_SMT02_MIC01_SMT02_NAN01_ULT02'
+  `code` VARCHAR(60) NOT NULL,                    -- e.g., '9TH_SCI_L01_TOP01_SUB02_MIN01_SMT02_MIC01_SMT02_NAN01_ULT02'
   `name` VARCHAR(150) NOT NULL,                   -- e.g., 'Topic 1: Linear Equations'
   `short_name` VARCHAR(50) DEFAULT NULL,          -- e.g., 'Linear Equations'
   `ordinal` SMALLINT UNSIGNED NOT NULL,           -- Order within parent
@@ -83,7 +82,7 @@ CREATE TABLE IF NOT EXISTS `slb_topics` (
   `duration_minutes` INT UNSIGNED DEFAULT NULL,   -- Estimated teaching time
   `learning_objectives` JSON DEFAULT NULL,        -- Array of objectives
   `keywords` JSON DEFAULT NULL,                   -- Search keywords array
-  `prerequisite_topic_ids` JSON DEFAULT NULL,     -- Dependency tracking
+  `prerequisite_topic_ids` JSON DEFAULT NULL,     -- Dependency tracking 
   -- Analytics identifiers
   `analytics_code` VARCHAR(60) NOT NULL,          -- Unique code for tracking e.g. '9TH_SCI_L01_TOP01_SUB02_MIN01_SMT02_MIC01_SMT02_NAN01_ULT02'
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
@@ -96,8 +95,6 @@ CREATE TABLE IF NOT EXISTS `slb_topics` (
   UNIQUE KEY `uq_topic_code` (`code`),
   UNIQUE KEY `uq_topic_parent_ordinal` (`lesson_id`, `parent_id`, `ordinal`),
   KEY `idx_topic_parent` (`parent_id`),
-  KEY `idx_topic_lesson` (`lesson_id`),
-  KEY `idx_topic_path` (`path`(255)),
   KEY `idx_topic_level` (`level`),
   KEY `idx_topic_class_subject` (`class_id`, `subject_id`),
   CONSTRAINT `fk_topic_parent` FOREIGN KEY (`parent_id`) REFERENCES `syl_topics` (`id`) ON DELETE CASCADE,

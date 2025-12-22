@@ -1,0 +1,154 @@
+Prompt: 
+
+
+I need you to act as a Principal Systems Architect to refine and expand my School ERP Complaint & Grievance Management module. I am using PHP (Laravel) + MySQL.
+
+1. Complaint & Grievance Management: Review my attached schema (databases/Modules_DDL/cmp_Complaint_Module/cmp_complaint_ddl_v1.sql). I need a detailed database structure to manage complaints and grievances effectively.
+
+  - Requirement: Implement a 
+  - Analytics Hook: Ensure each level has a unique identifier for performance tracking.
+  - Complaints will be allignwith competencies & sub-competencies.
+
+2. NEP 2020 & Question Bank: Design a questions table that strictly follows NEP 2020 guidelines. Every question must be categorized by:
+
+  - Bloom’s Taxonomy: (Remember, Understand, Apply, Analyze, Evaluate, Create).
+  - Cognitive Level: (Lower Order, Middle Order, Higher Order).
+  - Question Time Specificity: Estimated time to solve.
+  - Complexity Level: (Easy, Medium, Hard, Challenge).
+  - Question Type: (MCQ, MSQ, Descriptive, Assertion-Reasoning, Case-study based).
+
+3. Assessment Engine: Create the logic for Quizzes, Assessments, and Exams(Online / Offline).
+
+  - Linking: How are these assigned to Sections and Students?
+  - Teacher will update the status of the completion of the teaching on Topics / sub-topics.
+  - Once Teacher will update the status of the completion of the teaching on Topics / sub-topics, the Quiz (whcih will be already created by the Teacher) will be automatically assigned to the Students.
+  - System will also capture the time taken by the Student to complete the Quiz and Status of the Quiz (Completed / Incomplete).
+  - System will capture all small detail of the Student's attempt on the Quiz whcih will be used later for analytics & Prediction.
+  - All type of behavioural data will be captured. Whcih also may used to generate the report of the Student's performance and also can be considered for final result card.
+  - System will capture all diffrent parameter to understand student's confidence level and will also cature which all topics/sub-topics are weak and he need assistance for the same.
+  - System will provide Recommendation to the student as per their performance level ( e.g., 'You need to focus on Algebra, Geometry, and Statistics').
+  - System will provide Text & Video based Recommendation to the student as per their performance level ( e.g., 'You need to focus on Algebra, Geometry, and Statistics').
+  - System will provide Recommendation to the Teacher as per their performance level ( e.g., 'You need to focus on Algebra, Geometry, and Statistics').
+  - Attempt Tracking: Design the student_attempts and student_responses tables to capture granular data for analytics (e.g., time spent per question).
+  - System will also the analysis why Student is strugling in some topics and provide the reason for the same by finding the pattern in the data. e.g. he missed or having low understanding on the base topic (from previous class) because of which he is unable to perform well in the current topic.
+
+Theese are the some key features of the Syllabus & Exam Management Module but there are many more features which are not mentioned here.
+
+4. Deliverables Needed:
+
+    a. Schema Design:
+    - Enhanced DDL: Optimized MySQL SQL code with proper indexes and Foreign Keys.
+    - Data Dictionary: A complete breakdown of every table and column purpose.
+
+    b. UI Designs:
+    - ASCII Screen Designs:
+        - Syllabus Manager: A tree-view interface to manage lessons and topics.
+        - Exam Analytics Dashboard: An ASCII wireframe showing performance insights (e.g., 'Class performance by Bloom's Level').
+
+    c. Report Design: Detail the logic for a 'Student Gap Analysis Report' (identifying which specific topics a student is weak in based on exam performance).
+
+5. Thinking Instructions:
+
+  - Ensure Multi-tenancy (tenant_id) is present in all tables.
+  - Think through the 'Reporting' requirements: How will we efficiently query 'Average score in "Algebra" for Grade 10 across the entire school'? Suggest necessary summary tables or views if the raw data is too heavy.
+
+Please output the schema first, followed by the UI designs and report logic.
+First only provide the schema design. Once I will confirm the schema design that no enhancement is required then only I will ask you to provide the UI designs and report logic.
+
+Save all the files in a folder named "Syllabus_Exam_Module" in the "databases/Working/" directory.
+
+
+------------------------------------------------------------------------------------------------------------------------------------------
+
+Role: Act as a Senior Software Architect and Product Lead specializing in Educational ERP systems.
+
+Task: Design a comprehensive 'Complaint & Grievance Management Module' for a school which can accomodate all type of complaints and grievances related to all departments and entities.
+
+----------------------------------------------------------------------
+INPUT FILES
+----------------------------------------------------------------------
+I am providing below input files:
+A) **databases/Modules_DDL/cmp_Complaint_Module/cmp_complaint_ddl_v1.sql** — Initial database schema for Complaint & Grievance Management Module
+B) **databases/Screen_Design/cmp_Complaint_Module/cmp_1-Dashboards.md** — Dashboard design for Complaint & Grievance Management Module  
+C) **databases/Screen_Design/cmp_Complaint_Module/cmp_2-Escalation&SLA_Rules.md** — Escalation & SLA rules for Complaint & Grievance Management Module
+D) **databases/Screen_Design/cmp_Complaint_Module/cmp_3-RBAC_&_Permission_Matrix.md** — RBAC & Permission Matrix for Complaint & Grievance Management Module
+E) **databases/Screen_Design/cmp_Complaint_Module/cmp_4-AI-Based_Complaint_Analytics.md** — AI-Based Complaint Analytics for Complaint & Grievance Management Module
+F) **databases/Working/Prompts/Scr-Sample.md** — Screen Design Sample for Complaint & Grievance Management Module
+
+Other than Above you can read .sql files from "databases/master" directory to understand the database structure and transport Module file from "databases/Modules_DDL/tpt_Transport_Module/tpt_transport_v1.9.sql".
+
+The output must include the following components:
+
+1. Database & Data Model
+Finalized DDL: Provide the complete, optimized SQL script based on my initial version.
+
+Data Context: Explain the relationship between tables, indexing strategies, and data integrity constraints.
+
+2. The 7-Role Permission Matrix
+Create a detailed table mapping permissions (Create, View, Edit, Delete, Resolve, Escalate, Report) for:
+
+SuperAdmin, Management, Principal, School Admin, Teacher, Transport Manager, Transport Staff, Parent, Student.
+
+3. Screen Design Document (10 Comprehensive Sections)
+Provide a detailed breakdown for:
+
+Overview: Objectives and Scope.
+
+Data Context: How data flows from the UI to the DB.
+
+Screen Layouts: Logical layout descriptions for Web and Mobile.
+
+Data Models: Field-level definitions for each screen.
+
+User Workflows: Step-by-step logic for filing, tracking, and resolving a grievance.
+
+Visual Design: UI/UX guidelines (Color palettes, Typography, Component styles).
+
+Accessibility: WCAG 2.1 compliance strategy.
+
+Testing: Unit, Integration, and UAT checklists.
+
+Future Enhancements: Scalability paths.
+
+Technical Constraints: Browser/OS compatibility.
+
+4. UI/UX Mockups (ASCII Diagrams)
+Provide ASCII mockups for the following screens:
+
+Parent/Student Submission Form.
+
+Principal/Management Admin Tracking Board.
+
+Resolution/Communication Thread.
+
+5. Role-Specific Dashboards & Reports
+Dashboards: Tailored views for all 7 roles (e.g., Management sees trends; Teachers see assigned tasks).
+
+Report Designs: Structure for PDF/Excel exports (e.g., "Average Resolution Time," "Category-wise Grievance Volume").
+
+6. AI-Based Analytical Data Insights
+Propose features for:
+
+Sentiment Analysis: Detecting the urgency/tone of a complaint.
+
+Predictive Escalation: Alerting the Principal before a grievance exceeds the SLA.
+
+Categorization: Automatically tagging complaints using NLP.
+
+Save all the files in "databases/Screen_Design/cmp_Complaint_Module" folder.
+
+-----------------------------------------
+
+Why this prompt works:
+Contextual Guardrails: By mentioning the DDL file immediately, you prevent the AI from hallucinating a different database structure.
+
+Role-Specific Logic: It forces the AI to differentiate between a "Parent" user (who needs simplicity) and a "SuperAdmin" (who needs data density).
+
+Structured Output: By listing the 10 sections explicitly, the AI is less likely to skip the "boring" parts like Accessibility or Testing.
+
+A tip for your workflow:
+If the AI provides a response that is too short, simply reply: "Continue with the remaining sections in the same level of detail."
+
+
+7. API Documentation
+REST API Contracts: Provide JSON request/response examples for the core endpoints (Submit, Status Update, Assign).
