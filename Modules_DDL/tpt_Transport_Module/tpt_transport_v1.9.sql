@@ -1,6 +1,6 @@
 -- =======================================================================
 -- TRANSPORT MODULE ENHANCED (working) for MySQL 8.x
--- Strategy: Took backup from v1.4, verify, then Enhance.
+-- Strategy: Took backup from v1.9, verify, then Enhance.
 -- =======================================================================
 
 SET NAMES utf8mb4;
@@ -14,8 +14,8 @@ CREATE TABLE IF NOT EXISTS `tpt_vendor` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `vendor_short_name` VARCHAR(50) NOT NULL,
     `vendor_name` VARCHAR(100) NOT NULL,
-    `aggrement_start_date` DATE NOT NULL,
-    `aggrement_end_date` DATE NOT NULL,
+    `agreement_start_date` DATE NOT NULL,
+    `agreement_end_date` DATE NOT NULL,
     `contact_no` VARCHAR(30) NOT NULL,
     `contact_person` VARCHAR(100) NOT NULL,
     `email` VARCHAR(100) NOT NULL,
@@ -28,12 +28,11 @@ CREATE TABLE IF NOT EXISTS `tpt_vendor` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 -- conditions:
     -- 1. vendor_name must be unique.
-    -- 2. Aggrement file will be stored in sys_media_table.
+    -- 2. Agreement file will be stored in sys_media_table.
     -- 3. contact_no must be valid phone number.
     -- 4. email must be valid email address.
     -- 5. address must be valid address.
     -- 6. is_active indicates if vendor is currently active.
-    
 
 CREATE TABLE IF NOT EXISTS `tpt_vehicle` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
