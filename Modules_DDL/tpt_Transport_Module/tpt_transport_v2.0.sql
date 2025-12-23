@@ -52,14 +52,14 @@ CREATE TABLE IF NOT EXISTS `tpt_vehicle` (
     `vehicle_emission_class_id` BIGINT UNSIGNED NOT NULL,  -- fk to sys_dropdown_table ('BS IV', 'BS V', 'BS VI')
     `fire_extinguisher_valid_upto` DATE NOT NULL,    -- Fire extinguisher expiry date
     `gps_device_id` VARCHAR(50),                    -- Installed GPS device identifier
-    `vehicle_photo_upload` tinyint(1) unsigned not null default 0,
-    `registration_cert_upload` tinyint(1) unsigned not null default 0,
-    `fitness_cert_upload` tinyint(1) unsigned not null default 0,
-    `insurance_cert_upload` tinyint(1) unsigned not null default 0,
-    `pollution_cert_upload` tinyint(1) unsigned not null default 0,
-    `vehicle_emission_cert_upload` tinyint(1) unsigned not null default 0,
-    `fire_extinguisher_cert_upload` tinyint(1) unsigned not null default 0,
-    `gps_device_cert_upload` tinyint(1) unsigned not null default 0,
+    `vehicle_photo_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (vehicle photo will be uploaded in sys.media)
+    `registration_cert_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (registration certificate will be uploaded in sys.media)
+    `fitness_cert_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (fitness certificate will be uploaded in sys.media)
+    `insurance_cert_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (insurance certificate will be uploaded in sys.media)
+    `pollution_cert_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (pollution certificate will be uploaded in sys.media)
+    `vehicle_emission_cert_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (vehicle emission certificate will be uploaded in sys.media)
+    `fire_extinguisher_cert_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (fire extinguisher certificate will be uploaded in sys.media)
+    `gps_device_cert_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (gps device certificate will be uploaded in sys.media)
     `is_active` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -83,10 +83,18 @@ CREATE TABLE IF NOT EXISTS `tpt_vendor_vehicle_agreement` (
     `agreement_ref_no` VARCHAR(50) DEFAULT NULL,    -- Reference number of the physical agreement
     `agreement_start_date` DATE NOT NULL,
     `agreement_end_date` DATE NOT NULL,
+    `monthly_billing_date` DATE NOT NULL,  -- Billing date of every month
     `charge_type` VARCHAR(20) NOT NULL DEFAULT 'Fixed', -- 'Fixed', 'Km_Basis', 'Hybrid'
     `monthly_fixed_charge` DECIMAL(10, 2) DEFAULT 0.00, -- Applicable if charge_type is Fixed or Hybrid
     `rate_per_km` DECIMAL(10, 2) DEFAULT 0.00,          -- Applicable if charge_type is Km_Basis or Hybrid
     `min_km_guarantee` DECIMAL(10, 2) DEFAULT 0.00,     -- Minimum Km guaranteed per month (if applicable)
+    `tax1_rate` DECIMAL(5, 2) DEFAULT 0.00,            -- Tax 1 rate. (if applicable)
+    `tax2_rate` DECIMAL(5, 2) DEFAULT 0.00,            -- Tax 2 rate. (if applicable)
+    `tax3_rate` DECIMAL(5, 2) DEFAULT 0.00,            -- Tax 3 rate. (if applicable)
+    `tax4_rate` DECIMAL(5, 2) DEFAULT 0.00,            -- Tax 4 rate. (if applicable)
+    `other_charges` DECIMAL(10, 2) DEFAULT 0.00,       -- Other charges. (if applicable)
+    `credit_days` INT DEFAULT 0,                        -- Number of days to credit the payment
+    `agreement_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (agreement will be uploaded in sys.media table)
     `is_active` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -101,7 +109,7 @@ CREATE TABLE IF NOT EXISTS `tpt_vendor_vehicle_agreement` (
 -- =======================================================================
 -- VENDOR BILLING (New in v2.0)
 -- =======================================================================
-CREATE TABLE IF NOT EXISTS `tpt_vendor_monthly_bill_log` (
+CREATE TABLE IF NOT EXISTS `tpt_vendor_monthly_bill` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `vendor_id` BIGINT UNSIGNED NOT NULL,  -- fk to tpt_vendor
     `vehicle_id` BIGINT UNSIGNED NOT NULL, -- fk to tpt_vehicle
@@ -114,9 +122,19 @@ CREATE TABLE IF NOT EXISTS `tpt_vendor_monthly_bill_log` (
     `fixed_charge_amount` DECIMAL(12, 2) DEFAULT 0.00,    -- Applicable if charge_type is Fixed or Hybrid
     `variable_charge_amount` DECIMAL(12, 2) DEFAULT 0.00, -- (total_km_run * rate_per_km)
     `other_charges` DECIMAL(10, 2) DEFAULT 0.00,          -- Penalties, bonuses, etc.
-    `gst_tax_amount` DECIMAL(10, 2) DEFAULT 0.00,
+    `tax1_amount` DECIMAL(10, 2) DEFAULT 0.00,            -- Tax 1 amount. (if applicable)
+    `tax2_amount` DECIMAL(10, 2) DEFAULT 0.00,            -- Tax 2 amount. (if applicable)
+    `tax3_amount` DECIMAL(10, 2) DEFAULT 0.00,            -- Tax 3 amount. (if applicable)
+    `tax4_amount` DECIMAL(10, 2) DEFAULT 0.00,            -- Tax 4 amount. (if applicable)
+    `other_charges_amount` DECIMAL(10, 2) DEFAULT 0.00,   -- Other charges amount. (if applicable)
+    `discount_amount` DECIMAL(10, 2) DEFAULT 0.00,        -- Discount amount. (if applicable)
+    `penalty_amount` DECIMAL(10, 2) DEFAULT 0.00,         -- Penalty amount. (if applicable)
+    `other_deductions_amount` DECIMAL(10, 2) DEFAULT 0.00, -- Other deductions amount. (if applicable)
     `total_bill_amount` DECIMAL(12, 2) NOT NULL,
+    `total_paid_amount` DECIMAL(12, 2) DEFAULT 0.00,      -- Total amount paid by the vendor
+    `total_outstanding_amount` DECIMAL(12, 2) DEFAULT 0.00, -- Total outstanding amount
     `vendor_invoice_no` VARCHAR(50) DEFAULT NULL,
+    `due_date` DATE DEFAULT NULL,       -- This is Payment Due date (will be calcultaed by adding credit_days in monthly_billing_date)
     `remarks` VARCHAR(512) DEFAULT NULL,
     `status` BIGINT UNSIGNED NOT NULL DEFAULT 1,  -- FK to sys_dropdown_table e.g. Generated, Approved, Paid, Partial, Cancelled    
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -134,22 +152,39 @@ CREATE TABLE IF NOT EXISTS `tpt_vendor_monthly_bill_log` (
 -- =======================================================================
 -- VENDOR PAYMENTS (New in v2.0)
 -- =======================================================================
-CREATE TABLE IF NOT EXISTS `tpt_vendor_payment_log` (
+CREATE TABLE IF NOT EXISTS `tpt_vendor_bill_payment` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `bill_id` BIGINT UNSIGNED NOT NULL,           -- FK to tpt_vendor_monthly_bill_log
+    `vendor_bill_id` BIGINT UNSIGNED NOT NULL,           -- FK to tpt_vendor_monthly_bill_log
     `payment_date` DATE NOT NULL,
     `amount_paid` DECIMAL(12, 2) NOT NULL,
+    `currency` CHAR(3) NOT NULL DEFAULT 'INR',
     `payment_mode` BIGINT UNSIGNED NOT NULL,      -- FK to sys_dropdown_table (Cheque, Bank Transfer, etc.)
     `transaction_reference` VARCHAR(100) DEFAULT NULL, -- Cheque No, Transaction ID
+    `payment_status` VARCHAR(20) NOT NULL DEFAULT 'SUCCESS',  -- use dropdown table ('INITIATED','SUCCESS','FAILED')
+    `payment_reconciled` tinyint(1) NOT NULL DEFAULT '0',
     `paid_by` BIGINT UNSIGNED DEFAULT NULL,       -- FK to sys_users
     `remarks` VARCHAR(512) DEFAULT NULL,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at` TIMESTAMP NULL DEFAULT NULL,
-    CONSTRAINT `fk_payment_bill` FOREIGN KEY (`bill_id`) REFERENCES `tpt_vendor_monthly_bill_log`(`id`) ON DELETE RESTRICT,
+    CONSTRAINT `fk_payment_vendor_bill` FOREIGN KEY (`vendor_bill_id`) REFERENCES `tpt_vendor_monthly_bill`(`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_payment_paymentMode` FOREIGN KEY (`payment_mode`) REFERENCES `sys_dropdown_table`(`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_payment_paidBy` FOREIGN KEY (`paid_by`) REFERENCES `sys_users`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `tpt_vendor_billing_audit_logs` (
+  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `vendor_bill_id` BIGINT UNSIGNED NOT NULL,        -- fk to (bil_tenant_invoices)
+  `action_date` TIMESTAMP not NULL,
+  `action_type` VARCHAR(20) NOT NULL DEFAULT 'PENDING',  -- use dropdown table ('Not Billed','Bill Generated','Overdue','Notice Sent','Fully Paid')
+  `performed_by` BIGINT UNSIGNED DEFAULT NULL,           -- which user perform the ation
+  `event_info` JSON DEFAULT NULL,
+  `notes` VARCHAR(500) DEFAULT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT `fk_audit_billing` FOREIGN KEY (`vendor_bill_id`) REFERENCES `tpt_vendor_monthly_bill` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_audit_user` FOREIGN KEY (`performed_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 
 -- =======================================================================
 -- PERSONNEL (Transport Staff)
