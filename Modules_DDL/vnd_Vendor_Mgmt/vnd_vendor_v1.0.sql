@@ -14,6 +14,8 @@ CREATE TABLE IF NOT EXISTS `tpt_vendor` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `vendor_short_name` VARCHAR(50) NOT NULL,
     `vendor_name` VARCHAR(100) NOT NULL,
+    `vendor_type_id` BIGINT UNSIGNED NOT NULL,     -- fk to sys_dropdown_table ('TRANSPORT','DRESS','BOOKS','EVENT')
+    `tranport_vendor` TINYINT(1) UNS
     `agreement_start_date` DATE NOT NULL,  -- Agreement start date
     `agreement_end_date` DATE NOT NULL,    -- Agreement end date
     `contact_no` VARCHAR(30) NOT NULL,     -- Contact number
@@ -705,3 +707,4 @@ CREATE TABLE IF NOT EXISTS `tpt_trip_incidents` (
 
 SET FOREIGN_KEY_CHECKS = 1;
 
+-- -------------------------------------------------------------------------------------------------------------------
