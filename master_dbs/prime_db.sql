@@ -17,6 +17,7 @@
 -- hos - Hostel Mgmt
 -- mes - Mess Management
 -- bil - Billing & plans
+-- vnd - Vendor Management
 
 -- Below is a Postfix Abbreviation to identify Join Tables
 -- ------------------------------------------------------------
