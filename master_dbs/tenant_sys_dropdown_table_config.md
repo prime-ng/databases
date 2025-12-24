@@ -113,3 +113,67 @@ Values -
 
 Key - 
 Values - 
+
+### Invoicing screen > biling managment
+Entry in 'sys_dropdown_needs' table
+db_type - prime_db -> bil_tenant_invoices
+filter use 
+column_name - data_type
+value Invoicing Done , Inv. Need To Generate
+
+### Invoicing screen > biling managment
+Entry in 'sys_dropdown_needs' table
+db_type - prime_db -> bil_tenant_invoices
+filter use 
+column_name - status
+Active , Inactive
+
+### Invoicing screen > biling managment
+Entry in 'sys_dropdown_needs' table
+db_type - prime_db -> bil_tenant_invoices
+filter use 
+column_name - invoice_status
+PENDING
+
+### consolidated payment screen > biling managment
+Entry in 'sys_dropdown_needs' table
+db_type - prime_db -> bil_tenant_invoicing_payments
+filter use 
+column_name - payment_mode
+Cash , Bank , Online
+
+
+### consolidated payment screen > biling managment
+Entry in 'sys_dropdown_needs' table
+db_type - prime_db -> bil_tenant_invoicing_payments
+filter use 
+column_name - payment_status
+Pending , Partially Paid , Fully Paid , Overdue , Uncollectible , Void (Not Valid) , In Process , Payment Denied 
+
+### consolidated payment screen > biling managment
+Entry in 'sys_dropdown_needs' table
+db_type - prime_db -> bil_tenant_invoicing_payments
+filter use 
+column_name - payment_status
+Pending , Partially Paid , Fully Paid , Overdue , Uncollectible , Void (Not Valid) , In Process , Payment Denied 
+
+### consolidated payment screen > biling managment
+Entry in 'sys_dropdown_needs' table
+db_type - prime_db -> bil_tenant_invoicing_payments
+filter use 
+column_name - payment_reconciled
+YES , NO
+
+### consolidated payment screen > biling managment
+Entry in 'sys_dropdown_needs' table
+db_type - prime_db -> bil_tenant_invoicing_payments
+filter use 
+column_name - payment_consolidated_status
+INITIATED , SUCCESS , FAILED , REFUNDED , Reconciled Transactions Only , Non-Reconciled Trans. Only
+
+### audit log screen > biling managment
+Entry in 'sys_dropdown_needs' table
+db_type - prime_db -> bil_tenant_invoicing_audit_logs
+filter use 
+column_name - audit_status
+Not Billed , Bill Generated , Overdue , Notice Sent , Partially Paid ,Fully Paid
