@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS `tpt_vehicle` (
     `vehicle_emission_cert_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (vehicle emission certificate will be uploaded in sys.media)
     `fire_extinguisher_cert_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (fire extinguisher certificate will be uploaded in sys.media)
     `gps_device_cert_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (gps device certificate will be uploaded in sys.media)
+    `availability_status` tinyint(1) unsigned not null default 1,  -- 0: Not Available, 1: Available
     `is_active` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -65,6 +66,7 @@ CREATE TABLE IF NOT EXISTS `tpt_personnel` (
     `driving_exp_months` SMALLINT UNSIGNED DEFAULT NULL,
     `police_verification_done` TINYINT(1) NOT NULL DEFAULT 0,
     `address` VARCHAR(512) DEFAULT NULL,
+    `license_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (license will be uploaded in sys.media)
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -441,7 +443,9 @@ CREATE TABLE IF NOT EXISTS `std_student_pay_log` (
 -- FUEL & MAINTENANCE
 -- =======================================================================
 
-CREATE TABLE IF NOT EXISTS `tpt_vehicle_fuel_log` (
+-- Single Screen - 5 tab (Fuel, Inspection, Service Request, Maintenance, Approval)
+
+CREATE TABLE IF NOT EXISTS `tpt_vehicle_fuel` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `vehicle_id` BIGINT UNSIGNED NOT NULL,
     `driver_id` BIGINT UNSIGNED DEFAULT NULL,
@@ -458,14 +462,17 @@ CREATE TABLE IF NOT EXISTS `tpt_vehicle_fuel_log` (
     CONSTRAINT `fk_vfl_vehicle` FOREIGN KEY (`vehicle_id`) REFERENCES `tpt_vehicle`(`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_vfl_driver` FOREIGN KEY (`driver_id`) REFERENCES `tpt_personnel`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Condition:
+-- 1. After Fuel Entry, it need to be approved by the adminAuthorised Personnel.
+-- 2. To make sure the availaibility of Approval to the Authorise Person only, we need to keep Approval on Fuel & Maintenance on a seperate Tab.
 
-Create Table if not EXISTS `tpt_daily_vehicle_inspection_log` (
+Create Table if not EXISTS `tpt_daily_vehicle_inspection` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `vehicle_id` BIGINT UNSIGNED NOT NULL,
     `driver_id` BIGINT UNSIGNED DEFAULT NULL,
     `inspection_date` TIMESTAMP NOT NULL,
     `odometer_reading` BIGINT UNSIGNED DEFAULT NULL,
-    `fuel_level_percentage` DECIMAL(6,2) DEFAULT NULL,
+    `fuel_level_reading` DECIMAL(6,2) DEFAULT NULL,
     `tire_condition_ok` TINYINT(1) NOT NULL DEFAULT 0,
     `lights_condition_ok` TINYINT(1) NOT NULL DEFAULT 0,
     `brakes_condition_ok` TINYINT(1) NOT NULL DEFAULT 0,
@@ -494,38 +501,47 @@ Create Table if not EXISTS `tpt_daily_vehicle_inspection_log` (
     CONSTRAINT `fk_dvil_driver` FOREIGN KEY (`driver_id`) REFERENCES `tpt_personnel`(`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_dvil_inspectedBy` FOREIGN KEY (`inspected_by`) REFERENCES `sys_users`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Condition:
+-- 1. If Inspection is Failed, a new entry will be created in 'tpt_vehicle_service_request' table with available information.
+-- 2. If Inspection is Failed, application will change Status in the "tpt_Vehicle make '`availability_status` to 'Not Available'
 
-Create Table if not EXISTS `tpt_vehicle_service_log` (
+
+
+Create Table if not EXISTS `tpt_vehicle_service_request` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `vehicle_id` BIGINT UNSIGNED NOT NULL, 
-    `driver_id` BIGINT UNSIGNED DEFAULT NULL,
-    `date_from` TIMESTAMP NOT NULL,
-    `date_to` TIMESTAMP NOT NULL,
-    `reason` VARCHAR(512) NOT NULL,
-    `Vehicle_status` BIGINT UNSIGNED DEFAULT NULL,
-    `status` ENUM('Approved','Pending','Rejected') NOT NULL DEFAULT 'Pending',
+    `vehicle_inspection_id` BIGINT UNSIGNED NOT NULL,
+    `request_date` TIMESTAMP NOT NULL,
+    `reason` VARCHAR(512) DEFAULT NULL,  -- Reason can be filled by anyone
+    `Vehicle_status` BIGINT UNSIGNED DEFAULT NULL,  -- fk to sys_dropdown_table ('Due for Service', 'In-Service', 'Service Done')
+    `service_completion_date` TIMESTAMP NULL DEFAULT NULL,
+    `request_approval_status` ENUM('Approved','Pending','Rejected') NOT NULL DEFAULT 'Pending',
     `approved_by` BIGINT UNSIGNED DEFAULT NULL,
     `approved_at` TIMESTAMP NULL DEFAULT NULL,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at` TIMESTAMP NULL DEFAULT NULL,
-    CONSTRAINT `fk_vsl_vehicle` FOREIGN KEY (`vehicle_id`) REFERENCES `tpt_vehicle`(`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_vsl_driver` FOREIGN KEY (`driver_id`) REFERENCES `tpt_personnel`(`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_vsl_vehicleInspection` FOREIGN KEY (`vehicle_inspection_id`) REFERENCES `tpt_daily_vehicle_inspection`(`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_vsl_approvedBy` FOREIGN KEY (`approved_by`) REFERENCES `sys_users`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Condition:
+-- 1. If Inspection is Failed, a new entry will be created in 'tpt_vehicle_service_request' table with available information.
+-- 2. To make sure the availaibility of Approval to the Authorise Person only, we need to keep Approval in a seperate Tab.
+-- 3. user can create a new entry in 'tpt_vehicle_service_request' table as per the need.
+-- 4. Once Request i Approved by Authorised Person, a new entry will be created in 'tpt_vehicle_maintenance' table with available information.
+-- 5. Direct Entry in 'tpt_vehicle_maintenance' table is not allowed. 
+-- 6. Once Entry is created in 'tpt_vehicle_service_request' table, it will be redirected to 'tpt_vehicle_maintenance' table.
+
 
 CREATE TABLE IF NOT EXISTS `tpt_vehicle_maintenance` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `vehicle_service_log_id` BIGINT UNSIGNED NOT NULL,
-    `driver_id` BIGINT UNSIGNED DEFAULT NULL,
-    `date` DATE NOT NULL,
-    `maintenance_type` VARCHAR(120) NOT NULL,
+    `vehicle_service_request_id` BIGINT UNSIGNED NOT NULL,
+    `maintenance_initiation_date` DATE NOT NULL,  -- Date of Service Initiated (Vehicle reached in garage)
+    `maintenance_type` VARCHAR(120) NOT NULL,    -- Mannual Entry
     `cost` DECIMAL(12,2) NOT NULL,
-    `out_service` TINYINT(1) DEFAULT 0,
-    `out_service_date` DATE DEFAULT NULL,
-    `out_service_reason` VARCHAR(512) DEFAULT NULL,
+    `in_service_date` DATE DEFAULT NULL,   -- Date of Service Initiated (Vehicle reached in garage)
+    `out_service_date` DATE DEFAULT NULL,  -- Date of Service Completion 
     `workshop_details` VARCHAR(512) DEFAULT NULL,
-    `next_due_date` DATE DEFAULT NULL,
+    `next_due_date` DATE DEFAULT NULL,     -- Next Due Date (if Any)
     `remarks` VARCHAR(512) DEFAULT NULL,
     `status` ENUM('Approved','Pending','Rejected') NOT NULL DEFAULT 'Pending',
     `approved_by` BIGINT UNSIGNED DEFAULT NULL,
@@ -533,10 +549,13 @@ CREATE TABLE IF NOT EXISTS `tpt_vehicle_maintenance` (
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at` TIMESTAMP NULL DEFAULT NULL,
-    CONSTRAINT `fk_vm_vehicle_service_log` FOREIGN KEY (`vehicle_service_log_id`) REFERENCES `tpt_vehicle_service_log`(`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_vm_driver` FOREIGN KEY (`driver_id`) REFERENCES `tpt_personnel`(`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_vm_vehicle_service_request` FOREIGN KEY (`vehicle_service_request_id`) REFERENCES `tpt_vehicle_service_request`(`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_vm_approvedBy` FOREIGN KEY (`approved_by`) REFERENCES `sys_users`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Condition:
+-- 1. New Entry Can not be created in 'tpt_vehicle_maintenance' table. Only Edit of existing entry is allowed.
+-- 2. Approval of Both the Tables should be done by Authorised Person in "Approval" Tab.
+-- 3. Once Maintenance Entry is Approved by Authorised Person, it will create a entry in 'vnd_vendor_bill_due_for_payment' table.
 
 -- =======================================================================
 -- TRIP INCIDENTS & ALERTS
