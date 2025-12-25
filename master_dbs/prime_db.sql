@@ -1,36 +1,35 @@
 -- Prefix Abbreviation Detail used for Tables Name to distinguish them
 -- -------------------------------------------------------------------
--- sys - System Configuration
--- glb - Global Masters
--- tt  - Timetable Module
--- sch - School Setup
--- std - Student Management
--- slb - Syllabus & Curriculum Management
--- exm - Exam Management
--- quz - Quiz & Assessment Management
--- qns - Questiona Creation & Management
--- beh - Behaviour Management
--- tpt - Transport Module
--- lib - Library Module
--- fnt - FrontDesk Module
--- fin - Finance Mgmt
--- hos - Hostel Mgmt
--- mes - Mess Management
--- bil - Billing & plans
--- vnd - Vendor Management
+  -- sys - System Configuration
+  -- glb - Global Masters
+  -- tt  - Timetable Module
+  -- sch - School Setup
+  -- std - Student Management
+  -- slb - Syllabus & Curriculum Management
+  -- exm - Exam Management
+  -- quz - Quiz & Assessment Management
+  -- qns - Questiona Creation & Management
+  -- beh - Behaviour Management
+  -- tpt - Transport Module
+  -- lib - Library Module
+  -- fnt - FrontDesk Module
+  -- fin - Finance Mgmt
+  -- hos - Hostel Mgmt
+  -- mes - Mess Management
+  -- bil - Billing & plans
+  -- vnd - Vendor Management
 
 -- Below is a Postfix Abbreviation to identify Join Tables
 -- ------------------------------------------------------------
--- jnt - Join Table (Junction Table)
+  -- jnt - Join Table (Junction Table)
 
--- prm - only for the table required to be in prime_db
+  -- prm - only for the table required to be in prime_db
 
--- Important Note
--- 1 - We will have 3 Layers of Databases 1-prime_db database 2-global_masters database 3-org specific databases (one for every Tenant)
--- 2 - App will be developed in such way that same app will work as 2 identical instance 1-PrimeGurukul 2-Schools
--- 2 - Tables which we need in PG but we may need them in tenant databases also. Those tables will have prefix "sys", 
---     so that app can work seamlesly for PrimeGurukul instance and for Tenant instance both.
-
+  -- Important Note
+  -- 1 - We will have 3 Layers of Databases 1-prime_db database 2-global_masters database 3-org specific databases (one for every Tenant)
+  -- 2 - App will be developed in such way that same app will work as 2 identical instance 1-PrimeGurukul 2-Schools
+  -- 2 - Tables which we need in PG but we may need them in tenant databases also. Those tables will have prefix "sys", 
+  --     so that app can work seamlesly for PrimeGurukul instance and for Tenant instance both.
 
 -- --------------------------------------------------------------------------------------------
 -- Create Views after creating global_master database and it's tables
@@ -40,7 +39,6 @@ CREATE VIEW glb_countries AS SELECT * FROM global_master.glb_countries;
 CREATE VIEW glb_states    AS SELECT * FROM global_master.glb_states;
 CREATE VIEW glb_districts AS SELECT * FROM global_master.glb_districts;
 CREATE VIEW glb_cities    AS SELECT * FROM global_master.glb_cities;
-
 CREATE VIEW glb_languages AS SELECT * FROM global_master.glb_languages;
 CREATE VIEW glb_menus AS SELECT * FROM global_master.glb_menus;
 CREATE VIEW glb_modules AS SELECT * FROM global_master.glb_modules;
@@ -188,20 +186,21 @@ CREATE TABLE IF NOT EXISTS `sys_dropdown_needs` (
   CONSTRAINT chk_isSubModule_parentId CHECK ((tenant_creation_allowed = 0 AND menu_category IS NULL AND main_menu IS NULL AND sub_menu IS NULL AND tab_name IS NULL AND field_name IS NULL) OR (tenant_creation_allowed = 1 AND menu_category IS NOT NULL AND main_menu IS NOT NULL AND sub_menu IS NOT NULL AND tab_name IS NOT NULL AND field_name IS NOT NULL))  
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 -- Conditions:
--- 1. If tenant_creation_allowed = 1, then it is must to have menu_category, main_menu, sub_menu, tab_name, field_name.
--- 2. When PG-Admin/PG-Support will create a Dropdown, it will get 2 option to select -
---    Option 1 - Dropdown creation by Table & Column details.
---    Option 2 - Dropdown creation by Menu/Sub-Menu & Field Name.
---       a. If he select Option 1 then he can select - Table Name, Column Name.
---       b. If he select Option 2 then he can select - Menu Category, Main Menu, Sub Menu, Tab Name, Field Name.
--- 3. If some Dropdown is allowed to be created by Tenant(tenant_creation_allowed = 1), then it will always show 5 Dropdowns to select from.
---    a. Menu Category (this will come from sys_dropdown_needs.menu_category)
---    b. Main Menu (this will come from sys_dropdown_needs.main_menu)
---    c. Sub Menu (this will come from sys_dropdown_needs.sub_menu)
---    d. Tab Name (this will come from sys_dropdown_needs.tab_name)
---    e. Field Name (this will come from sys_dropdown_needs.field_name)
--- 4. is_system = 1
+  -- 1. If tenant_creation_allowed = 1, then it is must to have menu_category, main_menu, sub_menu, tab_name, field_name.
+  -- 2. When PG-Admin/PG-Support will create a Dropdown, it will get 2 option to select -
+  --    Option 1 - Dropdown creation by Table & Column details.
+  --    Option 2 - Dropdown creation by Menu/Sub-Menu & Field Name.
+  --       a. If he select Option 1 then he can select - Table Name, Column Name.
+  --       b. If he select Option 2 then he can select - Menu Category, Main Menu, Sub Menu, Tab Name, Field Name.
+  -- 3. If some Dropdown is allowed to be created by Tenant(tenant_creation_allowed = 1), then it will always show 5 Dropdowns to select from.
+  --    a. Menu Category (this will come from sys_dropdown_needs.menu_category)
+  --    b. Main Menu (this will come from sys_dropdown_needs.main_menu)
+  --    c. Sub Menu (this will come from sys_dropdown_needs.sub_menu)
+  --    d. Tab Name (this will come from sys_dropdown_needs.tab_name)
+  --    e. Field Name (this will come from sys_dropdown_needs.field_name)
+  -- 4. is_system = 1
 
+-- ---------------------------------------------------------------------------------------------------------------------
 -- Dropdown Table to store various dropdown values used across the system
 -- Enhanced sys_dropdown_table to accomodate Menu Detail (Category,Main Menu, Sub-Menu ID) for Easy identification.
 CREATE TABLE IF NOT EXISTS `sys_dropdown_table` (
@@ -221,29 +220,16 @@ CREATE TABLE IF NOT EXISTS `sys_dropdown_table` (
   CONSTRAINT `fk_sys_dropdown_table_sys_dropdown_needs` FOREIGN KEY (`dropdown_needs_id`) REFERENCES `sys_dropdown_needs` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 -- conditions:
--- 1. When we go to create a New Dropdown, It will show 3 Dropdowns to select from.
---    a. DB Type (this will come from sys_dropdown_needs.db_type)
---    b. Table Name (this will come from sys_dropdown_needs.table_name)
---    c. Column Name (this will come from sys_dropdown_needs.column_name)
--- 2. System will check if the Dropdown Need is already configured in sys_dropdown_needs table.
--- 3. If not, Developer need to create a new Dropdown Need as per the need.
--- 4. If yes, System will use the existing Dropdown Need.
+  -- 1. When we go to create a New Dropdown, It will show 3 Dropdowns to select from.
+  --    a. DB Type (this will come from sys_dropdown_needs.db_type)
+  --    b. Table Name (this will come from sys_dropdown_needs.table_name)
+  --    c. Column Name (this will come from sys_dropdown_needs.column_name)
+  -- 2. System will check if the Dropdown Need is already configured in sys_dropdown_needs table.
+  -- 3. If not, Developer need to create a new Dropdown Need as per the need.
+  -- 4. If yes, System will use the existing Dropdown Need.
 
--- ---------------------------------------------------------------------------------------------
--- below is Old `sys_dropdown_table` Table. I have Enhanced it to accomodate Menu Details (Category,Main Menu, Sub-Menu) for Easy identification.
--- CREATE TABLE IF NOT EXISTS `sys_dropdown_table` (
---   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
---   `ordinal` tinyint unsigned NOT NULL,
---   `key` varchar(150) NOT NULL,
---   `value` varchar(100) NOT NULL,
---   `type` ENUM('String','Integer','Decimal', 'Date', 'Datetime', 'Time', 'Boolean') NOT NULL DEFAULT 'String',
---   `is_active` TINYINT(1) DEFAULT 1,
---   `created_at` timestamp NULL DEFAULT NULL,
---   `updated_at` timestamp NULL DEFAULT NULL,
---   PRIMARY KEY (`id`),
---   UNIQUE KEY `uq_dropdownTable_ordinal_key` (`ordinal`,`key`)
--- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
--- ---------------------------------------------------------------------------------------------
+-- ---------------------------------------------------------------------------------------------------------------------
+
 
 CREATE TABLE IF NOT EXISTS `sys_media` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
@@ -602,13 +588,8 @@ CREATE TABLE IF NOT EXISTS `bil_tenant_email_schedules` (
 -- ----------------------------------------------------------------------------------------------------------
 -- Change Log
 -- ----------------------------------------------------------------------------------------------------------
--- Add New Field  - Table(bil_tenant_invoicing_payments)    - Field(consolidated_amount)
--- Change Filed   - Table(bil_tenant_invoicing_audit_logs)  - Field(notes) (Make it Varchar(500) from text)
--- Add New Field  - Table(bil_tenant_invoicing_audit_logs)  - Field(event_info)
--- Change Filed   - Table(bil_tenant_invoicing_audit_logs)  - Field(action_date) Change Date -> timestamp
--- ==========================================================================================================
--- Changed on 2025-12-21
--- Enhanced `sys_dropdown_table` to accomodate Menu Details (Category,Main Menu, Sub-Menu) for Easy identification. 
--- Added New table `sys_dropdown_needs` to capture Dropdown Needs for Easy identification. 
+  -- Changed on 2025-12-21
+  -- Enhanced `sys_dropdown_table` to accomodate Menu Details (Category,Main Menu, Sub-Menu) for Easy identification. 
+  -- Added New table `sys_dropdown_needs` to capture Dropdown Needs for Easy identification. 
 
 

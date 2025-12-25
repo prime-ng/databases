@@ -57,18 +57,20 @@ CREATE TABLE IF NOT EXISTS `tpt_personnel` (
     `id_card_type` ENUM('QR','RFID','NFC','Barcode') NOT NULL DEFAULT 'QR',
     `name` VARCHAR(100) NOT NULL,
     `phone` VARCHAR(30) DEFAULT NULL,
-    `id_type` VARCHAR(20) DEFAULT NULL,
-    `id_no` VARCHAR(100) DEFAULT NULL,
-    `role` VARCHAR(20) NOT NULL,
-    `license_no` VARCHAR(50) DEFAULT NULL,
-    `license_valid_upto` DATE DEFAULT NULL,
-    `assigned_vehicle_id` BIGINT UNSIGNED DEFAULT NULL,
-    `driving_exp_months` SMALLINT UNSIGNED DEFAULT NULL,
-    `police_verification_done` TINYINT(1) NOT NULL DEFAULT 0,
+    `id_type` VARCHAR(20) DEFAULT NULL,     -- ID Type (e.g., Aadhaar, PAN, Passport)
+    `id_no` VARCHAR(100) DEFAULT NULL,      -- ID Number   
+    `role` VARCHAR(20) NOT NULL,            -- Role (e.g., Driver, Helper, Transport Manager etc.)
+    `license_no` VARCHAR(50) DEFAULT NULL,  -- License Number
+    `license_valid_upto` DATE DEFAULT NULL,  -- License Valid Upto
+    `assigned_vehicle_id` BIGINT UNSIGNED DEFAULT NULL,  -- fk to tpt_vehicle
+    `driving_exp_months` SMALLINT UNSIGNED DEFAULT NULL,  -- Driving Experience in Months
+    `police_verification_done` TINYINT(1) NOT NULL DEFAULT 0,  -- 0: Not Done, 1: Done
     `address` VARCHAR(512) DEFAULT NULL,
-    `license_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (license will be uploaded in sys.media)
+    `id_card_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (id card will be uploaded in sys.media)
+    `photo_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (photo will be uploaded in sys.media)
+    `driving_license_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (driving license will be uploaded in sys.media)
     `police_verification_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (police verification will be uploaded in sys.media)
-
+    `address_proof_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (address proof will be uploaded in sys.media)
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -588,3 +590,8 @@ CREATE TABLE IF NOT EXISTS `tpt_trip_incidents` (
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- -------------------------------------------------------------------------------------------------------------------
+-- New Conditions:
+-- 1. When Bus will complete the Trip and register it's Trip completion in the System. Someone (Authorise Person) will Approve the Trip Completion. 
+-- 2. Application will check the Status of "trip_usage_needs_to_be_updated_into_vendor_usage_log" variable in "sch_settings" table.
+-- 3. If "trip_usage_needs_to_be_updated_into_vendor_usage_log" is True, then application will update the 'vnd_usage_logs' with the Trip Usage.
+

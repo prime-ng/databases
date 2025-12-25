@@ -12,9 +12,8 @@
 
 
 -- -------------------------------------------------------------------------
--- SECTION 1: CORE SYLLABUS STRUCTURE
+-- CORE SYLLABUS STRUCTURE
 -- -------------------------------------------------------------------------
-
 CREATE TABLE IF NOT EXISTS `slb_lessons` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `uuid` CHAR(36) NOT NULL,                       -- Unique identifier for analytics tracking
@@ -48,9 +47,8 @@ CREATE TABLE IF NOT EXISTS `slb_lessons` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- -------------------------------------------------------------------------
--- SECTION 2: HIERARCHICAL TOPICS & SUB-TOPICS (via parent_id)
+-- HIERARCHICAL TOPICS & SUB-TOPICS (via parent_id)
 -- -------------------------------------------------------------------------
--- 
 -- DESIGN DECISION: Using Materialized Path approach for:
 -- 1. Efficient ancestor/descendant queries
 -- 2. Easy breadcrumb generation
@@ -104,7 +102,7 @@ CREATE TABLE IF NOT EXISTS `slb_topics` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- -------------------------------------------------------------------------
--- SECTION 3: COMPETENCY FRAMEWORK (NEP 2020 ALIGNMENT)
+-- COMPETENCY FRAMEWORK (NEP 2020 ALIGNMENT)
 -- -------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `slb_competency_types` (
@@ -162,9 +160,8 @@ CREATE TABLE IF NOT EXISTS `slb_topic_competency_jnt` (
   CONSTRAINT `fk_tc_competency` FOREIGN KEY (`competency_id`) REFERENCES `slb_competencies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-
 -- -------------------------------------------------------------------------
--- SECTION 4: QUESTION TAXONOMIES (NEP / BLOOM etc.) - REFERENCE DATA
+-- QUESTION TAXONOMIES (NEP / BLOOM etc.) - REFERENCE DATA
 -- -------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `slb_bloom_taxonomy` (
@@ -219,9 +216,8 @@ CREATE TABLE IF NOT EXISTS `slb_question_types` (
   UNIQUE KEY `uq_qtype_code` (`code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-
 -- -------------------------------------------------------------------------
--- SECTION 5: QUESTION BANK & QUESTION MANAGEMENT
+-- QUESTION BANK & QUESTION MANAGEMENT
 -- -------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `sch_questions` (
@@ -269,7 +265,6 @@ CREATE TABLE IF NOT EXISTS `sch_questions` (
   CONSTRAINT `fk_ques_timeSpec` FOREIGN KEY (`ques_type_specificity_id`) REFERENCES `slb_ques_type_specificity` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-
 CREATE TABLE IF NOT EXISTS `sch_question_options` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `question_id` BIGINT UNSIGNED NOT NULL,
@@ -284,7 +279,6 @@ CREATE TABLE IF NOT EXISTS `sch_question_options` (
   CONSTRAINT `fk_opt_question` FOREIGN KEY (`question_id`) REFERENCES `sch_questions` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-
 CREATE TABLE IF NOT EXISTS `sch_question_media` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `question_id` BIGINT UNSIGNED NOT NULL,
@@ -296,7 +290,6 @@ CREATE TABLE IF NOT EXISTS `sch_question_media` (
   CONSTRAINT `fk_qmedia_question` FOREIGN KEY (`question_id`) REFERENCES `sch_questions` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_qmedia_media` FOREIGN KEY (`media_id`) REFERENCES `sys_media` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 
 CREATE TABLE IF NOT EXISTS `sch_question_tags` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -316,7 +309,7 @@ CREATE TABLE IF NOT EXISTS `sch_question_tag_jnt` (
 
 
 -- -------------------------------------------------------------------------
--- SECTION 6: QUESTION VERSIONING & HISTORY
+-- QUESTION VERSIONING & HISTORY
 -- -------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `sch_question_versions` (
@@ -332,9 +325,8 @@ CREATE TABLE IF NOT EXISTS `sch_question_versions` (
   CONSTRAINT `fk_qver_q` FOREIGN KEY (`question_id`) REFERENCES `sch_questions` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-
 -- -------------------------------------------------------------------------
--- SECTION 7: QUESTION POOLS & ADAPTIVE SELECTION
+-- QUESTION POOLS & ADAPTIVE SELECTION
 -- -------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `sch_question_pools` (
@@ -366,7 +358,7 @@ CREATE TABLE IF NOT EXISTS `sch_question_pool_questions` (
 
 
 -- -------------------------------------------------------------------------
--- SECTION 8: QUIZZES, ASSESSMENTS & EXAMS
+-- QUIZZES, ASSESSMENTS & EXAMS
 -- -------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `sch_quizzes` (
@@ -395,7 +387,6 @@ CREATE TABLE IF NOT EXISTS `sch_quizzes` (
   CONSTRAINT `fk_quiz_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE SET NULL,
   CONSTRAINT `fk_quiz_lesson` FOREIGN KEY (`lesson_id`) REFERENCES `sch_lessons` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 
 CREATE TABLE IF NOT EXISTS `sch_assessments` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -428,7 +419,6 @@ CREATE TABLE IF NOT EXISTS `sch_assessments` (
   CONSTRAINT `fk_assess_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE SET NULL,
   CONSTRAINT `fk_assess_academic_session` FOREIGN KEY (`academic_session_id`) REFERENCES `sch_org_academic_sessions_jnt` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4_COLLATE=utf8mb4_unicode_ci;
-
 
 CREATE TABLE IF NOT EXISTS `sch_exams` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -463,9 +453,8 @@ CREATE TABLE IF NOT EXISTS `sch_exams` (
   CONSTRAINT `fk_exam_academic_session` FOREIGN KEY (`academic_session_id`) REFERENCES `sch_org_academic_sessions_jnt` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4_COLLATE=utf8mb4_unicode_ci;
 
-
 -- -------------------------------------------------------------------------
--- SECTION 9: ASSESSMENT SECTIONS (for multi-part exams)
+-- ASSESSMENT SECTIONS (for multi-part exams)
 -- -------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `sch_assessment_sections` (
@@ -482,9 +471,8 @@ CREATE TABLE IF NOT EXISTS `sch_assessment_sections` (
   CONSTRAINT `fk_section_assessment` FOREIGN KEY (`assessment_id`) REFERENCES `sch_assessments` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4_COLLATE=utf8mb4_unicode_ci;
 
-
 -- -------------------------------------------------------------------------
--- SECTION 10: ASSESSMENT ITEMS (Questions in Quizzes/Assessments/Exams)
+-- ASSESSMENT ITEMS (Questions in Quizzes/Assessments/Exams)
 -- -------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `sch_assessment_items` (
@@ -522,7 +510,6 @@ CREATE TABLE IF NOT EXISTS `sch_exam_items` (
   CONSTRAINT `fk_ei_question` FOREIGN KEY (`question_id`) REFERENCES `sch_questions` (`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4_COLLATE=utf8mb4_unicode_ci;
 
-
 CREATE TABLE IF NOT EXISTS `sch_quiz_assessment_map` (
   `quiz_id` BIGINT UNSIGNED NOT NULL,
   `assessment_id` BIGINT UNSIGNED NOT NULL,
@@ -531,9 +518,8 @@ CREATE TABLE IF NOT EXISTS `sch_quiz_assessment_map` (
   CONSTRAINT `fk_qam_assess` FOREIGN KEY (`assessment_id`) REFERENCES `sch_assessments` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4_COLLATE=utf8mb4_unicode_ci;
 
-
 -- -------------------------------------------------------------------------
--- SECTION 11: ASSESSMENT ASSIGNMENT & RULES
+-- ASSESSMENT ASSIGNMENT & RULES
 -- -------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `sch_assessment_assignments` (
@@ -564,9 +550,8 @@ CREATE TABLE IF NOT EXISTS `sch_assessment_assignment_rules` (
   CONSTRAINT `fk_aar_assessment` FOREIGN KEY (`assessment_id`) REFERENCES `sch_assessments` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4_COLLATE=utf8mb4_unicode_ci;
 
-
 -- -------------------------------------------------------------------------
--- SECTION 12: STUDENT ATTEMPTS & RESPONSES (GRADING)
+-- STUDENT ATTEMPTS & RESPONSES (GRADING)
 -- -------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `sch_attempts` (
@@ -595,7 +580,6 @@ CREATE TABLE IF NOT EXISTS `sch_attempts` (
   CONSTRAINT `fk_att_student` FOREIGN KEY (`student_id`) REFERENCES `std_students` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4_COLLATE=utf8mb4_unicode_ci;
 
-
 CREATE TABLE IF NOT EXISTS `sch_attempt_answers` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `attempt_id` BIGINT UNSIGNED NOT NULL,
@@ -617,9 +601,8 @@ CREATE TABLE IF NOT EXISTS `sch_attempt_answers` (
   CONSTRAINT `fk_aa_question` FOREIGN KEY (`question_id`) REFERENCES `sch_questions` (`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4_COLLATE=utf8mb4_unicode_ci;
 
-
 -- -------------------------------------------------------------------------
--- SECTION 13: STUDENT LEARNING OUTCOMES & COMPETENCY TRACKING
+-- STUDENT LEARNING OUTCOMES & COMPETENCY TRACKING
 -- -------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `sch_student_learning_outcomes` (
@@ -648,9 +631,8 @@ CREATE TABLE IF NOT EXISTS `sch_student_learning_outcomes` (
   CONSTRAINT `fk_slo_subject` FOREIGN KEY (`subject_id`) REFERENCES `sch_subjects` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4_COLLATE=utf8mb4_unicode_ci;
 
-
 -- -------------------------------------------------------------------------
--- SECTION 14: QUESTION & EXAM ANALYTICS
+-- QUESTION & EXAM ANALYTICS
 -- -------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `sch_question_analytics` (
@@ -665,7 +647,6 @@ CREATE TABLE IF NOT EXISTS `sch_question_analytics` (
   `last_updated` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   CONSTRAINT `fk_qa_question` FOREIGN KEY (`question_id`) REFERENCES `sch_questions` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4_COLLATE=utf8mb4_unicode_ci;
-
 
 CREATE TABLE IF NOT EXISTS `sch_exam_analytics` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -687,7 +668,7 @@ CREATE TABLE IF NOT EXISTS `sch_exam_analytics` (
 
 
 -- -------------------------------------------------------------------------
--- SECTION 15: AUDIT & CHANGE LOG
+-- AUDIT & CHANGE LOG
 -- -------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `sch_audit_log` (
@@ -709,7 +690,7 @@ CREATE TABLE IF NOT EXISTS `sch_audit_log` (
 
 
 -- -------------------------------------------------------------------------
--- SECTION 16: MATERIALIZED VIEW FOR FAST QUERIES
+-- MATERIALIZED VIEW FOR FAST QUERIES
 -- -------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `sch_question_index` (

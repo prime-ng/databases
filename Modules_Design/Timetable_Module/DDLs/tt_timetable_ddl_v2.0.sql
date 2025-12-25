@@ -6,6 +6,7 @@
 -- Change table Name - Table (sch_subject_study_format_class_subj_types_jnt) to (sch_class_groups_jnt) in tenant_db.sql before executing this script.
 
 -- This table defines different timetable modes like Regular, Exam, Special Event etc.
+
 -- -----------------------------------------------------
 -- TIMETABLE MODE MASTER
 -- -----------------------------------------------------

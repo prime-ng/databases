@@ -1,6 +1,7 @@
 -- =======================================================================
--- TRANSPORT MODULE v2.0 for MySQL 8.x
--- Strategy: Enhanced v1.9 with Vendor Lease, Billing, and Payment tables.
+-- VENDOR_MANAGEMENT_MODULE v1.0 for MySQL 8.x
+-- Database: tenant_db
+-- Dependencies: sys_dropdown_table, sys_users, sys_media_table
 -- =======================================================================
 
 SET NAMES utf8mb4;

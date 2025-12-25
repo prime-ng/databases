@@ -15,6 +15,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- ==========================================================================================================
 -- Below table is for Reference Only and will not be part of Complaint Module. It will be developed in School Setup Module.
 -- ==========================================================================================================
+
 CREATE TABLE IF NOT EXISTS `sch_department` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `name` VARCHAR(100) NOT NULL, -- e.g. "Transport", "Academic", "Rash Driving"

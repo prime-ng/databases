@@ -1,75 +1,76 @@
+## Transport Module
 
---------------------------------------------------------------------------------------------------
-**Transport Module**
---------------------------------------------------------------------------------------------------
+---
+### Vehicle Type ###
 
-### Vehicle Type
-Entry in 'sys_dropdown_needs' table
-db_type - tenant_db
-table_name - tpt_vehicle
-column_name - vehicle_type
+**Entry in 'sys_dropdown_needs' table**
+db_type : tenant_db  
+table_name : tpt_vehicle  
+column_name : vehicle_type  
 
-### Entry in 'sys_dropdown_table' table
-Key - "tenant_db.tpt_vehicle.vehicle_type"
-Values - ('BUS','VAN','CAR') (3 records)
-Type - String
-Additional_info - Key-lebel, Value('BUS','VAN','CAR')
+**Entry in 'sys_dropdown_table' table**
+Key : "tenant_db.tpt_vehicle.vehicle_type"  
+Values : ('BUS','VAN','CAR') (3 records)  
+Type : String  
 
 ---
 
-### Fuel Type
-Entry in 'sys_dropdown_needs' table
-db_type - tenant_db
-table_name - tpt_vehicle
-column_name - fuel_type
 
-### Entry in 'sys_dropdown_table' table
-Key - "tenant_db.tpt_vehicle.fuel_type"
-Values - ('Diesel','Petrol','CNG','Electric') (4 records)
-Type - String
-Additional_info - Key-lebel, Value('Diesel','Petrol','CNG','Electric')
+### Fuel Type ###
 
----
+**Entry in 'sys_dropdown_needs' table**
+db_type : tenant_db  
+table_name : tpt_vehicle  
+column_name : fuel_type  
 
-### Ownership Type
-Entry in 'sys_dropdown_needs' table
-db_type - tenant_db
-table_name - tpt_vehicle
-column_name - ownership_type
-
-### Entry in 'sys_dropdown_table' table
-Key - "tenant_db.tpt_vehicle.ownership_type"
-Values - ('Owned','Leased','Rented') (3 records)
-Type - String
-Additional_info - Key-lebel, Value('Owned','Leased','Rented')
-
----
-### ID Type
-Entry in 'sys_dropdown_needs' table
-db_type - tenant_db
-table_name - tpt_personnel
-column_name - id_type
-
-### Entry in 'sys_dropdown_table' table
-Key - "tenant_db.tpt_personnel.id_type"
-Values - ('Aadhaar','Passport','DriverLicense') (3 records)
-Type - String
-Additional_info - Key-lebel, Value('Aadhaar','Passport','DriverLicense')
+**Entry in 'sys_dropdown_table' table**
+Key : "tenant_db.tpt_vehicle.fuel_type"  
+Values : ('Diesel','Petrol','CNG','Electric') (4 records)  
+Type : String  
 
 ---
 
-### Severity Level
-Entry in 'sys_dropdown_needs' table
-db_type - tenant_db
-table_name - cmp_complaint_categories
-column_name - severity_level
+### Ownership Type ###
 
-### Entry in 'sys_dropdown_table' table
-Key - "tenant_db.cmp_complaint_categories.severity_level"
-Values - ('1','2','3','4','5','6','7','8','9','10') (10 records)
-Type - Integer
-Additional_info - Key-lebel, Value('Low', Minor', 'Moderate', 'Substantial', 'Significant', 'Severe', 'Major', 'Acute', 'Emergency', 'Critical')
+**Entry in 'sys_dropdown_needs' table**
+db_type : tenant_db  
+table_name : tpt_vehicle  
+column_name : ownership_type  
 
+**Entry in 'sys_dropdown_table' table**
+Key : "tenant_db.tpt_vehicle.ownership_type"  
+Values : ('Owned','Leased','Rented') (3 records)  
+Type : String  
+
+---
+### ID Type ###
+
+**Entry in 'sys_dropdown_needs' table**
+db_type : tenant_db  
+table_name : tpt_personnel  
+column_name : id_type  
+
+**Entry in 'sys_dropdown_table' table**
+Key : "tenant_db.tpt_personnel.id_type"  
+Values : ('Aadhaar','Passport','DriverLicense') (3 records)  
+Type : String  
+
+---
+
+### Severity Level ###
+
+**Entry in 'sys_dropdown_needs' table**
+db_type : tenant_db  
+table_name : cmp_complaint_categories  
+column_name : severity_level  
+
+**Entry in 'sys_dropdown_table' table**
+Key : "tenant_db.cmp_complaint_categories.severity_level"  
+Values : ('1','2','3','4','5','6','7','8','9','10') (10 records)  
+Type : Integer  
+Additional_info : Key-lebel, Value('Low', Minor', 'Moderate', 'Substantial', 'Significant', 'Severe', 'Major', 'Acute', 'Emergency', 'Critical')
+
+**Severity_Level-Detail**
 ------------------------------------------------------------------------------------------------------------------------------------
 | Level	| Label	      | Description								      | Real-World Example
 |-------|-------------|-----------------------------------------------|-------------------------------------------------------------
@@ -86,14 +87,14 @@ Additional_info - Key-lebel, Value('Low', Minor', 'Moderate', 'Substantial', 'Si
 
 ---
 
-### Priority Score
+### Priority Score ###
 
-#### Entry in 'sys_dropdown_needs' table
-db_type - tenant_db
-table_name - cmp_complaint_categories
-column_name - priority_score
+**Entry in 'sys_dropdown_needs' table**
+db_type : tenant_db
+table_name : cmp_complaint_categories
+column_name : priority_score
 
-#### sys_dropdown_table e.g. 1=Critical, 2=Urgent 3=High, 4=Medium, 5=Low
+**sys_dropdown_table e.g. 1=Critical, 2=Urgent 3=High, 4=Medium, 5=Low**
 
 Key - "tenant_db.cmp_complaint_categories.priority_score"
 Values - ('1','2','3','4','5') (5 records)
@@ -101,15 +102,7 @@ Type - Integer
 Additional_info - Key-lebel, Value('Critical', 'Urgent', 'High', 'Medium', 'Low')
 
 ---
+---
 
-Key - 
-Values - 
-
-Key - 
-Values - 
-
-Key - 
-Values - 
-
-Key - 
-Values - 
+Key : 
+Values : 

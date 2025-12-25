@@ -132,6 +132,7 @@ BEGIN
 END$$
 DELIMITER ;
 
+-- --------------------------------------------------------------------------------------------------------
 -- This table will store various system-wide settings and configurations
 CREATE TABLE IF NOT EXISTS `sys_settings` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
@@ -146,6 +147,7 @@ CREATE TABLE IF NOT EXISTS `sys_settings` (
   UNIQUE KEY `uq_settings_key` (`key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- --------------------------------------------------------------------------------------------------------
 -- Ths Table will capture the detail of which Field of Which Table fo Which Databse Type, I can create a Dropdown in sys_dropdown_table of?
 -- This will help us to make sure we can only create create a Dropdown in sys_dropdown_table whcih has been configured by Developer.
 CREATE TABLE IF NOT EXISTS `sys_dropdown_needs` (
@@ -183,6 +185,7 @@ CREATE TABLE IF NOT EXISTS `sys_dropdown_needs` (
 --    e. Field Name (this will come from sys_dropdown_needs.field_name)
 -- 4. is_system = 1
 
+-- --------------------------------------------------------------------------------------------------------
 -- Dropdown Table to store various dropdown values used across the system
 -- Enhanced sys_dropdown_table to accomodate Menu Detail (Category,Main Menu, Sub-Menu ID) for Easy identification.
 CREATE TABLE IF NOT EXISTS `sys_dropdown_table` (
@@ -210,23 +213,7 @@ CREATE TABLE IF NOT EXISTS `sys_dropdown_table` (
 -- 3. If not, Developer need to create a new Dropdown Need as per the need.
 -- 4. If yes, System will use the existing Dropdown Need.
 
--- ---------------------------------------------------------------------------------------------
--- below is Old `sys_dropdown_table` Table. I have Enhanced it to accomodate Menu Details (Category,Main Menu, Sub-Menu) for Easy identification.
--- CREATE TABLE IF NOT EXISTS `sys_dropdown_table` (
---   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
---   `ordinal` tinyint unsigned NOT NULL,
---   `key` varchar(150) NOT NULL,
---   `value` varchar(100) NOT NULL,
---   `type` ENUM('String','Integer','Decimal', 'Date', 'Datetime', 'Time', 'Boolean') NOT NULL DEFAULT 'String',
---   `is_active` TINYINT(1) DEFAULT 1,
---   `created_at` timestamp NULL DEFAULT NULL,
---   `updated_at` timestamp NULL DEFAULT NULL,
---   PRIMARY KEY (`id`),
---   UNIQUE KEY `uq_dropdownTable_ordinal_key` (`ordinal`,`key`)
--- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
--- ---------------------------------------------------------------------------------------------
-
-
+-- --------------------------------------------------------------------------------------------------------
 -- Table to store media files associated with various models (e.g., users, posts)
 CREATE TABLE IF NOT EXISTS `sys_media` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,

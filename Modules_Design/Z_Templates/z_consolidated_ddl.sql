@@ -1,0 +1,3434 @@
+-- This is a Temporary file to consolidate all DDL scripts to use with AI
+
+-- ================================================================================================================
+-- prime_db.sql
+-- ================================================================================================================
+-- Prefix Abbreviation Detail used for Tables Name to distinguish them
+-- -------------------------------------------------------------------
+  -- sys - System Configuration
+  -- glb - Global Masters
+  -- tt  - Timetable Module
+  -- sch - School Setup
+  -- std - Student Management
+  -- slb - Syllabus & Curriculum Management
+  -- exm - Exam Management
+  -- quz - Quiz & Assessment Management
+  -- qns - Questiona Creation & Management
+  -- beh - Behaviour Management
+  -- tpt - Transport Module
+  -- lib - Library Module
+  -- fnt - FrontDesk Module
+  -- fin - Finance Mgmt
+  -- hos - Hostel Mgmt
+  -- mes - Mess Management
+  -- bil - Billing & plans
+  -- vnd - Vendor Management
+
+-- Below is a Postfix Abbreviation to identify Join Tables
+-- ------------------------------------------------------------
+  -- jnt - Join Table (Junction Table)
+
+  -- prm - only for the table required to be in prime_db
+
+  -- Important Note
+  -- 1 - We will have 3 Layers of Databases 1-prime_db database 2-global_masters database 3-org specific databases (one for every Tenant)
+  -- 2 - App will be developed in such way that same app will work as 2 identical instance 1-PrimeGurukul 2-Schools
+  -- 2 - Tables which we need in PG but we may need them in tenant databases also. Those tables will have prefix "sys", 
+  --     so that app can work seamlesly for PrimeGurukul instance and for Tenant instance both.
+
+-- --------------------------------------------------------------------------------------------
+-- Create Views after creating global_master database and it's tables
+-- --------------------------------------------------------------------------------------------
+
+  CREATE VIEW glb_countries AS SELECT * FROM global_master.glb_countries;
+  CREATE VIEW glb_states    AS SELECT * FROM global_master.glb_states;
+  CREATE VIEW glb_districts AS SELECT * FROM global_master.glb_districts;
+  CREATE VIEW glb_cities    AS SELECT * FROM global_master.glb_cities;
+  CREATE VIEW glb_languages AS SELECT * FROM global_master.glb_languages;
+  CREATE VIEW glb_menus AS SELECT * FROM global_master.glb_menus;
+  CREATE VIEW glb_modules AS SELECT * FROM global_master.glb_modules;
+  CREATE VIEW glb_menu_model_jnt AS SELECT * FROM global_master.glb_menu_model_jnt;
+  CREATE VIEW glb_translations AS SELECT * FROM global_master.glb_translations;
+
+-- System Tables
+-- ------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `sys_permissions` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `short_name` VARCHAR(20) NOT NULL,  -- This will be used for dropdown
+  `name` varchar(100) NOT NULL,
+  `guard_name` varchar(255) NOT NULL,  -- used by Laravel routing
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT NULL,  -- we dont have is_active, why?
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_permissions_shortName_guardName` (`short_name`,`guard_name`),
+  UNIQUE KEY `uq_permissions_name_guardName` (`name`,`guard_name`)
+) ENGINE=InnoDB AUTO_INCREMENT=176 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `sys_roles` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(50) NOT NULL,
+  `short_name` VARCHAR(20) NOT NULL,
+  `description` VARCHAR(255) NULL,
+  `guard_name` varchar(255) NOT NULL,
+  `is_system`  TINYINT(1) NOT NULL DEFAULT 0, -- if true, role belongs to PG
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_roles_name_guardName` (`name`,`guard_name`)
+  UNIQUE KEY `uq_roles_name_guardName` (`short_name`,`guard_name`)
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `sys_role_has_permissions_jnt` (
+  `permission_id` bigint unsigned NOT NULL,
+  `role_id` bigint unsigned NOT NULL,
+  PRIMARY KEY (`permission_id`,`role_id`),
+  KEY `idx_roleHasPermissions_roleId` (`role_id`),
+  CONSTRAINT `fk_roleHasPermissions_permissionId` FOREIGN KEY (`permission_id`) REFERENCES `sys_permissions` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_roleHasPermissions_roleId` FOREIGN KEY (`role_id`) REFERENCES `sys_roles` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `sys_model_has_permissions_jnt` (
+  `permission_id` bigint unsigned NOT NULL,
+  `model_type` varchar(190) NOT NULL,
+  `model_id` bigint unsigned NOT NULL,
+  PRIMARY KEY (`permission_id`,`model_id`,`model_type`),
+  KEY `idx_modelHasPermissions_modelId_modelType` (`model_id`,`model_type`),
+  CONSTRAINT `fk_odelHasPermissions_permissionId` FOREIGN KEY (`permission_id`) REFERENCES `sys_permissions` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `sys_model_has_roles_jnt` (
+  `role_id` bigint unsigned NOT NULL,
+  `model_type` varchar(190) NOT NULL,
+  `model_id` bigint unsigned NOT NULL,
+  PRIMARY KEY (`role_id`,`model_id`,`model_type`),
+  KEY `idx_modelHasRoles_modelId_modelType` (`model_id`,`model_type`),
+  CONSTRAINT `fk_modelHasRoles_roleId` FOREIGN KEY (`role_id`) REFERENCES `sys_roles` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `sys_users` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `emp_code` VARCHAR(20) NOT NULL,
+  `short_name` varchar(30) NOT NULL,   -- This Field will be used for showing Dropdown of Users i.e. Teachers, Students, Parents
+  `name` varchar(100) NOT NULL,        -- Full Name (First Name, Middle Name, Last Name)
+  `email` varchar(150) NOT NULL,
+  `mobile_no` varchar(32) DEFAULT NULL,
+  `phone_no` varchar(32) DEFAULT NULL,
+  `two_factor_auth_enabled` tinyint(1) NOT NULL DEFAULT '0',
+  `email_verified_at` timestamp NULL DEFAULT NULL,
+  `mobile_verified_at` timestamp NULL DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `password` varchar(255) COLLATE utf8mb4_unicode_bin NOT NULL,
+  `is_super_admin` tinyint(1) NOT NULL DEFAULT '0',
+  `last_login_at` datetime DEFAULT NULL,
+  `super_admin_flag` tinyint GENERATED ALWAYS AS ((case when (`is_super_admin` = 1) then 1 else NULL end)) STORED,
+  `remember_token` varchar(100) DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_users_empCode` (`emp_code`),
+  UNIQUE KEY `uq_users_email` (`email`),
+  UNIQUE KEY `uq_users_mobileNo` (`mobile_no`),
+  UNIQUE KEY `uq_single_super_admin` (`super_admin_flag`),
+) ENGINE=InnoDB AUTO_INCREMENT=33 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+/* Optional triggers to prevent deleting/demoting super admin (you already used triggers for sessions) */
+DELIMITER $$
+CREATE TRIGGER trg_users_prevent_delete_super BEFORE DELETE ON users
+FOR EACH ROW
+BEGIN
+  IF OLD.is_super_admin = 1 THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Super Admin cannot be deleted';
+  END IF;
+END$$
+
+CREATE TRIGGER trg_users_prevent_update_super BEFORE UPDATE ON users
+FOR EACH ROW
+BEGIN
+  IF OLD.is_super_admin = 1 AND NEW.is_super_admin = 0 THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Super Admin cannot be demoted';
+  END IF;
+END$$
+DELIMITER ;
+
+CREATE TABLE IF NOT EXISTS `sys_settings` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `description` varchar(255) NULL,    -- Here we will describe the use of the variable
+  `key` varchar(100) NOT NULL,        -- This will be the Key to connect Value with it
+  `value` varchar(255) DEFAULT NULL,          -- Actual stored setting value. Could be string, JSON, or serialized data depending on type
+  `type` varchar(50) DEFAULT NULL,    -- e.g. 'string','json','int','boolean', 'date' etc.
+  `is_public` tinyint(1) NOT NULL DEFAULT 0,  -- Flag — 1 means this setting can be safely exposed to the frontend (e.g. school logo, theme color), 0 means internal/backend-only (e.g. API keys).
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_settings_key` (`key`),
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Ths Table will capture the detail of which Field of Which Table fo Which Databse Type, I can create a Dropdown in sys_dropdown_table of?
+-- This will help us to make sure we can only create create a Dropdown in sys_dropdown_table whcih has been configured by Developer.
+CREATE TABLE IF NOT EXISTS `sys_dropdown_needs` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `db_type` ENUM('Prime','Tenant','Global') NOT NULL,  -- Which Database this Dropdown is for? (prime_db,tenant_db,global_db)
+  `table_name` varchar(150) NOT NULL,  -- Table Name
+  `column_name` varchar(150) NOT NULL,  -- Column Name
+  `menu_category` varchar(150) NULL,  -- Menu Category (e.g. School Setup, Foundation Setup, Operations, Reports)
+  `main_menu` varchar(150) NULL,  -- Main Menu (e.g. Student Mgmt., Sullabus Mgmt.)
+  `sub_menu` varchar(150) NULL,  -- Sub Menu (e.g. Student Details, Teacher Details)
+  `tab_name` varchar(100) NULL,
+  `field_name` varchar(100) NULL,
+  `is_system` TINYINT(1) DEFAULT 1,
+  `tenant_creation_allowed` TINYINT(1) DEFAULT 0,
+  `compulsory` TINYINT(1) DEFAULT 1,
+  `is_active` TINYINT(1) DEFAULT 1,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_dropdownNeeds_db_table_column_key` (`db_type`,`table_name`,`column_name`),
+  CONSTRAINT chk_isSubModule_parentId CHECK ((tenant_creation_allowed = 0 AND menu_category IS NULL AND main_menu IS NULL AND sub_menu IS NULL AND tab_name IS NULL AND field_name IS NULL) OR (tenant_creation_allowed = 1 AND menu_category IS NOT NULL AND main_menu IS NOT NULL AND sub_menu IS NOT NULL AND tab_name IS NOT NULL AND field_name IS NOT NULL))  
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Conditions:
+-- 1. If tenant_creation_allowed = 1, then it is must to have menu_category, main_menu, sub_menu, tab_name, field_name.
+-- 2. When PG-Admin/PG-Support will create a Dropdown, it will get 2 option to select -
+--    Option 1 - Dropdown creation by Table & Column details.
+--    Option 2 - Dropdown creation by Menu/Sub-Menu & Field Name.
+--       a. If he select Option 1 then he can select - Table Name, Column Name.
+--       b. If he select Option 2 then he can select - Menu Category, Main Menu, Sub Menu, Tab Name, Field Name.
+-- 3. If some Dropdown is allowed to be created by Tenant(tenant_creation_allowed = 1), then it will always show 5 Dropdowns to select from.
+--    a. Menu Category (this will come from sys_dropdown_needs.menu_category)
+--    b. Main Menu (this will come from sys_dropdown_needs.main_menu)
+--    c. Sub Menu (this will come from sys_dropdown_needs.sub_menu)
+--    d. Tab Name (this will come from sys_dropdown_needs.tab_name)
+--    e. Field Name (this will come from sys_dropdown_needs.field_name)
+-- 4. is_system = 1
+
+-- Dropdown Table to store various dropdown values used across the system
+-- Enhanced sys_dropdown_table to accomodate Menu Detail (Category,Main Menu, Sub-Menu ID) for Easy identification.
+CREATE TABLE IF NOT EXISTS `sys_dropdown_table` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `dropdown_needs_id` bigint unsigned NOT NULL,
+  `ordinal` tinyint unsigned NOT NULL,
+  `key` varchar(160) NOT NULL,      -- Key will be Combination of Table Name + Column Name (e.g. 'cmp_complaint_actions.action_type)
+  `value` varchar(100) NOT NULL,
+  `type` ENUM('String','Integer','Decimal', 'Date', 'Datetime', 'Time', 'Boolean') NOT NULL DEFAULT 'String',
+  `additional_info` JSON DEFAULT NULL,  -- This will store additional information about the dropdown value
+  `is_active` TINYINT(1) DEFAULT 1,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_dropdownTable_ordinal` (`dropdown_needs_id`,`ordinal`),
+  UNIQUE KEY `uq_dropdownTable_key` (`dropdown_needs_id`,`key`),
+  CONSTRAINT `fk_sys_dropdown_table_sys_dropdown_needs` FOREIGN KEY (`dropdown_needs_id`) REFERENCES `sys_dropdown_needs` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- conditions:
+  -- 1. When we go to create a New Dropdown, It will show 3 Dropdowns to select from.
+  --    a. DB Type (this will come from sys_dropdown_needs.db_type)
+  --    b. Table Name (this will come from sys_dropdown_needs.table_name)
+  --    c. Column Name (this will come from sys_dropdown_needs.column_name)
+  -- 2. System will check if the Dropdown Need is already configured in sys_dropdown_needs table.
+  -- 3. If not, Developer need to create a new Dropdown Need as per the need.
+  -- 4. If yes, System will use the existing Dropdown Need.
+
+CREATE TABLE IF NOT EXISTS `sys_media` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `model_type` varchar(255) NOT NULL,
+  `model_id` bigint unsigned NOT NULL,
+  `uuid` char(36) DEFAULT NULL,
+  `collection_name` varchar(255) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `file_name` varchar(255) NOT NULL,
+  `mime_type` varchar(255) DEFAULT NULL,
+  `disk` varchar(255) NOT NULL,
+  `conversions_disk` varchar(255) DEFAULT NULL,
+  `size` bigint unsigned NOT NULL,
+  `manipulations` json NOT NULL,
+  `custom_properties` json NOT NULL,
+  `generated_conversions` json NOT NULL,
+  `responsive_images` json NOT NULL,
+  `order_column` int unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_media_uuid` (`uuid`),
+  KEY `idx_media_modelType_modelId` (`model_type`,`model_id`),
+  KEY `idx_media_orderColumn` (`order_column`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `sys_activity_logs` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `subject_type` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `subject_id` bigint unsigned NOT NULL,
+  `user_id` bigint unsigned NOT NULL,
+  `event` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `properties` json DEFAULT NULL,
+  `ip_address` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `user_agent` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `sys_activity_logs_subject_type_subject_id_index` (`subject_type`,`subject_id`),
+  KEY `sys_activity_logs_user_id_foreign` (`user_id`),
+  KEY `sys_activity_logs_created_at_user_id_index` (`created_at`,`user_id`),
+  CONSTRAINT `sys_activity_logs_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `sys_users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- Tenant Creation
+-- ----------------------------------------------
+CREATE TABLE IF NOT EXISTS `prm_tenant_groups` (
+  id bigint unsigned NOT NULL AUTO_INCREMENT,
+  code VARCHAR(20) NOT NULL,
+  short_name varchar(50) NOT NULL,
+  name varchar(150) NOT NULL,
+  address_1 varchar(200) DEFAULT NULL,
+  address_2 varchar(200) DEFAULT NULL,
+  city_id bigint unsigned NOT NULL,
+  pincode varchar(10) DEFAULT NULL,
+  website_url varchar(150) DEFAULT NULL,
+  email varchar(100) DEFAULT NULL,
+  is_active tinyint(1) NOT NULL DEFAULT 1,
+  deleted_at timestamp NULL DEFAULT NULL,
+  created_at timestamp NULL DEFAULT NULL,
+  updated_at timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_tenantGroups_shortName (short_name),
+  CONSTRAINT fk_tenantGroups_cityId FOREIGN KEY (city_id) REFERENCES glb_cities (id) ON DELETE RESTRICT
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `prm_tenant` (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  tenant_group_id bigint unsigned NOT NULL,
+  code VARCHAR(20) NOT NULL,
+  short_name varchar(50) NOT NULL,
+  name varchar(150) NOT NULL,
+  udise_code varchar(30) DEFAULT NULL,
+  affiliation_no varchar(60) DEFAULT NULL,
+  email varchar(100) DEFAULT NULL,
+  website_url varchar(150) DEFAULT NULL,
+  address_1 varchar(200) DEFAULT NULL,
+  address_2 varchar(200) DEFAULT NULL,
+  area varchar(100) DEFAULT NULL,
+  city_id bigint unsigned NOT NULL,
+  pincode varchar(10) DEFAULT NULL,
+  phone_1 varchar(20) DEFAULT NULL,
+  phone_2 varchar(20) DEFAULT NULL,
+  whatsapp_number varchar(20) DEFAULT NULL,
+  longitude decimal(10,7) DEFAULT NULL,
+  latitude decimal(10,7) DEFAULT NULL,
+  locale varchar(16) DEFAULT 'en_IN',
+  currency varchar(8) DEFAULT 'INR',
+  established_date date DEFAULT NULL,
+  is_active tinyint(1) NOT NULL DEFAULT 1,
+  created_at timestamp NULL DEFAULT NULL,
+  updated_at timestamp NULL DEFAULT NULL,
+  deleted_at timestamp NULL DEFAULT NULL,
+  UNIQUE KEY uq_org (org_id),
+  CONSTRAINT fk_tenantGroups_cityId FOREIGN KEY (city_id) REFERENCES glb_cities (id) ON DELETE RESTRICT
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `prm_tenant_domains` (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  tenant_id BIGINT NOT NULL,
+  domain VARCHAR(255) NOT NULL,
+  db_name VARCHAR(100) NOT NULL,
+  db_host VARCHAR(200) NOT NULL,
+  db_port VARCHAR(10) NOT NULL DEFAULT '3306',
+  db_username VARCHAR(100) NOT NULL,
+  db_password VARCHAR(255) NOT NULL,
+  is_active TINYINT(1) DEFAULT 1,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  updated_at timestamp NULL DEFAULT NULL,
+  deleted_at timestamp NULL DEFAULT NULL,
+  CONSTRAINT fk_tenantDomains_tenantId FOREIGN KEY (tenant_id) REFERENCES prm_tenant (id) ON DELETE RESTRICT
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- Plan & Module
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `prm_billing_cycles` (
+  `id` SMALLINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `short_name` VARCHAR(50) NOT NULL,  -- 'MONTHLY','QUARTERLY','YEARLY','ONE_TIME'
+  `name` VARCHAR(50) NOT NULL,
+  `months_count` TINYINT UNSIGNED NOT NULL,
+  `description` VARCHAR(255) DEFAULT NULL,
+  `is_recurring` TINYINT(1) NOT NULL DEFAULT 1,
+  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+  UNIQUE KEY `uq_billingCycles_code` (`short_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `prm_plans` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `plan_code` varchar(20) NOT NULL,
+  `version` int unsigned NOT NULL DEFAULT '0',
+  `name` varchar(100) NOT NULL,
+  `description` varchar(255) DEFAULT NULL,
+  `billing_cycle_id` SMALLINT NOT NULL,           -- Default billing Cycle (This need to be json Type)
+  `price_monthly` decimal(12,2) DEFAULT NULL,     -- For Same Plan we may charge different for Monthly payment/Quaterly/Yearly
+  `price_quarterly` decimal(12,2) DEFAULT NULL,   -- For Same Plan we may charge different for Monthly payment/Quaterly/Yearly
+  `price_yearly` decimal(12,2) DEFAULT NULL,      -- For Same Plan we may charge different for Monthly payment/Quaterly/Yearly
+  `currency` char(3) NOT NULL DEFAULT 'INR',
+  `trial_days` int unsigned NOT NULL DEFAULT '0', -- Allowed Trial Days
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_plans_planCode_version` (`plan_code`,`version`),
+  CONSTRAINT `fk_plans_billingCycleId` FOREIGN KEY (`billing_cycle_id`) REFERENCES `prm_billing_cycles` (`id`) ON DELETE RESTRICT,
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `prm_module_plan_jnt` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `plan_id` bigint unsigned NOT NULL,
+  `module_id` bigint unsigned NOT NULL,
+  `is_active` tinyint(1) unsigned NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  CONSTRAINT `fk_modulePlan_moduleId` FOREIGN KEY (`module_id`) REFERENCES `sys_modules` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_modulePlan_planId` FOREIGN KEY (`plan_id`) REFERENCES `prm_plans` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- Tenant Subscription
+-- ------------------------------------------------------------
+-- old name 'prm_organization_plan_jnt'
+CREATE TABLE IF NOT EXISTS `prm_tenant_plan_jnt` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `tenant_id` bigint unsigned NOT NULL,             -- old name 'org_id'
+  `plan_id` bigint unsigned NOT NULL,
+  `is_subscribed` tinyint(1) NOT NULL DEFAULT '1',
+  `is_trial` tinyint(1) NOT NULL DEFAULT '0',
+  `auto_renew` tinyint(1) NOT NULL DEFAULT '1',
+  `automatic_billing` tinyint(1) NOT NULL DEFAULT '1',
+  `status` varchar(20) NOT NULL DEFAULT 'ACTIVE',  -- Need to be created in dorpdown Table ('ACTIVE','SUSPENDED','CANCELED','EXPIRED')
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `current_flag` int GENERATED ALWAYS AS ((case when (`is_subscribed` = 1) then `org_id` else NULL end)) STORED,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_tenantPlan_currentFlag_planId` (`current_flag`,`plan_id`),
+  CONSTRAINT `fk_tenantPlan_orgId` FOREIGN KEY (`tenant_id`) REFERENCES `prm_tenant` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `fk_tenantPlan_planId` FOREIGN KEY (`plan_id`) REFERENCES `prm_plans` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `prm_tenant_plan_rates` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `tenant_plan_id` bigint unsigned NOT NULL,         -- Old name 'organization_plan_id'
+  `start_date` date DEFAULT NULL,                    -- Plan Start Date
+  `end_date` date DEFAULT NULL,                      -- Plan End Date
+  `billing_cycle_id` SMALLINT UNSIGNED NOT NULL,
+  `billing_cycle_day` tinyint NOT NULL DEFAULT '1',  -- This will be day of billing every month for this Org.
+  `monthly_rate` decimal(12,2) NOT NULL,
+  `rate_per_cycle` decimal(12,2) NOT NULL,
+  `currency` char(3) NOT NULL DEFAULT 'INR',
+  `min_billing_qty` int unsigned NOT NULL DEFAULT '1',  -- Edited Name (Lencenses (if Student count < Min_Qty then min_qty will be charged))
+  `discount_percent` decimal(5,2) NOT NULL DEFAULT '0.00',  -- discount in percentage per billing cycle
+  `discount_amount` decimal(12,2) NOT NULL DEFAULT '0.00',  -- discount as a fixed amount per billing cycle
+  `discount_remark` varchar(50) NULL,                       -- Added New
+  `extra_charges` decimal(12,2) NOT NULL DEFAULT '0.00',    -- Added New
+  `charges_remark` varchar(50) NULL,                        -- Added New
+  `tax1_percent` decimal(5,2) NOT NULL DEFAULT '0.00',      -- Edited
+  `tax1_remark` varchar(50) NULL,                           -- Added New (to acomodate different type of taxes - GST, IGST, CGST etc.)
+  `tax2_percent` decimal(5,2) NOT NULL DEFAULT '0.00',      -- Edited
+  `tax2_remark` varchar(50) NULL,                           -- Added New (to acomodate different type of taxes - GST, IGST, CGST etc.)
+  `tax3_percent` decimal(5,2) NOT NULL DEFAULT '0.00',      -- Edited
+  `tax3_remark` varchar(50) NULL,                           -- Added New (to acomodate different type of taxes - GST, IGST, CGST etc.)
+  `tax4_percent` decimal(5,2) NOT NULL DEFAULT '0.00',      -- Edited
+  `tax4_remark` varchar(50) NULL,                           -- Added New (to acomodate different type of taxes - GST, IGST, CGST etc.)
+  `credit_days` SMALLINT UNSIGNED NOT NULL,                 -- Number of day to calculate 'next_billing_date'
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_tenantPlanRates_PlanId_stDate_endDate` (`tenant_plan_id`,`start_date`,`end_date`),
+  CONSTRAINT `fk_tenantPlanRates_billingCycleId` FOREIGN KEY (`billing_cycle_id`) REFERENCES `prm_billing_cycles` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `fk_tenantPlanRates_orgPlanId` FOREIGN KEY (`organization_plan_id`) REFERENCES `prm_tenant_plan_jnt` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- old name 'sch_module_organization_plan_jnt'
+CREATE TABLE IF NOT EXISTS `prm_tenant_plan_module_jnt` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `module_id` bigint unsigned NOT NULL,
+  `tenant_plan_id` bigint unsigned NOT NULL,     -- old name 'organization_plan_id'
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  CONSTRAINT `fk_moduleTenantPlan_moduleId` FOREIGN KEY (`module_id`) REFERENCES `sys_modules` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `fk_moduleTenantPlan_tenantPlanId` FOREIGN KEY (`tenant_plan_id`) REFERENCES `prm_tenant_plan_jnt` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- This Table will have entries for the plan validity date range within the current Academic Session (1st April to 31st March)
+CREATE TABLE IF NOT EXISTS `prm_tenant_plan_billing_schedule` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `tenant_plan_id` BIGINT UNSIGNED NOT NULL,
+    `tenant_id` BIGINT UNSIGNED NOT NULL,
+    `billing_cycle_id` SMALLINT UNSIGNED NOT NULL,
+    `schedule_billing_date` DATE NOT NULL,
+    `billing_start_date` DATE NOT NULL,
+    `billing_end_date` DATE NOT NULL,
+    `bill_generated` TINYINT(1) NOT NULL DEFAULT `0`,
+    `generated_invoice_id` BIGINT UNSIGNED DEFAULT NULL,  -- Fk to bil_tenant_invoices
+    `is_active` tinyint(1) NOT NULL DEFAULT '1',
+    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT `fk_tenantPlanBillSched_planId` FOREIGN KEY (`tenant_plan_id`) REFERENCES `prm_tenant_plan_jnt`(`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_tenantPlanBillSched_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `prm_tenant`(`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_tenantPlanBillSched_cycle` FOREIGN KEY (`billing_cycle_id`) REFERENCES `prm_billing_cycles`(`id`) ON DELETE RESTRICT,
+    CONSTRAINT `fk_tenantPlanBillSched_invId` FOREIGN KEY (`generated_invoice_id`) REFERENCES `bil_tenant_invoices`(`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- Tenant Invoicing
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `bil_tenant_invoices` (
+  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `tenant_id` BIGINT UNSIGNED NOT NULL,               -- old name 'org_id'
+  `tenant_plan_id` BIGINT UNSIGNED NOT NULL,          -- old Name 'organization_plan_id'
+  `billing_cycle_id` SMALLINT UNSIGNED NOT NULL,      -- FK
+  `invoice_no` VARCHAR(50) NOT NULL,                  -- Should be Auto-Generated
+  `invoice_date` DATE NOT NULL,                       -- Invoice Date will always be Next Day to billing_end_date
+  `billing_start_date` DATE NOT NULL,
+  `billing_end_date` DATE NOT NULL,
+  `min_billing_qty` int unsigned NOT NULL DEFAULT '1',    -- No of Lincenses (if Student count < Min_Qty then min_qty will be charged))
+  `total_user_qty` int unsigned NOT NULL DEFAULT '1',     -- Number of licenses used by Org in the billing period
+  `plan_rate` decimal(12,2) NOT NULL,                     -- applicable plan rate as per school aggrement
+  `billing_qty` int unsigned NOT NULL DEFAULT '1',        -- Billing Qty. will be either `min_billing_qty` or `total_license_qty`, whcihcever is higher)
+  `sub_total` DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+  `discount_percent` decimal(5,2) NOT NULL DEFAULT '0.00',  -- discount in percentage per billing cycle
+  `discount_amount` decimal(12,2) NOT NULL DEFAULT '0.00',  -- discount as a fixed amount per billing cycle
+  `discount_remark` varchar(50) NULL,
+  `extra_charges` decimal(12,2) NOT NULL DEFAULT '0.00', 
+  `charges_remark` varchar(50) NULL,
+  `tax1_percent` decimal(5,2) NOT NULL DEFAULT '0.00',
+  `tax1_remark` varchar(50) NULL,                           -- Acomodate different type of taxes - GST, IGST, CGST & other Taxes)
+  `tax1_amount` DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  `tax2_percent` decimal(5,2) NOT NULL DEFAULT '0.00',      -- 
+  `tax2_remark` varchar(50) NULL,                           -- Acomodate different type of taxes - GST, IGST, CGST & other Taxes)
+  `tax2_amount` DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  `tax3_percent` decimal(5,2) NOT NULL DEFAULT '0.00',      -- 
+  `tax3_remark` varchar(50) NULL,                           -- Acomodate different type of taxes - GST, IGST, CGST & other Taxes)
+  `tax3_amount` DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  `tax4_percent` decimal(5,2) NOT NULL DEFAULT '0.00',      -- 
+  `tax4_remark` varchar(50) NULL,                           -- Acomodate different type of taxes - GST, IGST, CGST & other Taxes)
+  `tax4_amount` DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  `total_tax_amount` DECIMAL(12,2) NOT NULL DEFAULT 0.00, 
+  `net_payable_amount` DECIMAL(12,2) NOT NULL DEFAULT 0.00, -- 
+  `paid_amount` DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+  `currency` CHAR(3) NOT NULL DEFAULT 'INR',
+  `status` VARCHAR(20) NOT NULL DEFAULT 'PENDING',        -- Will use Dropdown Table to populate (Tenant_Invoice_Status)
+  `credit_days`  SMALLINT UNSIGNED NOT NULL,              -- This will be used to calculat Due Date
+  `payment_due_date` DATE NOT NULL,                       -- Bill Date + credit_days
+  `is_recurring` TINYINT(1) NOT NULL DEFAULT 1,
+  `auto_renew` TINYINT(1) NOT NULL DEFAULT 1,
+  `remarks` TEXT DEFAULT NULL,
+  `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY `uq_tenantInvoices_invoiceNo` (`invoice_no`),
+  CONSTRAINT `fk_tenantInvoices_tenantId` FOREIGN KEY (`tenant_id`) REFERENCES `prm_tenant` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_tenantInvoices_PlanId` FOREIGN KEY (`tenant_plan_id`) REFERENCES `prm_tenant_plan_jnt` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_tenantInvoices_cycleId` FOREIGN KEY (`billing_cycle_id`) REFERENCES `prm_billing_cycles` (`id`) ON DELETE RESTRICT,
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `bil_tenant_invoicing_modules_jnt` (
+  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `tenant_invoice_id` BIGINT UNSIGNED NOT NULL,   -- fk to (bil_tenant_invoices)
+  `module_id` BIGINT UNSIGNED DEFAULT NULL,      -- FK
+  UNIQUE KEY `uq_tenantInvModule_orgInvId_moduleId` (`tenant_invoicing_id`, `module_id`),
+  CONSTRAINT `fk_tenantInvModule_invoicingId` FOREIGN KEY (`tenant_invoice_id`) REFERENCES `bil_tenant_invoice` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_tenantInvModule_moduleId` FOREIGN KEY (`module_id`) REFERENCES `sys_modules` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `bil_tenant_invoicing_payments` (
+  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `tenant_invoice_id` BIGINT UNSIGNED NOT NULL,    -- fk to (bil_tenant_invoices)
+  `payment_date` DATE NOT NULL,
+  `transaction_id` VARCHAR(100) DEFAULT NULL,
+  `mode` VARCHAR(20) NOT NULL DEFAULT 'ONLINE',      -- use dropdown table ('ONLINE','BANK_TRANSFER','CASH','CHEQUE')
+  `mode_other` VARCHAR(20) DEFAULT NULL,
+  `amount_paid` DECIMAL(14,2) NOT NULL,
+  `consolidated_amount` DECIMAL(14,2) NULL,      -- If Consolidated Payment then only this will be stored else Null.
+  `currency` CHAR(3) NOT NULL DEFAULT 'INR',
+  `payment_status` NOT NULL VARCHAR(20) DEFAULT 'SUCCESS',  -- use dropdown table ('INITIATED','SUCCESS','FAILED')
+  `gateway_response` JSON DEFAULT NULL,
+  `payment_reconciled` tinyint(1) NOT NULL DEFAULT '0',
+  `remarks` VARCHAR(255) DEFAULT NULL,
+  `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT `fk_tenantInvPayment_tenantInvId` FOREIGN KEY (`tenant_invoicing_id`) REFERENCES `bil_tenant_invoicing` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Note - Below table will have multiple records for every billing. 1 Record for every action.
+CREATE TABLE IF NOT EXISTS `bil_tenant_invoicing_audit_logs` (
+  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `tenant_invoicing_id` BIGINT UNSIGNED NOT NULL,        -- fk to (bil_tenant_invoices)
+  `action_date` TIMESTAMP not NULL,
+  `action_type` VARCHAR(20) NOT NULL DEFAULT 'PENDING',  -- use dropdown table ('Not Billed','Bill Generated','Overdue','Notice Sent','Fully Paid')
+  `performed_by` BIGINT UNSIGNED DEFAULT NULL,           -- which user perform the ation
+  `event_info` JSON DEFAULT NULL,
+  `notes` VARCHAR(500) DEFAULT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT `fk_audit_billing` FOREIGN KEY (`tenant_invoicing_id`) REFERENCES `bil_tenant_invoicing` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_audit_user` FOREIGN KEY (`performed_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `bil_tenant_email_schedules` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `invoice_id` bigint unsigned NOT NULL,
+  `schedule_time` timestamp NOT NULL,
+  `status` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+
+
+
+
+
+
+
+
+
+-- ==========================================================================================================
+-- global_db.sql 
+-- ==========================================================================================================
+
+CREATE TABLE IF NOT EXISTS `glb_countries` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(50) NOT NULL,
+  `short_name` varchar(10) NOT NULL,
+  `global_code` varchar(10) DEFAULT NULL,
+  `currency_code` varchar(8) DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_country_name` (`name`),
+  UNIQUE KEY `uq_countries_shortName` (`short_name`),
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `glb_states` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `country_id` bigint unsigned NOT NULL,    -- fk
+  `name` varchar(50) NOT NULL,
+  `short_name` varchar(10) NOT NULL,
+  `global_code` varchar(10) DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_state_countryId_name` (`country_id`,`name`),
+  CONSTRAINT `fk_state_countryId` FOREIGN KEY (`country_id`) REFERENCES `glb_countries` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB AUTO_INCREMENT=71 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `glb_districts` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `state_id` bigint unsigned NOT NULL,    -- fk
+  `name` varchar(50) NOT NULL,
+  `short_name` varchar(10) NOT NULL,
+  `global_code` varchar(10) DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_district_stateId_name` (`state_id`,`name`),
+  CONSTRAINT `chk_districts_stateId` FOREIGN KEY (`state_id`) REFERENCES `glb_states` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB AUTO_INCREMENT=290 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `glb_cities` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `district_id` bigint unsigned NOT NULL,    -- fk
+  `name` varchar(100) NOT NULL,
+  `short_name` varchar(20) NOT NULL,
+  `global_code` varchar(20) DEFAULT NULL,
+  `default_timezone` varchar(64) DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  CONSTRAINT `fk_cities_districtId` FOREIGN KEY (`district_id`) REFERENCES `glb_districts` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `glb_academic_sessions` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `short_name` varchar(20) NOT NULL,
+  `name` varchar(50) NOT NULL,
+  `start_date` date NOT NULL,
+  `end_date` date NOT NULL,
+  `is_current` tinyint(1) NOT NULL DEFAULT '1',
+  `current_flag` tinyint(1) GENERATED ALWAYS AS ((case when (`is_current` = 1) then `1` else NULL end)) STORED,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_acadSessions_shortName` (`short_name`),
+  UNIQUE KEY `uq_acadSession_currentFlag` (`current_flag`)
+) ENGINE=InnoDB AUTO_INCREMENT=31 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `glb_boards` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) NOT NULL,
+  `short_name` varchar(20) NOT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_academicBoard_name` (`name`),
+  UNIQUE KEY `uq_academicBoard_shortName` (`short_name`),
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `glb_languages` (
+  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `code` VARCHAR(10) NOT NULL,                  -- ISO code: en, hi, fr, ar
+  `name` VARCHAR(50) NOT NULL,                  -- English, Hindi, French...
+  `native_name` VARCHAR(50) DEFAULT NULL,       -- "हिन्दी", "Français"
+  `direction` ENUM('LTR','RTL') DEFAULT 'LTR',  -- Left to Rght / Right to Left
+  `is_active` TINYINT(1) DEFAULT 1,
+  UNIQUE KEY `uq_languages_code` (`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `glb_menus` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `parent_id` bigint unsigned DEFAULT NULL,     -- FK to self
+  `is_category` tinyint(1) NOT NULL DEFAULT '0',
+  `code` varchar(60) NOT NULL,
+  `slug` VARCHAR(150) NOT NULL,
+  `title` varchar(100) NOT NULL,
+  `description` varchar(255) DEFAULT NULL,
+  `icon` varchar(150) DEFAULT NULL,
+  `route` varchar(255) DEFAULT NULL,
+  `sort_order` int unsigned NOT NULL,
+  `visible_by_default` tinyint(1) NOT NULL DEFAULT '1',
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_menus_code` (`code`),
+  CONSTRAINT `fk_menus_parentId` FOREIGN KEY (`parent_id`) REFERENCES `glb_menus` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `chk_is_category_parentId` CHECK ((((`is_category` = 1) and (`parent_id` is NULL)) or (`is_category` = 0)))
+) ENGINE=InnoDB AUTO_INCREMENT=29 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `glb_modules` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `parent_id` bigint unsigned DEFAULT NULL,    -- fk to self
+  `name` varchar(50) NOT NULL,
+  `version` tinyint NOT NULL DEFAULT '1',
+  `is_sub_module` tinyint(1) NOT NULL DEFAULT '0',    -- kept for CONSTRAINT `chk_isSubModule_parentId`
+  `description` varchar(500) DEFAULT NULL,
+  `is_core` tinyint(1) NOT NULL DEFAULT '0',
+  `default_visible` tinyint(1) NOT NULL DEFAULT '1',
+  `available_perm_view` tinyint(1) NOT NULL DEFAULT '1',
+  `available_perm_add` tinyint(1) NOT NULL DEFAULT '1',
+  `available_perm_edit` tinyint(1) NOT NULL DEFAULT '1',
+  `available_perm_delete` tinyint(1) NOT NULL DEFAULT '1',
+  `available_perm_export` tinyint(1) NOT NULL DEFAULT '1',
+  `available_perm_import` tinyint(1) NOT NULL DEFAULT '1',
+  `available_perm_print` tinyint(1) NOT NULL DEFAULT '1',
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_module_parentId_name_version` (`parent_id`,`name`,`version`),
+  CONSTRAINT `fk_module_parentId` FOREIGN KEY (`parent_id`) REFERENCES `glb_modules` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT chk_isSubModule_parentId CHECK ((is_sub_module = 1 AND parent_id IS NOT NULL) OR (is_sub_module = 0 AND parent_id IS NULL))
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `glb_menu_model_jnt` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `menu_id` bigint unsigned NOT NULL,
+  `module_id` bigint unsigned NOT NULL,
+  PRIMARY KEY (`id`),
+  CONSTRAINT `fk_menuModel_menuId` FOREIGN KEY (`menu_id`) REFERENCES `glb_menus` (`id`)  ON DELETE RESTRICT,
+  CONSTRAINT `fk_menuModel_moduleId` FOREIGN KEY (`module_id`) REFERENCES `glb_modules` (`id`)  ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `glb_translations` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `translatable_type` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `translatable_id` bigint unsigned NOT NULL,
+  `language_id` bigint unsigned NOT NULL,
+  `key` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `value` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_translatable_language_key` (`translatable_type`,`translatable_id`,`language_id`,`key`),
+  KEY `sys_translations_translatable_type_translatable_id_index` (`translatable_type`,`translatable_id`),
+  KEY `sys_translations_language_id_foreign` (`language_id`),
+  CONSTRAINT `sys_translations_language_id_foreign` FOREIGN KEY (`language_id`) REFERENCES `sys_languages` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+
+
+
+
+
+
+
+
+
+-- ==========================================================================================================
+-- tenant_db.sql 
+-- ==========================================================================================================
+
+-- --------------------------------------------------------------------------------------------
+-- Create Views after creating global_master database and it's tables
+-- --------------------------------------------------------------------------------------------
+
+CREATE VIEW glb_countries  AS SELECT * FROM global_master.glb_countries;
+CREATE VIEW glb_states     AS SELECT * FROM global_master.glb_states;
+CREATE VIEW glb_districts  AS SELECT * FROM global_master.glb_districts;
+CREATE VIEW glb_cities     AS SELECT * FROM global_master.glb_cities;
+CREATE VIEW glb_academic_sessions  AS SELECT * FROM global_master.glb_academic_sessions;
+CREATE VIEW glb_boards     AS SELECT * FROM global_master.glb_boards;
+
+CREATE VIEW glb_languages AS SELECT * FROM global_master.glb_languages;
+CREATE VIEW glb_menus AS SELECT * FROM global_master.glb_menus;
+CREATE VIEW glb_modules AS SELECT * FROM global_master.glb_modules;
+CREATE VIEW glb_menu_model_jnt AS SELECT * FROM global_master.glb_menu_model_jnt;
+CREATE VIEW glb_translations AS SELECT * FROM global_master.glb_translations;
+
+-- ------------------------------------------------------------
+-- System Tables
+-- ------------------------------------------------------------
+
+-- Tables for Role Based Access Control (RBAC) using spatie/laravel-permission package
+CREATE TABLE IF NOT EXISTS `sys_permissions` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `short_name` VARCHAR(20) NOT NULL,            -- This will be used for dropdown
+  `name` varchar(100) NOT NULL,
+  `guard_name` varchar(255) NOT NULL,           -- used by Laravel routing
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_permissions_shortName_guardName` (`short_name`,`guard_name`),
+  UNIQUE KEY `uq_permissions_name_guardName` (`name`,`guard_name`)
+) ENGINE=InnoDB AUTO_INCREMENT=176 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `sys_roles` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(50) NOT NULL,
+  `short_name` VARCHAR(20) NOT NULL,
+  `description` VARCHAR(255) NULL,
+  `guard_name` varchar(255) NOT NULL,
+  `is_system`  TINYINT(1) NOT NULL DEFAULT 0, -- if true, role belongs to PG
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_roles_name_guardName` (`name`,`guard_name`),
+  UNIQUE KEY `uq_roles_name_guardName` (`short_name`,`guard_name`)
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Junction Tables for Many-to-Many Relationships
+CREATE TABLE IF NOT EXISTS `sys_role_has_permissions_jnt` (
+  `permission_id` bigint unsigned NOT NULL,   -- FK to sys_permissions
+  `role_id` bigint unsigned NOT NULL,         -- FK to sys_roles
+  PRIMARY KEY (`permission_id`,`role_id`),
+  KEY `idx_roleHasPermissions_roleId` (`role_id`),
+  CONSTRAINT `fk_roleHasPermissions_permissionId` FOREIGN KEY (`permission_id`) REFERENCES `sys_permissions` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_roleHasPermissions_roleId` FOREIGN KEY (`role_id`) REFERENCES `sys_roles` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Junction Tables for Polymorphic Many-to-Many Relationships
+CREATE TABLE IF NOT EXISTS `sys_model_has_permissions_jnt` (
+  `permission_id` bigint unsigned NOT NULL,   -- FK to sys_permissions
+  `model_type` varchar(190) NOT NULL,         -- E.g., 'App\Models\User'
+  `model_id` bigint unsigned NOT NULL,        -- E.g., User ID
+  PRIMARY KEY (`permission_id`,`model_id`,`model_type`),
+  KEY `idx_modelHasPermissions_modelId_modelType` (`model_id`,`model_type`),
+  CONSTRAINT `fk_modelHasPermissions_permissionId` FOREIGN KEY (`permission_id`) REFERENCES `sys_permissions` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Junction Tables for Polymorphic Many-to-Many Relationships
+CREATE TABLE IF NOT EXISTS `sys_model_has_roles_jnt` (
+  `role_id` bigint unsigned NOT NULL,       -- FK to sys_roles
+  `model_type` varchar(190) NOT NULL,       -- E.g., 'App\Models\User'
+  `model_id` bigint unsigned NOT NULL,      -- E.g., User ID
+  PRIMARY KEY (`role_id`,`model_id`,`model_type`),
+  KEY `idx_modelHasRoles_modelId_modelType` (`model_id`,`model_type`),
+  CONSTRAINT `fk_modelHasRoles_roleId` FOREIGN KEY (`role_id`) REFERENCES `sys_roles` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `sys_users` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `emp_code` VARCHAR(20) NOT NULL,        -- Employee Code (Unique code for each user)
+  `short_name` varchar(30) NOT NULL,      -- This Field will be used for showing Dropdown of Users i.e. Teachers, Students, Parents
+  `name` varchar(100) NOT NULL,           -- Full Name (First Name, Middle Name, Last Name)
+  `email` varchar(150) NOT NULL,
+  `mobile_no` varchar(32) DEFAULT NULL,
+  `phone_no` varchar(32) DEFAULT NULL,
+  `two_factor_auth_enabled` tinyint(1) NOT NULL DEFAULT '0',    -- 0 = Disabled, 1 = Enabled
+  `email_verified_at` timestamp NULL DEFAULT NULL,              -- When email was verified
+  `mobile_verified_at` timestamp NULL DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `password` varchar(255) COLLATE utf8mb4_unicode_bin NOT NULL, -- Hashed Password
+  `is_super_admin` tinyint(1) NOT NULL DEFAULT '0',             -- 0 = No, 1 = Yes
+  `last_login_at` datetime DEFAULT NULL,                        -- Last Login Timestamp
+  `super_admin_flag` tinyint GENERATED ALWAYS AS ((case when (`is_super_admin` = 1) then 1 else NULL end)) STORED,  -- To ensure only one super admin
+  `remember_token` varchar(100) DEFAULT NULL,                   -- For "Remember Me" functionality
+  `prefered_language` bigint unsigned NOT NULL,                 -- fk to glb_languages
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_users_empCode` (`emp_code`),
+  UNIQUE KEY `uq_users_shortName` (`short_name`),
+  UNIQUE KEY `uq_users_email` (`email`),
+  UNIQUE KEY `uq_users_mobileNo` (`mobile_no`),
+  UNIQUE KEY `uq_single_super_admin` (`super_admin_flag`),
+  CONSTRAINT `fk_users_language` FOREIGN KEY (`prefered_language`) REFERENCES `glb_languages` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=33 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+/* Optional triggers to prevent deleting/demoting super admin (you already used triggers for sessions) */
+DELIMITER $$
+CREATE TRIGGER trg_users_prevent_delete_super BEFORE DELETE ON users
+FOR EACH ROW
+BEGIN
+  IF OLD.is_super_admin = 1 THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Super Admin cannot be deleted';
+  END IF;
+END$$
+
+CREATE TRIGGER trg_users_prevent_update_super BEFORE UPDATE ON users
+FOR EACH ROW
+BEGIN
+  IF OLD.is_super_admin = 1 AND NEW.is_super_admin = 0 THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Super Admin cannot be demoted';
+  END IF;
+END$$
+DELIMITER ;
+
+-- This table will store various system-wide settings and configurations
+CREATE TABLE IF NOT EXISTS `sys_settings` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `description` varchar(255) NULL,    -- Here we will describe the use of the variable
+  `key` varchar(100) NOT NULL,        -- This will be the Key to connect Value with it
+  `value` varchar(255) DEFAULT NULL,          -- Actual stored setting value. Could be string, JSON, or serialized data depending on type
+  `type` varchar(50) DEFAULT NULL,    -- e.g. 'string','json','int','boolean', 'date' etc.
+  `is_public` tinyint(1) NOT NULL DEFAULT 0,  -- Flag — 1 means this setting can be safely exposed to the frontend (e.g. school logo, theme color), 0 means internal/backend-only (e.g. API keys).
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_settings_key` (`key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Ths Table will capture the detail of which Field of Which Table fo Which Databse Type, I can create a Dropdown in sys_dropdown_table of?
+-- This will help us to make sure we can only create create a Dropdown in sys_dropdown_table whcih has been configured by Developer.
+CREATE TABLE IF NOT EXISTS `sys_dropdown_needs` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `db_type` ENUM('Prime','Tenant','Global') NOT NULL,  -- Which Database this Dropdown is for? (prime_db,tenant_db,global_db)
+  `table_name` varchar(150) NOT NULL,  -- Table Name
+  `column_name` varchar(150) NOT NULL,  -- Column Name
+  `menu_category` varchar(150) NULL,  -- Menu Category (e.g. School Setup, Foundation Setup, Operations, Reports)
+  `main_menu` varchar(150) NULL,  -- Main Menu (e.g. Student Mgmt., Sullabus Mgmt.)
+  `sub_menu` varchar(150) NULL,  -- Sub Menu (e.g. Student Details, Teacher Details)
+  `tab_name` varchar(100) NULL,
+  `field_name` varchar(100) NULL,
+  `is_system` TINYINT(1) DEFAULT 1,
+  `tenant_creation_allowed` TINYINT(1) DEFAULT 0,
+  `compulsory` TINYINT(1) DEFAULT 1,
+  `is_active` TINYINT(1) DEFAULT 1,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_dropdownNeeds_db_table_column_key` (`db_type`,`table_name`,`column_name`),
+  CONSTRAINT chk_isSubModule_parentId CHECK ((tenant_creation_allowed = 0 AND menu_category IS NULL AND main_menu IS NULL AND sub_menu IS NULL AND tab_name IS NULL AND field_name IS NULL) OR (tenant_creation_allowed = 1 AND menu_category IS NOT NULL AND main_menu IS NOT NULL AND sub_menu IS NOT NULL AND tab_name IS NOT NULL AND field_name IS NOT NULL))  
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Conditions:
+  -- 1. If tenant_creation_allowed = 1, then it is must to have menu_category, main_menu, sub_menu, tab_name, field_name.
+  -- 2. When PG-Admin/PG-Support will create a Dropdown, it will get 2 option to select -
+  --    Option 1 - Dropdown creation by Table & Column details.
+  --    Option 2 - Dropdown creation by Menu/Sub-Menu & Field Name.
+  --       a. If he select Option 1 then he can select - Table Name, Column Name.
+  --       b. If he select Option 2 then he can select - Menu Category, Main Menu, Sub Menu, Tab Name, Field Name.
+  -- 3. If some Dropdown is allowed to be created by Tenant(tenant_creation_allowed = 1), then it will always show 5 Dropdowns to select from.
+  --    a. Menu Category (this will come from sys_dropdown_needs.menu_category)
+  --    b. Main Menu (this will come from sys_dropdown_needs.main_menu)
+  --    c. Sub Menu (this will come from sys_dropdown_needs.sub_menu)
+  --    d. Tab Name (this will come from sys_dropdown_needs.tab_name)
+  --    e. Field Name (this will come from sys_dropdown_needs.field_name)
+  -- 4. is_system = 1
+
+-- ---------------------------------------------------------------------------------------------
+-- Dropdown Table to store various dropdown values used across the system
+-- Enhanced sys_dropdown_table to accomodate Menu Detail (Category,Main Menu, Sub-Menu ID) for Easy identification.
+CREATE TABLE IF NOT EXISTS `sys_dropdown_table` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `dropdown_needs_id` bigint unsigned NOT NULL,
+  `ordinal` tinyint unsigned NOT NULL,
+  `key` varchar(160) NOT NULL,      -- Key will be Combination of Table Name + Column Name (e.g. 'cmp_complaint_actions.action_type)
+  `value` varchar(100) NOT NULL,
+  `type` ENUM('String','Integer','Decimal', 'Date', 'Datetime', 'Time', 'Boolean') NOT NULL DEFAULT 'String',
+  `additional_info` JSON DEFAULT NULL,  -- This will store additional information about the dropdown value
+  `is_active` TINYINT(1) DEFAULT 1,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_dropdownTable_ordinal` (`dropdown_needs_id`,`ordinal`),
+  UNIQUE KEY `uq_dropdownTable_key` (`dropdown_needs_id`,`key`),
+  CONSTRAINT `fk_sys_dropdown_table_sys_dropdown_needs` FOREIGN KEY (`dropdown_needs_id`) REFERENCES `sys_dropdown_needs` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- conditions:
+  -- 1. When we go to create a New Dropdown, It will show 3 Dropdowns to select from.
+  --    a. DB Type (this will come from sys_dropdown_needs.db_type)
+  --    b. Table Name (this will come from sys_dropdown_needs.table_name)
+  --    c. Column Name (this will come from sys_dropdown_needs.column_name)
+  -- 2. System will check if the Dropdown Need is already configured in sys_dropdown_needs table.
+  -- 3. If not, Developer need to create a new Dropdown Need as per the need.
+  -- 4. If yes, System will use the existing Dropdown Need.
+
+-- ---------------------------------------------------------------------------------------------
+
+-- Table to store media files associated with various models (e.g., users, posts)
+CREATE TABLE IF NOT EXISTS `sys_media` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `model_type` varchar(255) NOT NULL,           -- E.g., 'App\Models\User'
+  `model_id` bigint unsigned NOT NULL,          -- E.g., User ID
+  `uuid` char(36) DEFAULT NULL,                 -- Universally Unique Identifier for the media
+  `collection_name` varchar(255) NOT NULL,      -- E.g., 'avatars', 'documents'
+  `name` varchar(255) NOT NULL,                 -- Original file name without extension
+  `file_name` varchar(255) NOT NULL,
+  `mime_type` varchar(255) DEFAULT NULL,        -- E.g., 'image/jpeg', 'application/pdf'
+  `disk` varchar(255) NOT NULL,                 -- Storage disk (e.g., 'local', 's3')
+  `conversions_disk` varchar(255) DEFAULT NULL, -- Disk for storing converted files
+  `size` bigint unsigned NOT NULL,              -- File size in bytes  
+  `manipulations` json NOT NULL,                -- JSON field to store any manipulations applied to the media
+  `custom_properties` json NOT NULL,            -- JSON field for any custom properties
+  `generated_conversions` json NOT NULL,        -- JSON field to track generated conversions
+  `responsive_images` json NOT NULL,            -- JSON field for responsive image data
+  `order_column` int unsigned DEFAULT NULL,     -- For ordering media items
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_media_uuid` (`uuid`),
+  KEY `idx_media_modelType_modelId` (`model_type`,`model_id`),
+  KEY `idx_media_orderColumn` (`order_column`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ------------------------------------------------------------
+-- School Setup Module (sch)
+-- ------------------------------------------------------------
+-- This table is a replica of 'prm_tenant' table in 'prmprime_db' database
+CREATE TABLE IF NOT EXISTS `sch_organizations` (
+  `id` bigint unsigned NOT NULL,              -- it will have same id as it is in 'prm_tenant'
+  `group_code` varchar(20) NOT NULL,          -- Code for Grouping of Organizations/Schools
+  `group_short_name` varchar(50) NOT NULL,
+  `group_name` varchar(150) NOT NULL,
+  `code` varchar(20) NOT NULL,                -- School Code
+  `short_name` varchar(50) NOT NULL,
+  `name` varchar(150) NOT NULL,
+  `udise_code` varchar(30) DEFAULT NULL,      -- U-DISE Code of the School
+  `affiliation_no` varchar(60) DEFAULT NULL,  -- Affiliation Number of the School
+  `email` varchar(100) DEFAULT NULL,
+  `website_url` varchar(150) DEFAULT NULL,
+  `address_1` varchar(200) DEFAULT NULL,
+  `address_2` varchar(200) DEFAULT NULL,
+  `area` varchar(100) DEFAULT NULL,
+  `city_id` bigint unsigned NOT NULL,
+  `pincode` varchar(10) DEFAULT NULL,
+  `phone_1` varchar(20) DEFAULT NULL,
+  `phone_2` varchar(20) DEFAULT NULL,
+  `whatsapp_number` varchar(20) DEFAULT NULL,
+  `longitude` decimal(10,7) DEFAULT NULL,
+  `latitude` decimal(10,7) DEFAULT NULL,
+  `locale` varchar(16) DEFAULT 'en_IN',
+  `currency` varchar(8) DEFAULT 'INR',
+  `established_date` date DEFAULT NULL,                 -- School Established Date
+  `flg_single_record` tinyint(1) NOT NULL DEFAULT '1',  -- To ensure only one record in this table
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `chk_org_singleRecord` (`flg_single_record`),
+  CONSTRAINT fk_organizations_cityId FOREIGN KEY (city_id) REFERENCES glb_cities (id) ON DELETE RESTRICT
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Junction Table to link Organizations with Academic Sessions
+CREATE TABLE IF NOT EXISTS `sch_org_academic_sessions_jnt` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `academic_sessions_id` bigint unsigned NOT NULL,  -- Added New
+  `short_name` varchar(10) NOT NULL,
+  `name` varchar(50) NOT NULL,
+  `start_date` date NOT NULL,
+  `end_date` date NOT NULL,
+  `is_current` tinyint(1) NOT NULL DEFAULT '0',
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `current_flag` tinyint(1) GENERATED ALWAYS AS ((case when (`is_current` = 1) then '1' else NULL end)) STORED,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_orgAcademicSession_shortName` (`short_name`),
+  UNIQUE KEY `uq_orgAcademicSession_currentFlag` (`current_flag`),
+  CONSTRAINT `fk_orgAcademicSession_sessionId` FOREIGN KEY (`academic_sessions_id`) REFERENCES `glb_academic_sessions` (`id`) ON DELETE CASCADE  -- Added New
+) ENGINE=InnoDB AUTO_INCREMENT=30 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Junction Table to link Organizations with Boards
+CREATE TABLE IF NOT EXISTS `sch_board_organization_jnt` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `academic_sessions_id` bigint unsigned NOT NULL,
+  `board_id` bigint unsigned NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  CONSTRAINT `fk_boardOrg_boardId` FOREIGN KEY (`board_id`) REFERENCES `glb_boards` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_boardOrg_academicSessionId` FOREIGN KEY (`academic_sessions_id`) REFERENCES `sch_org_academic_sessions_jnt` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Tables for Classes, Sections, Subjects, Subject Types, Study Formats, Class-Section Junctions, Subject-StudyFormat Junctions, Class Groups, Subject Groups
+CREATE TABLE IF NOT EXISTS `sch_classes` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(50) NOT NULL,                -- e.g. 'Grade 1' or 'Class 10'
+  `short_name` varchar(10) DEFAULT NULL,      -- e.g. 'G1' or '10A'
+  `ordinal` tinyint DEFAULT NULL,             -- will have sequence order for Classes
+  `code` CHAR(3) NOT NULL,                    -- e.g., 'BV1','BV2','1st','1' and so on (This will be used for Timetable)
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_classes_shortName` (`short_name`),
+  UNIQUE KEY `uq_classes_code` (`code`),
+  UNIQUE KEY `uq_classes_name` (`name`),
+  UNIQUE KEY `uq_classes_ordinal` (`ordinal`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `sch_sections` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(20) NOT NULL,            -- e.g. 'A', 'B'
+  `ordinal` tinyint unsigned DEFAULT 1,   -- will have sequence order for Sections
+  `code` CHAR(1) NOT NULL,                -- e.g., 'A','B','C','D' and so on (This will be used for Timetable)
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_sections_name` (`name`),
+  UNIQUE KEY `uq_sections_code` (`code`),
+  UNIQUE KEY `uq_sections_ordinal` (`ordinal`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `sch_class_section_jnt` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `class_id` int unsigned NOT NULL,               -- FK to sch_classes
+  `section_id` int unsigned NOT NULL,             -- FK to sch_sections
+  `class_secton_code` char(5) NOT NULL,           -- Combination of class Code + section Code i.e. '8th_A', '10h_B'  
+  `capacity` tinyint unsigned DEFAULT NULL,       -- Targeted / Planned Quantity of stundets in Each Sections of every class.
+  `total_student` tinyint unsigned DEFAULT NULL,  -- Actual Number of Student in the Class+Section
+  `class_teacher_id` bigint unsigned NOT NULL,    -- FK to sch_users
+  `assistance_class_teacher_id` bigint unsigned NOT NULL,  -- FK to sch_users
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_classSection_classId_sectionId` (`class_id`,`section_id`),
+  UNIQUE KEY `uq_classSection_code` (`class_secton_code`),
+  CONSTRAINT `fk_classSection_classId` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_classSection_sectionId` FOREIGN KEY (`section_id`) REFERENCES `sch_sections` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_classSection_classTeacherId` FOREIGN KEY (`class_teacher_id`) REFERENCES `sch_users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_classSection_assistanceClassTeacherId` FOREIGN KEY (`assistance_class_teacher_id`) REFERENCES `sch_users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=300 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- subject_type will represent what type of subject it is - Major, Minor, Core, Main, Optional etc.
+CREATE TABLE IF NOT EXISTS `sch_subject_types` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `short_name` varchar(20) NOT NULL,  -- 'MAJOR','MINOR','OPTIONAL'
+  `name` varchar(50) NOT NULL,
+  `code` char(3) NOT NULL,         -- 'MAJ','MIN','OPT','ACT','SPO'
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_subjectTypes_shortName` (`short_name`),
+  UNIQUE KEY `uq_subjectTypes_code` (`code`)
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `sch_study_formats` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `short_name` varchar(20) NOT NULL,  -- 'LECTURE','LAB','PRACTICAL','TUTORIAL','SEMINAR','WORKSHOP','GROUP_DISCUSSION','OTHER'
+  `name` varchar(50) NOT NULL,
+  `code` CHAR(3) NOT NULL,            -- e.g., 'LAC','LAB','ACT','ART' and so on (This will be used for Timetable)
+  `is_active` tinyint(1) NOT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_studyFormats_shortName` (`short_name`),
+  UNIQUE KEY `uq_studyFormats_code` (`code`)
+) ENGINE=InnoDB AUTO_INCREMENT=78 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Data Seed for Study_Format - LECTURE, LAB, PRACTICAL, TUTORIAL, SEMINAR, WORKSHOP, GROUP_DISCUSSION, OTHER
+
+CREATE TABLE IF NOT EXISTS `sch_subjects` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `short_name` varchar(20) NOT NULL,  -- e.g. 'SCIENCE','MATH','SST','ENGLISH' and so on
+  `name` varchar(50) NOT NULL,
+  `code` CHAR(3) NOT NULL,         -- e.g., 'SCI','MTH','SST','ENG' and so on (This will be used for Timetable)
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_subjects_shortName` (`short_name`),
+  UNIQUE KEY `uq_subjects_code` (`code`)
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- subject_study_format is grouping for different streams like Sci-10 Lacture, Arts-10 Activity, Core-10
+-- I have removed 'sub_types' from 'sch_subject_study_format_jnt' because one Subject_StudyFormat may belongs to different Subject_type for different classes
+-- Removed 'short_name' as we can use `sub_stdformat_code`
+CREATE TABLE IF NOT EXISTS `sch_subject_study_format_jnt` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `subject_id` bigint unsigned NOT NULL,            -- FK
+  `study_format_id` int unsigned NOT NULL,          -- FK
+  `name` varchar(50) NOT NULL,
+  `subj_stdformat_code` CHAR(7) NOT NULL,         -- Will be combination of (Subject.codee+'-'+StudyFormat.code) e.g., 'SCI_LAC','SCI_LAB','SST_LAC','ENG_LAC' (This will be used for Timetable)
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_subStudyFormat_subjectId_stFormat` (`subject_id`,`study_format_id`),
+  UNIQUE KEY `uq_subStudyFormat_subStdformatCode` (`sub_stdformat_code`),
+  CONSTRAINT `fk_subStudyFormat_subjectId` FOREIGN KEY (`subject_id`) REFERENCES `sch_subjects` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_subStudyFormat_studyFormatId` FOREIGN KEY (`study_format_id`) REFERENCES `sch_study_formats` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=54 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Ths table will be used to define different Class Groups like 10th-A Science Lecture Major, 7th-B Commerce Optional etc.
+-- old name 'sch_subject_study_format_class_subj_types_jnt' changed to 'sch_class_groups_jnt'
+CREATE TABLE IF NOT EXISTS `sch_class_groups_jnt` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,                  -- FK
+  `class_id` int NOT NULL,                              -- FK to 'sch_classes'
+  `section_id` int NULL,                                -- FK to 'sch_sections'
+  `subject_Study_format_id` bigint unsigned NOT NULL,   -- FK to 'sch_subject_study_format_jnt'
+  `subject_type_id` int unsigned NOT NULL,              -- FK to 'sch_subject_types'
+  `rooms_type_id` bigint unsigned NOT NULL,             -- FK to 'sch_rooms_type'
+  `name` varchar(50) NOT NULL,                          -- 10th-A Science Lacture Major
+  `code` CHAR(17) NOT NULL, -- Combination of (Class+Section+Subject+StudyFormat+SubjType) e.g., '10h_A_SCI_LAC_MAJ','8th_MAT_LAC_OPT' (This will be used for Timetable)
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_classGroups_cls_Sec_subStdFmt_SubTyp` (`class_id`,`section_id`,`subject_Study_format_id`,`subject_type_id`),
+  UNIQUE KEY `uq_classGroups_subStdformatCode` (`code`),
+  CONSTRAINT `fk_classGroups_classId` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_classGroups_sectionId` FOREIGN KEY (`section_id`) REFERENCES `sch_sections` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_classGroups_subjStudyFormatId` FOREIGN KEY (`subject_Study_format_id`) REFERENCES `sch_subject_study_format_jnt` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_classGroups_subTypeId` FOREIGN KEY (`subject_type_id`) REFERENCES `sch_subject_types` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_classGroups_roomTypeId` FOREIGN KEY (`rooms_type_id`) REFERENCES `sch_rooms_type` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=54 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table 'sch_subject_groups' will be used to assign all subjects to the students
+-- There will be a Variable in 'sch_settings' table named 'SubjGroup_For_All_Sections' (Subj_Group_will_be_used_for_all_sections_of_a_class)
+-- if above variable is True then section_id will be Nul in below table and
+-- Every Group will eb avalaible accross sections for a particuler class
+CREATE TABLE IF NOT EXISTS `sch_subject_groups` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `class_id` int NOT NULL,                        -- FK to 'sch_classes'
+  `section_id` int NULL,                          -- FK (Section can be null if Group will be used for all sectons)
+  `short_name` varchar(30) NOT NULL,              -- 7th Science, 7th Commerce, 7th-A Science etc.
+  `name` varchar(100) NOT NULL,                   -- '7th (Sci,Mth,Eng,Hindi,SST with Sanskrit,Dance)'
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_subjectGroups_shortName` (`short_name`),
+  UNIQUE KEY `uq_subjectGroups_name` (`class_id`,`name`),
+  CONSTRAINT `fk_subGroups_classId` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_subGroups_sectionId` FOREIGN KEY (`section_id`) REFERENCES `sch_sections` (`id`) ON DELETE NULL
+) ENGINE=InnoDB AUTO_INCREMENT=54 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `sch_subject_group_subject_jnt` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `subject_group_id` bigint unsigned NOT NULL,              -- FK to 'sch_subject_groups'
+  `class_group_id` bigint unsigned NOT NULL,                -- FK to 'sch_class_groups_jnt'
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_subjGrpSubj_subjGrpId_classGroup` (`subject_group_id`,`class_group_id`),
+  CONSTRAINT `fk_subjGrpSubj_subjectGroup` FOREIGN KEY (`subject_group_id`) REFERENCES `sch_subject_groups` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_subjGrpSubj_classGroup` FOREIGN KEY (`class_group_id`) REFERENCES `sch_class_groups_jnt` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=54 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Tables for Room types, this will be used to define different types of rooms like Science Lab, Computer Lab, Sports Room etc.
+CREATE TABLE IF NOT EXISTS `sch_rooms_type` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `code` CHAR(7) NOT NULL,                        -- e.g., 'SCI_LAB','BIO_LAB','CRI_GRD','TT_ROOM','BDM_CRT'
+  `short_name` varchar(30) NOT NULL,              -- e.g., 'Science Lab','Biology Lab','Cricket Ground','Table Tanis Room','Badminton Court'
+  `name` varchar(100) NOT NULL,
+  `required_resources` text DEFAULT NULL,         -- e.g., 'Microscopes, Lab Coats, Safety Goggles' for Science Lab
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_roomType_code` (`code`),
+  UNIQUE KEY `uq_roomType_shortName` (`short_name`)
+) ENGINE=InnoDB AUTO_INCREMENT=188 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Building Coding format is - 2 Digit for Buildings(10-99)
+CREATE TABLE IF NOT EXISTS `sch_buildings` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `code` char(2) NOT NULL,                      -- 2 digits code (10,11,12) 
+  `short_name` varchar(30) NOT NULL,            -- e.g., 'Junior Wing','Primary Wing','Middle Wing','Senior Wing','Administration Wings'
+  `name` varchar(50) NOT NULL,                  -- Detailed Name of the Building
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_buildings_code` (`code`),
+  UNIQUE KEY `uq_buildings_name` (`short_name`)
+) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Room Coding format is - 2 Digit for Buildings(10-99), 1 Digit-Building Floor(G,F,S,T,F / A,B,C,D,E), & Last 3 Character defin Class+Section (09A,10A,12B)
+CREATE TABLE IF NOT EXISTS `sch_rooms` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `building_id` int unsigned NOT NULL,      -- FK to 'sch_buildings' table
+  `room_type_id` int NOT NULL,              -- FK to 'sch_rooms_type' table
+  `code` CHAR(7) NOT NULL,                  -- e.g., '11G-10A','12F-11A','11S-12A' and so on (This will be used for Timetable)
+  `short_name` varchar(30) NOT NULL,        -- e.g., 'Junior Wing','Primary Wing','Middle Wing','Senior Wing','Administration Wings'
+  `name` varchar(50) NOT NULL,
+  `capacity` int unsigned DEFAULT NULL,     -- Seating Capacity of the Room
+  `max_limit` int unsigned DEFAULT NULL,    -- Maximum Limit of the Room, Maximum how many students can accomodate in the room
+  `resource_tags` text DEFAULT NULL,        -- e.g., 'Projector, Smart Board, AC, Lab Equipment' etc.
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_rooms_code` (`code`),
+  UNIQUE KEY `uq_rooms_shortName` (`short_name`),
+  CONSTRAINT `fk_rooms_buildingId` FOREIGN KEY (`building_id`) REFERENCES `sch_buildings` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_rooms_roomTypeId` FOREIGN KEY (`room_type_id`) REFERENCES `sch_rooms_type` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=188 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Teacher table will store additional information about teachers
+CREATE TABLE IF NOT EXISTS `sch_teachers` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_id` BIGINT UNSIGNED NOT NULL,
+  `joining_date` DATE NOT NULL,
+  `total_experience_years` DECIMAL(4,1) DEFAULT NULL,       -- Total teaching experience
+  `highest_qualification` VARCHAR(100) DEFAULT NULL,        -- e.g. M.Sc., Ph.D.
+  `specialization` VARCHAR(150) DEFAULT NULL,               -- e.g. Mathematics, Physics
+  `last_institution` VARCHAR(200) DEFAULT NULL,             -- e.g. DPS Delhi
+  `awards` TEXT DEFAULT NULL,                               -- brief summary
+  `skills` TEXT DEFAULT NULL,                               -- general skills list (comma/JSON)
+  `qualifications_json` JSON DEFAULT NULL,   -- Array of {degree, specialization, university, year, grade}
+  `certifications_json` JSON DEFAULT NULL,   -- Array of {name, issued_by, issue_date, expiry_date, verified}
+  `experiences_json` JSON DEFAULT NULL,      -- Array of {institution, role, from_date, to_date, subject, remarks}
+  `notes` TEXT COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+  `created_at` TIMESTAMP NULL DEFAULT NULL,
+  `updated_at` TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `teachers_emp_code_unique` (`emp_code`),
+  KEY `teachers_user_id_foreign` (`user_id`),
+  CONSTRAINT `fk_teachers_userId` FOREIGN KEY (`user_id`) REFERENCES `sch_users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Teacher Profile table will store detailed proficiency to teach specific subjects, study formats, and classes
+CREATE TABLE IF NOT EXISTS `sch_teachers_profile` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `teacher_id` BIGINT UNSIGNED NOT NULL,
+  `subject_id` BIGINT UNSIGNED NOT NULL,            -- FK to 'subjects' table
+  `study_format_id` BIGINT UNSIGNED NOT NULL,       -- FK to 'sch_study_formats' table
+  `class_id` INT UNSIGNED NOT NULL,                 -- FK to 'sch_classes' table
+  `priority` ENUM('PRIMARY','SECONDARY') NOT NULL DEFAULT 'PRIMARY',
+  `proficiency` INT UNSIGNED DEFAULT NULL,          -- 1–10 rating or %
+  `special_skill_area` VARCHAR(100) DEFAULT NULL,   -- e.g. Robotics, AI, Debate
+  `certified_for_lab` TINYINT(1) DEFAULT 0,         -- allowed to conduct practicals
+  `assignment_meta` JSON DEFAULT NULL,              -- e.g. { "qualification": "M.Sc Physics", "experience": "7 years" }
+  `notes` TEXT NULL,
+  `effective_from` DATE DEFAULT NULL,               -- when this profile becomes effective
+  `effective_to` DATE DEFAULT NULL,                 -- when this profile ends 
+  `is_active` TINYINT(1) NOT NULL DEFAULT '1',
+  `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+  `created_at` TIMESTAMP NULL DEFAULT NULL,
+  `updated_at` TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_teachersProfile_teacher` (`teacher_id`,`subject_id`,`study_format_id`),
+  CONSTRAINT `fk_teachersProfile_teacherId` FOREIGN KEY (`teacher_id`) REFERENCES `teachers` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_teachersProfile_subjectId` FOREIGN KEY (`subject_id`) REFERENCES `subjects` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_teachersProfile_studyFormatId` FOREIGN KEY (`study_format_id`) REFERENCES `sch_study_formats` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_teachersProfile_classId` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+
+
+
+
+
+
+
+
+
+
+-- ===============================================================================================================
+-- Module wise Tables
+-- ===============================================================================================================
+
+-- -------------------------------------------------------------------------------------------------------
+-- Student Module
+-- -------------------------------------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `std_students` (
+  `id` BIGINT UNSIGNED AUTO_INCREMENT,
+  `user_id` bigint unsigned NOT NULL,          -- FK to sch_user
+  `parent_id` bigint unsigned NOT NULL,        -- FK to sch_user
+  `aadhar_id` VARCHAR(20) NOT NULL,            -- always permanent identity
+  `apaar_id` VARCHAR(100) NOT NULL,            -- 12 digits numeric i.e. 9876 5432 1098
+  `birth_cert_no` VARCHAR(50) NULL,
+  `health_id` VARCHAR(50) NULL,                -- like ABHA number in India
+  `smart_card_id` VARCHAR(100) NULL,           -- RFID Card Number / Smart Card Number
+  `first_name` VARCHAR(100) NOT NULL,
+  `middle_name` VARCHAR(100) DEFAULT NULL,
+  `last_name` VARCHAR(100) DEFAULT NULL,
+  `gender` ENUM('Male','Female','Transgender','Prefer Not to Say') NOT NULL DEFAULT 'Male',
+  `dob` DATE NOT NULL,
+  `blood_group` ENUM('A+','A-','B+','B-','AB+','AB-','O+','O-') NOT NULL,
+  `photo` VARCHAR(255) DEFAULT NULL,
+  `current_status_id` int NOT NULL,    -- FK to `gl_dropdown_table`
+  `note` varchar(200) DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_student_aadharId` (`aadhar_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=188 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `std_student_detail` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `student_id` int DEFAULT NULL,         -- FK to 'std_students'
+  `mobile` varchar(20) DEFAULT NULL,     -- Student Mobile
+  `email` varchar(100) DEFAULT NULL,     -- Student Mail ID
+  `current_address` text,
+  `permanent_address` text,
+  `city_id` varchar(100) DEFAULT NULL,   -- FK to 'glb_city'
+  `pin` varchar(10) DEFAULT NULL,
+  `religion` varchar(50) DEFAULT NULL,   -- FK to `gl_dropdown_table`
+  `cast` varchar(50) DEFAULT NULL,       -- FK to `gl_dropdown_table`
+  `right_to_edu` tinyint(1) NOT NULL DEFAULT '0',
+  `bank_account_no` varchar(100) DEFAULT NULL,
+  `bank_name` varchar(100) DEFAULT NULL,
+  `ifsc_code` varchar(100) DEFAULT NULL,
+  `upi_id` varchar(100) DEFAULT NULL,
+  `fee_depositor_pan_number` varchar(10) DEFAULT NULL,    -- or tax benefit
+  `father_name` varchar(50) DEFAULT NULL,
+  `father_phone` varchar(10) DEFAULT NULL,
+  `father_occupation` varchar(20) DEFAULT NULL,
+  `father_email` varchar(100) DEFAULT NULL,
+  `father_pic` varchar(200) NOT NULL,
+  `mother_name` varchar(50) DEFAULT NULL,
+  `mother_phone` varchar(10) DEFAULT NULL,
+  `mother_occupation` varchar(20) DEFAULT NULL,
+  `mother_email` varchar(100) DEFAULT NULL,
+  `mother_pic` varchar(200) NOT NULL,
+  `guardian_is` ENUM('Father','Mother','Other') NOT NULL DEFAULT 'Father',
+  `guardian_name` varchar(50) DEFAULT NULL,
+  `guardian_relation` varchar(100) DEFAULT NULL,
+  `guardian_relationship_proof_id` varchar(50) DEFAULT NULL,  -- for non-biological guardians
+  `guardian_phone` varchar(10) DEFAULT NULL,
+  `guardian_occupation` varchar(20) NOT NULL,
+  `guardian_address` text,
+  `guardian_email` varchar(100) DEFAULT NULL,
+  `guardian_pic` varchar(200) NOT NULL,
+  `previous_school_detail` text,
+  `height` varchar(100) NOT NULL,
+  `weight` varchar(100) NOT NULL,
+  `measurement_date` date DEFAULT NULL,
+  `additional_info` json DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  CONSTRAINT `fk_studentDetail_studentId` FOREIGN KEY (`student_id`) REFERENCES `std_students` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `fk_studentDetail_cityId` FOREIGN KEY (`city_id`) REFERENCES `glb_cities` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB AUTO_INCREMENT=188 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `std_student_sessions_jnt` (
+  `id` BIGINT UNSIGNED AUTO_INCREMENT,
+  `student_id` BIGINT UNSIGNED NOT NULL,            -- FK
+  `academic_sessions_id` bigint unsigned NOT NULL,  -- FK - sch_org_academic_sessions_jnt
+  `admission_no` VARCHAR(50) NOT NULL,
+  `roll_no` INT DEFAULT NULL,
+  `admission_date` DATE DEFAULT NULL,
+  `registration_no` VARCHAR(50) DEFAULT NULL,
+  `default_mobile` ENUM('Father','Mother','Guardian','All') NOT NULL DEFAULT 'Mother',
+  `default_email` ENUM('Father','Mother','Guardian','All') NOT NULL DEFAULT 'Mother',
+  `class_section_id` INT UNSIGNED NOT NULL,         -- FK (Instead of selecting Class & Section, we will be using Class+Section)
+  `subject_group_id` BIGINT UNSIGNED NOT NULL,      -- FK - sch_subject_groups
+  `session_status_id` BIGINT UNSIGNED DEFAULT NULL, -- FK - gl_dropdown_table (Status of the Student in the Session)
+  `is_current` TINYINT(1) DEFAULT 1,  -- Only one session can be current at a time for one student
+  `current_flag` bigint GENERATED ALWAYS AS ((case when (`is_current` = 1) then `student_id` else NULL end)) STORED,
+  `leaving_date` DATE DEFAULT NULL,
+  `reason_quit` int NULL,                       -- FK to `gl_dropdown_table` (Reason for leaving the Session)
+  `dis_note` text NOT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_studentSessions_currentFlag` (`current_flag`)
+  CONSTRAINT `fk_studentSessions_studentId` FOREIGN KEY (`student_id`) REFERENCES `std_students` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `fk_studentSessions_academicSession` FOREIGN KEY (`academic_sessions_id`) REFERENCES `sch_org_academic_sessions_jnt` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `fk_studentSessions_classSectionId` FOREIGN KEY (`class_section_id`) REFERENCES `sch_classes_sections_jnt` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `fk_studentSessions_subjGroupId` FOREIGN KEY (`subject_group_id`) REFERENCES `sch_subject_groups` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `fk_studentSessions_sessionStatusId` FOREIGN KEY (`session_status_id`) REFERENCES `sys_dropdown_table` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `fk_studentSessions_reasonQuit` FOREIGN KEY (`reason_quit`) REFERENCES `sys_dropdown_table` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB AUTO_INCREMENT=188 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- -------------------------------------------------------------------------------------------------------
+-- Timetable Module
+-- -------------------------------------------------------------------------------------------------------
+-- -----------------------------------------------------
+-- TIMETABLE MODE MASTER
+-- -----------------------------------------------------
+CREATE TABLE `tim_timetable_mode` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `code` VARCHAR(20) NOT NULL,                  -- e.g., 'REGULAR','EXAM','SPECIAL_EVENT'
+  `name` VARCHAR(100) NOT NULL,                 -- e.g., 'Regular Timetable','Examination Timetable'
+  `description` VARCHAR(255) DEFAULT NULL,
+  `has_exam` TINYINT(1) NOT NULL DEFAULT 0,     -- Whether this mode includes exam periods
+  `has_teaching` TINYINT(1) NOT NULL DEFAULT 1, -- Whether this mode includes teaching periods
+  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+  `is_deleted` TINYINT(1) NOT NULL DEFAULT 0,
+  `created_at` TIMESTAMP NULL DEFAULT NULL,
+  `updated_at` TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_timetable_mode_code` (`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- This table defines different types of periods like Teaching, Examination, Break, Assembly etc.
+-- -----------------------------------------------------
+-- PERIOD TYPE MASTER
+-- -----------------------------------------------------
+CREATE TABLE `tim_period_type` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `code` VARCHAR(20) NOT NULL,                          -- e.g., 'TEACHING','EXAMINATION','BREAK','ASSEMBLY'
+  `name` VARCHAR(50) NOT NULL,                          -- e.g., 'Teaching Period','Examination Period' 
+  `description` VARCHAR(255) DEFAULT NULL,
+  `counts_as_teaching` TINYINT(1) NOT NULL DEFAULT 0,   -- Whether this period type counts as teaching period
+  `counts_as_exam` TINYINT(1) NOT NULL DEFAULT 0,       -- Whether this period type counts as examination period
+  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+  `is_deleted` TINYINT(1) NOT NULL DEFAULT 0,
+  `created_at` TIMESTAMP NULL DEFAULT NULL,
+  `updated_at` TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_period_type_code` (`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- This table defines different teacher assignment roles like Primary Instructor, Assistant Instructor, Substitute etc.
+-- -----------------------------------------------------
+-- TEACHER ASSIGNMENT ROLE MASTER
+-- -----------------------------------------------------
+CREATE TABLE `tim_teacher_assignment_role` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `code` VARCHAR(20) NOT NULL,                  -- e.g., 'PRIMARY_INSTRUCTOR','ASSISTANT_INSTRUCTOR','SUBSTITUTE'   
+  `name` VARCHAR(100) NOT NULL,                 -- e.g., 'Primary Instructor','Assistant Instructor','Substitute Teacher'
+  `description` VARCHAR(255) DEFAULT NULL,
+  `is_primary_instructor` TINYINT(1) NOT NULL DEFAULT 0,    -- Whether this role is for primary instructor
+  `counts_for_workload` TINYINT(1) NOT NULL DEFAULT 1,      -- Whether this role counts towards workload calculations
+  `allows_overlap` TINYINT(1) NOT NULL DEFAULT 0,           -- Whether this role allows overlapping assignments (e.g., Substitute)
+  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+  `is_deleted` TINYINT(1) NOT NULL DEFAULT 0,
+  `created_at` TIMESTAMP NULL DEFAULT NULL,
+  `updated_at` TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_teacher_assignment_role_code` (`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- This table defines different period sets like Normal Day, Exam Day, Half Day etc.
+-- -----------------------------------------------------
+-- PERIOD SET
+-- -----------------------------------------------------
+CREATE TABLE `tim_period_set` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `code` VARCHAR(20) NOT NULL,                  -- e.g., "NORMAL_8P", "TODDLER_6P", "EXAM_3P". "EXAM_2P", "HALF_DAY_4P", "EVENT_DAY_0P"  
+  `name` VARCHAR(100) NOT NULL,                 -- e.g., "Normal Day 8 Periods", "Toddler Day 6 Periods", "Examination Day 3 Periods"
+  `description` VARCHAR(255) DEFAULT NULL,      -- e.g., "Normal Day with 8 Periods", "Toddler Day with 6 Periods", "Examination Day with 3 Periods"
+  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+  `is_deleted` TINYINT(1) NOT NULL DEFAULT 0,
+  `created_at` TIMESTAMP NULL DEFAULT NULL,
+  `updated_at` TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`)
+  UNIQUE KEY `uq_period_set_code` (`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- This table defines individual periods within a period set.
+-- -----------------------------------------------------
+-- PERIOD SET PERIOD
+-- -----------------------------------------------------
+CREATE TABLE `tim_period_set_period` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `period_set_id` BIGINT UNSIGNED NOT NULL,     -- FK to tim_period_set
+  `period_ord` TINYINT UNSIGNED NOT NULL,       -- Ordinal number of the period within the set (1, 2, 3, ...)
+  `code` VARCHAR(10) NOT NULL,                  -- e.g., "P1", "P2", "P3", "BREAK", "LUNCH"
+  `name` VARCHAR(50) NOT NULL,
+  `start_time` TIME NOT NULL,                   -- e.g., "09:00:00", "10:00:00"
+  `end_time` TIME NOT NULL,                     -- e.g., "09:45:00", "10:45:00"
+  `period_type_id` BIGINT UNSIGNED NOT NULL,    -- FK to tim_period_type
+  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+  `is_deleted` TINYINT(1) NOT NULL DEFAULT 0,
+  `created_at` TIMESTAMP NULL DEFAULT NULL,
+  `updated_at` TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_psp_set_ord` (`period_set_id`,`period_ord`),
+  CONSTRAINT `fk_psp_period_set` FOREIGN KEY (`period_set_id`) REFERENCES `tim_period_set`(`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_psp_period_type` FOREIGN KEY (`period_type_id`) REFERENCES `tim_period_type`(`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- This table links a class to a timetable mode along with specific period set and rules.
+-- -----------------------------------------------------
+-- CLASS MODE RULE
+-- -----------------------------------------------------
+CREATE TABLE `tim_class_mode_rule` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `class_id` BIGINT UNSIGNED NOT NULL,                      -- FK to sch_class
+  `tt_mode_id` BIGINT UNSIGNED NOT NULL,                       -- FK to tim_timetable_mode
+  `period_set_id` BIGINT UNSIGNED NOT NULL,                 -- FK to tim_period_set
+  `allow_teaching_periods` TINYINT(1) NOT NULL DEFAULT 1,   -- Whether teaching periods are allowed in this mode for the class
+  `allow_exam_periods` TINYINT(1) NOT NULL DEFAULT 0,       -- Whether exam periods are allowed in this mode for the class
+  `exam_period_count` TINYINT UNSIGNED DEFAULT NULL,        -- Number of exam periods if exam periods are allowed
+  `teaching_after_exam_flag` TINYINT(1) NOT NULL DEFAULT 0, -- Whether teaching periods can be scheduled after exam periods
+  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+  `is_deleted` TINYINT(1) NOT NULL DEFAULT 0,
+  `created_at` TIMESTAMP NULL DEFAULT NULL,
+  `updated_at` TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_cmr_class_mode` (`class_id`,`mode_id`),
+  CONSTRAINT `fk_cmr_mode` FOREIGN KEY (`mode_id`) REFERENCES `tim_timetable_mode`(`id`),
+  CONSTRAINT `fk_cmr_period_set` FOREIGN KEY (`period_set_id`) REFERENCES `tim_period_set`(`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- This table defines timetable requirements for each class group.
+-- -----------------------------------------------------
+-- CLASS GROUP REQUIREMENT
+-- -----------------------------------------------------
+CREATE TABLE `tim_class_group_requirement` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `class_group_id` BIGINT UNSIGNED NOT NULL,            -- FK to sch_class_groups_jnt
+  `weekly_periods` TINYINT UNSIGNED NOT NULL,           -- Total number of periods required per week for this class group
+  `max_per_day` TINYINT UNSIGNED DEFAULT NULL,          -- Maximum number of periods allowed per day for this class group
+  `min_gap_periods` TINYINT UNSIGNED DEFAULT NULL,      -- Minimum gap (in periods) between two sessions of this class group on the same day
+  `allow_consecutive` TINYINT(1) NOT NULL DEFAULT 0,    -- Whether consecutive periods are allowed for this class group
+  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+  `is_deleted` TINYINT(1) NOT NULL DEFAULT 0,
+  `created_at` TIMESTAMP NULL DEFAULT NULL,
+  `updated_at` TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_cgr_class_group` (`class_group_id`),
+  CONSTRAINT `fk_cgr_class_group` FOREIGN KEY (`class_group_id`) REFERENCES `sch_class_groups_jnt`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- This table defines subgroups within a class group for combining or splitting classes or sessions.
+-- -----------------------------------------------------
+-- CLASS SUBGROUP
+-- -----------------------------------------------------
+CREATE TABLE `tim_class_subgroup` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `class_group_id` BIGINT UNSIGNED NOT NULL,                -- FK to sch_class_groups_jnt
+  `code` VARCHAR(20) NOT NULL,                              -- e.g., '8th_FRENCH_LAC_OPT', 'SENIOR_GAME_ACT_OPT', 'ALL_GAME_ACT_OPT'
+  `name` VARCHAR(100) NOT NULL,                             -- e.g., 'Class 5th TO 12th Game', 'French-Lecture for Class 8th(All Sections)', 'All Students Games Activity'
+  `description` VARCHAR(255) DEFAULT NULL,
+  `student_count` INT UNSIGNED DEFAULT NULL,                -- Number of students in this subgroup (if applicable)
+  `is_shared_across_classes` TINYINT(1) NOT NULL DEFAULT 0, -- Whether this subgroup is shared across multiple classes
+  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+  `is_deleted` TINYINT(1) NOT NULL DEFAULT 0,
+  `created_at` TIMESTAMP NULL DEFAULT NULL,
+  `updated_at` TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_tim_group_code` (`class_group_id`,`code`),
+  CONSTRAINT `fk_subgroup_class_group` FOREIGN KEY (`class_group_id`) REFERENCES `sch_class_groups_jnt`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- This table links classes and sections to class subgroups.
+-- -----------------------------------------------------
+-- CLASS SUBGROUP MEMBER
+-- -----------------------------------------------------
+CREATE TABLE `tt_class_subgroup_member` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `class_subgroup_id` BIGINT UNSIGNED NOT NULL,
+  `class_id` BIGINT UNSIGNED NOT NULL,              -- FK to sch_classes
+  `section_id` BIGINT UNSIGNED NOT NULL,            -- FK to sch_sections
+  `is_primary` TINYINT(1) NULL DEFAULT 0,           -- Optional: marks the main class (useful for reports, attendance)
+  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+  `is_deleted` TINYINT(1) NOT NULL DEFAULT 0,
+  `created_at` TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_csm_subgroup_class_section` (`class_subgroup_id`, `class_id`, `section_id`),
+  CONSTRAINT `fk_csm_subgroup` FOREIGN KEY (`class_subgroup_id`) REFERENCES `tim_class_subgroup`(`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_csm_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes`(`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_csm_section` FOREIGN KEY (`section_id`) REFERENCES `sch_sections`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- This table logs each timetable generation run with its parameters and status.
+-- -----------------------------------------------------
+-- TIMETABLE GENERATION RUN
+-- -----------------------------------------------------
+CREATE TABLE `tim_generation_run` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `mode_id` BIGINT UNSIGNED NOT NULL,                   -- FK to tim_timetable_mode
+  `period_set_id` BIGINT UNSIGNED NOT NULL,             -- FK to tim_period_set
+  `academic_session_id` BIGINT UNSIGNED DEFAULT NULL,   -- FK to sch_academic_sessions
+  `started_at` DATETIME NOT NULL,                       -- Timestamp when the generation started
+  `finished_at` DATETIME DEFAULT NULL,                  -- Timestamp when the generation finished
+  `status` ENUM('RUNNING','SUCCESS','FAILED','CANCELLED') NOT NULL DEFAULT 'RUNNING',
+  `params_json` JSON DEFAULT NULL,                      -- JSON field to store generation parameters
+  `stats_json` JSON DEFAULT NULL,                       -- JSON field to store generation statistics
+  PRIMARY KEY (`id`),
+  CONSTRAINT `fk_gr_mode` FOREIGN KEY (`mode_id`) REFERENCES `tim_timetable_mode`(`id`),
+  CONSTRAINT `fk_gr_period_set` FOREIGN KEY (`period_set_id`) REFERENCES `tim_period_set`(`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- This table represents individual timetable cells (periods) assigned to class groups / Class subgroup on specific dates for a specific period.
+-- Each cell will have one recod for either class_group_id or class_subgroup_id (not both) and will have a Room assigned to it (if applicable).
+-- -----------------------------------------------------
+-- TIMETABLE CELL
+-- -----------------------------------------------------
+CREATE TABLE `tt_timetable_cell` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `generation_run_id` BIGINT UNSIGNED NOT NULL,     -- FK to tt_generation_run
+  `class_group_id` BIGINT UNSIGNED DEFAULT NULL,    -- FK to sch_class_groups_jnt (Only 1 of class_group_id / class_subgroup_id must be set (not both))
+  `class_subgroup_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to tt_class_subgroup (Only 1 of class_group_id / class_subgroup_id must be set (not both))
+  `date` DATE NOT NULL,                             -- Date of the timetable cell
+  `period_ord` TINYINT UNSIGNED NOT NULL,           -- Ordinal number of the period in the day
+  `room_id` BIGINT UNSIGNED DEFAULT NULL,           -- FK to sch_rooms (if applicable)
+  `locked` TINYINT(1) NOT NULL DEFAULT 0,           -- Whether this cell is locked from automatic changes
+  `source` ENUM('AUTO','MANUAL','ADJUST') NOT NULL DEFAULT 'AUTO',
+  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+  `is_deleted` TINYINT(1) NOT NULL DEFAULT 0,
+  `created_at` TIMESTAMP NULL DEFAULT NULL,
+  `updated_at` TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  CONSTRAINT `fk_tc_generation_run` FOREIGN KEY (`generation_run_id`) REFERENCES `tt_generation_run`(`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_tc_class_group` FOREIGN KEY (`class_group_id`) REFERENCES `sch_subject_study_format_class_subj_types_jnt`(`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_tc_class_subgroup` FOREIGN KEY (`class_subgroup_id`) REFERENCES `tt_class_subgroup`(`id`) ON DELETE CASCADE,
+  -- Enforce logic that Only 1 value (class_group_id / class_subgroup_id) should be set (not both))
+  CONSTRAINT `chk_tc_group_or_subgroup`
+    CHECK (
+      (class_group_id IS NOT NULL AND class_subgroup_id IS NULL)
+      OR
+      (class_group_id IS NULL AND class_subgroup_id IS NOT NULL)
+    )
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- This table links teachers to timetable cells with their specific assignment roles. 
+-- We may have more then one teacher per cell (e.g., primary and assistant instructors for a Lab or Activity).
+-- -----------------------------------------------------
+-- TIMETABLE CELL - TEACHER
+-- -----------------------------------------------------
+CREATE TABLE `tim_timetable_cell_teacher` (
+  `cell_id` BIGINT UNSIGNED NOT NULL,               -- FK to tim_timetable_cell
+  `teacher_id` BIGINT UNSIGNED NOT NULL,            -- FK to sch_users
+  `assignment_role_id` BIGINT UNSIGNED NOT NULL,    -- FK to tim_teacher_assignment_role
+  PRIMARY KEY (`cell_id`,`teacher_id`),
+  CONSTRAINT `fk_tct_cell` FOREIGN KEY (`cell_id`) REFERENCES `tim_timetable_cell`(`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_tct_assignment_role` FOREIGN KEY (`assignment_role_id`) REFERENCES `tim_teacher_assignment_role`(`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- This table logs substitutions made for absent teachers in timetable cells.
+-- -----------------------------------------------------
+-- SUBSTITUTION LOG
+-- -----------------------------------------------------
+CREATE TABLE `tim_substitution_log` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `cell_id` BIGINT UNSIGNED NOT NULL,                               -- FK to tim_timetable_cell
+  `absent_teacher_id` BIGINT UNSIGNED NOT NULL,                     -- FK to sch_users
+  `substitute_teacher_id` BIGINT UNSIGNED NOT NULL,                 -- FK to sch_users
+  `substituted_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,    -- Timestamp when the substitution occurred
+  `reason` VARCHAR(255) DEFAULT NULL,                               -- Reason for substitution
+  `created_at` TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  CONSTRAINT `fk_sub_cell` FOREIGN KEY (`cell_id`) REFERENCES `tim_timetable_cell`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- This table defines generic constraints that can be applied to teachers, class groups, rooms, or globally.
+-- -----------------------------------------------------
+-- GENERIC CONSTRAINT ENGINE
+-- -----------------------------------------------------
+CREATE TABLE `tim_constraint` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `target_type` ENUM('TEACHER','CLASS_GROUP','ROOM','GLOBAL') NOT NULL, -- Type of target the constraint applies to
+  `target_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to sch_users (if TEACHER), sch_class_groups_jnt (if CLASS_GROUP), sch_rooms (if ROOM), NULL if GLOBAL
+  `is_hard` TINYINT(1) NOT NULL DEFAULT 0,              -- Whether this is a hard constraint (must be enforced) or soft constraint (preferable)
+  `weight` TINYINT UNSIGNED NOT NULL DEFAULT 100,       -- Weight of the constraint (higher means more important)
+  `rule_json` JSON NOT NULL,                            -- JSON field defining the constraint rule (e.g., no classes before 10 AM on Fridays)
+  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+  `is_deleted` TINYINT(1) NOT NULL DEFAULT 0,
+  `created_at` TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- -----------------------------------------------------
+-- Billing Module
+-- -----------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `bil_tenant_invoices` (
+  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `tenant_id` BIGINT UNSIGNED NOT NULL,               -- old name 'org_id'
+  `tenant_plan_id` BIGINT UNSIGNED NOT NULL,          -- old Name 'organization_plan_id'
+  `billing_cycle_id` SMALLINT UNSIGNED NOT NULL,      -- FK
+  `invoice_no` VARCHAR(50) NOT NULL,                  -- Should be Auto-Generated
+  `invoice_date` DATE NOT NULL,                       -- Invoice Date will always be Next Day to billing_end_date
+  `billing_start_date` DATE NOT NULL,
+  `billing_end_date` DATE NOT NULL,
+  `min_billing_qty` int unsigned NOT NULL DEFAULT '1',    -- No of Lincenses (if Student count < Min_Qty then min_qty will be charged))
+  `total_user_qty` int unsigned NOT NULL DEFAULT '1',     -- Number of licenses used by Org in the billing period
+  `plan_rate` decimal(12,2) NOT NULL,                     -- applicable plan rate as per school aggrement
+  `billing_qty` int unsigned NOT NULL DEFAULT '1',        -- Billing Qty. will be either `min_billing_qty` or `total_license_qty`, whcihcever is higher)
+  `sub_total` DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+  `discount_percent` decimal(5,2) NOT NULL DEFAULT '0.00',  -- discount in percentage per billing cycle
+  `discount_amount` decimal(12,2) NOT NULL DEFAULT '0.00',  -- discount as a fixed amount per billing cycle
+  `discount_remark` varchar(50) NULL,
+  `extra_charges` decimal(12,2) NOT NULL DEFAULT '0.00', 
+  `charges_remark` varchar(50) NULL,
+  `tax1_percent` decimal(5,2) NOT NULL DEFAULT '0.00',
+  `tax1_remark` varchar(50) NULL,                           -- Acomodate different type of taxes - GST, IGST, CGST & other Taxes)
+  `tax1_amount` DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  `tax2_percent` decimal(5,2) NOT NULL DEFAULT '0.00',      -- 
+  `tax2_remark` varchar(50) NULL,                           -- Acomodate different type of taxes - GST, IGST, CGST & other Taxes)
+  `tax2_amount` DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  `tax3_percent` decimal(5,2) NOT NULL DEFAULT '0.00',      -- 
+  `tax3_remark` varchar(50) NULL,                           -- Acomodate different type of taxes - GST, IGST, CGST & other Taxes)
+  `tax3_amount` DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  `tax4_percent` decimal(5,2) NOT NULL DEFAULT '0.00',      -- 
+  `tax4_remark` varchar(50) NULL,                           -- Acomodate different type of taxes - GST, IGST, CGST & other Taxes)
+  `tax4_amount` DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  `total_tax_amount` DECIMAL(12,2) NOT NULL DEFAULT 0.00, 
+  `net_payable_amount` DECIMAL(12,2) NOT NULL DEFAULT 0.00, -- 
+  `paid_amount` DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+  `currency` CHAR(3) NOT NULL DEFAULT 'INR',
+  `status` VARCHAR(20) NOT NULL DEFAULT 'PENDING',        -- Will use Dropdown Table to populate (Tenant_Invoice_Status)
+  `credit_days`  SMALLINT UNSIGNED NOT NULL,              -- This will be used to calculat Due Date
+  `payment_due_date` DATE NOT NULL,                       -- Bill Date + credit_days
+  `is_recurring` TINYINT(1) NOT NULL DEFAULT 1,
+  `auto_renew` TINYINT(1) NOT NULL DEFAULT 1,
+  `remarks` TEXT DEFAULT NULL,
+  `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY `uq_tenantInvoices_invoiceNo` (`invoice_no`),
+  CONSTRAINT `fk_tenantInvoices_tenantId` FOREIGN KEY (`tenant_id`) REFERENCES `prm_tenant` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_tenantInvoices_PlanId` FOREIGN KEY (`tenant_plan_id`) REFERENCES `prm_tenant_plan_jnt` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_tenantInvoices_cycleId` FOREIGN KEY (`billing_cycle_id`) REFERENCES `prm_billing_cycles` (`id`) ON DELETE RESTRICT,
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `bil_tenant_invoicing_modules_jnt` (
+  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `tenant_invoice_id` BIGINT UNSIGNED NOT NULL,   -- fk to (bil_tenant_invoices)
+  `module_id` BIGINT UNSIGNED DEFAULT NULL,      -- FK
+  UNIQUE KEY `uq_tenantInvModule_orgInvId_moduleId` (`tenant_invoicing_id`, `module_id`),
+  CONSTRAINT `fk_tenantInvModule_invoicingId` FOREIGN KEY (`tenant_invoice_id`) REFERENCES `bil_tenant_invoice` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_tenantInvModule_moduleId` FOREIGN KEY (`module_id`) REFERENCES `sys_modules` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `bil_tenant_invoicing_payments` (
+  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `tenant_invoice_id` BIGINT UNSIGNED NOT NULL,    -- fk to (bil_tenant_invoices)
+  `payment_date` DATE NOT NULL,
+  `transaction_id` VARCHAR(100) DEFAULT NULL,
+  `mode` VARCHAR(20) NOT NULL DEFAULT 'ONLINE',      -- use dropdown table ('ONLINE','BANK_TRANSFER','CASH','CHEQUE')
+  `mode_other` VARCHAR(20) DEFAULT NULL,
+  `amount_paid` DECIMAL(14,2) NOT NULL,
+  `consolidated_amount` DECIMAL(14,2) NULL,      -- If Consolidated Payment then only this will be stored else Null.
+  `currency` CHAR(3) NOT NULL DEFAULT 'INR',
+  `payment_status` NOT NULL VARCHAR(20) DEFAULT 'SUCCESS',  -- use dropdown table ('INITIATED','SUCCESS','FAILED')
+  `gateway_response` JSON DEFAULT NULL,
+  `payment_reconciled` tinyint(1) NOT NULL DEFAULT '0',
+  `remarks` VARCHAR(255) DEFAULT NULL,
+  `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT `fk_tenantInvPayment_tenantInvId` FOREIGN KEY (`tenant_invoicing_id`) REFERENCES `bil_tenant_invoicing` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Note - Below table will have multiple records for every billing. 1 Record for every action.
+CREATE TABLE IF NOT EXISTS `bil_tenant_invoicing_audit_logs` (
+  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `tenant_invoicing_id` BIGINT UNSIGNED NOT NULL,        -- fk to (bil_tenant_invoices)
+  `action_date` TIMESTAMP not NULL,
+  `action_type` VARCHAR(20) NOT NULL DEFAULT 'PENDING',  -- use dropdown table ('Not Billed','Bill Generated','Overdue','Notice Sent','Fully Paid')
+  `performed_by` BIGINT UNSIGNED DEFAULT NULL,           -- which user perform the ation
+  `event_info` JSON DEFAULT NULL,
+  `notes` VARCHAR(500) DEFAULT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT `fk_audit_billing` FOREIGN KEY (`tenant_invoicing_id`) REFERENCES `bil_tenant_invoicing` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_audit_user` FOREIGN KEY (`performed_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------
+-- SYLLABUS MANAGEMENT MODULE - ENHANCED VERSION
+-- -----------------------------------------------------
+
+-- -------------------------------------------------------------------------
+-- CORE SYLLABUS STRUCTURE
+-- -------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `slb_lessons` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `uuid` CHAR(36) NOT NULL,                       -- Unique identifier for analytics tracking
+  `academic_session_id` BIGINT UNSIGNED NOT NULL, -- FK to sch_org_academic_sessions_jnt
+  `class_id` INT UNSIGNED NOT NULL,               -- FK to sch_classes
+  `subject_id` BIGINT UNSIGNED NOT NULL,          -- FK to sch_subjects
+  `code` VARCHAR(20) NOT NULL,                    -- e.g., '9TH_SCI_L01' (Auto-generated) It will be combination of class code, subject code and lesson code
+  `name` VARCHAR(150) NOT NULL,                   -- e.g., 'Chapter 1: Matter in Our Surroundings'
+  `short_name` VARCHAR(50) DEFAULT NULL,          -- e.g., 'Matter Around Us'
+  `ordinal` SMALLINT UNSIGNED NOT NULL,           -- Sequence order within subject
+  `description` VARCHAR(255) DEFAULT NULL,
+  `learning_objectives` JSON DEFAULT NULL,        -- Array of learning objectives e.g. [{"objective": "Objective 1"}, {"objective": "Objective 2"}]
+  `prerequisites` JSON DEFAULT NULL,              -- Array of prerequisite lesson IDs e.g. [1, 2, 3]
+  `estimated_periods` SMALLINT UNSIGNED DEFAULT NULL,  -- No. of periods to complete the Lesson
+  `weightage_percent` DECIMAL(5,2) DEFAULT NULL,  -- Weightage in final exam (e.g., 8.5%)
+  `nep_alignment` VARCHAR(100) DEFAULT NULL,      -- NEP 2020 reference code e.g. 'NEP_2020_01'
+  `resources_json` JSON DEFAULT NULL,             -- [{type, url, title}] e.g. [{"type": "video", "url": "https://example.com/video.mp4", "title": "Video 1"}, {"type": "pdf", "url": "https://example.com/pdf.pdf", "title": "PDF 1"}]
+  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+  `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_lesson_uuid` (`uuid`),
+  UNIQUE KEY `uq_lesson_class_subject_name` (`class_id`, `subject_id`, `name`),
+  UNIQUE KEY `uq_lesson_code` (`code`),
+  KEY `idx_lesson_class_subject` (`class_id`, `subject_id`),
+  KEY `idx_lesson_ordinal` (`ordinal`),
+  CONSTRAINT `fk_lesson_session` FOREIGN KEY (`academic_session_id`) REFERENCES `sch_org_academic_sessions_jnt` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `fk_lesson_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_lesson_subject` FOREIGN KEY (`subject_id`) REFERENCES `sch_subjects` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -------------------------------------------------------------------------
+-- HIERARCHICAL TOPICS & SUB-TOPICS (via parent_id)
+-- -------------------------------------------------------------------------
+-- DESIGN DECISION: Using Materialized Path approach for:
+-- 1. Efficient ancestor/descendant queries
+-- 2. Easy breadcrumb generation
+-- 3. Unlimited nesting depth
+-- 4. Fast reads (trade-off: slightly slower writes)
+--
+-- path format: /1/5/23/145/ (ancestor IDs separated by /)
+-- level: 0=Topic, 1=Sub-topic, 2=Mini Topic, 3=Sub-Mini Topic, 
+--        4=Micro Topic, 5=Sub-Micro Topic, 6+=Nano Topic, 7+=Ultra Topic
+-- -------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `slb_topics` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `uuid` CHAR(36) NOT NULL,                       -- Unique analytics identifier
+  `parent_id` BIGINT UNSIGNED DEFAULT NULL,       -- FK to self (NULL for root topics)
+  `lesson_id` BIGINT UNSIGNED NOT NULL,           -- FK to syl_lessons
+  `class_id` INT UNSIGNED NOT NULL,               -- Denormalized for fast queries
+  `subject_id` BIGINT UNSIGNED NOT NULL,          -- Denormalized for fast queries
+  -- Materialized Path columns
+  `path` VARCHAR(500) NOT NULL,                   -- e.g., '/1/5/23/' (ancestor path)
+  `path_names` VARCHAR(2000) DEFAULT NULL,        -- e.g., 'Algebra > Linear Equations > Solving Methods'
+  `level` TINYINT UNSIGNED NOT NULL DEFAULT 0,    -- Depth in hierarchy (0=root)
+  -- Core topic information
+  `code` VARCHAR(60) NOT NULL,                    -- e.g., '9TH_SCI_L01_TOP01_SUB02_MIN01_SMT02_MIC01_SMT02_NAN01_ULT02'
+  `name` VARCHAR(150) NOT NULL,                   -- e.g., 'Topic 1: Linear Equations'
+  `short_name` VARCHAR(50) DEFAULT NULL,          -- e.g., 'Linear Equations'
+  `ordinal` SMALLINT UNSIGNED NOT NULL,           -- Order within parent
+  `description` VARCHAR(255) DEFAULT NULL,        -- e.g., 'Description of Topic 1'
+  -- Teaching metadata
+  `duration_minutes` INT UNSIGNED DEFAULT NULL,   -- Estimated teaching time
+  `learning_objectives` JSON DEFAULT NULL,        -- Array of objectives
+  `keywords` JSON DEFAULT NULL,                   -- Search keywords array
+  `prerequisite_topic_ids` JSON DEFAULT NULL,     -- Dependency tracking
+  -- Analytics identifiers
+  `analytics_code` VARCHAR(60) NOT NULL,          -- Unique code for tracking e.g. '9TH_SCI_L01_TOP01_SUB02_MIN01_SMT02_MIC01_SMT02_NAN01_ULT02'
+  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+  `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_topic_uuid` (`uuid`),
+  UNIQUE KEY `uq_topic_analytics_code` (`analytics_code`),
+  UNIQUE KEY `uq_topic_code` (`code`),
+  UNIQUE KEY `uq_topic_parent_ordinal` (`lesson_id`, `parent_id`, `ordinal`),
+  KEY `idx_topic_parent` (`parent_id`),
+  KEY `idx_topic_level` (`level`),
+  KEY `idx_topic_class_subject` (`class_id`, `subject_id`),
+  CONSTRAINT `fk_topic_parent` FOREIGN KEY (`parent_id`) REFERENCES `syl_topics` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_topic_lesson` FOREIGN KEY (`lesson_id`) REFERENCES `syl_lessons` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_topic_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_topic_subject` FOREIGN KEY (`subject_id`) REFERENCES `sch_subjects` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -------------------------------------------------------------------------
+-- COMPETENCY FRAMEWORK (NEP 2020 ALIGNMENT)
+-- -------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `slb_competency_types` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `code` VARCHAR(20) NOT NULL,   -- e.g. 'KNOWLEDGE','SKILL','ATTITUDE'
+  `name` VARCHAR(100) NOT NULL,
+  `description` VARCHAR(255) DEFAULT NULL,
+  `is_active` TINYINT(1) DEFAULT 1,
+  `created_at` TIMESTAMP NULL DEFAULT NULL,
+  `updated_at` TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_comp_type_code` (`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+CREATE TABLE IF NOT EXISTS `slb_competencies` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `uuid` CHAR(36) NOT NULL,
+  `parent_id` BIGINT UNSIGNED DEFAULT NULL,
+  `code` VARCHAR(60) NOT NULL,    -- Auto generated e.g. '9TH_SCI_L01_TOP01_SUB02_MIN01_SMT02_MIC01_SMT02_NAN01_ULT02'
+  `name` VARCHAR(150) NOT NULL,   -- e.g. 'Knowledge of Linear Equations'
+  `short_name` VARCHAR(50) DEFAULT NULL,   -- e.g. 'Linear Equations' 
+  `description` VARCHAR(255) DEFAULT NULL,    -- e.g. 'Description of Knowledge of Linear Equations'
+  `class_id` INT UNSIGNED DEFAULT NULL,         -- FK to sch_classes.id
+  `subject_id` BIGINT UNSIGNED DEFAULT NULL,    -- FK to sch_subjects.id
+  `competency_type_id` INT UNSIGNED NOT NULL,   -- FK to slb_competency_types.id
+  `domain` ENUM('COGNITIVE', 'AFFECTIVE', 'PSYCHOMOTOR') NOT NULL DEFAULT 'COGNITIVE', -- e.g. 'COGNITIVE'
+  `nep_framework_ref` VARCHAR(100) DEFAULT NULL,    -- e.g. 'NEP Framework Reference'
+  `ncf_alignment` VARCHAR(100) DEFAULT NULL,        -- e.g. 'NCF Alignment'
+  `learning_outcome_code` VARCHAR(50) DEFAULT NULL, -- e.g. 'Learning Outcome Code'
+  `path` VARCHAR(500) DEFAULT '/',  -- e.g. '/9TH_SCI_L01_TOP01_SUB02_MIN01_SMT02_MIC01_SMT02_NAN01_ULT02'
+  `level` TINYINT UNSIGNED DEFAULT 0, -- e.g. 0
+  `is_active` TINYINT(1) DEFAULT 1,
+  `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_competency_uuid` (`uuid`),
+  UNIQUE KEY `uq_competency_code` (`code`),
+  KEY `idx_competency_parent` (`parent_id`),
+  KEY `idx_competency_type` (`competency_type_id`),
+  CONSTRAINT `fk_competency_parent` FOREIGN KEY (`parent_id`) REFERENCES `syl_competencies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_competency_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_competency_subject` FOREIGN KEY (`subject_id`) REFERENCES `sch_subjects` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_competency_type` FOREIGN KEY (`competency_type_id`) REFERENCES `slb_competency_types` (`id`) ON DELETE CASCADE
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Link topics to competencies
+CREATE TABLE IF NOT EXISTS `slb_topic_competency_jnt` (
+  `topic_id` BIGINT UNSIGNED NOT NULL,
+  `competency_id` BIGINT UNSIGNED NOT NULL, -- FK to slb_competencies.id
+  `weightage` DECIMAL(5,2) DEFAULT NULL,    -- How much topic contributes to competency
+  `is_primary` TINYINT(1) DEFAULT 0, -- True if this is the primary competency for this topic
+  PRIMARY KEY (`topic_id`,`competency_id`),
+  CONSTRAINT `fk_tc_topic` FOREIGN KEY (`topic_id`) REFERENCES `slb_topics` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_tc_competency` FOREIGN KEY (`competency_id`) REFERENCES `slb_competencies` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -------------------------------------------------------------------------
+-- QUESTION TAXONOMIES (NEP / BLOOM etc.) - REFERENCE DATA
+-- -------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `slb_bloom_taxonomy` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `code` VARCHAR(20) NOT NULL,   -- e.g. 'REMEMBERING','UNDERSTANDING','APPLYING','ANALYZING','EVALUATING','CREATING'
+  `name` VARCHAR(100) NOT NULL,
+  `description` VARCHAR(255) DEFAULT NULL,
+  `bloom_level` TINYINT UNSIGNED DEFAULT NULL, -- 1-6 for Bloom's revised taxonomy
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_bloom_code` (`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `slb_cognitive_skill` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `bloom_id` INT UNSIGNED DEFAULT NULL,       -- slb_bloom_taxonomy.id
+  `code` VARCHAR(20) NOT NULL,  -- e.g. 'COG-KNOWLEDGE','COG-SKILL','COG-UNDERSTANDING'
+  `name` VARCHAR(100) NOT NULL,
+  `description` VARCHAR(255) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_cog_code` (`code`),
+  CONSTRAINT `fk_cog_bloom` FOREIGN KEY (`bloom_id`) REFERENCES `slb_bloom_taxonomy` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `slb_ques_type_specificity` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `cognitive_skill_id` INT UNSIGNED DEFAULT NULL, -- slb_cognitive_skill.id
+  `code` VARCHAR(20) NOT NULL,  -- e.g. 'IN_CLASS','HOMEWORK','SUMMATIVE','FORMATIVE'
+  `name` VARCHAR(100) NOT NULL,
+  `description` VARCHAR(255) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_quesTypeSps_code` (`code`),
+  CONSTRAINT `fk_quesTypeSps_cognitive` FOREIGN KEY (`cognitive_skill_id`) REFERENCES `slb_cognitive_skill` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `slb_complexity_level` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `code` VARCHAR(20) NOT NULL,  -- e.g. 'EASY','MEDIUM','DIFFICULT'
+  `name` VARCHAR(50) NOT NULL,
+  `complexity_level` TINYINT UNSIGNED DEFAULT NULL,  -- 1=Easy, 2=Medium, 3=Difficult
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_complex_code` (`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `slb_question_types` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `code` VARCHAR(30) NOT NULL,  -- e.g. 'MCQ_SINGLE','MCQ_MULTI','SHORT_ANSWER','LONG_ANSWER','MATCH','NUMERIC','FILL_BLANK','CODING'
+  `name` VARCHAR(100) NOT NULL,
+  `has_options` TINYINT(1) NOT NULL DEFAULT 0,    -- True if this type has options
+  `auto_gradable` TINYINT(1) NOT NULL DEFAULT 1,  -- True if this type can be auto-graded (Can System Marked Automatically?)
+  `description` TEXT DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_qtype_code` (`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -------------------------------------------------------------------------
+-- QUESTION BANK & QUESTION MANAGEMENT
+-- -------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `sch_questions` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `external_ref` VARCHAR(100) DEFAULT NULL,   -- for mapping to external banks
+  `topic_id` BIGINT UNSIGNED DEFAULT NULL,    -- FK -> sch_topics.id (can be root topic or sub-topic depending on level)
+  `competency_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to sch_competencies.id
+  `lesson_id` INT UNSIGNED DEFAULT NULL,      -- optional denormalized FK
+  `class_id` INT UNSIGNED DEFAULT NULL,
+  `subject_id` BIGINT UNSIGNED DEFAULT NULL,
+  `created_by` BIGINT UNSIGNED DEFAULT NULL,  -- sch_users.id or teachers.id
+  `question_type_id` INT UNSIGNED NOT NULL,   -- gl_question_types.id
+  `stem` TEXT NOT NULL,                       -- full question text (may include placeholders)
+  `answer_explanation` TEXT DEFAULT NULL,     -- teacher explanation
+  `reference_material` TEXT DEFAULT NULL,     -- e.g., book section, web link
+  `marks` DECIMAL(5,2) DEFAULT 1.00,
+  `negative_marks` DECIMAL(5,2) DEFAULT 0.00,
+  `complexity_level_id` INT UNSIGNED DEFAULT NULL,  -- slb_complexity_level.id
+  `bloom_id` INT UNSIGNED DEFAULT NULL,       -- slb_bloom_taxonomy.id
+  `cognitive_skill_id` INT UNSIGNED DEFAULT NULL, -- slb_cognitive_skill.id
+  `ques_type_specificity_id` INT UNSIGNED DEFAULT NULL, -- slb_ques_type_specificity.id
+  `estimated_time_seconds` INT UNSIGNED DEFAULT NULL, -- avg time to answer
+  `tags` JSON DEFAULT NULL,                   -- array of tag strings or ids
+  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+  `is_public` TINYINT(1) NOT NULL DEFAULT 0,  -- share between tenants? keep default 0
+  `version` INT UNSIGNED NOT NULL DEFAULT 1,
+  `created_at` TIMESTAMP NULL DEFAULT NULL,
+  `updated_at` TIMESTAMP NULL DEFAULT NULL,
+  `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_ques_topic` (`topic_id`),
+  KEY `idx_ques_competency` (`competency_id`),
+  KEY `idx_ques_class_subject` (`class_id`,`subject_id`),
+  KEY `idx_ques_complexity_bloom` (`complexity_level_id`,`bloom_id`),
+  KEY `idx_ques_active` (`is_active`),
+  CONSTRAINT `fk_ques_topic` FOREIGN KEY (`topic_id`) REFERENCES `sch_topics` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_ques_competency` FOREIGN KEY (`competency_id`) REFERENCES `sch_competencies` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_ques_lesson` FOREIGN KEY (`lesson_id`) REFERENCES `sch_lessons` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_ques_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_ques_subject` FOREIGN KEY (`subject_id`) REFERENCES `sch_subjects` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_ques_type` FOREIGN KEY (`question_type_id`) REFERENCES `gl_question_types` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `fk_ques_complexity` FOREIGN KEY (`complexity_level_id`) REFERENCES `slb_complexity_level` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_ques_bloom` FOREIGN KEY (`bloom_id`) REFERENCES `slb_bloom_taxonomy` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_ques_cog` FOREIGN KEY (`cognitive_skill_id`) REFERENCES `slb_cognitive_skill` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_ques_timeSpec` FOREIGN KEY (`ques_type_specificity_id`) REFERENCES `slb_ques_type_specificity` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `sch_question_options` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `question_id` BIGINT UNSIGNED NOT NULL,
+  `ordinal` SMALLINT UNSIGNED DEFAULT NULL,
+  `option_text` TEXT NOT NULL,
+  `is_correct` TINYINT(1) NOT NULL DEFAULT 0,
+  `feedback` TEXT DEFAULT NULL,               -- specific feedback for this option
+  `image_url` VARCHAR(255) DEFAULT NULL,      -- if option has an image
+  `created_at` TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_opt_question` (`question_id`),
+  CONSTRAINT `fk_opt_question` FOREIGN KEY (`question_id`) REFERENCES `sch_questions` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `sch_question_media` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `question_id` BIGINT UNSIGNED NOT NULL,
+  `media_id` BIGINT UNSIGNED NOT NULL,        -- link to sys_media.id
+  `purpose` VARCHAR(50) DEFAULT 'ATTACHMENT', -- e.g., 'IMAGE','AUDIO','VIDEO','ATTACHMENT'
+  `ordinal` SMALLINT UNSIGNED DEFAULT 1,
+  PRIMARY KEY (`id`),
+  KEY `idx_qmedia_question` (`question_id`),
+  CONSTRAINT `fk_qmedia_question` FOREIGN KEY (`question_id`) REFERENCES `sch_questions` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_qmedia_media` FOREIGN KEY (`media_id`) REFERENCES `sys_media` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `sch_question_tags` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `short_name` VARCHAR(100) NOT NULL,
+  `name` VARCHAR(255) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_qtag_short` (`short_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `sch_question_tag_jnt` (
+  `question_id` BIGINT UNSIGNED NOT NULL,
+  `tag_id` BIGINT UNSIGNED NOT NULL,
+  PRIMARY KEY (`question_id`,`tag_id`),
+  CONSTRAINT `fk_qtag_q` FOREIGN KEY (`question_id`) REFERENCES `sch_questions` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_qtag_tag` FOREIGN KEY (`tag_id`) REFERENCES `sch_question_tags` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- -------------------------------------------------------------------------
+-- QUESTION VERSIONING & HISTORY
+-- -------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `sch_question_versions` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `question_id` BIGINT UNSIGNED NOT NULL,
+  `version` INT UNSIGNED NOT NULL,
+  `data` JSON NOT NULL,                       -- full snapshot of question (stem, options, metadata)
+  `change_reason` VARCHAR(255) DEFAULT NULL,  -- why was this version created?
+  `created_by` BIGINT UNSIGNED DEFAULT NULL,
+  `created_at` TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_qver_q_v` (`question_id`,`version`),
+  CONSTRAINT `fk_qver_q` FOREIGN KEY (`question_id`) REFERENCES `sch_questions` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -------------------------------------------------------------------------
+-- QUESTION POOLS & ADAPTIVE SELECTION
+-- -------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `sch_question_pools` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `name` VARCHAR(100) NOT NULL,
+  `description` TEXT DEFAULT NULL,
+  `subject_id` BIGINT UNSIGNED NOT NULL,
+  `class_id` INT UNSIGNED NOT NULL,
+  `complexity_filter` JSON DEFAULT NULL,      -- ["EASY","MEDIUM","DIFFICULT"]
+  `bloom_filter` JSON DEFAULT NULL,           -- ["REMEMBER","UNDERSTAND","APPLY"]
+  `cognitive_filter` JSON DEFAULT NULL,       -- Filter by cognitive skills
+  `ques_type_specificity_filter` JSON DEFAULT NULL, -- e.g., ["IN_CLASS","HOMEWORK"]
+  `min_questions` INT UNSIGNED DEFAULT NULL,  -- Minimum pool size
+  `is_active` TINYINT(1) DEFAULT 1,
+  `created_at` TIMESTAMP NULL DEFAULT NULL,
+  `updated_at` TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  CONSTRAINT `fk_qpool_subject` FOREIGN KEY (`subject_id`) REFERENCES `sch_subjects` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_qpool_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `sch_question_pool_questions` (
+  `question_pool_id` BIGINT UNSIGNED NOT NULL,
+  `question_id` BIGINT UNSIGNED NOT NULL,
+  PRIMARY KEY (`question_pool_id`,`question_id`),
+  CONSTRAINT `fk_qpq_pool` FOREIGN KEY (`question_pool_id`) REFERENCES `sch_question_pools` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_qpq_question` FOREIGN KEY (`question_id`) REFERENCES `sch_questions` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4_COLLATE=utf8mb4_unicode_ci;
+
+
+-- -------------------------------------------------------------------------
+-- QUIZZES, ASSESSMENTS & EXAMS
+-- -------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `sch_quizzes` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `short_name` VARCHAR(100) NOT NULL,
+  `name` VARCHAR(255) NOT NULL,
+  `description` TEXT DEFAULT NULL,
+  `subject_id` BIGINT UNSIGNED DEFAULT NULL,
+  `class_id` INT UNSIGNED DEFAULT NULL,
+  `lesson_id` INT UNSIGNED DEFAULT NULL,
+  `quiz_type` ENUM('PRACTICE','DIAGNOSTIC','REINFORCEMENT') DEFAULT 'PRACTICE',
+  `duration_minutes` INT UNSIGNED DEFAULT NULL,
+  `total_marks` DECIMAL(7,2) DEFAULT NULL,
+  `passing_marks` DECIMAL(7,2) DEFAULT NULL,
+  `shuffle_questions` TINYINT(1) DEFAULT 0,
+  `shuffle_options` TINYINT(1) DEFAULT 0,
+  `show_answers_immediately` TINYINT(1) DEFAULT 1,
+  `allow_review_before_submit` TINYINT(1) DEFAULT 1,
+  `is_published` TINYINT(1) NOT NULL DEFAULT 0,
+  `created_by` BIGINT UNSIGNED DEFAULT NULL,
+  `created_at` TIMESTAMP NULL DEFAULT NULL,
+  `updated_at` TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_quiz_subject_class` (`subject_id`,`class_id`),
+  CONSTRAINT `fk_quiz_subject` FOREIGN KEY (`subject_id`) REFERENCES `sch_subjects` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_quiz_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_quiz_lesson` FOREIGN KEY (`lesson_id`) REFERENCES `sch_lessons` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `sch_assessments` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `short_name` VARCHAR(100) NOT NULL,
+  `name` VARCHAR(255) NOT NULL,
+  `type` ENUM('FORMATIVE','SUMMATIVE','TERM','DIAGNOSTIC') NOT NULL DEFAULT 'FORMATIVE',
+  `description` TEXT DEFAULT NULL,
+  `subject_id` BIGINT UNSIGNED DEFAULT NULL,
+  `class_id` INT UNSIGNED DEFAULT NULL,
+  `academic_session_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to sch_org_academic_sessions_jnt
+  `start_datetime` DATETIME DEFAULT NULL,
+  `end_datetime` DATETIME DEFAULT NULL,
+  `duration_minutes` INT UNSIGNED DEFAULT NULL,
+  `total_marks` DECIMAL(7,2) DEFAULT NULL,
+  `passing_marks` DECIMAL(7,2) DEFAULT NULL,
+  `negative_marking_enabled` TINYINT(1) DEFAULT 0,
+  `show_answers_after_exam` TINYINT(1) DEFAULT 0,
+  `show_answers_on_date` DATE DEFAULT NULL,
+  `shuffle_questions` TINYINT(1) DEFAULT 0,
+  `shuffle_options` TINYINT(1) DEFAULT 0,
+  `allow_review_before_submit` TINYINT(1) DEFAULT 1,
+  `is_published` TINYINT(1) NOT NULL DEFAULT 0,
+  `created_by` BIGINT UNSIGNED DEFAULT NULL,
+  `created_at` TIMESTAMP NULL DEFAULT NULL,
+  `updated_at` TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_assess_subject_class` (`subject_id`,`class_id`),
+  KEY `idx_assess_type` (`type`),
+  CONSTRAINT `fk_assess_subject` FOREIGN KEY (`subject_id`) REFERENCES `sch_subjects` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_assess_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_assess_academic_session` FOREIGN KEY (`academic_session_id`) REFERENCES `sch_org_academic_sessions_jnt` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4_COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `sch_exams` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `short_name` VARCHAR(100) NOT NULL,
+  `name` VARCHAR(255) NOT NULL,
+  `description` TEXT DEFAULT NULL,
+  `exam_type` ENUM('UNIT','MIDTERM','FINAL','BOARD','COMPETITIVE','MOCK') NOT NULL,
+  `subject_id` BIGINT UNSIGNED DEFAULT NULL,
+  `class_id` INT UNSIGNED DEFAULT NULL,
+  `academic_session_id` BIGINT UNSIGNED DEFAULT NULL,
+  `scheduled_date` DATE NOT NULL,
+  `start_time` TIME NOT NULL,
+  `end_time` TIME NOT NULL,
+  `duration_minutes` INT UNSIGNED NOT NULL,
+  `total_marks` DECIMAL(7,2) NOT NULL,
+  `passing_marks` DECIMAL(7,2) DEFAULT NULL,
+  `negative_marking_enabled` TINYINT(1) DEFAULT 0,
+  `show_answers_after_exam` TINYINT(1) DEFAULT 0,
+  `show_answers_on_date` DATE DEFAULT NULL,
+  `shuffle_questions` TINYINT(1) DEFAULT 0,
+  `shuffle_options` TINYINT(1) DEFAULT 0,
+  `allow_review_before_submit` TINYINT(1) DEFAULT 0,
+  `is_published` TINYINT(1) NOT NULL DEFAULT 0,
+  `created_by` BIGINT UNSIGNED DEFAULT NULL,
+  `created_at` TIMESTAMP NULL DEFAULT NULL,
+  `updated_at` TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_exam_date_class` (`scheduled_date`,`class_id`),
+  KEY `idx_exam_type` (`exam_type`),
+  CONSTRAINT `fk_exam_subject` FOREIGN KEY (`subject_id`) REFERENCES `sch_subjects` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_exam_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_exam_academic_session` FOREIGN KEY (`academic_session_id`) REFERENCES `sch_org_academic_sessions_jnt` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4_COLLATE=utf8mb4_unicode_ci;
+
+-- -------------------------------------------------------------------------
+-- ASSESSMENT SECTIONS (for multi-part exams)
+-- -------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `sch_assessment_sections` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `assessment_id` BIGINT UNSIGNED NOT NULL,   -- FK to sch_assessments or sch_exams
+  `section_name` VARCHAR(100) NOT NULL,       -- e.g., "Part A: Reading", "Part B: Writing"
+  `ordinal` TINYINT UNSIGNED NOT NULL,
+  `description` TEXT DEFAULT NULL,
+  `section_marks` DECIMAL(7,2) DEFAULT NULL, -- total marks for this section
+  `instructions` TEXT DEFAULT NULL,           -- special instructions for this section
+  `shuffle_questions` TINYINT(1) DEFAULT 0,   -- randomize question order per student
+  PRIMARY KEY (`id`),
+  KEY `idx_section_assessment` (`assessment_id`),
+  CONSTRAINT `fk_section_assessment` FOREIGN KEY (`assessment_id`) REFERENCES `sch_assessments` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4_COLLATE=utf8mb4_unicode_ci;
+
+-- -------------------------------------------------------------------------
+-- ASSESSMENT ITEMS (Questions in Quizzes/Assessments/Exams)
+-- -------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `sch_assessment_items` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `assessment_id` BIGINT UNSIGNED NOT NULL,   -- FK to sch_assessments
+  `section_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to sch_assessment_sections (for multi-part exams)
+  `question_id` BIGINT UNSIGNED NOT NULL,
+  `marks` DECIMAL(6,2) DEFAULT 1.00,
+  `negative_marks` DECIMAL(6,2) DEFAULT 0.00,
+  `ordinal` SMALLINT UNSIGNED DEFAULT NULL,
+  `shuffle_options` TINYINT(1) DEFAULT 0,
+  `show_answer_explanation` TINYINT(1) DEFAULT 1,
+  PRIMARY KEY (`id`),
+  KEY `idx_ai_assessment` (`assessment_id`),
+  KEY `idx_ai_section` (`section_id`),
+  CONSTRAINT `fk_ai_assessment` FOREIGN KEY (`assessment_id`) REFERENCES `sch_assessments` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_ai_section` FOREIGN KEY (`section_id`) REFERENCES `sch_assessment_sections` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_ai_question` FOREIGN KEY (`question_id`) REFERENCES `sch_questions` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4_COLLATE=utf8mb4_unicode_ci;
+
+
+CREATE TABLE IF NOT EXISTS `sch_exam_items` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `exam_id` BIGINT UNSIGNED NOT NULL,         -- FK to sch_exams
+  `section_id` BIGINT UNSIGNED DEFAULT NULL,  -- Can be extended to support exam sections
+  `question_id` BIGINT UNSIGNED NOT NULL,
+  `marks` DECIMAL(6,2) DEFAULT 1.00,
+  `negative_marks` DECIMAL(6,2) DEFAULT 0.00,
+  `ordinal` SMALLINT UNSIGNED DEFAULT NULL,
+  `shuffle_options` TINYINT(1) DEFAULT 0,
+  `show_answer_explanation` TINYINT(1) DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_ei_exam` (`exam_id`),
+  CONSTRAINT `fk_ei_exam` FOREIGN KEY (`exam_id`) REFERENCES `sch_exams` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_ei_question` FOREIGN KEY (`question_id`) REFERENCES `sch_questions` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4_COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `sch_quiz_assessment_map` (
+  `quiz_id` BIGINT UNSIGNED NOT NULL,
+  `assessment_id` BIGINT UNSIGNED NOT NULL,
+  PRIMARY KEY (`quiz_id`,`assessment_id`),
+  CONSTRAINT `fk_qam_quiz` FOREIGN KEY (`quiz_id`) REFERENCES `sch_quizzes` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_qam_assess` FOREIGN KEY (`assessment_id`) REFERENCES `sch_assessments` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4_COLLATE=utf8mb4_unicode_ci;
+
+-- -------------------------------------------------------------------------
+-- ASSESSMENT ASSIGNMENT & RULES
+-- -------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `sch_assessment_assignments` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `assessment_id` BIGINT UNSIGNED NOT NULL,
+  `assigned_to_type` ENUM('CLASS_SECTION','STUDENT','SUBJECT_GROUP','TEACHER') NOT NULL,
+  `assigned_to_id` BIGINT UNSIGNED NOT NULL,  -- id of class_section / student / subject_group / teacher
+  `available_from` DATETIME DEFAULT NULL,
+  `available_to` DATETIME DEFAULT NULL,
+  `max_attempts` INT UNSIGNED DEFAULT 1,
+  `is_visible` TINYINT(1) DEFAULT 1,
+  `created_by` BIGINT UNSIGNED DEFAULT NULL,
+  `created_at` TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_asg_assessment` (`assessment_id`),
+  KEY `idx_asg_visibility` (`is_visible`,`available_from`,`available_to`),
+  CONSTRAINT `fk_asg_assessment` FOREIGN KEY (`assessment_id`) REFERENCES `sch_assessments` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4_COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `sch_assessment_assignment_rules` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `assessment_id` BIGINT UNSIGNED NOT NULL,
+  `rule_type` ENUM('ATTENDANCE_MIN','SCORE_MIN','TIME_WINDOW','DEVICE_TYPE','IP_RESTRICTED','PREREQUISITE_COMPLETION') NOT NULL,
+  `rule_value` JSON NOT NULL,                 -- e.g., {"min_attendance": 75}, {"allowed_ips": ["192.168.1.0/24"]}
+  `is_active` TINYINT(1) DEFAULT 1,
+  `created_at` TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  CONSTRAINT `fk_aar_assessment` FOREIGN KEY (`assessment_id`) REFERENCES `sch_assessments` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4_COLLATE=utf8mb4_unicode_ci;
+
+-- -------------------------------------------------------------------------
+-- STUDENT ATTEMPTS & RESPONSES (GRADING)
+-- -------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `sch_attempts` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `assessment_id` BIGINT UNSIGNED NOT NULL,
+  `student_id` BIGINT UNSIGNED NOT NULL,
+  `ip_address` VARCHAR(45) DEFAULT NULL,      -- IPv4 or IPv6
+  `user_agent` VARCHAR(255) DEFAULT NULL,     -- Browser info for audit
+  `started_at` DATETIME DEFAULT NULL,
+  `submitted_at` DATETIME DEFAULT NULL,
+  `status` ENUM('IN_PROGRESS','SUBMITTED','GRADED','CANCELLED') NOT NULL DEFAULT 'IN_PROGRESS',
+  `total_marks_obtained` DECIMAL(8,2) DEFAULT 0.00,
+  `percentage_score` DECIMAL(5,2) DEFAULT 0.00,
+  `evaluated_by` BIGINT UNSIGNED DEFAULT NULL,
+  `evaluated_at` DATETIME DEFAULT NULL,
+  `attempt_number` INT UNSIGNED DEFAULT 1,
+  `time_taken_seconds` INT UNSIGNED DEFAULT NULL,
+  `total_questions_attempted` INT UNSIGNED DEFAULT 0,
+  `total_questions_correct` INT UNSIGNED DEFAULT 0,
+  `notes` TEXT DEFAULT NULL,                  -- evaluator notes
+  PRIMARY KEY (`id`),
+  KEY `idx_att_assessment_student` (`assessment_id`,`student_id`),
+  KEY `idx_att_student_status` (`student_id`,`status`),
+  KEY `idx_att_submitted` (`submitted_at`),
+  CONSTRAINT `fk_att_assessment` FOREIGN KEY (`assessment_id`) REFERENCES `sch_assessments` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_att_student` FOREIGN KEY (`student_id`) REFERENCES `std_students` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4_COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `sch_attempt_answers` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `attempt_id` BIGINT UNSIGNED NOT NULL,
+  `assessment_item_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to sch_assessment_items.id
+  `question_id` BIGINT UNSIGNED NOT NULL,
+  `selected_option_ids` JSON DEFAULT NULL,    -- for MCQ multi-select: array of option ids
+  `answer_text` TEXT DEFAULT NULL,            -- for short/long answers, code, numeric answers etc.
+  `marks_awarded` DECIMAL(7,2) DEFAULT 0.00,
+  `is_correct` TINYINT(1) DEFAULT NULL,
+  `grader_note` TEXT DEFAULT NULL,
+  `answered_at` DATETIME DEFAULT NULL,
+  `time_taken_seconds` INT UNSIGNED DEFAULT NULL,
+  `review_count` TINYINT UNSIGNED DEFAULT 0,  -- how many times reviewed before submission
+  PRIMARY KEY (`id`),
+  KEY `idx_aa_attempt` (`attempt_id`),
+  KEY `idx_aa_question` (`question_id`),
+  CONSTRAINT `fk_aa_attempt` FOREIGN KEY (`attempt_id`) REFERENCES `sch_attempts` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_aa_item` FOREIGN KEY (`assessment_item_id`) REFERENCES `sch_assessment_items` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_aa_question` FOREIGN KEY (`question_id`) REFERENCES `sch_questions` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4_COLLATE=utf8mb4_unicode_ci;
+
+-- -------------------------------------------------------------------------
+-- STUDENT LEARNING OUTCOMES & COMPETENCY TRACKING
+-- -------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `sch_student_learning_outcomes` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `student_id` BIGINT UNSIGNED NOT NULL,
+  `competency_id` BIGINT UNSIGNED NOT NULL,
+  `topic_id` BIGINT UNSIGNED NOT NULL,
+  `class_id` INT UNSIGNED NOT NULL,
+  `subject_id` BIGINT UNSIGNED NOT NULL,
+  `bloom_level` VARCHAR(50) DEFAULT NULL,     -- from questions attempted
+  `avg_score_percent` DECIMAL(5,2) DEFAULT NULL,
+  `total_attempts` INT UNSIGNED DEFAULT 0,
+  `correct_attempts` INT UNSIGNED DEFAULT 0,
+  `last_attempt_date` DATE DEFAULT NULL,
+  `mastery_status` ENUM('NOT_STARTED','IN_PROGRESS','PROFICIENT','MASTERED') DEFAULT 'NOT_STARTED',
+  `progress_percentage` DECIMAL(5,2) DEFAULT 0,
+  `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_slo_student_competency_topic` (`student_id`,`competency_id`,`topic_id`),
+  KEY `idx_slo_student` (`student_id`),
+  KEY `idx_slo_mastery` (`mastery_status`),
+  CONSTRAINT `fk_slo_student` FOREIGN KEY (`student_id`) REFERENCES `std_students` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_slo_competency` FOREIGN KEY (`competency_id`) REFERENCES `sch_competencies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_slo_topic` FOREIGN KEY (`topic_id`) REFERENCES `sch_topics` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_slo_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_slo_subject` FOREIGN KEY (`subject_id`) REFERENCES `sch_subjects` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4_COLLATE=utf8mb4_unicode_ci;
+
+-- -------------------------------------------------------------------------
+-- QUESTION & EXAM ANALYTICS
+-- -------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `sch_question_analytics` (
+  `question_id` BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+  `total_attempts` INT UNSIGNED DEFAULT 0,
+  `correct_attempts` INT UNSIGNED DEFAULT 0,
+  `avg_time_seconds` INT UNSIGNED DEFAULT NULL,
+  `discrimination_index` DECIMAL(4,3) DEFAULT NULL,  -- (correct top 27% - correct bottom 27%) / group_size
+  `difficulty_index` DECIMAL(4,3) DEFAULT NULL,      -- total_correct / total_attempts
+  `discrimination_status` VARCHAR(20) DEFAULT NULL,   -- 'GOOD','FAIR','POOR'
+  `last_used` DATE DEFAULT NULL,
+  `last_updated` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT `fk_qa_question` FOREIGN KEY (`question_id`) REFERENCES `sch_questions` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4_COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `sch_exam_analytics` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `exam_id` BIGINT UNSIGNED NOT NULL,
+  `total_students_assigned` INT UNSIGNED DEFAULT 0,
+  `total_students_attempted` INT UNSIGNED DEFAULT 0,
+  `avg_score_percent` DECIMAL(5,2) DEFAULT NULL,
+  `highest_score` DECIMAL(8,2) DEFAULT NULL,
+  `lowest_score` DECIMAL(8,2) DEFAULT NULL,
+  `pass_count` INT UNSIGNED DEFAULT 0,
+  `fail_count` INT UNSIGNED DEFAULT 0,
+  `pass_percentage` DECIMAL(5,2) DEFAULT NULL,
+  `standard_deviation` DECIMAL(8,2) DEFAULT NULL,
+  `question_difficulty_avg` DECIMAL(4,3) DEFAULT NULL,
+  `last_updated` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  CONSTRAINT `fk_ea_exam` FOREIGN KEY (`exam_id`) REFERENCES `sch_exams` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4_COLLATE=utf8mb4_unicode_ci;
+
+
+-- -------------------------------------------------------------------------
+-- AUDIT & CHANGE LOG
+-- -------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `sch_audit_log` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `table_name` VARCHAR(50) NOT NULL,
+  `record_id` BIGINT UNSIGNED NOT NULL,
+  `action` ENUM('CREATE','UPDATE','DELETE','PUBLISH','GRADE','SUBMIT') NOT NULL,
+  `changed_by` BIGINT UNSIGNED DEFAULT NULL,
+  `old_values` JSON DEFAULT NULL,
+  `new_values` JSON DEFAULT NULL,
+  `ip_address` VARCHAR(45) DEFAULT NULL,
+  `timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_audit_table_record` (`table_name`,`record_id`),
+  KEY `idx_audit_action` (`action`),
+  KEY `idx_audit_timestamp` (`timestamp`),
+  CONSTRAINT `fk_audit_user` FOREIGN KEY (`changed_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4_COLLATE=utf8mb4_unicode_ci;
+
+
+-- -------------------------------------------------------------------------
+-- MATERIALIZED VIEW FOR FAST QUERIES
+-- -------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `sch_question_index` (
+  `question_id` BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+  `class_id` INT UNSIGNED DEFAULT NULL,           -- sch_classes.id
+  `subject_id` BIGINT UNSIGNED DEFAULT NULL,      -- sch_subjects.id
+  `lesson_id` INT UNSIGNED DEFAULT NULL,          -- denormalized for faster filtering
+  `topic_id` BIGINT UNSIGNED DEFAULT NULL,        -- sch_topics.id
+  `competency_id` BIGINT UNSIGNED DEFAULT NULL,   -- sch_competencies.id
+  `complexity_level_id` INT UNSIGNED DEFAULT NULL,      -- slb_complexity_level.id
+  `bloom_id` INT UNSIGNED DEFAULT NULL,           -- slb_bloom_taxonomy.id
+  `cognitive_skill_id` INT UNSIGNED DEFAULT NULL, -- slb_cognitive_skill.id
+  `question_type_id` INT UNSIGNED DEFAULT NULL,   -- gl_question_types.id
+  `marks` DECIMAL(5,2) DEFAULT NULL,              -- marks allocated
+  `negative_marks` DECIMAL(5,2) DEFAULT NULL,     -- negative marks
+  `estimated_time_seconds` INT UNSIGNED DEFAULT NULL,  -- estimated time to answer
+  `tags` JSON DEFAULT NULL,                       -- array of tag strings or ids
+  `last_updated` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  KEY `idx_qi_class_subject` (`class_id`,`subject_id`),
+  KEY `idx_qi_complexity` (`complexity_level_id`),
+  KEY `idx_qi_bloom` (`bloom_id`),
+  CONSTRAINT `fk_qi_question` FOREIGN KEY (`question_id`) REFERENCES `sch_questions` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4_COLLATE=utf8mb4_unicode_ci;
+
+
+-- -------------------------------------------------------------------------
+-- TRANSPORT MODULE
+-- -------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `tpt_vehicle` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `vehicle_no` VARCHAR(20) NOT NULL,              -- Vehicle number(Vehicle Identification Number (VIN)/Chassis Number: A unique 17-character code stamped on the vehicle's chassis)
+    `registration_no` VARCHAR(30) NOT NULL,         -- Unique govt registration number
+    `model` VARCHAR(50),                            -- Vehicle model
+    `manufacturer` VARCHAR(50),                     -- Vehicle manufacturer 
+    `vehicle_type_id` BIGINT UNSIGNED NOT NULL,     -- fk to sys_dropdown_table ('BUS','VAN','CAR')
+    `fuel_type_id` BIGINT UNSIGNED NOT NULL,        -- fk to sys_dropdown_table ('Diesel','Petrol','CNG','Electric')
+    `capacity` INT UNSIGNED NOT NULL DEFAULT 40,    -- Seating capacity
+    `max_capacity` INT UNSIGNED NOT NULL DEFAULT 40, -- Maximum allowed capacity including standing
+    `ownership_type_id` BIGINT UNSIGNED NOT NULL,   -- fk to sys_dropdown_table ('Owned','Leased','Rented')
+    `vendor_id` BIGINT UNSIGNED NOT NULL,           -- fk to tpt_vendor
+    `fitness_valid_upto` DATE NOT NULL,             -- Fitness certificate expiry date
+    `insurance_valid_upto` DATE NOT NULL,           -- Insurance expiry date
+    `pollution_valid_upto` DATE NOT NULL,           -- Pollution certificate expiry date
+    `vehicle_emission_class_id` BIGINT UNSIGNED NOT NULL,  -- fk to sys_dropdown_table ('BS IV', 'BS V', 'BS VI')
+    `fire_extinguisher_valid_upto` DATE NOT NULL,    -- Fire extinguisher expiry date
+    `gps_device_id` VARCHAR(50),                    -- Installed GPS device identifier
+    `vehicle_photo_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (vehicle photo will be uploaded in sys.media)
+    `registration_cert_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (registration certificate will be uploaded in sys.media)
+    `fitness_cert_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (fitness certificate will be uploaded in sys.media)
+    `insurance_cert_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (insurance certificate will be uploaded in sys.media)
+    `pollution_cert_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (pollution certificate will be uploaded in sys.media)
+    `vehicle_emission_cert_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (vehicle emission certificate will be uploaded in sys.media)
+    `fire_extinguisher_cert_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (fire extinguisher certificate will be uploaded in sys.media)
+    `gps_device_cert_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (gps device certificate will be uploaded in sys.media)
+    `availability_status` tinyint(1) unsigned not null default 1,  -- 0: Not Available, 1: Available
+    `is_active` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    UNIQUE KEY `uq_vehicle_vehicleNo` (`vehicle_no`),
+    UNIQUE KEY `uq_vehicle_registration_no` (`registration_no`),
+    CONSTRAINT `fk_vehicle_vehicle_type` FOREIGN KEY (`vehicle_type_id`) REFERENCES `sys_dropdown_table`(`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_vehicle_fuel_type` FOREIGN KEY (`fuel_type_id`) REFERENCES `sys_dropdown_table`(`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_vehicle_ownership_type` FOREIGN KEY (`ownership_type_id`) REFERENCES `sys_dropdown_table`(`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_vehicle_vendor` FOREIGN KEY (`vendor_id`) REFERENCES `tpt_vendor`(`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_vehicle_vehicle_emission_class` FOREIGN KEY (`vehicle_emission_class_id`) REFERENCES `sys_dropdown_table`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `tpt_personnel` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `user_id` BIGINT UNSIGNED DEFAULT NULL,
+    `user_qr_code` VARCHAR(30) NOT NULL,
+    `id_card_type` ENUM('QR','RFID','NFC','Barcode') NOT NULL DEFAULT 'QR',
+    `name` VARCHAR(100) NOT NULL,
+    `phone` VARCHAR(30) DEFAULT NULL,
+    `id_type` VARCHAR(20) DEFAULT NULL,     -- ID Type (e.g., Aadhaar, PAN, Passport)
+    `id_no` VARCHAR(100) DEFAULT NULL,      -- ID Number   
+    `role` VARCHAR(20) NOT NULL,            -- Role (e.g., Driver, Helper, Transport Manager etc.)
+    `license_no` VARCHAR(50) DEFAULT NULL,  -- License Number
+    `license_valid_upto` DATE DEFAULT NULL,  -- License Valid Upto
+    `assigned_vehicle_id` BIGINT UNSIGNED DEFAULT NULL,  -- fk to tpt_vehicle
+    `driving_exp_months` SMALLINT UNSIGNED DEFAULT NULL,  -- Driving Experience in Months
+    `police_verification_done` TINYINT(1) NOT NULL DEFAULT 0,  -- 0: Not Done, 1: Done
+    `address` VARCHAR(512) DEFAULT NULL,
+    `id_card_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (id card will be uploaded in sys.media)
+    `photo_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (photo will be uploaded in sys.media)
+    `driving_license_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (driving license will be uploaded in sys.media)
+    `police_verification_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (police verification will be uploaded in sys.media)
+    `address_proof_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (address proof will be uploaded in sys.media)
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    CONSTRAINT `fk_personnel_user` FOREIGN KEY (`user_id`) REFERENCES `sys_users`(`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_personnel_vehicle` FOREIGN KEY (`assigned_vehicle_id`) REFERENCES `tpt_vehicle`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `tpt_shift` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `code` VARCHAR(20) NOT NULL,
+    `name` VARCHAR(100) NOT NULL,
+    `effective_from` DATE NOT NULL,
+    `effective_to` DATE NOT NULL,
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    UNIQUE KEY `uq_shift_code` (`code`),
+    UNIQUE KEY `uq_shift_name` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `tpt_route` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `code` VARCHAR(50) NOT NULL,
+    `name` VARCHAR(200) NOT NULL,
+    `description` VARCHAR(500) DEFAULT NULL,
+    `pickup_drop` ENUM('Pickup','Drop','Both') NOT NULL DEFAULT 'Both',
+    `shift_id` BIGINT UNSIGNED NOT NULL,
+    `route_geometry` LINESTRING SRID 4326 DEFAULT NULL,
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    UNIQUE KEY `uq_route_code` (`code`),
+    UNIQUE KEY `uq_route_name` (`name`),
+    SPATIAL INDEX `sp_idx_route_geometry` (`route_geometry`),
+    CONSTRAINT `fk_route_shiftId` FOREIGN KEY (`shift_id`) REFERENCES `tpt_shift`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `tpt_pickup_points` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `shift_id` BIGINT UNSIGNED NOT NULL,
+    `code` VARCHAR(50) NOT NULL,
+    `name` VARCHAR(200) NOT NULL,
+    `latitude` DECIMAL(10,7) DEFAULT NULL,
+    `longitude` DECIMAL(10,7) DEFAULT NULL,
+    `location` POINT NOT NULL SRID 4326,
+    `total_distance` DECIMAL(7,2) DEFAULT NULL,
+    `estimated_time` INT DEFAULT NULL,
+    `stop_type` ENUM('Pickup','Drop','Both') NOT NULL DEFAULT 'Both',
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    UNIQUE KEY `uq_pickup_code` (`code`),
+    UNIQUE KEY `uq_pickup_name` (`name`),
+    SPATIAL INDEX `sp_idx_pickup_location` (`location`),
+    CONSTRAINT `fk_pickupPoint_shiftId` FOREIGN KEY (`shift_id`) REFERENCES `tpt_shift`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `tpt_pickup_points_route_jnt` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `shift_id` BIGINT UNSIGNED NOT NULL,
+    `route_id` BIGINT UNSIGNED NOT NULL,
+    `pickup_drop` ENUM('Pickup','Drop') NOT NULL DEFAULT 'Pickup',
+    `pickup_point_id` BIGINT UNSIGNED NOT NULL,
+    `ordinal` SMALLINT UNSIGNED NOT NULL DEFAULT 1,
+    `total_distance` DECIMAL(7,2) DEFAULT NULL,
+    `arrival_time` INT DEFAULT NULL,
+    `departure_time` INT DEFAULT NULL,   
+    `estimated_time` INT DEFAULT NULL,
+    `pickup_fare` DECIMAL(10,2) DEFAULT NULL,
+    `drop_fare` DECIMAL(10,2) DEFAULT NULL,
+    `both_side_fare` DECIMAL(10,2) DEFAULT NULL, -- Fixed typo from v1.9 (DEFAULT NOT NULL -> DEFAULT NULL)
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    UNIQUE KEY `uq_pickupPointRoute_shift_pickupPoint` (`shift_id`,`pickup_point_id`,`route_id`),
+    KEY `idx_pprj_route_ordinal` (`route_id`, `ordinal`),
+    CONSTRAINT `fk_pickupPointRoute_shiftId` FOREIGN KEY (`shift_id`) REFERENCES `tpt_shift`(`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_pickupPointRoute_routeId` FOREIGN KEY (`route_id`) REFERENCES `tpt_route`(`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_pickupPointRoute_pickupPointId` FOREIGN KEY (`pickup_point_id`) REFERENCES `tpt_pickup_points`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `tpt_driver_route_vehicle_jnt` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `shift_id` BIGINT UNSIGNED NOT NULL,
+    `route_id` BIGINT UNSIGNED NOT NULL,
+    `vehicle_id` BIGINT UNSIGNED NOT NULL,
+    `driver_id` BIGINT UNSIGNED NOT NULL,
+    `helper_id` BIGINT UNSIGNED DEFAULT NULL,
+    `pickup_drop` ENUM('Pickup','Drop','Both') NOT NULL DEFAULT 'Both',
+    `effective_from` DATE NOT NULL,
+    `effective_to` DATE DEFAULT NULL,
+    `total_students` INT NOT NULL DEFAULT 0,
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    CONSTRAINT `fk_routeVehicle_shiftId` FOREIGN KEY (`shift_id`) REFERENCES `tpt_shift`(`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_routeVehicle_routeId` FOREIGN KEY (`route_id`) REFERENCES `tpt_route`(`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_routeVehicle_vehicleId` FOREIGN KEY (`vehicle_id`) REFERENCES `tpt_vehicle`(`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_routeVehicle_driverId` FOREIGN KEY (`driver_id`) REFERENCES `tpt_personnel`(`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_routeVehicle_helperId` FOREIGN KEY (`helper_id`) REFERENCES `tpt_personnel`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+DELIMITER $$
+CREATE TRIGGER `trg_driver_route_vehicle_unique_assignment`
+BEFORE INSERT ON `tpt_driver_route_vehicle_jnt`
+FOR EACH ROW
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM `tpt_driver_route_vehicle_jnt`
+        WHERE `shift_id` = NEW.`shift_id`
+          AND `route_id` = NEW.`route_id`
+          AND `vehicle_id` = NEW.`vehicle_id`
+          AND `driver_id` = NEW.`driver_id`
+          AND (
+              (NEW.`effective_to` IS NULL AND (`effective_to` IS NULL OR `effective_to` >= NEW.`effective_from`))
+              OR
+              (NEW.`effective_to` IS NOT NULL AND (
+                  (`effective_from` <= NEW.`effective_to` AND `effective_to` >= NEW.`effective_from`)
+              ))
+          )
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Overlapping assignment for the same shift, route, vehicle, and driver.';
+    END IF;
+END$$
+DELIMITER ;
+
+CREATE TABLE IF NOT EXISTS `tpt_route_scheduler_jnt` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `scheduled_date` DATE NOT NULL,
+    `shift_id` BIGINT UNSIGNED NOT NULL,
+    `route_id` BIGINT UNSIGNED NOT NULL,
+    `vehicle_id` BIGINT UNSIGNED NOT NULL,
+    `driver_id` BIGINT UNSIGNED NOT NULL,
+    `helper_id` BIGINT UNSIGNED DEFAULT NULL,
+    `pickup_drop` ENUM('Pickup','Drop') NOT NULL DEFAULT 'Pickup',
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    UNIQUE KEY `uq_route_scheduler_schedDate_shift_route` (`scheduled_date`,`shift_id`,`route_id`,`pickup_drop`),
+    UNIQUE KEY `uq_route_scheduler_vehicle_schedDate_shift` (`vehicle_id`,`scheduled_date`,`shift_id`,`pickup_drop`),
+    UNIQUE KEY `uq_route_scheduler_driver_schedDate_shift` (`driver_id`,`scheduled_date`,`shift_id`,`pickup_drop`),
+    UNIQUE KEY `uq_route_scheduler_helper_schedDate_shift` (`helper_id`,`scheduled_date`,`shift_id`,`pickup_drop`),
+    CONSTRAINT `fk_sched_shift` FOREIGN KEY (`shift_id`) REFERENCES `tpt_shift`(`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_sched_route` FOREIGN KEY (`route_id`) REFERENCES `tpt_route`(`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_sched_vehicle` FOREIGN KEY (`vehicle_id`) REFERENCES `tpt_vehicle`(`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_sched_driver` FOREIGN KEY (`driver_id`) REFERENCES `tpt_personnel`(`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_sched_helper` FOREIGN KEY (`helper_id`) REFERENCES `tpt_personnel`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `tpt_trip` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `trip_date` DATE NOT NULL,
+    `route_scheduler_id` BIGINT UNSIGNED NOT NULL,
+    `vehicle_id` BIGINT UNSIGNED NOT NULL,
+    `driver_id` BIGINT UNSIGNED NOT NULL,
+    `helper_id` BIGINT UNSIGNED DEFAULT NULL,
+    `start_time` DATETIME DEFAULT NULL,
+    `end_time` DATETIME DEFAULT NULL,
+    `start_odometer_reading` DECIMAL(11, 2) DEFAULT 0.00,
+    `end_odometer_reading` DECIMAL(11, 2) DEFAULT 0.00,
+    `start_fuel_reading` DECIMAL(8, 3) DEFAULT 0.00,
+    `end_fuel_reading` DECIMAL(8, 3) DEFAULT 0.00,
+    `status` VARCHAR(20) NOT NULL DEFAULT 'Scheduled',
+    `remarks` VARCHAR(512) DEFAULT NULL, 
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    KEY `idx_trip_routeSched_tripDate` (`route_scheduler_id`, `trip_date`),
+    KEY `idx_trip_vehicle` (`vehicle_id`),
+    CONSTRAINT `fk_trip_route_scheduler` FOREIGN KEY (`route_scheduler_id`) REFERENCES `tpt_route_scheduler_jnt`(`id`) ON DELETE RESTRICT,
+    CONSTRAINT `fk_trip_vehicle` FOREIGN KEY (`vehicle_id`) REFERENCES `tpt_vehicle`(`id`) ON DELETE RESTRICT,
+    CONSTRAINT `fk_trip_driver` FOREIGN KEY (`driver_id`) REFERENCES `tpt_personnel`(`id`) ON DELETE RESTRICT,
+    CONSTRAINT `fk_trip_helper` FOREIGN KEY (`helper_id`) REFERENCES `tpt_personnel`(`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `tpt_trip_stop_detail` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `trip_id` BIGINT UNSIGNED NOT NULL,
+    `stop_id` BIGINT UNSIGNED DEFAULT NULL,
+    `pickup_drop` ENUM('Pickup','Drop') NOT NULL DEFAULT 'Pickup',
+    `sch_arrival_time` DATETIME DEFAULT NULL,
+    `sch_departure_time` DATETIME DEFAULT NULL,
+    `reached_flag` TINYINT(1) NOT NULL DEFAULT 0,
+    `reaching_time` TIMESTAMP DEFAULT NULL,
+    `leaving_time` TIMESTAMP DEFAULT NULL,
+    `emergency_flag` TINYINT(1) DEFAULT 0,
+    `emergency_time` TIMESTAMP DEFAULT NULL,
+    `emergency_remarks` VARCHAR(512) DEFAULT NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `updated_by` BIGINT UNSIGNED DEFAULT NULL,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    CONSTRAINT `fk_trip_stop_detail_trip` FOREIGN KEY (`trip_id`) REFERENCES `tpt_trip`(`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_trip_stop_detail_stop` FOREIGN KEY (`stop_id`) REFERENCES `tpt_pickup_points`(`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_trip_stop_detail_updated_by` FOREIGN KEY (`updated_by`) REFERENCES `tpt_personnel`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `tpt_attendance_device` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `device_code` VARCHAR(50) NOT NULL UNIQUE,
+    `device_name` VARCHAR(100) NOT NULL,
+    `device_type` ENUM('Mobile','Scanner','Tablet','Gate') NOT NULL,
+    `location` VARCHAR(150) NULL,
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `tpt_driver_attendance` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `driver_id` BIGINT UNSIGNED NOT NULL,
+    `attendance_date` DATE NOT NULL,
+    `first_in_time` DATETIME NULL,
+    `last_out_time` DATETIME NULL,
+    `total_work_minutes` INT NULL,
+    `attendance_status` ENUM('Present','Absent','Half-Day','Late') NOT NULL,
+    `via_app` TINYINT(1) NOT NULL DEFAULT 1,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY `uq_driver_day` (`driver_id`, `attendance_date`),
+    FOREIGN KEY (`driver_id`) REFERENCES `tpt_personnel`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `tpt_driver_attendance_log` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `attendance_id` BIGINT UNSIGNED NOT NULL,
+    `scan_time` DATETIME NOT NULL,
+    `attendance_type` ENUM('IN','OUT') NOT NULL,
+    `scan_method` ENUM('QR','RFID','NFC','Manual') NOT NULL,
+    `device_id` BIGINT UNSIGNED NOT NULL,
+    `latitude` DECIMAL(10,6) NULL,
+    `longitude` DECIMAL(10,6) NULL,
+    `scan_status` ENUM('Valid','Duplicate','Rejected') NOT NULL DEFAULT 'Valid',
+    `remarks` VARCHAR(255) NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT `fk_da_attendance` FOREIGN KEY (`attendance_id`) REFERENCES `tpt_driver_attendance`(`id`) ON DELETE CASCADE,
+    CONSTRAINT `FK_da_device` FOREIGN KEY (`device_id`) REFERENCES `tpt_attendance_device`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+
+CREATE TABLE IF NOT EXISTS `tpt_student_route_allocation_jnt` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `student_session_id` BIGINT UNSIGNED NOT NULL,
+    `route_id` BIGINT UNSIGNED NOT NULL,
+    `pickup_stop_id` BIGINT UNSIGNED NOT NULL,
+    `drop_stop_id` BIGINT UNSIGNED NOT NULL,
+    `fare` DECIMAL(10,2) NOT NULL,
+    `effective_from` DATE NOT NULL,
+    `active_status` TINYINT(1) NOT NULL DEFAULT 1,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    CONSTRAINT `fk_sa_studentSession` FOREIGN KEY (`student_session_id`) REFERENCES `std_student_sessions_jnt`(`id`) ON DELETE RESTRICT,
+    CONSTRAINT `fk_sa_route` FOREIGN KEY (`route_id`) REFERENCES `tpt_route`(`id`) ON DELETE RESTRICT,
+    CONSTRAINT `fk_sa_pickup` FOREIGN KEY (`pickup_stop_id`) REFERENCES `tpt_pickup_points`(`id`) ON DELETE RESTRICT,
+    CONSTRAINT `fk_sa_drop` FOREIGN KEY (`drop_stop_id`) REFERENCES `tpt_pickup_points`(`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `tpt_fine_master` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `std_academic_sessions_id` BIGINT UNSIGNED NOT NULL,
+    `fine_from_days` TINYINT DEFAULT 0,
+    `fine_to_days` TINYINT DEFAULT 0,
+    `fine_type` ENUM('Fixed','Percentage') DEFAULT 'Fixed',
+    `fine_rate` DECIMAL(5,2) DEFAULT 0.00,
+    `Remark` VARCHAR(512) DEFAULT NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `tpt_student_fee_detail` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `std_academic_sessions_id` BIGINT UNSIGNED NOT NULL,
+    `month` DATE NOT NULL,
+    `amount` DECIMAL(10,2) NOT NULL,
+    `fine_amount` DECIMAL(10,2) DEFAULT 0.00,
+    `total_amount` DECIMAL(10,2) NOT NULL,
+    `due_date` DATE NOT NULL,
+    `Remark` VARCHAR(512) DEFAULT NULL,
+    `status` VARCHAR(20) NOT NULL DEFAULT 'Pending',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `tpt_student_fine_detail` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `student_fee_detail_id` BIGINT UNSIGNED NOT NULL,
+    `fine_master_id` BIGINT UNSIGNED NOT NULL,
+    `fine_days` TINYINT DEFAULT 0,
+    `fine_type` ENUM('Fixed','Percentage') DEFAULT 'Fixed',
+    `fine_rate` DECIMAL(5,2) DEFAULT 0.00,
+    `fine_amount` DECIMAL(10,2) DEFAULT 0.00,
+    `waved_fine_amount` DECIMAL(10,2) DEFAULT 0.00,
+    `net_fine_amount` DECIMAL(10,2) DEFAULT 0.00,
+    `Remark` VARCHAR(512) DEFAULT NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    CONSTRAINT `fk_sf_master` FOREIGN KEY (`student_fee_detail_id`) REFERENCES `tpt_student_fee_detail`(`id`) ON DELETE RESTRICT,
+    CONSTRAINT `fk_sf_fine_master` FOREIGN KEY (`fine_master_id`) REFERENCES `tpt_fine_master`(`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `tpt_student_fee_collection` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `student_fee_detail_id` BIGINT UNSIGNED NOT NULL,
+    `payment_date` DATE NOT NULL,
+    `total_delay_days` INT DEFAULT 0,
+    `paid_amount` DECIMAL(10,2) NOT NULL,
+    `payment_mode`  VARCHAR(20) NOT NULL,
+    `status` VARCHAR(20) NOT NULL,
+    `reconciled` TINYINT(1) NOT NULL DEFAULT 0,
+    `remarks` VARCHAR(512) DEFAULT NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    CONSTRAINT `fk_fc_fee_detail` FOREIGN KEY (`student_fee_detail_id`) REFERENCES `tpt_student_fee_detail`(`id`) ON DELETE RESTRICT
+    -- Removed fk_fc_master as tpt_fee_master is not directly linked here in v1.9 schema provided in context,
+    -- or if it was intended, the column fee_master_id was missing in the column list in v1.9.
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `std_student_pay_log` (
+  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `student_id` BIGINT UNSIGNED NOT NULL,
+  `academic_session_id` BIGINT UNSIGNED NOT NULL,
+  `module_name` VARCHAR(50) NOT NULL,
+  `activity_type` VARCHAR(50) NOT NULL,
+  `amount` DECIMAL(10,2) DEFAULT NULL,
+  `log_date` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `reference_id` BIGINT UNSIGNED DEFAULT NULL,
+  `reference_table` VARCHAR(100) DEFAULT NULL,
+  `description` VARCHAR(512) DEFAULT NULL,
+  `triggered_by` BIGINT UNSIGNED DEFAULT NULL,
+  `is_system_generated` TINYINT(1) DEFAULT 0,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+  KEY `idx_payLog_student` (`student_id`),
+  KEY `idx_payLog_module` (`module_name`),
+  KEY `idx_payLog_date` (`log_date`),
+  KEY `idx_payLog_reference` (`reference_table`, `reference_id`),
+  KEY `idx_payLog_trigger` (`triggered_by`),
+  CONSTRAINT `fk_payLog_studentId` FOREIGN KEY (`student_id`) REFERENCES `std_students` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_payLog_sessionId` FOREIGN KEY (`academic_session_id`) REFERENCES `sch_org_academic_sessions_jnt` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_payLog_triggeredBy` FOREIGN KEY (`triggered_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- ---------------------------------------------------------------------------------
+-- Single Screen - 5 tab (Fuel, Inspection, Service Request, Maintenance, Approval)
+CREATE TABLE IF NOT EXISTS `tpt_vehicle_fuel` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `vehicle_id` BIGINT UNSIGNED NOT NULL,
+    `driver_id` BIGINT UNSIGNED DEFAULT NULL,
+    `date` DATE NOT NULL,
+    `quantity` DECIMAL(10,3) NOT NULL,
+    `cost` DECIMAL(12,2) NOT NULL,
+    `fuel_type` BIGINT UNSIGNED NOT NULL,
+    `odometer_reading` BIGINT UNSIGNED DEFAULT NULL,
+    `remarks` VARCHAR(512) DEFAULT NULL,
+    `status` ENUM('Approved','Pending','Rejected') NOT NULL DEFAULT 'Pending',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    CONSTRAINT `fk_vfl_vehicle` FOREIGN KEY (`vehicle_id`) REFERENCES `tpt_vehicle`(`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_vfl_driver` FOREIGN KEY (`driver_id`) REFERENCES `tpt_personnel`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Condition:
+    -- 1. After Fuel Entry, it need to be approved by the adminAuthorised Personnel.
+    -- 2. To make sure the availaibility of Approval to the Authorise Person only, we need to keep Approval on Fuel & Maintenance on a seperate Tab.
+
+Create Table if not EXISTS `tpt_daily_vehicle_inspection` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `vehicle_id` BIGINT UNSIGNED NOT NULL,
+    `driver_id` BIGINT UNSIGNED DEFAULT NULL,
+    `inspection_date` TIMESTAMP NOT NULL,
+    `odometer_reading` BIGINT UNSIGNED DEFAULT NULL,
+    `fuel_level_reading` DECIMAL(6,2) DEFAULT NULL,
+    `tire_condition_ok` TINYINT(1) NOT NULL DEFAULT 0,
+    `lights_condition_ok` TINYINT(1) NOT NULL DEFAULT 0,
+    `brakes_condition_ok` TINYINT(1) NOT NULL DEFAULT 0,
+    `engine_condition_ok` TINYINT(1) NOT NULL DEFAULT 0,
+    `battery_condition_ok` TINYINT(1) NOT NULL DEFAULT 0,
+    `fire_extinguisher_condition_ok` TINYINT(1) NOT NULL DEFAULT 0,
+    `first_aid_kit_condition_ok` TINYINT(1) NOT NULL DEFAULT 0,
+    `seat_belts_condition_ok` TINYINT(1) NOT NULL DEFAULT 0,
+    `headlights_condition_ok` TINYINT(1) NOT NULL DEFAULT 0,
+    `tailights_condition_ok` TINYINT(1) NOT NULL DEFAULT 0,
+    `wipers_condition_ok` TINYINT(1) NOT NULL DEFAULT 0,
+    `mirrors_condition_ok` TINYINT(1) NOT NULL DEFAULT 0,
+    `steering_wheel_condition_ok` TINYINT(1) NOT NULL DEFAULT 0,
+    `emergency_tools_condition_ok` TINYINT(1) NOT NULL DEFAULT 0,
+    `cleanliness_ok` TINYINT(1) NOT NULL DEFAULT 0,
+    `any_issues_found` TINYINT(1) NOT NULL DEFAULT 0,
+    `issues_description` VARCHAR(512) DEFAULT NULL,
+    `remarks` VARCHAR(512) DEFAULT NULL,
+    `inspection_status` ENUM('Passed','Failed','Pending') NOT NULL DEFAULT 'Pending',
+    `inspected_by` BIGINT UNSIGNED DEFAULT NULL, 
+    `inspected_at` TIMESTAMP NULL DEFAULT NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    CONSTRAINT `fk_dvil_vehicle` FOREIGN KEY (`vehicle_id`) REFERENCES `tpt_vehicle`(`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_dvil_driver` FOREIGN KEY (`driver_id`) REFERENCES `tpt_personnel`(`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_dvil_inspectedBy` FOREIGN KEY (`inspected_by`) REFERENCES `sys_users`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Condition:
+    -- 1. If Inspection is Failed, a new entry will be created in 'tpt_vehicle_service_request' table with available information.
+    -- 2. If Inspection is Failed, application will change Status in the "tpt_Vehicle make '`availability_status` to 'Not Available'
+
+Create Table if not EXISTS `tpt_vehicle_service_request` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `vehicle_inspection_id` BIGINT UNSIGNED NOT NULL,
+    `request_date` TIMESTAMP NOT NULL,
+    `reason` VARCHAR(512) DEFAULT NULL,  -- Reason can be filled by anyone
+    `Vehicle_status` BIGINT UNSIGNED DEFAULT NULL,  -- fk to sys_dropdown_table ('Due for Service', 'In-Service', 'Service Done')
+    `service_completion_date` TIMESTAMP NULL DEFAULT NULL,
+    `request_approval_status` ENUM('Approved','Pending','Rejected') NOT NULL DEFAULT 'Pending',
+    `approved_by` BIGINT UNSIGNED DEFAULT NULL,
+    `approved_at` TIMESTAMP NULL DEFAULT NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    CONSTRAINT `fk_vsl_vehicleInspection` FOREIGN KEY (`vehicle_inspection_id`) REFERENCES `tpt_daily_vehicle_inspection`(`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_vsl_approvedBy` FOREIGN KEY (`approved_by`) REFERENCES `sys_users`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Condition:
+    -- 1. If Inspection is Failed, a new entry will be created in 'tpt_vehicle_service_request' table with available information.
+    -- 2. To make sure the availaibility of Approval to the Authorise Person only, we need to keep Approval in a seperate Tab.
+    -- 3. user can create a new entry in 'tpt_vehicle_service_request' table as per the need.
+    -- 4. Once Request i Approved by Authorised Person, a new entry will be created in 'tpt_vehicle_maintenance' table with available information.
+    -- 5. Direct Entry in 'tpt_vehicle_maintenance' table is not allowed. 
+    -- 6. Once Entry is created in 'tpt_vehicle_service_request' table, it will be redirected to 'tpt_vehicle_maintenance' table.
+
+
+CREATE TABLE IF NOT EXISTS `tpt_vehicle_maintenance` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `vehicle_service_request_id` BIGINT UNSIGNED NOT NULL,
+    `maintenance_initiation_date` DATE NOT NULL,  -- Date of Service Initiated (Vehicle reached in garage)
+    `maintenance_type` VARCHAR(120) NOT NULL,    -- Mannual Entry
+    `cost` DECIMAL(12,2) NOT NULL,
+    `in_service_date` DATE DEFAULT NULL,   -- Date of Service Initiated (Vehicle reached in garage)
+    `out_service_date` DATE DEFAULT NULL,  -- Date of Service Completion 
+    `workshop_details` VARCHAR(512) DEFAULT NULL,
+    `next_due_date` DATE DEFAULT NULL,     -- Next Due Date (if Any)
+    `remarks` VARCHAR(512) DEFAULT NULL,
+    `status` ENUM('Approved','Pending','Rejected') NOT NULL DEFAULT 'Pending',
+    `approved_by` BIGINT UNSIGNED DEFAULT NULL,
+    `approved_at` TIMESTAMP NULL DEFAULT NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    CONSTRAINT `fk_vm_vehicle_service_request` FOREIGN KEY (`vehicle_service_request_id`) REFERENCES `tpt_vehicle_service_request`(`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_vm_approvedBy` FOREIGN KEY (`approved_by`) REFERENCES `sys_users`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Condition:
+    -- 1. New Entry Can not be created in 'tpt_vehicle_maintenance' table. Only Edit of existing entry is allowed.
+    -- 2. Approval of Both the Tables should be done by Authorised Person in "Approval" Tab.
+    -- 3. Once Maintenance Entry is Approved by Authorised Person, it will create a entry in 'vnd_vendor_bill_due_for_payment' table.
+
+
+CREATE TABLE IF NOT EXISTS `tpt_trip_incidents` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `trip_id` BIGINT UNSIGNED NOT NULL,
+    `incident_time` TIMESTAMP NOT NULL,
+    `incident_type` BIGINT UNSIGNED NOT NULL,
+    `severity` ENUM('LOW','MEDIUM','HIGH') DEFAULT 'MEDIUM',
+    `latitude` DECIMAL(10,7) DEFAULT NULL,
+    `longitude` DECIMAL(10,7) DEFAULT NULL,
+    `description` VARCHAR(512) DEFAULT NULL,
+    `status` BIGINT UNSIGNED DEFAULT NULL,
+    `raised_by` BIGINT UNSIGNED DEFAULT NULL,  -- fk to sys_users
+    `raised_at` TIMESTAMP NULL DEFAULT NULL,    -- When Incident is Raised
+    `resolved_at` TIMESTAMP NULL DEFAULT NULL,  -- When Incident is Resolved
+    `resolved_by` BIGINT UNSIGNED DEFAULT NULL,  -- fk to sys_users
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    CONSTRAINT `fk_ti_trip` FOREIGN KEY (`trip_id`) REFERENCES `tpt_trip`(`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_ti_raisedBy` FOREIGN KEY (`raised_by`) REFERENCES `sys_users`(`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_ti_resolvedBy` FOREIGN KEY (`resolved_by`) REFERENCES `sys_users`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -------------------------------------------------------------------------
+-- COMPLAINT MODULE
+-- -------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `sch_department` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `name` VARCHAR(100) NOT NULL, -- e.g. "Transport", "Academic", "Rash Driving"
+  `code` VARCHAR(30) DEFAULT NULL, -- Optional short code e.g. "TPT", "ACD"
+  `is_active` TINYINT(1) DEFAULT 1,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `sch_designation` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `name` VARCHAR(100) NOT NULL, -- e.g. "Teacher", "Staff", "Student"
+  `code` VARCHAR(30) DEFAULT NULL, -- Optional short code e.g. "TCH", "STF", "STD"
+  `is_active` TINYINT(1) DEFAULT 1,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- This table will facilitate to create Groups of different department, Roles, Designations etc.
+CREATE TABLE IF NOT EXISTS `sch_entity_groups` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `entity_purpose_id` BIGINT UNSIGNED NOT NULL, -- FK to sys_dropdown_table e.g. (escalation_management, notification, event_supervision, exam_supervision)
+  `code` VARCHAR(30) DEFAULT NULL, -- Optional short code e.g. "All_Class_Teachers", "Stundets_Play_Cricket", "Students_Participate_Annual_day"
+  `name` VARCHAR(100) NOT NULL, -- e.g. "Class Teachers for all the classes", "Students Registered for Cricket", "All Students Participate in Annual Day"
+  `description` VARCHAR(512) DEFAULT NULL,
+  `is_active` TINYINT(1) DEFAULT 1,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_code` (`code`),
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Condition: 
+-- This table will be used to get Entity Group, which will be a combination of differet type of Entities.
+-- 'entity_purpose_id' will be used to filter the Entity Group created for some purpose.
+-- e.g. "Tour Supervisors" which can be a combination of Students & Teachers, "Event Organizers" which can be a combination of Students & Teachers.
+
+-- This table will be used to store the members of the Entity Group.
+CREATE TABLE IF NOT EXISTS `sch_entity_groups_members` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `entity_group_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to sch_entity_groups
+  `entity_type_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to sys_dropdown_table (1=Class, 2=Section, 3=Subject, 4=Designation, 5=Department, 6=Role etc.)
+  `entity_table_name` VARCHAR(60) DEFAULT NULL, -- Entity Table Name e.g. "sch_class", "sch_section", "sch_subject", "sch_designation", "sch_department", "sch_role"
+  `entity_selected_id` BIGINT UNSIGNED DEFAULT NULL, -- Foriegn Key will be managed at Application Level as it will be different for different entities e.g. sch_class.id, sch_section.id, sch_subject.id, sch_designation.id, sch_department.id, sch_role.id etc.
+  `entity_name` VARCHAR(100) DEFAULT NULL, -- Entity Name e.g. "Students of Class-1st", "Students of Section-7th_A", "Students of Subject-English", "Students of Designation-Teacher", "Students of Department-Transport", "Role-School Principal"
+  `entity_code` VARCHAR(30) DEFAULT NULL, -- Entity Code e.g. "STD_CLS_1", "STD_SEC_7th_A", "STD_SUB_English", "STU_DES_Teacher", "STU_DEP_Transport", "ROL_School_Principal"
+  `is_active` TINYINT(1) DEFAULT 1,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  CONSTRAINT `fk_entity_group_id` FOREIGN KEY (`entity_group_id`) REFERENCES `sch_entity_groups` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_entity_type_id` FOREIGN KEY (`entity_type_id`) REFERENCES `sys_dropdown_table` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci; 
+-- Condition: 
+-- entity_type = (1=Class, 2=Section, 3=Subject, 4=Designation, 5=Department, 6=Role, 7=Students, 8=Staff, 9=Vehicle, 10=Facility, 11=Event, 12=Location, 13=Other)
+-- We will be storing table name to use for selecting entities in `additional_info` in `sys_dropdown_table` table alongwith entity_type menu items e.g. for entity_type=1, table_name="sch_class", for entity_type=9, table_name="sch_vehicle"
+-- entity_table_name will be fetched from `additional_info` in `sys_dropdown_table` table e.g. (sch_class, sch_section, sch_subject, sch_designation, sch_department, sch_role, sch_students, sch_staff, sch_vehicle, sch_facility, sch_event, sch_location, sch_other)
+
+
+CREATE TABLE IF NOT EXISTS `cmp_complaint_categories` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `parent_id` BIGINT UNSIGNED DEFAULT NULL, -- NULL = Main Category, Value = Sub-category
+  `name` VARCHAR(100) NOT NULL, -- e.g. "Transport", "Academic", "Rash Driving"
+  `code` VARCHAR(30) DEFAULT NULL, -- Optional short code e.g. "TPT", "ACAD", "RASH_DRIVE"
+  `description` VARCHAR(512) DEFAULT NULL,
+  `severity_level_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to sys_dropdown_table (1-10) e.g. "1-Low", "2-Medium", "3-High", "10-Critical"
+  `priority_score_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to sys_dropdown_table (1-5) e.g. 1=Critical, 2=Urgent, 3=High, 4=Medium, 5=Low
+  `default_expected_resolution_hours` INT UNSIGNED NOT NULL,  -- This must be less than escalation_l1_hours
+  `default_escalation_hours_l1` INT UNSIGNED NOT NULL, -- Time before escalating to L1 (This must be less than escalation_l2_hours)
+  `default_escalation_hours_l2` INT UNSIGNED NOT NULL, -- Time before escalating to L2 (This must be less than escalation_l3_hours)
+  `default_escalation_hours_l3` INT UNSIGNED NOT NULL, -- Time before escalating to L3 (This must be less than escalation_l4_hours)
+  `default_escalation_hours_l4` INT UNSIGNED NOT NULL, -- Time before escalating to L4 (This must be less than escalation_l5_hours)
+  `default_escalation_hours_l5` INT UNSIGNED NOT NULL, -- Time before escalating to L5
+  `default_escalation_l1_entity_group_id` BIGINT UNSIGNED DEFAULT NULL,    -- FK to sys_groups
+  `default_escalation_l2_entity_group_id` BIGINT UNSIGNED DEFAULT NULL,    -- FK to sys_groups
+  `default_escalation_l3_entity_group_id` BIGINT UNSIGNED DEFAULT NULL,    -- FK to sys_groups
+  `default_escalation_l4_entity_group_id` BIGINT UNSIGNED DEFAULT NULL,    -- FK to sys_groups
+  `default_escalation_l5_entity_group_id` BIGINT UNSIGNED DEFAULT NULL,    -- FK to sys_groups
+  `is_medical_check_required` TINYINT(1) DEFAULT 0, -- If true, then medical check is required
+  `is_active` TINYINT(1) DEFAULT 1,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_cat_parent` (`parent_id`),
+  UNIQUE KEY `idx_cat_parent_name` (`parent_id`, `name`),
+  UNIQUE KEY `idx_cat_code` (`code`),
+  CONSTRAINT `fk_cat_parent` FOREIGN KEY (`parent_id`) REFERENCES `cmp_complaint_categories` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_cat_severity_level` FOREIGN KEY (`severity_level_id`) REFERENCES `sys_dropdown_table` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_cat_priority_score` FOREIGN KEY (`priority_score_id`) REFERENCES `sys_dropdown_table` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_cat_default_escalation_l1_entity_group` FOREIGN KEY (`default_escalation_l1_entity_group_id`) REFERENCES `sys_groups` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_cat_default_escalation_l2_entity_group` FOREIGN KEY (`default_escalation_l2_entity_group_id`) REFERENCES `sys_groups` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_cat_default_escalation_l3_entity_group` FOREIGN KEY (`default_escalation_l3_entity_group_id`) REFERENCES `sys_groups` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_cat_default_escalation_l4_entity_group` FOREIGN KEY (`default_escalation_l4_entity_group_id`) REFERENCES `sys_groups` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_cat_default_escalation_l5_entity_group` FOREIGN KEY (`default_escalation_l5_entity_group_id`) REFERENCES `sys_groups` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- This table will capture the detail of complaint categories and sub-categories (like whom to escalate, expected resolution time, escalation time etc.)
+CREATE TABLE IF NOT EXISTS `cmp_department_sla` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `complaint_category_id` BIGINT UNSIGNED NOT NULL,       -- FK to cmp_complaint_categories
+  `complaint_subcategory_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to cmp_complaint_categories (if sub-category is Null then it will be applied to all sub-categories exept those defined in the sub-category)
+-- Group wise SLA
+  `target_department_id` BIGINT UNSIGNED DEFAULT NULL,    -- FK to sys_departments
+  `target_designation_id` BIGINT UNSIGNED DEFAULT NULL,   -- FK to sys_designations
+  `target_role_id` BIGINT UNSIGNED DEFAULT NULL,          -- FK to sys_roles
+  `target_entity_group_id` BIGINT UNSIGNED DEFAULT NULL,         -- FK to sys_groups
+-- User wise SLA
+  `target_user_id` BIGINT UNSIGNED DEFAULT NULL,          -- FK to sys_users
+-- Vehicle wise SLA
+  `target_vehicle_id` BIGINT UNSIGNED DEFAULT NULL,       -- FK to sys_vehicles
+-- Vendor wise SLA
+  `target_vendor_id` BIGINT UNSIGNED DEFAULT NULL,        -- FK to tpt_vendor
+-- SLA (Expected Resolution Time & Escalation Time)
+  `dept_expected_resolution_hours` INT UNSIGNED NOT NULL, -- This must be less than escalation_l1_hours
+  `dept_escalation_hours_l1` INT UNSIGNED NOT NULL,       -- Time before escalating to L1 (This must be less than escalation_l2_hours)
+  `dept_escalation_hours_l2` INT UNSIGNED NOT NULL,       -- Time before escalating to L2 (This must be less than escalation_l3_hours)
+  `dept_escalation_hours_l3` INT UNSIGNED NOT NULL,       -- Time before escalating to L3 (This must be less than escalation_l4_hours)
+  `dept_escalation_hours_l4` INT UNSIGNED NOT NULL,       -- Time before escalating to L4 (This must be less than escalation_l5_hours)
+  `dept_escalation_hours_l5` INT UNSIGNED NOT NULL,       -- Time before escalating to L5
+  `escalation_l1_entity_group_id` BIGINT UNSIGNED DEFAULT NULL,    -- FK to sys_groups
+  `escalation_l2_entity_group_id` BIGINT UNSIGNED DEFAULT NULL,    -- FK to sys_groups
+  `escalation_l3_entity_group_id` BIGINT UNSIGNED DEFAULT NULL,    -- FK to sys_groups
+  `escalation_l4_entity_group_id` BIGINT UNSIGNED DEFAULT NULL,    -- FK to sys_groups
+  `escalation_l5_entity_group_id` BIGINT UNSIGNED DEFAULT NULL,    -- FK to sys_groups
+  `is_active` TINYINT(1) DEFAULT 1,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  CONSTRAINT `fk_sla_category` FOREIGN KEY (`complaint_category_id`) REFERENCES `cmp_complaint_categories` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_sla_subcategory` FOREIGN KEY (`complaint_subcategory_id`) REFERENCES `cmp_complaint_categories` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_sla_target_department_id` FOREIGN KEY (`target_department_id`) REFERENCES `sch_departments` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_sla_target_designation_id` FOREIGN KEY (`target_designation_id`) REFERENCES `sch_designations` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_sla_target_role_id` FOREIGN KEY (`target_role_id`) REFERENCES `sch_roles` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_sla_target_entity_group_id` FOREIGN KEY (`target_entity_group_id`) REFERENCES `sch_entity_groups` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_sla_target_user_id` FOREIGN KEY (`target_user_id`) REFERENCES `sch_users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_sla_target_vehicle_id` FOREIGN KEY (`target_vehicle_id`) REFERENCES `sch_vehicles` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_sla_target_vendor_id` FOREIGN KEY (`target_vendor_id`) REFERENCES `tpt_vendor` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_sla_escalation_l1_entity_group_id` FOREIGN KEY (`escalation_l1_entity_group_id`) REFERENCES `sch_entity_groups` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_sla_escalation_l2_entity_group_id` FOREIGN KEY (`escalation_l2_entity_group_id`) REFERENCES `sch_entity_groups` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_sla_escalation_l3_entity_group_id` FOREIGN KEY (`escalation_l3_entity_group_id`) REFERENCES `sch_entity_groups` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_sla_escalation_l4_entity_group_id` FOREIGN KEY (`escalation_l4_entity_group_id`) REFERENCES `sch_entity_groups` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_sla_escalation_l5_entity_group_id` FOREIGN KEY (`escalation_l5_entity_group_id`) REFERENCES `sch_entity_groups` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Condition: 
+-- 1. If sub-category is NULL then it will be applied to all sub-categories exept those defined in the sub-category
+-- 2. we can create Department/Designation/Role/User/Entity Group wise SLA as per our requirement.
+-- 3. We can Create Escalation Group for each Level (l1,l2,l3,l4,l5) for each Department/Designation/Role/User/Entity Group.
+-- 4. User who are member of that Entity Group will see excalated complaints in their dashboard.
+
+
+CREATE TABLE IF NOT EXISTS `cmp_complaints` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `ticket_no` VARCHAR(30) NOT NULL, -- Auto-generated unique ticket ID (e.g., CMP-2025-0001)
+  `ticket_date` DATE NOT NULL DEFAULT CURRENT_DATE(), -- Date when the complaint was raised
+  -- Complainant Info (Who raised it)
+  `complainant_type_id` BIGINT UNSIGNED NOT NULL, -- FK to sys_dropdown_table (Parent, Student, Staff, Vendor, Anonymous, Public)
+  `complainant_user_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to sys_users (NULL if Public/Anonymous)
+  `complainant_name` VARCHAR(100) DEFAULT NULL, -- Captured if not a system user (Public/Anonymous)
+  `complainant_contact` VARCHAR(50) DEFAULT NULL, -- Captured if not a system user (Public/Anonymous)
+  -- Target Entity (Against whom/what)
+  `target_user_type_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to sys_dropdown_table (1=Student, 2=Staff, 3=Group, 4=Department, 5=Role, 6=Designation, 7=Facility, 8=Vehicle, 9=Event, 10=Location, 11-Vendor, 12-Other)
+  `target_table_name` VARCHAR(60) DEFAULT NULL, -- e.g. "sch_class", "sch_section", "sch_subject", "sch_designation", "sch_department", "sch_role", "sch_students", "sch_staff", "sch_vehicle", "sch_facility", "sch_event", "sch_location", "sch_other"
+  `target_selected_id` BIGINT UNSIGNED DEFAULT NULL, -- Foriegn Key will be managed at Application Level as it will be different for different entities e.g. sch_class, sch_section, sch_subject, sch_students, sch_staff, sch_vehicle etc.
+  `target_code` VARCHAR(50) DEFAULT NULL, -- Optional short code e.g. "Transport", "Academic", "Account Manager"
+  `target_name` VARCHAR(100) DEFAULT NULL, -- Optional name e.g. "Transport", "Academic", "Account Manager"
+  -- Complaint Classification
+  `category_id` BIGINT UNSIGNED NOT NULL, -- FK to cmp_complaint_categories
+  `subcategory_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to cmp_complaint_categories
+  `severity_level_id` BIGINT UNSIGNED NOT NULL, -- It will not be asked to Complaint Form but will be auto fetched from 'cmp_complaint_categories' table
+  `priority_score_id` BIGINT UNSIGNED NOT NULL, -- It will not be asked to Complaint Form but will be auto fetched from 'cmp_complaint_categories' table
+  -- Complaint Content
+  `title` VARCHAR(200) NOT NULL,
+  `description` TEXT DEFAULT NULL,
+  `location_details` VARCHAR(255) DEFAULT NULL, -- Where did it happen?
+  `incident_date` DATETIME DEFAULT NULL,
+  `incident_time` TIME DEFAULT NULL,
+  -- Status & Resolution
+  `status_id` BIGINT UNSIGNED NOT NULL, -- FK to sys_dropdown_table (Open, In-Progress, Escalated, Resolved, Closed, Rejected)
+  `assigned_to_role_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to sys_roles (Current Role handling it)
+  `assigned_to_user_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to sys_users (Specific Officer)
+  `resolution_due_at` DATETIME DEFAULT NULL, -- Calculated from 'cmp_department_sla'. If not available then use 'default_expected_resolution_hours' from 'cmp_complaint_categories'.
+  `actual_resolved_at` DATETIME DEFAULT NULL, -- When it was actually resolved
+  `resolved_by_role_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to sys_roles (Role who resolved it)
+  `resolved_by_user_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to sys_users (Officer who resolved it)
+  `resolution_summary` TEXT DEFAULT NULL,
+  -- Escalation
+  `is_escalated` TINYINT(1) DEFAULT 0,
+  `current_escalation_level` TINYINT UNSIGNED DEFAULT 0, -- 0=None, 1=L1, 2=L2...
+  -- Meta
+  `source_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to sys_dropdown_table (App, Web, Email, Walk-in, Call)
+  `is_anonymous` TINYINT(1) DEFAULT 0,
+  `dept_specific_info` JSON DEFAULT NULL, -- Department-specific additional info (e.g., Student ID, Parent ID, route_id, vehicle_id)
+  `is_medical_check_required` TINYINT(1) DEFAULT 0, -- Fetch from 'cmp_complaint_categories' table. If true, then system will capture medical check details in 'cmp_medical_checks' table.
+  -- Support Files
+  `support_file` tinyint(1) DEFAULT 0, -- If true, then system will have support files in sys_media table.
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_ticket_no` (`ticket_no`),
+  KEY `idx_cmp_status` (`status`),
+  KEY `idx_cmp_complainant` (`complainant_type_id`, `complainant_user_id`),
+  KEY `idx_cmp_target` (`target_user_type_id`, `target_selected_id`),
+  CONSTRAINT `fk_cmp_complainant_type` FOREIGN KEY (`complainant_type_id`) REFERENCES `sys_dropdown_table` (`id`),
+  CONSTRAINT `fk_cmp_complainant_name` FOREIGN KEY (`complainant_user_id`) REFERENCES `sys_users` (`id`),
+  CONSTRAINT `fk_cmp_target_type` FOREIGN KEY (`target_user_type_id`) REFERENCES `sys_dropdown_table` (`id`),
+  CONSTRAINT `fk_cmp_target` FOREIGN KEY (`target_selected_id`) REFERENCES `sys_users` (`id`),
+  CONSTRAINT `fk_cmp_category` FOREIGN KEY (`category_id`) REFERENCES `cmp_complaint_categories` (`id`),
+  CONSTRAINT `fk_cmp_subcategory` FOREIGN KEY (`subcategory_id`) REFERENCES `cmp_complaint_categories` (`id`),
+  CONSTRAINT `fk_cmp_severity_level` FOREIGN KEY (`severity_level_id`) REFERENCES `sys_dropdown_table` (`id`),
+  CONSTRAINT `fk_cmp_priority_score` FOREIGN KEY (`priority_score_id`) REFERENCES `sys_dropdown_table` (`id`),
+  CONSTRAINT `fk_cmp_status` FOREIGN KEY (`status_id`) REFERENCES `sys_dropdown_table` (`id`),
+  CONSTRAINT `fk_cmp_assigned_to_role` FOREIGN KEY (`assigned_to_role_id`) REFERENCES `sys_roles` (`id`),
+  CONSTRAINT `fk_cmp_assigned_to_user` FOREIGN KEY (`assigned_to_user_id`) REFERENCES `sys_users` (`id`),
+  CONSTRAINT `fk_cmp_resolved_by_role` FOREIGN KEY (`resolved_by_role_id`) REFERENCES `sys_roles` (`id`),
+  CONSTRAINT `fk_cmp_resolved_by_user` FOREIGN KEY (`resolved_by_user_id`) REFERENCES `sys_users` (`id`),
+  CONSTRAINT `fk_cmp_source` FOREIGN KEY (`source_id`) REFERENCES `sys_dropdown_table` (`id`),
+  CONSTRAINT `fk_cmp_medical_check` FOREIGN KEY (`is_medical_check_required`) REFERENCES `cmp_medical_checks` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Condition: 
+--
+
+CREATE TABLE IF NOT EXISTS `cmp_complaint_actions` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `complaint_id` BIGINT UNSIGNED NOT NULL,
+  `action_type_id` BIGINT UNSIGNED NOT NULL, -- FK to sys_dropdown_table (Created, Assigned, Comment, StatusChange, Investigation, Escalated, Resolved)
+  `performed_by_user_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to sys_users (NULL for System)
+  `performed_by_role_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to sys_roles (NULL for System)
+  `assigned_to_user_id` BIGINT UNSIGNED DEFAULT NULL, -- If reassigned
+  `assigned_to_role_id` BIGINT UNSIGNED DEFAULT NULL, -- If reassigned
+  `notes` TEXT DEFAULT NULL,
+  `is_private_note` TINYINT(1) DEFAULT 0, -- If true, not visible to complainant
+  `action_timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_act_complaint` (`complaint_id`),
+  CONSTRAINT `fk_act_complaint` FOREIGN KEY (`complaint_id`) REFERENCES `cmp_complaints` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_act_action_type` FOREIGN KEY (`action_type_id`) REFERENCES `sys_dropdown_table` (`id`),
+  CONSTRAINT `fk_act_performed_by_user` FOREIGN KEY (`performed_by_user_id`) REFERENCES `sys_users` (`id`),
+  CONSTRAINT `fk_act_performed_by_role` FOREIGN KEY (`performed_by_role_id`) REFERENCES `sys_roles` (`id`),
+  CONSTRAINT `fk_act_assigned_to_user` FOREIGN KEY (`assigned_to_user_id`) REFERENCES `sys_users` (`id`),
+  CONSTRAINT `fk_act_assigned_to_role` FOREIGN KEY (`assigned_to_role_id`) REFERENCES `sys_roles` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+CREATE TABLE IF NOT EXISTS `cmp_medical_checks` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `complaint_id` BIGINT UNSIGNED NOT NULL,
+  `check_type_id` BIGINT UNSIGNED NOT NULL, -- FK to sys_dropdown_table (AlcoholTest, DrugTest, FitnessCheck)
+  `conducted_by` VARCHAR(100) DEFAULT NULL, -- Doctor/Officer Name
+  `conducted_at` DATETIME NOT NULL,
+  `result` VARCHAR(20) NOT NULL, -- FK to sys_dropdown_table (Positive, Negative, Inconclusive)
+  `reading_value` VARCHAR(50) DEFAULT NULL, -- e.g. BAC Level (AlcoholTest)
+  `remarks` TEXT DEFAULT NULL, 
+  `evidence_uploded` TINYINT(1) DEFAULT 0, -- 1 (Yes), 0 (No), If 'YES', Docs will be uploaded in sys_media table.
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_med_complaint` (`complaint_id`),
+  CONSTRAINT `fk_med_complaint` FOREIGN KEY (`complaint_id`) REFERENCES `cmp_complaints` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_med_check_type` FOREIGN KEY (`check_type_id`) REFERENCES `sys_dropdown_table` (`id`),
+  CONSTRAINT `fk_med_result` FOREIGN KEY (`result`) REFERENCES `sys_dropdown_table` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Stores processed insights for complaints (Prediction, Sentiment, Risk)
+CREATE TABLE IF NOT EXISTS `cmp_ai_insights` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `complaint_id` BIGINT UNSIGNED NOT NULL,
+  `sentiment_score` DECIMAL(4,3) DEFAULT NULL, -- -1.0 (Negative) to +1.0 (Positive) calculated by AI e.g. -0.8
+  `sentiment_label_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to sys_dropdown_table (Angry, Urgent, Calm, Neutral) calculated by AI e.g. Angry
+  `escalation_risk_score` DECIMAL(5,2) DEFAULT NULL, -- 0-100% Probability calculated by AI e.g. 80% 
+  `predicted_category_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to cmp_complaint_categories calculated by AI e.g. Rash Driving
+  `safety_risk_score` DECIMAL(5,2) DEFAULT NULL, -- 0-100% Probability calculated by AI e.g. 80%
+  `model_version` VARCHAR(20) DEFAULT NULL, -- model version used for prediction e.g. v1.0
+  `processed_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_ai_complaint` (`complaint_id`),
+  KEY `idx_ai_risk` (`escalation_risk_score`),
+  CONSTRAINT `fk_ai_complaint` FOREIGN KEY (`complaint_id`) REFERENCES `cmp_complaints` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_ai_sentiment_label` FOREIGN KEY (`sentiment_label_id`) REFERENCES `sys_dropdown_table` (`id`),
+  CONSTRAINT `fk_ai_predicted_category` FOREIGN KEY (`predicted_category_id`) REFERENCES `cmp_complaint_categories` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Condition: 
+-- 1. How to calculate all required fields is mentioned in /Screen_Design/cmp_Complaint_Module/cmp_11_AI_Calculation_Logic.md
+
+
+-- -------------------------------------------------------------------------
+-- VENDOR MANAGEMENT
+-- -------------------------------------------------------------------------

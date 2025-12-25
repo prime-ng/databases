@@ -13,7 +13,8 @@ Field Name - 'Allow_only_one_side_transport_charges'
 Field Name - 'Allow_different_pickup_and_drop_point' 
             (This Key will indicate if school allow a student to opt different pickup & drop point and pay fare accordingly?)
 
-Field Name - 
+Field Name - 'trip_usage_needs_to_be_updated_into_vendor_usage_log' (True/False)
+            (This key will be used to define whether School has taken Vendor Module and Entry into Vendor usage log is required ot not?)
 Field Name - 
 Field Name - 
 Field Name - 
