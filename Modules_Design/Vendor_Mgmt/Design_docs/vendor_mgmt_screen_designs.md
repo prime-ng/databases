@@ -124,6 +124,7 @@ This document provides detailed UI/UX specifications for the **Vendor Management
 │ Bank Name          [________________]            │
 │ Account No.        [________________]            │
 │ IFSC Code          [________________]            │
+│ UPI ID             [________________]            │
 │                                                  │
 │ Status             [☑] Active                    │
 ├──────────────────────────────────────────────────┤

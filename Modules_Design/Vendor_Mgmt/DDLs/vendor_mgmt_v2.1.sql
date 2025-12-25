@@ -11,6 +11,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- VENDOR MASTER
 -- =======================================================================
 
+-- 1-Screen Name - Vendor Master
 CREATE TABLE IF NOT EXISTS `vnd_vendors` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `vendor_name` VARCHAR(100) NOT NULL,
@@ -21,7 +22,11 @@ CREATE TABLE IF NOT EXISTS `vnd_vendors` (
     `address` VARCHAR(512) DEFAULT NULL,
     `gst_number` VARCHAR(50) DEFAULT NULL,      -- Tax ID 1
     `pan_number` VARCHAR(50) DEFAULT NULL,      -- Tax ID 2 (or generic Tax Reg No)
-    `bank_details` JSON DEFAULT NULL,           -- Store bank name, account no, IFSC code etc.
+    `bank_name` VARCHAR(100) DEFAULT NULL,
+    `bank_account_no` VARCHAR(50) DEFAULT NULL,
+    `bank_ifsc_code` VARCHAR(20) DEFAULT NULL,
+    `bank_branch` VARCHAR(100) DEFAULT NULL,
+    `upi_id` VARCHAR(100) DEFAULT NULL,
     `is_active` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,
     `is_deleted` TINYINT(1) UNSIGNED NOT NULL DEFAULT 0, -- Soft delete flag
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -36,6 +41,7 @@ CREATE TABLE IF NOT EXISTS `vnd_vendors` (
 -- ITEM MASTER (Services & Products)
 -- =======================================================================
 
+-- 2-Screen Name - Item Master
 CREATE TABLE IF NOT EXISTS `vnd_items` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `item_code` VARCHAR(50) DEFAULT NULL,       -- SKU or Internal Item Code (Can be used for barcode printing)
@@ -64,6 +70,7 @@ CREATE TABLE IF NOT EXISTS `vnd_items` (
 -- VENDOR AGREEMENTS (Contracts)
 -- =======================================================================
 
+-- 3-Screen Name - Agreement Master
 CREATE TABLE IF NOT EXISTS `vnd_agreements` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `vendor_id` BIGINT UNSIGNED NOT NULL,
@@ -87,6 +94,7 @@ CREATE TABLE IF NOT EXISTS `vnd_agreements` (
 -- AGREEMENT ITEMS (Line Items & Rates)
 -- =======================================================================
 
+-- 3-Screen Name - Agreement Master (Agreement Items). This will be part of above Screen
 CREATE TABLE IF NOT EXISTS `vnd_agreement_items_jnt` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `agreement_id` BIGINT UNSIGNED NOT NULL,
@@ -105,7 +113,7 @@ CREATE TABLE IF NOT EXISTS `vnd_agreement_items_jnt` (
     `tax4_percent` DECIMAL(5, 2) DEFAULT 0.00,
     -- Context (For hooking to specific assets)
     `related_entity_type` BIGINT UNSIGNED DEFAULT NULL,  -- FK to sys_dropdown_table ('Vehicle', 'Asset', 'Service', etc.)
-    `related_entity_table` VARCHAR(60) DEFAULT NULL, -- e.g., vehicle, asset, service, etc.
+    `related_entity_table` VARCHAR(60) DEFAULT NULL, -- e.g., tpt_vehicle, sch_asset, sch_service, etc.
     `related_entity_id` BIGINT UNSIGNED DEFAULT NULL, -- e.g., vehicle_id, asset_id, service_id, etc.
     `description` VARCHAR(255) DEFAULT NULL,
     `is_active` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,
@@ -113,22 +121,28 @@ CREATE TABLE IF NOT EXISTS `vnd_agreement_items_jnt` (
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at` TIMESTAMP NULL DEFAULT NULL,
-
     CONSTRAINT `fk_vnd_agr_items_agreement` FOREIGN KEY (`agreement_id`) REFERENCES `vnd_agreements`(`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_vnd_agr_items_item` FOREIGN KEY (`item_id`) REFERENCES `vnd_items`(`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_vnd_agr_items_entity_type` FOREIGN KEY (`related_entity_type`) REFERENCES `sys_dropdown_table`(`id`) ON DELETE RESTRICT,
-    
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 -- conditions: 
 -- related_entity_type = (Vehicle, Asset, Service, etc.) will have table name as `additional_info` in `sys_dropdown_table` table.
 -- e.g. related_entity_type = 'Vehicle' will have table_name as `tpt_vehicle` in 'additional_info' field of `sys_dropdown_table` table.
 -- related_entity_id will be the id of the entity in the related_entity_type table.
 
+--Example
+Drop Down - Vehicle 
+sys_dropdown_table
+Key                                             Value                   Additional_Info(JSON)
+vnd_agreement_items_jnt.related_entity_type     Vehicle                 {"table_name": "tpt_vehicle"}
+vnd_agreement_items_jnt.related_entity_type     Asset                   {"table_name": "sch_asset"}
+vnd_agreement_items_jnt.related_entity_type     Service                 {"table_name": "sch_service"}
 
 -- =======================================================================
 -- SERVICE/PRODUCT USAGE LOG (Analytics Hook)
 -- =======================================================================
 -- This table is used to log the usage of services/products by vendors.
+-- 4-Screen Name - Usage Log
 CREATE TABLE IF NOT EXISTS `vnd_usage_logs` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `vendor_id` BIGINT UNSIGNED NOT NULL,
@@ -150,6 +164,7 @@ CREATE TABLE IF NOT EXISTS `vnd_usage_logs` (
 -- VENDOR INVOICES (Bill)
 -- =======================================================================
 
+-- 5-Screen Name - Invoice
 CREATE TABLE IF NOT EXISTS `vnd_invoices` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `vendor_id` BIGINT UNSIGNED NOT NULL,
@@ -176,7 +191,7 @@ CREATE TABLE IF NOT EXISTS `vnd_invoices` (
     `net_payable` DECIMAL(12, 2) NOT NULL,
     `amount_paid` DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
     `balance_due` DECIMAL(12, 2) GENERATED ALWAYS AS (net_payable - amount_paid) STORED,
-    `due_date` DATE DEFAULT NULL,
+    `due_date` DATE DEFAULT NULL,   --  Payment due date (Invoice date + Credit days)
     `status` BIGINT UNSIGNED NOT NULL, -- FK to sys_dropdown_table (Approval Pending, Approved, Payment Pending, Paid, Overdue)
     `remarks` VARCHAR(512) DEFAULT NULL,
     `is_active` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,
@@ -197,6 +212,7 @@ CREATE TABLE IF NOT EXISTS `vnd_invoices` (
 -- VENDOR PAYMENTS
 -- =======================================================================
 
+-- 6-Screen Name - Payment
 CREATE TABLE IF NOT EXISTS `vnd_payments` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `vendor_id` BIGINT UNSIGNED NOT NULL,
@@ -207,6 +223,9 @@ CREATE TABLE IF NOT EXISTS `vnd_payments` (
     `reference_no` VARCHAR(100) DEFAULT NULL, -- Trx ID, Cheque No
     `status` ENUM('INITIATED', 'SUCCESS', 'FAILED') DEFAULT 'SUCCESS',
     `paid_by` BIGINT UNSIGNED DEFAULT NULL, -- FK sys_users
+    `reconciled` TINYINT(1) UNSIGNED NOT NULL DEFAULT 0, -- 0: Not Reconciled, 1: Reconciled
+    `reconciled_by` BIGINT UNSIGNED DEFAULT NULL, -- FK sys_users
+    `reconciled_at` TIMESTAMP NULL DEFAULT NULL,
     `remarks` TEXT DEFAULT NULL,
     `is_deleted` TINYINT(1) UNSIGNED NOT NULL DEFAULT 0,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -217,7 +236,9 @@ CREATE TABLE IF NOT EXISTS `vnd_payments` (
     CONSTRAINT `fk_vnd_pay_mode` FOREIGN KEY (`payment_mode`) REFERENCES `sys_dropdown_table`(`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- RemoveD 'vnd_complaints' table as we will be using common Complaint Module for this?
+-- Vendor Complaints will be handled using common Complaint Module.
+
+
 
 
 -- =======================================================================

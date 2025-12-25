@@ -171,19 +171,19 @@ CREATE TABLE IF NOT EXISTS `sys_dropdown_needs` (
   CONSTRAINT chk_isSubModule_parentId CHECK ((tenant_creation_allowed = 0 AND menu_category IS NULL AND main_menu IS NULL AND sub_menu IS NULL AND tab_name IS NULL AND field_name IS NULL) OR (tenant_creation_allowed = 1 AND menu_category IS NOT NULL AND main_menu IS NOT NULL AND sub_menu IS NOT NULL AND tab_name IS NOT NULL AND field_name IS NOT NULL))  
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 -- Conditions:
--- 1. If tenant_creation_allowed = 1, then it is must to have menu_category, main_menu, sub_menu, tab_name, field_name.
--- 2. When PG-Admin/PG-Support will create a Dropdown, it will get 2 option to select -
---    Option 1 - Dropdown creation by Table & Column details.
---    Option 2 - Dropdown creation by Menu/Sub-Menu & Field Name.
---       a. If he select Option 1 then he can select - Table Name, Column Name.
---       b. If he select Option 2 then he can select - Menu Category, Main Menu, Sub Menu, Tab Name, Field Name.
--- 3. If some Dropdown is allowed to be created by Tenant(tenant_creation_allowed = 1), then it will always show 5 Dropdowns to select from.
---    a. Menu Category (this will come from sys_dropdown_needs.menu_category)
---    b. Main Menu (this will come from sys_dropdown_needs.main_menu)
---    c. Sub Menu (this will come from sys_dropdown_needs.sub_menu)
---    d. Tab Name (this will come from sys_dropdown_needs.tab_name)
---    e. Field Name (this will come from sys_dropdown_needs.field_name)
--- 4. is_system = 1
+  -- 1. If tenant_creation_allowed = 1, then it is must to have menu_category, main_menu, sub_menu, tab_name, field_name.
+  -- 2. When PG-Admin/PG-Support will create a Dropdown, it will get 2 option to select -
+  --    Option 1 - Dropdown creation by Table & Column details.
+  --    Option 2 - Dropdown creation by Menu/Sub-Menu & Field Name.
+  --       a. If he select Option 1 then he can select - Table Name, Column Name.
+  --       b. If he select Option 2 then he can select - Menu Category, Main Menu, Sub Menu, Tab Name, Field Name.
+  -- 3. If some Dropdown is allowed to be created by Tenant(tenant_creation_allowed = 1), then it will always show 5 Dropdowns to select from.
+  --    a. Menu Category (this will come from sys_dropdown_needs.menu_category)
+  --    b. Main Menu (this will come from sys_dropdown_needs.main_menu)
+  --    c. Sub Menu (this will come from sys_dropdown_needs.sub_menu)
+  --    d. Tab Name (this will come from sys_dropdown_needs.tab_name)
+  --    e. Field Name (this will come from sys_dropdown_needs.field_name)
+  -- 4. is_system = 1
 
 -- --------------------------------------------------------------------------------------------------------
 -- Dropdown Table to store various dropdown values used across the system
@@ -314,6 +314,69 @@ CREATE TABLE IF NOT EXISTS `sch_board_organization_jnt` (
   CONSTRAINT `fk_boardOrg_academicSessionId` FOREIGN KEY (`academic_sessions_id`) REFERENCES `sch_org_academic_sessions_jnt` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+
+CREATE TABLE IF NOT EXISTS `sch_department` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `name` VARCHAR(100) NOT NULL, -- e.g. "Transport", "Academic", "Rash Driving"
+  `code` VARCHAR(30) DEFAULT NULL, -- Optional short code e.g. "TPT", "ACD"
+  `is_active` TINYINT(1) DEFAULT 1,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `sch_designation` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `name` VARCHAR(100) NOT NULL, -- e.g. "Teacher", "Staff", "Student"
+  `code` VARCHAR(30) DEFAULT NULL, -- Optional short code e.g. "TCH", "STF", "STD"
+  `is_active` TINYINT(1) DEFAULT 1,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- This table will facilitate to create Groups of different department, Roles, Designations etc.
+CREATE TABLE IF NOT EXISTS `sch_entity_groups` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `entity_purpose_id` BIGINT UNSIGNED NOT NULL, -- FK to sys_dropdown_table e.g. (escalation_management, notification, event_supervision, exam_supervision)
+  `code` VARCHAR(30) DEFAULT NULL, -- Optional short code e.g. "All_Class_Teachers", "Stundets_Play_Cricket", "Students_Participate_Annual_day"
+  `name` VARCHAR(100) NOT NULL, -- e.g. "Class Teachers for all the classes", "Students Registered for Cricket", "All Students Participate in Annual Day"
+  `description` VARCHAR(512) DEFAULT NULL,
+  `is_active` TINYINT(1) DEFAULT 1,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_code` (`code`),
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Condition: 
+  -- This table will be used to get Entity Group, which will be a combination of differet type of Entities.
+  -- 'entity_purpose_id' will be used to filter the Entity Group created for some purpose.
+  -- e.g. "Tour Supervisors" which can be a combination of Students & Teachers, "Event Organizers" which can be a combination of Students & Teachers.
+
+-- This table will be used to store the members of the Entity Group.
+CREATE TABLE IF NOT EXISTS `sch_entity_groups_members` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `entity_group_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to sch_entity_groups
+  `entity_type_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to sys_dropdown_table (1=Class, 2=Section, 3=Subject, 4=Designation, 5=Department, 6=Role etc.)
+  `entity_table_name` VARCHAR(60) DEFAULT NULL, -- Entity Table Name e.g. "sch_class", "sch_section", "sch_subject", "sch_designation", "sch_department", "sch_role"
+  `entity_selected_id` BIGINT UNSIGNED DEFAULT NULL, -- Foriegn Key will be managed at Application Level as it will be different for different entities e.g. sch_class.id, sch_section.id, sch_subject.id, sch_designation.id, sch_department.id, sch_role.id etc.
+  `entity_name` VARCHAR(100) DEFAULT NULL, -- Entity Name e.g. "Students of Class-1st", "Students of Section-7th_A", "Students of Subject-English", "Students of Designation-Teacher", "Students of Department-Transport", "Role-School Principal"
+  `entity_code` VARCHAR(30) DEFAULT NULL, -- Entity Code e.g. "STD_CLS_1", "STD_SEC_7th_A", "STD_SUB_English", "STU_DES_Teacher", "STU_DEP_Transport", "ROL_School_Principal"
+  `is_active` TINYINT(1) DEFAULT 1,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  CONSTRAINT `fk_entity_group_id` FOREIGN KEY (`entity_group_id`) REFERENCES `sch_entity_groups` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_entity_type_id` FOREIGN KEY (`entity_type_id`) REFERENCES `sys_dropdown_table` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci; 
+-- Condition: 
+  -- entity_type = (1=Class, 2=Section, 3=Subject, 4=Designation, 5=Department, 6=Role, 7=Students, 8=Staff, 9=Vehicle, 10=Facility, 11=Event, 12=Location, 13=Other)
+  -- We will be storing table name to use for selecting entities in `additional_info` in `sys_dropdown_table` table alongwith entity_type menu items e.g. for entity_type=1, table_name="sch_class", for entity_type=9, table_name="sch_vehicle"
+  -- entity_table_name will be fetched from `additional_info` in `sys_dropdown_table` table e.g. (sch_class, sch_section, sch_subject, sch_designation, sch_department, sch_role, sch_students, sch_staff, sch_vehicle, sch_facility, sch_event, sch_location, sch_other)
+
+-- ------------------------------------------------------------
+-- School Setup Module (sch)
+-- ------------------------------------------------------------
 -- Tables for Classes, Sections, Subjects, Subject Types, Study Formats, Class-Section Junctions, Subject-StudyFormat Junctions, Class Groups, Subject Groups
 CREATE TABLE IF NOT EXISTS `sch_classes` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
