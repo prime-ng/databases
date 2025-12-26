@@ -147,8 +147,9 @@ CREATE TABLE IF NOT EXISTS `tpt_pickup_points_route_jnt` (
     `arrival_time` INT DEFAULT NULL,
     `departure_time` INT DEFAULT NULL,   
     `estimated_time` INT DEFAULT NULL,
-    `pickup_fare` DECIMAL(10,2) DEFAULT NULL,
-    `drop_fare` DECIMAL(10,2) DEFAULT NULL,
+    `pickup_drop_fare` DECIMAL(10,2) DEFAULT NULL,
+--    `pickup_fare` DECIMAL(10,2) DEFAULT NULL,
+--    `drop_fare` DECIMAL(10,2) DEFAULT NULL,
     `both_side_fare` DECIMAL(10,2) DEFAULT NULL, -- Fixed typo from v1.9 (DEFAULT NOT NULL -> DEFAULT NULL)
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
