@@ -365,6 +365,7 @@ CREATE TABLE IF NOT EXISTS `tpt_fine_master` (
     `fine_to_days` TINYINT DEFAULT 0,
     `fine_type` ENUM('Fixed','Percentage') DEFAULT 'Fixed',
     `fine_rate` DECIMAL(5,2) DEFAULT 0.00,
+    `student_restricted` TINYINT(1) DEFAULT 0,
     `Remark` VARCHAR(512) DEFAULT NULL,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `deleted_at` TIMESTAMP NULL DEFAULT NULL
