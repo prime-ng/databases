@@ -687,9 +687,11 @@ CREATE TABLE IF NOT EXISTS `std_students` (
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_student_aadharId` (`aadhar_id`)
+  UNIQUE KEY `uq_student_userId` (`user_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=188 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `std_student_detail` (
+-- Changed table name from 'std_student_detail' to 'std_student_personal_details'
+CREATE TABLE IF NOT EXISTS `std_student_personal_details` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
   `student_id` int DEFAULT NULL,         -- FK to 'std_students'
   `mobile` varchar(20) DEFAULT NULL,     -- Student Mobile
@@ -741,6 +743,7 @@ CREATE TABLE IF NOT EXISTS `std_student_detail` (
 CREATE TABLE IF NOT EXISTS `std_student_sessions_jnt` (
   `id` BIGINT UNSIGNED AUTO_INCREMENT,
   `student_id` BIGINT UNSIGNED NOT NULL,            -- FK
+  `user_id` bigint unsigned NOT NULL,               -- FK to sch_user
   `academic_sessions_id` bigint unsigned NOT NULL,  -- FK - sch_org_academic_sessions_jnt
   `admission_no` VARCHAR(50) NOT NULL,
   `roll_no` INT DEFAULT NULL,
@@ -794,3 +797,7 @@ CREATE TABLE IF NOT EXISTS `std_student_sessions_jnt` (
 -- Changed on 2025-12-21
 -- Enhanced `sys_dropdown_table` to accomodate Menu Details (Category,Main Menu, Sub-Menu) for Easy identification. 
 -- Added New table `sys_dropdown_needs` to capture Dropdown Needs for Easy identification. 
+-- ===========================================================================================================================================
+-- Changed on 2025-12-29
+-- Added New Field `user_id` in table `std_student_sessions_jnt` to capture User ID of the Student. This is required to Get Student details Directly from `sch_user` table.
+-- Changed table name from 'std_student_detail' to 'std_student_personal_details'

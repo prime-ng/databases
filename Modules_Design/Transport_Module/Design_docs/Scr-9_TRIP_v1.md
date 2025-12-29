@@ -44,41 +44,41 @@ Database Table: `tpt_trip`
 
 #### 2.1.1 Layout
 ```
-┌──────────────────────────────────────────────────────────────────┐
-│ TRANSPORT > TRIPS                                                 │
-├──────────────────────────────────────────────────────────────────┤
-│ [__________] [Search]  [+ New Trip]                             │
-│ DATE: [Date Picker] ROUTE: [Dropdown] STATUS: [Dropdown]        │
-├──────────────────────────────────────────────────────────────────┤
-│ ☐ │ Date       │ Route     │ Vehicle  │ Driver    │ Type  │ Status│
-│───┼────────────┼───────────┼──────────┼───────────┼───────┼──────│
-│ ☐ │ 2025-12-01 │ Route A   │ BUS-101  │ Ravi Kumar│Morning│ Ongoing
-│ ☐ │ 2025-12-01 │ Route B   │ VAN-22   │ Anita... │Evening│ Scheduled
-│ ☐ │ 2025-11-30 │ Route A   │ BUS-101  │ Ravi Kumar│Morning│ Completed
-│   │ ...        │ ...       │ ...      │ ...      │ ...   │ ...
-│
-│ Showing 1-10 of 87 trips                          [< 1 2 3 >]
-└──────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│ TRANSPORT > TRIPS                                                               │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│ [__________] [Search]  [+ New Trip]                                             │
+│ DATE: [Date Picker] ROUTE: [Dropdown] STATUS: [Dropdown]               [Export] │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│ ☐ │ Date       │ Route     │ Vehicle  │ Driver      │ Helper│ Type  │ Status    │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│ ☐ │ 2025-12-01 │ Route A   │ BUS-101  │ Ravi Kumar  │ Anita │Morning│ Ongoing   │
+│ ☐ │ 2025-12-01 │ Route B   │ VAN-22   │ Anita Kumar │ Ravi  │Evening│ Scheduled │
+│ ☐ │ 2025-11-30 │ Route A   │ BUS-101  │ Ravi Kumar  │ Anita │Morning│ Completed │
+│   │ ...        │ ...       │ ...      │ ...         │ ...   │ ...   │ ...       │
+│                                                                                 │
+│ Showing 1-10 of 87 trips                                           [< 1 2 3 >]. │
+└─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### 2.2 Create Trip (Modal)
 #### 2.2.1 Layout
 ```
-┌──────────────────────────────────────────────────┐
-│ CREATE NEW TRIP                              [✕] │
-├──────────────────────────────────────────────────┤
-│ Trip Date *         [Date Picker]               │
-│ Route *             [Dropdown ▼]                │
-│ Vehicle *           [Typeahead]                 │
-│ Driver *            [Typeahead]                 │
-│ Helper              [Typeahead]                 │
-│ Trip Type *         [Dropdown] Morning/Afternoon/Evening│
-│ Start Time          [Time Picker]               │
-│ End Time            [Time Picker]               │
-│ Status              [Dropdown] Scheduled        │
-├──────────────────────────────────────────────────┤
-│         [Cancel]     [Save]  [Save & New]       │
-└──────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ CREATE NEW TRIP                                                         [✕] │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ Trip Date *         [Date Picker]                                           │
+│ Route *             [Dropdown ▼]                                            │
+│ Vehicle *           [Typeahead]                                             │
+│ Driver *            [Typeahead]                                             │
+│ Helper              [Typeahead]                                             │
+│ Trip Type *         [Dropdown] Morning/Afternoon/Evening                    │
+│ Start Time          [Time Picker]                                           │
+│ End Time            [Time Picker]                                           │
+│ Status              [Dropdown] Scheduled                                    │
+├─────────────────────────────────────────────────────────────────────────────┤
+│         [Cancel]     [Save]  [Save & New]                                   │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
 #### 2.2.2 Field Specifications
@@ -122,20 +122,21 @@ Database Table: `tpt_trip`
 
 #### 2.3.1 Layout
 ```
-┌────────────────────────────────────────────────────────┐
-│ TRIP DETAIL > 2025-12-01 Route A               [Edit]  │
-├────────────────────────────────────────────────────────┤
+┌───────────────────────────────────────────────────────┐
+│ TRIP DETAIL > 2025-12-01 Route A               [Edit] │
+├───────────────────────────────────────────────────────┤
 │ [Basic Info] [Telemetry] [Students] [Audit Log]       │
-├────────────────────────────────────────────────────────┤
-│ Trip Date: 2025-12-01
-│ Route: Route A
-│ Vehicle: BUS-101
-│ Driver: Ravi Kumar
-│ Trip Type: Morning
-│ Status: Ongoing
-│ Start Time: 06:30 AM
-│ End Time: 08:15 AM
-│ [Edit] [Start Trip] [Complete] [Cancel]
+├───────────────────────────────────────────────────────┤
+│ Trip Date: 2025-12-01                                 │
+│ Route: Route A                                        │
+│ Vehicle: BUS-101                                      │
+│ Driver: Ravi Kumar                                    │
+│ Trip Type: Morning                                    │
+│ Status: Ongoing                                       │
+│ Start Time: 06:30 AM                                  │
+│ End Time: 08:15 AM                                    │
+│ [Edit] [Start Trip] [Complete] [Cancel]               │
+└───────────────────────────────────────────────────────┘
 ```
 
 **TAB 2: TELEMETRY** – GPS logs for this trip, speed chart, route deviation map.
