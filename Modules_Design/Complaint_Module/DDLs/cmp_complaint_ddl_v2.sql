@@ -67,7 +67,7 @@ CREATE TABLE IF NOT EXISTS `cmp_department_sla` (
   `target_department_id` BIGINT UNSIGNED DEFAULT NULL,    -- FK to sys_departments
   `target_designation_id` BIGINT UNSIGNED DEFAULT NULL,   -- FK to sys_designations
   `target_role_id` BIGINT UNSIGNED DEFAULT NULL,          -- FK to sys_roles
-  `target_entity_group_id` BIGINT UNSIGNED DEFAULT NULL,         -- FK to sys_groups
+  `target_entity_group_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to sys_groups
 -- User wise SLA
   `target_user_id` BIGINT UNSIGNED DEFAULT NULL,          -- FK to sys_users
 -- Vehicle wise SLA
@@ -256,7 +256,11 @@ CREATE TABLE IF NOT EXISTS `cmp_ai_insights` (
   CONSTRAINT `fk_ai_sentiment_label` FOREIGN KEY (`sentiment_label_id`) REFERENCES `sys_dropdown_table` (`id`),
   CONSTRAINT `fk_ai_predicted_category` FOREIGN KEY (`predicted_category_id`) REFERENCES `cmp_complaint_categories` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
--- Condition: 
--- 1. How to calculate all required fields is mentioned in /Screen_Design/cmp_Complaint_Module/cmp_11_AI_Calculation_Logic.md
 
 SET FOREIGN_KEY_CHECKS = 1;
+
+-- Condition: 
+-- 1. How to calculate all required fields is mentioned in '/Complaint_Module/Screen_Design/cmp_AI_Calc_Logic.md'
+-- The Approach We will be using is Laravel (ERP) → Python ML Microservice → Prediction → Store in MySQL
+
+

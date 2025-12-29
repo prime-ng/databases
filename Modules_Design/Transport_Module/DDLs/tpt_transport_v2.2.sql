@@ -296,14 +296,37 @@ CREATE TABLE IF NOT EXISTS `tpt_trip_stop_detail` (
 -- DRIVER ATTENDANCE
 -- =======================================================================
 
+-- CREATE TABLE IF NOT EXISTS `tpt_attendance_device` (
+--     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+--     `device_code` VARCHAR(50) NOT NULL UNIQUE,
+--     `device_name` VARCHAR(100) NOT NULL,
+--     `device_type` ENUM('Mobile','Scanner','Tablet','Gate') NOT NULL,
+--     `location` VARCHAR(150) NULL,
+--     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+--     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+-- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS `tpt_attendance_device` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `device_code` VARCHAR(50) NOT NULL UNIQUE,
+    `id` BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    `user_id` BIGINT UNSIGNED NOT NULL,     -- fk to tpt_personnel
+    `device_uuid` CHAR(36) NOT NULL,        -- Unique identifier of the device
+    `device_type` ENUM('Mobile','Tablet','Laptop','Desktop') NOT NULL,
+    `device_os` BIGINT NOT NULL,            -- fk to sys_dropdown_table ('android','ios','windows','linux','mac')
+    `os_version` VARCHAR(50),               -- OS version
     `device_name` VARCHAR(100) NOT NULL,
-    `device_type` ENUM('Mobile','Scanner','Tablet','Gate') NOT NULL,
-    `location` VARCHAR(150) NULL,
-    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    `device_model` VARCHAR(100),            -- Device model e.g. iPhone 12 Pro
+    `pg_app_version` VARCHAR(20),           -- App version e.g. 1.0.0
+    `pg_fcm_token` TEXT,                    -- FCM token of the device e.g. eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9
+    `pg_first_registered_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `pg_last_seen_at` TIMESTAMP NULL,
+    `is_active` TINYINT(1) DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP NULL DEFAULT NULL,
+    KEY `idx_attendance_device_user` (`user_id`),
+    UNIQUE KEY uq_device (device_uuid),
+    UNIQUE KEY uq_user_device (user_id, device_uuid),
+    CONSTRAINT `fk_attendance_device_user` FOREIGN KEY (`user_id`) REFERENCES `tpt_personnel`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `tpt_driver_attendance` (
@@ -593,6 +616,80 @@ CREATE TABLE IF NOT EXISTS `tpt_trip_incidents` (
     CONSTRAINT `fk_ti_resolvedBy` FOREIGN KEY (`resolved_by`) REFERENCES `sys_users`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- ---------------------------------------------------------------------------------------------------------------
+-- New Tables
+-- ---------------------------------------------------------------------------------------------------------------
+
+-- =======================================================================
+-- STUDENT BOARD/UN-BOARD EVENTS
+-- =======================================================================
+
+CREATE TABLE IF NOT EXISTS `tpt_student_boarding_log` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `route_id` BIGINT UNSIGNED DEFAULT NULL,
+    `trip_id` BIGINT UNSIGNED DEFAULT NULL,
+    `trip_date` DATE NOT NULL,
+    `student_id` BIGINT UNSIGNED DEFAULT NULL,
+    `student_session_id` BIGINT UNSIGNED DEFAULT NULL,
+    `expected_stop_id` BIGINT UNSIGNED DEFAULT NULL,
+    `boarding_stop_id` BIGINT UNSIGNED DEFAULT NULL,
+    `boarding_time` DATETIME DEFAULT NULL,
+    `unboarding_stop_id` BIGINT UNSIGNED DEFAULT NULL,
+    `unboarding_time` DATETIME DEFAULT NULL,
+    `boarding_sequence` INT DEFAULT NULL,       -- Sequence of Boarding Stop
+    `unboarding_sequence` INT DEFAULT NULL,     -- Sequence of Unboarding Stop
+    `device_id` VARCHAR(200) DEFAULT NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    CONSTRAINT `fk_sel_route` FOREIGN KEY (`route_id`) REFERENCES `tpt_routes`(`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_sel_trip` FOREIGN KEY (`trip_id`) REFERENCES `tpt_trip`(`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_sel_student` FOREIGN KEY (`student_id`) REFERENCES `tpt_students`(`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_sel_studentSession` FOREIGN KEY (`student_session_id`) REFERENCES `tpt_student_session`(`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_sel_expectedStop` FOREIGN KEY (`expected_stop_id`) REFERENCES `tpt_pickup_points`(`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_sel_boardingStop` FOREIGN KEY (`boarding_stop_id`) REFERENCES `tpt_pickup_points`(`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_sel_unboardingStop` FOREIGN KEY (`unboarding_stop_id`) REFERENCES `tpt_pickup_points`(`id`) ON DELETE SET NULL,
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =======================================================================
+-- NOTIFICATIONS & LOGS
+-- =======================================================================
+
+CREATE TABLE IF NOT EXISTS `tpt_notification_log` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `student_session_id` BIGINT UNSIGNED DEFAULT NULL,
+    `trip_id` BIGINT UNSIGNED DEFAULT NULL,
+    `boarding_stop_id` BIGINT UNSIGNED DEFAULT NULL,
+    `notification_type` ENUM('TripStart','ApproachingStop','ReachedStop','Delayed','Cancelled') DEFAULT NULL,
+    `sent_time` DATETIME DEFAULT NULL,
+    `app_notification_status` ENUM('NotRegistered','Sent','Failed') DEFAULT NULL,
+    `sms_notification_status` ENUM('NotRegistered','Sent','Failed') DEFAULT NULL,
+    `email_notification_status` ENUM('NotRegistered','Sent','Failed') DEFAULT NULL,
+    `whatsapp_notification_status` ENUM('NotRegistered','Sent','Failed') DEFAULT NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    CONSTRAINT `fk_nl_studentSession` FOREIGN KEY (`student_session_id`) REFERENCES `tpt_student_session`(`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_nl_trip` FOREIGN KEY (`trip_id`) REFERENCES `tpt_trip`(`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_nl_stop` FOREIGN KEY (`stop_id`) REFERENCES `tpt_pickup_points`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- =======================================================================
+-- AUDIT TRACKING. 
+-- This may not be required. we use Common Audit Log of the System
+-- =======================================================================
+
+-- CREATE TABLE IF NOT EXISTS `tpt_audit_log` (
+--     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+--     `entity` VARCHAR(128) NOT NULL,
+--     `entity_id` BIGINT UNSIGNED DEFAULT NULL,
+--     `action` VARCHAR(64) NOT NULL,
+--     `performed_by` VARCHAR(128) DEFAULT NULL,
+--     `payload` JSON DEFAULT NULL,
+--     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+-- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- -------------------------------------------------------------------------------------------------------------------
@@ -600,4 +697,11 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- 1. When Bus will complete the Trip and register it's Trip completion in the System. Someone (Authorise Person) will Approve the Trip Completion. 
 -- 2. Application will check the Status of "trip_usage_needs_to_be_updated_into_vendor_usage_log" variable in "sch_settings" table.
 -- 3. If "trip_usage_needs_to_be_updated_into_vendor_usage_log" is True, then application will update the 'vnd_usage_logs' with the Trip Usage.
+-- -------------------------------------------------------------------------------------------------------------------
+-- Change on 29th Dec 2025:
+-- 1. Enhanced Table tpt_attendance_device to have unique device_uuid for each user.
+-- 2. Add New Table tpt_student_boarding_log to track the Boarding and Unboarding of Students.
+-- 3. Add New Table tpt_notification_log to track the Notifications sent to Students.
+
+
 

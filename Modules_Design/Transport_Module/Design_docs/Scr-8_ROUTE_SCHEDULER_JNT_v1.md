@@ -42,37 +42,36 @@ Database Table: `tpt_route_scheduler_jnt`
 
 #### 2.1.1 Page Layout (Calendar View)
 ```
-┌──────────────────────────────────────────────────────────────────┐
-│ TRANSPORT > SCHEDULER                                             │
-├──────────────────────────────────────────────────────────────────┤
-│ [Calendar View] [List View]  SHIFT: [Dropdown ▼]  ROUTE: [Dropdown ▼]│
-├──────────────────────────────────────────────────────────────────┤
-│
-│ December 2025                              [< Previous | Next >]
-│
-│   Sun   Mon   Tue   Wed   Thu   Fri   Sat
-│    1     2 ●   3     4 ●   5     6     7
-│    8     9    10     11    12    13 ●  14
-│   15    16 ●  17     18    19    20    21
-│   22    23    24 ●   25    26    27    28
-│   29    30    31
-│
-│ Legend: ● = Route scheduled
-│         Hover for details: Route A (Morning), Vehicle: BUS-101
-│
-└──────────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────────────┐
+│ TRANSPORT > SCHEDULER                                                     │
+├──────────────────────────────────────────────── ──────────────────────────┤
+│ [Calendar View] [List View]  SHIFT: [Dropdown ▼]  ROUTE: [Dropdown ▼]     │
+├───────────────────────────────────────────────────────────────────────────┤
+│                                                                           │
+│ December 2025                                       [< Previous | Next >] │
+│                                                                           │
+│   Sun   Mon   Tue   Wed   Thu   Fri   Sat                                 │
+│    1     2 ●   3     4 ●   5     6     7                                  │
+│   15    16 ●  17     18    19    20    21                                 │
+│   22    23    24 ●   25    26    27    28                                 │
+│   29    30    31                                                          │
+│                                                                           │
+│ Legend: ● = Route scheduled                                               │
+│         Hover for details: Route A (Morning), Vehicle: BUS-101            │
+│                                                                           │
+└───────────────────────────────────────────────────────────────────────────┘
 ```
 
 #### 2.1.2 List View
 ```
-┌──────────────────────────────────────────────────────────────────┐
-│ Scheduled Date | Shift   | Route     | Vehicle  | Driver    │ Status│
-├──────────────────────────────────────────────────────────────────┤
-│ 2025-12-02     │ Morning │ Route A   │ BUS-101  │ Ravi Kumar│ Active│
-│ 2025-12-04     │ Morning │ Route A   │ BUS-102  │ Anita... │ Active│
-│ 2025-12-13     │ Evening │ Route B   │ VAN-22   │ (None)   │ Active│
-│ ...                                                              │
-└──────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│ Scheduled Date | Shift   | Route     | Vehicle  | Driver      | Helper  │ Status│
+├─────────────────────────────────────────────────────────────────────────────────┤
+│ 2025-12-02     │ Morning │ Route A   │ BUS-101  │ Ravi Kumar  │ Anita   │ Active│
+│ 2025-12-04     │ Morning │ Route A   │ BUS-102  │ Anita Kumar │ Ravi    │ Active│
+│ 2025-12-13     │ Evening │ Route B   │ VAN-22   │ (None)      │ (None)  │ Active│
+│ ...                                                                             │  
+└─────────────────────────────────────────────────────────────────────────────────┘  
 ```
 
 ### 2.2 Create Schedule Entry (Modal)
@@ -83,15 +82,15 @@ Database Table: `tpt_route_scheduler_jnt`
 ┌──────────────────────────────────────────────────┐
 │ CREATE SCHEDULE ENTRY                        [✕] │
 ├──────────────────────────────────────────────────┤
-│ Scheduled Date *    [Date Picker]               │
-│ Shift *             [Dropdown ▼]                │
-│ Route *             [Dropdown ▼]                │
-│ Vehicle             [Typeahead / Select]        │
-│ Driver              [Typeahead / Select]        │
-│ Helper              [Typeahead / Select]        │
-│ Active Status       [☑] Enable schedule         │
+│ Scheduled Date *    [Date Picker]                │
+│ Shift *             [Dropdown ▼]                 │
+│ Route *             [Dropdown ▼]                 │
+│ Vehicle             [Typeahead / Select]         │
+│ Driver              [Typeahead / Select]         │
+│ Helper              [Typeahead / Select]         │
+│ Active Status       [☑] Enable schedule          │
 ├──────────────────────────────────────────────────┤
-│          [Cancel]     [Save]  [Save & New]      │
+│          [Cancel]     [Save]  [Save & New]       │
 └──────────────────────────────────────────────────┘
 ```
 
@@ -137,18 +136,19 @@ Database Table: `tpt_route_scheduler_jnt`
 
 #### 2.3.1 Layout (Tabbed)
 ```
-┌──────────────────────────────────────────────────┐
-│ SCHEDULE DETAIL > 2025-12-02               [Edit]│
-├──────────────────────────────────────────────────┤
-│ [Basic Info] [Trip History] [Audit Log]        │
-├──────────────────────────────────────────────────┤
-│ Scheduled Date: 2025-12-02
-│ Shift: Morning
-│ Route: Route A
-│ Vehicle: BUS-101
-│ Driver: Ravi Kumar
-│ Status: Active
-│ [Edit] [Duplicate] [Deactivate]
+┌─────────────────────────────────────────────────┐
+│ SCHEDULE DETAIL > 2025-12-02              [Edit]│
+├─────────────────────────────────────────────────┤
+│ [Basic Info] [Trip History] [Audit Log]         │
+├─────────────────────────────────────────────────┤
+│ Scheduled Date: 2025-12-02                      │
+│ Shift: Morning                                  │
+│ Route: Route A                                  │
+│ Vehicle: BUS-101                                │
+│ Driver: Ravi Kumar                              │
+│ Status: Active                                  │
+│ [Edit] [Duplicate] [Deactivate]                 │
+└─────────────────────────────────────────────────┘
 ```
 
 ---

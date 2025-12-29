@@ -2,6 +2,12 @@
 
 ## ROUTE & STOP MANAGEMENT REPORTS
 
+Useful For
+Fields Shown
+Tables Used
+Filters
+MySQL Query (Reference)
+Charts Details
 
 ### 1. ROUTE MASTER REPORT
 
@@ -38,7 +44,7 @@
 
 **MySQL Query (Reference)**
 SELECT
-    r.id            AS route_id,
+    r.id AS route_id,
     r.route_code,
     r.route_name,
     s.shift_type,
@@ -98,8 +104,8 @@ SELECT
     s.stop_name,
     rs.pickup_time,
     rs.drop_time,
-    rs.fare_oneside,
-    rs.fare_roundtrip,
+    rs.pickup_drop_fare,
+    rs.both_side_fare,
     COUNT(sa.student_id) AS total_students
 FROM tpt_pickup_points_route_jnt rs
 JOIN tpt_routes r ON r.id = rs.route_id
@@ -216,7 +222,7 @@ GROUP BY v.id;
   - Heatmap: Under-utilized Vehicles
 
 ---
-
+(This Report will be created when we will be starting Student wise Attendance at Bus Stop)
 ### 5. STUDENT TRANSPORT ATTENDANCE REPORT
 
 **What this Report Covers**
@@ -482,81 +488,107 @@ GROUP BY rs.stop_name;
 ## Reports with Screen
  - Vendor Details
  +-----------------------------------------------------------------------------+
-| Route: [Dropdown]  Session: [Dropdown]  Export [ ] |
-| Period: [From–To]
-|[Export] [Print] [PDF] [Excel] [CSV]
+| Route: [Dropdown]  Session: [Dropdown]   Period: [From–To]                   |
+|[Export] [Print] [PDF] [Excel] [CSV]                                          |
 +------------------------------------------------------------------------------+
-| Vehicle No. | Registration No. | Model | Stop | Capacity | Status   | Action
-|-----------------------------------------------------|
+| Vehicle No. | Registration No. | Model | Stop | Capacity | Status   | Action |
+|------------------------------------------------------------------------------|
  
  - Vehicle Details
  +-----------------------------------------------------------------------------+
-| Route: [Dropdown]  Session: [Dropdown]  Export [ ] |
-| Period: [From–To]
-|[Export] [Print] [PDF] [Excel] [CSV]
+| Route: [Dropdown]  Session: [Dropdown]   Period: [From–To]                   |
+|[Export] [Print] [PDF] [Excel] [CSV]                                          |
 +------------------------------------------------------------------------------+
-| Vehicle No. | Registration No. | Model | Stop | Capacity | Status   | Action
-|-----------------------------------------------------|
+| Vehicle No. | Registration No. | Model | Stop | Capacity | Status   | Action |
+|------------------------------------------------------------------------------|
 
  - Route Details
  +-----------------------------------------------------------------------------+
-| Route: [Dropdown]  Session: [Dropdown]  Export [ ] |
-| Period: [From–To]
-|[Export] [Print] [PDF] [Excel] [CSV]
+| Route: [Dropdown]  Session: [Dropdown]   Period: [From–To]                   |
+|[Export] [Print] [PDF] [Excel] [CSV]                                          |
 +------------------------------------------------------------------------------+
-| Vehicle No. | Registration No. | Model | Stop | Capacity | Status   | Action
-|-----------------------------------------------------|
+| Vehicle No. | Registration No. | Model | Stop | Capacity | Status   | Action |
+|------------------------------------------------------------------------------|
 
  - Route Stop Details
  +-----------------------------------------------------------------------------+
-| Route: [Dropdown]  Session: [Dropdown]  Export [ ] |
-| Period: [From–To]
-|[Export] [Print] [PDF] [Excel] [CSV]
+| Route: [Dropdown]  Session: [Dropdown]   Period: [From–To]                   |
+|[Export] [Print] [PDF] [Excel] [CSV]                                          |
 +------------------------------------------------------------------------------+
-| Vehicle No. | Registration No. | Model | Stop | Capacity | Status   | Action
-|-----------------------------------------------------|
+| Vehicle No. | Registration No. | Model | Stop | Capacity | Status   | Action |
+|------------------------------------------------------------------------------|
 
  - Route Student Details
  +-----------------------------------------------------------------------------+
-| Route: [Dropdown]  Session: [Dropdown]  Export [ ] |
-| Period: [From–To]
-|[Export] [Print] [PDF] [Excel] [CSV]
+| Route: [Dropdown]  Session: [Dropdown]   Period: [From–To]                   |
+|[Export] [Print] [PDF] [Excel] [CSV]                                          |
 +------------------------------------------------------------------------------+
-| Vehicle No. | Registration No. | Model | Stop | Capacity | Status   | Action
-|-----------------------------------------------------|
+| Vehicle No. | Registration No. | Model | Stop | Capacity | Status   | Action |
+|------------------------------------------------------------------------------|
 
  - Route Vehicle Details
  +-----------------------------------------------------------------------------+
-| Route: [Dropdown]  Session: [Dropdown]  Export [ ] |
-| Period: [From–To]
-|[Export] [Print] [PDF] [Excel] [CSV]
+| Route: [Dropdown]  Session: [Dropdown]   Period: [From–To]                   |
+|[Export] [Print] [PDF] [Excel] [CSV]                                          |
 +------------------------------------------------------------------------------+
-| Vehicle No. | Registration No. | Model | Stop | Capacity | Status   | Action
-|-----------------------------------------------------|
+| Vehicle No. | Registration No. | Model | Stop | Capacity | Status   | Action |
+|------------------------------------------------------------------------------|
 
  - Route Vendor Details
  +-----------------------------------------------------------------------------+
-| Route: [Dropdown]  Session: [Dropdown]  Export [ ] |
-| Period: [From–To]
-|[Export] [Print] [PDF] [Excel] [CSV]
+| Route: [Dropdown]  Session: [Dropdown]   Period: [From–To]                   |
+|[Export] [Print] [PDF] [Excel] [CSV]                                          |
 +------------------------------------------------------------------------------+
-| Vehicle No. | Registration No. | Model | Stop | Capacity | Status   | Action
-|-----------------------------------------------------|
+| Vehicle No. | Registration No. | Model | Stop | Capacity | Status   | Action |
+|------------------------------------------------------------------------------|
 
  - Route Stop Student Details
  +-----------------------------------------------------------------------------+
-| Route: [Dropdown]  Session: [Dropdown]  Export [ ] |
-| Period: [From–To]
-|[Export] [Print] [PDF] [Excel] [CSV]
+| Route: [Dropdown]  Session: [Dropdown]   Period: [From–To]                   |
+|[Export] [Print] [PDF] [Excel] [CSV]                                          |
 +------------------------------------------------------------------------------+
-| Vehicle No. | Registration No. | Model | Stop | Capacity | Status   | Action
-|-----------------------------------------------------|
+| Vehicle No. | Registration No. | Model | Stop | Capacity | Status   | Action |
+|------------------------------------------------------------------------------|
 
  - Route Stop Vehicle Details
+ +-----------------------------------------------------------------------------+
+| Route: [Dropdown]  Session: [Dropdown]   Period: [From–To]                   |
+|[Export] [Print] [PDF] [Excel] [CSV]                                          |
++------------------------------------------------------------------------------+
+| Vehicle No. | Registration No. | Model | Stop | Capacity | Status   | Action |
+|------------------------------------------------------------------------------|
+
  - Route Stop Vendor Details
+ +-----------------------------------------------------------------------------+
+| Route: [Dropdown]  Session: [Dropdown]   Period: [From–To]                   |
+|[Export] [Print] [PDF] [Excel] [CSV]                                          |
++------------------------------------------------------------------------------+
+| Vehicle No. | Registration No. | Model | Stop | Capacity | Status   | Action |
+|------------------------------------------------------------------------------|
+
  - Route Stop Student Vehicle Details
+ +-----------------------------------------------------------------------------+
+| Route: [Dropdown]  Session: [Dropdown]   Period: [From–To]                   |
+|[Export] [Print] [PDF] [Excel] [CSV]                                          |
++------------------------------------------------------------------------------+
+| Vehicle No. | Registration No. | Model | Stop | Capacity | Status   | Action |
+|------------------------------------------------------------------------------|
+
  - Route Stop Student Vendor Details
+ +-----------------------------------------------------------------------------+
+| Route: [Dropdown]  Session: [Dropdown]   Period: [From–To]                   |
+|[Export] [Print] [PDF] [Excel] [CSV]                                          |
++------------------------------------------------------------------------------+
+| Vehicle No. | Registration No. | Model | Stop | Capacity | Status   | Action |
+|------------------------------------------------------------------------------|
+
  - Route Stop Student Vehicle Vendor Details
+ +-----------------------------------------------------------------------------+
+| Route: [Dropdown]  Session: [Dropdown]   Period: [From–To]                   |
+|[Export] [Print] [PDF] [Excel] [CSV]                                          |
++------------------------------------------------------------------------------+
+| Vehicle No. | Registration No. | Model | Stop | Capacity | Status   | Action |
+|------------------------------------------------------------------------------|
 
 
 

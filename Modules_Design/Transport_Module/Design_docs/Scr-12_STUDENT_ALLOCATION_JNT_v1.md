@@ -45,8 +45,8 @@ Database Table: `tpt_student_allocation_jnt`
 ┌──────────────────────────────────────────────────────────────────┐
 │ TRANSPORT > STUDENT ALLOCATION                                   │
 ├──────────────────────────────────────────────────────────────────┤
-│ CLASS: [▼]  ROUTE: [▼]  STATUS: [All ▼]  SEARCH: [__________]  │
-│ [Bulk Upload CSV] [Add Student] [Export]                        │
+│ CLASS: [▼]  ROUTE: [▼]  STATUS: [All ▼]  SEARCH: [__________]    │
+│ [Bulk Upload CSV] [Add Student] [Export]                         │
 ├──────────────────────────────────────────────────────────────────┤
 │ Roll No | Student Name      | Class | Route  | Pickup    | Drop  │
 ├──────────────────────────────────────────────────────────────────┤
@@ -54,9 +54,9 @@ Database Table: `tpt_student_allocation_jnt`
 │ ST002   | Bhavna Gupta      | 10-A  | Route1 | Stop 5    | Stop3 │
 │ ST003   | Chetan Singh      | 10-B  | Route2 | Stop 12   | Stop1 │
 │ ST004   | Diya Verma (Away) | 10-A  | Route1 | ON LEAVE  | -     │
-│
-│ [Edit] [Remove] [View Details]
-│
+│                                                                  │
+│ [Edit] [Remove] [View Details]                                   │
+│                                                                  │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
