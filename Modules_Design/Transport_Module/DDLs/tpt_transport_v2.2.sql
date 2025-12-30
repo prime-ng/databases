@@ -6,6 +6,10 @@
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
+-- =======================================================================
+-- TRANSPORT MASTER TABLES
+-- =======================================================================
+
 CREATE TABLE IF NOT EXISTS `tpt_vehicle` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `vehicle_no` VARCHAR(20) NOT NULL,              -- Vehicle number(Vehicle Identification Number (VIN)/Chassis Number: A unique 17-character code stamped on the vehicle's chassis)
@@ -45,10 +49,6 @@ CREATE TABLE IF NOT EXISTS `tpt_vehicle` (
     CONSTRAINT `fk_vehicle_vendor` FOREIGN KEY (`vendor_id`) REFERENCES `tpt_vendor`(`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_vehicle_vehicle_emission_class` FOREIGN KEY (`vehicle_emission_class_id`) REFERENCES `sys_dropdown_table`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- =======================================================================
--- PERSONNEL (Transport Staff)
--- =======================================================================
 
 CREATE TABLE IF NOT EXISTS `tpt_personnel` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -92,10 +92,6 @@ CREATE TABLE IF NOT EXISTS `tpt_shift` (
     UNIQUE KEY `uq_shift_code` (`code`),
     UNIQUE KEY `uq_shift_name` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- =======================================================================
--- ROUTES & STOPS
--- =======================================================================
 
 CREATE TABLE IF NOT EXISTS `tpt_route` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -311,6 +307,7 @@ CREATE TABLE IF NOT EXISTS `tpt_attendance_device` (
     `user_id` BIGINT UNSIGNED NOT NULL,     -- fk to tpt_personnel
     `device_uuid` CHAR(36) NOT NULL,        -- Unique identifier of the device
     `device_type` ENUM('Mobile','Tablet','Laptop','Desktop') NOT NULL,
+    `location` VARCHAR(150) NULL,
     `device_os` BIGINT NOT NULL,            -- fk to sys_dropdown_table ('android','ios','windows','linux','mac')
     `os_version` VARCHAR(50),               -- OS version
     `device_name` VARCHAR(100) NOT NULL,
