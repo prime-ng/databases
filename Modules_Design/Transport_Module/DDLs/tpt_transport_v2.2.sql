@@ -93,12 +93,12 @@ CREATE TABLE IF NOT EXISTS `tpt_shift` (
     UNIQUE KEY `uq_shift_name` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `tpt_route` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS `tpt_route` (
     `code` VARCHAR(50) NOT NULL,
     `name` VARCHAR(200) NOT NULL,
     `description` VARCHAR(500) DEFAULT NULL,
-    `pickup_drop` ENUM('Pickup','Drop','Both') NOT NULL DEFAULT 'Both',
+    `pickup_drop` ENUM('Pickup','Drop') NOT NULL DEFAULT 'Pickup',
     `shift_id` BIGINT UNSIGNED NOT NULL,
     `route_geometry` LINESTRING SRID 4326 DEFAULT NULL,
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
@@ -143,15 +143,13 @@ CREATE TABLE IF NOT EXISTS `tpt_pickup_points_route_jnt` (
     `arrival_time` INT DEFAULT NULL,
     `departure_time` INT DEFAULT NULL,   
     `estimated_time` INT DEFAULT NULL,
-    `pickup_drop_fare` DECIMAL(10,2) DEFAULT NULL,
---    `pickup_fare` DECIMAL(10,2) DEFAULT NULL,
---    `drop_fare` DECIMAL(10,2) DEFAULT NULL,
-    `both_side_fare` DECIMAL(10,2) DEFAULT NULL, -- Fixed typo from v1.9 (DEFAULT NOT NULL -> DEFAULT NULL)
+    `pickup_drop_fare` DECIMAL(10,2) DEFAULT NULL,  -- One Side (Pickup / Drop) Fare
+    `both_side_fare` DECIMAL(10,2) DEFAULT NULL,    -- Bothside Fare if Student choose same Stop for Pickup & Drop both
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at` TIMESTAMP NULL DEFAULT NULL,
-    UNIQUE KEY `uq_pickupPointRoute_shift_pickupPoint` (`shift_id`,`pickup_point_id`,`route_id`),
+    UNIQUE KEY `uq_pickupPointRoute_route_pickupPoint` (`route_id`,`pickup_drop`,`pickup_point_id`),
     KEY `idx_pprj_route_ordinal` (`route_id`, `ordinal`),
     CONSTRAINT `fk_pickupPointRoute_shiftId` FOREIGN KEY (`shift_id`) REFERENCES `tpt_shift`(`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_pickupPointRoute_routeId` FOREIGN KEY (`route_id`) REFERENCES `tpt_route`(`id`) ON DELETE CASCADE,
@@ -364,8 +362,9 @@ CREATE TABLE IF NOT EXISTS `tpt_student_route_allocation_jnt` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `student_session_id` BIGINT UNSIGNED NOT NULL,
     `student_id` BIGINT UNSIGNED NOT NULL,
-    `route_id` BIGINT UNSIGNED NOT NULL,
+    `pickup_route_id` BIGINT UNSIGNED NOT NULL,
     `pickup_stop_id` BIGINT UNSIGNED NOT NULL,
+    `drop_route_id` BIGINT UNSIGNED NOT NULL,
     `drop_stop_id` BIGINT UNSIGNED NOT NULL,
     `fare` DECIMAL(10,2) NOT NULL,
     `effective_from` DATE NOT NULL,
@@ -623,29 +622,30 @@ CREATE TABLE IF NOT EXISTS `tpt_trip_incidents` (
 
 CREATE TABLE IF NOT EXISTS `tpt_student_boarding_log` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `route_id` BIGINT UNSIGNED DEFAULT NULL,
-    `trip_id` BIGINT UNSIGNED DEFAULT NULL,
     `trip_date` DATE NOT NULL,
-    `student_id` BIGINT UNSIGNED DEFAULT NULL,
-    `student_session_id` BIGINT UNSIGNED DEFAULT NULL,
-    `expected_stop_id` BIGINT UNSIGNED DEFAULT NULL,
-    `boarding_stop_id` BIGINT UNSIGNED DEFAULT NULL,
+    `student_id` BIGINT UNSIGNED DEFAULT NULL,      -- FK to tpt_students
+    `student_session_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to tpt_student_session
+    `boarding_route_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to tpt_routes
+    `boarding_trip_id` BIGINT UNSIGNED DEFAULT NULL,   -- FK to tpt_trip
+    `boarding_stop_id` BIGINT UNSIGNED DEFAULT NULL,   -- FK to tpt_pickup_points
     `boarding_time` DATETIME DEFAULT NULL,
-    `unboarding_stop_id` BIGINT UNSIGNED DEFAULT NULL,
+    `unboarding_route_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to tpt_routes
+    `unboarding_trip_id` BIGINT UNSIGNED DEFAULT NULL,   -- FK to tpt_trip
+    `unboarding_stop_id` BIGINT UNSIGNED DEFAULT NULL,   -- FK to tpt_pickup_points
     `unboarding_time` DATETIME DEFAULT NULL,
-    `boarding_sequence` INT DEFAULT NULL,       -- Sequence of Boarding Stop
-    `unboarding_sequence` INT DEFAULT NULL,     -- Sequence of Unboarding Stop
-    `device_id` VARCHAR(200) DEFAULT NULL,
+    `device_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to tpt_attendance_device
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at` TIMESTAMP NULL DEFAULT NULL,
-    CONSTRAINT `fk_sel_route` FOREIGN KEY (`route_id`) REFERENCES `tpt_routes`(`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_sel_trip` FOREIGN KEY (`trip_id`) REFERENCES `tpt_trip`(`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_sel_student` FOREIGN KEY (`student_id`) REFERENCES `tpt_students`(`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_sel_studentSession` FOREIGN KEY (`student_session_id`) REFERENCES `tpt_student_session`(`id`) ON DELETE SET NULL,
-    CONSTRAINT `fk_sel_expectedStop` FOREIGN KEY (`expected_stop_id`) REFERENCES `tpt_pickup_points`(`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_sel_boardingRoute` FOREIGN KEY (`boarding_route_id`) REFERENCES `tpt_routes`(`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_sel_boardingTrip` FOREIGN KEY (`boarding_trip_id`) REFERENCES `tpt_trip`(`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_sel_boardingStop` FOREIGN KEY (`boarding_stop_id`) REFERENCES `tpt_pickup_points`(`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_sel_unboardingRoute` FOREIGN KEY (`unboarding_route_id`) REFERENCES `tpt_routes`(`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_sel_unboardingTrip` FOREIGN KEY (`unboarding_trip_id`) REFERENCES `tpt_trip`(`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_sel_unboardingStop` FOREIGN KEY (`unboarding_stop_id`) REFERENCES `tpt_pickup_points`(`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_sel_device` FOREIGN KEY (`device_id`) REFERENCES `tpt_attendance_device`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =======================================================================
@@ -699,6 +699,13 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- 1. Enhanced Table tpt_attendance_device to have unique device_uuid for each user.
 -- 2. Add New Table tpt_student_boarding_log to track the Boarding and Unboarding of Students.
 -- 3. Add New Table tpt_notification_log to track the Notifications sent to Students.
-
-
+-- -------------------------------------------------------------------------------------------------------------------
+-- Change on 31st Dec 2025:
+-- 1. Changed the UNIQUE KEY `uq_pickupPointRoute_shift_pickupPoint` (`shift_id`,`route_id`,`pickup_point_id`), to `uq_pickupPointRoute_shift_pickupPoint` (`route_id`,`pickup_point_id`),
+--    to make sure one Route can have multiple Pickup Points but One Route can be allocate only in one Shift.
+-- 2. Change filed `route_id` to `pickup_route_id` in tpt_student_route_allocation_jnt
+-- 3. Add filed `drop_route_id` in tpt_student_route_allocation_jnt
+-- 4. Enhanced Table tpt_student_boarding_log to track the Boarding and Unboarding of Students.
+-- 5. Enhanced Table tpt_student_route_allocation_jnt to have `pickup_route_id` and `drop_route_id`.
+-- 6. Enhanced Table tpt_route to have `pickup_drop` field to define if the Route is for Pickup or Drop, can not be for Both.
 
