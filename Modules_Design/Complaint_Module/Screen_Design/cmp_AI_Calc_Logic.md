@@ -20,12 +20,12 @@ cmp_ai_insights table
 
 **Prediction Targets**
 
-| Field			        | Type		  | ML Task                     |
+| Field			         | Type		  | ML Task                     |
 |-----------------------|-------------|-----------------------------|
-|sentiment_score	    | -1 to +1	  | Regression                  |
-|escalation_risk_score	| 0–100	      | Classification / Regression |
+|sentiment_score	      | -1 to +1	  | Regression                  |
+|escalation_risk_score	| 0–100	     | Classification / Regression |
 |predicted_category_id	| Category ID | Multi-class Classification  |
-|safety_risk_score	    | 0–100	      | Classification / Regression |
+|safety_risk_score	   | 0–100	     | Classification / Regression |
 
 sentiment_score, escalation_risk_score,safety_risk_score, predicted_category_id
 

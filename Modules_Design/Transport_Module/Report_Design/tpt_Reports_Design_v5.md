@@ -18,6 +18,7 @@ The format, structure, and philosophy remain **identical** to v3.
 |-------|------------|
 | v3.0 | Consolidated 9 core transport reports |
 | v3.1 | Added boarding/unboarding + notifications, updated 4 reports |
+| v5.0 | Updated SQL Queries to align with DDL v2.2 (Dec 31st Changes) |
 
 ---
 
@@ -43,22 +44,22 @@ Route Performance Report
 
 ### Fields Shown in Report
 - Route Name
+- Pickup / Drop
 - Total Stops
 - Allocated Students
 - Boarded Students
 - Unboarded Students
 - Boarding Compliance %
 - Unboarding Compliance %
-- Avg Pickup Delay
-- Avg Drop Delay
+- Avg Delay
+
 
 ### Tables Used in Report
-- tpt_routes
+- tpt_route
 - tpt_pickup_points_route_jnt
 - tpt_student_route_allocation_jnt
-- tpt_student_boarding_events
-- tpt_student_unboarding_events
-- tpt_trip_logs
+- tpt_student_boarding_log
+- tpt_trip_stop_detail (for estimated vs actual time)
 
 ### Filters Required
 - Academic Session
@@ -70,21 +71,26 @@ Route Performance Report
 ### MySQL Query (Reference)
 ```sql
 SELECT
-  r.route_name,
+  r.name AS route_name,
+  r.pickup_drop AS pickup_drop,
   COUNT(DISTINCT rs.pickup_point_id) AS total_stops,
   COUNT(DISTINCT sa.student_id) AS allocated_students,
-  COUNT(DISTINCT sb.student_id) AS boarded_students,
-  COUNT(DISTINCT ue.student_id) AS unboarded_students,
-  ROUND(COUNT(DISTINCT be.student_id)/COUNT(DISTINCT sa.student_id)*100,2) AS boarding_pct,
-  ROUND(COUNT(DISTINCT ue.student_id)/COUNT(DISTINCT sa.student_id)*100,2) AS unboarding_pct,
-  AVG(tl.pickup_delay_minutes) AS avg_pickup_delay,
-  AVG(tl.drop_delay_minutes) AS avg_drop_delay
-FROM tpt_routes r
+  COUNT(DISTINCT CASE WHEN sb.boarding_time IS NOT NULL THEN sb.student_id END) AS boarded_students,
+  COUNT(DISTINCT CASE WHEN sb.unboarding_time IS NOT NULL THEN sb.student_id END) AS unboarded_students,
+  ROUND(COUNT(DISTINCT CASE WHEN sb.boarding_time IS NOT NULL THEN sb.student_id END) / NULLIF(COUNT(DISTINCT sa.student_id),0) * 100, 2) AS boarding_pct,
+  ROUND(COUNT(DISTINCT CASE WHEN sb.unboarding_time IS NOT NULL THEN sb.student_id END) / NULLIF(COUNT(DISTINCT sa.student_id),0) * 100, 2) AS unboarding_pct,
+  -- Approximating delay from trip stop details (Avg difference between reaching_time and sch_arrival_time)
+  AVG(TIMESTAMPDIFF(MINUTE, tsd.sch_arrival_time, tsd.reaching_time)) AS avg_delay_minutes 
+
+FROM tpt_route r
 LEFT JOIN tpt_pickup_points_route_jnt rs ON rs.route_id = r.id
-LEFT JOIN tpt_student_route_allocation_jnt sa ON sa.route_id = r.id
-LEFT JOIN tpt_student_boarding_events sb ON sb.route_id = r.id
-LEFT JOIN tpt_student_unboarding_events ue ON ue.route_id = r.id
-LEFT JOIN tpt_trip_logs tl ON tl.route_id = r.id
+-- Allocations (Checking both pickup and drop routes)
+LEFT JOIN tpt_student_route_allocation_jnt sa ON (sa.pickup_route_id = r.id OR sa.drop_route_id = r.id)
+-- Boarding Logs
+LEFT JOIN tpt_student_boarding_log sb ON (sb.boarding_route_id = r.id OR sb.unboarding_route_id = r.id) AND DATE(sb.trip_date) BETWEEN :start_date AND :end_date
+-- Trip Details for Delay Calculation
+LEFT JOIN tpt_trip t ON (t.route_scheduler_id IN (SELECT id FROM tpt_route_scheduler_jnt WHERE route_id = r.id))
+LEFT JOIN tpt_trip_stop_detail tsd ON tsd.trip_id = t.id AND tsd.reached_flag = 1
 GROUP BY r.id;
 ```
 
@@ -121,12 +127,15 @@ Student Transport Usage Report
 - Missed Drop Flag
 
 ### Tables Used in Report
-- students
-- classes
-- sections
-- tpt_student_route_allocation
-- tpt_student_boarding_events
-- tpt_student_unboarding_events
+- std_students
+- std_student_sessions_jnt
+- sch_classes
+- sch_sections
+- sch_class_section_jnt
+- tpt_student_route_allocation_jnt
+- tpt_student_boarding_log
+- tpt_route
+- tpt_pickup_points
 
 ### Filters Required
 - Academic Session
@@ -140,23 +149,35 @@ Student Transport Usage Report
 ```sql
 SELECT
   CONCAT(s.first_name,' ',s.last_name) AS student_name,
-  c.class_name,
-  sec.section_name,
-  r.route_name,
-  st.stop_name,
-  COUNT(be.id) AS boarding_count,
-  COUNT(ue.id) AS unboarding_count,
-  CASE WHEN COUNT(be.id)=0 THEN 1 ELSE 0 END AS missed_boarding,
-  CASE WHEN COUNT(ue.id)=0 THEN 1 ELSE 0 END AS missed_drop
-FROM students s
-JOIN tpt_student_route_allocation sa ON sa.student_id = s.id
-JOIN classes c ON c.id = sa.class_id
-JOIN sections sec ON sec.id = sa.section_id
-JOIN tpt_routes r ON r.id = sa.route_id
-JOIN tpt_route_stops st ON st.id = sa.stop_id
-LEFT JOIN tpt_student_boarding_events be ON be.student_id = s.id
-LEFT JOIN tpt_student_unboarding_events ue ON ue.student_id = s.id
-GROUP BY s.id;
+  c.name AS class_name,
+  sec.name AS section_name,
+  COALESCE(r_pickup.name, r_drop.name) AS route_name,
+  COALESCE(st_pickup.name, st_drop.name) AS stop_name,
+  
+  COUNT(CASE WHEN sb.boarding_time IS NOT NULL THEN 1 END) AS boarding_count,
+  COUNT(CASE WHEN sb.unboarding_time IS NOT NULL THEN 1 END) AS unboarding_count,
+  
+  -- Logic: If allocated but no boarding time found for a trip date
+  CASE WHEN COUNT(CASE WHEN sb.boarding_time IS NOT NULL THEN 1 END) = 0 THEN 1 ELSE 0 END AS missed_boarding,
+  CASE WHEN COUNT(CASE WHEN sb.unboarding_time IS NOT NULL THEN 1 END) = 0 THEN 1 ELSE 0 END AS missed_drop
+
+FROM std_students s
+JOIN std_student_sessions_jnt ssj ON ssj.student_id = s.id AND ssj.is_current = 1
+JOIN sch_class_section_jnt csj ON csj.id = ssj.class_section_id
+JOIN sch_classes c ON c.id = csj.class_id
+JOIN sch_sections sec ON sec.id = csj.section_id
+
+-- Route Allocation
+JOIN tpt_student_route_allocation_jnt sa ON sa.student_session_id = ssj.id
+LEFT JOIN tpt_route r_pickup ON r_pickup.id = sa.pickup_route_id
+LEFT JOIN tpt_route r_drop ON r_drop.id = sa.drop_route_id
+LEFT JOIN tpt_pickup_points st_pickup ON st_pickup.id = sa.pickup_stop_id
+LEFT JOIN tpt_pickup_points st_drop ON st_drop.id = sa.drop_stop_id
+
+-- Boarding Logs
+LEFT JOIN tpt_student_boarding_log sb ON sb.student_session_id = ssj.id AND DATE(sb.trip_date) BETWEEN :start_date AND :end_date
+
+GROUP BY s.id, r_pickup.name, st_pickup.name;
 ```
 
 ### Charts Details
@@ -186,9 +207,9 @@ Stop & Locality Analysis Report
 - Congestion Flag
 
 ### Tables Used in Report
-- tpt_route_stops
-- tpt_student_boarding_events
-- tpt_routes
+- tpt_pickup_points
+- tpt_student_boarding_log
+- tpt_route
 
 ### Filters Required
 - Route
@@ -199,14 +220,16 @@ Stop & Locality Analysis Report
 ### MySQL Query (Reference)
 ```sql
 SELECT
-  st.stop_name,
-  r.route_name,
-  COUNT(be.id) AS boarding_count,
-  AVG(TIME(be.boarding_time)) AS avg_boarding_time
-FROM tpt_route_stops st
-JOIN tpt_student_boarding_events be ON be.stop_id = st.id
-JOIN tpt_routes r ON r.id = be.route_id
-GROUP BY st.id;
+  st.name AS stop_name,
+  r.name AS route_name,
+  COUNT(sb.id) AS boarding_count,
+  AVG(TIME(sb.boarding_time)) AS avg_boarding_time
+FROM tpt_pickup_points st
+-- Join boarding logs on boarding_stop_id
+JOIN tpt_student_boarding_log sb ON sb.boarding_stop_id = st.id
+LEFT JOIN tpt_route r ON r.id = sb.boarding_route_id
+WHERE sb.trip_date BETWEEN :start_date AND :end_date
+GROUP BY st.id, r.id;
 ```
 
 ### Charts Details
@@ -223,6 +246,7 @@ Trip Execution & Discipline Report
 ### What this Report Covers
 - Planned vs actual trips
 - Trip completion validated via unboarding
+- Safety Validation (Boarding count == Unboarding count)
 
 ### Useful For
 - Transport Head
@@ -232,34 +256,40 @@ Trip Execution & Discipline Report
 - Trip Date
 - Route
 - Vehicle
-- Planned Boardings
+- Planned Boardings (from Allocation)
+- Actual Boardings
 - Actual Unboardings
 - Trip Safety Status
 
 ### Tables Used in Report
-- tpt_trips
-- tpt_student_boarding_events
-- tpt_student_unboarding_events
-
-### Filters Required
-- Date Range
-- Route
-- Vehicle
+- tpt_trip
+- tpt_route
+- tpt_vehicle
+- tpt_student_boarding_log
 
 ### MySQL Query (Reference)
 ```sql
 SELECT
   t.trip_date,
-  r.route_name,
-  v.vehicle_number,
-  COUNT(be.id) AS expected_boardings,
-  COUNT(ue.id) AS actual_unboardings,
-  CASE WHEN COUNT(be.id)=COUNT(ue.id) THEN 'SAFE' ELSE 'RISK' END AS trip_status
-FROM tpt_trips t
-JOIN tpt_routes r ON r.id = t.route_id
-JOIN tpt_vehicles v ON v.id = t.vehicle_id
-LEFT JOIN tpt_student_boarding_events be ON be.trip_id = t.id
-LEFT JOIN tpt_student_unboarding_events ue ON ue.trip_id = t.id
+  r.name AS route_name,
+  v.vehicle_no AS vehicle_number,
+  
+  -- Count boarded vs unboarded for this trip
+  COUNT(CASE WHEN sb.boarding_time IS NOT NULL THEN 1 END) AS actual_boardings,
+  COUNT(CASE WHEN sb.unboarding_time IS NOT NULL THEN 1 END) AS actual_unboardings,
+  
+  -- If Boarding > Unboarding, it's a Risk (Student left on bus)
+  CASE 
+    WHEN COUNT(CASE WHEN sb.boarding_time IS NOT NULL THEN 1 END) = COUNT(CASE WHEN sb.unboarding_time IS NOT NULL THEN 1 END) 
+    THEN 'SAFE' 
+    ELSE 'RISK' 
+  END AS trip_status
+
+FROM tpt_trip t
+JOIN tpt_route_scheduler_jnt sch ON sch.id = t.route_scheduler_id
+JOIN tpt_route r ON r.id = sch.route_id
+JOIN tpt_vehicle v ON v.id = t.vehicle_id
+LEFT JOIN tpt_student_boarding_log sb ON (sb.boarding_trip_id = t.id OR sb.unboarding_trip_id = t.id)
 GROUP BY t.id;
 ```
 
@@ -290,19 +320,18 @@ Student Boarding / Unboarding Report
 
 ### Fields Shown in Report
 - Student Name
+- Trip Date
 - Route
-- Stop
-- Boarding Time
-- Unboarding Time
+- Boarding Stop & Time
+- Unboarding Stop & Time
 - Boarding Status
 - Unboarding Status
 
 ### Tables Used in Report
-- students
-- tpt_student_boarding_events
-- tpt_student_unboarding_events
-- tpt_routes
-- tpt_route_stops
+- std_students
+- tpt_student_boarding_log
+- tpt_route
+- tpt_pickup_points
 
 ### Filters Required
 - Academic Session
@@ -315,17 +344,24 @@ Student Boarding / Unboarding Report
 ```sql
 SELECT
   CONCAT(s.first_name,' ',s.last_name) AS student_name,
-  r.route_name,
-  st.stop_name,
-  be.boarding_time,
-  ue.unboarding_time,
-  be.status AS boarding_status,
-  ue.status AS unboarding_status
-FROM students s
-JOIN tpt_student_boarding_events be ON be.student_id = s.id
-LEFT JOIN tpt_student_unboarding_events ue ON ue.student_id = s.id
-JOIN tpt_routes r ON r.id = be.route_id
-JOIN tpt_route_stops st ON st.id = be.stop_id;
+  sb.trip_date,
+  r.name AS route_name,
+  
+  st_board.name AS boarding_stop_name,
+  sb.boarding_time,
+  
+  st_unboard.name AS unboarding_stop_name,
+  sb.unboarding_time,
+  
+  CASE WHEN sb.boarding_time IS NOT NULL THEN 'Boarded' ELSE 'Skipped' END AS boarding_status,
+  CASE WHEN sb.unboarding_time IS NOT NULL THEN 'Unboarded' ELSE 'OnBus/Missed' END AS unboarding_status
+
+FROM tpt_student_boarding_log sb
+JOIN std_students s ON s.id = sb.student_id
+LEFT JOIN tpt_route r ON r.id = sb.boarding_route_id
+LEFT JOIN tpt_pickup_points st_board ON st_board.id = sb.boarding_stop_id
+LEFT JOIN tpt_pickup_points st_unboard ON st_unboard.id = sb.unboarding_stop_id
+WHERE sb.trip_date BETWEEN :start_date AND :end_date;
 ```
 
 ### Charts Details
@@ -352,40 +388,38 @@ Transport Notifications & Alerts Report
 
 ### Fields Shown in Report
 - Notification Type
-- Trigger Event
 - Student Name
-- Route
+- Trip ID
 - Sent Time
-- Delivery Status
-- Retry Count
+- App Delivery Status
+- SMS Delivery Status
 
 ### Tables Used in Report
-- tpt_transport_notifications
-- tpt_notification_logs
-- students
-- tpt_routes
+- tpt_notification_log
+- std_students
+- std_student_sessions_jnt
+- tpt_trip
 
 ### Filters Required
 - Date Range
 - Notification Type
 - Delivery Status
-- Route
 - Student
 
 ### MySQL Query (Reference)
 ```sql
 SELECT
-  n.notification_type,
-  n.trigger_event,
+  nl.notification_type,
   CONCAT(s.first_name,' ',s.last_name) AS student_name,
-  r.route_name,
-  nl.sent_at,
-  nl.delivery_status,
-  nl.retry_count
-FROM tpt_transport_notifications n
-JOIN tpt_notification_logs nl ON nl.notification_id = n.id
-JOIN students s ON s.id = n.student_id
-JOIN tpt_routes r ON r.id = n.route_id;
+  nl.trip_id,
+  nl.sent_time,
+  nl.app_notification_status,
+  nl.sms_notification_status
+
+FROM tpt_notification_log nl
+LEFT JOIN std_student_sessions_jnt ssj ON ssj.id = nl.student_session_id
+LEFT JOIN std_students s ON s.id = ssj.student_id
+WHERE nl.sent_time BETWEEN :start_date AND :end_date;
 ```
 
 ### Charts Details

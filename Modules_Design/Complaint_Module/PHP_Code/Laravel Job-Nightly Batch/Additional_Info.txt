@@ -1,0 +1,65 @@
+----------------------------------------------------------------------------
+Scheduler – Nightly Execution
+----------------------------------------------------------------------------
+
+app/Console/Kernel.php
+
+ ADD THIS TO schedule() METHOD
+
+ protected function schedule(\Illuminate\Console\Scheduling\Schedule $schedule)
+{
+    $schedule->command('complaints:process-ai-insights --days=7')
+        ->dailyAt('02:00')
+        ->onOneServer()
+        ->withoutOverlapping()
+        ->runInBackground()
+        ->appendOutputTo(storage_path('logs/complaint-ai-nightly.log'));
+}
+
+
+
+----------------------------------------------------------------------------
+Queue Configuration (Recommended)
+----------------------------------------------------------------------------
+.env
+
+QUEUE_CONNECTION=database
+
+
+---------------------------------------------------------------------------
+Create Queue Tables (if not already)
+---------------------------------------------------------------------------
+
+php artisan queue:table
+php artisan migrate 
+
+
+---------------------------------------------------------------------------
+Run Worker (Production)
+---------------------------------------------------------------------------
+
+php artisan queue:work --queue=complaint-ai --tries=3
+
+
+---------------------------------------------------------------------------
+OPTIONAL – Trigger on New Complaint (Real-Time)
+---------------------------------------------------------------------------
+
+Observer
+--------
+app/Observers/ComplaintObserver.php
+
+
+use App\Jobs\ProcessComplaintAIInsightsJob;
+
+public function created($complaint)
+{
+    ProcessComplaintAIInsightsJob::dispatch($complaint->id)
+        ->onQueue('complaint-ai');
+}
+
+
+
+Register in AppServiceProvider.
+
+---------------------------------------------------------------------------
