@@ -666,6 +666,8 @@ CREATE TABLE IF NOT EXISTS `sch_teachers_profile` (
 CREATE TABLE IF NOT EXISTS `std_students` (
   `id` BIGINT UNSIGNED AUTO_INCREMENT,
   `user_id` bigint unsigned NOT NULL,          -- FK to sch_user
+  `student_qr_code` VARCHAR(30) NOT NULL,
+  `student_id_card_type` ENUM('QR','RFID','NFC','Barcode') NOT NULL DEFAULT 'QR',
   `parent_id` bigint unsigned NOT NULL,        -- FK to sch_user
   `aadhar_id` VARCHAR(20) NOT NULL,            -- always permanent identity
   `apaar_id` VARCHAR(100) NOT NULL,            -- 12 digits numeric i.e. 9876 5432 1098
