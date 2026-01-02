@@ -149,7 +149,7 @@ CREATE TABLE IF NOT EXISTS `tpt_pickup_points_route_jnt` (
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at` TIMESTAMP NULL DEFAULT NULL,
-    UNIQUE KEY `uq_pickupPointRoute_route_pickupPoint` (`route_id`,`pickup_drop`,`pickup_point_id`),
+    UNIQUE KEY `uq_pickupPointRoute_route_pickupPoint` (`route_id`,`pickup_point_id`),
     KEY `idx_pprj_route_ordinal` (`route_id`, `ordinal`),
     CONSTRAINT `fk_pickupPointRoute_shiftId` FOREIGN KEY (`shift_id`) REFERENCES `tpt_shift`(`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_pickupPointRoute_routeId` FOREIGN KEY (`route_id`) REFERENCES `tpt_route`(`id`) ON DELETE CASCADE,
@@ -239,6 +239,7 @@ CREATE TABLE IF NOT EXISTS `tpt_trip` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `trip_date` DATE NOT NULL,      --  Date of the trip
     `route_scheduler_id` BIGINT UNSIGNED NOT NULL, -- FK to tpt_route_scheduler_jnt
+    `route_id` BIGINT UNSIGNED NOT NULL, -- FK to tpt_route
     `vehicle_id` BIGINT UNSIGNED NOT NULL, -- FK to tpt_vehicle
     `driver_id` BIGINT UNSIGNED NOT NULL, -- FK to tpt_personnel
     `helper_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to tpt_personnel
