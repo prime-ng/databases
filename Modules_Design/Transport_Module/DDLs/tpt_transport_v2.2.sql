@@ -239,6 +239,7 @@ CREATE TABLE IF NOT EXISTS `tpt_trip` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `trip_date` DATE NOT NULL,      --  Date of the trip
     `route_scheduler_id` BIGINT UNSIGNED NOT NULL, -- FK to tpt_route_scheduler_jnt
+    `route_id` BIGINT UNSIGNED NOT NULL, -- FK to tpt_route
     `vehicle_id` BIGINT UNSIGNED NOT NULL, -- FK to tpt_vehicle
     `driver_id` BIGINT UNSIGNED NOT NULL, -- FK to tpt_personnel
     `helper_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to tpt_personnel
