@@ -132,8 +132,9 @@ CREATE TABLE IF NOT EXISTS `slb_competency_types` (
   `name` VARCHAR(100) NOT NULL,
   `description` VARCHAR(255) DEFAULT NULL,
   `is_active` TINYINT(1) DEFAULT 1,
-  `created_at` TIMESTAMP NULL DEFAULT NULL,
-  `updated_at` TIMESTAMP NULL DEFAULT NULL,
+  `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` TIMESTAMP NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_comp_type_code` (`code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -158,6 +159,7 @@ CREATE TABLE IF NOT EXISTS `slb_competencies` (
   `is_active` TINYINT(1) DEFAULT 1,
   `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` TIMESTAMP NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_competency_uuid` (`uuid`),
   UNIQUE KEY `uq_competency_code` (`code`),
@@ -176,6 +178,10 @@ CREATE TABLE IF NOT EXISTS `slb_topic_competency_jnt` (
   `competency_id` BIGINT UNSIGNED NOT NULL, -- FK to slb_competencies.id
   `weightage` DECIMAL(5,2) DEFAULT NULL,    -- How much topic contributes to competency
   `is_primary` TINYINT(1) DEFAULT 0, -- True if this is the primary competency for this topic
+  `is_active` TINYINT(1) DEFAULT 1,
+  `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` TIMESTAMP NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_tc_topic_competency` (`topic_id`,`competency_id`),
   CONSTRAINT `fk_tc_topic` FOREIGN KEY (`topic_id`) REFERENCES `slb_topics` (`id`) ON DELETE CASCADE,
@@ -191,6 +197,10 @@ CREATE TABLE IF NOT EXISTS `slb_bloom_taxonomy` (
   `name` VARCHAR(100) NOT NULL,
   `description` VARCHAR(255) DEFAULT NULL,
   `bloom_level` TINYINT UNSIGNED DEFAULT NULL, -- 1-6 for Bloom's revised taxonomy
+  `is_active` TINYINT(1) DEFAULT 1,
+  `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` TIMESTAMP NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_bloom_code` (`code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -201,6 +211,10 @@ CREATE TABLE IF NOT EXISTS `slb_cognitive_skill` (
   `code` VARCHAR(20) NOT NULL,  -- e.g. 'COG-KNOWLEDGE','COG-SKILL','COG-UNDERSTANDING'
   `name` VARCHAR(100) NOT NULL,
   `description` VARCHAR(255) DEFAULT NULL,
+  `is_active` TINYINT(1) DEFAULT 1,
+  `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` TIMESTAMP NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_cog_code` (`code`),
   CONSTRAINT `fk_cog_bloom` FOREIGN KEY (`bloom_id`) REFERENCES `slb_bloom_taxonomy` (`id`) ON DELETE SET NULL
@@ -212,6 +226,10 @@ CREATE TABLE IF NOT EXISTS `slb_ques_type_specificity` (
   `code` VARCHAR(20) NOT NULL,  -- e.g. 'IN_CLASS','HOMEWORK','SUMMATIVE','FORMATIVE'
   `name` VARCHAR(100) NOT NULL,
   `description` VARCHAR(255) DEFAULT NULL,
+  `is_active` TINYINT(1) DEFAULT 1,
+  `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` TIMESTAMP NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_quesTypeSps_code` (`code`),
   CONSTRAINT `fk_quesTypeSps_cognitive` FOREIGN KEY (`cognitive_skill_id`) REFERENCES `slb_cognitive_skill` (`id`) ON DELETE SET NULL
@@ -222,6 +240,10 @@ CREATE TABLE IF NOT EXISTS `slb_complexity_level` (
   `code` VARCHAR(20) NOT NULL,  -- e.g. 'EASY','MEDIUM','DIFFICULT'
   `name` VARCHAR(50) NOT NULL,
   `complexity_level` TINYINT UNSIGNED DEFAULT NULL,  -- 1=Easy, 2=Medium, 3=Difficult
+  `is_active` TINYINT(1) DEFAULT 1,
+  `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` TIMESTAMP NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_complex_code` (`code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -233,6 +255,10 @@ CREATE TABLE IF NOT EXISTS `slb_question_types` (
   `has_options` TINYINT(1) NOT NULL DEFAULT 0,    -- True if this type has options
   `auto_gradable` TINYINT(1) NOT NULL DEFAULT 1,  -- True if this type can be auto-graded (Can System Marked Automatically?)
   `description` TEXT DEFAULT NULL,
+  `is_active` TINYINT(1) DEFAULT 1,
+  `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` TIMESTAMP NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_qtype_code` (`code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -247,8 +273,9 @@ CREATE TABLE IF NOT EXISTS `slb_performance_categories` (
   `display_order` SMALLINT UNSIGNED DEFAULT 1,  -- Display order
   `color_code` VARCHAR(10) DEFAULT NULL, -- UI badge color
   `is_active` TINYINT(1) DEFAULT 1,  -- Active? (1=Yes, 0=No)
-  `created_at` TIMESTAMP NULL,
-  `updated_at` TIMESTAMP NULL,
+  `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` TIMESTAMP NULL DEFAULT NULL,
   KEY `idx_active` (`is_active`),
   UNIQUE KEY `uq_perf_code` (`code`),
   UNIQUE KEY `uq_perf_cat` (`min_percentage`, `max_percentage`)  
@@ -264,8 +291,9 @@ CREATE TABLE IF NOT EXISTS `slb_grade_division` (
   `display_order` SMALLINT UNSIGNED DEFAULT 1,  -- Display order
   `color_code` VARCHAR(10) DEFAULT NULL, -- UI badge color
   `is_active` TINYINT(1) DEFAULT 1,  -- Active? (1=Yes, 0=No)
-  `created_at` TIMESTAMP NULL,
-  `updated_at` TIMESTAMP NULL,
+  `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` TIMESTAMP NULL DEFAULT NULL,
   KEY `idx_active` (`is_active`),
   UNIQUE KEY `uq_grade_code` (`code`),
   UNIQUE KEY `uq_grade_div` (`min_percentage`, `max_percentage`)  
@@ -327,9 +355,9 @@ CREATE TABLE IF NOT EXISTS `qns_questions_bank` (
   `external_ref` VARCHAR(100) DEFAULT NULL,       -- for mapping to external banks
   `reference_material` TEXT DEFAULT NULL,         -- e.g., book section, web link
   -- Status
-  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-  `created_at` TIMESTAMP NULL DEFAULT NULL,
-  `updated_at` TIMESTAMP NULL DEFAULT NULL,
+  `is_active` TINYINT(1) DEFAULT 1,
+  `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `deleted_at` TIMESTAMP NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `idx_ques_uuid` (`uuid`),
@@ -370,9 +398,9 @@ CREATE TABLE IF NOT EXISTS `qns_question_options` (
   `option_text` TEXT NOT NULL,                 -- text of the option
   `is_correct` TINYINT(1) NOT NULL DEFAULT 0,  -- whether this option is correct
   `Explanation` TEXT DEFAULT NULL,             -- detailed explanation for this option (Why this option is correct / incorrect)
-  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-  `created_at` TIMESTAMP NULL DEFAULT NULL,
-  `updated_at` TIMESTAMP NULL DEFAULT NULL,
+  `is_active` TINYINT(1) DEFAULT 1,
+  `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `deleted_at` TIMESTAMP NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_opt_question` (`question_bank_id`),
@@ -387,9 +415,9 @@ CREATE TABLE IF NOT EXISTS `qns_question_media_jnt` (
   `media_id` BIGINT UNSIGNED NOT NULL,                   -- fk to qns_media_store.id
   `media_type` ENUM('IMAGE','AUDIO','VIDEO','ATTACHMENT') DEFAULT 'IMAGE',        -- e.g., 'IMAGE','AUDIO','VIDEO','ATTACHMENT'
   `ordinal` SMALLINT UNSIGNED DEFAULT 1,                 -- ordinal position of this media
-  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-  `created_at` TIMESTAMP NULL DEFAULT NULL,
-  `updated_at` TIMESTAMP NULL DEFAULT NULL,
+  `is_active` TINYINT(1) DEFAULT 1,
+  `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `deleted_at` TIMESTAMP NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_qmedia_question` (`question_bank_id`),
@@ -403,6 +431,10 @@ CREATE TABLE IF NOT EXISTS `qns_question_tags` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `short_name` VARCHAR(100) NOT NULL,
   `name` VARCHAR(255) NOT NULL,
+  `is_active` TINYINT(1) DEFAULT 1,
+  `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` TIMESTAMP NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_qtag_short` (`short_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -411,6 +443,10 @@ CREATE TABLE IF NOT EXISTS `qns_question_tags` (
 CREATE TABLE IF NOT EXISTS `qns_question_tag_jnt` (
   `question_bank_id` BIGINT UNSIGNED NOT NULL,
   `tag_id` BIGINT UNSIGNED NOT NULL,
+  `is_active` TINYINT(1) DEFAULT 1,
+  `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` TIMESTAMP NULL DEFAULT NULL,
   PRIMARY KEY (`question_bank_id`,`tag_id`),
   CONSTRAINT `fk_qtag_q` FOREIGN KEY (`question_bank_id`) REFERENCES `qns_questions_bank` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_qtag_tag` FOREIGN KEY (`tag_id`) REFERENCES `qns_question_tags` (`id`) ON DELETE CASCADE
@@ -421,9 +457,12 @@ CREATE TABLE IF NOT EXISTS `qns_question_versions` (
   `question_bank_id` BIGINT UNSIGNED NOT NULL,
   `version` INT UNSIGNED NOT NULL,
   `data` JSON NOT NULL,                       -- full snapshot of question (stem, options, metadata)
+  `version_created_by` BIGINT UNSIGNED DEFAULT NULL,
   `change_reason` VARCHAR(255) DEFAULT NULL,  -- why was this version created?
-  `created_by` BIGINT UNSIGNED DEFAULT NULL,
-  `created_at` TIMESTAMP NULL DEFAULT NULL,
+  `is_active` TINYINT(1) DEFAULT 1,
+  `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` TIMESTAMP NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_qver_q_v` (`question_bank_id`,`version`),
   CONSTRAINT `fk_qver_q` FOREIGN KEY (`question_bank_id`) REFERENCES `qns_questions_bank` (`id`) ON DELETE CASCADE
@@ -444,11 +483,12 @@ CREATE TABLE IF NOT EXISTS `qns_media_store` (
   `disk` varchar(255) NOT NULL,
   `conversions_disk` varchar(255) DEFAULT NULL,
   `size` bigint unsigned NOT NULL,
-  `checksum` CHAR(64),
-  `created_at` TIMESTAMP NULL,
   `image_url` varchar(255) NOT NULL,
-  `created_at` timestamp NULL DEFAULT NULL,
-  `updated_at` timestamp NULL DEFAULT NULL,
+  `checksum` CHAR(64),
+  `is_active` TINYINT(1) DEFAULT 1,
+  `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` TIMESTAMP NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_media_uuid` (`uuid`),
   KEY `idx_media_modelType_modelId` (`model_type`,`model_id`),
