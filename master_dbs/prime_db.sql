@@ -574,6 +574,11 @@ CREATE TABLE IF NOT EXISTS `bil_tenant_invoicing_audit_logs` (
   CONSTRAINT `fk_audit_user` FOREIGN KEY (`performed_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+
+
+
+
+
 CREATE TABLE IF NOT EXISTS `bil_tenant_email_schedules` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
   `invoice_id` bigint unsigned NOT NULL,

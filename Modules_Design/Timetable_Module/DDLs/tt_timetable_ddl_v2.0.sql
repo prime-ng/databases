@@ -18,7 +18,6 @@ CREATE TABLE `tim_timetable_mode` (
   `has_exam` TINYINT(1) NOT NULL DEFAULT 0,     -- Whether this mode includes exam periods
   `has_teaching` TINYINT(1) NOT NULL DEFAULT 1, -- Whether this mode includes teaching periods
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-  `is_deleted` TINYINT(1) NOT NULL DEFAULT 0,
   `created_at` TIMESTAMP NULL DEFAULT NULL,
   `updated_at` TIMESTAMP NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -37,7 +36,6 @@ CREATE TABLE `tim_period_type` (
   `counts_as_teaching` TINYINT(1) NOT NULL DEFAULT 0,   -- Whether this period type counts as teaching period
   `counts_as_exam` TINYINT(1) NOT NULL DEFAULT 0,       -- Whether this period type counts as examination period
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-  `is_deleted` TINYINT(1) NOT NULL DEFAULT 0,
   `created_at` TIMESTAMP NULL DEFAULT NULL,
   `updated_at` TIMESTAMP NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -57,7 +55,6 @@ CREATE TABLE `tim_teacher_assignment_role` (
   `counts_for_workload` TINYINT(1) NOT NULL DEFAULT 1,      -- Whether this role counts towards workload calculations
   `allows_overlap` TINYINT(1) NOT NULL DEFAULT 0,           -- Whether this role allows overlapping assignments (e.g., Substitute)
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-  `is_deleted` TINYINT(1) NOT NULL DEFAULT 0,
   `created_at` TIMESTAMP NULL DEFAULT NULL,
   `updated_at` TIMESTAMP NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -74,7 +71,6 @@ CREATE TABLE `tim_period_set` (
   `name` VARCHAR(100) NOT NULL,                 -- e.g., "Normal Day 8 Periods", "Toddler Day 6 Periods", "Examination Day 3 Periods"
   `description` VARCHAR(255) DEFAULT NULL,      -- e.g., "Normal Day with 8 Periods", "Toddler Day with 6 Periods", "Examination Day with 3 Periods"
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-  `is_deleted` TINYINT(1) NOT NULL DEFAULT 0,
   `created_at` TIMESTAMP NULL DEFAULT NULL,
   `updated_at` TIMESTAMP NULL DEFAULT NULL,
   PRIMARY KEY (`id`)
@@ -95,7 +91,6 @@ CREATE TABLE `tim_period_set_period` (
   `end_time` TIME NOT NULL,                     -- e.g., "09:45:00", "10:45:00"
   `period_type_id` BIGINT UNSIGNED NOT NULL,    -- FK to tim_period_type
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-  `is_deleted` TINYINT(1) NOT NULL DEFAULT 0,
   `created_at` TIMESTAMP NULL DEFAULT NULL,
   `updated_at` TIMESTAMP NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -118,7 +113,6 @@ CREATE TABLE `tim_class_mode_rule` (
   `exam_period_count` TINYINT UNSIGNED DEFAULT NULL,        -- Number of exam periods if exam periods are allowed
   `teaching_after_exam_flag` TINYINT(1) NOT NULL DEFAULT 0, -- Whether teaching periods can be scheduled after exam periods
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-  `is_deleted` TINYINT(1) NOT NULL DEFAULT 0,
   `created_at` TIMESTAMP NULL DEFAULT NULL,
   `updated_at` TIMESTAMP NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -139,7 +133,6 @@ CREATE TABLE `tim_class_group_requirement` (
   `min_gap_periods` TINYINT UNSIGNED DEFAULT NULL,      -- Minimum gap (in periods) between two sessions of this class group on the same day
   `allow_consecutive` TINYINT(1) NOT NULL DEFAULT 0,    -- Whether consecutive periods are allowed for this class group
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-  `is_deleted` TINYINT(1) NOT NULL DEFAULT 0,
   `created_at` TIMESTAMP NULL DEFAULT NULL,
   `updated_at` TIMESTAMP NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -160,7 +153,6 @@ CREATE TABLE `tim_class_subgroup` (
   `student_count` INT UNSIGNED DEFAULT NULL,                -- Number of students in this subgroup (if applicable)
   `is_shared_across_classes` TINYINT(1) NOT NULL DEFAULT 0, -- Whether this subgroup is shared across multiple classes
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-  `is_deleted` TINYINT(1) NOT NULL DEFAULT 0,
   `created_at` TIMESTAMP NULL DEFAULT NULL,
   `updated_at` TIMESTAMP NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -179,7 +171,6 @@ CREATE TABLE `tt_class_subgroup_member` (
   `section_id` BIGINT UNSIGNED NOT NULL,            -- FK to sch_sections
   `is_primary` TINYINT(1) NULL DEFAULT 0,           -- Optional: marks the main class (useful for reports, attendance)
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-  `is_deleted` TINYINT(1) NOT NULL DEFAULT 0,
   `created_at` TIMESTAMP NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_csm_subgroup_class_section` (`class_subgroup_id`, `class_id`, `section_id`),
@@ -223,7 +214,6 @@ CREATE TABLE `tt_timetable_cell` (
   `locked` TINYINT(1) NOT NULL DEFAULT 0,           -- Whether this cell is locked from automatic changes
   `source` ENUM('AUTO','MANUAL','ADJUST') NOT NULL DEFAULT 'AUTO',
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-  `is_deleted` TINYINT(1) NOT NULL DEFAULT 0,
   `created_at` TIMESTAMP NULL DEFAULT NULL,
   `updated_at` TIMESTAMP NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -281,7 +271,6 @@ CREATE TABLE `tim_constraint` (
   `weight` TINYINT UNSIGNED NOT NULL DEFAULT 100,       -- Weight of the constraint (higher means more important)
   `rule_json` JSON NOT NULL,                            -- JSON field defining the constraint rule (e.g., no classes before 10 AM on Fridays)
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-  `is_deleted` TINYINT(1) NOT NULL DEFAULT 0,
   `created_at` TIMESTAMP NULL DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
