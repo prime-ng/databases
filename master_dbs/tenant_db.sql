@@ -499,7 +499,7 @@ CREATE TABLE IF NOT EXISTS `sch_subject_study_format_jnt` (
 CREATE TABLE IF NOT EXISTS `sch_class_groups_jnt` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,                  -- FK
   `class_id` int NOT NULL,                              -- FK to 'sch_classes'
-  `section_id` int NULL,                                -- FK to 'sch_sections'
+  `section_id` int NOT NULL,                            -- FK to 'sch_sections'
   `subject_Study_format_id` bigint unsigned NOT NULL,   -- FK to 'sch_subject_study_format_jnt'
   `subject_type_id` int unsigned NOT NULL,              -- FK to 'sch_subject_types'
   `rooms_type_id` bigint unsigned NOT NULL,             -- FK to 'sch_rooms_type'
@@ -800,3 +800,5 @@ CREATE TABLE IF NOT EXISTS `std_student_sessions_jnt` (
 -- Changed on 2025-12-29
 -- Added New Field `user_id` in table `std_student_sessions_jnt` to capture User ID of the Student. This is required to Get Student details Directly from `sch_user` table.
 -- Changed table name from 'std_student_detail' to 'std_student_personal_details'
+-- Changed on 20255-01-06
+-- Modify Table (sch_class_groups_jnt) - `section_id` int NULL, to NOT NULL

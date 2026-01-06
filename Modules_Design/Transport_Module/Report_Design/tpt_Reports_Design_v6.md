@@ -398,7 +398,6 @@ GROUP BY t.trip_date, r.name, v.vehicle_no, d.name;
   ### Tables Used in Report
   - tpt_fuel_logs
   - tpt_vehicle_maintenance
-  - tpt_vehicle_breakdowns
 
   ### Filters Required
   - Vehicle
@@ -537,3 +536,9 @@ GROUP BY t.trip_date, r.name, v.vehicle_no, d.name;
 ---
 
 END OF DOCUMENT
+
+
+---
+
+
+

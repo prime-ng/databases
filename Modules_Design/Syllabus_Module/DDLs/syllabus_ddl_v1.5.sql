@@ -265,41 +265,109 @@ CREATE TABLE IF NOT EXISTS `slb_question_types` (
 
 CREATE TABLE IF NOT EXISTS `slb_performance_categories` (
   `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  `code` VARCHAR(20) NOT NULL,       -- TOPPER, EXCELLENT, GOOD, AVERAGE, BELOW_AVERAGE, NEED_IMPROVEMENT, POOR etc.
-  `name` VARCHAR(100) NOT NULL,      -- Display name
-  `description` VARCHAR(255) DEFAULT NULL,  -- Description
-  `min_percentage` DECIMAL(5,2) NOT NULL,  -- Minimum percentage
-  `max_percentage` DECIMAL(5,2) NOT NULL,  -- Maximum percentage
-  `display_order` SMALLINT UNSIGNED DEFAULT 1,  -- Display order
-  `color_code` VARCHAR(10) DEFAULT NULL, -- UI badge color
-  `is_active` TINYINT(1) DEFAULT 1,  -- Active? (1=Yes, 0=No)
-  `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `deleted_at` TIMESTAMP NULL DEFAULT NULL,
-  KEY `idx_active` (`is_active`),
-  UNIQUE KEY `uq_perf_code` (`code`),
-  UNIQUE KEY `uq_perf_cat` (`min_percentage`, `max_percentage`)  
+  -- Identity
+  `code` VARCHAR(20) NOT NULL,    -- TOPPER, EXCELLENT, GOOD, AVERAGE, BELOW_AVERAGE, NEED_IMPROVEMENT, POOR etc.
+  `name` VARCHAR(100) NOT NULL,
+  `description` VARCHAR(255),
+  -- Academic meaning
+  `level` TINYINT UNSIGNED NOT NULL,    -- 1 = Topper, 2 = Good, 3 = Average, 4 = Below Average, 5 = Poor
+  `min_percentage` DECIMAL(5,2) NOT NULL, -- Minimum percentage
+  `max_percentage` DECIMAL(5,2) NOT NULL, -- Maximum percentage
+  -- AI semantics
+  `ai_severity` ENUM('LOW','MEDIUM','HIGH','CRITICAL') DEFAULT 'LOW',
+  `ai_default_action` ENUM('ACCELERATE','PROGRESS','PRACTICE','REMEDIATE','ESCALATE') NOT NULL,
+  -- UX
+  `display_order` SMALLINT UNSIGNED DEFAULT 1,
+  `color_code` VARCHAR(10),
+  `icon_code` VARCHAR(50),              -- e.g. trophy, warning, alert
+  -- Scope & governance
+  `scope` ENUM('SCHOOL','CLASS') DEFAULT 'SCHOOL',
+  `class_id` BIGINT UNSIGNED DEFAULT NULL,
+  -- Control
+  `is_system_defined` TINYINT(1) DEFAULT 1, -- system vs school editable
+  `is_active` TINYINT(1) DEFAULT 1,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` TIMESTAMP NULL,
+  -- Constraints
+  UNIQUE KEY `uq_perf_code` (`code`, `scope`),
+  CHECK (`min_percentage` < `max_percentage`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Conditions:
+  -- 1. If 'is_system_defined' is 1, then school can not edit this record.
+  -- 2. The Schema does NOT prevent overlapping ranges like:
+  --    - min_percentage = 80, max_percentage = 90
+  --    - min_percentage = 85, max_percentage = 95
+  -- 3. The Schema does NOT prevent ranges that do not cover the full range of 0-100%
+  --    - min_percentage = 80, max_percentage = 100
+  -- 4. Above 2 needs to be handled at the application level
+  -- ✅ Enforce at application/service layer:
+    SELECT 1
+    FROM slb_performance_categories
+    WHERE
+      :new_min <= max_percentage
+      AND :new_max >= min_percentage
+      AND is_active = 1
+    LIMIT 1;
+  -- If row exists → ❌ reject insert/update
 
-CREATE TABLE IF NOT EXISTS `slb_grade_division` (
+-- 🎯 Special:
+  -- 1. School may want different categorisation for different classes, Which most of the ERP doesn't cover.
+  -- 2. School may want to use different categorisation for different subjects, Which most of the ERP doesn't cover.
+
+
+CREATE TABLE slb_grade_division (
   `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  `code` VARCHAR(20) NOT NULL,       -- TOPPER, EXCELLENT, GOOD, AVERAGE, BELOW_AVERAGE, NEED_IMPROVEMENT, POOR etc.
-  `name` VARCHAR(100) NOT NULL,      -- Display name
-  `description` VARCHAR(255) DEFAULT NULL,  -- Description
-  `min_percentage` DECIMAL(5,2) NOT NULL,  -- Minimum percentage
-  `max_percentage` DECIMAL(5,2) NOT NULL,  -- Maximum percentage
-  `display_order` SMALLINT UNSIGNED DEFAULT 1,  -- Display order
-  `color_code` VARCHAR(10) DEFAULT NULL, -- UI badge color
-  `is_active` TINYINT(1) DEFAULT 1,  -- Active? (1=Yes, 0=No)
-  `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `deleted_at` TIMESTAMP NULL DEFAULT NULL,
-  KEY `idx_active` (`is_active`),
-  UNIQUE KEY `uq_grade_code` (`code`),
-  UNIQUE KEY `uq_grade_div` (`min_percentage`, `max_percentage`)  
+  -- Identity
+  `code` VARCHAR(20) NOT NULL,        -- A, B, C, 1st, 2nd
+  `name` VARCHAR(100) NOT NULL,       -- Grade A, First Division
+  `description` VARCHAR(255),
+  -- Type
+  `grading_type` ENUM('GRADE','DIVISION') NOT NULL,
+  -- Academic band
+  `min_percentage` DECIMAL(5,2) NOT NULL,
+  `max_percentage` DECIMAL(5,2) NOT NULL,
+  -- Board & compliance
+  `board_code` VARCHAR(50),           -- CBSE, ICSE, STATE
+  `academic_session_id` BIGINT UNSIGNED NULL,
+  -- UX
+  `display_order` SMALLINT UNSIGNED DEFAULT 1,
+  `color_code` VARCHAR(10),
+  -- Scope
+  `scope` ENUM('SCHOOL','BOARD','CLASS') DEFAULT 'SCHOOL',
+  `class_id` BIGINT UNSIGNED DEFAULT NULL,
+  -- Control
+  `is_locked` TINYINT(1) DEFAULT 0,   -- locked after result publishing
+  `is_active` TINYINT(1) DEFAULT 1,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` TIMESTAMP NULL,
+  UNIQUE KEY `uq_grade_code` (`code`, `grading_type`, `scope`, `class_id`),
+  UNIQUE KEY `uq_scope_range` (`scope`, `class_id`, `min_percentage`, `max_percentage`),
+  CHECK (`min_percentage` < `max_percentage`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Conditions:
+  -- 1. The Schema does NOT prevent overlapping ranges like:
+  --    - min_percentage = 80, max_percentage = 90
+  --    - min_percentage = 85, max_percentage = 95
+  -- 2. The Schema does NOT prevent ranges that do not cover the full range of 0-100%
+  --    - min_percentage = 80, max_percentage = 100
+  -- 3. Above 2 needs to be handled at the application level
+  -- ✅ Enforce at application/service layer:
+    SELECT 1
+    FROM slb_performance_categories
+    WHERE
+      :new_min <= max_percentage
+      AND :new_max >= min_percentage
+      AND is_active = 1
+    LIMIT 1;
+  -- If row exists → ❌ reject insert/update
 
-
+-- 🎯 Special:
+  -- 1. Scholl may have different System for different Boards / Classes, Which most of the ERP doesn't cover. e.g. Grade system till 8th and then 9-12 Division System
+  --    Classes 1–3 → Emerging / Developing / Proficient
+  --    Classes 4–8 → Good / Average / Below Average / Need Improvement / Poor
+  --    Classes 9–12 → Topper / Excellent / Good / Average / Below Average / Need Improvement / Poor
 
 -- =========================================================================
 -- QUESTION MODULE (Question Bank & Question Management)
@@ -325,8 +393,7 @@ CREATE TABLE IF NOT EXISTS `qns_questions_bank` (
   `complexity_level_id` INT UNSIGNED DEFAULT NULL,  -- fk -> slb_complexity_level.id (Taxonomy)
   `question_type_id` INT UNSIGNED NOT NULL,         -- fk -> slb_question_types.id (Question Type)
   -- Question Time to solve & Tags
-  `topper_time_to_answer_seconds` INT UNSIGNED DEFAULT NULL,  -- time taken by topper to answer the question
-  `average_time_to_answer_seconds` INT UNSIGNED DEFAULT NULL, -- average time taken to answer by students
+  `expected_time_to_answer_seconds` INT UNSIGNED DEFAULT NULL, -- Expected time required to answer by students
   `marks` DECIMAL(5,2) DEFAULT 1.00,
   `negative_marks` DECIMAL(5,2) DEFAULT 0.00,
   -- Question Audit & Versioning
@@ -355,6 +422,7 @@ CREATE TABLE IF NOT EXISTS `qns_questions_bank` (
   `external_ref` VARCHAR(100) DEFAULT NULL,       -- for mapping to external banks
   `reference_material` TEXT DEFAULT NULL,         -- e.g., book section, web link
   -- Status
+  `status` ENUM('DRAFT','IN_REVIEW','APPROVED','REJECTED','PUBLISHED','ARCHIVED') NOT NULL DEFAULT 'DRAFT',
   `is_active` TINYINT(1) DEFAULT 1,
   `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -440,14 +508,15 @@ CREATE TABLE IF NOT EXISTS `qns_question_tags` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Laravel Morph Relationship
-CREATE TABLE IF NOT EXISTS `qns_question_tag_jnt` (
+CREATE TABLE IF NOT EXISTS `qns_question_questiontag_jnt` (
+  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   `question_bank_id` BIGINT UNSIGNED NOT NULL,
   `tag_id` BIGINT UNSIGNED NOT NULL,
   `is_active` TINYINT(1) DEFAULT 1,
   `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `deleted_at` TIMESTAMP NULL DEFAULT NULL,
-  PRIMARY KEY (`question_bank_id`,`tag_id`),
+  UNIQUE KEY `uq_qtag_q_t` (`question_bank_id`,`tag_id`),
   CONSTRAINT `fk_qtag_q` FOREIGN KEY (`question_bank_id`) REFERENCES `qns_questions_bank` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_qtag_tag` FOREIGN KEY (`tag_id`) REFERENCES `qns_question_tags` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -456,9 +525,9 @@ CREATE TABLE IF NOT EXISTS `qns_question_versions` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `question_bank_id` BIGINT UNSIGNED NOT NULL,
   `version` INT UNSIGNED NOT NULL,
-  `data` JSON NOT NULL,                       -- full snapshot of question (stem, options, metadata)
+  `data` JSON NOT NULL,                       -- full snapshot of question (Question_content, options, metadata)
   `version_created_by` BIGINT UNSIGNED DEFAULT NULL,
-  `change_reason` VARCHAR(255) DEFAULT NULL,  -- why was this version created?
+  `change_reason` VARCHAR(255) DEFAULT NULL,  -- why was this version modified?
   `is_active` TINYINT(1) DEFAULT 1,
   `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -469,124 +538,210 @@ CREATE TABLE IF NOT EXISTS `qns_question_versions` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `qns_media_store` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   `uuid` BINARY(16) NOT NULL,
-  `question_bank_id` bigint unsigned DEFAULT NULL,
-  `ques_option_id` bigint unsigned DEFAULT NULL,
-  `media_type` ENUM('IMAGE','AUDIO','VIDEO','PDF'),
-  `part_of` ENUM('Question','Option') NOT NULL,
-  `placed_at` int unsigned DEFAULT NULL,
-  `name` varchar(255) NOT NULL,
-  `file_name` varchar(255) NOT NULL,
-  `file_path` VARCHAR(255) NOT NULL,
-  `mime_type` varchar(255) DEFAULT NULL,
-  `disk` varchar(255) NOT NULL,
-  `conversions_disk` varchar(255) DEFAULT NULL,
-  `size` bigint unsigned NOT NULL,
-  `image_url` varchar(255) NOT NULL,
-  `checksum` CHAR(64),
+  `owner_type` ENUM('QUESTION','OPTION','EXPLANATION','RECOMMENDATION') NOT NULL,
+  `owner_id` BIGINT UNSIGNED NOT NULL,
+  `media_type` ENUM('IMAGE','AUDIO','VIDEO','PDF') NOT NULL,
+  `file_name` VARCHAR(255),
+  `file_path` VARCHAR(255),
+  `mime_type` VARCHAR(100),
+  `disk` VARCHAR(50),     -- storage disk
+  `size` BIGINT UNSIGNED, -- file size in bytes
+  `checksum` CHAR(64),    -- file checksum
+  `ordinal` SMALLINT UNSIGNED DEFAULT 1,
   `is_active` TINYINT(1) DEFAULT 1,
-  `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `deleted_at` TIMESTAMP NULL DEFAULT NULL,
-  PRIMARY KEY (`id`),
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` TIMESTAMP DEFAULT NULL,
   UNIQUE KEY `uq_media_uuid` (`uuid`),
-  KEY `idx_media_modelType_modelId` (`model_type`,`model_id`),
-  KEY `idx_media_orderColumn` (`order_column`),
-  CONSTRAINT `fk_qmedia_question_bank` FOREIGN KEY (`question_bank_id`) REFERENCES `qns_questions_bank` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_qmedia_ques_option` FOREIGN KEY (`ques_option_id`) REFERENCES `qns_questions_bank_options` (`id`) ON DELETE CASCADE
+  KEY `idx_owner` (`owner_type`, `owner_id`)
+);
+
+CREATE TABLE IF NOT EXISTS `qns_question_topic_jnt` (
+  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `question_bank_id` BIGINT UNSIGNED NOT NULL,
+  `topic_id` BIGINT UNSIGNED NOT NULL,
+  `weightage` DECIMAL(5,2) DEFAULT 100.00,  -- weightage of question in topic
+  `is_active` TINYINT(1) DEFAULT 1,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` TIMESTAMP DEFAULT NULL,
+  UNIQUE KEY `uq_qt_q_t` (`question_bank_id`,`topic_id`),
+  CONSTRAINT `fk_qt_question` FOREIGN KEY (`question_bank_id`) REFERENCES `qns_questions_bank` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_qt_topic` FOREIGN KEY (`topic_id`) REFERENCES `slb_topics` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS `qns_question_statistics` (
+  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `question_bank_id` BIGINT UNSIGNED NOT NULL,
+  `difficulty_index` DECIMAL(5,2),       -- % students answered correctly
+  `discrimination_index` DECIMAL(5,2),   -- Top vs bottom performer delta
+  `guessing_factor` DECIMAL(5,2),        -- MCQ only
+  `min_time_taken_seconds` INT UNSIGNED DEFAULT NULL,  -- time taken by topper to answer the question
+  `max_time_taken_seconds` INT UNSIGNED DEFAULT NULL, -- average time taken to answer by students
+  `avg_time_taken_seconds` INT UNSIGNED,
+  `total_attempts` INT UNSIGNED DEFAULT 0,
+  `last_computed_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `is_active` TINYINT(1) DEFAULT 1,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` TIMESTAMP DEFAULT NULL,
+  UNIQUE KEY `uq_qstats_q` (`question_bank_id`),
+  CONSTRAINT `fk_qstats_question` FOREIGN KEY (`question_bank_id`) REFERENCES `qns_questions_bank` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `qns_question_performance_category_jnt` (
+  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `question_bank_id` BIGINT UNSIGNED NOT NULL,
+  `performance_category_id` BIGINT UNSIGNED NOT NULL,
+  `recommendation_type` ENUM('REVISION','PRACTICE','CHALLENGE') NOT NULL,
+  `priority` SMALLINT UNSIGNED DEFAULT 1,
+  `is_active` TINYINT(1) DEFAULT 1,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` TIMESTAMP DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_qrec_q_p` (`question_bank_id`, `performance_category_id`),
+  CONSTRAINT `fk_qrec_question` FOREIGN KEY (`question_bank_id`) REFERENCES `qns_questions_bank` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_qrec_perf` FOREIGN KEY (`performance_category_id`) REFERENCES `slb_performance_categories` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- conditions:
+-- This directly powers Personalized learning paths, AI-Teacher module, LXP integration
+-- This table will map questions to performance categories. using it we can recommend questions to students based on their performance.
+
+CREATE TABLE IF NOT EXISTS `qns_question_usage_log` (
+  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `question_bank_id` BIGINT UNSIGNED NOT NULL,    -- FK to qns_questions_bank
+  `usage_context` ENUM('QUIZ','ASSESSMENT','EXAM') NOT NULL,
+  `context_id` BIGINT UNSIGNED NOT NULL,    -- quiz_id, assessment_id, exam_id
+  `used_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `is_active` TINYINT(1) DEFAULT 1,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` TIMESTAMP DEFAULT NULL,
+  CONSTRAINT `fk_qusage_question` FOREIGN KEY (`question_bank_id`) REFERENCES `qns_questions_bank` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 -- =========================================================================
 -- RECOMMENDATION MODULE (Performance Based Recommendations)
 -- =========================================================================
 
-CREATE TABLE rec_recommendation_materials (
-  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  title VARCHAR(255) NOT NULL,
-  description TEXT DEFAULT NULL,
-  material_type ENUM('TEXT','VIDEO','PDF','AUDIO','QUIZ','ASSIGNMENT','LINK') NOT NULL,
-  content LONGTEXT DEFAULT NULL,      -- HTML / text (for TEXT)
-  media_id BIGINT UNSIGNED DEFAULT NULL, -- FK to sys_media
-  external_url VARCHAR(500) DEFAULT NULL,
-  subject_id BIGINT UNSIGNED DEFAULT NULL,
-  class_id INT UNSIGNED DEFAULT NULL,
-  topic_id BIGINT UNSIGNED DEFAULT NULL,
-  difficulty_level ENUM('EASY','MEDIUM','HARD') DEFAULT 'MEDIUM',
-  is_active TINYINT(1) DEFAULT 1,
-  created_at TIMESTAMP NULL,
-  KEY idx_material_scope (class_id, subject_id, topic_id),
-  KEY idx_material_type (material_type),
-  KEY idx_material_active (is_active)
+CREATE TABLE IF NOT EXISTS `rec_recommendation_materials` (
+  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `title` VARCHAR(255) NOT NULL,
+  `description` TEXT DEFAULT NULL,
+  `material_type` ENUM('TEXT','VIDEO','PDF','AUDIO','QUIZ','ASSIGNMENT','LINK') NOT NULL,
+  `content` LONGTEXT DEFAULT NULL,      -- HTML / text (for TEXT)
+  `media_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to qns_media_store
+  `external_url` VARCHAR(500) DEFAULT NULL, -- External URL (for LINK)
+  `subject_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to qns_subjects
+  `class_id` INT UNSIGNED DEFAULT NULL, -- FK to qns_classes
+  `topic_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to qns_topics
+  `difficulty_level` ENUM('EASY','MEDIUM','HARD') DEFAULT 'MEDIUM',
+  `is_active` TINYINT(1) DEFAULT 1,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` TIMESTAMP DEFAULT NULL,
+  KEY `idx_material_scope` (`class_id`, `subject_id`, `topic_id`),
+  KEY `idx_material_type` (`material_type`),
+  KEY `idx_material_active` (`is_active`),
+  CONSTRAINT `fk_rmat_media` FOREIGN KEY (`media_id`) REFERENCES `qns_media_store` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_rmat_subject` FOREIGN KEY (`subject_id`) REFERENCES `qns_subjects` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_rmat_class` FOREIGN KEY (`class_id`) REFERENCES `qns_classes` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_rmat_topic` FOREIGN KEY (`topic_id`) REFERENCES `qns_topics` (`id`) ON DELETE SET NULL 
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
-CREATE TABLE rec_recommendation_rules (
-  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  school_id BIGINT UNSIGNED DEFAULT NULL, 
+CREATE TABLE IF NOT EXISTS `rec_recommendation_rules` (
+  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `school_id` BIGINT UNSIGNED DEFAULT NULL, 
   -- NULL = System default rule
-  performance_category_id BIGINT UNSIGNED NOT NULL,
-  subject_id BIGINT UNSIGNED DEFAULT NULL,
-  class_id INT UNSIGNED DEFAULT NULL,
-  topic_id BIGINT UNSIGNED DEFAULT NULL,
-  recommendation_goal ENUM('REVISION','PRACTICE','REMEDIAL','ADVANCED','ENRICHMENT') NOT NULL,
-  material_type ENUM('TEXT','VIDEO','PDF','QUIZ','ASSIGNMENT') NOT NULL,
-  max_items SMALLINT UNSIGNED DEFAULT 5,
-  priority SMALLINT UNSIGNED DEFAULT 1,
-  is_active TINYINT(1) DEFAULT 1,
-  created_at TIMESTAMP NULL,
-  CONSTRAINT fk_rule_perf_cat FOREIGN KEY (performance_category_id) REFERENCES slb_performance_categories(id),
-  KEY idx_rule_scope (school_id, class_id, subject_id, topic_id)
+  `performance_category_id` BIGINT UNSIGNED NOT NULL, -- FK to slb_performance_categories
+  `subject_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to qns_subjects
+  `class_id` INT UNSIGNED DEFAULT NULL, -- FK to qns_classes
+  `topic_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to qns_topics
+  `recommendation_goal` ENUM('REVISION','PRACTICE','REMEDIAL','ADVANCED','ENRICHMENT') NOT NULL,
+  `material_type` ENUM('TEXT','VIDEO','PDF','QUIZ','ASSIGNMENT') NOT NULL,
+  `max_items` SMALLINT UNSIGNED DEFAULT 5,
+  `priority` SMALLINT UNSIGNED DEFAULT 1,
+  `is_active` TINYINT(1) DEFAULT 1,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` TIMESTAMP DEFAULT NULL,
+  CONSTRAINT `fk_rule_perf_cat` FOREIGN KEY (`performance_category_id`) REFERENCES `slb_performance_categories`(`id`),
+  CONSTRAINT `fk_rule_subject` FOREIGN KEY (`subject_id`) REFERENCES `qns_subjects` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_rule_class` FOREIGN KEY (`class_id`) REFERENCES `qns_classes` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_rule_topic` FOREIGN KEY (`topic_id`) REFERENCES `qns_topics` (`id`) ON DELETE SET NULL
+  KEY `idx_rule_scope` (`school_id`, `class_id`, `subject_id`, `topic_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE rec_student_recommendations (
-  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  student_id BIGINT UNSIGNED NOT NULL,
-  school_id BIGINT UNSIGNED NOT NULL,
-  performance_category_id BIGINT UNSIGNED NOT NULL,
-  recommendation_rule_id BIGINT UNSIGNED NOT NULL,
-  material_id BIGINT UNSIGNED NOT NULL,
-  recommended_for ENUM('DAILY','WEEKLY','MONTHLY','EXAM_PREP') DEFAULT 'WEEKLY',
-  status ENUM('PENDING','VIEWED','IN_PROGRESS','COMPLETED','SKIPPED') DEFAULT 'PENDING',
-  relevance_score DECIMAL(5,2) DEFAULT NULL, -- for future AI ranking
-  generated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  consumed_at TIMESTAMP NULL,
-  UNIQUE KEY uq_student_material (student_id, material_id),
-  KEY idx_student_status (student_id, status),
-  KEY idx_student_school (school_id, student_id)
+CREATE TABLE IF NOT EXISTS `rec_student_recommendations` (
+  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `student_id` BIGINT UNSIGNED NOT NULL, -- FK to users
+  `school_id` BIGINT UNSIGNED NOT NULL, -- FK to schools
+  `performance_category_id` BIGINT UNSIGNED NOT NULL, -- FK to slb_performance_categories
+  `recommendation_rule_id` BIGINT UNSIGNED NOT NULL, -- FK to rec_recommendation_rules
+  `material_id` BIGINT UNSIGNED NOT NULL, -- FK to rec_recommendation_materials
+  `recommended_for` ENUM('DAILY','WEEKLY','MONTHLY','EXAM_PREP') DEFAULT 'WEEKLY',
+  `status` ENUM('PENDING','VIEWED','IN_PROGRESS','COMPLETED','SKIPPED') DEFAULT 'PENDING',
+  `relevance_score` DECIMAL(5,2) DEFAULT NULL, -- for future AI ranking
+  `generated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `consumed_at` TIMESTAMP NULL,
+  UNIQUE KEY `uq_student_material` (`student_id`, `material_id`),
+  KEY `idx_student_status` (`student_id`, `status`),
+  KEY `idx_student_school` (`school_id`, `student_id`),
+  CONSTRAINT `fk_stud_perf_cat` FOREIGN KEY (`performance_category_id`) REFERENCES `slb_performance_categories`(`id`),
+  CONSTRAINT `fk_stud_rule` FOREIGN KEY (`recommendation_rule_id`) REFERENCES `rec_recommendation_rules`(`id`),
+  CONSTRAINT `fk_stud_material` FOREIGN KEY (`material_id`) REFERENCES `rec_recommendation_materials`(`id`),
+  CONSTRAINT `fk_stud_student` FOREIGN KEY (`student_id`) REFERENCES `users`(`id`),
+  CONSTRAINT `fk_stud_school` FOREIGN KEY (`school_id`) REFERENCES `schools`(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE rec_student_performance_snapshot (
-  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  student_id BIGINT UNSIGNED NOT NULL,
-  school_id BIGINT UNSIGNED NOT NULL,
-  performance_category_id BIGINT UNSIGNED NOT NULL,
-  recommendation_rule_id BIGINT UNSIGNED NOT NULL,
-  material_id BIGINT UNSIGNED NOT NULL,
-  recommended_for ENUM('DAILY','WEEKLY','MONTHLY','EXAM_PREP') DEFAULT 'WEEKLY',
-  status ENUM('PENDING','VIEWED','IN_PROGRESS','COMPLETED','SKIPPED') DEFAULT 'PENDING',
-  relevance_score DECIMAL(5,2) DEFAULT NULL, -- for future AI ranking
-  generated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  consumed_at TIMESTAMP NULL,
-  UNIQUE KEY uq_student_material (student_id, material_id),
-  KEY idx_student_status (student_id, status),
-  KEY idx_student_school (school_id, student_id)
+CREATE TABLE IF NOT EXISTS `rec_student_performance_snapshot` (
+  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `student_id` BIGINT UNSIGNED NOT NULL,
+  `school_id` BIGINT UNSIGNED NOT NULL,
+  `performance_category_id` BIGINT UNSIGNED NOT NULL,
+  `recommendation_rule_id` BIGINT UNSIGNED NOT NULL,
+  `material_id` BIGINT UNSIGNED NOT NULL,
+  `recommended_for` ENUM('DAILY','WEEKLY','MONTHLY','EXAM_PREP') DEFAULT 'WEEKLY',
+  `status` ENUM('PENDING','VIEWED','IN_PROGRESS','COMPLETED','SKIPPED') DEFAULT 'PENDING',
+  `relevance_score` DECIMAL(5,2) DEFAULT NULL, -- for future AI ranking
+  `generated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `consumed_at` TIMESTAMP NULL,
+  UNIQUE KEY `uq_student_material` (`student_id`, `material_id`),
+  KEY `idx_student_status` (`student_id`, `status`),
+  KEY `idx_student_school` (`school_id`, `student_id`),
+  CONSTRAINT `fk_stud_perf_cat` FOREIGN KEY (`performance_category_id`) REFERENCES `slb_performance_categories`(`id`),
+  CONSTRAINT `fk_stud_rule` FOREIGN KEY (`recommendation_rule_id`) REFERENCES `rec_recommendation_rules`(`id`),
+  CONSTRAINT `fk_stud_material` FOREIGN KEY (`material_id`) REFERENCES `rec_recommendation_materials`(`id`),
+  CONSTRAINT `fk_stud_student` FOREIGN KEY (`student_id`) REFERENCES `users`(`id`),
+  CONSTRAINT `fk_stud_school` FOREIGN KEY (`school_id`) REFERENCES `schools`(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE rec_student_performance_snapshot (
-  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  student_id BIGINT UNSIGNED NOT NULL,
-  school_id BIGINT UNSIGNED NOT NULL,
-  class_id INT UNSIGNED NOT NULL,
-  subject_id BIGINT UNSIGNED DEFAULT NULL,
-  percentage DECIMAL(5,2) NOT NULL,
-  performance_category_id BIGINT UNSIGNED NOT NULL,
-  assessment_type ENUM('QUIZ','TEST','EXAM','TERM','OVERALL') NOT NULL,
-  captured_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  KEY idx_student_perf (student_id, captured_at)
+CREATE TABLE IF NOT EXISTS `rec_student_performance_snapshot` (
+  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `student_id` BIGINT UNSIGNED NOT NULL,
+  `school_id` BIGINT UNSIGNED NOT NULL,
+  `class_id` INT UNSIGNED NOT NULL,
+  `subject_id` BIGINT UNSIGNED DEFAULT NULL,
+  `percentage` DECIMAL(5,2) NOT NULL,
+  `performance_category_id` BIGINT UNSIGNED NOT NULL,
+  `assessment_type` ENUM('QUIZ','TEST','EXAM','TERM','OVERALL') NOT NULL,
+  `captured_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `consumed_at` TIMESTAMP NULL,
+  KEY `idx_student_perf` (`student_id`, `captured_at`),
+  KEY `idx_student_school` (`school_id`, `student_id`),
+  CONSTRAINT `fk_stud_perf_cat` FOREIGN KEY (`performance_category_id`) REFERENCES `slb_performance_categories`(`id`),
+  CONSTRAINT `fk_stud_student` FOREIGN KEY (`student_id`) REFERENCES `users`(`id`),
+  CONSTRAINT `fk_stud_school` FOREIGN KEY (`school_id`) REFERENCES `schools`(`id`),
+  CONSTRAINT `fk_stud_class` FOREIGN KEY (`class_id`) REFERENCES `qns_classes`(`id`),
+  CONSTRAINT `fk_stud_subject` FOREIGN KEY (`subject_id`) REFERENCES `qns_subjects`(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
 
 
 -- =========================================================================
@@ -1661,21 +1816,16 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- -------------------
 -- 1. I need to Capture Different Types of Recommendation as per the Performance of the Student
 -- 2. Will Capture Student Behaviour while attempting Questions Like -
---    a. Student Confidence
---    b. Student Hesitation
---    c. Student Weak Areas
---    d. Student Strong Areas
---    e. Student Learning Style
---    f. Student Learning Speed
---    g. Student Learning Pattern
---    h. Student Learning Habit
---    i. Student Learning Capability
---    j. Student Learning Potential
--- 3. Will Capture Student Weak Areas and Strong Areas
--- 4. Will Capture Student Learning Style
--- 5. Will Capture Student Learning Speed
--- 6. Will Capture Student Learning Pattern
--- 7. Will Capture Student Learning Habit
--- 8. Will Capture Student Learning Capability
--- 9. Will Capture Student Learning Potential
--- 10. Will Capture Student Learning Capability
+--    a. Student Confidence & Hesitation
+--    b. Student Weak Areas & Strong Areas
+--    c. Student Learning Behavior, Style, Speed, Pattern, Habit
+--    d. Student Learning Capability, Potential
+
+
+-------------------------------------------------------------------------------
+-- Variables for sys_settings table
+-------------------------------------------------------------------------------
+-- 1. Question can be re-use in Quiz, Assessment, Exam, etc.
+-- 2. Manytimes Question need knowledge of multiple Topics to answer. So, Question Marks wil be distributed among linked Topics on the basis of Weightage. 
+--    e.g. if a Question is linked to 3 Topics with weightage 20%, 30%, 50% then QuestionMarks will be distributed as 20%, 30%, 50%.
+-- 3. 
