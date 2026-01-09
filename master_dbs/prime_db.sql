@@ -61,7 +61,7 @@ CREATE TABLE IF NOT EXISTS `sys_permissions` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_permissions_shortName_guardName` (`short_name`,`guard_name`),
   UNIQUE KEY `uq_permissions_name_guardName` (`name`,`guard_name`)
-) ENGINE=InnoDB AUTO_INCREMENT=176 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `sys_roles` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
@@ -76,7 +76,7 @@ CREATE TABLE IF NOT EXISTS `sys_roles` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_roles_name_guardName` (`name`,`guard_name`)
   UNIQUE KEY `uq_roles_name_guardName` (`short_name`,`guard_name`)
-) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `sys_role_has_permissions_jnt` (
   `permission_id` bigint unsigned NOT NULL,
@@ -131,7 +131,7 @@ CREATE TABLE IF NOT EXISTS `sys_users` (
   UNIQUE KEY `uq_users_email` (`email`),
   UNIQUE KEY `uq_users_mobileNo` (`mobile_no`),
   UNIQUE KEY `uq_single_super_admin` (`super_admin_flag`),
-) ENGINE=InnoDB AUTO_INCREMENT=33 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 /* Optional triggers to prevent deleting/demoting super admin (you already used triggers for sessions) */
 DELIMITER $$
@@ -271,7 +271,7 @@ CREATE TABLE IF NOT EXISTS `sys_activity_logs` (
   KEY `sys_activity_logs_user_id_foreign` (`user_id`),
   KEY `sys_activity_logs_created_at_user_id_index` (`created_at`,`user_id`),
   CONSTRAINT `sys_activity_logs_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `sys_users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 -- ===============================================================================================================
@@ -298,7 +298,7 @@ CREATE TABLE IF NOT EXISTS `prm_tenant_groups` (
   PRIMARY KEY (id),
   UNIQUE KEY uq_tenantGroups_shortName (short_name),
   CONSTRAINT fk_tenantGroups_cityId FOREIGN KEY (city_id) REFERENCES glb_cities (id) ON DELETE RESTRICT
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `prm_tenant` (
   id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -329,7 +329,7 @@ CREATE TABLE IF NOT EXISTS `prm_tenant` (
   deleted_at timestamp NULL DEFAULT NULL,
   UNIQUE KEY uq_org (org_id),
   CONSTRAINT fk_tenantGroups_cityId FOREIGN KEY (city_id) REFERENCES glb_cities (id) ON DELETE RESTRICT
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `prm_tenant_domains` (
   id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -345,7 +345,7 @@ CREATE TABLE IF NOT EXISTS `prm_tenant_domains` (
   updated_at timestamp NULL DEFAULT NULL,
   deleted_at timestamp NULL DEFAULT NULL,
   CONSTRAINT fk_tenantDomains_tenantId FOREIGN KEY (tenant_id) REFERENCES prm_tenant (id) ON DELETE RESTRICT
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 -- Plan & Module
@@ -380,7 +380,7 @@ CREATE TABLE IF NOT EXISTS `prm_plans` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_plans_planCode_version` (`plan_code`,`version`),
   CONSTRAINT `fk_plans_billingCycleId` FOREIGN KEY (`billing_cycle_id`) REFERENCES `prm_billing_cycles` (`id`) ON DELETE RESTRICT,
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `prm_module_plan_jnt` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
@@ -392,7 +392,7 @@ CREATE TABLE IF NOT EXISTS `prm_module_plan_jnt` (
   PRIMARY KEY (`id`),
   CONSTRAINT `fk_modulePlan_moduleId` FOREIGN KEY (`module_id`) REFERENCES `sys_modules` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_modulePlan_planId` FOREIGN KEY (`plan_id`) REFERENCES `prm_plans` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Tenant Subscription
 -- ------------------------------------

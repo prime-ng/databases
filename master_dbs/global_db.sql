@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS `glb_countries` (
   `deleted_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_country_name` (`name`),
-  UNIQUE KEY `uq_countries_shortName` (`short_name`),
+  UNIQUE KEY `uq_countries_shortName` (`short_name`)
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `glb_states` (
@@ -87,7 +87,7 @@ CREATE TABLE IF NOT EXISTS `glb_boards` (
   `deleted_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_academicBoard_name` (`name`),
-  UNIQUE KEY `uq_academicBoard_shortName` (`short_name`),
+  UNIQUE KEY `uq_academicBoard_shortName` (`short_name`)
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----------------------------------------------------------------------------------------------------------
@@ -173,17 +173,17 @@ CREATE TABLE IF NOT EXISTS `glb_menu_model_jnt` (
 
 CREATE TABLE IF NOT EXISTS `glb_translations` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `translatable_type` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `translatable_type` varchar(255) NOT NULL,
   `translatable_id` bigint unsigned NOT NULL,
   `language_id` bigint unsigned NOT NULL,
-  `key` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `value` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `key` varchar(255) NOT NULL,
+  `value` text NOT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_translatable_language_key` (`translatable_type`,`translatable_id`,`language_id`,`key`),
   KEY `sys_translations_translatable_type_translatable_id_index` (`translatable_type`,`translatable_id`),
   KEY `sys_translations_language_id_foreign` (`language_id`),
-  CONSTRAINT `sys_translations_language_id_foreign` FOREIGN KEY (`language_id`) REFERENCES `sys_languages` (`id`) ON DELETE CASCADE
+  CONSTRAINT `sys_translations_language_id_foreign` FOREIGN KEY (`language_id`) REFERENCES `glb_languages` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
