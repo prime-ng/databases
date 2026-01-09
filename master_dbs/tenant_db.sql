@@ -7,18 +7,18 @@
 -- Create Views after creating global_master database and it's tables
 -- ========================================================================================================
 
-CREATE VIEW glb_countries  AS SELECT * FROM global_master.glb_countries;
-CREATE VIEW glb_states     AS SELECT * FROM global_master.glb_states;
-CREATE VIEW glb_districts  AS SELECT * FROM global_master.glb_districts;
-CREATE VIEW glb_cities     AS SELECT * FROM global_master.glb_cities;
-CREATE VIEW glb_academic_sessions  AS SELECT * FROM global_master.glb_academic_sessions;
-CREATE VIEW glb_boards     AS SELECT * FROM global_master.glb_boards;
+-- CREATE VIEW glb_countries  AS SELECT * FROM global_master.glb_countries;
+-- CREATE VIEW glb_states     AS SELECT * FROM global_master.glb_states;
+-- CREATE VIEW glb_districts  AS SELECT * FROM global_master.glb_districts;
+-- CREATE VIEW glb_cities     AS SELECT * FROM global_master.glb_cities;
+-- CREATE VIEW glb_academic_sessions  AS SELECT * FROM global_master.glb_academic_sessions;
+-- CREATE VIEW glb_boards     AS SELECT * FROM global_master.glb_boards;
 
-CREATE VIEW glb_languages AS SELECT * FROM global_master.glb_languages;
-CREATE VIEW glb_menus AS SELECT * FROM global_master.glb_menus;
-CREATE VIEW glb_modules AS SELECT * FROM global_master.glb_modules;
-CREATE VIEW glb_menu_model_jnt AS SELECT * FROM global_master.glb_menu_model_jnt;
-CREATE VIEW glb_translations AS SELECT * FROM global_master.glb_translations;
+-- CREATE VIEW glb_languages AS SELECT * FROM global_master.glb_languages;
+-- CREATE VIEW glb_menus AS SELECT * FROM global_master.glb_menus;
+-- CREATE VIEW glb_modules AS SELECT * FROM global_master.glb_modules;
+-- CREATE VIEW glb_menu_model_jnt AS SELECT * FROM global_master.glb_menu_model_jnt;
+-- CREATE VIEW glb_translations AS SELECT * FROM global_master.glb_translations;
 
 
 
@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS `sys_permissions` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_permissions_shortName_guardName` (`short_name`,`guard_name`),
   UNIQUE KEY `uq_permissions_name_guardName` (`name`,`guard_name`)
-) ENGINE=InnoDB AUTO_INCREMENT=176 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `sys_roles` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
@@ -51,9 +51,9 @@ CREATE TABLE IF NOT EXISTS `sys_roles` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_roles_name_guardName` (`name`,`guard_name`),
-  UNIQUE KEY `uq_roles_name_guardName` (`short_name`,`guard_name`)
-) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  UNIQUE KEY `uq_roles_name_name_guardName` (`name`,`guard_name`),
+  UNIQUE KEY `uq_roles_name_shortName_guardName` (`short_name`,`guard_name`) 
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Junction Tables for Many-to-Many Relationships
 CREATE TABLE IF NOT EXISTS `sys_role_has_permissions_jnt` (
@@ -61,8 +61,8 @@ CREATE TABLE IF NOT EXISTS `sys_role_has_permissions_jnt` (
   `role_id` bigint unsigned NOT NULL,         -- FK to sys_roles
   PRIMARY KEY (`permission_id`,`role_id`),
   KEY `idx_roleHasPermissions_roleId` (`role_id`),
-  CONSTRAINT `fk_roleHasPermissions_permissionId` FOREIGN KEY (`permission_id`) REFERENCES `sys_permissions` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_roleHasPermissions_roleId` FOREIGN KEY (`role_id`) REFERENCES `sys_roles` (`id`) ON DELETE CASCADE
+  CONSTRAINT `fk_roleHasPermissions_permissionId` FOREIGN KEY (`permission_id`) REFERENCES `sys_permissions` (`id`),
+  CONSTRAINT `fk_roleHasPermissions_roleId` FOREIGN KEY (`role_id`) REFERENCES `sys_roles` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Junction Tables for Polymorphic Many-to-Many Relationships
@@ -72,7 +72,8 @@ CREATE TABLE IF NOT EXISTS `sys_model_has_permissions_jnt` (
   `model_id` bigint unsigned NOT NULL,        -- E.g., User ID
   PRIMARY KEY (`permission_id`,`model_id`,`model_type`),
   KEY `idx_modelHasPermissions_modelId_modelType` (`model_id`,`model_type`),
-  CONSTRAINT `fk_modelHasPermissions_permissionId` FOREIGN KEY (`permission_id`) REFERENCES `sys_permissions` (`id`) ON DELETE CASCADE
+  CONSTRAINT `fk_modelHasPermissions_permissionId` FOREIGN KEY (`permission_id`) REFERENCES `sys_permissions` (`id`),
+  CONSTRAINT `fk_modelHasPermissions_modelId_modelType` FOREIGN KEY (`model_id`) REFERENCES `sys_models` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Junction Tables for Polymorphic Many-to-Many Relationships
@@ -82,7 +83,8 @@ CREATE TABLE IF NOT EXISTS `sys_model_has_roles_jnt` (
   `model_id` bigint unsigned NOT NULL,      -- E.g., User ID
   PRIMARY KEY (`role_id`,`model_id`,`model_type`),
   KEY `idx_modelHasRoles_modelId_modelType` (`model_id`,`model_type`),
-  CONSTRAINT `fk_modelHasRoles_roleId` FOREIGN KEY (`role_id`) REFERENCES `sys_roles` (`id`) ON DELETE CASCADE
+  CONSTRAINT `fk_modelHasRoles_roleId` FOREIGN KEY (`role_id`) REFERENCES `sys_roles` (`id`),
+  CONSTRAINT `fk_modelHasRoles_modelId_modelType` FOREIGN KEY (`model_id`) REFERENCES `sys_models` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `sys_users` (
@@ -96,8 +98,7 @@ CREATE TABLE IF NOT EXISTS `sys_users` (
   `two_factor_auth_enabled` tinyint(1) NOT NULL DEFAULT '0',    -- 0 = Disabled, 1 = Enabled
   `email_verified_at` timestamp NULL DEFAULT NULL,              -- When email was verified
   `mobile_verified_at` timestamp NULL DEFAULT NULL,
-  `is_active` tinyint(1) NOT NULL DEFAULT '1',
-  `password` varchar(255) COLLATE utf8mb4_unicode_bin NOT NULL, -- Hashed Password
+  `password` varchar(255) NOT NULL, -- Hashed Password
   `is_super_admin` tinyint(1) NOT NULL DEFAULT '0',             -- 0 = No, 1 = Yes
   `last_login_at` datetime DEFAULT NULL,                        -- Last Login Timestamp
   `super_admin_flag` tinyint GENERATED ALWAYS AS ((case when (`is_super_admin` = 1) then 1 else NULL end)) STORED,  -- To ensure only one super admin
@@ -113,28 +114,34 @@ CREATE TABLE IF NOT EXISTS `sys_users` (
   UNIQUE KEY `uq_users_email` (`email`),
   UNIQUE KEY `uq_users_mobileNo` (`mobile_no`),
   UNIQUE KEY `uq_single_super_admin` (`super_admin_flag`),
-  CONSTRAINT `fk_users_language` FOREIGN KEY (`prefered_language`) REFERENCES `glb_languages` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=33 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  CONSTRAINT `fk_users_language` FOREIGN KEY (`prefered_language`) REFERENCES `glb_languages` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Triggers - to prevent deleting/demoting super admin (you already used triggers for sessions)
-  DELIMITER $$
-  CREATE TRIGGER trg_users_prevent_delete_super BEFORE DELETE ON users
-  FOR EACH ROW
-  BEGIN
-    IF OLD.is_super_admin = 1 THEN
-      SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Super Admin cannot be deleted';
-    END IF;
-  END$$
+DELIMITER $$
+-- 1. Handle Delete Trigger
+DROP TRIGGER IF EXISTS trg_users_prevent_delete_super$$
 
-  CREATE TRIGGER trg_users_prevent_update_super BEFORE UPDATE ON users
-  FOR EACH ROW
-  BEGIN
-    IF OLD.is_super_admin = 1 AND NEW.is_super_admin = 0 THEN
-      SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Super Admin cannot be demoted';
-    END IF;
-  END$$
-  DELIMITER ;
+CREATE TRIGGER trg_users_prevent_delete_super BEFORE DELETE ON sys_users
+FOR EACH ROW
+BEGIN
+  IF OLD.is_super_admin = 1 THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Super Admin cannot be deleted';
+  END IF;
+END$$
 
+-- 2. Handle Update Trigger
+DROP TRIGGER IF EXISTS trg_users_prevent_update_super$$
+
+CREATE TRIGGER trg_users_prevent_update_super BEFORE UPDATE ON sys_users
+FOR EACH ROW
+BEGIN
+  IF OLD.is_super_admin = 1 AND NEW.is_super_admin = 0 THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Super Admin cannot be demoted';
+  END IF;
+END$$
+
+DELIMITER ;
 -- --------------------------------------------------------------------------------------------------------
 -- This table will store various system-wide settings and configurations
 CREATE TABLE IF NOT EXISTS `sys_settings` (
@@ -158,34 +165,33 @@ CREATE TABLE IF NOT EXISTS `sys_dropdown_needs` (
   `db_type` ENUM('Prime','Tenant','Global') NOT NULL,  -- Which Database this Dropdown is for? (prime_db,tenant_db,global_db)
   `table_name` varchar(150) NOT NULL,  -- Table Name
   `column_name` varchar(150) NOT NULL,  -- Column Name
-  `menu_category` varchar(150) NULL,  -- Menu Category (e.g. School Setup, Foundation Setup, Operations, Reports)
-  `main_menu` varchar(150) NULL,  -- Main Menu (e.g. Student Mgmt., Sullabus Mgmt.)
-  `sub_menu` varchar(150) NULL,  -- Sub Menu (e.g. Student Details, Teacher Details)
-  `tab_name` varchar(100) NULL,
-  `field_name` varchar(100) NULL,
-  `is_system` TINYINT(1) DEFAULT 1,
-  `tenant_creation_allowed` TINYINT(1) DEFAULT 0,
-  `compulsory` TINYINT(1) DEFAULT 1,
-  `is_active` TINYINT(1) DEFAULT 1,
+  `menu_category` varchar(150) NULL,    -- Menu Category (e.g. School Setup, Foundation Setup, Operations, Reports)
+  `main_menu` varchar(150) NULL,        -- Main Menu (e.g. Student Mgmt., Sullabus Mgmt.)
+  `sub_menu` varchar(150) NULL,         -- Sub Menu (e.g. Student Details, Teacher Details)
+  `tab_name` varchar(100) NULL,         -- Tab Name (e.g. Student Details, Teacher Details)
+  `field_name` varchar(100) NULL,       -- Field Name (e.g. Student Details, Teacher Details)
+  `is_system` TINYINT(1) DEFAULT 1,     -- If true, this Dropdown can be created by Tenant
+  `tenant_creation_allowed` TINYINT(1) DEFAULT 0,  -- If true, this Dropdown can be created by Tenant
+  `compulsory` TINYINT(1) DEFAULT 1,    -- If true, this Dropdown is compulsory for Application fuctioning
+  `is_active` TINYINT(1) DEFAULT 1,     -- If true, this Dropdown is active
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_dropdownNeeds_db_table_column_key` (`db_type`,`table_name`,`column_name`),
-  CONSTRAINT chk_isSubModule_parentId CHECK ((tenant_creation_allowed = 0 AND menu_category IS NULL AND main_menu IS NULL AND sub_menu IS NULL AND tab_name IS NULL AND field_name IS NULL) OR (tenant_creation_allowed = 1 AND menu_category IS NOT NULL AND main_menu IS NOT NULL AND sub_menu IS NOT NULL AND tab_name IS NOT NULL AND field_name IS NOT NULL))  
+  UNIQUE KEY `uq_dropdownNeeds_db_table_column_key` (`db_type`,`table_name`,`column_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 -- Conditions:
-  -- 1. If tenant_creation_allowed = 1, then it is must to have menu_category, main_menu, sub_menu, tab_name, field_name.
+  -- 1. If tenant_creation_allowed = 1, then it is must to have menu_category, main_menu, sub_menu, tab_name, field_name. This needs to be managed at Application Level.
   -- 2. When PG-Admin/PG-Support will create a Dropdown, it will get 2 option to select -
   --    Option 1 - Dropdown creation by Table & Column details.
   --    Option 2 - Dropdown creation by Menu/Sub-Menu & Field Name.
   --       a. If he select Option 1 then he can select - Table Name, Column Name.
   --       b. If he select Option 2 then he can select - Menu Category, Main Menu, Sub Menu, Tab Name, Field Name.
   -- 3. If some Dropdown is allowed to be created by Tenant(tenant_creation_allowed = 1), then it will always show 5 Dropdowns to select from.
-  --    a. Menu Category (this will come from sys_dropdown_needs.menu_category)
-  --    b. Main Menu (this will come from sys_dropdown_needs.main_menu)
-  --    c. Sub Menu (this will come from sys_dropdown_needs.sub_menu)
-  --    d. Tab Name (this will come from sys_dropdown_needs.tab_name)
-  --    e. Field Name (this will come from sys_dropdown_needs.field_name)
+  --    a. Menu Category (this will come from sys_dropdown_needs.menu_category). This is a Must Dropdown.
+  --    b. Main Menu (this will come from sys_dropdown_needs.main_menu). This is a Must Dropdown.
+  --    c. Sub Menu (this will come from sys_dropdown_needs.sub_menu). This is a Optional Dropdown.
+  --    d. Tab Name (this will come from sys_dropdown_needs.tab_name). This is a Optional Dropdown.
+  --    e. Field Name (this will come from sys_dropdown_needs.field_name). This is a Must Dropdown.
   -- 4. is_system = 1
 
 -- --------------------------------------------------------------------------------------------------------
@@ -282,7 +288,7 @@ CREATE TABLE IF NOT EXISTS `sch_organizations` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `chk_org_singleRecord` (`flg_single_record`),
   CONSTRAINT fk_organizations_cityId FOREIGN KEY (city_id) REFERENCES glb_cities (id) ON DELETE RESTRICT
-) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Junction Table to link Organizations with Academic Sessions
 CREATE TABLE IF NOT EXISTS `sch_org_academic_sessions_jnt` (
@@ -302,7 +308,7 @@ CREATE TABLE IF NOT EXISTS `sch_org_academic_sessions_jnt` (
   UNIQUE KEY `uq_orgAcademicSession_shortName` (`short_name`),
   UNIQUE KEY `uq_orgAcademicSession_currentFlag` (`current_flag`),
   CONSTRAINT `fk_orgAcademicSession_sessionId` FOREIGN KEY (`academic_sessions_id`) REFERENCES `glb_academic_sessions` (`id`) ON DELETE CASCADE  -- Added New
-) ENGINE=InnoDB AUTO_INCREMENT=30 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Junction Table to link Organizations with Boards
 CREATE TABLE IF NOT EXISTS `sch_board_organization_jnt` (
@@ -314,7 +320,7 @@ CREATE TABLE IF NOT EXISTS `sch_board_organization_jnt` (
   PRIMARY KEY (`id`),
   CONSTRAINT `fk_boardOrg_boardId` FOREIGN KEY (`board_id`) REFERENCES `glb_boards` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_boardOrg_academicSessionId` FOREIGN KEY (`academic_sessions_id`) REFERENCES `sch_org_academic_sessions_jnt` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 CREATE TABLE IF NOT EXISTS `sch_department` (
@@ -324,7 +330,7 @@ CREATE TABLE IF NOT EXISTS `sch_department` (
   `is_active` TINYINT(1) DEFAULT 1,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
+  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `sch_designation` (
@@ -334,7 +340,7 @@ CREATE TABLE IF NOT EXISTS `sch_designation` (
   `is_active` TINYINT(1) DEFAULT 1,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
+  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- This table will facilitate to create Groups of different department, Roles, Designations etc.
@@ -348,7 +354,7 @@ CREATE TABLE IF NOT EXISTS `sch_entity_groups` (
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `unique_code` (`code`),
+  UNIQUE KEY `unique_code` (`code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 -- Condition: 
   -- This table will be used to get Entity Group, which will be a combination of differet type of Entities.
@@ -424,11 +430,18 @@ CREATE TABLE IF NOT EXISTS `sch_class_section_jnt` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_classSection_classId_sectionId` (`class_id`,`section_id`),
   UNIQUE KEY `uq_classSection_code` (`class_secton_code`),
-  CONSTRAINT `fk_classSection_classId` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_classSection_sectionId` FOREIGN KEY (`section_id`) REFERENCES `sch_sections` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_classSection_classTeacherId` FOREIGN KEY (`class_teacher_id`) REFERENCES `sch_users` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_classSection_assistanceClassTeacherId` FOREIGN KEY (`assistance_class_teacher_id`) REFERENCES `sch_users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=300 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+ALTER TABLE `sch_class_section_jnt`
+ADD CONSTRAINT `fk_classSection_classId` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE CASCADE; *
+
+ALTER TABLE `sch_class_section_jnt`
+ADD CONSTRAINT `fk_classSection_sectionId` FOREIGN KEY (`section_id`) REFERENCES `sch_sections` (`id`) ON DELETE CASCADE;
+ALTER TABLE `sch_class_section_jnt`
+ADD CONSTRAINT `fk_classSection_classTeacherId` FOREIGN KEY (`class_teacher_id`) REFERENCES `sys_users` (`id`) ON DELETE CASCADE; *
+ALTER TABLE `sch_class_section_jnt`
+ADD CONSTRAINT `fk_classSection_assistanceClassTeacherId` FOREIGN KEY (`assistance_class_teacher_id`) REFERENCES `sys_users` (`id`) ON DELETE CASCADE;
+
 
 -- subject_type will represent what type of subject it is - Major, Minor, Core, Main, Optional etc.
 CREATE TABLE IF NOT EXISTS `sch_subject_types` (
@@ -443,7 +456,7 @@ CREATE TABLE IF NOT EXISTS `sch_subject_types` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_subjectTypes_shortName` (`short_name`),
   UNIQUE KEY `uq_subjectTypes_code` (`code`)
-) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `sch_study_formats` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
@@ -457,7 +470,7 @@ CREATE TABLE IF NOT EXISTS `sch_study_formats` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_studyFormats_shortName` (`short_name`),
   UNIQUE KEY `uq_studyFormats_code` (`code`)
-) ENGINE=InnoDB AUTO_INCREMENT=78 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 -- Data Seed for Study_Format - LECTURE, LAB, PRACTICAL, TUTORIAL, SEMINAR, WORKSHOP, GROUP_DISCUSSION, OTHER
 
 CREATE TABLE IF NOT EXISTS `sch_subjects` (
@@ -472,7 +485,7 @@ CREATE TABLE IF NOT EXISTS `sch_subjects` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_subjects_shortName` (`short_name`),
   UNIQUE KEY `uq_subjects_code` (`code`)
-) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- subject_study_format is grouping for different streams like Sci-10 Lacture, Arts-10 Activity, Core-10
 -- I have removed 'sub_types' from 'sch_subject_study_format_jnt' because one Subject_StudyFormat may belongs to different Subject_type for different classes
@@ -489,20 +502,35 @@ CREATE TABLE IF NOT EXISTS `sch_subject_study_format_jnt` (
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_subStudyFormat_subjectId_stFormat` (`subject_id`,`study_format_id`),
-  UNIQUE KEY `uq_subStudyFormat_subStdformatCode` (`sub_stdformat_code`),
+  UNIQUE KEY `uq_subStudyFormat_subStdformatCode` (`subj_stdformat_code`),
   CONSTRAINT `fk_subStudyFormat_subjectId` FOREIGN KEY (`subject_id`) REFERENCES `sch_subjects` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_subStudyFormat_studyFormatId` FOREIGN KEY (`study_format_id`) REFERENCES `sch_study_formats` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=54 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Building Coding format is - 2 Digit for Buildings(10-99)
+CREATE TABLE IF NOT EXISTS `sch_buildings` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `code` char(2) NOT NULL,                      -- 2 digits code (10,11,12) 
+  `short_name` varchar(30) NOT NULL,            -- e.g., 'Junior Wing','Primary Wing','Middle Wing','Senior Wing','Administration Wings'
+  `name` varchar(50) NOT NULL,                  -- Detailed Name of the Building
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_buildings_code` (`code`),
+  UNIQUE KEY `uq_buildings_name` (`short_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Ths table will be used to define different Class Groups like 10th-A Science Lecture Major, 7th-B Commerce Optional etc.
 -- old name 'sch_subject_study_format_class_subj_types_jnt' changed to 'sch_class_groups_jnt'
 CREATE TABLE IF NOT EXISTS `sch_class_groups_jnt` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,                  -- FK
-  `class_id` int NOT NULL,                              -- FK to 'sch_classes'
-  `section_id` int NOT NULL,                            -- FK to 'sch_sections'
+  `class_id` int unsigned NOT NULL,                              -- FK to 'sch_classes'
+  `section_id` int unsigned NOT NULL,                            -- FK to 'sch_sections'
   `subject_Study_format_id` bigint unsigned NOT NULL,   -- FK to 'sch_subject_study_format_jnt'
   `subject_type_id` int unsigned NOT NULL,              -- FK to 'sch_subject_types'
-  `rooms_type_id` bigint unsigned NOT NULL,             -- FK to 'sch_rooms_type'
+  `rooms_type_id` int unsigned NOT NULL,             -- FK to 'sch_rooms_type'
   `name` varchar(50) NOT NULL,                          -- 10th-A Science Lacture Major
   `code` CHAR(17) NOT NULL, -- Combination of (Class+Section+Subject+StudyFormat+SubjType) e.g., '10h_A_SCI_LAC_MAJ','8th_MAT_LAC_OPT' (This will be used for Timetable)
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
@@ -517,7 +545,7 @@ CREATE TABLE IF NOT EXISTS `sch_class_groups_jnt` (
   CONSTRAINT `fk_classGroups_subjStudyFormatId` FOREIGN KEY (`subject_Study_format_id`) REFERENCES `sch_subject_study_format_jnt` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_classGroups_subTypeId` FOREIGN KEY (`subject_type_id`) REFERENCES `sch_subject_types` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_classGroups_roomTypeId` FOREIGN KEY (`rooms_type_id`) REFERENCES `sch_rooms_type` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=54 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Table 'sch_subject_groups' will be used to assign all subjects to the students
 -- There will be a Variable in 'sch_settings' table named 'SubjGroup_For_All_Sections' (Subj_Group_will_be_used_for_all_sections_of_a_class)
@@ -525,8 +553,8 @@ CREATE TABLE IF NOT EXISTS `sch_class_groups_jnt` (
 -- Every Group will eb avalaible accross sections for a particuler class
 CREATE TABLE IF NOT EXISTS `sch_subject_groups` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `class_id` int NOT NULL,                        -- FK to 'sch_classes'
-  `section_id` int NULL,                          -- FK (Section can be null if Group will be used for all sectons)
+  `class_id` int UNSIGNED NOT NULL,                        -- FK to 'sch_classes'
+  `section_id` int UNSIGNED NULL,                          -- FK (Section can be null if Group will be used for all sectons)
   `short_name` varchar(30) NOT NULL,              -- 7th Science, 7th Commerce, 7th-A Science etc.
   `name` varchar(100) NOT NULL,                   -- '7th (Sci,Mth,Eng,Hindi,SST with Sanskrit,Dance)'
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
@@ -537,8 +565,8 @@ CREATE TABLE IF NOT EXISTS `sch_subject_groups` (
   UNIQUE KEY `uq_subjectGroups_shortName` (`short_name`),
   UNIQUE KEY `uq_subjectGroups_name` (`class_id`,`name`),
   CONSTRAINT `fk_subGroups_classId` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_subGroups_sectionId` FOREIGN KEY (`section_id`) REFERENCES `sch_sections` (`id`) ON DELETE NULL
-) ENGINE=InnoDB AUTO_INCREMENT=54 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  CONSTRAINT `fk_subGroups_sectionId` FOREIGN KEY (`section_id`) REFERENCES `sch_sections` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `sch_subject_group_subject_jnt` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
@@ -552,7 +580,7 @@ CREATE TABLE IF NOT EXISTS `sch_subject_group_subject_jnt` (
   UNIQUE KEY `uq_subjGrpSubj_subjGrpId_classGroup` (`subject_group_id`,`class_group_id`),
   CONSTRAINT `fk_subjGrpSubj_subjectGroup` FOREIGN KEY (`subject_group_id`) REFERENCES `sch_subject_groups` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_subjGrpSubj_classGroup` FOREIGN KEY (`class_group_id`) REFERENCES `sch_class_groups_jnt` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=54 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Tables for Room types, this will be used to define different types of rooms like Science Lab, Computer Lab, Sports Room etc.
 CREATE TABLE IF NOT EXISTS `sch_rooms_type` (
@@ -568,22 +596,9 @@ CREATE TABLE IF NOT EXISTS `sch_rooms_type` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_roomType_code` (`code`),
   UNIQUE KEY `uq_roomType_shortName` (`short_name`)
-) ENGINE=InnoDB AUTO_INCREMENT=188 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Building Coding format is - 2 Digit for Buildings(10-99)
-CREATE TABLE IF NOT EXISTS `sch_buildings` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `code` char(2) NOT NULL,                      -- 2 digits code (10,11,12) 
-  `short_name` varchar(30) NOT NULL,            -- e.g., 'Junior Wing','Primary Wing','Middle Wing','Senior Wing','Administration Wings'
-  `name` varchar(50) NOT NULL,                  -- Detailed Name of the Building
-  `is_active` tinyint(1) NOT NULL DEFAULT '1',
-  `deleted_at` timestamp NULL DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT NULL,
-  `updated_at` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_buildings_code` (`code`),
-  UNIQUE KEY `uq_buildings_name` (`short_name`)
-) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 
 -- Room Coding format is - 2 Digit for Buildings(10-99), 1 Digit-Building Floor(G,F,S,T,F / A,B,C,D,E), & Last 3 Character defin Class+Section (09A,10A,12B)
 CREATE TABLE IF NOT EXISTS `sch_rooms` (
@@ -605,12 +620,13 @@ CREATE TABLE IF NOT EXISTS `sch_rooms` (
   UNIQUE KEY `uq_rooms_shortName` (`short_name`),
   CONSTRAINT `fk_rooms_buildingId` FOREIGN KEY (`building_id`) REFERENCES `sch_buildings` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_rooms_roomTypeId` FOREIGN KEY (`room_type_id`) REFERENCES `sch_rooms_type` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=188 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Teacher table will store additional information about teachers
 CREATE TABLE IF NOT EXISTS `sch_teachers` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `user_id` BIGINT UNSIGNED NOT NULL,
+  `user_id` BIGINT UNSIGNED NOT NULL,  -- fk to sys_users.id
+  `emp_code` VARCHAR(20) NOT NULL,     -- Employee Code (Unique code for each user)
   `joining_date` DATE NOT NULL,
   `total_experience_years` DECIMAL(4,1) DEFAULT NULL,       -- Total teaching experience
   `highest_qualification` VARCHAR(100) DEFAULT NULL,        -- e.g. M.Sc., Ph.D.
@@ -628,7 +644,7 @@ CREATE TABLE IF NOT EXISTS `sch_teachers` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `teachers_emp_code_unique` (`emp_code`),
   KEY `teachers_user_id_foreign` (`user_id`),
-  CONSTRAINT `fk_teachers_userId` FOREIGN KEY (`user_id`) REFERENCES `sch_users` (`id`) ON DELETE CASCADE
+  CONSTRAINT `fk_teachers_userId` FOREIGN KEY (`user_id`) REFERENCES `sys_users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Teacher Profile table will store detailed proficiency to teach specific subjects, study formats, and classes
@@ -636,7 +652,7 @@ CREATE TABLE IF NOT EXISTS `sch_teachers_profile` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `teacher_id` BIGINT UNSIGNED NOT NULL,
   `subject_id` BIGINT UNSIGNED NOT NULL,            -- FK to 'subjects' table
-  `study_format_id` BIGINT UNSIGNED NOT NULL,       -- FK to 'sch_study_formats' table
+  `study_format_id` INT UNSIGNED NOT NULL,       -- FK to 'sch_study_formats' table 
   `class_id` INT UNSIGNED NOT NULL,                 -- FK to 'sch_classes' table
   `priority` ENUM('PRIMARY','SECONDARY') NOT NULL DEFAULT 'PRIMARY',
   `proficiency` INT UNSIGNED DEFAULT NULL,          -- 1–10 rating or %
@@ -651,9 +667,9 @@ CREATE TABLE IF NOT EXISTS `sch_teachers_profile` (
   `created_at` TIMESTAMP NULL DEFAULT NULL,
   `updated_at` TIMESTAMP NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_teachersProfile_teacher` (`teacher_id`,`subject_id`,`study_format_id`),
-  CONSTRAINT `fk_teachersProfile_teacherId` FOREIGN KEY (`teacher_id`) REFERENCES `teachers` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_teachersProfile_subjectId` FOREIGN KEY (`subject_id`) REFERENCES `subjects` (`id`) ON DELETE CASCADE,
+  UNIQUE KEY `uq_teachersProfile_teacher` (`teacher_id`,`subject_id`,`study_format_id`,class_id),
+  CONSTRAINT `fk_teachersProfile_teacherId` FOREIGN KEY (`teacher_id`) REFERENCES `sch_teachers` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_teachersProfile_subjectId` FOREIGN KEY (`subject_id`) REFERENCES `sch_subjects` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_teachersProfile_studyFormatId` FOREIGN KEY (`study_format_id`) REFERENCES `sch_study_formats` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_teachersProfile_classId` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -688,19 +704,21 @@ CREATE TABLE IF NOT EXISTS `std_students` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_student_aadharId` (`aadhar_id`)
-  UNIQUE KEY `uq_student_userId` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=188 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  UNIQUE KEY `uq_student_aadharId` (`aadhar_id`),
+  UNIQUE KEY `uq_student_userId` (`user_id`),
+  CONSTRAINT `fk_students_userId` FOREIGN KEY (`user_id`) REFERENCES `sys_users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_students_parentId` FOREIGN KEY (`parent_id`) REFERENCES `sys_users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Changed table name from 'std_student_detail' to 'std_student_personal_details'
 CREATE TABLE IF NOT EXISTS `std_student_personal_details` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `student_id` int DEFAULT NULL,         -- FK to 'std_students'
+  `student_id` BIGINT UNSIGNED DEFAULT NULL,         -- FK to 'std_students'
   `mobile` varchar(20) DEFAULT NULL,     -- Student Mobile
   `email` varchar(100) DEFAULT NULL,     -- Student Mail ID
   `current_address` text,
   `permanent_address` text,
-  `city_id` varchar(100) DEFAULT NULL,   -- FK to 'glb_city'
+  `city_id` BIGINT UNSIGNED DEFAULT NULL,   -- FK to 'glb_city'
   `pin` varchar(10) DEFAULT NULL,
   `religion` varchar(50) DEFAULT NULL,   -- FK to `gl_dropdown_table`
   `cast` varchar(50) DEFAULT NULL,       -- FK to `gl_dropdown_table`
@@ -740,7 +758,7 @@ CREATE TABLE IF NOT EXISTS `std_student_personal_details` (
   PRIMARY KEY (`id`),
   CONSTRAINT `fk_studentDetail_studentId` FOREIGN KEY (`student_id`) REFERENCES `std_students` (`id`) ON DELETE RESTRICT,
   CONSTRAINT `fk_studentDetail_cityId` FOREIGN KEY (`city_id`) REFERENCES `glb_cities` (`id`) ON DELETE RESTRICT
-) ENGINE=InnoDB AUTO_INCREMENT=188 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `std_student_sessions_jnt` (
   `id` BIGINT UNSIGNED AUTO_INCREMENT,
@@ -765,14 +783,15 @@ CREATE TABLE IF NOT EXISTS `std_student_sessions_jnt` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_studentSessions_currentFlag` (`current_flag`)
+  UNIQUE KEY `uq_studentSessions_currentFlag` (`current_flag`),
   CONSTRAINT `fk_studentSessions_studentId` FOREIGN KEY (`student_id`) REFERENCES `std_students` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `fk_studentSessions_userId` FOREIGN KEY (`user_id`) REFERENCES `sys_users` (`id`) ON DELETE RESTRICT,
   CONSTRAINT `fk_studentSessions_academicSession` FOREIGN KEY (`academic_sessions_id`) REFERENCES `sch_org_academic_sessions_jnt` (`id`) ON DELETE RESTRICT,
-  CONSTRAINT `fk_studentSessions_classSectionId` FOREIGN KEY (`class_section_id`) REFERENCES `sch_classes_sections_jnt` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `fk_studentSessions_classSectionId` FOREIGN KEY (`class_section_id`) REFERENCES `sch_class_section_jnt` (`id`) ON DELETE RESTRICT,
   CONSTRAINT `fk_studentSessions_subjGroupId` FOREIGN KEY (`subject_group_id`) REFERENCES `sch_subject_groups` (`id`) ON DELETE RESTRICT,
   CONSTRAINT `fk_studentSessions_sessionStatusId` FOREIGN KEY (`session_status_id`) REFERENCES `sys_dropdown_table` (`id`) ON DELETE RESTRICT,
   CONSTRAINT `fk_studentSessions_reasonQuit` FOREIGN KEY (`reason_quit`) REFERENCES `sys_dropdown_table` (`id`) ON DELETE RESTRICT
-) ENGINE=InnoDB AUTO_INCREMENT=188 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 

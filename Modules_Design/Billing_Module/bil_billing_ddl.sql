@@ -10,26 +10,26 @@ CREATE TABLE IF NOT EXISTS `bil_tenant_invoices` (
   `invoice_date` DATE NOT NULL,                       -- Invoice Date will always be Next Day to billing_end_date
   `billing_start_date` DATE NOT NULL,
   `billing_end_date` DATE NOT NULL,
-  `min_billing_qty` int unsigned NOT NULL DEFAULT '1',    -- No of Lincenses (if Student count < Min_Qty then min_qty will be charged))
-  `total_user_qty` int unsigned NOT NULL DEFAULT '1',     -- Number of licenses used by Org in the billing period
+  `min_billing_qty` int unsigned NOT NULL DEFAULT 1,    -- No of Lincenses (if Student count < Min_Qty then min_qty will be charged))
+  `total_user_qty` int unsigned NOT NULL DEFAULT 1,     -- Number of licenses used by Org in the billing period
   `plan_rate` decimal(12,2) NOT NULL,                     -- applicable plan rate as per school aggrement
-  `billing_qty` int unsigned NOT NULL DEFAULT '1',        -- Billing Qty. will be either `min_billing_qty` or `total_license_qty`, whcihcever is higher)
+  `billing_qty` int unsigned NOT NULL DEFAULT 1,        -- Billing Qty. will be either `min_billing_qty` or `total_license_qty`, whcihcever is higher)
   `sub_total` DECIMAL(14,2) NOT NULL DEFAULT 0.00,
-  `discount_percent` decimal(5,2) NOT NULL DEFAULT '0.00',  -- discount in percentage per billing cycle
-  `discount_amount` decimal(12,2) NOT NULL DEFAULT '0.00',  -- discount as a fixed amount per billing cycle
+  `discount_percent` decimal(5,2) NOT NULL DEFAULT 0.00,  -- discount in percentage per billing cycle
+  `discount_amount` decimal(12,2) NOT NULL DEFAULT 0.00,  -- discount as a fixed amount per billing cycle
   `discount_remark` varchar(50) NULL,
-  `extra_charges` decimal(12,2) NOT NULL DEFAULT '0.00', 
+  `extra_charges` decimal(12,2) NOT NULL DEFAULT 0.00, 
   `charges_remark` varchar(50) NULL,
-  `tax1_percent` decimal(5,2) NOT NULL DEFAULT '0.00',
+  `tax1_percent` decimal(5,2) NOT NULL DEFAULT 0.00,
   `tax1_remark` varchar(50) NULL,                           -- Acomodate different type of taxes - GST, IGST, CGST & other Taxes)
   `tax1_amount` DECIMAL(12,2) NOT NULL DEFAULT 0.00,
-  `tax2_percent` decimal(5,2) NOT NULL DEFAULT '0.00',      -- 
+  `tax2_percent` decimal(5,2) NOT NULL DEFAULT 0.00,      -- 
   `tax2_remark` varchar(50) NULL,                           -- Acomodate different type of taxes - GST, IGST, CGST & other Taxes)
   `tax2_amount` DECIMAL(12,2) NOT NULL DEFAULT 0.00,
-  `tax3_percent` decimal(5,2) NOT NULL DEFAULT '0.00',      -- 
+  `tax3_percent` decimal(5,2) NOT NULL DEFAULT 0.00,      -- 
   `tax3_remark` varchar(50) NULL,                           -- Acomodate different type of taxes - GST, IGST, CGST & other Taxes)
   `tax3_amount` DECIMAL(12,2) NOT NULL DEFAULT 0.00,
-  `tax4_percent` decimal(5,2) NOT NULL DEFAULT '0.00',      -- 
+  `tax4_percent` decimal(5,2) NOT NULL DEFAULT 0.00,      -- 
   `tax4_remark` varchar(50) NULL,                           -- Acomodate different type of taxes - GST, IGST, CGST & other Taxes)
   `tax4_amount` DECIMAL(12,2) NOT NULL DEFAULT 0.00,
   `total_tax_amount` DECIMAL(12,2) NOT NULL DEFAULT 0.00, 
@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS `bil_tenant_invoices` (
   UNIQUE KEY `uq_tenantInvoices_invoiceNo` (`invoice_no`),
   CONSTRAINT `fk_tenantInvoices_tenantId` FOREIGN KEY (`tenant_id`) REFERENCES `prm_tenant` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_tenantInvoices_PlanId` FOREIGN KEY (`tenant_plan_id`) REFERENCES `prm_tenant_plan_jnt` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_tenantInvoices_cycleId` FOREIGN KEY (`billing_cycle_id`) REFERENCES `prm_billing_cycles` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `fk_tenantInvoices_cycleId` FOREIGN KEY (`billing_cycle_id`) REFERENCES `prm_billing_cycles` (`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `bil_tenant_invoicing_modules_jnt` (
