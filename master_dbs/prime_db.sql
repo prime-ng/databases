@@ -31,9 +31,9 @@
   -- 2 - Tables which we need in PG but we may need them in tenant databases also. Those tables will have prefix "sys", 
   --     so that app can work seamlesly for PrimeGurukul instance and for Tenant instance both.
 
--- --------------------------------------------------------------------------------------------
+-- ===============================================================================================================
 -- Create Views after creating global_master database and it's tables
--- --------------------------------------------------------------------------------------------
+-- ===============================================================================================================
 
 CREATE VIEW glb_countries AS SELECT * FROM global_master.glb_countries;
 CREATE VIEW glb_states    AS SELECT * FROM global_master.glb_states;
@@ -45,8 +45,10 @@ CREATE VIEW glb_modules AS SELECT * FROM global_master.glb_modules;
 CREATE VIEW glb_menu_model_jnt AS SELECT * FROM global_master.glb_menu_model_jnt;
 CREATE VIEW glb_translations AS SELECT * FROM global_master.glb_translations;
 
+
+-- ===============================================================================================================
 -- System Tables
--- ------------------------------------------------------------
+-- ===============================================================================================================
 
 CREATE TABLE IF NOT EXISTS `sys_permissions` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
@@ -200,7 +202,6 @@ CREATE TABLE IF NOT EXISTS `sys_dropdown_needs` (
   --    e. Field Name (this will come from sys_dropdown_needs.field_name)
   -- 4. is_system = 1
 
--- ---------------------------------------------------------------------------------------------------------------------
 -- Dropdown Table to store various dropdown values used across the system
 -- Enhanced sys_dropdown_table to accomodate Menu Detail (Category,Main Menu, Sub-Menu ID) for Easy identification.
 CREATE TABLE IF NOT EXISTS `sys_dropdown_table` (
@@ -227,8 +228,6 @@ CREATE TABLE IF NOT EXISTS `sys_dropdown_table` (
   -- 2. System will check if the Dropdown Need is already configured in sys_dropdown_needs table.
   -- 3. If not, Developer need to create a new Dropdown Need as per the need.
   -- 4. If yes, System will use the existing Dropdown Need.
-
--- ---------------------------------------------------------------------------------------------------------------------
 
 
 CREATE TABLE IF NOT EXISTS `sys_media` (
@@ -275,8 +274,12 @@ CREATE TABLE IF NOT EXISTS `sys_activity_logs` (
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
+-- ===============================================================================================================
+-- Prime Module Tables (prm)
+-- ===============================================================================================================
+
 -- Tenant Creation
--- ------------------------------------------------------------------
+-- ------------------------------------
 CREATE TABLE IF NOT EXISTS `prm_tenant_groups` (
   id bigint unsigned NOT NULL AUTO_INCREMENT,
   code VARCHAR(20) NOT NULL,
@@ -346,7 +349,7 @@ CREATE TABLE IF NOT EXISTS `prm_tenant_domains` (
 
 
 -- Plan & Module
--- ------------------------------------------------------------
+-- ------------------------------------
 CREATE TABLE IF NOT EXISTS `prm_billing_cycles` (
   `id` SMALLINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   `short_name` VARCHAR(50) NOT NULL,  -- 'MONTHLY','QUARTERLY','YEARLY','ONE_TIME'
@@ -391,9 +394,8 @@ CREATE TABLE IF NOT EXISTS `prm_module_plan_jnt` (
   CONSTRAINT `fk_modulePlan_planId` FOREIGN KEY (`plan_id`) REFERENCES `prm_plans` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-
 -- Tenant Subscription
--- ------------------------------------------------------------
+-- ------------------------------------
 -- old name 'prm_organization_plan_jnt'
 CREATE TABLE IF NOT EXISTS `prm_tenant_plan_jnt` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
@@ -480,6 +482,10 @@ CREATE TABLE IF NOT EXISTS `prm_tenant_plan_billing_schedule` (
     CONSTRAINT `fk_tenantPlanBillSched_invId` FOREIGN KEY (`generated_invoice_id`) REFERENCES `bil_tenant_invoices`(`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+
+-- ===============================================================================================================
+-- Billing Module Tables (bil)
+-- ===============================================================================================================
 
 -- Tenant Invoicing
 -- ------------------------------------------------------------
@@ -585,9 +591,9 @@ CREATE TABLE IF NOT EXISTS `bil_tenant_email_schedules` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- ----------------------------------------------------------------------------------------------------------
+-- ===============================================================================================================
 -- Change Log
--- ----------------------------------------------------------------------------------------------------------
+-- ===============================================================================================================
   -- Changed on 2025-12-21
   -- Enhanced `sys_dropdown_table` to accomodate Menu Details (Category,Main Menu, Sub-Menu) for Easy identification. 
   -- Added New table `sys_dropdown_needs` to capture Dropdown Needs for Easy identification. 

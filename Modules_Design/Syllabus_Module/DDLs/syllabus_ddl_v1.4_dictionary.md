@@ -568,8 +568,8 @@
 ## 14. Modified Tables
 
 ### Columns added to `slb_lessons`:
-- `book_chapter_ref` - Reference to book chapter
-- `scheduled_month` - Planned teaching month
+- `book_chapter_ref` - Reference to book chapter (e.g., 'Chapter 1' or 'Section 1.1')
+- `scheduled_year_week` - Planned teaching year-week (e.g., '2024_01')
 
 ### Columns added to `slb_topics`:
 - `base_topic_id` - Primary prerequisite from previous class

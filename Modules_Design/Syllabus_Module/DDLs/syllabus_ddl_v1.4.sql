@@ -1,24 +1,23 @@
 -- =====================================================================
 -- SYLLABUS & EXAM MANAGEMENT MODULE - ENHANCED VERSION 1.4
 -- =====================================================================
--- 
 -- Hierarchy: Class → Subject → Lesson → Topic → Sub-topic → Mini Topic 
 --            → Sub-Mini Topic → Micro Topic → Sub-Micro Topic (Unlimited)
 --
 -- NEW IN v1.4:
--- ✓ Book/Publication Management aligned with Topics
--- ✓ School-specific Custom Question Bank
--- ✓ Performance-based Study Material Recommendations
--- ✓ Configurable Performance Categories at School Level
--- ✓ Teaching Status (Syllabus Completion) Tracking
--- ✓ Syllabus Scheduling per Class/Section/Subject
--- ✓ Teacher Assignment with Timetable Integration
--- ✓ Hierarchical Topic Dependencies for Remedial Learning
--- ✓ Base Topic Mapping for Root Cause Analysis
--- ✓ Enhanced Quiz/Assessment/Exam with Auto-Assignment
--- ✓ Offline Exam Support with Manual Marking
--- ✓ Comprehensive Student Behavioral Analytics
--- ✓ Performance-based Recommendations Engine
+  -- ✓ Book/Publication Management aligned with Topics
+  -- ✓ School-specific Custom Question Bank
+  -- ✓ Performance-based Study Material Recommendations
+  -- ✓ Configurable Performance Categories at School Level
+  -- ✓ Teaching Status (Syllabus Completion) Tracking
+  -- ✓ Syllabus Scheduling per Class/Section/Subject
+  -- ✓ Teacher Assignment with Timetable Integration
+  -- ✓ Hierarchical Topic Dependencies for Remedial Learning
+  -- ✓ Base Topic Mapping for Root Cause Analysis
+  -- ✓ Enhanced Quiz/Assessment/Exam with Auto-Assignment
+  -- ✓ Offline Exam Support with Manual Marking
+  -- ✓ Comprehensive Student Behavioral Analytics
+  -- ✓ Performance-based Recommendations Engine
 -- =====================================================================
 
 SET NAMES utf8mb4;
@@ -667,6 +666,8 @@ ALTER TABLE `sch_attempts`
   ADD COLUMN `confidence_level` DECIMAL(5,2) DEFAULT NULL AFTER `notes`,
   ADD COLUMN `performance_category_id` INT UNSIGNED DEFAULT NULL AFTER `confidence_level`,
   ADD KEY `idx_att_perfcat` (`performance_category_id`);
+
+
 
 
 -- =========================================================================

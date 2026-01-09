@@ -1,10 +1,11 @@
--- ------------------------------------------------------------
+-- ========================================================================================================
 -- Tanent Database
--- ------------------------------------------------------------
+-- ========================================================================================================
 
--- --------------------------------------------------------------------------------------------
+
+-- ========================================================================================================
 -- Create Views after creating global_master database and it's tables
--- --------------------------------------------------------------------------------------------
+-- ========================================================================================================
 
 CREATE VIEW glb_countries  AS SELECT * FROM global_master.glb_countries;
 CREATE VIEW glb_states     AS SELECT * FROM global_master.glb_states;
@@ -19,9 +20,11 @@ CREATE VIEW glb_modules AS SELECT * FROM global_master.glb_modules;
 CREATE VIEW glb_menu_model_jnt AS SELECT * FROM global_master.glb_menu_model_jnt;
 CREATE VIEW glb_translations AS SELECT * FROM global_master.glb_translations;
 
--- ------------------------------------------------------------
--- System Tables
--- ------------------------------------------------------------
+
+
+-- ========================================================================================================
+-- SYSTEM MODULE (sys)
+-- ========================================================================================================
 
 -- Tables for Role Based Access Control (RBAC) using spatie/laravel-permission package
 CREATE TABLE IF NOT EXISTS `sys_permissions` (
@@ -113,24 +116,24 @@ CREATE TABLE IF NOT EXISTS `sys_users` (
   CONSTRAINT `fk_users_language` FOREIGN KEY (`prefered_language`) REFERENCES `glb_languages` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=33 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-/* Optional triggers to prevent deleting/demoting super admin (you already used triggers for sessions) */
-DELIMITER $$
-CREATE TRIGGER trg_users_prevent_delete_super BEFORE DELETE ON users
-FOR EACH ROW
-BEGIN
-  IF OLD.is_super_admin = 1 THEN
-    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Super Admin cannot be deleted';
-  END IF;
-END$$
+-- Triggers - to prevent deleting/demoting super admin (you already used triggers for sessions)
+  DELIMITER $$
+  CREATE TRIGGER trg_users_prevent_delete_super BEFORE DELETE ON users
+  FOR EACH ROW
+  BEGIN
+    IF OLD.is_super_admin = 1 THEN
+      SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Super Admin cannot be deleted';
+    END IF;
+  END$$
 
-CREATE TRIGGER trg_users_prevent_update_super BEFORE UPDATE ON users
-FOR EACH ROW
-BEGIN
-  IF OLD.is_super_admin = 1 AND NEW.is_super_admin = 0 THEN
-    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Super Admin cannot be demoted';
-  END IF;
-END$$
-DELIMITER ;
+  CREATE TRIGGER trg_users_prevent_update_super BEFORE UPDATE ON users
+  FOR EACH ROW
+  BEGIN
+    IF OLD.is_super_admin = 1 AND NEW.is_super_admin = 0 THEN
+      SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Super Admin cannot be demoted';
+    END IF;
+  END$$
+  DELIMITER ;
 
 -- --------------------------------------------------------------------------------------------------------
 -- This table will store various system-wide settings and configurations
@@ -241,11 +244,10 @@ CREATE TABLE IF NOT EXISTS `sys_media` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- ========================================================================================================
 
--- ------------------------------------------------------------
--- School Setup Module (sch)
--- ------------------------------------------------------------
+-- ========================================================================================================
+-- SCHOOL SETUP MODULE (sch)
+-- ========================================================================================================
 -- This table is a replica of 'prm_tenant' table in 'prmprime_db' database
 CREATE TABLE IF NOT EXISTS `sch_organizations` (
   `id` bigint unsigned NOT NULL,              -- it will have same id as it is in 'prm_tenant'
@@ -374,9 +376,6 @@ CREATE TABLE IF NOT EXISTS `sch_entity_groups_members` (
   -- We will be storing table name to use for selecting entities in `additional_info` in `sys_dropdown_table` table alongwith entity_type menu items e.g. for entity_type=1, table_name="sch_class", for entity_type=9, table_name="sch_vehicle"
   -- entity_table_name will be fetched from `additional_info` in `sys_dropdown_table` table e.g. (sch_class, sch_section, sch_subject, sch_designation, sch_department, sch_role, sch_students, sch_staff, sch_vehicle, sch_facility, sch_event, sch_location, sch_other)
 
--- ------------------------------------------------------------
--- School Setup Module (sch)
--- ------------------------------------------------------------
 -- Tables for Classes, Sections, Subjects, Subject Types, Study Formats, Class-Section Junctions, Subject-StudyFormat Junctions, Class Groups, Subject Groups
 CREATE TABLE IF NOT EXISTS `sch_classes` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
@@ -500,7 +499,7 @@ CREATE TABLE IF NOT EXISTS `sch_subject_study_format_jnt` (
 CREATE TABLE IF NOT EXISTS `sch_class_groups_jnt` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,                  -- FK
   `class_id` int NOT NULL,                              -- FK to 'sch_classes'
-  `section_id` int NULL,                                -- FK to 'sch_sections'
+  `section_id` int NOT NULL,                            -- FK to 'sch_sections'
   `subject_Study_format_id` bigint unsigned NOT NULL,   -- FK to 'sch_subject_study_format_jnt'
   `subject_type_id` int unsigned NOT NULL,              -- FK to 'sch_subject_types'
   `rooms_type_id` bigint unsigned NOT NULL,             -- FK to 'sch_rooms_type'
@@ -660,8 +659,9 @@ CREATE TABLE IF NOT EXISTS `sch_teachers_profile` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- Student Module
--- ==================================================================================
+-- ========================================================================================================
+-- STUDENT MODULE (std)
+-- ========================================================================================================
 
 CREATE TABLE IF NOT EXISTS `std_students` (
   `id` BIGINT UNSIGNED AUTO_INCREMENT,
@@ -776,10 +776,7 @@ CREATE TABLE IF NOT EXISTS `std_student_sessions_jnt` (
 
 
 
--- ===============================================================================================================
-
-
-
+-- ===========================================================================================================================================
 -- Change Log
 -- ===========================================================================================================================================
 -- Change table Name - Table (sch_subject_study_format_class_subj_types_jnt) to (sch_class_groups_jnt)
@@ -803,3 +800,5 @@ CREATE TABLE IF NOT EXISTS `std_student_sessions_jnt` (
 -- Changed on 2025-12-29
 -- Added New Field `user_id` in table `std_student_sessions_jnt` to capture User ID of the Student. This is required to Get Student details Directly from `sch_user` table.
 -- Changed table name from 'std_student_detail' to 'std_student_personal_details'
+-- Changed on 20255-01-06
+-- Modify Table (sch_class_groups_jnt) - `section_id` int NULL, to NOT NULL

@@ -1,4 +1,5 @@
 Requirements Doc - Automatic Timetable Generation and Teacher Alternate finder
+------------------------------------------------------------------------------
 This document outlines the requirements for a web-based version of the ‘Automatic Timetable Generation’ and ‘Teacher Alternate finder’. I have also used information from a opensource timetable generator called FET timetabling application. I want to develop this application using PHP with Laravel and MySQL database. The requirements are based on an evaluation of the official FET manual, a basic guide for screen design, the features listed on the application's website, and the new requirement to manage substitute teachers. I have also added requirements received directly from schools.
 To develop a full-featured timetable generation and management module that supports automatic and manual timetable scheduling for schools, incorporating the advanced constraint-based engine similar to FET. 
 Note – My Database name is “primeai”
@@ -7,55 +8,47 @@ Below are the functionalities which should be covered in the application -
 1-	Landing page which should have a dashboard with Menu and Submenu to run all below functionalities of the Application. Below are Menu and Submenu options –
 a.	Setup
     >	New Timetable
-    >	Open Timetable
+    >	Open Generated Timetable
     >	Mode
         1.	Single Shift
         2.	Two Shifts (Morning & Afternoon)
-        3.	Block Planning
-        4.	Tearms
-    >	Save
-    >	Save as
-    >	Autosave Settings
-    >	Import
-        1.	Import CSV (Text)
-            a.	Import Subject from CSV file
-            b.	Import Activity from CSV file
-            c.	Import Teachers from CSV file
-            d.	Import Years, Groups & Sub-Groups from CSV file
-            e.	Import Rooms and Building from CSV file
-            f.	Import Study Format from CSV file
-    >	Export
-        1.	Export CSV (Comma Separated Value) File
-            a.	Export Subject to CSV file
-            b.	Export Activity to CSV file
-            c.	Export Teachers to CSV file
-            d.	Export Years, Groups & Sub-Groups to CSV file
-            e.	Export Rooms and Building to CSV file
-            f.	Export Study Format to CSV file
+        3.	Block (Date) Planning (Exam Timetable, Extra Classes etc.)
+        4.	Terms Planning
+        5.  Group Planning
+    >	Save / Save as / Autosave Settings
+    >	Import & Export in CSV (Text)
+        1.	Subject
+        2.	Activity
+        3.	Teachers
+        4.	Years, Groups & Sub-Groups
+        5.	Rooms and Building
+        6.	Study Format
+
 b.	Data
-    >	Institution Information
-        Here we capture Institution Name, Address and Shifts in Schools etc.
-    >	Days & Hours
-        Here we configure How many days per week school will be open and how many hours per day it will operate, this include Interval and other Breaks also.
+    >	Institution Information - This will have Institution Name, Address and Shifts in Schools etc.
+    >	Days & Hours - Here we configure How many days per week school will be open and how many hours per day it will operate, this include Interval and other Breaks also.
     >	Subject
-    >	Study Format (A Sub-Group under Subject like Lecture, Lab etc.) (Study Format  in FET)
+    >	Study Format - (A Sub-Group under Subject like Lecture, Lab etc.) (Study Format  in FET)
     >	Teacher
     >	Students (It will have Sessions, Class, Section and Group under a Section of a Class)
-    >	Activities
-    >	Sub-Activities
-    >	Building
-    >	Rooms
+    >	Activities / Sub-Activities
+    >	Building & Rooms
     >	Constraints
     1.	Time Constraints
         a.	List of Time Constraints
         b.	Set Break Time
         c.	Basic Hard Constrains
-            These are the basic compulsory constraints (referring to time allocation) for any timetable
-            Weight (percentage)=100%. The basic time constraints must be avoided : 
-            i.	teachers assigned to more than one activity simultaneously
-            ii.	students assigned to more than one activity simultaneously
-            iii.	Any Activity can be assign in Breaktime
-        d.	Soft Time Constrains
+            - These are the basic compulsory constraints (referring to time allocation) for any timetable
+            - Weight (percentage)=100%. The basic time constraints must be avoided : 
+                i.	 teachers assigned to more than one activity simultaneously
+                ii.	 students assigned to more than one activity simultaneously
+                iii. Any Activity can not be assigned in Breaktime (Hard Constraint)
+        d.	Soft Time Constrains 
+            - These are the soft constraints (referring to time allocation) for any timetable
+            - Weight (percentage)=1 to 100%. The soft time constraints try to avoid : 
+                i.	 teachers assigned to more than one activity simultaneously
+                ii.	 students assigned to more than one activity simultaneously
+                iii. Activity can be assign for soft constraints.
 
         For a particular Teacher
             >	A Teacher’s not available Times
