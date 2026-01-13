@@ -1160,13 +1160,10 @@ CREATE TABLE IF NOT EXISTS `sch_question_index` (
 -- SECTION 1: BOOK & PUBLICATION MANAGEMENT (NEW)
 -- =========================================================================
 
-
-
-
 -- Master table for Books/Publications used across schools
 CREATE TABLE IF NOT EXISTS `slb_books` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `uuid` CHAR(36) NOT NULL,
+  `uuid` BINARY(16) NOT NULL,  -- UUID
   `isbn` VARCHAR(20) DEFAULT NULL,              -- International Standard Book Number
   `title` VARCHAR(255) NOT NULL,
   `subtitle` VARCHAR(255) DEFAULT NULL,
@@ -1219,10 +1216,10 @@ CREATE TABLE IF NOT EXISTS `slb_book_author_jnt` (
 -- Link Books to Class/Subject (which books are used for which class/subject)
 CREATE TABLE IF NOT EXISTS `slb_book_class_subject_jnt` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `book_id` BIGINT UNSIGNED NOT NULL,
-  `class_id` INT UNSIGNED NOT NULL,
-  `subject_id` BIGINT UNSIGNED NOT NULL,
-  `academic_session_id` BIGINT UNSIGNED NOT NULL,
+  `book_id` BIGINT UNSIGNED NOT NULL,  -- FK to slb_books.id
+  `class_id` INT UNSIGNED NOT NULL,    -- FK to sch_classes.id
+  `subject_id` BIGINT UNSIGNED NOT NULL, -- FK to sch_subjects.id
+  `academic_session_id` BIGINT UNSIGNED NOT NULL, -- FK to sch_org_academic_sessions_jnt.id
   `is_primary` TINYINT(1) DEFAULT 1,            -- Primary textbook vs reference
   `is_mandatory` TINYINT(1) DEFAULT 1,
   `remarks` VARCHAR(255) DEFAULT NULL,

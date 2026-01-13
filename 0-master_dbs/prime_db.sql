@@ -18,6 +18,7 @@
   -- mes - Mess Management
   -- bil - Billing & plans
   -- vnd - Vendor Management
+  -- bok - Syllabus Books
 
 -- Below is a Postfix Abbreviation to identify Join Tables
 -- ------------------------------------------------------------

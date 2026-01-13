@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS `tt_shift` (
 
 CREATE TABLE IF NOT EXISTS `tt_day_type` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `code` VARCHAR(20) NOT NULL,
+  `code` VARCHAR(20) NOT NULL,  -- e.g., 'WD', 'HD', 'SD'
   `name` VARCHAR(100) NOT NULL,
   `description` VARCHAR(255) DEFAULT NULL,
   `is_working_day` TINYINT(1) NOT NULL DEFAULT 1,
@@ -58,7 +58,7 @@ CREATE TABLE IF NOT EXISTS `tt_day_type` (
 
 CREATE TABLE IF NOT EXISTS `tt_period_type` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `code` VARCHAR(30) NOT NULL,
+  `code` VARCHAR(30) NOT NULL,  -- 
   `name` VARCHAR(100) NOT NULL,
   `description` VARCHAR(255) DEFAULT NULL,
   `color_code` VARCHAR(10) DEFAULT NULL,
@@ -98,7 +98,7 @@ CREATE TABLE IF NOT EXISTS `tt_teacher_assignment_role` (
 
 CREATE TABLE IF NOT EXISTS `tt_school_days` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `code` VARCHAR(10) NOT NULL,
+  `code` VARCHAR(10) NOT NULL,  -- "Monday", "Tuesday", etc.
   `name` VARCHAR(20) NOT NULL,
   `short_name` VARCHAR(5) NOT NULL,
   `day_of_week` TINYINT UNSIGNED NOT NULL,
@@ -182,24 +182,24 @@ CREATE TABLE IF NOT EXISTS `tt_period_set_period_jnt` (
 
 CREATE TABLE IF NOT EXISTS `tt_timetable_type` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `code` VARCHAR(30) NOT NULL,
+  `code` VARCHAR(30) NOT NULL,   -- e.g., 'Standard', 'Extended'
   `name` VARCHAR(100) NOT NULL,
   `description` VARCHAR(255) DEFAULT NULL,
-  `shift_id` BIGINT UNSIGNED DEFAULT NULL,
-  `default_period_set_id` BIGINT UNSIGNED DEFAULT NULL,
-  `day_type_id` BIGINT UNSIGNED DEFAULT NULL,
-  `effective_from_date` DATE DEFAULT NULL,
-  `effective_to_date` DATE DEFAULT NULL,
-  `school_start_time` TIME DEFAULT NULL,
-  `school_end_time` TIME DEFAULT NULL,
+  `shift_id` BIGINT UNSIGNED DEFAULT NULL,   -- FK to tt_shift.id
+  `default_period_set_id` BIGINT UNSIGNED DEFAULT NULL,   -- FK to tt_period_set.id
+  `day_type_id` BIGINT UNSIGNED DEFAULT NULL,   -- FK to tt_day_type.id
+  `effective_from_date` DATE DEFAULT NULL,  -- Start date for this timetable type
+  `effective_to_date` DATE DEFAULT NULL,    -- End date for this timetable type
+  `school_start_time` TIME DEFAULT NULL,    -- School start time
+  `school_end_time` TIME DEFAULT NULL,      -- School end time
   `assembly_duration_min` SMALLINT UNSIGNED DEFAULT NULL,  -- Assembly duration in minutes
   `short_break_duration_min` SMALLINT UNSIGNED DEFAULT NULL,  -- Default break duration 
   `lunch_duration_min` SMALLINT UNSIGNED DEFAULT NULL,  -- Lunch duration
-  `has_exam` TINYINT(1) NOT NULL DEFAULT 0,
-  `has_teaching` TINYINT(1) NOT NULL DEFAULT 1,
-  `ordinal` SMALLINT UNSIGNED DEFAULT 1,
-  `is_default` TINYINT(1) DEFAULT 0,
-  `is_system` TINYINT(1) DEFAULT 1,
+  `has_exam` TINYINT(1) NOT NULL DEFAULT 0,  -- Whether this timetable type has exams
+  `has_teaching` TINYINT(1) NOT NULL DEFAULT 1,  -- Whether this timetable type has teaching
+  `ordinal` SMALLINT UNSIGNED DEFAULT 1,  -- Order of this timetable type
+  `is_default` TINYINT(1) DEFAULT 0,  -- Whether this timetable type is the default
+  `is_system` TINYINT(1) DEFAULT 1,  -- Whether this timetable type is a system-defined type
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
   `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -264,35 +264,6 @@ CREATE TABLE IF NOT EXISTS `tt_class_subgroup` (
   CONSTRAINT `fk_subgroup_class_group` FOREIGN KEY (`class_group_id`) REFERENCES `sch_class_groups_jnt` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `tt_class_group_requirement` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `class_group_id` BIGINT UNSIGNED DEFAULT NULL,
-  `class_subgroup_id` BIGINT UNSIGNED DEFAULT NULL,
-  `academic_session_id` BIGINT UNSIGNED DEFAULT NULL,
-  `weekly_periods` TINYINT UNSIGNED NOT NULL,
-  `min_periods_per_week` TINYINT UNSIGNED DEFAULT NULL,
-  `max_periods_per_week` TINYINT UNSIGNED DEFAULT NULL,
-  `max_per_day` TINYINT UNSIGNED DEFAULT NULL,
-  `min_per_day` TINYINT UNSIGNED DEFAULT NULL,
-  `min_gap_periods` TINYINT UNSIGNED DEFAULT NULL,
-  `allow_consecutive` TINYINT(1) NOT NULL DEFAULT 0,
-  `max_consecutive` TINYINT UNSIGNED DEFAULT 2,
-  `preferred_periods_json` JSON DEFAULT NULL,
-  `avoid_periods_json` JSON DEFAULT NULL,
-  `spread_evenly` TINYINT(1) DEFAULT 1,
-  `priority` SMALLINT UNSIGNED DEFAULT 50,
-  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-  `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `deleted_at` TIMESTAMP NULL DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_cgr_group_session` (`class_group_id`, `class_subgroup_id`, `academic_session_id`),
-  CONSTRAINT `fk_cgr_class_group` FOREIGN KEY (`class_group_id`) REFERENCES `sch_class_groups_jnt` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_cgr_subgroup` FOREIGN KEY (`class_subgroup_id`) REFERENCES `tt_class_subgroup` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_cgr_session` FOREIGN KEY (`academic_session_id`) REFERENCES `sch_org_academic_sessions_jnt` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `chk_cgr_target` CHECK ((`class_group_id` IS NOT NULL AND `class_subgroup_id` IS NULL) OR (`class_group_id` IS NULL AND `class_subgroup_id` IS NOT NULL))
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 CREATE TABLE IF NOT EXISTS `tt_class_subgroup_member` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `class_subgroup_id` BIGINT UNSIGNED NOT NULL,
@@ -309,6 +280,37 @@ CREATE TABLE IF NOT EXISTS `tt_class_subgroup_member` (
   CONSTRAINT `fk_csm_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_csm_section` FOREIGN KEY (`section_id`) REFERENCES `sch_sections` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `tt_class_group_requirement` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+
+  `class_group_id` BIGINT UNSIGNED DEFAULT NULL,
+  `class_subgroup_id` BIGINT UNSIGNED DEFAULT NULL,
+  `academic_session_id` BIGINT UNSIGNED DEFAULT NULL,
+  `weekly_periods` TINYINT UNSIGNED NOT NULL,  -- Total periods required per week
+  `min_periods_per_week` TINYINT UNSIGNED DEFAULT NULL,  -- Minimum periods required per week
+  `max_periods_per_week` TINYINT UNSIGNED DEFAULT NULL,  -- Maximum periods required per week
+  `max_per_day` TINYINT UNSIGNED DEFAULT NULL,  -- Maximum periods per day
+  `min_per_day` TINYINT UNSIGNED DEFAULT NULL,  -- Minimum periods per day
+  `min_gap_periods` TINYINT UNSIGNED DEFAULT NULL,  -- Minimum gap periods
+  `allow_consecutive` TINYINT(1) NOT NULL DEFAULT 0,  -- Whether consecutive periods are allowed
+  `max_consecutive` TINYINT UNSIGNED DEFAULT 2,  -- Maximum consecutive periods
+  `preferred_periods_json` JSON DEFAULT NULL,  -- Preferred periods
+  `avoid_periods_json` JSON DEFAULT NULL,  -- Avoid periods
+  `spread_evenly` TINYINT(1) DEFAULT 1,  -- Whether periods should be spread evenly
+  `priority` SMALLINT UNSIGNED DEFAULT 50,  -- Priority of this requirement
+  `is_active` TINYINT(1) NOT NULL DEFAULT 1,  -- Whether this requirement is active
+  `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_cgr_group_session` (`class_group_id`, `class_subgroup_id`, `academic_session_id`),
+  CONSTRAINT `fk_cgr_class_group` FOREIGN KEY (`class_group_id`) REFERENCES `sch_class_groups_jnt` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_cgr_subgroup` FOREIGN KEY (`class_subgroup_id`) REFERENCES `tt_class_subgroup` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_cgr_session` FOREIGN KEY (`academic_session_id`) REFERENCES `sch_org_academic_sessions_jnt` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `chk_cgr_target` CHECK ((`class_group_id` IS NOT NULL AND `class_subgroup_id` IS NULL) OR (`class_group_id` IS NULL AND `class_subgroup_id` IS NOT NULL))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 
 -- =========================================================================
 --  SECTION 4: ACTIVITY MANAGEMENT
@@ -365,12 +367,12 @@ CREATE TABLE IF NOT EXISTS `tt_activity` (
 
 CREATE TABLE IF NOT EXISTS `tt_activity_teacher` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `activity_id` BIGINT UNSIGNED NOT NULL,
-  `teacher_id` BIGINT UNSIGNED NOT NULL,
-  `assignment_role_id` BIGINT UNSIGNED NOT NULL,
-  `is_required` TINYINT(1) DEFAULT 1,
-  `ordinal` TINYINT UNSIGNED DEFAULT 1,
-  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+  `activity_id` BIGINT UNSIGNED NOT NULL,  -- Activity ID
+  `teacher_id` BIGINT UNSIGNED NOT NULL,  -- Teacher ID
+  `assignment_role_id` BIGINT UNSIGNED NOT NULL,  -- Assignment role ID
+  `is_required` TINYINT(1) DEFAULT 1,  -- Whether this teacher is required for the activity
+  `ordinal` TINYINT UNSIGNED DEFAULT 1,  -- Order of this teacher in the activity
+  `is_active` TINYINT(1) NOT NULL DEFAULT 1,  -- Whether this teacher is active
   `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `deleted_at` TIMESTAMP NULL DEFAULT NULL,
