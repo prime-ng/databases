@@ -20,18 +20,25 @@
 --   - glb_cities, glb_states, glb_countries (Geography)
 --   - sch_classes, sch_sections, sch_class_section_jnt, sch_subject_groups (Academic)
 --   - sys_dropdown_table (Lookups)
--- ========================================================================================================
 
 -- --------------------------------------------------------------------------------------------------------
--- 1. Student Core Tables
+-- Screen - 1 : Tab Name (Registration) User Creation & Login
+-- --------------------------------------------------------------------------------------------------------
+-- This tab will update sys_users table
+-- Capture all th Value needs to be filled into sys_user
+
+-- --------------------------------------------------------------------------------------------------------
+-- Screen - 2 : Tab Name (Student Detail)
 -- --------------------------------------------------------------------------------------------------------
 
 -- Main Student Entity, linked to System User for Login/Auth
 CREATE TABLE IF NOT EXISTS `std_students` (
   `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  -- Student Info
   `user_id` BIGINT UNSIGNED NOT NULL,              -- Link to sys_users for login credentials
   `admission_no` VARCHAR(50) NOT NULL,             -- Unique School Admission Number
   `admission_date` DATE NOT NULL,                  -- Date of admission
+  -- ID Cards
   `student_qr_code` VARCHAR(50) DEFAULT NULL,      -- For ID Cards
   `student_id_card_type` ENUM('QR','RFID','NFC','Barcode') NOT NULL DEFAULT 'QR',
   `smart_card_id` VARCHAR(100) DEFAULT NULL,       -- RFID/NFC Tag ID
@@ -43,6 +50,7 @@ CREATE TABLE IF NOT EXISTS `std_students` (
   `first_name` VARCHAR(100) NOT NULL,
   `middle_name` VARCHAR(100) DEFAULT NULL,
   `last_name` VARCHAR(100) DEFAULT NULL,
+  -- Personal Info
   `gender` ENUM('Male','Female','Transgender','Prefer Not to Say') NOT NULL DEFAULT 'Male',
   `dob` DATE NOT NULL,
   `photo_file_name` VARCHAR(100) DEFAULT NULL,     -- Fk to sys_media (file name to show in UI)
@@ -61,12 +69,11 @@ CREATE TABLE IF NOT EXISTS `std_students` (
   CONSTRAINT `fk_std_students_userId` FOREIGN KEY (`user_id`) REFERENCES `sys_users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-
 -- Extended Personal Profile
 CREATE TABLE IF NOT EXISTS `std_student_profiles` (
   `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  -- Student Info
   `student_id` BIGINT UNSIGNED NOT NULL,
-  -- Contact Info (Personal)
   `mobile` VARCHAR(20) DEFAULT NULL,               -- Student's own mobile
   `email` VARCHAR(100) DEFAULT NULL,               -- Student's own email
   -- Social / Category
@@ -78,6 +85,7 @@ CREATE TABLE IF NOT EXISTS `std_student_profiles` (
   `bank_account_no` VARCHAR(100) DEFAULT NULL,
   `bank_name` VARCHAR(100) DEFAULT NULL,
   `ifsc_code` VARCHAR(50) DEFAULT NULL,
+  -- Bank Details
   `bank_branch` VARCHAR(100) DEFAULT NULL,
   `upi_id` VARCHAR(100) DEFAULT NULL,
   `fee_depositor_pan_number` VARCHAR(10) DEFAULT NULL,    -- For tax benefit
@@ -88,8 +96,9 @@ CREATE TABLE IF NOT EXISTS `std_student_profiles` (
   `height_cm` DECIMAL(5,2) DEFAULT NULL,
   `weight_kg` DECIMAL(5,2) DEFAULT NULL,
   `measurement_date` date DEFAULT NULL,
+  -- Additional Info
   `additional_info` json DEFAULT NULL,
-  `blood_group` ENUM('A+','A-','B+','B-','AB+','AB-','O+','O-') DEFAULT NULL,
+--  `blood_group` ENUM('A+','A-','B+','B-','AB+','AB-','O+','O-') DEFAULT NULL, (Remove this Field, it is already there Health Table)
   -- Meta
   `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -100,11 +109,6 @@ CREATE TABLE IF NOT EXISTS `std_student_profiles` (
   CONSTRAINT `fk_std_profiles_nationality` FOREIGN KEY (`nationality`) REFERENCES `sys_dropdown_table` (`id`) ON DELETE SET NULL,
   CONSTRAINT `fk_std_profiles_mother_tongue` FOREIGN KEY (`mother_tongue`) REFERENCES `sys_dropdown_table` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-
--- --------------------------------------------------------------------------------------------------------
--- 2. Contact & Family Tables (Normalized)
--- --------------------------------------------------------------------------------------------------------
 
 -- Student Addresses (1:N)
 CREATE TABLE IF NOT EXISTS `std_student_addresses` (
@@ -122,25 +126,33 @@ CREATE TABLE IF NOT EXISTS `std_student_addresses` (
   CONSTRAINT `fk_std_addr_cityId` FOREIGN KEY (`city_id`) REFERENCES `glb_cities` (`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- --------------------------------------------------------------------------------------------------------
+-- Screen - 3 : Tab Name (Parents)
+-- --------------------------------------------------------------------------------------------------------
 
 -- Parent/Guardian Master
 -- Guardians can be parents to multiple students (Siblings). 
 -- Optional link to sys_users if Parent Portal access is granted.
 CREATE TABLE IF NOT EXISTS `std_guardians` (
   `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  -- User Info
   `user_id` BIGINT UNSIGNED DEFAULT NOT NULL,        -- Nullable. Set when Parent Portal access is created.
   `first_name` VARCHAR(100) NOT NULL,
   `last_name` VARCHAR(100) DEFAULT NULL,
+  -- Personal Info
   `gender` ENUM('Male','Female','Transgender','Prefer Not to Say') NOT NULL DEFAULT 'Male',
   `mobile_no` VARCHAR(20) NOT NULL,                -- Primary identifier if user_id is null
   `phone_no` VARCHAR(20) DEFAULT NULL,
   `email` VARCHAR(100) DEFAULT NULL,
+  -- Professional Info
   `occupation` VARCHAR(100) DEFAULT NULL,
   `qualification` VARCHAR(100) DEFAULT NULL,
   `annual_income` DECIMAL(15,2) DEFAULT NULL,
+  -- Media & Status
   `photo_file_name` VARCHAR(100) DEFAULT NULL,     -- Fk to sys_media (file name to show in UI)
   `media_id` BIGINT UNSIGNED DEFAULT NULL,         -- Optional if using sys_media table
   `is_active` TINYINT(1) DEFAULT 1,
+  -- Meta
   `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   UNIQUE KEY `uq_std_guardians_mobile` (`mobile_no`), -- Assumes unique mobile per parent
@@ -148,13 +160,13 @@ CREATE TABLE IF NOT EXISTS `std_guardians` (
   CONSTRAINT `fk_std_guardians_userId` FOREIGN KEY (`user_id`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-
 -- Student-Guardian Junction
 -- M:N Relationship (Student has Father, Mother; Parent has multiple kids)
 CREATE TABLE IF NOT EXISTS `std_student_guardian_jnt` (
   `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   `student_id` BIGINT UNSIGNED NOT NULL,
   `guardian_id` BIGINT UNSIGNED NOT NULL,
+  -- 
   `relation_type` ENUM('Father','Mother','Guardian') NOT NULL, 
   `relationship` VARCHAR(50) NOT NULL, -- Father, Mother, Uncle, Brother, Sister, Grandfather, Grandmother
   `is_emergency_contact` TINYINT(1) DEFAULT 0,
@@ -170,19 +182,22 @@ CREATE TABLE IF NOT EXISTS `std_student_guardian_jnt` (
   CONSTRAINT `fk_sg_jnt_guardian` FOREIGN KEY (`guardian_id`) REFERENCES `std_guardians` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- | Name (Firt Name + Last Name). | Relation Type | Relationship | Emergency Contact | Can Pick | Fee Payer | Portal Access | Notifications | Notification Pref. |
 
 -- --------------------------------------------------------------------------------------------------------
--- 3. Academic Information Tables
+-- Screen - 4 : Tab Name (Session)
 -- --------------------------------------------------------------------------------------------------------
 
 -- Tracks chronological academic history (Class/Section allocation per session)
 CREATE TABLE IF NOT EXISTS `std_student_academic_sessions` (
   `id` BIGINT UNSIGNED AUTO_INCREMENT,
   `student_id` BIGINT UNSIGNED NOT NULL,
+  -- Academic Session
   `academic_session_id` BIGINT UNSIGNED NOT NULL,   -- FK to glb_academic_sessions (or sch_org_academic_sessions_jnt)
   `class_section_id` INT UNSIGNED NOT NULL,         -- FK to sch_class_section_jnt
   `roll_no` INT UNSIGNED DEFAULT NULL,
   `subject_group_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to sch_subject_groups (if streams apply)
+  -- Other Detail
   `house` BIGINT UNSIGNED DEFAULT NULL,             -- FK to sys_dropdown_table
   `is_current` TINYINT(1) DEFAULT 0,                -- Only one active record per student
   `current_flag` bigint GENERATED ALWAYS AS ((case when (`is_current` = 1) then `student_id` else NULL end)) STORED,
@@ -190,6 +205,7 @@ CREATE TABLE IF NOT EXISTS `std_student_academic_sessions` (
   `leaving_date` DATE DEFAULT NULL,
   `count_as_attrition` TINYINT(1) NOT NULL,         -- Can we count this record as Attrition
   `reason_quit` int NULL,                           -- FK to `sys_dropdown_table` (Reason for leaving the Session)
+  -- Note
   `dis_note` text NOT NULL,
   `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -205,23 +221,26 @@ CREATE TABLE IF NOT EXISTS `std_student_academic_sessions` (
 
 
 -- --------------------------------------------------------------------------------------------------------
--- 4. Previous Education & Documents (New in v1.3)
+-- Screen - 5 : Tab Name (Previous Education)
 -- --------------------------------------------------------------------------------------------------------
 
 -- Student's Previous Education History (e.g. Previous Schools attended)
 CREATE TABLE IF NOT EXISTS `std_previous_education` (
   `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   `student_id` BIGINT UNSIGNED NOT NULL,
+  -- School Details
   `school_name` VARCHAR(150) NOT NULL,
   `school_address` VARCHAR(255) DEFAULT NULL,
   `board` VARCHAR(50) DEFAULT NULL,           -- e.g. CBSE, ICSE, State Board
+  -- Class Details
   `class_passed` VARCHAR(50) DEFAULT NULL,    -- e.g. 5th, 8th, 10th
   `year_of_passing` YEAR DEFAULT NULL,
   `percentage_grade` VARCHAR(20) DEFAULT NULL,
-  `medium_of_instruction` VARCHAR(30) DEFAULT NULL,
+  `medium_of_instruction` VARCHAR(30) DEFAULT NULL, -- e.g. English, Hindi, Gujarati
   `tc_number` VARCHAR(50) DEFAULT NULL,       -- Transfer Certificate Number
   `tc_date` DATE DEFAULT NULL,                -- Transfer Certificate Date
   `is_recognized` TINYINT(1) DEFAULT 1,       -- Was the previous school recognized?
+  -- Note
   `remarks` TEXT DEFAULT NULL,
   `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -253,13 +272,14 @@ CREATE TABLE IF NOT EXISTS `std_student_documents` (
 
 
 -- --------------------------------------------------------------------------------------------------------
--- 5. Health & Medical Tables
+-- Screen - 6 : Tab Name (Health)
 -- --------------------------------------------------------------------------------------------------------
 
 -- Medical Profile
 CREATE TABLE IF NOT EXISTS `std_health_profiles` (
   `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   `student_id` BIGINT UNSIGNED NOT NULL,
+  -- 
   `blood_group` ENUM('A+','A-','B+','B-','AB+','AB-','O+','O-') DEFAULT NULL,
   `height_cm` DECIMAL(5,2) DEFAULT NULL,    -- Last recorded
   `weight_kg` DECIMAL(5,2) DEFAULT NULL,    -- Last recorded
@@ -289,7 +309,6 @@ CREATE TABLE IF NOT EXISTS `std_vaccination_records` (
   CONSTRAINT `fk_vacc_student` FOREIGN KEY (`student_id`) REFERENCES `std_students` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-
 -- Medical Incidents (School Clinic Log)
 CREATE TABLE IF NOT EXISTS `std_medical_incidents` (
   `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -312,7 +331,7 @@ CREATE TABLE IF NOT EXISTS `std_medical_incidents` (
 
 
 -- --------------------------------------------------------------------------------------------------------
--- 6. Attendance Tables
+-- Screen - 7 : Tab Name (Attendance)
 -- --------------------------------------------------------------------------------------------------------
 
 -- Variable in sys_setting (Key "Period_wise_Student_Attendance", Value-TRUE/FALSE)
