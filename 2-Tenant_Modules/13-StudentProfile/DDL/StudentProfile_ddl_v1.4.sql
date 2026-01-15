@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS `std_students` (
   `admission_no` VARCHAR(50) NOT NULL,             -- Unique School Admission Number
   `admission_date` DATE NOT NULL,                  -- Date of admission
   -- ID Cards
-  `student_qr_code` VARCHAR(50) DEFAULT NULL,      -- For ID Cards
+  `student_qr_code` VARCHAR(20) DEFAULT NULL,      -- For ID Cards (this will be saved as emp_code in sys_users table) 
   `student_id_card_type` ENUM('QR','RFID','NFC','Barcode') NOT NULL DEFAULT 'QR',
   `smart_card_id` VARCHAR(100) DEFAULT NULL,       -- RFID/NFC Tag ID
   -- Identity Documents
@@ -47,9 +47,9 @@ CREATE TABLE IF NOT EXISTS `std_students` (
   `apaar_id` VARCHAR(100) DEFAULT NULL,            -- Academic Bank of Credits ID
   `birth_cert_no` VARCHAR(50) DEFAULT NULL,
   -- Basic Info (Demographics)
-  `first_name` VARCHAR(100) NOT NULL,
-  `middle_name` VARCHAR(100) DEFAULT NULL,
-  `last_name` VARCHAR(100) DEFAULT NULL,
+  `first_name` VARCHAR(50) NOT NULL,               -- (Combined (First_name+Middle_name+last_name) and saved as `name` in sys_users table (Check Max_Length should not be more than 100))
+  `middle_name` VARCHAR(50) DEFAULT NULL,
+  `last_name` VARCHAR(50) DEFAULT NULL,              -- (Combined (First_name+Middle_name+last_name) and saved as `name` in sys_users table (Check Max_Length should not be more than 100))
   -- Personal Info
   `gender` ENUM('Male','Female','Transgender','Prefer Not to Say') NOT NULL DEFAULT 'Male',
   `dob` DATE NOT NULL,
@@ -68,14 +68,18 @@ CREATE TABLE IF NOT EXISTS `std_students` (
   UNIQUE KEY `uq_std_students_aadhar` (`aadhar_id`),
   CONSTRAINT `fk_std_students_userId` FOREIGN KEY (`user_id`) REFERENCES `sys_users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Condition:
+-- Short Name - (sys_user.short_name VARCHAR(30)) - This field value will be saved as 'short_name' in 'sys_users' table
+-- Password - (sys_user.password VARCHAR(255)) - The Hashed Value of Password will be saved as 'password' in 'sys_users' table
+
 
 -- Extended Personal Profile
 CREATE TABLE IF NOT EXISTS `std_student_profiles` (
   `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   -- Student Info
   `student_id` BIGINT UNSIGNED NOT NULL,
-  `mobile` VARCHAR(20) DEFAULT NULL,               -- Student's own mobile
-  `email` VARCHAR(100) DEFAULT NULL,               -- Student's own email
+  `mobile` VARCHAR(20) DEFAULT NULL,               -- Student/Parent mobile (This will be saved as mobile in sys_users table)
+  `email` VARCHAR(150) DEFAULT NULL,               -- Student/Parent email (This will be saved as email in sys_users table)
   -- Social / Category
   `religion` BIGINT UNSIGNED DEFAULT NULL,         -- FK to sys_dropdown_table
   `caste_category` BIGINT UNSIGNED DEFAULT NULL,   -- FK to sys_dropdown_table
@@ -135,10 +139,11 @@ CREATE TABLE IF NOT EXISTS `std_student_addresses` (
 -- Optional link to sys_users if Parent Portal access is granted.
 CREATE TABLE IF NOT EXISTS `std_guardians` (
   `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `user_code` VARCHAR(20) NOT NULL,  -- Unique code for guardian (this will be saved as emp_code in sys_users table) 
   -- User Info
   `user_id` BIGINT UNSIGNED DEFAULT NOT NULL,        -- Nullable. Set when Parent Portal access is created.
-  `first_name` VARCHAR(100) NOT NULL,
-  `last_name` VARCHAR(100) DEFAULT NULL,
+  `first_name` VARCHAR(50) NOT NULL,                 -- First_name+last_name will be saved as name in sys_users table
+  `last_name` VARCHAR(50) DEFAULT NULL,              -- First_name+last_name will be saved as name in sys_users table
   -- Personal Info
   `gender` ENUM('Male','Female','Transgender','Prefer Not to Say') NOT NULL DEFAULT 'Male',
   `mobile_no` VARCHAR(20) NOT NULL,                -- Primary identifier if user_id is null
@@ -148,6 +153,7 @@ CREATE TABLE IF NOT EXISTS `std_guardians` (
   `occupation` VARCHAR(100) DEFAULT NULL,
   `qualification` VARCHAR(100) DEFAULT NULL,
   `annual_income` DECIMAL(15,2) DEFAULT NULL,
+  `preferred_language` bigint unsigned NOT NULL,   -- fk to glb_languages
   -- Media & Status
   `photo_file_name` VARCHAR(100) DEFAULT NULL,     -- Fk to sys_media (file name to show in UI)
   `media_id` BIGINT UNSIGNED DEFAULT NULL,         -- Optional if using sys_media table
@@ -159,6 +165,10 @@ CREATE TABLE IF NOT EXISTS `std_guardians` (
   UNIQUE KEY `uq_std_guardians_userId` (`user_id`),
   CONSTRAINT `fk_std_guardians_userId` FOREIGN KEY (`user_id`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Condition:
+-- Short Name - (sys_user.short_name VARCHAR(30)) - This field value will be saved as 'short_name' in 'sys_users' table
+-- Password - (sys_user.password VARCHAR(255)) - The Hashed Value of Password will be saved as 'password' in 'sys_users' table
+
 
 -- Student-Guardian Junction
 -- M:N Relationship (Student has Father, Mother; Parent has multiple kids)
