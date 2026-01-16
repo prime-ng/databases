@@ -116,7 +116,7 @@ CREATE TABLE IF NOT EXISTS `slb_competencies` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `uuid` BINARY(16) NOT NULL,
   `parent_id` BIGINT UNSIGNED DEFAULT NULL,     -- FK to self (NULL for root competencies)
-  `code` VARCHAR(60) NOT NULL,    
+  `code` VARCHAR(60) NOT NULL,  
   `name` VARCHAR(150) NOT NULL,   
   `short_name` VARCHAR(50) DEFAULT NULL,   
   `description` VARCHAR(255) DEFAULT NULL,    
@@ -369,5 +369,91 @@ CREATE TABLE IF NOT EXISTS `slb_syllabus_schedule` (
   CONSTRAINT `fk_sylsched_subject` FOREIGN KEY (`subject_id`) REFERENCES `sch_subjects` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_sylsched_topic` FOREIGN KEY (`topic_id`) REFERENCES `slb_topics` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_sylsched_teacher` FOREIGN KEY (`assigned_teacher_id`) REFERENCES `sch_teachers` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ===========================================================================================
+
+-- =========================================================================
+-- LESSON VERSION & GOVERNANCE CONTROL (NCERT / BOARD DRIVEN)
+-- =========================================================================
+-- Purpose:
+-- 1. Track lesson source authority (NCERT / Board / Publisher)
+-- 2. Track textbook & edition used to define the lesson
+-- 3. Enforce immutability during academic session
+-- 4. Maintain historical version traceability across years
+-- =========================================================================
+
+CREATE TABLE IF NOT EXISTS `hpc_lesson_version_control` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  -- Core linkage
+  `lesson_id` BIGINT UNSIGNED NOT NULL,           -- FK to slb_lessons.id
+  `academic_session_id` BIGINT UNSIGNED NOT NULL, -- Session in which this version applies
+  -- Authority & source
+  `curriculum_authority` ENUM('NCERT','CBSE','ICSE','STATE_BOARD','OTHER') NOT NULL DEFAULT 'NCERT',
+  `board_code` VARCHAR(50) DEFAULT NULL,          -- CBSE, ICSE, STATE-UK, etc.
+  `book_id` BIGINT UNSIGNED DEFAULT NULL,         -- FK to book master (if exists)
+  `book_title` VARCHAR(255) DEFAULT NULL,         -- Redundant but audit-friendly
+  `book_edition` VARCHAR(100) DEFAULT NULL,       -- e.g. "2024 Edition"
+  `publisher` VARCHAR(150) DEFAULT 'NCERT',
+  -- Versioning
+  `lesson_version` VARCHAR(20) NOT NULL,          -- e.g. v1.0, v2.0
+  `derived_from_lesson_id` BIGINT UNSIGNED DEFAULT NULL, -- Previous version reference
+  -- Governance state (SYSTEM CONTROLLED)
+  `status` ENUM('IMPORTED','ACTIVE','LOCKED','DEPRECATED','ARCHIVED') NOT NULL DEFAULT 'IMPORTED',
+  -- Control flags
+  `is_editable` TINYINT(1) NOT NULL DEFAULT 0,    -- Always 0 for system-defined lessons
+  `is_system_defined` TINYINT(1) NOT NULL DEFAULT 1,
+  -- Audit
+  `imported_on` DATE DEFAULT NULL,                -- When lesson was imported
+  `locked_on` DATE DEFAULT NULL,                  -- When lesson was locked
+  `remarks` VARCHAR(500) DEFAULT NULL,
+  `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  -- Constraints
+  UNIQUE KEY `uq_lesson_session_version`(`lesson_id`, `academic_session_id`, `lesson_version`),
+  KEY `idx_lvc_lesson` (`lesson_id`),
+  KEY `idx_lvc_session` (`academic_session_id`),
+  KEY `idx_lvc_status` (`status`),
+  CONSTRAINT `fk_lvc_lesson` FOREIGN KEY (`lesson_id`) REFERENCES `slb_lessons` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_lvc_prev_lesson` FOREIGN KEY (`derived_from_lesson_id`) REFERENCES `slb_lessons` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Conditions:
+    -- NCERT Import (Once per Year)
+    --   Lessons imported from NCERT book structure
+    --   Record inserted with:
+    --     status = IMPORTED
+    --     lesson_version = v1.0
+    -- Session Lock (Before Teaching / Exams)
+    --   System marks:
+    --     status = LOCKED
+    --     locked_on = CURRENT_DATE
+    --   No updates allowed at service layer
+    -- Next Academic Year
+    --   New NCERT edition released
+    --   New lessons created
+    --   New record inserted:
+    --     lesson_version = v2.0
+    --     derived_from_lesson_id = old lesson_id
+    --   Old record marked DEPRECATED
+
+
+-- =========================================================
+-- CURRICULUM CHANGE MANAGEMENT
+-- =========================================================
+CREATE TABLE hpc_curriculum_change_request (
+  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `entity_type` ENUM('SUBJECT','LESSON','TOPIC','COMPETENCY') NOT NULL,
+  `entity_id` BIGINT UNSIGNED NOT NULL,
+  `change_type` ENUM('ADD','UPDATE','DELETE') NOT NULL,
+  `change_summary` VARCHAR(500),
+  `impact_analysis` JSON,
+  `status` ENUM('DRAFT','SUBMITTED','APPROVED','REJECTED') DEFAULT 'DRAFT',
+  `requested_by` BIGINT UNSIGNED,
+  `requested_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `is_active` TINYINT(1) DEFAULT 1,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` TIMESTAMP DEFAULT NULL,
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
