@@ -5,7 +5,7 @@
 -- Master table for Books/Publications used across schools
 CREATE TABLE IF NOT EXISTS `bok_books` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `uuid` BINARY(16) NOT NULL,  -- UUID
+  `uuid` BINARY(16) NOT NULL,  -- UUID 
   `isbn` VARCHAR(20) DEFAULT NULL,              -- International Standard Book Number
   `title` VARCHAR(100) NOT NULL,
   `subtitle` VARCHAR(255) DEFAULT NULL,

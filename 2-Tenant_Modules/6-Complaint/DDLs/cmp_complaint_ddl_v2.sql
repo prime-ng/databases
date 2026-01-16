@@ -12,11 +12,6 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- Hierarchical master for Categories (e.g. Transport) and Sub-categories (e.g. Rash Driving).
 -- Aligns complaints with specific Departments.
 
--- ==========================================================================================================
--- Below table is for Reference Only and will not be part of Complaint Module. It will be developed in School Setup Module.
--- ==========================================================================================================
-
--- ==========================================================================================================
 
 CREATE TABLE IF NOT EXISTS `cmp_complaint_categories` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
