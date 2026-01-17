@@ -332,11 +332,12 @@ CREATE TABLE IF NOT EXISTS `tpt_driver_attendance` (
     `first_in_time` DATETIME NULL,
     `last_out_time` DATETIME NULL,
     `total_work_minutes` INT NULL,
-    `attendance_status` ENUM('Present','Absent','Half-Day','Late') NOT NULL,
+    `attendance_status` BIGINT NOT NULL, -- fk to sys_dropdown_table ('Present','Absent','Half-Day','Late')
     `via_app` TINYINT(1) NOT NULL DEFAULT 1,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE KEY `uq_driver_day` (`driver_id`, `attendance_date`),
-    FOREIGN KEY (`driver_id`) REFERENCES `tpt_personnel`(`id`) ON DELETE CASCADE
+    FOREIGN KEY (`driver_id`) REFERENCES `tpt_personnel`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`attendance_status`) REFERENCES `sys_dropdown_table`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `tpt_driver_attendance_log` (
