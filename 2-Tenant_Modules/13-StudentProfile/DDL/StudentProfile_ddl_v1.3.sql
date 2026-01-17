@@ -111,8 +111,7 @@ CREATE TABLE IF NOT EXISTS `std_student_addresses` (
   `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   `student_id` BIGINT UNSIGNED NOT NULL,
   `address_type` ENUM('Permanent','Correspondence','Guardian','Local') NOT NULL DEFAULT 'Correspondence',
-  `address_line_1` VARCHAR(255) NOT NULL,
-  `address_line_2` VARCHAR(255) DEFAULT NULL,
+  `address` VARCHAR(512) NOT NULL,
   `city_id` BIGINT UNSIGNED NOT NULL,  -- FK to glb_cities
   `pincode` VARCHAR(10) NOT NULL,
   `is_primary` TINYINT(1) DEFAULT 0, -- To mark primary communication address
