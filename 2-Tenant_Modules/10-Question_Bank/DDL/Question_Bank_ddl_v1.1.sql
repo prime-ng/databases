@@ -202,6 +202,7 @@ CREATE TABLE IF NOT EXISTS `qns_question_topic_jnt` (
   CONSTRAINT `fk_qt_topic` FOREIGN KEY (`topic_id`) REFERENCES `slb_topics` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Display Only
 CREATE TABLE IF NOT EXISTS `qns_question_statistics` (
   `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   `question_bank_id` BIGINT UNSIGNED NOT NULL,
@@ -225,7 +226,7 @@ CREATE TABLE IF NOT EXISTS `qns_question_performance_category_jnt` (
   `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   `question_bank_id` BIGINT UNSIGNED NOT NULL,
   `performance_category_id` BIGINT UNSIGNED NOT NULL,
-  `recommendation_type` ENUM('REVISION','PRACTICE','CHALLENGE') NOT NULL,
+  `recommendation_type` BIGINT UNSIGNED NOT NULL,  -- FK to sys_dropdowns table e.g. 'REVISION','PRACTICE','CHALLENGE'
   `priority` SMALLINT UNSIGNED DEFAULT 1,
   `is_active` TINYINT(1) DEFAULT 1,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -240,6 +241,7 @@ CREATE TABLE IF NOT EXISTS `qns_question_performance_category_jnt` (
 -- This directly powers Personalized learning paths, AI-Teacher module, LXP integration
 -- This table will map questions to performance categories. using it we can recommend questions to students based on their performance.
 
+-- Display Only
 CREATE TABLE IF NOT EXISTS `qns_question_usage_log` (
   `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   `question_bank_id` BIGINT UNSIGNED NOT NULL,    -- FK to qns_questions_bank
