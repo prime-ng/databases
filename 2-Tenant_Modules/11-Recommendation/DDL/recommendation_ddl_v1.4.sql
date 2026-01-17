@@ -19,8 +19,14 @@ SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
 -- ========================================================================================================
--- SCREEN - 1 (Recommendation Masters)
+-- SECTION 1: RECOMMENDATION TABLES
 -- ========================================================================================================
+
+-- ========================================================================================================
+-- SCREEN - (Recommendation Masters)
+-- ========================================================================================================
+
+-- TAB-1 : Recommendation Materials
 
 -- table for "trigger_event" ENUM values
 CREATE TABLE IF NOT EXISTS `rec_trigger_events` (
@@ -35,6 +41,8 @@ CREATE TABLE IF NOT EXISTS `rec_trigger_events` (
   UNIQUE KEY `uq_recTriggerEvent_name` (`event_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci; 
 
+-- TAB-2 : Recommendation Rules
+
 -- table for "recommendation_mode" ENUM values
 CREATE TABLE IF NOT EXISTS `rec_recommendation_modes` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -47,6 +55,8 @@ CREATE TABLE IF NOT EXISTS `rec_recommendation_modes` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_recRecommendationMode_name` (`mode_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci; 
+
+-- TAB-3 : Recommendation Rules
 
 -- table for "dynamic_material_type" ENUM values
 CREATE TABLE IF NOT EXISTS `rec_dynamic_material_types` (
@@ -61,6 +71,8 @@ CREATE TABLE IF NOT EXISTS `rec_dynamic_material_types` (
   UNIQUE KEY `uq_recDynamicMaterialType_name` (`type_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci; 
 
+-- TAB-4 : Recommendation Rules
+
 -- table for "dynamic_purpose" ENUM values
 CREATE TABLE IF NOT EXISTS `rec_dynamic_purposes` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -73,6 +85,8 @@ CREATE TABLE IF NOT EXISTS `rec_dynamic_purposes` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_recDynamicPurpose_name` (`purpose_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci; 
+
+-- TAB-5 : Recommendation Rules
 
 -- table for "assessment_type" ENUM values
 CREATE TABLE IF NOT EXISTS `rec_assessment_types` (
@@ -87,8 +101,9 @@ CREATE TABLE IF NOT EXISTS `rec_assessment_types` (
   UNIQUE KEY `uq_recAssessmentType_name` (`type_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci; 
 
+
 -- ========================================================================================================
--- SCREEN - 2 (Recommendation Materials)
+-- SCREEN - 2 : Tab-1 (Recommendation Materials)
 -- ========================================================================================================
 
 -- 1. Master table for Recommendation Materials (Content Bank)
@@ -106,7 +121,6 @@ CREATE TABLE IF NOT EXISTS `rec_recommendation_materials` (
   `file_url` VARCHAR(500) DEFAULT NULL,           -- Direct URL for 'UPLOADED_FILE' or 'PDF' or 'VIDEO'
   `external_url` VARCHAR(500) DEFAULT NULL,       -- YouTube link, Khan Academy link etc.
   `media_id` BIGINT UNSIGNED DEFAULT NULL,        -- fk to qns_media_store (for stored Media)
-----  `reference_id` BIGINT UNSIGNED DEFAULT NULL,    -- Link to external module ID (e.g. Quiz ID, Assignment ID)
   -- Academic Mapping
   `subject_id` BIGINT UNSIGNED DEFAULT NULL,      -- FK to sch_subjects
   `class_id` INT UNSIGNED DEFAULT NULL,           -- FK to sch_classes (Target Class)
@@ -136,7 +150,11 @@ CREATE TABLE IF NOT EXISTS `rec_recommendation_materials` (
   CONSTRAINT `fk_recMat_media` FOREIGN KEY (`media_id`) REFERENCES `qns_media_store` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 2. Recommendation Bundles/Collections (e.g. "Week 1 Revision Kit")
+-- ========================================================================================================
+-- SCREEN - 2  : Tab-2 (Recommendation Bundles)
+-- ========================================================================================================
+
+-- 1. Recommendation Bundles/Collections (e.g. "Week 1 Revision Kit")
 --    Allows grouping multiple materials into one recommendation
 CREATE TABLE IF NOT EXISTS `rec_material_bundles` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -152,7 +170,7 @@ CREATE TABLE IF NOT EXISTS `rec_material_bundles` (
   CONSTRAINT `fk_recBundle_school` FOREIGN KEY (`school_id`) REFERENCES `sch_organizations` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Junction between Bundle and Materials
+-- 2. Junction between Bundle and Materials
 CREATE TABLE IF NOT EXISTS `rec_bundle_materials_jnt` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `bundle_id` BIGINT UNSIGNED NOT NULL,
@@ -165,8 +183,11 @@ CREATE TABLE IF NOT EXISTS `rec_bundle_materials_jnt` (
   CONSTRAINT `fk_recBundleMat_material` FOREIGN KEY (`material_id`) REFERENCES `rec_recommendation_materials` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- ========================================================================================================
+-- SCREEN - 2  : Tab-3 (Recommendation Rules)
+-- ========================================================================================================
 
--- 3. Recommendation Rules Engine
+-- 1. Recommendation Rules Engine
 --    Defines logics: WHEN (Trigger) + WHO (Performance) -> WHAT (Recommendation)
 CREATE TABLE IF NOT EXISTS `rec_recommendation_rules` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -187,11 +208,11 @@ CREATE TABLE IF NOT EXISTS `rec_recommendation_rules` (
   -- Assessment Type Filter (Only apply if the result came from this type of exam)
   `assessment_type` BIGINT UNSIGNED DEFAULT NULL,  -- FK to rec_assessment_types
   -- ACTION (What to Recommend)
-  `recommendation_mode` BIGINT UNSIGNED NOT NULL,  -- FK to rec_recommendation_modes
-  `target_material_id` BIGINT UNSIGNED DEFAULT NULL,  -- If SPECIFIC_MATERIAL
-  `target_bundle_id` BIGINT UNSIGNED DEFAULT NULL,    -- If SPECIFIC_BUNDLE
-  `dynamic_material_type` BIGINT UNSIGNED DEFAULT NULL,  -- FK to rec_dynamic_material_types
-  `dynamic_purpose` BIGINT UNSIGNED DEFAULT NULL,  -- FK to rec_dynamic_purposes
+  `recommendation_mode_id` BIGINT UNSIGNED NOT NULL,  -- FK to rec_recommendation_modes
+  `target_material_id` BIGINT UNSIGNED DEFAULT NULL,  -- KF TO rec_recommendation_materials
+  `target_bundle_id` BIGINT UNSIGNED DEFAULT NULL,    -- KF TO rec_recommendation_bundles
+  `dynamic_material_type_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to rec_dynamic_material_types
+  `dynamic_purpose_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to rec_dynamic_purposes
   `priority` INT UNSIGNED DEFAULT 10,                 -- Higher priority rules override or appear first
   `is_active` TINYINT(1) DEFAULT 1,
   `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
@@ -205,22 +226,25 @@ CREATE TABLE IF NOT EXISTS `rec_recommendation_rules` (
   CONSTRAINT `fk_recRule_perfCat` FOREIGN KEY (`performance_category_id`) REFERENCES `slb_performance_categories` (`id`) ON DELETE SET NULL,
   CONSTRAINT `fk_recRule_targetMat` FOREIGN KEY (`target_material_id`) REFERENCES `rec_recommendation_materials` (`id`) ON DELETE SET NULL,
   CONSTRAINT `fk_recRule_targetBun` FOREIGN KEY (`target_bundle_id`) REFERENCES `rec_material_bundles` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `fk_recRule_trigger` FOREIGN KEY (`trigger_event`) REFERENCES `rec_trigger_events` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_recRule_recMode` FOREIGN KEY (`recommendation_mode`) REFERENCES `rec_recommendation_modes` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_recRule_dynMatType` FOREIGN KEY (`dynamic_material_type`) REFERENCES `rec_dynamic_material_types` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `fk_recRule_dynPurpose` FOREIGN KEY (`dynamic_purpose`) REFERENCES `rec_dynamic_purposes` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `fk_recRule_assessmentType` FOREIGN KEY (`assessment_type`) REFERENCES `rec_assessment_types` (`id`) ON DELETE SET NULL
+  CONSTRAINT `fk_recRule_trigger` FOREIGN KEY (`trigger_event_id`) REFERENCES `rec_trigger_events` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_recRule_recMode` FOREIGN KEY (`recommendation_mode_id`) REFERENCES `rec_recommendation_modes` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_recRule_dynMatType` FOREIGN KEY (`dynamic_material_type_id`) REFERENCES `rec_dynamic_material_types` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_recRule_dynPurpose` FOREIGN KEY (`dynamic_purpose_id`) REFERENCES `rec_dynamic_purposes` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_recRule_assessmentType` FOREIGN KEY (`assessment_type_id`) REFERENCES `rec_assessment_types` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- ========================================================================================================
+-- SCREEN - 2  : Tab-4 (Student Recommendations)
+-- ========================================================================================================
 
--- 4. Student Recommendations (The Resulting Assignments)
+-- 1. Student Recommendations (The Resulting Assignments)
 --    Refined from v1.1 `rec_student_recommendations`
 CREATE TABLE IF NOT EXISTS `rec_student_recommendations` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `uuid` BINARY(16) NOT NULL,                       -- Unique ID for public access/tracking
   `student_id` BIGINT UNSIGNED NOT NULL,          -- FK to std_students (or users depending on arch. std_students preferred)
   -- Source of Recommendation
-  `rule_id` BIGINT UNSIGNED DEFAULT NULL,         -- Which rule generated this?
+  `rule_id` BIGINT UNSIGNED DEFAULT NULL,         -- fk to rec_recommendation_rules. Which rule generated this?
   `triggered_by_result_id` BIGINT UNSIGNED DEFAULT NULL, -- Optional: Link to the Exam Result ID in Exam Module
   `manual_assigned_by` BIGINT UNSIGNED DEFAULT NULL,     -- If manually assigned by Teacher
   -- The Content
@@ -250,6 +274,9 @@ CREATE TABLE IF NOT EXISTS `rec_student_recommendations` (
   CONSTRAINT `fk_recStud_bundle` FOREIGN KEY (`bundle_id`) REFERENCES `rec_material_bundles` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_recStud_teacher` FOREIGN KEY (`manual_assigned_by`) REFERENCES `sch_teachers` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+
 
 -- ========================================================================================================
 -- SECTION 2: ENHANCEMENTS IN EXISTING TABLES (SEED DATA ETC)
