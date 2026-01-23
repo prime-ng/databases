@@ -159,7 +159,7 @@
   -- This will help us to make sure we can only create create a Dropdown in sys_dropdown_table whcih has been configured by Developer.
   CREATE TABLE IF NOT EXISTS `sys_dropdown_needs` (
     `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-    `dropdown_table_id` bigint unsigned NOT NULL,  -- FK to sys_dropdown_table.id
+    `dropdown_table_id` bigint unsigned NULL,  -- FK to sys_dropdown_table.id
     `db_type` ENUM('Prime','Tenant','Global') NOT NULL,  -- Which Database this Dropdown is for? (prime_db,tenant_db,global_db)
     `table_name` varchar(150) NOT NULL,  -- Table Name
     `column_name` varchar(150) NOT NULL,  -- Column Name

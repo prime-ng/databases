@@ -9,7 +9,7 @@ table_name : tpt_vehicle
 column_name : vehicle_type  
 
 **Entry in 'sys_dropdown_table' table**
-Key : "tenant_db.tpt_vehicle.vehicle_type"  
+Key : "tpt_vehicle.vehicle_type"  
 Values : ('BUS','VAN','CAR') (3 records)  
 Type : String  
 
@@ -24,7 +24,7 @@ table_name : tpt_vehicle
 column_name : fuel_type  
 
 **Entry in 'sys_dropdown_table' table**
-Key : "tenant_db.tpt_vehicle.fuel_type"  
+Key : "tpt_vehicle.fuel_type"  
 Values : ('Diesel','Petrol','CNG','Electric') (4 records)  
 Type : String  
 
@@ -38,7 +38,7 @@ table_name : tpt_vehicle
 column_name : ownership_type  
 
 **Entry in 'sys_dropdown_table' table**
-Key : "tenant_db.tpt_vehicle.ownership_type"  
+Key : "tpt_vehicle.ownership_type"  
 Values : ('Owned','Leased','Rented') (3 records)  
 Type : String  
 
@@ -51,7 +51,7 @@ table_name : tpt_personnel
 column_name : id_type  
 
 **Entry in 'sys_dropdown_table' table**
-Key : "tenant_db.tpt_personnel.id_type"  
+Key : "tpt_personnel.id_type"  
 Values : ('Aadhaar','Passport','DriverLicense') (3 records)  
 Type : String  
 
@@ -65,7 +65,7 @@ table_name : cmp_complaint_categories
 column_name : severity_level  
 
 **Entry in 'sys_dropdown_table' table**
-Key : "tenant_db.cmp_complaint_categories.severity_level"  
+Key : "cmp_complaint_categories.severity_level"  
 Values : ('1','2','3','4','5','6','7','8','9','10') (10 records)  
 Type : Integer  
 Additional_info : Key-lebel, Value('Low', Minor', 'Moderate', 'Substantial', 'Significant', 'Severe', 'Major', 'Acute', 'Emergency', 'Critical')
@@ -96,7 +96,7 @@ column_name : priority_score
 
 **sys_dropdown_table e.g. 1=Critical, 2=Urgent 3=High, 4=Medium, 5=Low**
 
-Key - "tenant_db.cmp_complaint_categories.priority_score"
+Key - "cmp_complaint_categories.priority_score"
 Values - ('1','2','3','4','5') (5 records)
 Type - Integer
 Additional_info - Key-lebel, Value('Critical', 'Urgent', 'High', 'Medium', 'Low')
