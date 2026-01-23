@@ -79,7 +79,7 @@ CREATE TABLE IF NOT EXISTS `lms_homework` (
     `section_id` INT UNSIGNED DEFAULT NULL,               -- FK to sch_sections.id (Null = All Sections)
     `subject_id` BIGINT UNSIGNED NOT NULL,                -- FK to sch_subjects.id
     -- Content Alignment
-    `topic_id` BIGINT UNSIGNED DEFAULT NULL,              -- FK to syllabus_topics.id (Null = All Topics) It can be anything like Topic/Sub-Topic/Mini-Topic/Micro-Topic etc.
+    `topic_id` BIGINT UNSIGNED DEFAULT NULL,              -- FK to slb_topics.id (Null = All Topics) It can be anything like Topic/Sub-Topic/Mini-Topic/Micro-Topic etc.
     `title` VARCHAR(255) NOT NULL,
     `description` LONGTEXT NOT NULL,                      -- Supports HTML/Markdown
     `submission_type_id` BIGINT UNSIGNED NOT NULL,        -- FK to sys_dropdown_table.id (TEXT, FILE, HYBRID, OFFLINE_CHECK)
@@ -106,8 +106,8 @@ CREATE TABLE IF NOT EXISTS `lms_homework` (
     INDEX `idx_hw_class_sub` (`class_id`, `subject_id`),
     CONSTRAINT `fk_hw_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`),
     CONSTRAINT `fk_hw_subject` FOREIGN KEY (`subject_id`) REFERENCES `sch_subjects` (`id`),
-    CONSTRAINT `fk_hw_topic` FOREIGN KEY (`topic_id`) REFERENCES `syllabus_topics` (`id`),
-    CONSTRAINT `fk_hw_sub_topic` FOREIGN KEY (`sub_topic_id`) REFERENCES `syllabus_sub_topics` (`id`),
+    CONSTRAINT `fk_hw_topic` FOREIGN KEY (`topic_id`) REFERENCES `slb_topics` (`id`),
+    CONSTRAINT `fk_hw_sub_topic` FOREIGN KEY (`sub_topic_id`) REFERENCES `slb_sub_topics` (`id`),
     CONSTRAINT `fk_hw_submission_type` FOREIGN KEY (`submission_type_id`) REFERENCES `sys_dropdown_table` (`id`),
     CONSTRAINT `fk_hw_difficulty_level` FOREIGN KEY (`difficulty_level_id`) REFERENCES `slb_complexity_level` (`id`),
     CONSTRAINT `fk_hw_release_condition` FOREIGN KEY (`release_condition_id`) REFERENCES `sys_dropdown_table` (`id`),
@@ -115,6 +115,19 @@ CREATE TABLE IF NOT EXISTS `lms_homework` (
     CONSTRAINT `fk_hw_created_by` FOREIGN KEY (`created_by`) REFERENCES `sys_users` (`id`),
     CONSTRAINT `fk_hw_updated_by` FOREIGN KEY (`updated_by`) REFERENCES `sys_users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Condition:
+-- If `allow_late_submission` = 0, then Student can not submit Homework online after `due_date`. He need to submit directly to the Teacher. OR teacher can allow to submit after due_date.
+-- If `allow_late_submission` = 1, then Student can submit Homework online after `due_date` also
+
+
+
+-- Create Data seed
+INSERT INTO  lms_homework (academic_session_id, class_id, section_id, subject_id, topic_id, title, description, submission_type_id, is_gradable, max_marks, passing_marks, difficulty_level_id, assign_date, due_date, allow_late_submission, auto_publish_score, release_condition_id, status_id, is_active, created_by, updated_by, created_at, updated_at, deleted_at) VALUES 
+(1, 1, NULL, 1, NULL, 'Homework 1', 'Description of Homework 1', 1, 1, 100, 50, 1, '2023-01-01 00:00:00', '2023-01-01 23:59:59', 0, 1, 1, 1, 1, 1, 1, NOW(), NOW(), NULL),
+(1, 1, NULL, 1, NULL, 'Homework 2', 'Description of Homework 2', 1, 1, 100, 50, 1, '2023-01-01 00:00:00', '2023-01-01 23:59:59', 0, 1, 1, 1, 1, 1, 1, NOW(), NOW(), NULL);
+
+
+
 
 -- 2.1 Homework Submissions
 CREATE TABLE IF NOT EXISTS `lms_homework_submissions` (
