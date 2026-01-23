@@ -176,7 +176,8 @@
     `updated_at` timestamp NULL DEFAULT NULL,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_DDNeeds_dbType_tableName_columnName` (`db_type`,`table_name`,`column_name`),
-    UNIQUE KEY `uq_DDNeeds_category_mainMenu_subMenu_tabName_fieldName` (`menu_category`,`main_menu`,`sub_menu`,`tab_name`,`field_name`)
+    UNIQUE KEY `uq_DDNeeds_category_mainMenu_subMenu_tabName_fieldName` (`menu_category`,`main_menu`,`sub_menu`,`tab_name`,`field_name`),
+    UNIQUE KEY `uq_DDNeeds_dropdownTableId` (`dropdown_table_id`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
   -- Conditions:
     -- 1. If tenant_creation_allowed = 1, then it is must to have menu_category, main_menu, sub_menu, tab_name, field_name. This needs to be managed at Application Level.
@@ -209,8 +210,7 @@
     `updated_at` timestamp NULL DEFAULT NULL,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_dropdownTable_ordinal` (`dropdown_needs_id`,`ordinal`),
-    UNIQUE KEY `uq_dropdownTable_key` (`dropdown_needs_id`,`key`),
-    CONSTRAINT `fk_sys_dropdown_table_sys_dropdown_needs` FOREIGN KEY (`dropdown_needs_id`) REFERENCES `sys_dropdown_needs` (`id`) ON DELETE CASCADE
+    UNIQUE KEY `uq_dropdownTable_key` (`dropdown_needs_id`,`key`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
   -- conditions:
   -- 1. When we go to create a New Dropdown, It will show 3 Dropdowns to select from.
