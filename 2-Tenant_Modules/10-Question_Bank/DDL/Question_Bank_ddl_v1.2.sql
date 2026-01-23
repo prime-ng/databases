@@ -27,11 +27,11 @@ CREATE TABLE IF NOT EXISTS `qns_questions_bank` (
   `marks` DECIMAL(5,2) DEFAULT 1.00,
   `negative_marks` DECIMAL(5,2) DEFAULT 0.00,
   -- Question Audit & Versioning
-  `ques_reviewed` TINYINT(1) NOT NULL DEFAULT 0,              -- True if this question is reviewed
-  `ques_reviewed_by` BIGINT UNSIGNED DEFAULT NULL,            --  fk -> sch_users.id (if reviewed by teacher)
-  `ques_reviewed_at` TIMESTAMP NULL DEFAULT NULL,
-  `ques_reviewed_status` ENUM('PENDING','APPROVED','REJECTED') DEFAULT 'PENDING',
-  `current_version` TINYINT UNSIGNED NOT NULL DEFAULT 1,       -- version of the question (for history)
+  -- `ques_reviewed` TINYINT(1) NOT NULL DEFAULT 0,              -- True if this question is reviewed
+  -- `ques_reviewed_by` BIGINT UNSIGNED DEFAULT NULL,            --  fk -> sch_users.id (if reviewed by teacher)
+  -- `ques_reviewed_at` TIMESTAMP NULL DEFAULT NULL,
+  -- `ques_reviewed_status` ENUM('PENDING','APPROVED','REJECTED') DEFAULT 'PENDING',
+  `current_version` TINYINT UNSIGNED NOT NULL DEFAULT 1,       -- version of the question (for history) 
   -- Question Usage
   `for_quiz` TINYINT(1) NOT NULL DEFAULT 1,        -- True if this question is for quiz
   `for_assessment` TINYINT(1) NOT NULL DEFAULT 1,  -- True if this question is for assessment
@@ -246,13 +246,50 @@ CREATE TABLE IF NOT EXISTS `qns_question_performance_category_jnt` (
 CREATE TABLE IF NOT EXISTS `qns_question_usage_log` (
   `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   `question_bank_id` BIGINT UNSIGNED NOT NULL,    -- FK to qns_questions_bank
-  `usage_context` ENUM('QUIZ','ASSESSMENT','EXAM') NOT NULL,
-  `context_id` BIGINT UNSIGNED NOT NULL,    -- quiz_id, assessment_id, exam_id
+  --`usage_context` BIGINT UNSIGNED NOT NULL, -- FK to qns_question_usage_type.id
+  `question_usage_type` BIGINT UNSIGNED NOT NULL, -- FK to qns_question_usage_type.id
+  `context_id` BIGINT UNSIGNED NOT NULL,    -- quiz_id, assessment_id, exam_id - FK to sys_dropdowns table
   `used_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `is_active` TINYINT(1) DEFAULT 1,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `deleted_at` TIMESTAMP DEFAULT NULL,
-  CONSTRAINT `fk_qusage_question` FOREIGN KEY (`question_bank_id`) REFERENCES `qns_questions_bank` (`id`) ON DELETE CASCADE
+  CONSTRAINT `fk_qusage_question` FOREIGN KEY (`question_bank_id`) REFERENCES `qns_questions_bank` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_qusage_usage_context` FOREIGN KEY (`usage_context`) REFERENCES `qns_question_usage_type` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------------------------------------------------------------------------
+-- Question Review & Approval Audit
+CREATE TABLE `qns_question_review_log` (
+    `review_log_id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `question_id` BIGINT UNSIGNED NOT NULL,  -- FK to qns_questions_bank.id
+    `reviewer_id` BIGINT UNSIGNED NOT NULL,  -- FK to users.id
+    `review_status_id` BIGINT UNSIGNED NOT NULL,  -- FK to sys_dropdowns.id e.g. 'PENDING','APPROVED','REJECTED'
+    `review_comment` TEXT,
+    `reviewed_at` DATETIME NOT NULL,
+    `is_active` TINYINT(1) DEFAULT 1,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP DEFAULT NULL,
+    INDEX `idx_q_review_question` (question_id),
+    INDEX `idx_q_review_status` (review_status_id),
+    CONSTRAINT `fk_q_review_question` FOREIGN KEY (`question_id`) REFERENCES `qns_questions_bank` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_q_review_reviewer` FOREIGN KEY (`reviewer_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_q_review_status` FOREIGN KEY (`review_status_id`) REFERENCES `sys_dropdowns` (`id`) ON DELETE CASCADE
+);
+
+-- Question Usage Type (Quiz / Quest / Exam)
+CREATE TABLE `qns_question_usage_type` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `code` VARCHAR(50) NOT NULL,  -- e.g. 'QUIZ','QUEST','ONLINE_EXAM','OFFLINE_EXAM','UT_TEST'
+    `name` VARCHAR(100) NOT NULL, -- e.g. 'Quiz','Quest','Online Exam','Offline Exam','Unit Test'
+    `description` TEXT,
+    `is_active` TINYINT(1) DEFAULT 1,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP DEFAULT NULL,
+    UNIQUE KEY `uq_q_usage_type_code` (`code`)
+    UNIQUE KEY `uq_q_usage_type_name` (`name`)
+);
+
 
