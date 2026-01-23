@@ -159,6 +159,7 @@
   -- This will help us to make sure we can only create create a Dropdown in sys_dropdown_table whcih has been configured by Developer.
   CREATE TABLE IF NOT EXISTS `sys_dropdown_needs` (
     `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+    `dropdown_table_id` bigint unsigned NOT NULL,  -- FK to sys_dropdown_table.id
     `db_type` ENUM('Prime','Tenant','Global') NOT NULL,  -- Which Database this Dropdown is for? (prime_db,tenant_db,global_db)
     `table_name` varchar(150) NOT NULL,  -- Table Name
     `column_name` varchar(150) NOT NULL,  -- Column Name
@@ -174,8 +175,8 @@
     `created_at` timestamp NULL DEFAULT NULL,
     `updated_at` timestamp NULL DEFAULT NULL,
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_dropdownNeeds_db_table_column_key` (`db_type`,`table_name`,`column_name`),
-    UNIQUE KEY `uq_dropdownNeeds_menu_category_main_menu_sub_menu_tab_name_field_name_key` (`menu_category`,`main_menu`,`sub_menu`,`tab_name`,`field_name`)
+    UNIQUE KEY `uq_DDNeeds_dbType_tableName_columnName` (`db_type`,`table_name`,`column_name`),
+    UNIQUE KEY `uq_DDNeeds_category_mainMenu_subMenu_tabName_fieldName` (`menu_category`,`main_menu`,`sub_menu`,`tab_name`,`field_name`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
   -- Conditions:
     -- 1. If tenant_creation_allowed = 1, then it is must to have menu_category, main_menu, sub_menu, tab_name, field_name. This needs to be managed at Application Level.
@@ -197,7 +198,7 @@
   -- Enhanced sys_dropdown_table to accomodate Menu Detail (Category,Main Menu, Sub-Menu ID) for Easy identification.
   CREATE TABLE IF NOT EXISTS `sys_dropdown_table` (
     `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-    `dropdown_needs_id` bigint unsigned NOT NULL,
+  --  `dropdown_needs_id` bigint unsigned NOT NULL,
     `ordinal` tinyint unsigned NOT NULL,
     `key` varchar(160) NOT NULL,      -- Key will be Combination of Table Name + Column Name (e.g. 'cmp_complaint_actions.action_type)
     `value` varchar(100) NOT NULL,
