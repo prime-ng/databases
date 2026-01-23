@@ -2,7 +2,6 @@
 -- Tanent Database
 -- ===========================================================================
 
-
 -- ===========================================================================
 -- VIEWS - Create Views after creating global_master database and it's tables
 -- ===========================================================================
@@ -13,12 +12,12 @@
   -- CREATE VIEW glb_cities     AS SELECT * FROM global_master.glb_cities;
   -- CREATE VIEW glb_academic_sessions  AS SELECT * FROM global_master.glb_academic_sessions;
   -- CREATE VIEW glb_boards     AS SELECT * FROM global_master.glb_boards;
-
   -- CREATE VIEW glb_languages AS SELECT * FROM global_master.glb_languages;
   -- CREATE VIEW glb_menus AS SELECT * FROM global_master.glb_menus;
   -- CREATE VIEW glb_modules AS SELECT * FROM global_master.glb_modules;
   -- CREATE VIEW glb_menu_model_jnt AS SELECT * FROM global_master.glb_menu_model_jnt;
   -- CREATE VIEW glb_translations AS SELECT * FROM global_master.glb_translations;
+
 
 -- ===========================================================================
 -- SYSTEM MODULE (sys)
@@ -175,7 +174,8 @@
     `created_at` timestamp NULL DEFAULT NULL,
     `updated_at` timestamp NULL DEFAULT NULL,
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_dropdownNeeds_db_table_column_key` (`db_type`,`table_name`,`column_name`)
+    UNIQUE KEY `uq_dropdownNeeds_db_table_column_key` (`db_type`,`table_name`,`column_name`),
+    UNIQUE KEY `uq_dropdownNeeds_menu_category_main_menu_sub_menu_tab_name_field_name_key` (`menu_category`,`main_menu`,`sub_menu`,`tab_name`,`field_name`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
   -- Conditions:
     -- 1. If tenant_creation_allowed = 1, then it is must to have menu_category, main_menu, sub_menu, tab_name, field_name. This needs to be managed at Application Level.
@@ -249,7 +249,7 @@
 
 
 -- ===========================================================================
--- SCHOOL SETUP MODULE (sch)
+-- 3-SCHOOL SETUP MODULE (sch)
 -- ===========================================================================
 
   -- This table is a replica of 'prm_tenant' table in 'prmprime_db' database
@@ -485,9 +485,9 @@
   -- Removed 'short_name' as we can use `sub_stdformat_code`
   CREATE TABLE IF NOT EXISTS `sch_subject_study_format_jnt` (
     `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-    `subject_id` bigint unsigned NOT NULL,            -- FK
-    `study_format_id` int unsigned NOT NULL,          -- FK
-    `name` varchar(50) NOT NULL,
+    `subject_id` bigint unsigned NOT NULL,            -- FK to 'sch_subjects'
+    `study_format_id` int unsigned NOT NULL,          -- FK to 'sch_study_formats'
+    `name` varchar(50) NOT NULL,                      -- e.g., 'Science Lecture','Science Lab','Math Lecture','Math Lab' and so on
     `subj_stdformat_code` CHAR(7) NOT NULL,         -- Will be combination of (Subject.codee+'-'+StudyFormat.code) e.g., 'SCI_LAC','SCI_LAB','SST_LAC','ENG_LAC' (This will be used for Timetable)
     `is_active` tinyint(1) NOT NULL DEFAULT '1',
     `deleted_at` timestamp NULL DEFAULT NULL,
@@ -565,6 +565,9 @@
     `id` bigint unsigned NOT NULL AUTO_INCREMENT,
     `subject_group_id` bigint unsigned NOT NULL,              -- FK to 'sch_subject_groups'
     `class_group_id` bigint unsigned NOT NULL,                -- FK to 'sch_class_groups_jnt'
+    `subject_id` int unsigned NOT NULL,                       -- FK to 'sch_subjects'
+    `subject_type_id` int unsigned NOT NULL,                  -- FK to 'sch_subject_types'
+    `subject_study_format_id` bigint unsigned NOT NULL,       -- FK to 'sch_subject_study_format_jnt'
     `is_active` tinyint(1) NOT NULL DEFAULT '1',
     `deleted_at` timestamp NULL DEFAULT NULL,
     `created_at` timestamp NULL DEFAULT NULL,
@@ -572,7 +575,10 @@
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_subjGrpSubj_subjGrpId_classGroup` (`subject_group_id`,`class_group_id`),
     CONSTRAINT `fk_subjGrpSubj_subjectGroup` FOREIGN KEY (`subject_group_id`) REFERENCES `sch_subject_groups` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_subjGrpSubj_classGroup` FOREIGN KEY (`class_group_id`) REFERENCES `sch_class_groups_jnt` (`id`) ON DELETE CASCADE
+    CONSTRAINT `fk_subjGrpSubj_classGroup` FOREIGN KEY (`class_group_id`) REFERENCES `sch_class_groups_jnt` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_subjGrpSubj_subject` FOREIGN KEY (`subject_id`) REFERENCES `sch_subjects` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_subjGrpSubj_subjectTypeId` FOREIGN KEY (`subject_type_id`) REFERENCES `sch_subject_types` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_subjGrpSubj_subjectStudyFormatId` FOREIGN KEY (`subject_study_format_id`) REFERENCES `sch_subject_study_format_jnt` (`id`) ON DELETE CASCADE
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   -- Tables for Room types, this will be used to define different types of rooms like Science Lab, Computer Lab, Sports Room etc.
@@ -667,7 +673,7 @@
 
 
 -- ===========================================================================
--- TRANSPORT MODULE (tpt)
+-- 4-TRANSPORT MODULE (tpt)
 -- ===========================================================================
   -- =======================================================================
   -- TRANSPORT MASTER TABLES
@@ -995,11 +1001,12 @@
       `first_in_time` DATETIME NULL,
       `last_out_time` DATETIME NULL,
       `total_work_minutes` INT NULL,
-      `attendance_status` ENUM('Present','Absent','Half-Day','Late') NOT NULL,
+      `attendance_status` BIGINT NOT NULL, -- fk to sys_dropdown_table ('Present','Absent','Half-Day','Late')
       `via_app` TINYINT(1) NOT NULL DEFAULT 1,
       `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       UNIQUE KEY `uq_driver_day` (`driver_id`, `attendance_date`),
-      FOREIGN KEY (`driver_id`) REFERENCES `tpt_personnel`(`id`) ON DELETE CASCADE
+      FOREIGN KEY (`driver_id`) REFERENCES `tpt_personnel`(`id`),
+      FOREIGN KEY (`attendance_status`) REFERENCES `sys_dropdown_table`(`id`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `tpt_driver_attendance_log` (
@@ -1337,7 +1344,7 @@
 
 
 -- ===========================================================================
--- VENDOR MODULE (vnd)
+-- 5-VENDOR MODULE (vnd)
 -- ===========================================================================
 
   -- 1-Screen Name - Vendor Master
@@ -1548,7 +1555,7 @@
 
 
 -- ===========================================================================
--- COMPLAINT MODULE (cmp)
+-- 6-COMPLAINT MODULE (cmp)
 -- ===========================================================================
 
   CREATE TABLE IF NOT EXISTS `cmp_complaint_categories` (
@@ -1798,7 +1805,7 @@
 
 
 -- ===========================================================================
--- NOTIFICATION MODULE (ntf)
+-- 7-NOTIFICATION MODULE (ntf)
 -- ===========================================================================
 
   -- =========================================================
@@ -2022,7 +2029,7 @@
 
 
 -- =========================================================================
--- TIMETABLE MODULE (tt)
+-- 8-TIMETABLE MODULE (tt)
 -- =========================================================================
   -- =========================================================================
   --  SECTION 0: MASTER CONFIGURATION TABLES
@@ -2778,8 +2785,29 @@
 
 
 -- =========================================================================
--- SYLLABUS MODULE (slb)
+-- 9-SYLLABUS MODULE (slb)
 -- =========================================================================
+
+  -- We need to create Master table to capture slb_topic_type
+  -- level: 0=Topic, 1=Sub-topic, 2=Mini Topic, 3=Sub-Mini Topic, 4=Micro Topic, 5=Sub-Micro Topic, 6=Nano Topic, 7=Ultra Topic,
+  -- This table will be used to Generate slb_topics.code and slb_topics.analytics_code.
+  -- User can Not change slb_topics.analytics_code, But he can change slb_topics.code as per their choice.
+  -- This Table will be set by PG_Team and will not be available for change to School.
+  CREATE TABLE IF NOT EXISTS `slb_topic_level_types` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `level` TINYINT UNSIGNED NOT NULL,              -- e.g., 0=Topic, 1=Sub-topic, 2=Mini Topic, 3=Sub-Mini Topic, 4=Micro Topic, 5=Sub-Micro Topic, 6=Nano Topic, 7=Ultra Topic,
+    `code` VARCHAR(3) NOT NULL,                    -- e.g., 'TOP','SUB',`MIN`,`SMT`, `MIC`, `SMT`, `NAN`, `ULT`
+    `name` VARCHAR(150) NOT NULL,                   -- e.g., `TOPIC`, `SUB-TOPIC`, `MINI-TOPIC`, `SUB-MINI-TOPIC`, `MICRO-TOPIC`, `SUB-MICRO-TOPIC`, `NANO-TOPIC`, `ULTRA-TOPIC`
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_topic_type_level` (`level`),
+    UNIQUE KEY `uq_topic_type_code` (`code`),
+    UNIQUE KEY `uq_topic_type_name` (`name`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 
   CREATE TABLE IF NOT EXISTS `slb_lessons` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -2789,7 +2817,7 @@
     `subject_id` BIGINT UNSIGNED NOT NULL,          -- FK to sch_subjects
     `code` VARCHAR(20) NOT NULL,                    -- e.g., '9TH_SCI_L01' (Auto-generated) It will be combination of class code, subject code and lesson code
     `name` VARCHAR(150) NOT NULL,                   -- e.g., 'Chapter 1: Matter in Our Surroundings'
-    `short_name` VARCHAR(50) DEFAULT NULL,          -- e.g., 'Matter Around Us'
+    `short_name` VARCHAR(50) DEFAULT NULL,          -- e.g., 'Matter Around Us' 
     `ordinal` SMALLINT UNSIGNED NOT NULL,           -- Sequence order within subject
     `description` VARCHAR(255) DEFAULT NULL,
     `learning_objectives` JSON DEFAULT NULL,        -- Array of learning objectives e.g. [{"objective": "Objective 1"}, {"objective": "Objective 2"}]
@@ -2834,7 +2862,7 @@
     `path` VARCHAR(500) NOT NULL,                   -- e.g., '/1/5/23/' (ancestor path) e.g. "/1/5/23/145/" (ancestor IDs separated by /)
     `path_names` VARCHAR(2000) DEFAULT NULL,        -- e.g., 'Algebra > Linear Equations > Solving Methods'
     `level` TINYINT UNSIGNED NOT NULL DEFAULT 0,    -- Depth in hierarchy (0=root)
-    -- Core topic information
+    -- Core topic information (Use slb_topic_level_types to Generate code)
     `code` VARCHAR(60) NOT NULL,                    -- e.g., '9TH_SCI_L01_TOP01_SUB02_MIN01_SMT02_MIC01_SMT02_NAN01_ULT02'
     `name` VARCHAR(150) NOT NULL,                   -- e.g., 'Topic 1: Linear Equations'
     `short_name` VARCHAR(50) DEFAULT NULL,          -- e.g., 'Linear Equations'
@@ -2850,6 +2878,9 @@
     `is_assessable` TINYINT(1) DEFAULT 1,           -- Whether the topic is assessable
     -- Analytics identifiers
     `analytics_code` VARCHAR(60) NOT NULL,          -- Unique code for tracking e.g. '9TH_SCI_L01_TOP01_SUB02_MIN01_SMT02_MIC01_SMT02_NAN01_ULT02'
+    `can_use_for_syllabus_status` TINYINT(1) DEFAULT 1,  -- Whether the topic can be used for syllabus status progress
+    `release_quiz_on_completion` TINYINT(1) DEFAULT 0, -- Whether the quiz should be released on completion of the topic
+    `release_quest_on_completion` TINYINT(1) DEFAULT 0, -- Whether the question should be released on completion of the topic
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -2888,10 +2919,10 @@
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `uuid` BINARY(16) NOT NULL,
     `parent_id` BIGINT UNSIGNED DEFAULT NULL,     -- FK to self (NULL for root competencies)
-    `code` VARCHAR(60) NOT NULL,  
-    `name` VARCHAR(150) NOT NULL,   
-    `short_name` VARCHAR(50) DEFAULT NULL,   
-    `description` VARCHAR(255) DEFAULT NULL,    
+    `code` VARCHAR(60) NOT NULL,                 -- e.g. 'KNOWLEDGE','SKILL','ATTITUDE'
+    `name` VARCHAR(150) NOT NULL,                -- e.g. 'Knowledge of Linear Equations'
+    `short_name` VARCHAR(50) DEFAULT NULL,       -- e.g. 'Linear Equations'
+    `description` VARCHAR(255) DEFAULT NULL,     -- e.g. 'Description of Knowledge of Linear Equations'
     `class_id` INT UNSIGNED DEFAULT NULL,         -- FK to sch_classes.id
     `subject_id` BIGINT UNSIGNED DEFAULT NULL,    -- FK to sch_subjects.id
     `competency_type_id` INT UNSIGNED NOT NULL,   -- FK to slb_competency_types.id
@@ -3030,6 +3061,7 @@
     `class_id` BIGINT UNSIGNED DEFAULT NULL,
     -- Control
     `is_system_defined` TINYINT(1) DEFAULT 1, -- system vs school editable
+    `auto_retest_required` TINYINT(1) DEFAULT 0, -- Auto Retest Required or Not (if 'True' then System will auto create a Test for the Topic and assign to Student)
     `is_active` TINYINT(1) DEFAULT 1,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -3143,95 +3175,10 @@
     CONSTRAINT `fk_sylsched_teacher` FOREIGN KEY (`assigned_teacher_id`) REFERENCES `sch_teachers` (`id`) ON DELETE SET NULL
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-  -- ===========================================================================================
-
-  -- =========================================================================
-  -- LESSON VERSION & GOVERNANCE CONTROL (NCERT / BOARD DRIVEN)
-  -- =========================================================================
-  -- Purpose:
-  -- 1. Track lesson source authority (NCERT / Board / Publisher)
-  -- 2. Track textbook & edition used to define the lesson
-  -- 3. Enforce immutability during academic session
-  -- 4. Maintain historical version traceability across years
-  -- =========================================================================
-
-  CREATE TABLE IF NOT EXISTS `hpc_lesson_version_control` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    -- Core linkage
-    `lesson_id` BIGINT UNSIGNED NOT NULL,           -- FK to slb_lessons.id
-    `academic_session_id` BIGINT UNSIGNED NOT NULL, -- Session in which this version applies
-    -- Authority & source
-    `curriculum_authority` ENUM('NCERT','CBSE','ICSE','STATE_BOARD','OTHER') NOT NULL DEFAULT 'NCERT',
-    `board_code` VARCHAR(50) DEFAULT NULL,          -- CBSE, ICSE, STATE-UK, etc.
-    `book_id` BIGINT UNSIGNED DEFAULT NULL,         -- FK to book master (if exists)
-    `book_title` VARCHAR(255) DEFAULT NULL,         -- Redundant but audit-friendly
-    `book_edition` VARCHAR(100) DEFAULT NULL,       -- e.g. "2024 Edition"
-    `publisher` VARCHAR(150) DEFAULT 'NCERT',
-    -- Versioning
-    `lesson_version` VARCHAR(20) NOT NULL,          -- e.g. v1.0, v2.0
-    `derived_from_lesson_id` BIGINT UNSIGNED DEFAULT NULL, -- Previous version reference
-    -- Governance state (SYSTEM CONTROLLED)
-    `status` ENUM('IMPORTED','ACTIVE','LOCKED','DEPRECATED','ARCHIVED') NOT NULL DEFAULT 'IMPORTED',
-    -- Control flags
-    `is_editable` TINYINT(1) NOT NULL DEFAULT 0,    -- Always 0 for system-defined lessons
-    `is_system_defined` TINYINT(1) NOT NULL DEFAULT 1,
-    -- Audit
-    `imported_on` DATE DEFAULT NULL,                -- When lesson was imported
-    `locked_on` DATE DEFAULT NULL,                  -- When lesson was locked
-    `remarks` VARCHAR(500) DEFAULT NULL,
-    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (`id`),
-    -- Constraints
-    UNIQUE KEY `uq_lesson_session_version`(`lesson_id`, `academic_session_id`, `lesson_version`),
-    KEY `idx_lvc_lesson` (`lesson_id`),
-    KEY `idx_lvc_session` (`academic_session_id`),
-    KEY `idx_lvc_status` (`status`),
-    CONSTRAINT `fk_lvc_lesson` FOREIGN KEY (`lesson_id`) REFERENCES `slb_lessons` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_lvc_prev_lesson` FOREIGN KEY (`derived_from_lesson_id`) REFERENCES `slb_lessons` (`id`) ON DELETE SET NULL
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-  -- Conditions:
-      -- NCERT Import (Once per Year)
-      --   Lessons imported from NCERT book structure
-      --   Record inserted with:
-      --     status = IMPORTED
-      --     lesson_version = v1.0
-      -- Session Lock (Before Teaching / Exams)
-      --   System marks:
-      --     status = LOCKED
-      --     locked_on = CURRENT_DATE
-      --   No updates allowed at service layer
-      -- Next Academic Year
-      --   New NCERT edition released
-      --   New lessons created
-      --   New record inserted:
-      --     lesson_version = v2.0
-      --     derived_from_lesson_id = old lesson_id
-      --   Old record marked DEPRECATED
-
-
-  -- =========================================================
-  -- CURRICULUM CHANGE MANAGEMENT
-  -- =========================================================
-  CREATE TABLE hpc_curriculum_change_request (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `entity_type` ENUM('SUBJECT','LESSON','TOPIC','COMPETENCY') NOT NULL,
-    `entity_id` BIGINT UNSIGNED NOT NULL,
-    `change_type` ENUM('ADD','UPDATE','DELETE') NOT NULL,
-    `change_summary` VARCHAR(500),
-    `impact_analysis` JSON,
-    `status` ENUM('DRAFT','SUBMITTED','APPROVED','REJECTED') DEFAULT 'DRAFT',
-    `requested_by` BIGINT UNSIGNED,
-    `requested_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    `is_active` TINYINT(1) DEFAULT 1,
-    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    `deleted_at` TIMESTAMP DEFAULT NULL,
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 -- ===========================================================================
--- Question Bank Module (qns)
+-- 10-Question Bank Module (qns)
 -- ===========================================================================
   CREATE TABLE IF NOT EXISTS `qns_questions_bank` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -3486,188 +3433,260 @@
 
 
 -- ===========================================================================
--- Recommendation (rec)
+-- 11-Recommendation (rec)
 -- ===========================================================================
-  -- 1. Master table for Recommendation Materials (Content Bank)
-  --    Refined from v1.1 `rec_recommendation_materials`
-  CREATE TABLE IF NOT EXISTS `rec_recommendation_materials` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `title` VARCHAR(255) NOT NULL,
-    `description` TEXT DEFAULT NULL,
-    -- Content Classification
-    `material_type` BIGINT UNSIGNED DEFAULT NULL,    -- fk to sys_dropdown_table (e.g. 'TEXT','VIDEO','PDF','AUDIO','QUIZ','ASSIGNMENT','LINK','INTERACTIVE')
-    `purpose` BIGINT UNSIGNED DEFAULT NULL,          -- fk to sys_dropdown_table (e.g. 'REVISION','PRACTICE','REMEDIAL','ADVANCED','ENRICHMENT','CONCEPT_BUILDING') NOT NULL DEFAULT 'PRACTICE',
-    `complexity_level` BIGINT UNSIGNED DEFAULT NULL,  -- fk to slb_complexity_level
-    -- Content Source
-    `content_source` BIGINT UNSIGNED DEFAULT NULL,    -- fk to sys_dropdown_table (e.g. 'INTERNAL_EDITOR','UPLOADED_FILE','EXTERNAL_LINK','LMS_MODULE','QUESTION_BANK')
-    `content_text` LONGTEXT DEFAULT NULL,           -- HTML content for 'TEXT' type or Internal Notes
-    `file_url` VARCHAR(500) DEFAULT NULL,           -- Direct URL for 'UPLOADED_FILE' or 'PDF' or 'VIDEO'
-    `external_url` VARCHAR(500) DEFAULT NULL,       -- YouTube link, Khan Academy link etc.
-    `media_id` BIGINT UNSIGNED DEFAULT NULL,        -- fk to qns_media_store (for external modules)
-    `reference_id` BIGINT UNSIGNED DEFAULT NULL,    -- Link to external module ID (e.g. Quiz ID, Assignment ID)
-    -- Academic Mapping
-    `subject_id` BIGINT UNSIGNED DEFAULT NULL,      -- FK to sch_subjects
-    `class_id` INT UNSIGNED DEFAULT NULL,           -- FK to sch_classes (Target Class)
-    `topic_id` BIGINT UNSIGNED DEFAULT NULL,        -- FK to slb_topics
-    `competency_code` VARCHAR(50) DEFAULT NULL,     -- Optional link to Competency Framework
-    -- Metadata
-    `duration_seconds` INT UNSIGNED DEFAULT NULL,   -- Est. time to consume
-    `language_code` VARCHAR(10) DEFAULT 'en',       -- e.g. 'en', 'hi'
-    `tags` JSON DEFAULT NULL,                       -- Search tags
-    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-    `created_by` BIGINT UNSIGNED DEFAULT NULL,
-    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    KEY `idx_recMat_school` (`school_id`),
-    KEY `idx_recMat_type` (`material_type`),
-    KEY `idx_recMat_scope` (`class_id`, `subject_id`, `topic_id`),
-    CONSTRAINT `fk_recMat_school` FOREIGN KEY (`school_id`) REFERENCES `sch_organizations` (`id`),
-    CONSTRAINT `fk_recMat_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`),
-    CONSTRAINT `fk_recMat_subject` FOREIGN KEY (`subject_id`) REFERENCES `sch_subjects` (`id`),
-    CONSTRAINT `fk_recMat_topic` FOREIGN KEY (`topic_id`) REFERENCES `slb_topics` (`id`),
-    CONSTRAINT `fk_recMat_content_source` FOREIGN KEY (`content_source`) REFERENCES `sys_dropdown_table` (`id`),
-    CONSTRAINT `fk_recMat_material_type` FOREIGN KEY (`material_type`) REFERENCES `sys_dropdown_table` (`id`),
-    CONSTRAINT `fk_recMat_purpose` FOREIGN KEY (`purpose`) REFERENCES `sys_dropdown_table` (`id`),
-    CONSTRAINT `fk_recMat_complexity_level` FOREIGN KEY (`complexity_level`) REFERENCES `slb_complexity_level` (`id`),
-    CONSTRAINT `fk_recMat_media` FOREIGN KEY (`media_id`) REFERENCES `qns_media_store` (`id`)
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    -- table for "trigger_event" ENUM values
+    CREATE TABLE IF NOT EXISTS `rec_trigger_events` (
+      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `event_name` VARCHAR(50) NOT NULL,  -- ON_ASSESSMENT_RESULT, ON_TOPIC_COMPLETION, ON_ATTENDANCE_LOW, MANUAL_RUN, SCHEDULED_WEEKLY
+      `description` VARCHAR(255) DEFAULT NULL,
+      `is_active` TINYINT(1) DEFAULT 1,
+      `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+      `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `uq_recTriggerEvent_name` (`event_name`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci; 
 
-  -- 2. Recommendation Bundles/Collections (e.g. "Week 1 Revision Kit")
-  --    Allows grouping multiple materials into one recommendation
-  CREATE TABLE IF NOT EXISTS `rec_material_bundles` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `title` VARCHAR(255) NOT NULL,
-    `description` TEXT DEFAULT NULL,
-    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-    `created_by` BIGINT UNSIGNED DEFAULT NULL,
-    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    KEY `idx_recBundle_school` (`school_id`),
-    CONSTRAINT `fk_recBundle_school` FOREIGN KEY (`school_id`) REFERENCES `sch_organizations` (`id`) ON DELETE CASCADE
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    -- TAB-2 : Recommendation Rules
 
-  -- Junction between Bundle and Materials
-  CREATE TABLE IF NOT EXISTS `rec_bundle_materials_jnt` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `bundle_id` BIGINT UNSIGNED NOT NULL,
-    `material_id` BIGINT UNSIGNED NOT NULL,
-    `sequence_order` INT UNSIGNED DEFAULT 1,
-    `is_mandatory` TINYINT(1) DEFAULT 1,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_recBundleMat_rel` (`bundle_id`, `material_id`),
-    CONSTRAINT `fk_recBundleMat_bundle` FOREIGN KEY (`bundle_id`) REFERENCES `rec_material_bundles` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_recBundleMat_material` FOREIGN KEY (`material_id`) REFERENCES `rec_recommendation_materials` (`id`) ON DELETE CASCADE
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    -- table for "recommendation_mode" ENUM values
+    CREATE TABLE IF NOT EXISTS `rec_recommendation_modes` (
+      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `mode_name` VARCHAR(50) NOT NULL,  -- SPECIFIC_MATERIAL, SPECIFIC_BUNDLE, DYNAMIC_BY_TOPIC, DYNAMIC_BY_COMPETENCY
+      `description` VARCHAR(255) DEFAULT NULL,
+      `is_active` TINYINT(1) DEFAULT 1,
+      `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+      `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `uq_recRecommendationMode_name` (`mode_name`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci; 
+
+    -- TAB-3 : Recommendation Rules
+
+    -- table for "dynamic_material_type" ENUM values
+    CREATE TABLE IF NOT EXISTS `rec_dynamic_material_types` (
+      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `type_name` VARCHAR(50) NOT NULL,  -- ANY_BEST_FIT, VIDEO, QUIZ, PDF
+      `description` VARCHAR(255) DEFAULT NULL,
+      `is_active` TINYINT(1) DEFAULT 1,
+      `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+      `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `uq_recDynamicMaterialType_name` (`type_name`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci; 
+
+    -- TAB-4 : Recommendation Rules
+
+    -- table for "dynamic_purpose" ENUM values
+    CREATE TABLE IF NOT EXISTS `rec_dynamic_purposes` (
+      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `purpose_name` VARCHAR(50) NOT NULL,  -- REMEDIAL, ENRICHMENT, PRACTICE
+      `description` VARCHAR(255) DEFAULT NULL,
+      `is_active` TINYINT(1) DEFAULT 1,
+      `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+      `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `uq_recDynamicPurpose_name` (`purpose_name`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci; 
+
+    -- TAB-5 : Recommendation Rules
+
+    -- table for "assessment_type" ENUM values
+    CREATE TABLE IF NOT EXISTS `rec_assessment_types` (
+      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `type_name` VARCHAR(50) NOT NULL,  -- ALL, QUIZ, WEEKLY_TEST, TERM_EXAM, FINAL_EXAM
+      `description` VARCHAR(255) DEFAULT NULL,
+      `is_active` TINYINT(1) DEFAULT 1,
+      `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+      `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `uq_recAssessmentType_name` (`type_name`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci; 
 
 
-  -- 3. Recommendation Rules Engine
-  --    Defines logics: WHEN (Trigger) + WHO (Performance) -> WHAT (Recommendation)
-  CREATE TABLE IF NOT EXISTS `rec_recommendation_rules` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    -- Rule Definition
-    `name` VARCHAR(150) NOT NULL,                   -- e.g. "Math Remedial for Poor Performers in Algebra"
-    `is_automated` TINYINT(1) DEFAULT 1,            -- 1=Run by System Job, 0=Manual Helper Rule
-    -- TRIGGERS (When to Apply)
-    `trigger_event` ENUM('ON_ASSESSMENT_RESULT','ON_TOPIC_COMPLETION','ON_ATTENDANCE_LOW','MANUAL_RUN','SCHEDULED_WEEKLY') NOT NULL DEFAULT 'ON_ASSESSMENT_RESULT',
-    -- CONDITIONS (The "Switch")
-    -- Narrowing Scope
-    `class_id` INT UNSIGNED DEFAULT NULL,
-    `subject_id` BIGINT UNSIGNED DEFAULT NULL,
-    `topic_id` BIGINT UNSIGNED DEFAULT NULL,
-    -- Performance Criteria
-    `performance_category_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to slb_performance_categories (The bucket, e.g. POOR)
-    `min_score_pct` DECIMAL(5,2) DEFAULT NULL,      -- Specific override e.g. < 40%
-    `max_score_pct` DECIMAL(5,2) DEFAULT NULL,      -- Specific override e.g. > 90%
-    -- Assessment Type Filter (Only apply if the result came from this type of exam)
-    `assessment_type` ENUM('ALL','QUIZ','WEEKLY_TEST','TERM_EXAM','FINAL_EXAM') DEFAULT 'ALL',
-    -- ACTION (What to Recommend)
-    `recommendation_mode` ENUM('SPECIFIC_MATERIAL','SPECIFIC_BUNDLE','DYNAMIC_BY_TOPIC','DYNAMIC_BY_COMPETENCY') NOT NULL,
-    `target_material_id` BIGINT UNSIGNED DEFAULT NULL,  -- If SPECIFIC_MATERIAL
-    `target_bundle_id` BIGINT UNSIGNED DEFAULT NULL,    -- If SPECIFIC_BUNDLE
-    `dynamic_material_type` ENUM('ANY_BEST_FIT','VIDEO','QUIZ','PDF') DEFAULT 'ANY_BEST_FIT', -- If DYNAMIC, look for materials of this type matching the Topic
-    `dynamic_purpose` ENUM('REMEDIAL','ENRICHMENT','PRACTICE') DEFAULT 'REMEDIAL',              -- If DYNAMIC, look for materials with this purpose
-    `priority` INT UNSIGNED DEFAULT 10,                 -- Higher priority rules override or appear first
-    `is_active` TINYINT(1) DEFAULT 1,
-    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    KEY `idx_recRule_trigger` (`trigger_event`),
-    CONSTRAINT `fk_recRule_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE SET NULL,
-    CONSTRAINT `fk_recRule_subject` FOREIGN KEY (`subject_id`) REFERENCES `sch_subjects` (`id`) ON DELETE SET NULL,
-    CONSTRAINT `fk_recRule_topic` FOREIGN KEY (`topic_id`) REFERENCES `slb_topics` (`id`) ON DELETE SET NULL,
-    CONSTRAINT `fk_recRule_perfCat` FOREIGN KEY (`performance_category_id`) REFERENCES `slb_performance_categories` (`id`) ON DELETE SET NULL,
-    CONSTRAINT `fk_recRule_targetMat` FOREIGN KEY (`target_material_id`) REFERENCES `rec_recommendation_materials` (`id`) ON DELETE SET NULL,
-    CONSTRAINT `fk_recRule_targetBun` FOREIGN KEY (`target_bundle_id`) REFERENCES `rec_material_bundles` (`id`) ON DELETE SET NULL
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    -- ========================================================================================================
+    -- SCREEN - 2 : Tab-1 (Recommendation Materials)
+    -- ========================================================================================================
 
-  -- 4. Student Recommendations (The Resulting Assignments)
-  --    Refined from v1.1 `rec_student_recommendations`
-  CREATE TABLE IF NOT EXISTS `rec_student_recommendations` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `uuid` BINARY(16) NOT NULL,                       -- Unique ID for public access/tracking
-    `student_id` BIGINT UNSIGNED NOT NULL,          -- FK to std_students (or users depending on arch. std_students preferred)
-    -- Source of Recommendation
-    `rule_id` BIGINT UNSIGNED DEFAULT NULL,         -- Which rule generated this?
-    `triggered_by_result_id` BIGINT UNSIGNED DEFAULT NULL, -- Optional: Link to the Exam Result ID in Exam Module
-    `manual_assigned_by` BIGINT UNSIGNED DEFAULT NULL,     -- If manually assigned by Teacher
-    -- The Content
-    `material_id` BIGINT UNSIGNED DEFAULT NULL,
-    `bundle_id` BIGINT UNSIGNED DEFAULT NULL,
-    -- Context
-    `recommendation_reason` VARCHAR(255) DEFAULT NULL, -- e.g. "Scored Low in Algebra Quiz"
-    `priority` ENUM('LOW','MEDIUM','HIGH','CRITICAL') DEFAULT 'MEDIUM',
-    `due_date` DATE DEFAULT NULL,
-    -- Status Tracking
-    `status` ENUM('PENDING','VIEWED','IN_PROGRESS','COMPLETED','SKIPPED','EXPIRED') DEFAULT 'PENDING',
-    `assigned_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    `first_viewed_at` TIMESTAMP NULL DEFAULT NULL,
-    `completed_at` TIMESTAMP NULL DEFAULT NULL,
-    -- Outcomes
-    `score_achieved` DECIMAL(5,2) DEFAULT NULL,     -- If the recommendation was a Quiz/Practice
-    `student_rating` TINYINT UNSIGNED DEFAULT NULL, -- 1-5 Stars
-    `student_feedback` VARCHAR(255) DEFAULT NULL,
-    `is_active` TINYINT(1) DEFAULT 1,
-    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_recStudRec_uuid` (`uuid`),
-    KEY `idx_recStud_student` (`student_id`, `status`),
-    CONSTRAINT `fk_recStud_student` FOREIGN KEY (`student_id`) REFERENCES `std_students` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_recStud_rule` FOREIGN KEY (`rule_id`) REFERENCES `rec_recommendation_rules` (`id`) ON DELETE SET NULL,
-    CONSTRAINT `fk_recStud_material` FOREIGN KEY (`material_id`) REFERENCES `rec_recommendation_materials` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_recStud_bundle` FOREIGN KEY (`bundle_id`) REFERENCES `rec_material_bundles` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_recStud_teacher` FOREIGN KEY (`manual_assigned_by`) REFERENCES `sch_teachers` (`id`) ON DELETE SET NULL
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    -- 1. Master table for Recommendation Materials (Content Bank)
+    CREATE TABLE IF NOT EXISTS `rec_recommendation_materials` (
+      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `title` VARCHAR(255) NOT NULL,
+      `description` TEXT DEFAULT NULL,
+      -- Content Classification
+      `material_type` BIGINT UNSIGNED DEFAULT NULL,    -- fk to sys_dropdown_table (e.g. 'TEXT','VIDEO','PDF','AUDIO','QUIZ','ASSIGNMENT','LINK','INTERACTIVE')
+      `purpose` BIGINT UNSIGNED DEFAULT NULL,          -- fk to sys_dropdown_table (e.g. 'REVISION','PRACTICE','REMEDIAL','ADVANCED','ENRICHMENT','CONCEPT_BUILDING') NOT NULL DEFAULT 'PRACTICE',
+      `complexity_level` BIGINT UNSIGNED DEFAULT NULL,  -- fk to slb_complexity_level
+      -- Content Source
+      `content_source` BIGINT UNSIGNED DEFAULT NULL,    -- fk to sys_dropdown_table (e.g. 'INTERNAL_EDITOR','UPLOADED_FILE','EXTERNAL_LINK','LMS_MODULE','QUESTION_BANK')
+      `content_text` LONGTEXT DEFAULT NULL,           -- HTML content for 'TEXT' type or Internal Notes
+      `file_url` VARCHAR(500) DEFAULT NULL,           -- Direct URL for 'UPLOADED_FILE' or 'PDF' or 'VIDEO'
+      `external_url` VARCHAR(500) DEFAULT NULL,       -- YouTube link, Khan Academy link etc.
+      `media_id` BIGINT UNSIGNED DEFAULT NULL,        -- fk to qns_media_store (for stored Media)
+      -- Academic Mapping
+      `subject_id` BIGINT UNSIGNED DEFAULT NULL,      -- FK to sch_subjects
+      `class_id` INT UNSIGNED DEFAULT NULL,           -- FK to sch_classes (Target Class)
+      `topic_id` BIGINT UNSIGNED DEFAULT NULL,        -- FK to slb_topics
+      `competency_code` VARCHAR(50) DEFAULT NULL,     -- Optional link to Competency Framework
+      -- Metadata
+      `duration_seconds` INT UNSIGNED DEFAULT NULL,   -- Est. time to consume
+      `language_code` VARCHAR(10) DEFAULT 'en',       -- e.g. 'en', 'hi'
+      `tags` JSON DEFAULT NULL,                       -- Search tags
+      `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+      `created_by` BIGINT UNSIGNED DEFAULT NULL,
+      `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+      `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+      PRIMARY KEY (`id`),
+      KEY `idx_recMat_school` (`school_id`),
+      KEY `idx_recMat_type` (`material_type`),
+      KEY `idx_recMat_scope` (`class_id`, `subject_id`, `topic_id`),
+      CONSTRAINT `fk_recMat_school` FOREIGN KEY (`school_id`) REFERENCES `sch_organizations` (`id`),
+      CONSTRAINT `fk_recMat_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`),
+      CONSTRAINT `fk_recMat_subject` FOREIGN KEY (`subject_id`) REFERENCES `sch_subjects` (`id`),
+      CONSTRAINT `fk_recMat_topic` FOREIGN KEY (`topic_id`) REFERENCES `slb_topics` (`id`),
+      CONSTRAINT `fk_recMat_content_source` FOREIGN KEY (`content_source`) REFERENCES `sys_dropdown_table` (`id`),
+      CONSTRAINT `fk_recMat_material_type` FOREIGN KEY (`material_type`) REFERENCES `sys_dropdown_table` (`id`),
+      CONSTRAINT `fk_recMat_purpose` FOREIGN KEY (`purpose`) REFERENCES `sys_dropdown_table` (`id`),
+      CONSTRAINT `fk_recMat_complexity_level` FOREIGN KEY (`complexity_level`) REFERENCES `slb_complexity_level` (`id`),
+      CONSTRAINT `fk_recMat_media` FOREIGN KEY (`media_id`) REFERENCES `qns_media_store` (`id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-  -- ========================================================================================================
-  -- SECTION 2: ENHANCEMENTS IN EXISTING TABLES (SEED DATA ETC)
-  -- ========================================================================================================
+    -- ========================================================================================================
+    -- SCREEN - 2  : Tab-2 (Recommendation Bundles)
+    -- ========================================================================================================
 
-  -- Insert Dropdown Configurations into sys_dropdown_needs
-  -- Checking first if tables exist to prevent errors in partial execution environments, 
-  -- but strictly this is a DDL file. We use INSERT IGNORE.
+    -- 1. Recommendation Bundles/Collections (e.g. "Week 1 Revision Kit")
+    --    Allows grouping multiple materials into one recommendation
+    CREATE TABLE IF NOT EXISTS `rec_material_bundles` (
+      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `title` VARCHAR(255) NOT NULL,
+      `description` TEXT DEFAULT NULL,
+      `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+      `created_by` BIGINT UNSIGNED DEFAULT NULL,
+      `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+      `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+      PRIMARY KEY (`id`),
+      KEY `idx_recBundle_school` (`school_id`),
+      CONSTRAINT `fk_recBundle_school` FOREIGN KEY (`school_id`) REFERENCES `sch_organizations` (`id`) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-  INSERT IGNORE INTO `sys_dropdown_needs` 
-  (`db_type`, `table_name`, `column_name`, `menu_category`, `main_menu`, `sub_menu`, `field_name`, `is_system`, `compulsory`) 
-  VALUES 
-  ('Tenant', 'rec_recommendation_materials', 'material_type', 'LMS', 'Recommendations', 'Material Library', 'Material Type', 1, 1),
-  ('Tenant', 'rec_recommendation_materials', 'purpose', 'LMS', 'Recommendations', 'Material Library', 'Purpose', 1, 1),
-  ('Tenant', 'rec_recommendation_materials', 'complexity_level', 'LMS', 'Recommendations', 'Material Library', 'Complexity', 1, 1),
-  ('Tenant', 'rec_recommendation_rules', 'trigger_event', 'LMS', 'Recommendations', 'Rules Engine', 'Trigger Event', 1, 1);
+    -- 2. Junction between Bundle and Materials
+    CREATE TABLE IF NOT EXISTS `rec_bundle_materials_jnt` (
+      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `bundle_id` BIGINT UNSIGNED NOT NULL,
+      `material_id` BIGINT UNSIGNED NOT NULL,
+      `sequence_order` INT UNSIGNED DEFAULT 1,
+      `is_mandatory` TINYINT(1) DEFAULT 1,
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `uq_recBundleMat_rel` (`bundle_id`, `material_id`),
+      CONSTRAINT `fk_recBundleMat_bundle` FOREIGN KEY (`bundle_id`) REFERENCES `rec_material_bundles` (`id`) ON DELETE CASCADE,
+      CONSTRAINT `fk_recBundleMat_material` FOREIGN KEY (`material_id`) REFERENCES `rec_recommendation_materials` (`id`) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-  -- Default Seed for Material Types (if we were using a lookup table, but we used ENUM. 
-  -- However, if sys_dropdown_table is used for UI drivers, we populate it)
-  -- Note: schema uses ENUMs for strictness, but UI might need dynamic lists. 
-  -- For this "Production Ready" DDL, we stick to ENUMs in tables but definitions in dropdowns helpful.
+    -- ========================================================================================================
+    -- SCREEN - 2  : Tab-3 (Recommendation Rules)
+    -- ========================================================================================================
+
+    -- 1. Recommendation Rules Engine
+    --    Defines logics: WHEN (Trigger) + WHO (Performance) -> WHAT (Recommendation)
+    CREATE TABLE IF NOT EXISTS `rec_recommendation_rules` (
+      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      -- Rule Definition
+      `name` VARCHAR(150) NOT NULL,                   -- e.g. "Math Remedial for Poor Performers in Algebra"
+      `is_automated` TINYINT(1) DEFAULT 1,            -- 1=Run by System Job, 0=Manual Helper Rule
+      -- TRIGGERS (When to Apply)
+      `trigger_event` BIGINT UNSIGNED NOT NULL,  -- FK to rec_trigger_events
+      -- CONDITIONS (The "Switch")
+      -- Narrowing Scope
+      `class_id` INT UNSIGNED DEFAULT NULL,  -- FK to sch_classes
+      `subject_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to sch_subjects
+      `topic_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to slb_topics
+      -- Performance Criteria
+      `performance_category_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to slb_performance_categories (The bucket, e.g. POOR)
+      `min_score_pct` DECIMAL(5,2) DEFAULT NULL,      -- Specific override e.g. < 40%
+      `max_score_pct` DECIMAL(5,2) DEFAULT NULL,      -- Specific override e.g. > 90%
+      -- Assessment Type Filter (Only apply if the result came from this type of exam)
+      `assessment_type` BIGINT UNSIGNED DEFAULT NULL,  -- FK to rec_assessment_types
+      -- ACTION (What to Recommend)
+      `recommendation_mode_id` BIGINT UNSIGNED NOT NULL,  -- FK to rec_recommendation_modes
+      `target_material_id` BIGINT UNSIGNED DEFAULT NULL,  -- KF TO rec_recommendation_materials
+      `target_bundle_id` BIGINT UNSIGNED DEFAULT NULL,    -- KF TO rec_recommendation_bundles
+      `dynamic_material_type_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to rec_dynamic_material_types
+      `dynamic_purpose_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to rec_dynamic_purposes
+      `priority` INT UNSIGNED DEFAULT 10,                 -- Higher priority rules override or appear first
+      `is_active` TINYINT(1) DEFAULT 1,
+      `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+      `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+      PRIMARY KEY (`id`),
+      KEY `idx_recRule_trigger` (`trigger_event`),
+      CONSTRAINT `fk_recRule_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE SET NULL,
+      CONSTRAINT `fk_recRule_subject` FOREIGN KEY (`subject_id`) REFERENCES `sch_subjects` (`id`) ON DELETE SET NULL,
+      CONSTRAINT `fk_recRule_topic` FOREIGN KEY (`topic_id`) REFERENCES `slb_topics` (`id`) ON DELETE SET NULL,
+      CONSTRAINT `fk_recRule_perfCat` FOREIGN KEY (`performance_category_id`) REFERENCES `slb_performance_categories` (`id`) ON DELETE SET NULL,
+      CONSTRAINT `fk_recRule_targetMat` FOREIGN KEY (`target_material_id`) REFERENCES `rec_recommendation_materials` (`id`) ON DELETE SET NULL,
+      CONSTRAINT `fk_recRule_targetBun` FOREIGN KEY (`target_bundle_id`) REFERENCES `rec_material_bundles` (`id`) ON DELETE SET NULL,
+      CONSTRAINT `fk_recRule_trigger` FOREIGN KEY (`trigger_event_id`) REFERENCES `rec_trigger_events` (`id`) ON DELETE CASCADE,
+      CONSTRAINT `fk_recRule_recMode` FOREIGN KEY (`recommendation_mode_id`) REFERENCES `rec_recommendation_modes` (`id`) ON DELETE CASCADE,
+      CONSTRAINT `fk_recRule_dynMatType` FOREIGN KEY (`dynamic_material_type_id`) REFERENCES `rec_dynamic_material_types` (`id`) ON DELETE SET NULL,
+      CONSTRAINT `fk_recRule_dynPurpose` FOREIGN KEY (`dynamic_purpose_id`) REFERENCES `rec_dynamic_purposes` (`id`) ON DELETE SET NULL,
+      CONSTRAINT `fk_recRule_assessmentType` FOREIGN KEY (`assessment_type_id`) REFERENCES `rec_assessment_types` (`id`) ON DELETE SET NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+    -- ========================================================================================================
+    -- SCREEN - 2  : Tab-4 (Student Recommendations)
+    -- ========================================================================================================
+
+    -- 1. Student Recommendations (The Resulting Assignments)
+    --    Refined from v1.1 `rec_student_recommendations`
+    CREATE TABLE IF NOT EXISTS `rec_student_recommendations` (
+      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `uuid` BINARY(16) NOT NULL,                       -- Unique ID for public access/tracking
+      `student_id` BIGINT UNSIGNED NOT NULL,          -- FK to std_students (or users depending on arch. std_students preferred)
+      -- Source of Recommendation
+      `rule_id` BIGINT UNSIGNED DEFAULT NULL,         -- fk to rec_recommendation_rules. Which rule generated this?
+      `triggered_by_result_id` BIGINT UNSIGNED DEFAULT NULL, -- Optional: Link to the Exam Result ID in Exam Module
+      `manual_assigned_by` BIGINT UNSIGNED DEFAULT NULL,     -- If manually assigned by Teacher
+      -- The Content
+      `material_id` BIGINT UNSIGNED DEFAULT NULL,
+      `bundle_id` BIGINT UNSIGNED DEFAULT NULL,
+      -- Context
+      `recommendation_reason` VARCHAR(255) DEFAULT NULL, -- e.g. "Scored Low in Algebra Quiz"
+      `priority` ENUM('LOW','MEDIUM','HIGH','CRITICAL') DEFAULT 'MEDIUM',
+      `due_date` DATE DEFAULT NULL,
+      -- Status Tracking
+      `status` ENUM('PENDING','VIEWED','IN_PROGRESS','COMPLETED','SKIPPED','EXPIRED') DEFAULT 'PENDING',
+      `assigned_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      `first_viewed_at` TIMESTAMP NULL DEFAULT NULL,
+      `completed_at` TIMESTAMP NULL DEFAULT NULL,
+      -- Outcomes
+      `score_achieved` DECIMAL(5,2) DEFAULT NULL,     -- If the recommendation was a Quiz/Practice
+      `student_rating` TINYINT UNSIGNED DEFAULT NULL, -- 1-5 Stars
+      `student_feedback` VARCHAR(255) DEFAULT NULL,
+      `is_active` TINYINT(1) DEFAULT 1,
+      `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `uq_recStudRec_uuid` (`uuid`),
+      KEY `idx_recStud_student` (`student_id`, `status`),
+      CONSTRAINT `fk_recStud_student` FOREIGN KEY (`student_id`) REFERENCES `std_students` (`id`) ON DELETE CASCADE,
+      CONSTRAINT `fk_recStud_rule` FOREIGN KEY (`rule_id`) REFERENCES `rec_recommendation_rules` (`id`) ON DELETE SET NULL,
+      CONSTRAINT `fk_recStud_material` FOREIGN KEY (`material_id`) REFERENCES `rec_recommendation_materials` (`id`) ON DELETE CASCADE,
+      CONSTRAINT `fk_recStud_bundle` FOREIGN KEY (`bundle_id`) REFERENCES `rec_material_bundles` (`id`) ON DELETE CASCADE,
+      CONSTRAINT `fk_recStud_teacher` FOREIGN KEY (`manual_assigned_by`) REFERENCES `sch_teachers` (`id`) ON DELETE SET NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 -- ===========================================================================
--- Syllabus_Books (rec)
+-- 12-Syllabus_Books (rec)
 -- ===========================================================================
+  -- Master table for Books/Publications used across schools
   -- Master table for Books/Publications used across schools
   CREATE TABLE IF NOT EXISTS `bok_books` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -3768,14 +3787,687 @@
 
 
 -- ===========================================================================
--- Student Profile (std)
+-- 13-Student Profile (std)
 -- ===========================================================================
+  -- Main Student Entity, linked to System User for Login/Auth
+    CREATE TABLE IF NOT EXISTS `std_students` (
+      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      -- Student Info
+      `user_id` BIGINT UNSIGNED NOT NULL,              -- Link to sys_users for login credentials
+      `admission_no` VARCHAR(50) NOT NULL,             -- Unique School Admission Number
+      `admission_date` DATE NOT NULL,                  -- Date of admission
+      -- ID Cards
+      `student_qr_code` VARCHAR(20) DEFAULT NULL,      -- For ID Cards (this will be saved as emp_code in sys_users table) 
+      `student_id_card_type` ENUM('QR','RFID','NFC','Barcode') NOT NULL DEFAULT 'QR',
+      `smart_card_id` VARCHAR(100) DEFAULT NULL,       -- RFID/NFC Tag ID
+      -- Identity Documents
+      `aadhar_id` VARCHAR(20) DEFAULT NULL,            -- National ID (India)
+      `apaar_id` VARCHAR(100) DEFAULT NULL,            -- Academic Bank of Credits ID
+      `birth_cert_no` VARCHAR(50) DEFAULT NULL,
+      -- Basic Info (Demographics)
+      `first_name` VARCHAR(50) NOT NULL,               -- (Combined (First_name+Middle_name+last_name) and saved as `name` in sys_users table (Check Max_Length should not be more than 100))
+      `middle_name` VARCHAR(50) DEFAULT NULL,
+      `last_name` VARCHAR(50) DEFAULT NULL,              -- (Combined (First_name+Middle_name+last_name) and saved as `name` in sys_users table (Check Max_Length should not be more than 100))
+      -- Personal Info
+      `gender` ENUM('Male','Female','Transgender','Prefer Not to Say') NOT NULL DEFAULT 'Male',
+      `dob` DATE NOT NULL,
+      `photo_file_name` VARCHAR(100) DEFAULT NULL,     -- Fk to sys_media (file name to show in UI)
+      `media_id` BIGINT UNSIGNED DEFAULT NULL,         -- Optional if using sys_media table
+      -- Status
+      `current_status_id` BIGINT UNSIGNED NOT NULL,    -- FK to sys_dropdown_table (Active, Left, Suspended, Alumni, Withdrawn)
+      `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+      -- Meta
+      `note` VARCHAR(255) DEFAULT NULL,
+      `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+      `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+      UNIQUE KEY `uq_std_students_admissionNo` (`admission_no`),
+      UNIQUE KEY `uq_std_students_userId` (`user_id`),
+      UNIQUE KEY `uq_std_students_aadhar` (`aadhar_id`),
+      CONSTRAINT `fk_std_students_userId` FOREIGN KEY (`user_id`) REFERENCES `sys_users` (`id`) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    -- Condition:
+    -- Short Name - (sys_user.short_name VARCHAR(30)) - This field value will be saved as 'short_name' in 'sys_users' table
+    -- Password - (sys_user.password VARCHAR(255)) - The Hashed Value of Password will be saved as 'password' in 'sys_users' table
+
+
+    -- Extended Personal Profile
+    CREATE TABLE IF NOT EXISTS `std_student_profiles` (
+      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      -- Student Info
+      `student_id` BIGINT UNSIGNED NOT NULL,
+      `mobile` VARCHAR(20) DEFAULT NULL,               -- Student/Parent mobile (This will be saved as mobile in sys_users table)
+      `email` VARCHAR(150) DEFAULT NULL,               -- Student/Parent email (This will be saved as email in sys_users table)
+      -- Social / Category
+      `religion` BIGINT UNSIGNED DEFAULT NULL,         -- FK to sys_dropdown_table
+      `caste_category` BIGINT UNSIGNED DEFAULT NULL,   -- FK to sys_dropdown_table
+      `nationality` BIGINT UNSIGNED DEFAULT NULL,      -- FK to sys_dropdown_table
+      `mother_tongue` BIGINT UNSIGNED DEFAULT NULL,    -- FK to sys_dropdown_table
+      -- Financial / Banking
+      `bank_account_no` VARCHAR(100) DEFAULT NULL,
+      `bank_name` VARCHAR(100) DEFAULT NULL,
+      `ifsc_code` VARCHAR(50) DEFAULT NULL,
+      -- Bank Details
+      `bank_branch` VARCHAR(100) DEFAULT NULL,
+      `upi_id` VARCHAR(100) DEFAULT NULL,
+      `fee_depositor_pan_number` VARCHAR(10) DEFAULT NULL,    -- For tax benefit
+      -- RTE / Government Schemes
+      `right_to_education` TINYINT(1) NOT NULL DEFAULT 0, -- RTE Quota
+      `is_ews` TINYINT(1) NOT NULL DEFAULT 0,             -- Economically Weaker Section
+      -- Physical Stats (Latest snapshot, history in Health)
+      `height_cm` DECIMAL(5,2) DEFAULT NULL,
+      `weight_kg` DECIMAL(5,2) DEFAULT NULL,
+      `measurement_date` date DEFAULT NULL,
+      -- Additional Info
+      `additional_info` json DEFAULT NULL,
+    --  `blood_group` ENUM('A+','A-','B+','B-','AB+','AB-','O+','O-') DEFAULT NULL, (Remove this Field, it is already there Health Table)
+      -- Meta
+      `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+      `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY `uq_std_profiles_studentId` (`student_id`),
+      CONSTRAINT `fk_std_profiles_studentId` FOREIGN KEY (`student_id`) REFERENCES `std_students` (`id`) ON DELETE CASCADE,
+      CONSTRAINT `fk_std_profiles_religion` FOREIGN KEY (`religion`) REFERENCES `sys_dropdown_table` (`id`) ON DELETE SET NULL,
+      CONSTRAINT `fk_std_profiles_caste_category` FOREIGN KEY (`caste_category`) REFERENCES `sys_dropdown_table` (`id`) ON DELETE SET NULL,
+      CONSTRAINT `fk_std_profiles_nationality` FOREIGN KEY (`nationality`) REFERENCES `sys_dropdown_table` (`id`) ON DELETE SET NULL,
+      CONSTRAINT `fk_std_profiles_mother_tongue` FOREIGN KEY (`mother_tongue`) REFERENCES `sys_dropdown_table` (`id`) ON DELETE SET NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+    -- Student Addresses (1:N)
+    CREATE TABLE IF NOT EXISTS `std_student_addresses` (
+      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `student_id` BIGINT UNSIGNED NOT NULL,
+      `address_type` ENUM('Permanent','Correspondence','Guardian','Local') NOT NULL DEFAULT 'Correspondence',
+      `address` VARCHAR(512) NOT NULL,
+      `city_id` BIGINT UNSIGNED NOT NULL,  -- FK to glb_cities
+      `pincode` VARCHAR(10) NOT NULL,
+      `is_primary` TINYINT(1) DEFAULT 0, -- To mark primary communication address
+      `is_active` TINYINT(1) DEFAULT 1, -- To mark address as active
+      `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+      `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      CONSTRAINT `fk_std_addr_studentId` FOREIGN KEY (`student_id`) REFERENCES `std_students` (`id`) ON DELETE CASCADE,
+      CONSTRAINT `fk_std_addr_cityId` FOREIGN KEY (`city_id`) REFERENCES `glb_cities` (`id`) ON DELETE RESTRICT
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+    -- --------------------------------------------------------------------------------------------------------
+    -- Screen - 3 : Tab Name (Parents)
+    -- --------------------------------------------------------------------------------------------------------
+
+    -- Parent/Guardian Master
+    -- Guardians can be parents to multiple students (Siblings). 
+    -- Optional link to sys_users if Parent Portal access is granted.
+    CREATE TABLE IF NOT EXISTS `std_guardians` (
+      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `user_code` VARCHAR(20) NOT NULL,  -- Unique code for guardian (this will be saved as emp_code in sys_users table) 
+      -- User Info
+      `user_id` BIGINT UNSIGNED DEFAULT NOT NULL,        -- Nullable. Set when Parent Portal access is created.
+      `first_name` VARCHAR(50) NOT NULL,                 -- First_name+last_name will be saved as name in sys_users table
+      `last_name` VARCHAR(50) DEFAULT NULL,              -- First_name+last_name will be saved as name in sys_users table
+      -- Personal Info
+      `gender` ENUM('Male','Female','Transgender','Prefer Not to Say') NOT NULL DEFAULT 'Male',
+      `mobile_no` VARCHAR(20) NOT NULL,                -- Primary identifier if user_id is null
+      `phone_no` VARCHAR(20) DEFAULT NULL,
+      `email` VARCHAR(100) DEFAULT NULL,
+      -- Professional Info
+      `occupation` VARCHAR(100) DEFAULT NULL,
+      `qualification` VARCHAR(100) DEFAULT NULL,
+      `annual_income` DECIMAL(15,2) DEFAULT NULL,
+      `preferred_language` bigint unsigned NOT NULL,   -- fk to glb_languages
+      -- Media & Status
+      `photo_file_name` VARCHAR(100) DEFAULT NULL,     -- Fk to sys_media (file name to show in UI)
+      `media_id` BIGINT UNSIGNED DEFAULT NULL,         -- Optional if using sys_media table
+      `is_active` TINYINT(1) DEFAULT 1,
+      -- Meta
+      `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+      `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY `uq_std_guardians_mobile` (`mobile_no`), -- Assumes unique mobile per parent
+      UNIQUE KEY `uq_std_guardians_userId` (`user_id`),
+      CONSTRAINT `fk_std_guardians_userId` FOREIGN KEY (`user_id`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    -- Condition:
+    -- Short Name - (sys_user.short_name VARCHAR(30)) - This field value will be saved as 'short_name' in 'sys_users' table
+    -- Password - (sys_user.password VARCHAR(255)) - The Hashed Value of Password will be saved as 'password' in 'sys_users' table
+
+
+    -- Student-Guardian Junction
+    -- M:N Relationship (Student has Father, Mother; Parent has multiple kids)
+    CREATE TABLE IF NOT EXISTS `std_student_guardian_jnt` (
+      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `student_id` BIGINT UNSIGNED NOT NULL,
+      `guardian_id` BIGINT UNSIGNED NOT NULL,
+      -- 
+      `relation_type` ENUM('Father','Mother','Guardian') NOT NULL, 
+      `relationship` VARCHAR(50) NOT NULL, -- Father, Mother, Uncle, Brother, Sister, Grandfather, Grandmother
+      `is_emergency_contact` TINYINT(1) DEFAULT 0,
+      `can_pickup` TINYINT(1) DEFAULT 0,   -- Authorization to pick up child
+      `is_fee_payer` TINYINT(1) DEFAULT 0, -- Who pays the fees?
+      `can_access_parent_portal` TINYINT(1) DEFAULT 0,  -- Can he access Paret Portal or Not
+      `can_receive_notifications` TINYINT(1) DEFAULT 1,
+      `notification_preference` ENUM('Email','SMS','WhatsApp','All') DEFAULT 'All',
+      `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+      `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY `uq_std_guard_jnt` (`student_id`, `guardian_id`),
+      CONSTRAINT `fk_sg_jnt_student` FOREIGN KEY (`student_id`) REFERENCES `std_students` (`id`) ON DELETE CASCADE,
+      CONSTRAINT `fk_sg_jnt_guardian` FOREIGN KEY (`guardian_id`) REFERENCES `std_guardians` (`id`) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+    -- | Name (Firt Name + Last Name). | Relation Type | Relationship | Emergency Contact | Can Pick | Fee Payer | Portal Access | Notifications | Notification Pref. |
+
+    -- --------------------------------------------------------------------------------------------------------
+    -- Screen - 4 : Tab Name (Session)
+    -- --------------------------------------------------------------------------------------------------------
+
+    -- Tracks chronological academic history (Class/Section allocation per session)
+    CREATE TABLE IF NOT EXISTS `std_student_academic_sessions` (
+      `id` BIGINT UNSIGNED AUTO_INCREMENT,
+      `student_id` BIGINT UNSIGNED NOT NULL,
+      -- Academic Session
+      `academic_session_id` BIGINT UNSIGNED NOT NULL,   -- FK to glb_academic_sessions (or sch_org_academic_sessions_jnt)
+      `class_section_id` INT UNSIGNED NOT NULL,         -- FK to sch_class_section_jnt
+      `roll_no` INT UNSIGNED DEFAULT NULL,
+      `subject_group_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to sch_subject_groups (if streams apply)
+      -- Other Detail
+      `house` BIGINT UNSIGNED DEFAULT NULL,             -- FK to sys_dropdown_table
+      `is_current` TINYINT(1) DEFAULT 0,                -- Only one active record per student
+      `current_flag` bigint GENERATED ALWAYS AS ((case when (`is_current` = 1) then `student_id` else NULL end)) STORED,
+      `session_status_id` BIGINT UNSIGNED NOT NULL DEFAULT 'ACTIVE',    -- FK to sys_dropdown_table (PROMOTED, ACTIVE, LEFT, SUSPENDED, ALUMNI, WITHDRAWN)
+      `leaving_date` DATE DEFAULT NULL,
+      `count_as_attrition` TINYINT(1) NOT NULL,         -- Can we count this record as Attrition
+      `reason_quit` int NULL,                           -- FK to `sys_dropdown_table` (Reason for leaving the Session)
+      -- Note
+      `dis_note` text NOT NULL,
+      `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+      `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `uq_studentSessions_currentFlag` (`current_flag`),
+      UNIQUE KEY `uq_std_acad_sess_student_session` (`student_id`, `academic_session_id`),
+      CONSTRAINT `fk_sas_student` FOREIGN KEY (`student_id`) REFERENCES `std_students` (`id`) ON DELETE CASCADE,
+      CONSTRAINT `fk_sas_session` FOREIGN KEY (`academic_session_id`) REFERENCES `sch_org_academic_sessions_jnt` (`id`) ON DELETE RESTRICT,
+      CONSTRAINT `fk_sas_class_section` FOREIGN KEY (`class_section_id`) REFERENCES `sch_class_section_jnt` (`id`) ON DELETE RESTRICT,
+      CONSTRAINT `fk_sas_subj_group` FOREIGN KEY (`subject_group_id`) REFERENCES `sch_subject_groups` (`id`) ON DELETE SET NULL,
+      CONSTRAINT `fk_sas_status` FOREIGN KEY (`session_status_id`) REFERENCES `sys_dropdown_table` (`id`) ON DELETE RESTRICT
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+    -- --------------------------------------------------------------------------------------------------------
+    -- Screen - 5 : Tab Name (Previous Education)
+    -- --------------------------------------------------------------------------------------------------------
+
+    -- Student's Previous Education History (e.g. Previous Schools attended)
+    CREATE TABLE IF NOT EXISTS `std_previous_education` (
+      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `student_id` BIGINT UNSIGNED NOT NULL,
+      -- School Details
+      `school_name` VARCHAR(150) NOT NULL,
+      `school_address` VARCHAR(255) DEFAULT NULL,
+      `board` VARCHAR(50) DEFAULT NULL,           -- e.g. CBSE, ICSE, State Board
+      -- Class Details
+      `class_passed` VARCHAR(50) DEFAULT NULL,    -- e.g. 5th, 8th, 10th
+      `year_of_passing` YEAR DEFAULT NULL,
+      `percentage_grade` VARCHAR(20) DEFAULT NULL,
+      `medium_of_instruction` VARCHAR(30) DEFAULT NULL, -- e.g. English, Hindi, Gujarati
+      `tc_number` VARCHAR(50) DEFAULT NULL,       -- Transfer Certificate Number
+      `tc_date` DATE DEFAULT NULL,                -- Transfer Certificate Date
+      `is_recognized` TINYINT(1) DEFAULT 1,       -- Was the previous school recognized?
+      -- Note
+      `remarks` TEXT DEFAULT NULL,
+      `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+      `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      CONSTRAINT `fk_prev_edu_student` FOREIGN KEY (`student_id`) REFERENCES `std_students` (`id`) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+    -- Student Documents (Uploads for Previous Education, ID Proofs, etc.)
+    CREATE TABLE IF NOT EXISTS `std_student_documents` (
+      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `student_id` BIGINT UNSIGNED NOT NULL,
+      `document_name` VARCHAR(100) NOT NULL,           -- e.g. 'Transfer Certificate', 'Mark Sheet', 'Aadhar Card'
+      `document_type_id` BIGINT UNSIGNED NOT NULL,     -- FK to sys_dropdown_table (Category of doc)
+      `document_number` VARCHAR(100) DEFAULT NULL,     -- e.g. TC No, Serial No
+      `issue_date` DATE DEFAULT NULL,
+      `expiry_date` DATE DEFAULT NULL,
+      `issuing_authority` VARCHAR(150) DEFAULT NULL,
+      `is_verified` TINYINT(1) DEFAULT 0,              -- Verified by school admin
+      `verified_by` BIGINT UNSIGNED DEFAULT NULL,      -- FK to sys_users
+      `verification_date` DATETIME DEFAULT NULL,
+      `file_name` VARCHAR(100) DEFAULT NULL,           -- Fk to sys_media (file name to show in UI)
+      `media_id` BIGINT UNSIGNED DEFAULT NULL,         -- Optional if using sys_media table
+      `notes` TEXT DEFAULT NULL,
+      `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+      `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      CONSTRAINT `fk_std_docs_student` FOREIGN KEY (`student_id`) REFERENCES `std_students` (`id`) ON DELETE CASCADE,
+      CONSTRAINT `fk_std_docs_type` FOREIGN KEY (`document_type_id`) REFERENCES `sys_dropdown_table` (`id`) ON DELETE RESTRICT,
+      CONSTRAINT `fk_std_docs_verifier` FOREIGN KEY (`verified_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+    -- --------------------------------------------------------------------------------------------------------
+    -- Screen - 6 : Tab Name (Health)
+    -- --------------------------------------------------------------------------------------------------------
+
+    -- Medical Profile
+    CREATE TABLE IF NOT EXISTS `std_health_profiles` (
+      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `student_id` BIGINT UNSIGNED NOT NULL,
+      -- 
+      `blood_group` ENUM('A+','A-','B+','B-','AB+','AB-','O+','O-') DEFAULT NULL,
+      `height_cm` DECIMAL(5,2) DEFAULT NULL,    -- Last recorded
+      `weight_kg` DECIMAL(5,2) DEFAULT NULL,    -- Last recorded
+      `measurement_date` date DEFAULT NULL,
+      `allergies` TEXT DEFAULT NULL,            -- CSV or Notes
+      `chronic_conditions` TEXT DEFAULT NULL,   -- Asthma, Diabetes, etc.
+      `medications` TEXT DEFAULT NULL,          -- Ongoing medications
+      `dietary_restrictions` TEXT DEFAULT NULL,
+      `vision_left` VARCHAR(20) DEFAULT NULL,
+      `vision_right` VARCHAR(20) DEFAULT NULL,
+      `doctor_name` VARCHAR(100) DEFAULT NULL,
+      `doctor_phone` VARCHAR(20) DEFAULT NULL,
+      `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY `uq_health_student` (`student_id`),
+      CONSTRAINT `fk_health_student` FOREIGN KEY (`student_id`) REFERENCES `std_students` (`id`) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+    -- Vaccination History
+    CREATE TABLE IF NOT EXISTS `std_vaccination_records` (
+      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `student_id` BIGINT UNSIGNED NOT NULL,
+      `vaccine_name` VARCHAR(100) NOT NULL,
+      `date_administered` DATE DEFAULT NULL,
+      `next_due_date` DATE DEFAULT NULL,
+      `remarks` VARCHAR(255) DEFAULT NULL,
+      `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT `fk_vacc_student` FOREIGN KEY (`student_id`) REFERENCES `std_students` (`id`) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+    -- Medical Incidents (School Clinic Log)
+    CREATE TABLE IF NOT EXISTS `std_medical_incidents` (
+      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `student_id` BIGINT UNSIGNED NOT NULL,
+      `incident_date` DATETIME NOT NULL,
+      `incident_type_id` BIGINT UNSIGNED NOT NULL, -- FK to sys_dropdown_table (e.g. Injury, Sickness, Fainting)
+      `location` VARCHAR(100) DEFAULT NULL,     -- Playground, Classroom
+      `description` TEXT NOT NULL,
+      `first_aid_given` TEXT DEFAULT NULL,
+      `action_taken` VARCHAR(255) DEFAULT NULL, -- Sent home, Rested in sick bay, Taken to hospital
+      `reported_by` BIGINT UNSIGNED DEFAULT NULL, --  fk to sys_users (Teacher/Staff)
+      `parent_notified` TINYINT(1) DEFAULT 0,
+      `closure_date` DATE DEFAULT NULL,
+      `follow_up_required` TINYINT(1) DEFAULT 0,
+      `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+      `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      CONSTRAINT `fk_med_inc_student` FOREIGN KEY (`student_id`) REFERENCES `std_students` (`id`) ON DELETE CASCADE,
+      CONSTRAINT `fk_med_inc_reporter` FOREIGN KEY (`reported_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+    -- --------------------------------------------------------------------------------------------------------
+    -- Screen - 7 : Tab Name (Attendance)
+    -- --------------------------------------------------------------------------------------------------------
+
+    -- Variable in sys_setting (Key "Period_wise_Student_Attendance", Value-TRUE/FALSE)
+    -- Daily Attendance Log
+    CREATE TABLE IF NOT EXISTS `std_student_attendance` (
+      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `student_id` BIGINT UNSIGNED NOT NULL,
+      `academic_session_id` BIGINT UNSIGNED NOT NULL,
+      `class_section_id` INT UNSIGNED NOT NULL,
+      `attendance_date` DATE NOT NULL, -- Date of attendance
+      `attendance_period` TINYINT UNSIGNED NOT NULL DEFAULT 0,
+      `status` ENUM('Present','Absent','Late','Half Day','Short Leave','Leave') NOT NULL,
+      `remarks` VARCHAR(255) DEFAULT NULL,
+      `marked_by` BIGINT UNSIGNED DEFAULT NULL,        -- User ID who marked attendance
+      `marked_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+      `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY `uq_std_att_student_date` (`student_id`, `attendance_date`, `attendance_period`),
+      KEY `idx_std_att_class_date` (`class_section_id`, `attendance_date`),
+      CONSTRAINT `fk_att_student` FOREIGN KEY (`student_id`) REFERENCES `std_students` (`id`) ON DELETE CASCADE,
+      CONSTRAINT `fk_att_class` FOREIGN KEY (`class_section_id`) REFERENCES `sch_class_section_jnt` (`id`) ON DELETE CASCADE,
+      CONSTRAINT `fk_att_marker` FOREIGN KEY (`marked_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+    -- Attendance Correction Requests
+    CREATE TABLE IF NOT EXISTS `std_attendance_corrections` (
+      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `attendance_id` BIGINT UNSIGNED NOT NULL,        -- FK to std_student_attendance
+      `requested_by` BIGINT UNSIGNED NOT NULL,         -- Parent or Student User ID
+      `requested_status` ENUM('Present','Absent','Late','Half Day','Short Leave','Leave') NOT NULL,
+      `requested_period` TINYINT UNSIGNED NOT NULL DEFAULT 0,
+      `reason` TEXT NOT NULL,
+      `status` ENUM('Pending','Approved','Rejected') NOT NULL DEFAULT 'Pending',
+      `admin_remarks` VARCHAR(255) DEFAULT NULL,       -- Admin/Teacher Remark on approval/rejection
+      `action_by` BIGINT UNSIGNED DEFAULT NULL,        -- Admin/Teacher who approved/rejected
+      `action_at` TIMESTAMP NULL DEFAULT NULL,         -- When approved/rejected
+      `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+      `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      CONSTRAINT `fk_att_corr_attId` FOREIGN KEY (`attendance_id`) REFERENCES `std_student_attendance` (`id`) ON DELETE CASCADE,
+      CONSTRAINT `fk_att_corr_reqBy` FOREIGN KEY (`requested_by`) REFERENCES `sys_users` (`id`) ON DELETE CASCADE,
+      CONSTRAINT `fk_att_corr_actBy` FOREIGN KEY (`action_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- ===========================================================================
+-- 14-HPC (hpc)
+-- ===========================================================================
+    -- Screen - 1 (Circular Goals)
+    -- =========================================================
+    -- CIRCULAR GOALS (NEP / PARAKH)
+    -- =========================================================
+    CREATE TABLE hpc_circular_goals (
+      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `code` VARCHAR(50) NOT NULL,
+      `name` VARCHAR(150) NOT NULL,
+      `class_id` INT UNSIGNED NOT NULL,  -- Fk to sch_classes
+      `description` TEXT,
+      `nep_reference` VARCHAR(100),
+      `is_active` TINYINT(1) DEFAULT 1,
+      `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      `deleted_at` TIMESTAMP DEFAULT NULL,
+      UNIQUE KEY `uq_cg_code` (`code`),
+      CONSTRAINT `fk_cg_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes`(`id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+    CREATE TABLE hpc_circular_goal_competency_jnt (
+      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `circular_goal_id` BIGINT UNSIGNED NOT NULL,
+      `competency_id` BIGINT UNSIGNED NOT NULL,
+      `is_primary` TINYINT(1) DEFAULT 0,
+      `is_active` TINYINT(1) DEFAULT 1,
+      `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      `deleted_at` TIMESTAMP DEFAULT NULL,
+      UNIQUE KEY `uq_cg_comp` (`circular_goal_id`, `competency_id`),
+      CONSTRAINT `fk_cg_comp_goal` FOREIGN KEY (`circular_goal_id`) REFERENCES `slb_circular_goals`(`id`),
+      CONSTRAINT `fk_cg_comp_comp` FOREIGN KEY (`competency_id`) REFERENCES `slb_competencies`(`id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+    -- Screen - 2 (Learning Activities)
+    -- =========================================================
+    -- LEARNING OUTCOMES (NORMALIZED)
+    -- =========================================================
+    CREATE TABLE hpc_learning_outcomes (
+      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `code` VARCHAR(50) NOT NULL,
+      `description` VARCHAR(255) NOT NULL,
+      `domain` BIGINT UNSIGNED NOT NULL,   -- FK TO sys_dropdown_table e.g. ('COGNITIVE','AFFECTIVE','PSYCHOMOTOR') DEFAULT 'COGNITIVE'
+      `bloom_id` INT UNSIGNED DEFAULT NULL,
+      `level` TINYINT UNSIGNED DEFAULT 1,
+      `is_active` TINYINT(1) DEFAULT 1,
+      `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      `deleted_at` TIMESTAMP DEFAULT NULL,
+      UNIQUE KEY `uq_lo_code` (`code`),
+      CONSTRAINT `fk_lo_bloom` FOREIGN KEY (`bloom_id`) REFERENCES `slb_bloom_taxonomy`(`id`)
+      CONSTRAINT `fk_lo_domain` FOREIGN KEY (`domain`) REFERENCES `sys_dropdown_table`(`id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+    CREATE TABLE hpc_outcome_entity_jnt (
+      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `outcome_id` BIGINT UNSIGNED NOT NULL,
+      `class_id` INT UNSIGNED NOT NULL,  -- Fk to sch_classes
+      `entity_type` ENUM('SUBJECT','LESSON','TOPIC') NOT NULL,
+      `entity_id` BIGINT UNSIGNED NOT NULL,  -- Dropdown from sch_subjects, slb_lessons, slb_topics (Depend upon selection of entity_type)
+      `is_active` TINYINT(1) DEFAULT 1,
+      `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      `deleted_at` TIMESTAMP DEFAULT NULL,
+      UNIQUE KEY `uq_outcome_entity` (`outcome_id`, `entity_type`, `entity_id`),
+      CONSTRAINT `fk_outcome_entity_outcome` FOREIGN KEY (`outcome_id`) REFERENCES `slb_learning_outcomes`(`id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+    -- Screen - 3 (QUESTION MAPPING)
+    -- =========================================================
+    -- OUTCOME ↔ QUESTION MAPPING (will be used for HPC)
+    -- =========================================================
+    CREATE TABLE hpc_outcome_question_jnt (
+      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `outcome_id` BIGINT UNSIGNED NOT NULL,
+      `question_id` BIGINT UNSIGNED NOT NULL,  -- fk to qns_questions_bank.id
+      `weightage` DECIMAL(5,2) DEFAULT NULL,
+      `is_active` TINYINT(1) DEFAULT 1,
+      `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      `deleted_at` TIMESTAMP DEFAULT NULL,
+      UNIQUE KEY `uq_outcome_question` (`outcome_id`, `question_id`),
+      CONSTRAINT `fk_outcome_question_outcome` FOREIGN KEY (`outcome_id`) REFERENCES `slb_learning_outcomes`(`id`),
+      CONSTRAINT `fk_outcome_question_question` FOREIGN KEY (`question_id`) REFERENCES `qns_questions_bank`(`id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+    -- Screen - 4 (Knowledge Graph Validation)
+    -- =========================================================
+    -- KNOWLEDGE GRAPH VALIDATION
+    -- =========================================================
+    CREATE TABLE hpc_knowledge_graph_validation (
+      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `topic_id` BIGINT UNSIGNED NOT NULL,
+      `issue_type` ENUM('NO_COMPETENCY','NO_OUTCOME','NO_WEIGHTAGE','ORPHAN_NODE') NOT NULL,
+      `severity` ENUM('LOW','MEDIUM','HIGH','CRITICAL') DEFAULT 'LOW',
+      `detected_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      `is_resolved` TINYINT(1) DEFAULT 0,
+      `resolved_at` TIMESTAMP NULL,
+      `is_active` TINYINT(1) DEFAULT 1,
+      `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      `deleted_at` TIMESTAMP DEFAULT NULL,
+      CONSTRAINT `fk_kgv_topic` FOREIGN KEY (`topic_id`) REFERENCES `slb_topics`(`id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+    -- Screen - 5 (Topic Equivalency)
+    -- =========================================================
+    -- MULTI-SYLLABUS TOPIC EQUIVALENCY
+    -- =========================================================
+    CREATE TABLE hpc_topic_equivalency (
+      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `source_topic_id` BIGINT UNSIGNED NOT NULL,
+      `target_topic_id` BIGINT UNSIGNED NOT NULL,
+      `equivalency_type` ENUM('FULL','PARTIAL','PREREQUISITE') DEFAULT 'FULL',
+      `is_active` TINYINT(1) DEFAULT 1,
+      `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      `deleted_at` TIMESTAMP DEFAULT NULL,
+      UNIQUE KEY `uq_topic_equiv` (`source_topic_id`, `target_topic_id`),
+      CONSTRAINT `fk_equiv_source` FOREIGN KEY (`source_topic_id`) REFERENCES `slb_topics`(`id`),
+      CONSTRAINT `fk_equiv_target` FOREIGN KEY (`target_topic_id`) REFERENCES `slb_topics`(`id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+    -- Screen - 6 (Syllabus Coverage) Only View & Update
+    -- =========================================================
+    -- SYLLABUS COVERAGE SNAPSHOT (ANALYTICS)
+    -- =========================================================
+    CREATE TABLE hpc_syllabus_coverage_snapshot (
+      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `academic_session_id` BIGINT UNSIGNED NOT NULL,
+      `class_id` INT UNSIGNED NOT NULL,
+      `subject_id` BIGINT UNSIGNED NOT NULL,
+      `coverage_percentage` DECIMAL(5,2) NOT NULL,
+      `snapshot_date` DATE NOT NULL,
+      `is_active` TINYINT(1) DEFAULT 1,
+      `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      `deleted_at` TIMESTAMP DEFAULT NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+    -- Screen - 7 (HPC Parameters)
+    -- =========================================================
+    -- HPC PARAMETERS
+    -- =========================================================
+    CREATE TABLE hpc_hpc_parameters (
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `code` VARCHAR(20) NOT NULL,      -- AWARENESS, SENSITIVITY, CREATIVITY
+      `name` VARCHAR(100) NOT NULL,
+      `description` VARCHAR(500) DEFAULT NULL,
+      `is_active` TINYINT(1) DEFAULT 1,
+      `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      `deleted_at` TIMESTAMP DEFAULT NULL,
+      UNIQUE KEY `uq_hpc_param_code` (`code`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+    -- Screen - 8 (HPC Performance Levels)
+    -- =========================================================
+    -- HPC PERFORMANCE LEVELS
+    -- =========================================================
+    CREATE TABLE hpc_hpc_levels (
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `code` VARCHAR(20) NOT NULL,      -- BEGINNER, PROFICIENT, ADVANCED
+      `ordinal` TINYINT UNSIGNED NOT NULL,
+      `description` VARCHAR(500) DEFAULT NULL,
+      `is_active` TINYINT(1) DEFAULT 1,
+      `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      `deleted_at` TIMESTAMP DEFAULT NULL,
+      UNIQUE KEY `uq_hpc_level_code` (`code`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+    -- Screen - 9 (Student HPC Evaluation)
+    -- =========================================================
+    -- STUDENT HPC EVALUATION
+    -- =========================================================
+    CREATE TABLE hpc_student_hpc_evaluation (
+      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `academic_session_id` BIGINT UNSIGNED NOT NULL,
+      `student_id` BIGINT UNSIGNED NOT NULL,
+      `subject_id` BIGINT UNSIGNED NOT NULL,
+      `competency_id` BIGINT UNSIGNED NOT NULL,
+      `hpc_parameter_id` INT UNSIGNED NOT NULL,
+      `hpc_level_id` INT UNSIGNED NOT NULL,
+      `evidence_type` BIGINT UNSIGNED NOT NULL,   -- FK TO sys_dropdown_table e.g. ('ACTIVITY','ASSESSMENT','OBSERVATION')
+      `evidence_id` BIGINT UNSIGNED,
+      `remarks` VARCHAR(500),
+      `assessed_by` BIGINT UNSIGNED,
+      `assessed_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      `is_active` TINYINT(1) DEFAULT 1,
+      `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      `deleted_at` TIMESTAMP DEFAULT NULL,
+      UNIQUE KEY `uq_hpc_eval` (`academic_session_id`, `student_id`, `subject_id`, `competency_id`, `hpc_parameter_id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+    -- Screen - 10 (Learning Activities)
+    -- =========================================================
+    -- LEARNING ACTIVITIES (HPC EVIDENCE)
+    -- =========================================================
+    CREATE TABLE hpc_learning_activities (
+      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `topic_id` BIGINT UNSIGNED NOT NULL,
+      `activity_type` BIGINT UNSIGNED NOT NULL,   FK TO sys_dropdown_table e.g. ('PROJECT','OBSERVATION','FIELD_WORK','GROUP_WORK','ART','SPORT','DISCUSSION')
+      `description` TEXT NOT NULL,
+      `expected_outcome` TEXT,
+      `is_active` TINYINT(1) DEFAULT 1,
+      `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      `deleted_at` TIMESTAMP DEFAULT NULL,
+      CONSTRAINT `fk_activity_topic` FOREIGN KEY (`topic_id`) REFERENCES `slb_topics`(`id`)
+      CONSTRAINT `fk_activity_type` FOREIGN KEY (`activity_type`) REFERENCES `sys_dropdown_table`(`id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+    -- Do not ceate screen for this write Now. We will 
+    -- =========================================================
+    -- HOLISTIC PROGRESS CARD SNAPSHOT
+    -- =========================================================
+    CREATE TABLE hpc_student_hpc_snapshot (
+      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `academic_session_id` BIGINT UNSIGNED NOT NULL,
+      `student_id` BIGINT UNSIGNED NOT NULL,
+      `snapshot_json` JSON NOT NULL,
+      `generated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      `is_active` TINYINT(1) DEFAULT 1,
+      `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      `deleted_at` TIMESTAMP DEFAULT NULL,
+      UNIQUE KEY `uq_hpc_snapshot` (`academic_session_id`, `student_id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+    -- =====================================================================
+    -- END OF NEP 2020 + HPC EXTENSION SCHEMA
+    -- =====================================================================
 
 
 
 
+-- =========================================================================
+-- LESSON VERSION & GOVERNANCE CONTROL (NCERT / BOARD DRIVEN)
+-- =========================================================================
+-- Purpose:
+-- 1. Track lesson source authority (NCERT / Board / Publisher)
+-- 2. Track textbook & edition used to define the lesson
+-- 3. Enforce immutability during academic session
+-- 4. Maintain historical version traceability across years
+-- =========================================================================
+
+CREATE TABLE IF NOT EXISTS `hpc_lesson_version_control` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  -- Core linkage
+  `lesson_id` BIGINT UNSIGNED NOT NULL,           -- FK to slb_lessons.id
+  `academic_session_id` BIGINT UNSIGNED NOT NULL, -- Session in which this version applies
+  -- Authority & source
+  `curriculum_authority` ENUM('NCERT','CBSE','ICSE','STATE_BOARD','OTHER') NOT NULL DEFAULT 'NCERT',
+  `board_code` VARCHAR(50) DEFAULT NULL,          -- CBSE, ICSE, STATE-UK, etc.
+  `book_id` BIGINT UNSIGNED DEFAULT NULL,         -- FK to book master (if exists)
+  `book_title` VARCHAR(255) DEFAULT NULL,         -- Redundant but audit-friendly
+  `book_edition` VARCHAR(100) DEFAULT NULL,       -- e.g. "2024 Edition"
+  `publisher` VARCHAR(150) DEFAULT 'NCERT',
+  -- Versioning
+  `lesson_version` VARCHAR(20) NOT NULL,          -- e.g. v1.0, v2.0
+  `derived_from_lesson_id` BIGINT UNSIGNED DEFAULT NULL, -- Previous version reference
+  -- Governance state (SYSTEM CONTROLLED)
+  `status` ENUM('IMPORTED','ACTIVE','LOCKED','DEPRECATED','ARCHIVED') NOT NULL DEFAULT 'IMPORTED',
+  -- Control flags
+  `is_editable` TINYINT(1) NOT NULL DEFAULT 0,    -- Always 0 for system-defined lessons
+  `is_system_defined` TINYINT(1) NOT NULL DEFAULT 1,
+  -- Audit
+  `imported_on` DATE DEFAULT NULL,                -- When lesson was imported
+  `locked_on` DATE DEFAULT NULL,                  -- When lesson was locked
+  `remarks` VARCHAR(500) DEFAULT NULL,
+  `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  -- Constraints
+  UNIQUE KEY `uq_lesson_session_version`(`lesson_id`, `academic_session_id`, `lesson_version`),
+  KEY `idx_lvc_lesson` (`lesson_id`),
+  KEY `idx_lvc_session` (`academic_session_id`),
+  KEY `idx_lvc_status` (`status`),
+  CONSTRAINT `fk_lvc_lesson` FOREIGN KEY (`lesson_id`) REFERENCES `slb_lessons` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_lvc_prev_lesson` FOREIGN KEY (`derived_from_lesson_id`) REFERENCES `slb_lessons` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Conditions:
+    -- NCERT Import (Once per Year)
+    --   Lessons imported from NCERT book structure
+    --   Record inserted with:
+    --     status = IMPORTED
+    --     lesson_version = v1.0
+    -- Session Lock (Before Teaching / Exams)
+    --   System marks:
+    --     status = LOCKED
+    --     locked_on = CURRENT_DATE
+    --   No updates allowed at service layer
+    -- Next Academic Year
+    --   New NCERT edition released
+    --   New lessons created
+    --   New record inserted:
+    --     lesson_version = v2.0
+    --     derived_from_lesson_id = old lesson_id
+    --   Old record marked DEPRECATED
 
 
+-- =========================================================
+-- CURRICULUM CHANGE MANAGEMENT
+-- =========================================================
+CREATE TABLE hpc_curriculum_change_request (
+  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `entity_type` ENUM('SUBJECT','LESSON','TOPIC','COMPETENCY') NOT NULL,
+  `entity_id` BIGINT UNSIGNED NOT NULL,
+  `change_type` ENUM('ADD','UPDATE','DELETE') NOT NULL,
+  `change_summary` VARCHAR(500),
+  `impact_analysis` JSON,
+  `status` ENUM('DRAFT','SUBMITTED','APPROVED','REJECTED') DEFAULT 'DRAFT',
+  `requested_by` BIGINT UNSIGNED,
+  `requested_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `is_active` TINYINT(1) DEFAULT 1,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` TIMESTAMP DEFAULT NULL,
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 
