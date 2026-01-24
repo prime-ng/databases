@@ -124,6 +124,7 @@ CREATE TABLE IF NOT EXISTS `sys_users` (
   `super_admin_flag` tinyint GENERATED ALWAYS AS ((case when (`is_super_admin` = 1) then 1 else NULL end)) STORED,
   `remember_token` varchar(100) DEFAULT NULL,
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `is_pg_user` tinyint(1) NOT NULL DEFAULT '0',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
@@ -137,20 +138,19 @@ CREATE TABLE IF NOT EXISTS `sys_users` (
 /* Optional triggers to prevent deleting/demoting super admin (you already used triggers for sessions) */
 DELIMITER $$
 CREATE TRIGGER trg_users_prevent_delete_super BEFORE DELETE ON users
-FOR EACH ROW
-BEGIN
-  IF OLD.is_super_admin = 1 THEN
-    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Super Admin cannot be deleted';
-  END IF;
-END$$
-
+  FOR EACH ROW
+  BEGIN
+    IF OLD.is_super_admin = 1 THEN
+      SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Super Admin cannot be deleted';
+    END IF;
+  END$$
 CREATE TRIGGER trg_users_prevent_update_super BEFORE UPDATE ON users
-FOR EACH ROW
-BEGIN
-  IF OLD.is_super_admin = 1 AND NEW.is_super_admin = 0 THEN
-    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Super Admin cannot be demoted';
-  END IF;
-END$$
+  FOR EACH ROW
+  BEGIN
+    IF OLD.is_super_admin = 1 AND NEW.is_super_admin = 0 THEN
+      SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Super Admin cannot be demoted';
+    END IF;
+  END$$
 DELIMITER ;
 
 CREATE TABLE IF NOT EXISTS `sys_settings` (
@@ -166,48 +166,49 @@ CREATE TABLE IF NOT EXISTS `sys_settings` (
   UNIQUE KEY `uq_settings_key` (`key`),
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Ths Table will capture the detail of which Field of Which Table fo Which Databse Type, I can create a Dropdown in sys_dropdown_table of?
--- This will help us to make sure we can only create create a Dropdown in sys_dropdown_table whcih has been configured by Developer.
+  -- Ths Table will capture the detail of which Field of Which Table fo Which Databse Type, I can create a Dropdown in sys_dropdown_table of?
+  -- This will help us to make sure we can only create create a Dropdown in sys_dropdown_table whcih has been configured by Developer.
 CREATE TABLE IF NOT EXISTS `sys_dropdown_needs` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
   `db_type` ENUM('Prime','Tenant','Global') NOT NULL,  -- Which Database this Dropdown is for? (prime_db,tenant_db,global_db)
   `table_name` varchar(150) NOT NULL,  -- Table Name
   `column_name` varchar(150) NOT NULL,  -- Column Name
-  `menu_category` varchar(150) NULL,  -- Menu Category (e.g. School Setup, Foundation Setup, Operations, Reports)
-  `main_menu` varchar(150) NULL,  -- Main Menu (e.g. Student Mgmt., Sullabus Mgmt.)
-  `sub_menu` varchar(150) NULL,  -- Sub Menu (e.g. Student Details, Teacher Details)
-  `tab_name` varchar(100) NULL,
-  `field_name` varchar(100) NULL,
-  `is_system` TINYINT(1) DEFAULT 1,
-  `tenant_creation_allowed` TINYINT(1) DEFAULT 0,
-  `compulsory` TINYINT(1) DEFAULT 1,
-  `is_active` TINYINT(1) DEFAULT 1,
+  `menu_category` varchar(150) NULL,    -- Menu Category (e.g. School Setup, Foundation Setup, Operations, Reports)
+  `main_menu` varchar(150) NULL,        -- Main Menu (e.g. Student Mgmt., Sullabus Mgmt.)
+  `sub_menu` varchar(150) NULL,         -- Sub Menu (e.g. Student Details, Teacher Details)
+  `tab_name` varchar(100) NULL,         -- Tab Name (e.g. Student Details, Teacher Details)
+  `field_name` varchar(100) NULL,       -- Field Name (e.g. Student Details, Teacher Details)
+  `is_system` TINYINT(1) DEFAULT 1,     -- If true, this Dropdown can be created by Tenant
+  `tenant_creation_allowed` TINYINT(1) DEFAULT 0,  -- If true, this Dropdown can be created by Tenant
+  `compulsory` TINYINT(1) DEFAULT 1,    -- If true, this Dropdown is compulsory for Application fuctioning
+  `is_active` TINYINT(1) DEFAULT 1,     -- If true, this Dropdown is active
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_dropdownNeeds_db_table_column_key` (`db_type`,`table_name`,`column_name`),
-  CONSTRAINT chk_isSubModule_parentId CHECK ((tenant_creation_allowed = 0 AND menu_category IS NULL AND main_menu IS NULL AND sub_menu IS NULL AND tab_name IS NULL AND field_name IS NULL) OR (tenant_creation_allowed = 1 AND menu_category IS NOT NULL AND main_menu IS NOT NULL AND sub_menu IS NOT NULL AND tab_name IS NOT NULL AND field_name IS NOT NULL))  
+  UNIQUE KEY `uq_DDNeeds_dbType_tableName_columnName` (`db_type`,`table_name`,`column_name`),
+  UNIQUE KEY `uq_DDNeeds_category_mainMenu_subMenu_tabName_fieldName` (`menu_category`,`main_menu`,`sub_menu`,`tab_name`,`field_name`),
+  UNIQUE KEY `uq_DDNeeds_dropdownTableId` (`dropdown_table_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
--- Conditions:
-  -- 1. If tenant_creation_allowed = 1, then it is must to have menu_category, main_menu, sub_menu, tab_name, field_name.
-  -- 2. When PG-Admin/PG-Support will create a Dropdown, it will get 2 option to select -
-  --    Option 1 - Dropdown creation by Table & Column details.
-  --    Option 2 - Dropdown creation by Menu/Sub-Menu & Field Name.
-  --       a. If he select Option 1 then he can select - Table Name, Column Name.
-  --       b. If he select Option 2 then he can select - Menu Category, Main Menu, Sub Menu, Tab Name, Field Name.
-  -- 3. If some Dropdown is allowed to be created by Tenant(tenant_creation_allowed = 1), then it will always show 5 Dropdowns to select from.
-  --    a. Menu Category (this will come from sys_dropdown_needs.menu_category)
-  --    b. Main Menu (this will come from sys_dropdown_needs.main_menu)
-  --    c. Sub Menu (this will come from sys_dropdown_needs.sub_menu)
-  --    d. Tab Name (this will come from sys_dropdown_needs.tab_name)
-  --    e. Field Name (this will come from sys_dropdown_needs.field_name)
-  -- 4. is_system = 1
+  -- Conditions:
+    -- 1. If tenant_creation_allowed = 1, then it is must to have menu_category, main_menu, sub_menu, tab_name, field_name. This needs to be managed at Application Level.
+    -- 2. When PG-Admin/PG-Support will create a Dropdown, it will get 2 option to select -
+    --    Option 1 - Dropdown creation by Table & Column details.
+    --    Option 2 - Dropdown creation by Menu/Sub-Menu & Field Name.
+    --       a. If he select Option 1 then he can select - Table Name, Column Name.
+    --       b. If he select Option 2 then he can select - Menu Category, Main Menu, Sub Menu, Tab Name, Field Name.
+    -- 3. If some Dropdown is allowed to be created by Tenant(tenant_creation_allowed = 1), then it will always show 5 Dropdowns to select from.
+    --    a. Menu Category (this will come from sys_dropdown_needs.menu_category). This is a Must Dropdown.
+    --    b. Main Menu (this will come from sys_dropdown_needs.main_menu). This is a Must Dropdown.
+    --    c. Sub Menu (this will come from sys_dropdown_needs.sub_menu). This is a Optional Dropdown.
+    --    d. Tab Name (this will come from sys_dropdown_needs.tab_name). This is a Optional Dropdown.
+    --    e. Field Name (this will come from sys_dropdown_needs.field_name). This is a Must Dropdown.
+    --    f. is_system = 1
 
--- Dropdown Table to store various dropdown values used across the system
--- Enhanced sys_dropdown_table to accomodate Menu Detail (Category,Main Menu, Sub-Menu ID) for Easy identification.
+  -- --------------------------------------------------------------------------------------------------------
+  -- Dropdown Table to store various dropdown values used across the system
+  -- Enhanced sys_dropdown_table to accomodate Menu Detail (Category,Main Menu, Sub-Menu ID) for Easy identification.
 CREATE TABLE IF NOT EXISTS `sys_dropdown_table` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `dropdown_needs_id` bigint unsigned NOT NULL,
   `ordinal` tinyint unsigned NOT NULL,
   `key` varchar(160) NOT NULL,      -- Key will be Combination of Table Name + Column Name (e.g. 'cmp_complaint_actions.action_type)
   `value` varchar(100) NOT NULL,
@@ -218,17 +219,51 @@ CREATE TABLE IF NOT EXISTS `sys_dropdown_table` (
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_dropdownTable_ordinal` (`dropdown_needs_id`,`ordinal`),
-  UNIQUE KEY `uq_dropdownTable_key` (`dropdown_needs_id`,`key`),
-  CONSTRAINT `fk_sys_dropdown_table_sys_dropdown_needs` FOREIGN KEY (`dropdown_needs_id`) REFERENCES `sys_dropdown_needs` (`id`) ON DELETE CASCADE
+  UNIQUE KEY `uq_dropdownTable_key` (`dropdown_needs_id`,`key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
--- conditions:
-  -- 1. When we go to create a New Dropdown, It will show 3 Dropdowns to select from.
-  --    a. DB Type (this will come from sys_dropdown_needs.db_type)
-  --    b. Table Name (this will come from sys_dropdown_needs.table_name)
-  --    c. Column Name (this will come from sys_dropdown_needs.column_name)
+  -- conditions:
+  -- 1. When we go to create a New Dropdown, 
+  --    1.1 PG_USER (PG-Admin/PG-Support) will get 2 option to select -
+  --        Option 1 - Dropdown creation by DB details.
+  --        Option 2 - Dropdown creation by Menu Detail.
+  --          - If user select Option 1 then he can select - DB Type, Table Name, Column Name.
+  --            a. DB Type (this will come from sys_dropdown_needs.db_type)
+  --            b. Table Name (this will come from sys_dropdown_needs.table_name)
+  --            c. Column Name (this will come from sys_dropdown_needs.column_name)
+  --          - If user select Option 2 then he can select - Menu Category, Main Menu, Sub Menu, Tab Name, Field Name.
+  --            a. Menu Category (this will come from sys_dropdown_needs.menu_category). This is a Must Dropdown.
+  --            b. Main Menu (this will come from sys_dropdown_needs.main_menu). This is a Must Dropdown.
+  --            c. Sub Menu (this will come from sys_dropdown_needs.sub_menu). This is a Optional Dropdown.
+  --            d. Tab Name (this will come from sys_dropdown_needs.tab_name). This is a Optional Dropdown.
+  --            e. Field Name (this will come from sys_dropdown_needs.field_name). This is a Must Dropdown.
+  --            f. is_system = 1
+  --    1.2 NON PG_USER (PG-Admin/PG-Support) will get only 1 option of Dropdowns to select -
+  --        Option 1 - Dropdown creation by Menu/Sub-Menu & Field Name. (Need not to show the Option Button)
+  --            a. Menu Category (this will come from sys_dropdown_needs.menu_category). This is a Must Dropdown.
+  --            b. Main Menu (this will come from sys_dropdown_needs.main_menu). This is a Must Dropdown.
+  --            c. Sub Menu (this will come from sys_dropdown_needs.sub_menu). This is a Optional Dropdown.
+  --            d. Tab Name (this will come from sys_dropdown_needs.tab_name). This is a Optional Dropdown.
+  --            e. Field Name (this will come from sys_dropdown_needs.field_name). This is a Must Dropdown.
+  --            f. is_system = 1
   -- 2. System will check if the Dropdown Need is already configured in sys_dropdown_needs table.
-  -- 3. If not, Developer need to create a new Dropdown Need as per the need.
+  -- 3. If not, Developer need to create a new Dropdown Need first as per the requirement.
   -- 4. If yes, System will use the existing Dropdown Need.
+
+-- This table will be Junction table for sys_dropdown_needs & sys_dropdown_table
+CREATE TABLE IF NOT EXISTS `sys_dropdown_need_table_jnt` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `dropdown_needs_id` bigint unsigned NOT NULL,  -- FK to sys_dropdown_needs.id
+  `dropdown_table_id` bigint unsigned NOT NULL,  -- FK to sys_dropdown_table.id
+  `is_active` TINYINT(1) DEFAULT 1,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_dropdownNeedTableJnt_dropdownNeedsId` (`dropdown_needs_id`),
+  UNIQUE KEY `uq_dropdownNeedTableJnt_dropdownTableId` (`dropdown_table_id`),
+  CONSTRAINT `fk_dropdownNeedTableJnt_dropdownNeedsId` FOREIGN KEY (`dropdown_needs_id`) REFERENCES `sys_dropdown_needs` (`id`),
+  CONSTRAINT `fk_dropdownNeedTableJnt_dropdownTableId` FOREIGN KEY (`dropdown_table_id`) REFERENCES `sys_dropdown_table` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 
 
 CREATE TABLE IF NOT EXISTS `sys_media` (
