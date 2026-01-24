@@ -199,7 +199,6 @@
   -- Enhanced sys_dropdown_table to accomodate Menu Detail (Category,Main Menu, Sub-Menu ID) for Easy identification.
   CREATE TABLE IF NOT EXISTS `sys_dropdown_table` (
     `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  --  `dropdown_needs_id` bigint unsigned NOT NULL,
     `ordinal` tinyint unsigned NOT NULL,
     `key` varchar(160) NOT NULL,      -- Key will be Combination of Table Name + Column Name (e.g. 'cmp_complaint_actions.action_type)
     `value` varchar(100) NOT NULL,
