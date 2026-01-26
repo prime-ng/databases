@@ -120,7 +120,6 @@ CREATE TABLE IF NOT EXISTS `lms_homework` (
 -- If `allow_late_submission` = 1, then Student can submit Homework online after `due_date` also
 
 
-
 -- Create Data seed
 INSERT INTO  lms_homework (academic_session_id, class_id, section_id, subject_id, topic_id, title, description, submission_type_id, is_gradable, max_marks, passing_marks, difficulty_level_id, assign_date, due_date, allow_late_submission, auto_publish_score, release_condition_id, status_id, is_active, created_by, updated_by, created_at, updated_at, deleted_at) VALUES 
 (1, 1, NULL, 1, NULL, 'Homework 1', 'Description of Homework 1', 1, 1, 100, 50, 1, '2023-01-01 00:00:00', '2023-01-01 23:59:59', 0, 1, 1, 1, 1, 1, 1, NOW(), NOW(), NULL),
@@ -134,20 +133,20 @@ CREATE TABLE IF NOT EXISTS `lms_homework_submissions` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `homework_id` BIGINT UNSIGNED NOT NULL,
     `student_id` BIGINT UNSIGNED NOT NULL,                -- FK to sys_users (Student)
-    
     `submitted_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
-    `submission_text` LONGTEXT DEFAULT NULL,
+    `submission_text` LONGTEXT DEFAULT NULL,              -- Student Submission Text
     `attachment_media_id` BIGINT UNSIGNED DEFAULT NULL,   -- FK to sys_media (Handwritten scan)
-    
     -- Evaluation
-    `status_id` BIGINT UNSIGNED NOT NULL,                 -- FK to sys_dropdown_table (SUBMITTED, CHECKED, REJECTED)
-    `marks_obtained` DECIMAL(5,2) DEFAULT NULL,
-    `teacher_feedback` TEXT DEFAULT NULL,
-    `graded_by` BIGINT UNSIGNED DEFAULT NULL,
-    `graded_at` DATETIME DEFAULT NULL,
-    
-    `is_late` TINYINT(1) DEFAULT 0,
-    
+    `status_id` BIGINT UNSIGNED NOT NULL,                 -- FK to sys_dropdown_table (SUBMITTED, CHECKED, REJECTED)    
+    `marks_obtained` DECIMAL(5,2) DEFAULT NULL,          -- Obtained Marks
+    `teacher_feedback` TEXT DEFAULT NULL,                 -- Teacher Feedback
+    `graded_by` BIGINT UNSIGNED DEFAULT NULL,             -- Graded By
+    `graded_at` DATETIME DEFAULT NULL,                    -- Graded At
+    `is_late` TINYINT(1) DEFAULT 0,                      -- Is Late
+    -- Metadata
+    `created_at` TIMESTAMP NULL DEFAULT NULL,
+    `updated_at` TIMESTAMP NULL DEFAULT NULL,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,    
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_hw_sub` (`homework_id`, `student_id`),
     CONSTRAINT `fk_hws_hw` FOREIGN KEY (`homework_id`) REFERENCES `lms_homework` (`id`) ON DELETE CASCADE

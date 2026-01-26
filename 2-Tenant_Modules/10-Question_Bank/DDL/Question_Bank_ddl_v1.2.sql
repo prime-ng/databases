@@ -34,8 +34,9 @@ CREATE TABLE IF NOT EXISTS `qns_questions_bank` (
   `current_version` TINYINT UNSIGNED NOT NULL DEFAULT 1,       -- version of the question (for history) 
   -- Question Usage
   `for_quiz` TINYINT(1) NOT NULL DEFAULT 1,        -- True if this question is for quiz
-  `for_assessment` TINYINT(1) NOT NULL DEFAULT 1,  -- True if this question is for assessment
-  `for_exam` TINYINT(1) NOT NULL DEFAULT 1,        -- True if this question is for exam
+  `for_assessment` TINYINT(1) NOT NULL DEFAULT 0,  -- True if this question is for assessment
+  `for_exam` TINYINT(1) NOT NULL DEFAULT 0,        -- True if this question is for exam
+  `for_offline_exam` TINYINT(1) NOT NULL DEFAULT 0, -- True if this question is for offline exam
   -- Question Ownership
   `ques_owner` ENUM('PrimeGurukul','School') NOT NULL DEFAULT 'PrimeGurukul',
   `created_by_AI` TINYINT(1) DEFAULT 0,            -- True if this question is created by AI
@@ -177,9 +178,9 @@ CREATE TABLE IF NOT EXISTS `qns_media_store` (
   `file_name` VARCHAR(255),
   `file_path` VARCHAR(255),
   `mime_type` VARCHAR(100),
-  `disk` VARCHAR(50),     -- storage disk
-  `size` BIGINT UNSIGNED, -- file size in bytes
-  `checksum` CHAR(64),    -- file checksum
+  `disk` VARCHAR(50) DEFAULT NULL,     -- storage disk
+  `size` BIGINT UNSIGNED DEFAULT NULL, -- file size in bytes
+  `checksum` CHAR(64) DEFAULT NULL,    -- file checksum
   `ordinal` SMALLINT UNSIGNED DEFAULT 1,
   `is_active` TINYINT(1) DEFAULT 1,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -203,6 +204,7 @@ CREATE TABLE IF NOT EXISTS `qns_question_topic_jnt` (
   CONSTRAINT `fk_qt_topic` FOREIGN KEY (`topic_id`) REFERENCES `slb_topics` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Required a backend Service to calculate the statistics
 -- Display Only
 CREATE TABLE IF NOT EXISTS `qns_question_statistics` (
   `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -260,12 +262,12 @@ CREATE TABLE IF NOT EXISTS `qns_question_usage_log` (
 
 -- -----------------------------------------------------------------------------------------------------------------------
 -- Question Review & Approval Audit
-CREATE TABLE `qns_question_review_log` (
+CREATE TABLE IF NOT EXISTS `qns_question_review_log` (
     `review_log_id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `question_id` BIGINT UNSIGNED NOT NULL,  -- FK to qns_questions_bank.id
     `reviewer_id` BIGINT UNSIGNED NOT NULL,  -- FK to users.id
     `review_status_id` BIGINT UNSIGNED NOT NULL,  -- FK to sys_dropdowns.id e.g. 'PENDING','APPROVED','REJECTED'
-    `review_comment` TEXT,
+    `review_comment` TEXT DEFAULT NULL,
     `reviewed_at` DATETIME NOT NULL,
     `is_active` TINYINT(1) DEFAULT 1,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -283,7 +285,7 @@ CREATE TABLE `qns_question_usage_type` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `code` VARCHAR(50) NOT NULL,  -- e.g. 'QUIZ','QUEST','ONLINE_EXAM','OFFLINE_EXAM','UT_TEST'
     `name` VARCHAR(100) NOT NULL, -- e.g. 'Quiz','Quest','Online Exam','Offline Exam','Unit Test'
-    `description` TEXT,
+    `description` TEXT DEFAULT NULL,
     `is_active` TINYINT(1) DEFAULT 1,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -292,4 +294,10 @@ CREATE TABLE `qns_question_usage_type` (
     UNIQUE KEY `uq_q_usage_type_name` (`name`)
 );
 
+INSERT INTO qns_question_usage_type (code, name, description) VALUES
+('QUIZ','Quiz', 'Quiz'),
+('QUEST','Quest', 'Quest'),
+('ONLINE_EXAM','Online Exam', 'Online Exam'),
+('OFFLINE_EXAM','Offline Exam', 'Offline Exam'),
+('UT_TEST','Unit Test', 'Unit Test');
 

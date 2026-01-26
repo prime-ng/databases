@@ -1,5 +1,5 @@
 -- ========================================================================================================
--- RECOMMENDATION MODULE (rec) - v1.2
+-- RECOMMENDATION MODULE (rec) - v1.4
 -- ========================================================================================================
 -- Purpose: 
 --   1. Capture content/materials for recommendations (Text, Video, PDF, etc.)
@@ -56,8 +56,9 @@ CREATE TABLE IF NOT EXISTS `rec_recommendation_modes` (
   UNIQUE KEY `uq_recRecommendationMode_name` (`mode_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci; 
 
--- TAB-3 : Recommendation Rules
 
+
+-- TAB-3 : Recommendation Rules
 -- table for "dynamic_material_type" ENUM values
 CREATE TABLE IF NOT EXISTS `rec_dynamic_material_types` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -72,7 +73,6 @@ CREATE TABLE IF NOT EXISTS `rec_dynamic_material_types` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci; 
 
 -- TAB-4 : Recommendation Rules
-
 -- table for "dynamic_purpose" ENUM values
 CREATE TABLE IF NOT EXISTS `rec_dynamic_purposes` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -86,8 +86,8 @@ CREATE TABLE IF NOT EXISTS `rec_dynamic_purposes` (
   UNIQUE KEY `uq_recDynamicPurpose_name` (`purpose_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci; 
 
--- TAB-5 : Recommendation Rules
 
+-- TAB-5 : Recommendation Rules
 -- table for "assessment_type" ENUM values
 CREATE TABLE IF NOT EXISTS `rec_assessment_types` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -136,10 +136,8 @@ CREATE TABLE IF NOT EXISTS `rec_recommendation_materials` (
   `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `deleted_at` TIMESTAMP NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
-  KEY `idx_recMat_school` (`school_id`),
   KEY `idx_recMat_type` (`material_type`),
   KEY `idx_recMat_scope` (`class_id`, `subject_id`, `topic_id`),
-  CONSTRAINT `fk_recMat_school` FOREIGN KEY (`school_id`) REFERENCES `sch_organizations` (`id`),
   CONSTRAINT `fk_recMat_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`),
   CONSTRAINT `fk_recMat_subject` FOREIGN KEY (`subject_id`) REFERENCES `sch_subjects` (`id`),
   CONSTRAINT `fk_recMat_topic` FOREIGN KEY (`topic_id`) REFERENCES `slb_topics` (`id`),
@@ -165,9 +163,7 @@ CREATE TABLE IF NOT EXISTS `rec_material_bundles` (
   `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `deleted_at` TIMESTAMP NULL DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  KEY `idx_recBundle_school` (`school_id`),
-  CONSTRAINT `fk_recBundle_school` FOREIGN KEY (`school_id`) REFERENCES `sch_organizations` (`id`) ON DELETE CASCADE
+  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 2. Junction between Bundle and Materials
@@ -195,7 +191,7 @@ CREATE TABLE IF NOT EXISTS `rec_recommendation_rules` (
   `name` VARCHAR(150) NOT NULL,                   -- e.g. "Math Remedial for Poor Performers in Algebra"
   `is_automated` TINYINT(1) DEFAULT 1,            -- 1=Run by System Job, 0=Manual Helper Rule
   -- TRIGGERS (When to Apply)
-  `trigger_event` BIGINT UNSIGNED NOT NULL,  -- FK to rec_trigger_events
+  `trigger_event_id` BIGINT UNSIGNED NOT NULL,  -- FK to rec_trigger_events
   -- CONDITIONS (The "Switch")
   -- Narrowing Scope
   `class_id` INT UNSIGNED DEFAULT NULL,  -- FK to sch_classes
@@ -206,11 +202,11 @@ CREATE TABLE IF NOT EXISTS `rec_recommendation_rules` (
   `min_score_pct` DECIMAL(5,2) DEFAULT NULL,      -- Specific override e.g. < 40%
   `max_score_pct` DECIMAL(5,2) DEFAULT NULL,      -- Specific override e.g. > 90%
   -- Assessment Type Filter (Only apply if the result came from this type of exam)
-  `assessment_type` BIGINT UNSIGNED DEFAULT NULL,  -- FK to rec_assessment_types
+  `assessment_type_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to rec_assessment_types
   -- ACTION (What to Recommend)
   `recommendation_mode_id` BIGINT UNSIGNED NOT NULL,  -- FK to rec_recommendation_modes
-  `target_material_id` BIGINT UNSIGNED DEFAULT NULL,  -- KF TO rec_recommendation_materials
-  `target_bundle_id` BIGINT UNSIGNED DEFAULT NULL,    -- KF TO rec_recommendation_bundles
+  `target_material_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK TO rec_recommendation_materials
+  `target_bundle_id` BIGINT UNSIGNED DEFAULT NULL,    -- FK TO rec_material_bundles
   `dynamic_material_type_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to rec_dynamic_material_types
   `dynamic_purpose_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to rec_dynamic_purposes
   `priority` INT UNSIGNED DEFAULT 10,                 -- Higher priority rules override or appear first

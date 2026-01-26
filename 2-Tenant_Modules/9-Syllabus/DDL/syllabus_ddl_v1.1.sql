@@ -8,6 +8,26 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- =========================================================================
 -- SYLLABUS MODULE (10 Tables)
 -- =========================================================================
+-- We need to create Master table to capture slb_topic_type
+-- level: 0=Topic, 1=Sub-topic, 2=Mini Topic, 3=Sub-Mini Topic, 4=Micro Topic, 5=Sub-Micro Topic, 6=Nano Topic, 7=Ultra Topic,
+-- This table will be used to Generate slb_topics.code and slb_topics.analytics_code.
+-- User can Not change slb_topics.analytics_code, But he can change slb_topics.code as per their choice.
+-- This Table will be set by PG_Team and will not be available for change to School.
+CREATE TABLE IF NOT EXISTS `slb_topic_level_types` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `level` TINYINT UNSIGNED NOT NULL,              -- e.g., 0=Topic, 1=Sub-topic, 2=Mini Topic, 3=Sub-Mini Topic, 4=Micro Topic, 5=Sub-Micro Topic, 6=Nano Topic, 7=Sub-Nano Topic, 8=Ultra Topic, 9=Sub-Ultra Topic
+  `code` VARCHAR(3) NOT NULL,                    -- e.g., (TOP, SBT, MIN, SMN, MIC, SMC, NAN, SNN, ULT, SUT)
+  `name` VARCHAR(150) NOT NULL,                   -- e.g., (TOPIC, SUB-TOPIC, MINI TOPIC, SUB-MINI TOPIC, MICRO TOPIC, SUB-MICRO TOPIC, NANO TOPIC, SUB-NANO TOPIC, ULTRA TOPIC, SUB-ULTRA TOPIC)
+  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+  `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_topic_type_level` (`level`),
+  UNIQUE KEY `uq_topic_type_code` (`code`),
+  UNIQUE KEY `uq_topic_type_name` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 
 CREATE TABLE IF NOT EXISTS `slb_lessons` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -17,7 +37,7 @@ CREATE TABLE IF NOT EXISTS `slb_lessons` (
   `subject_id` BIGINT UNSIGNED NOT NULL,          -- FK to sch_subjects
   `code` VARCHAR(20) NOT NULL,                    -- e.g., '9TH_SCI_L01' (Auto-generated) It will be combination of class code, subject code and lesson code
   `name` VARCHAR(150) NOT NULL,                   -- e.g., 'Chapter 1: Matter in Our Surroundings'
-  `short_name` VARCHAR(50) DEFAULT NULL,          -- e.g., 'Matter Around Us'
+  `short_name` VARCHAR(50) DEFAULT NULL,          -- e.g., 'Matter Around Us' 
   `ordinal` SMALLINT UNSIGNED NOT NULL,           -- Sequence order within subject
   `description` VARCHAR(255) DEFAULT NULL,
   `learning_objectives` JSON DEFAULT NULL,        -- Array of learning objectives e.g. [{"objective": "Objective 1"}, {"objective": "Objective 2"}]
@@ -62,7 +82,7 @@ CREATE TABLE IF NOT EXISTS `slb_topics` (
   `path` VARCHAR(500) NOT NULL,                   -- e.g., '/1/5/23/' (ancestor path) e.g. "/1/5/23/145/" (ancestor IDs separated by /)
   `path_names` VARCHAR(2000) DEFAULT NULL,        -- e.g., 'Algebra > Linear Equations > Solving Methods'
   `level` TINYINT UNSIGNED NOT NULL DEFAULT 0,    -- Depth in hierarchy (0=root)
-  -- Core topic information
+  -- Core topic information (Use slb_topic_level_types to Generate code)
   `code` VARCHAR(60) NOT NULL,                    -- e.g., '9TH_SCI_L01_TOP01_SUB02_MIN01_SMT02_MIC01_SMT02_NAN01_ULT02'
   `name` VARCHAR(150) NOT NULL,                   -- e.g., 'Topic 1: Linear Equations'
   `short_name` VARCHAR(50) DEFAULT NULL,          -- e.g., 'Linear Equations'
@@ -76,8 +96,11 @@ CREATE TABLE IF NOT EXISTS `slb_topics` (
   `prerequisite_topic_ids` JSON DEFAULT NULL,     -- Dependency tracking
   `base_topic_id` BIGINT UNSIGNED DEFAULT NULL,   -- Primary prerequisite from previous class
   `is_assessable` TINYINT(1) DEFAULT 1,           -- Whether the topic is assessable
-  -- Analytics identifiers
+  -- Analytics identifiers (With New Width analytics_code = "'09TH_SCINC_LES01_TOP01_SUB02_MIN01_SMT02_MIC01_SMT02_NAN01_ULT02'")
   `analytics_code` VARCHAR(60) NOT NULL,          -- Unique code for tracking e.g. '9TH_SCI_L01_TOP01_SUB02_MIN01_SMT02_MIC01_SMT02_NAN01_ULT02'
+  `can_use_for_syllabus_status` TINYINT(1) DEFAULT 1,  -- Whether the topic can be used for syllabus status progress
+  `release_quiz_on_completion` TINYINT(1) DEFAULT 0, -- Whether the quiz should be released on completion of the topic
+  `release_quest_on_completion` TINYINT(1) DEFAULT 0, -- Whether the question should be released on completion of the topic
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
   `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -116,10 +139,10 @@ CREATE TABLE IF NOT EXISTS `slb_competencies` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `uuid` BINARY(16) NOT NULL,
   `parent_id` BIGINT UNSIGNED DEFAULT NULL,     -- FK to self (NULL for root competencies)
-  `code` VARCHAR(60) NOT NULL,  
-  `name` VARCHAR(150) NOT NULL,   
-  `short_name` VARCHAR(50) DEFAULT NULL,   
-  `description` VARCHAR(255) DEFAULT NULL,    
+  `code` VARCHAR(60) NOT NULL,                 -- e.g. 'KNOWLEDGE','SKILL','ATTITUDE'
+  `name` VARCHAR(150) NOT NULL,                -- e.g. 'Knowledge of Linear Equations'
+  `short_name` VARCHAR(50) DEFAULT NULL,       -- e.g. 'Linear Equations'
+  `description` VARCHAR(255) DEFAULT NULL,     -- e.g. 'Description of Knowledge of Linear Equations'
   `class_id` INT UNSIGNED DEFAULT NULL,         -- FK to sch_classes.id
   `subject_id` BIGINT UNSIGNED DEFAULT NULL,    -- FK to sch_subjects.id
   `competency_type_id` INT UNSIGNED NOT NULL,   -- FK to slb_competency_types.id
@@ -258,6 +281,7 @@ CREATE TABLE IF NOT EXISTS `slb_performance_categories` (
   `class_id` BIGINT UNSIGNED DEFAULT NULL,
   -- Control
   `is_system_defined` TINYINT(1) DEFAULT 1, -- system vs school editable
+  `auto_retest_required` TINYINT(1) DEFAULT 0, -- Auto Retest Required or Not (if 'True' then System will auto create a Test for the Topic and assign to Student)
   `is_active` TINYINT(1) DEFAULT 1,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -342,13 +366,24 @@ CREATE TABLE IF NOT EXISTS `slb_grade_division_master` (
   --    Classes 4–8 → Good / Average / Below Average / Need Improvement / Poor
   --    Classes 9–12 → Topper / Excellent / Good / Average / Below Average / Need Improvement / Poor
 
+
+
+
+
+
+-- -------------------------------------------------------------------------
+-- LESSON PLANNING
+-- This should be Part of Standard Timetable
+-- -------------------------------------------------------------------------
+
+-- This table is used for Lesson Planning (scheduling topics to classes and sections)
 CREATE TABLE IF NOT EXISTS `slb_syllabus_schedule` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `academic_session_id` BIGINT UNSIGNED NOT NULL,
   `class_id` INT UNSIGNED NOT NULL,           -- FK to sch_classes.id. NULL = applies to all classes
   `section_id` INT UNSIGNED DEFAULT NULL,       -- FK to sch_sections.id. NULL = applies to all sections
   `subject_id` BIGINT UNSIGNED NOT NULL,       -- FK to sch_subjects.id
-  `topic_id` BIGINT UNSIGNED NOT NULL,         -- FK to slb_topics.id
+  `topic_id` BIGINT UNSIGNED NOT NULL,         -- FK to slb_topics.id (It can be Topic, Sub-Topic, Mini-Topic, Micro-Topic etc.)
   `scheduled_start_date` DATE NOT NULL,
   `scheduled_end_date` DATE NOT NULL,
   `assigned_teacher_id` BIGINT UNSIGNED DEFAULT NULL,   -- FK to sch_teachers.id (who assigned to teach this topic)
@@ -370,6 +405,15 @@ CREATE TABLE IF NOT EXISTS `slb_syllabus_schedule` (
   CONSTRAINT `fk_sylsched_topic` FOREIGN KEY (`topic_id`) REFERENCES `slb_topics` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_sylsched_teacher` FOREIGN KEY (`assigned_teacher_id`) REFERENCES `sch_teachers` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+
+
+
+
+
+
+
 
 -- ===========================================================================================
 

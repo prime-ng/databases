@@ -211,32 +211,32 @@
     UNIQUE KEY `uq_dropdownTable_key` (`dropdown_needs_id`,`key`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
   -- conditions:
-  -- 1. When we go to create a New Dropdown, 
-  --    1.1 PG_USER (PG-Admin/PG-Support) will get 2 option to select -
-  --        Option 1 - Dropdown creation by DB details.
-  --        Option 2 - Dropdown creation by Menu Detail.
-  --          - If user select Option 1 then he can select - DB Type, Table Name, Column Name.
-  --            a. DB Type (this will come from sys_dropdown_needs.db_type)
-  --            b. Table Name (this will come from sys_dropdown_needs.table_name)
-  --            c. Column Name (this will come from sys_dropdown_needs.column_name)
-  --          - If user select Option 2 then he can select - Menu Category, Main Menu, Sub Menu, Tab Name, Field Name.
-  --            a. Menu Category (this will come from sys_dropdown_needs.menu_category). This is a Must Dropdown.
-  --            b. Main Menu (this will come from sys_dropdown_needs.main_menu). This is a Must Dropdown.
-  --            c. Sub Menu (this will come from sys_dropdown_needs.sub_menu). This is a Optional Dropdown.
-  --            d. Tab Name (this will come from sys_dropdown_needs.tab_name). This is a Optional Dropdown.
-  --            e. Field Name (this will come from sys_dropdown_needs.field_name). This is a Must Dropdown.
-  --            f. is_system = 1
-  --    1.2 NON PG_USER (PG-Admin/PG-Support) will get only 1 option of Dropdowns to select -
-  --        Option 1 - Dropdown creation by Menu/Sub-Menu & Field Name. (Need not to show the Option Button)
-  --            a. Menu Category (this will come from sys_dropdown_needs.menu_category). This is a Must Dropdown.
-  --            b. Main Menu (this will come from sys_dropdown_needs.main_menu). This is a Must Dropdown.
-  --            c. Sub Menu (this will come from sys_dropdown_needs.sub_menu). This is a Optional Dropdown.
-  --            d. Tab Name (this will come from sys_dropdown_needs.tab_name). This is a Optional Dropdown.
-  --            e. Field Name (this will come from sys_dropdown_needs.field_name). This is a Must Dropdown.
-  --            f. is_system = 1
-  -- 2. System will check if the Dropdown Need is already configured in sys_dropdown_needs table.
-  -- 3. If not, Developer need to create a new Dropdown Need first as per the requirement.
-  -- 4. If yes, System will use the existing Dropdown Need.
+    -- 1. When we go to create a New Dropdown, 
+    --    1.1 PG_USER (PG-Admin/PG-Support) will get 2 option to select -
+    --        Option 1 - Dropdown creation by DB details.
+    --        Option 2 - Dropdown creation by Menu Detail.
+    --          - If user select Option 1 then he can select - DB Type, Table Name, Column Name.
+    --            a. DB Type (this will come from sys_dropdown_needs.db_type)
+    --            b. Table Name (this will come from sys_dropdown_needs.table_name)
+    --            c. Column Name (this will come from sys_dropdown_needs.column_name)
+    --          - If user select Option 2 then he can select - Menu Category, Main Menu, Sub Menu, Tab Name, Field Name.
+    --            a. Menu Category (this will come from sys_dropdown_needs.menu_category). This is a Must Dropdown.
+    --            b. Main Menu (this will come from sys_dropdown_needs.main_menu). This is a Must Dropdown.
+    --            c. Sub Menu (this will come from sys_dropdown_needs.sub_menu). This is a Optional Dropdown.
+    --            d. Tab Name (this will come from sys_dropdown_needs.tab_name). This is a Optional Dropdown.
+    --            e. Field Name (this will come from sys_dropdown_needs.field_name). This is a Must Dropdown.
+    --            f. is_system = 1
+    --    1.2 NON PG_USER (PG-Admin/PG-Support) will get only 1 option of Dropdowns to select -
+    --        Option 1 - Dropdown creation by Menu/Sub-Menu & Field Name. (Need not to show the Option Button)
+    --            a. Menu Category (this will come from sys_dropdown_needs.menu_category). This is a Must Dropdown.
+    --            b. Main Menu (this will come from sys_dropdown_needs.main_menu). This is a Must Dropdown.
+    --            c. Sub Menu (this will come from sys_dropdown_needs.sub_menu). This is a Optional Dropdown.
+    --            d. Tab Name (this will come from sys_dropdown_needs.tab_name). This is a Optional Dropdown.
+    --            e. Field Name (this will come from sys_dropdown_needs.field_name). This is a Must Dropdown.
+    --            f. is_system = 1
+    -- 2. System will check if the Dropdown Need is already configured in sys_dropdown_needs table.
+    -- 3. If not, Developer need to create a new Dropdown Need first as per the requirement.
+    -- 4. If yes, System will use the existing Dropdown Need.
 
 -- This table will be Junction table for sys_dropdown_needs & sys_dropdown_table
 CREATE TABLE IF NOT EXISTS `sys_dropdown_need_table_jnt` (
