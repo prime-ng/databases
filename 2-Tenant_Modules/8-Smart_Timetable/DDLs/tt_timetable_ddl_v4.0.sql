@@ -254,7 +254,7 @@ CREATE TABLE IF NOT EXISTS `tt_period_set_period_jnt` (
   `period_set_id` BIGINT UNSIGNED NOT NULL,  -- FK to tt_period_set
   `period_type_id` BIGINT UNSIGNED NOT NULL,  -- FK to tt_period_type
   `period_ord` TINYINT UNSIGNED NOT NULL,  -- Ordinal within set (1, 2, 3...)
-  `code` VARCHAR(20) NOT NULL,  -- e.g., 'P1','P2','BREAK1','LUNCH'
+  `code` VARCHAR(20) NOT NULL,  -- e.g., 'P1','P2','BREAK1','P3','P4','LUNCH'
   `name` VARCHAR(50) NOT NULL,  -- e.g., 'Period 1','Short Break'
   `short_name` VARCHAR(10) DEFAULT NULL,  -- e.g., 'P1','BR'
   `start_time` TIME NOT NULL,  -- e.g., '08:00:00'
