@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS `slb_lessons` (
   `academic_session_id` BIGINT UNSIGNED NOT NULL, -- FK to sch_org_academic_sessions_jnt
   `class_id` INT UNSIGNED NOT NULL,               -- FK to sch_classes
   `subject_id` BIGINT UNSIGNED NOT NULL,          -- FK to sch_subjects
+  `bok_books_id` BIGINT UNSIGNED NOT NULL,        -- FK to bok_books.id
   `code` VARCHAR(20) NOT NULL,                    -- e.g., '9TH_SCI_L01' (Auto-generated) It will be combination of class code, subject code and lesson code
   `name` VARCHAR(150) NOT NULL,                   -- e.g., 'Chapter 1: Matter in Our Surroundings'
   `short_name` VARCHAR(50) DEFAULT NULL,          -- e.g., 'Matter Around Us' 
