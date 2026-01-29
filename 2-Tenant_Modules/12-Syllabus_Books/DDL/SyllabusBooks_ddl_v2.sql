@@ -2,8 +2,32 @@
 -- SECTION 1: BOOK & PUBLICATION MANAGEMENT (NEW)
 -- =========================================================================
 
+-- ---------------------------------------------------------------------
+-- Menu Option : Syllabus Books
+-- Tab : A. Authors
+-- ---------------------------------------------------------------------
+
+-- Authors table (Many-to-Many with Books)
+CREATE TABLE IF NOT EXISTS `slb_book_authors` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `name` VARCHAR(150) NOT NULL,
+  `qualification` VARCHAR(200) DEFAULT NULL,
+  `bio` TEXT DEFAULT NULL,
+  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+  `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_author_name` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------
+-- Menu Option : Syllabus Books
+-- Tab : 1. Books (Section-1.1)
+-- ---------------------------------------------------------------------
+
 -- Master table for Books/Publications used across schools
-CREATE TABLE IF NOT EXISTS `bok_books` (
+CREATE TABLE IF NOT EXISTS `slb_books` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `uuid` BINARY(16) NOT NULL,  -- UUID 
   `isbn` VARCHAR(20) DEFAULT NULL,              -- International Standard Book Number
@@ -33,22 +57,12 @@ CREATE TABLE IF NOT EXISTS `bok_books` (
   CONSTRAINT `fk_book_cover_image_media_id` FOREIGN KEY (`cover_image_media_id`) REFERENCES `media_files` (`id`),
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Authors table (Many-to-Many with Books)
-CREATE TABLE IF NOT EXISTS `bok_book_authors` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `name` VARCHAR(150) NOT NULL,
-  `qualification` VARCHAR(200) DEFAULT NULL,
-  `bio` TEXT DEFAULT NULL,
-  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-  `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `deleted_at` TIMESTAMP NULL DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_author_name` (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
+-- ---------------------------------------------------------------------
+-- Menu Option : Syllabus Books
+-- Tab : 1. Books (Section-1.2)
+-- ---------------------------------------------------------------------
 -- Junction: Book-Author relationship
-CREATE TABLE IF NOT EXISTS `bok_book_author_jnt` (
+CREATE TABLE IF NOT EXISTS `slb_book_author_jnt` (
   `book_id` BIGINT UNSIGNED NOT NULL,
   `author_id` BIGINT UNSIGNED NOT NULL,
   `author_role` ENUM('PRIMARY','CO_AUTHOR','EDITOR','CONTRIBUTOR') DEFAULT 'PRIMARY',
@@ -58,8 +72,12 @@ CREATE TABLE IF NOT EXISTS `bok_book_author_jnt` (
   CONSTRAINT `fk_ba_author` FOREIGN KEY (`author_id`) REFERENCES `bok_book_authors` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- ---------------------------------------------------------------------
+-- Menu Option : Syllabus Books
+-- Tab : 1. Books (Section-1.3)
+-- ---------------------------------------------------------------------
 -- Link Books to Class/Subject (which books are used for which class/subject)
-CREATE TABLE IF NOT EXISTS `bok_book_class_subject_jnt` (
+CREATE TABLE IF NOT EXISTS `slb_book_class_subject_jnt` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `book_id` BIGINT UNSIGNED NOT NULL,  -- FK to slb_books.id
   `class_id` INT UNSIGNED NOT NULL,    -- FK to sch_classes.id
@@ -78,24 +96,4 @@ CREATE TABLE IF NOT EXISTS `bok_book_class_subject_jnt` (
   CONSTRAINT `fk_bcs_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`),
   CONSTRAINT `fk_bcs_subject` FOREIGN KEY (`subject_id`) REFERENCES `sch_subjects` (`id`),
   CONSTRAINT `fk_bcs_session` FOREIGN KEY (`academic_session_id`) REFERENCES `sch_org_academic_sessions_jnt` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Link Book Chapters/Sections to Topics (granular mapping)
-CREATE TABLE IF NOT EXISTS `bok_book_topic_mapping` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `book_id` BIGINT UNSIGNED NOT NULL,
-  `topic_id` BIGINT UNSIGNED NOT NULL,          -- Can be topic or sub-topic at any level
-  `chapter_number` VARCHAR(20) DEFAULT NULL,    -- e.g., '1', '1.2', 'Unit I'
-  `chapter_title` VARCHAR(255) DEFAULT NULL,
-  `page_start` INT UNSIGNED DEFAULT NULL,
-  `page_end` INT UNSIGNED DEFAULT NULL,
-  `section_reference` VARCHAR(100) DEFAULT NULL, -- e.g., 'Section 1.3.2'
-  `remarks` VARCHAR(255) DEFAULT NULL,
-  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-  `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `idx_btm_book` (`book_id`),
-  KEY `idx_btm_topic` (`topic_id`),
-  CONSTRAINT `fk_btm_book` FOREIGN KEY (`book_id`) REFERENCES `bok_books` (`id`),
-  CONSTRAINT `fk_btm_topic` FOREIGN KEY (`topic_id`) REFERENCES `bok_topics` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
