@@ -298,7 +298,10 @@ CREATE TABLE IF NOT EXISTS `tt_class_group_requirement` (
   `avoid_periods_json` JSON DEFAULT NULL,  -- Avoid periods
   `spread_evenly` TINYINT(1) DEFAULT 1,  -- Whether periods should be spread evenly
   `priority` SMALLINT UNSIGNED DEFAULT 50,  -- Priority of this requirement
-  `is_active` TINYINT(1) NOT NULL DEFAULT 1,  -- Whether this requirement is active
+  `tot_students` SMALLINT UNSIGNED DEFAULT NULL,  -- Total students in this class group
+  `weekly_activity_required` TINYINT(1) UNSIGNED DEFAULT 0,  -- Whether weekly activity is required
+  `compulsory_room_type` INT UNSIGNED DEFAULT NULL,  -- FK to sch_room_types.id
+  `is_active` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,  -- Whether this requirement is active
   `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `deleted_at` TIMESTAMP NULL DEFAULT NULL,
