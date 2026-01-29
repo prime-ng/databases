@@ -3210,44 +3210,45 @@ CREATE TABLE IF NOT EXISTS `sys_dropdown_need_table_jnt` (
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
-
 -- ===========================================================================
 -- 10-Question Bank Module (qns)
 -- ===========================================================================
+
   CREATE TABLE IF NOT EXISTS `qns_questions_bank` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `uuid` BINARY(16) NOT NULL,                 -- Unique identifier for tracking ("INSERT INTO slb_questions_bank (uuid) VALUES (UUID_TO_BIN(UUID()))")
-    `class_id` INT UNSIGNED DEFAULT NULL,       --  fk -> sch_classes.id optional denormalized FK
-    `subject_id` BIGINT UNSIGNED DEFAULT NULL,  --  fk -> sch_subjects.id optional denormalized FK
-    `lesson_id` INT UNSIGNED DEFAULT NULL,      --  fk -> slb_lessons.id optional denormalized FK
-    `topic_id` BIGINT UNSIGNED DEFAULT NULL,    -- FK -> sch_topics.id (can be root topic or sub-topic depending on level)
-    `competency_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to slb_competencies.id
+    `class_id` INT UNSIGNED NOT NULL,       --  fk -> sch_classes.id optional denormalized FK
+    `subject_id` BIGINT UNSIGNED NOT NULL,  --  fk -> sch_subjects.id optional denormalized FK
+    `lesson_id` INT UNSIGNED NOT NULL,      --  fk -> slb_lessons.id optional denormalized FK
+    `topic_id` BIGINT UNSIGNED NOT NULL,    -- FK -> sch_topics.id (can be root topic or sub-topic depending on level)
+    `competency_id` BIGINT UNSIGNED NOT NULL, -- FK to slb_competencies.id
     -- Question Text
-    `ques_title` VARCHAR(255) DEFAULT NULL,       -- title of the question (For System use)
-    `ques_title_display` TINYINT(1) DEFAULT 0,    -- display title? (1=Yes, 0=No)
-    `question_content` TEXT DEFAULT NULL,         -- header of the question (For User Display)
-    `content_format` ENUM('TEXT','HTML','MARKDOWN','LATEX','JSON') DEFAULT 'TEXT', -- format of the question content
+    `ques_title` VARCHAR(255) NOT NULL,       -- title of the question (For System use)
+    `ques_title_display` TINYINT(1) NOT NULL DEFAULT 0,    -- display title? (1=Yes, 0=No)
+    `question_content` TEXT NOT NULL,         -- header of the question (For User Display)
+    `content_format` ENUM('TEXT','HTML','MARKDOWN','LATEX','JSON') NOT NULL DEFAULT 'TEXT', -- format of the question content
     `teacher_explanation` TEXT DEFAULT NULL,      -- teacher explanation (For User Display)
     -- Question Type & Taxonomy
-    `bloom_id` INT UNSIGNED DEFAULT NULL,       -- fk -> slb_bloom_taxonomy.id (Taxonomy)
-    `cognitive_skill_id` INT UNSIGNED DEFAULT NULL, -- fk -> slb_cognitive_skill.id (Taxonomy)
-    `ques_type_specificity_id` INT UNSIGNED DEFAULT NULL, -- fk -> slb_ques_type_specificity.id (Taxonomy)
-    `complexity_level_id` INT UNSIGNED DEFAULT NULL,  -- fk -> slb_complexity_level.id (Taxonomy)
+    `bloom_id` INT UNSIGNED NOT NULL,       -- fk -> slb_bloom_taxonomy.id (Taxonomy)
+    `cognitive_skill_id` INT UNSIGNED NOT NULL, -- fk -> slb_cognitive_skill.id (Taxonomy)
+    `ques_type_specificity_id` INT UNSIGNED NOT NULL, -- fk -> slb_ques_type_specificity.id (Taxonomy)
+    `complexity_level_id` INT UNSIGNED NOT NULL,  -- fk -> slb_complexity_level.id (Taxonomy)
     `question_type_id` INT UNSIGNED NOT NULL,         -- fk -> slb_question_types.id (Question Type)
     -- Question Time to solve & Tags
     `expected_time_to_answer_seconds` INT UNSIGNED DEFAULT NULL, -- Expected time required to answer by students
     `marks` DECIMAL(5,2) DEFAULT 1.00,
     `negative_marks` DECIMAL(5,2) DEFAULT 0.00,
     -- Question Audit & Versioning
-    `ques_reviewed` TINYINT(1) NOT NULL DEFAULT 0,              -- True if this question is reviewed
-    `ques_reviewed_by` BIGINT UNSIGNED DEFAULT NULL,            --  fk -> sch_users.id (if reviewed by teacher)
-    `ques_reviewed_at` TIMESTAMP NULL DEFAULT NULL,
-    `ques_reviewed_status` ENUM('PENDING','APPROVED','REJECTED') DEFAULT 'PENDING',
-    `current_version` TINYINT UNSIGNED NOT NULL DEFAULT 1,       -- version of the question (for history)
+    -- `ques_reviewed` TINYINT(1) NOT NULL DEFAULT 0,              -- True if this question is reviewed
+    -- `ques_reviewed_by` BIGINT UNSIGNED DEFAULT NULL,            --  fk -> sch_users.id (if reviewed by teacher)
+    -- `ques_reviewed_at` TIMESTAMP NULL DEFAULT NULL,
+    -- `ques_reviewed_status` ENUM('PENDING','APPROVED','REJECTED') DEFAULT 'PENDING',
+    `current_version` TINYINT UNSIGNED NOT NULL DEFAULT 1,       -- version of the question (for history) 
     -- Question Usage
     `for_quiz` TINYINT(1) NOT NULL DEFAULT 1,        -- True if this question is for quiz
-    `for_assessment` TINYINT(1) NOT NULL DEFAULT 1,  -- True if this question is for assessment
-    `for_exam` TINYINT(1) NOT NULL DEFAULT 1,        -- True if this question is for exam
+    `for_assessment` TINYINT(1) NOT NULL DEFAULT 0,  -- True if this question is for assessment
+    `for_exam` TINYINT(1) NOT NULL DEFAULT 0,        -- True if this question is for exam
+    `for_offline_exam` TINYINT(1) NOT NULL DEFAULT 0, -- True if this question is for offline exam
     -- Question Ownership
     `ques_owner` ENUM('PrimeGurukul','School') NOT NULL DEFAULT 'PrimeGurukul',
     `created_by_AI` TINYINT(1) DEFAULT 0,            -- True if this question is created by AI
@@ -3296,174 +3297,214 @@ CREATE TABLE IF NOT EXISTS `sys_dropdown_need_table_jnt` (
     CONSTRAINT `fk_ques_book` FOREIGN KEY (`book_id`) REFERENCES `slb_books` (`id`) ON DELETE SET NULL
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
   -- Conditions:
-  -- 1. Questions can have 2 more options as an answer
+  -- 1. Questions can have 2 or more options as an answer
   -- To Insert UUID into BINARY(16) use: INSERT INTO slb_questions_bank (uuid) VALUES (UUID_TO_BIN(UUID()));
   -- To Update UUID into BINARY(16) use: UPDATE slb_questions_bank SET uuid = UUID_TO_BIN(UUID());
   -- To Read UUID back as string from BINARY(16) use: SELECT BIN_TO_UUID(uuid) FROM slb_questions_bank;
 
-    CREATE TABLE IF NOT EXISTS `qns_question_options` (
-      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-      `question_bank_id` BIGINT UNSIGNED NOT NULL,
-      `ordinal` SMALLINT UNSIGNED DEFAULT NULL,    -- ordinal position of this option
-      `option_text` TEXT NOT NULL,                 -- text of the option
-      `is_correct` TINYINT(1) NOT NULL DEFAULT 0,  -- whether this option is correct
-      `Explanation` TEXT DEFAULT NULL,             -- detailed explanation for this option (Why this option is correct / incorrect)
-      `is_active` TINYINT(1) DEFAULT 1,
-      `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-      `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      `deleted_at` TIMESTAMP NULL DEFAULT NULL,
-      PRIMARY KEY (`id`),
-      KEY `idx_opt_question` (`question_bank_id`),
-      CONSTRAINT `fk_opt_question` FOREIGN KEY (`question_bank_id`) REFERENCES `qns_questions_bank` (`id`) ON DELETE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  CREATE TABLE IF NOT EXISTS `qns_question_options` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `question_bank_id` BIGINT UNSIGNED NOT NULL,
+    `ordinal` SMALLINT UNSIGNED DEFAULT NULL,    -- ordinal position of this option
+    `option_text` TEXT NOT NULL,                 -- text of the option
+    `is_correct` TINYINT(1) NOT NULL DEFAULT 0,  -- whether this option is correct
+    `Explanation` TEXT DEFAULT NULL,             -- detailed explanation for this option (Why this option is correct / incorrect)
+    `is_active` TINYINT(1) DEFAULT 1,
+    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    KEY `idx_opt_question` (`question_bank_id`),
+    CONSTRAINT `fk_opt_question` FOREIGN KEY (`question_bank_id`) REFERENCES `qns_questions_bank` (`id`) ON DELETE CASCADE
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-    CREATE TABLE IF NOT EXISTS `qns_question_media_jnt` (
-      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-      `question_bank_id` BIGINT UNSIGNED NOT NULL,          -- fk to qns_questions_bank.id
-      `question_option_id` BIGINT UNSIGNED DEFAULT NULL,    -- fk to qns_question_options.id
-      `media_purpose` ENUM('QUESTION','OPTION','QUES_EXPLANATION','OPT_EXPLANATION','RECOMMENDATION') DEFAULT 'QUESTION',
-      `media_id` BIGINT UNSIGNED NOT NULL,                   -- fk to qns_media_store.id
-      `media_type` ENUM('IMAGE','AUDIO','VIDEO','ATTACHMENT') DEFAULT 'IMAGE',        -- e.g., 'IMAGE','AUDIO','VIDEO','ATTACHMENT'
-      `ordinal` SMALLINT UNSIGNED DEFAULT 1,                 -- ordinal position of this media
-      `is_active` TINYINT(1) DEFAULT 1,
-      `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-      `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      `deleted_at` TIMESTAMP NULL DEFAULT NULL,
-      PRIMARY KEY (`id`),
-      KEY `idx_qmedia_question` (`question_bank_id`),
-      KEY `idx_qmedia_option` (`question_option_id`),
-      CONSTRAINT `fk_qmedia_question` FOREIGN KEY (`question_bank_id`) REFERENCES `qns_questions_bank` (`id`) ON DELETE CASCADE,
-      CONSTRAINT `fk_qmedia_option` FOREIGN KEY (`question_option_id`) REFERENCES `qns_question_options` (`id`) ON DELETE CASCADE,
-      CONSTRAINT `fk_qmedia_media` FOREIGN KEY (`media_id`) REFERENCES `qns_media_store` (`id`) ON DELETE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  CREATE TABLE IF NOT EXISTS `qns_question_media_jnt` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `question_bank_id` BIGINT UNSIGNED NOT NULL,          -- fk to qns_questions_bank.id
+    `question_option_id` BIGINT UNSIGNED DEFAULT NULL,    -- fk to qns_question_options.id
+    `media_purpose` ENUM('QUESTION','OPTION','QUES_EXPLANATION','OPT_EXPLANATION','RECOMMENDATION') DEFAULT 'QUESTION',
+    `media_id` BIGINT UNSIGNED NOT NULL,                   -- fk to qns_media_store.id
+    `media_type` ENUM('IMAGE','AUDIO','VIDEO','ATTACHMENT') DEFAULT 'IMAGE',        -- e.g., 'IMAGE','AUDIO','VIDEO','ATTACHMENT'
+    `ordinal` SMALLINT UNSIGNED DEFAULT 1,                 -- ordinal position of this media
+    `is_active` TINYINT(1) DEFAULT 1,
+    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    KEY `idx_qmedia_question` (`question_bank_id`),
+    KEY `idx_qmedia_option` (`question_option_id`),
+    CONSTRAINT `fk_qmedia_question` FOREIGN KEY (`question_bank_id`) REFERENCES `qns_questions_bank` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_qmedia_option` FOREIGN KEY (`question_option_id`) REFERENCES `qns_question_options` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_qmedia_media` FOREIGN KEY (`media_id`) REFERENCES `qns_media_store` (`id`) ON DELETE CASCADE
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-    CREATE TABLE IF NOT EXISTS `qns_question_tags` (
-      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-      `short_name` VARCHAR(100) NOT NULL,
-      `name` VARCHAR(255) NOT NULL,
-      `is_active` TINYINT(1) DEFAULT 1,
-      `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-      `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      `deleted_at` TIMESTAMP NULL DEFAULT NULL,
-      PRIMARY KEY (`id`),
-      UNIQUE KEY `uq_qtag_short` (`short_name`)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  CREATE TABLE IF NOT EXISTS `qns_question_tags` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `short_name` VARCHAR(100) NOT NULL,
+    `name` VARCHAR(255) NOT NULL,
+    `is_active` TINYINT(1) DEFAULT 1,
+    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_qtag_short` (`short_name`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-    -- Laravel Morph Relationship
-    CREATE TABLE IF NOT EXISTS `qns_question_questiontag_jnt` (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `question_bank_id` BIGINT UNSIGNED NOT NULL,
-      `tag_id` BIGINT UNSIGNED NOT NULL,
-      `is_active` TINYINT(1) DEFAULT 1,
-      `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-      `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      `deleted_at` TIMESTAMP NULL DEFAULT NULL,
-      UNIQUE KEY `uq_qtag_q_t` (`question_bank_id`,`tag_id`),
-      CONSTRAINT `fk_qtag_q` FOREIGN KEY (`question_bank_id`) REFERENCES `qns_questions_bank` (`id`) ON DELETE CASCADE,
-      CONSTRAINT `fk_qtag_tag` FOREIGN KEY (`tag_id`) REFERENCES `qns_question_tags` (`id`) ON DELETE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  -- Laravel Morph Relationship
+  CREATE TABLE IF NOT EXISTS `qns_question_questiontag_jnt` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `question_bank_id` BIGINT UNSIGNED NOT NULL,
+    `tag_id` BIGINT UNSIGNED NOT NULL,
+    `is_active` TINYINT(1) DEFAULT 1,
+    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    UNIQUE KEY `uq_qtag_q_t` (`question_bank_id`,`tag_id`),
+    CONSTRAINT `fk_qtag_q` FOREIGN KEY (`question_bank_id`) REFERENCES `qns_questions_bank` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_qtag_tag` FOREIGN KEY (`tag_id`) REFERENCES `qns_question_tags` (`id`) ON DELETE CASCADE
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-    CREATE TABLE IF NOT EXISTS `qns_question_versions` (
-      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-      `question_bank_id` BIGINT UNSIGNED NOT NULL,
-      `version` INT UNSIGNED NOT NULL,
-      `data` JSON NOT NULL,                       -- full snapshot of question (Question_content, options, metadata)
-      `version_created_by` BIGINT UNSIGNED DEFAULT NULL,
-      `change_reason` VARCHAR(255) DEFAULT NULL,  -- why was this version modified?
-      `is_active` TINYINT(1) DEFAULT 1,
-      `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-      `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      `deleted_at` TIMESTAMP NULL DEFAULT NULL,
-      PRIMARY KEY (`id`),
-      UNIQUE KEY `uq_qver_q_v` (`question_bank_id`,`version`),
-      CONSTRAINT `fk_qver_q` FOREIGN KEY (`question_bank_id`) REFERENCES `qns_questions_bank` (`id`) ON DELETE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  -- In this Table data will be entered on Modification only. No CRUD required
+  CREATE TABLE IF NOT EXISTS `qns_question_versions` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `question_bank_id` BIGINT UNSIGNED NOT NULL,
+    `version` INT UNSIGNED NOT NULL,
+    `data` JSON NOT NULL,                       -- full snapshot of question (Question_content, options, metadata)
+    `version_created_by` BIGINT UNSIGNED DEFAULT NULL,
+    `change_reason` VARCHAR(255) DEFAULT NULL,  -- why was this version modified?
+    `is_active` TINYINT(1) DEFAULT 1,
+    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_qver_q_v` (`question_bank_id`,`version`),
+    CONSTRAINT `fk_qver_q` FOREIGN KEY (`question_bank_id`) REFERENCES `qns_questions_bank` (`id`) ON DELETE CASCADE
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-    CREATE TABLE IF NOT EXISTS `qns_media_store` (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `uuid` BINARY(16) NOT NULL,
-      `owner_type` ENUM('QUESTION','OPTION','EXPLANATION','RECOMMENDATION') NOT NULL,
-      `owner_id` BIGINT UNSIGNED NOT NULL,
-      `media_type` ENUM('IMAGE','AUDIO','VIDEO','PDF') NOT NULL,
-      `file_name` VARCHAR(255),
-      `file_path` VARCHAR(255),
-      `mime_type` VARCHAR(100),
-      `disk` VARCHAR(50),     -- storage disk
-      `size` BIGINT UNSIGNED, -- file size in bytes
-      `checksum` CHAR(64),    -- file checksum
-      `ordinal` SMALLINT UNSIGNED DEFAULT 1,
+  CREATE TABLE IF NOT EXISTS `qns_media_store` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `uuid` BINARY(16) NOT NULL,
+    `owner_type` ENUM('QUESTION','OPTION','EXPLANATION','RECOMMENDATION') NOT NULL,
+    `owner_id` BIGINT UNSIGNED NOT NULL,
+    `media_type` ENUM('IMAGE','AUDIO','VIDEO','PDF') NOT NULL,
+    `file_name` VARCHAR(255),
+    `file_path` VARCHAR(255),
+    `mime_type` VARCHAR(100),
+    `disk` VARCHAR(50) DEFAULT NULL,     -- storage disk
+    `size` BIGINT UNSIGNED DEFAULT NULL, -- file size in bytes
+    `checksum` CHAR(64) DEFAULT NULL,    -- file checksum
+    `ordinal` SMALLINT UNSIGNED DEFAULT 1,
+    `is_active` TINYINT(1) DEFAULT 1,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP DEFAULT NULL,
+    UNIQUE KEY `uq_media_uuid` (`uuid`),
+    KEY `idx_owner` (`owner_type`, `owner_id`)
+  );
+
+  CREATE TABLE IF NOT EXISTS `qns_question_topic_jnt` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `question_bank_id` BIGINT UNSIGNED NOT NULL,
+    `topic_id` BIGINT UNSIGNED NOT NULL,
+    `weightage` DECIMAL(5,2) DEFAULT 100.00,  -- weightage of question in topic
+    `is_active` TINYINT(1) DEFAULT 1,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP DEFAULT NULL,
+    UNIQUE KEY `uq_qt_q_t` (`question_bank_id`,`topic_id`),
+    CONSTRAINT `fk_qt_question` FOREIGN KEY (`question_bank_id`) REFERENCES `qns_questions_bank` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_qt_topic` FOREIGN KEY (`topic_id`) REFERENCES `slb_topics` (`id`) ON DELETE CASCADE
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+  -- Required a backend Service to calculate the statistics
+  -- Display Only
+  CREATE TABLE IF NOT EXISTS `qns_question_statistics` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `question_bank_id` BIGINT UNSIGNED NOT NULL,
+    `difficulty_index` DECIMAL(5,2),       -- % students answered correctly
+    `discrimination_index` DECIMAL(5,2),   -- Top vs bottom performer delta
+    `guessing_factor` DECIMAL(5,2),        -- MCQ only
+    `min_time_taken_seconds` INT UNSIGNED DEFAULT NULL,  -- time taken by topper to answer the question
+    `max_time_taken_seconds` INT UNSIGNED DEFAULT NULL, -- average time taken to answer by students
+    `avg_time_taken_seconds` INT UNSIGNED,
+    `total_attempts` INT UNSIGNED DEFAULT 0,
+    `last_computed_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `is_active` TINYINT(1) DEFAULT 1,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP DEFAULT NULL,
+    UNIQUE KEY `uq_qstats_q` (`question_bank_id`),
+    CONSTRAINT `fk_qstats_question` FOREIGN KEY (`question_bank_id`) REFERENCES `qns_questions_bank` (`id`) ON DELETE CASCADE
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+  CREATE TABLE IF NOT EXISTS `qns_question_performance_category_jnt` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `question_bank_id` BIGINT UNSIGNED NOT NULL,
+    `performance_category_id` BIGINT UNSIGNED NOT NULL,  -- FK to slb_performance_categories.id
+    `recommendation_type` BIGINT UNSIGNED NOT NULL,  -- FK to sys_dropdowns table e.g. 'REVISION','PRACTICE','CHALLENGE'
+    `priority` SMALLINT UNSIGNED DEFAULT 1,  -- priority of the question in the performance category
+    `is_active` TINYINT(1) DEFAULT 1,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_qrec_q_p` (`question_bank_id`, `performance_category_id`),
+    CONSTRAINT `fk_qrec_question` FOREIGN KEY (`question_bank_id`) REFERENCES `qns_questions_bank` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_qrec_perf` FOREIGN KEY (`performance_category_id`) REFERENCES `slb_performance_categories` (`id`) ON DELETE CASCADE
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  -- conditions:
+  -- This directly powers Personalized learning paths, AI-Teacher module, LXP integration
+  -- This table will map questions to performance categories. using it we can recommend questions to students based on their performance.
+
+  -- Display Only
+  CREATE TABLE IF NOT EXISTS `qns_question_usage_log` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `question_bank_id` BIGINT UNSIGNED NOT NULL,    -- FK to qns_questions_bank
+    --`usage_context` BIGINT UNSIGNED NOT NULL, -- FK to qns_question_usage_type.id
+    `question_usage_type` BIGINT UNSIGNED NOT NULL, -- FK to qns_question_usage_type.id
+    `context_id` BIGINT UNSIGNED NOT NULL,    -- quiz_id, assessment_id, exam_id - FK to sys_dropdowns table
+    `used_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `is_active` TINYINT(1) DEFAULT 1,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP DEFAULT NULL,
+    CONSTRAINT `fk_qusage_question` FOREIGN KEY (`question_bank_id`) REFERENCES `qns_questions_bank` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_qusage_usage_context` FOREIGN KEY (`usage_context`) REFERENCES `qns_question_usage_type` (`id`) ON DELETE CASCADE
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+  -- -----------------------------------------------------------------------------------------------------------------------
+  -- Question Review & Approval Audit
+  CREATE TABLE IF NOT EXISTS `qns_question_review_log` (
+      `review_log_id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `question_id` BIGINT UNSIGNED NOT NULL,  -- FK to qns_questions_bank.id
+      `reviewer_id` BIGINT UNSIGNED NOT NULL,  -- FK to users.id
+      `review_status_id` BIGINT UNSIGNED NOT NULL,  -- FK to sys_dropdowns.id e.g. 'PENDING','APPROVED','REJECTED'
+      `review_comment` TEXT DEFAULT NULL,
+      `reviewed_at` DATETIME NOT NULL,
       `is_active` TINYINT(1) DEFAULT 1,
       `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       `deleted_at` TIMESTAMP DEFAULT NULL,
-      UNIQUE KEY `uq_media_uuid` (`uuid`),
-      KEY `idx_owner` (`owner_type`, `owner_id`)
-    );
+      INDEX `idx_q_review_question` (question_id),
+      INDEX `idx_q_review_status` (review_status_id),
+      CONSTRAINT `fk_q_review_question` FOREIGN KEY (`question_id`) REFERENCES `qns_questions_bank` (`id`) ON DELETE CASCADE,
+      CONSTRAINT `fk_q_review_reviewer` FOREIGN KEY (`reviewer_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+      CONSTRAINT `fk_q_review_status` FOREIGN KEY (`review_status_id`) REFERENCES `sys_dropdowns` (`id`) ON DELETE CASCADE
+  );
 
-    CREATE TABLE IF NOT EXISTS `qns_question_topic_jnt` (
+  -- Question Usage Type (Quiz / Quest / Exam)
+  CREATE TABLE `qns_question_usage_type` (
       `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `question_bank_id` BIGINT UNSIGNED NOT NULL,
-      `topic_id` BIGINT UNSIGNED NOT NULL,
-      `weightage` DECIMAL(5,2) DEFAULT 100.00,  -- weightage of question in topic
+      `code` VARCHAR(50) NOT NULL,  -- e.g. 'QUIZ','QUEST','ONLINE_EXAM','OFFLINE_EXAM','UT_TEST'
+      `name` VARCHAR(100) NOT NULL, -- e.g. 'Quiz','Quest','Online Exam','Offline Exam','Unit Test'
+      `description` TEXT DEFAULT NULL,
       `is_active` TINYINT(1) DEFAULT 1,
       `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       `deleted_at` TIMESTAMP DEFAULT NULL,
-      UNIQUE KEY `uq_qt_q_t` (`question_bank_id`,`topic_id`),
-      CONSTRAINT `fk_qt_question` FOREIGN KEY (`question_bank_id`) REFERENCES `qns_questions_bank` (`id`) ON DELETE CASCADE,
-      CONSTRAINT `fk_qt_topic` FOREIGN KEY (`topic_id`) REFERENCES `slb_topics` (`id`) ON DELETE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-    CREATE TABLE IF NOT EXISTS `qns_question_statistics` (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `question_bank_id` BIGINT UNSIGNED NOT NULL,
-      `difficulty_index` DECIMAL(5,2),       -- % students answered correctly
-      `discrimination_index` DECIMAL(5,2),   -- Top vs bottom performer delta
-      `guessing_factor` DECIMAL(5,2),        -- MCQ only
-      `min_time_taken_seconds` INT UNSIGNED DEFAULT NULL,  -- time taken by topper to answer the question
-      `max_time_taken_seconds` INT UNSIGNED DEFAULT NULL, -- average time taken to answer by students
-      `avg_time_taken_seconds` INT UNSIGNED,
-      `total_attempts` INT UNSIGNED DEFAULT 0,
-      `last_computed_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      `is_active` TINYINT(1) DEFAULT 1,
-      `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      `deleted_at` TIMESTAMP DEFAULT NULL,
-      UNIQUE KEY `uq_qstats_q` (`question_bank_id`),
-      CONSTRAINT `fk_qstats_question` FOREIGN KEY (`question_bank_id`) REFERENCES `qns_questions_bank` (`id`) ON DELETE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-    CREATE TABLE IF NOT EXISTS `qns_question_performance_category_jnt` (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `question_bank_id` BIGINT UNSIGNED NOT NULL,
-      `performance_category_id` BIGINT UNSIGNED NOT NULL,
-      `recommendation_type` ENUM('REVISION','PRACTICE','CHALLENGE') NOT NULL,
-      `priority` SMALLINT UNSIGNED DEFAULT 1,
-      `is_active` TINYINT(1) DEFAULT 1,
-      `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      `deleted_at` TIMESTAMP DEFAULT NULL,
-      PRIMARY KEY (`id`),
-      UNIQUE KEY `uq_qrec_q_p` (`question_bank_id`, `performance_category_id`),
-      CONSTRAINT `fk_qrec_question` FOREIGN KEY (`question_bank_id`) REFERENCES `qns_questions_bank` (`id`) ON DELETE CASCADE,
-      CONSTRAINT `fk_qrec_perf` FOREIGN KEY (`performance_category_id`) REFERENCES `slb_performance_categories` (`id`) ON DELETE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-    -- conditions:
-    -- This directly powers Personalized learning paths, AI-Teacher module, LXP integration
-    -- This table will map questions to performance categories. using it we can recommend questions to students based on their performance.
-
-    CREATE TABLE IF NOT EXISTS `qns_question_usage_log` (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `question_bank_id` BIGINT UNSIGNED NOT NULL,    -- FK to qns_questions_bank
-      `usage_context` ENUM('QUIZ','ASSESSMENT','EXAM') NOT NULL,
-      `context_id` BIGINT UNSIGNED NOT NULL,    -- quiz_id, assessment_id, exam_id
-      `used_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      `is_active` TINYINT(1) DEFAULT 1,
-      `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      `deleted_at` TIMESTAMP DEFAULT NULL,
-      CONSTRAINT `fk_qusage_question` FOREIGN KEY (`question_bank_id`) REFERENCES `qns_questions_bank` (`id`) ON DELETE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+      UNIQUE KEY `uq_q_usage_type_code` (`code`)
+      UNIQUE KEY `uq_q_usage_type_name` (`name`)
+  );
 
 
 -- ===========================================================================

@@ -95,6 +95,8 @@ CREATE TABLE IF NOT EXISTS `lms_quizzes` (
   `show_result_immediately` TINYINT(1) NOT NULL DEFAULT 0,  -- Show Result Immediately (Student will get the result immediately after submitting the quiz)
   `auto_publish_result` TINYINT(1) NOT NULL DEFAULT 0,  -- Auto Publish Result (Result of the Class will be shown Automatically just after due date)
   `timer_enforced` TINYINT(1) NOT NULL DEFAULT 1,  -- Enforce Timer (If Timer is enforced then timer will be shown)
+  `show_correct_answer` TINYINT(1) NOT NULL DEFAULT 0, -- Show Correct Answer (If this will be 1 then Correct Answer will be shown when attempt to the quiz)
+  `show_explanation` TINYINT(1) NOT NULL DEFAULT 0, -- Show Explanation (If this will be 1 then Explanation will be shown when attempt to the quiz)
   -- Difficulty & Generation
   `difficulty_config_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to lms_difficulty_distribution_configs
   `ignore_difficulty_config` TINYINT(1) NOT NULL DEFAULT 0, -- Ignore Difficulty Config (If this will be 1 then difficulty_config_id will be ignored)
@@ -147,7 +149,7 @@ CREATE TABLE IF NOT EXISTS `lms_quiz_allocations` (
   `allocation_type` ENUM('CLASS','SECTION','GROUP','STUDENT') NOT NULL,
   `target_table_name` VARCHAR(60) NOT NULL,        -- Name of the target table (e.g. 'sch_classes', 'sch_sections', 'sch_entity_groups', 'std_students')
   `target_id` BIGINT UNSIGNED NOT NULL,             -- ID of Class, Section, Group, or Student (e.g. sch_classes.id, sch_sections.id, sch_entity_groups.id, std_students.id)
-  `assigned_by` BIGINT UNSIGNED DEFAULT NULL,       -- Teacher who assigned
+  `assigned_by` BIGINT UNSIGNED DEFAULT NULL,       -- FK to sys_users.id (Who assigned the quest). Null if assigned by System
   -- Timing
   `published_at` DATETIME DEFAULT NULL,             -- Visible from
   `due_date` DATETIME DEFAULT NULL,                 -- Due by
