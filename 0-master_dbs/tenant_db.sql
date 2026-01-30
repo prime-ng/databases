@@ -709,9 +709,6 @@ CREATE TABLE IF NOT EXISTS `sys_dropdown_need_table_jnt` (
 -- ===========================================================================
 -- 4-TRANSPORT MODULE (tpt)
 -- ===========================================================================
-  -- =======================================================================
-  -- TRANSPORT MASTER TABLES
-  -- =======================================================================
 
   CREATE TABLE IF NOT EXISTS `tpt_vehicle` (
       `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -859,10 +856,6 @@ CREATE TABLE IF NOT EXISTS `sys_dropdown_need_table_jnt` (
       CONSTRAINT `fk_pickupPointRoute_pickupPointId` FOREIGN KEY (`pickup_point_id`) REFERENCES `tpt_pickup_points`(`id`) ON DELETE CASCADE
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-  -- =======================================================================
-  -- ROUTE SCHEDULE & DRIVER ASSIGNMENT
-  -- =======================================================================
-
   CREATE TABLE IF NOT EXISTS `tpt_driver_route_vehicle_jnt` (
       `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       `shift_id` BIGINT UNSIGNED NOT NULL,
@@ -934,10 +927,6 @@ CREATE TABLE IF NOT EXISTS `sys_dropdown_need_table_jnt` (
       CONSTRAINT `fk_sched_helper` FOREIGN KEY (`helper_id`) REFERENCES `tpt_personnel`(`id`) ON DELETE SET NULL
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-  -- =======================================================================
-  -- TRIPS
-  -- =======================================================================
-
   CREATE TABLE IF NOT EXISTS `tpt_trip` (
       `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       `trip_date` DATE NOT NULL,      --  Date of the trip
@@ -989,20 +978,6 @@ CREATE TABLE IF NOT EXISTS `sys_dropdown_need_table_jnt` (
       CONSTRAINT `fk_trip_stop_detail_stop` FOREIGN KEY (`stop_id`) REFERENCES `tpt_pickup_points`(`id`) ON DELETE SET NULL,
       CONSTRAINT `fk_trip_stop_detail_updated_by` FOREIGN KEY (`updated_by`) REFERENCES `tpt_personnel`(`id`) ON DELETE SET NULL
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-  -- =======================================================================
-  -- DRIVER ATTENDANCE
-  -- =======================================================================
-
-  -- CREATE TABLE IF NOT EXISTS `tpt_attendance_device` (
-  --     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  --     `device_code` VARCHAR(50) NOT NULL UNIQUE,
-  --     `device_name` VARCHAR(100) NOT NULL,
-  --     `device_type` ENUM('Mobile','Scanner','Tablet','Gate') NOT NULL,
-  --     `location` VARCHAR(150) NULL,
-  --     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-  --     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-  -- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `tpt_attendance_device` (
       `id` BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
@@ -1059,10 +1034,6 @@ CREATE TABLE IF NOT EXISTS `sys_dropdown_need_table_jnt` (
       CONSTRAINT `FK_da_device` FOREIGN KEY (`device_id`) REFERENCES `tpt_attendance_device`(`id`) ON DELETE CASCADE
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-  -- =======================================================================
-  -- STUDENT ALLOCATION
-  -- =======================================================================
-
   CREATE TABLE IF NOT EXISTS `tpt_student_route_allocation_jnt` (
       `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       `student_session_id` BIGINT UNSIGNED NOT NULL,
@@ -1082,10 +1053,6 @@ CREATE TABLE IF NOT EXISTS `sys_dropdown_need_table_jnt` (
       CONSTRAINT `fk_sa_pickup` FOREIGN KEY (`pickup_stop_id`) REFERENCES `tpt_pickup_points`(`id`) ON DELETE RESTRICT,
       CONSTRAINT `fk_sa_drop` FOREIGN KEY (`drop_stop_id`) REFERENCES `tpt_pickup_points`(`id`) ON DELETE RESTRICT
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-  -- =======================================================================
-  -- TRANSPORT FEE
-  -- =======================================================================
 
   CREATE TABLE IF NOT EXISTS `tpt_fine_master` (
       `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -1173,10 +1140,6 @@ CREATE TABLE IF NOT EXISTS `sys_dropdown_need_table_jnt` (
     CONSTRAINT `fk_payLog_triggeredBy` FOREIGN KEY (`triggered_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-  -- =======================================================================
-  -- FUEL & MAINTENANCE
-  -- =======================================================================
-
   -- Single Screen - 5 tab (Fuel, Inspection, Service Request, Maintenance, Approval)
 
   CREATE TABLE IF NOT EXISTS `tpt_vehicle_fuel` (
@@ -1239,8 +1202,6 @@ CREATE TABLE IF NOT EXISTS `sys_dropdown_need_table_jnt` (
       -- 1. If Inspection is Failed, a new entry will be created in 'tpt_vehicle_service_request' table with available information.
       -- 2. If Inspection is Failed, application will change Status in the "tpt_Vehicle make '`availability_status` to 'Not Available'
 
-
-
   Create Table if not EXISTS `tpt_vehicle_service_request` (
       `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       `vehicle_inspection_id` BIGINT UNSIGNED NOT NULL,
@@ -1286,14 +1247,6 @@ CREATE TABLE IF NOT EXISTS `sys_dropdown_need_table_jnt` (
       CONSTRAINT `fk_vm_vehicle_service_request` FOREIGN KEY (`vehicle_service_request_id`) REFERENCES `tpt_vehicle_service_request`(`id`) ON DELETE CASCADE,
       CONSTRAINT `fk_vm_approvedBy` FOREIGN KEY (`approved_by`) REFERENCES `sys_users`(`id`) ON DELETE SET NULL
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-  -- Condition:
-      -- 1. New Entry Can not be created in 'tpt_vehicle_maintenance' table. Only Edit of existing entry is allowed.
-      -- 2. Approval of Both the Tables should be done by Authorised Person in "Approval" Tab.
-      -- 3. Once Maintenance Entry is Approved by Authorised Person, it will create a entry in 'vnd_vendor_bill_due_for_payment' table.
-
-  -- =======================================================================
-  -- TRIP INCIDENTS & ALERTS
-  -- =======================================================================
 
   CREATE TABLE IF NOT EXISTS `tpt_trip_incidents` (
       `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -1316,14 +1269,6 @@ CREATE TABLE IF NOT EXISTS `sys_dropdown_need_table_jnt` (
       CONSTRAINT `fk_ti_raisedBy` FOREIGN KEY (`raised_by`) REFERENCES `sys_users`(`id`) ON DELETE SET NULL,
       CONSTRAINT `fk_ti_resolvedBy` FOREIGN KEY (`resolved_by`) REFERENCES `sys_users`(`id`) ON DELETE SET NULL
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-  -- ---------------------------------------------------------------------------------------------------------------
-  -- New Tables
-  -- ---------------------------------------------------------------------------------------------------------------
-
-  -- =======================================================================
-  -- STUDENT BOARD/UN-BOARD EVENTS
-  -- =======================================================================
 
   CREATE TABLE IF NOT EXISTS `tpt_student_boarding_log` (
       `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -1352,10 +1297,6 @@ CREATE TABLE IF NOT EXISTS `sys_dropdown_need_table_jnt` (
       CONSTRAINT `fk_sel_unboardingStop` FOREIGN KEY (`unboarding_stop_id`) REFERENCES `tpt_pickup_points`(`id`) ON DELETE SET NULL,
       CONSTRAINT `fk_sel_device` FOREIGN KEY (`device_id`) REFERENCES `tpt_attendance_device`(`id`) ON DELETE SET NULL
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-  -- =======================================================================
-  -- NOTIFICATIONS & LOGS
-  -- =======================================================================
 
   CREATE TABLE IF NOT EXISTS `tpt_notification_log` (
       `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -1842,232 +1783,236 @@ CREATE TABLE IF NOT EXISTS `sys_dropdown_need_table_jnt` (
 -- 7-NOTIFICATION MODULE (ntf)
 -- ===========================================================================
 
-  -- =========================================================
-  -- NOTIFICATION MASTER
-  -- =========================================================
-  CREATE TABLE IF NOT EXISTS ntf_channel_master (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `code` VARCHAR(20) NOT NULL,
-      `name` VARCHAR(50) NOT NULL,
-      `description` VARCHAR(255) NULL,
-      `max_retry` INT DEFAULT 1,
-      -- Maximum number of retries for failed notifications
-      `is_active` TINYINT(1) DEFAULT 1,
-      `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      `deleted_at` TIMESTAMP NULL,
-      INDEX `idx_ntf_channel_code` (`code`),
-      CONSTRAINT `uq_ntf_channel_code` UNIQUE (`code`),
-      CONSTRAINT `uq_ntf_channel_name` UNIQUE (`name`)
-  ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
-  CREATE TABLE IF NOT EXISTS ntf_notifications (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `source_module` VARCHAR(50) NOT NULL,
-      -- Triggering module: Exam, Fee, Transport, Complaint etc
-      `notification_event` VARCHAR(50) NOT NULL,
-      -- Triggering event: Student Registered, Student Promoted, Exam Result Published, Fee Payment Reminder etc
-      `title` VARCHAR(255) NOT NULL,
-      -- Notification title
-      `description` VARCHAR(512) NULL,
-      -- Notification description
-      `template_id` BIGINT UNSIGNED NULL,
-      -- Template ID
-      `priority_id` BIGINT UNSIGNED NOT NULL,
-      -- fk to sys_dropdown_table e.g. 'LOW, NORMAL, HIGH, URGENT'
-      `confidentiality_level_id` BIGINT UNSIGNED NOT NULL,
-      -- fk to sys_dropdown_table e.g. 'PUBLIC, RESTRICTED, CONFIDENTIAL'
-      `scheduled_at` DATETIME NULL,
-      -- Scheduled time for notifications
-      `recurring` TINYINT(1) DEFAULT 0,
-      -- 0: One Time, 1: Recurring
-      `recurring_interval_id` BIGINT UNSIGNED NULL,
-      -- fk to sys_dropdown_table e.g. 'HOURLY, DAILY, WEEKLY, MONTHLY, QUARTERLY, YEARLY'
-      `recurring_end_at` DATETIME NULL,
-      -- End date or time for recurring notifications
-      `recurring_end_count` INT NULL,
-      -- End count for recurring notifications
-      `expires_at` DATETIME NULL,
-      -- Expiry date or time for notifications
-      `created_by` BIGINT UNSIGNED NOT NULL,
-      `is_active` TINYINT(1) DEFAULT 1,
-      `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      `deleted_at` TIMESTAMP NULL,
-      INDEX `idx_ntf_schedule` (`scheduled_at`),
-      INDEX `idx_ntf_source` (`source_module`),
-      CONSTRAINT `fk_ntf_priority` FOREIGN KEY (`priority_id`) REFERENCES `sys_dropdown_table`(`id`),
-      CONSTRAINT `fk_ntf_confidentiality` FOREIGN KEY (`confidentiality_level_id`) REFERENCES `sys_dropdown_table`(`id`),
-      CONSTRAINT `fk_ntf_recurring_interval` FOREIGN KEY (`recurring_interval_id`) REFERENCES `sys_dropdown_table`(`id`)
-  ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
-  -- This table is used to store the notification channels for each notification
-  -- =========================================================
-  -- NOTIFICATION CHANNELS 
-  -- =========================================================
-  CREATE TABLE IF NOT EXISTS ntf_notification_channels (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `notification_id` BIGINT UNSIGNED NOT NULL,
-      `channel_id` BIGINT UNSIGNED NOT NULL,
-      -- fk to ntf_channel_master
-      `provider_id` BIGINT UNSIGNED NULL,
-      -- fk to sys_dropdown_table e.g. 'MSG91, Twilio, AWS SES, Meta API'
-      `status_id` BIGINT UNSIGNED NOT NULL,
-      -- fk to sys_dropdown_table e.g. 'PENDING, SENT, FAILED, RETRIED'
-      `scheduled_at` DATETIME NULL,
-      -- Scheduled time for notifications
-      `sent_at` DATETIME NULL,
-      -- Actual time when notification was sent
-      `failure_reason` VARCHAR(512) NULL,
-      `retry_count` INT DEFAULT 0,
-      `max_retry` INT DEFAULT 3,
-      -- Maximum number of retries for failed notifications (Need to be fetched from ntf_channel_master)
-      `is_active` TINYINT(1) DEFAULT 1,
-      `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      `deleted_at` TIMESTAMP NULL,
-      UNIQUE KEY `uq_notification_channel` (`notification_id`, `channel_id`),
-      INDEX `idx_ntf_channel_status` (`status_id`),
-      INDEX `idx_ntf_channel_scheduled_at` (`scheduled_at`),
-      CONSTRAINT `fk_ntf_channel_notification` FOREIGN KEY (`notification_id`) REFERENCES `ntf_notifications`(`id`),
-      CONSTRAINT `fk_ntf_channel_type` FOREIGN KEY (`channel_id`) REFERENCES `ntf_channel_master`(`id`),
-      CONSTRAINT `fk_ntf_channel_provider` FOREIGN KEY (`provider_id`) REFERENCES `sys_dropdown_table`(`id`),
-      CONSTRAINT `fk_ntf_channel_status` FOREIGN KEY (`status_id`) REFERENCES `sys_dropdown_table`(`id`)
-  ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
-  -- Condition;
-  -- 1. may have multipal Records against one notification_id (if multiple channels are enabled for the notification)
-  -- 2. may have multipal Records against one notification_id and channel_id (if multiple templates are enabled for the notification)
-  -- =========================================================
-  -- NOTIFICATION TARGETING
-  -- =========================================================
-  CREATE TABLE IF NOT EXISTS ntf_notification_targets (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `notification_id` BIGINT UNSIGNED NOT NULL,
-      `target_type_id` BIGINT UNSIGNED NOT NULL,
-      -- FK to sys_dropdown_table e.g. USER, ROLE, DEPARTMENT, DESIGNATION, CLASS, SECTION, SUBJECT, ENTITY_GROUP, ENTIRE_SCHOOL
-      `target_table_name` VARCHAR(60) DEFAULT NULL,
-      -- e.g. sys_user, sys_role, sch_department, sch_designation, sch_classes, sch_sections, sch_subjects, sch_entity_groups, sch_staff_groups
-      `target_selected_id` BIGINT UNSIGNED NULL,
-      -- Reference ID based on target type e.g. user_id, role_id, designation_id, etc.
-      `is_active` TINYINT(1) DEFAULT 1,
-      `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      `deleted_at` TIMESTAMP NULL,
-      INDEX `idx_ntf_target_lookup` (`target_type_id`, `target_selected_id`),
-      CONSTRAINT `fk_ntf_target_notification` FOREIGN KEY (`notification_id`) REFERENCES `ntf_notifications`(`id`),
-      CONSTRAINT `fk_ntf_target_type` FOREIGN KEY (`target_type_id`) REFERENCES `sys_dropdown_table`(`id`)
-  ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
-  -- Condition;
-  -- 1. may have multipal Records against one notification_id (if multiple targets are selected for the notification)
-  -- 2. may have multipal Records against one target_type_id (if multiple targets are selected for the notification)
-  -- =========================================================
-  -- USER NOTIFICATION PREFERENCES
-  -- =========================================================
-  CREATE TABLE IF NOT EXISTS ntf_user_preferences (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `user_id` BIGINT UNSIGNED NOT NULL,
-      `channel_id` BIGINT UNSIGNED NOT NULL,
-      -- fk to ntf_channel_master
-      `is_enabled` TINYINT(1) DEFAULT 1,
-      `quiet_hours_start` TIME NULL,
-      `quiet_hours_end` TIME NULL,
-      `is_active` TINYINT(1) DEFAULT 1,
-      `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      `deleted_at` TIMESTAMP NULL,
-      UNIQUE KEY `uq_user_channel` (`user_id`, `channel_id`),
-      CONSTRAINT `fk_ntf_pref_channel` FOREIGN KEY (`channel_id`) REFERENCES `ntf_channel_master`(`id`)
-  ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
-  -- =========================================================
-  -- NOTIFICATION TEMPLATES
-  -- =========================================================
-  CREATE TABLE IF NOT EXISTS ntf_templates (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `template_code` VARCHAR(50) NOT NULL,
-      `channel_id` BIGINT UNSIGNED NOT NULL,
-      -- fk to ntf_channel_master
-      `subject` VARCHAR(255) NULL,
-      -- 'Used for Email'
-      `body` TEXT NOT NULL,
-      -- 'Supports {{placeholders}}'
-      `language_code` VARCHAR(10) DEFAULT 'en',
-      `media_id` BIGINT UNSIGNED NULL,
-      `is_system_template` TINYINT(1) DEFAULT 0,
-      `is_active` TINYINT(1) DEFAULT 1,
-      `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      `deleted_at` TIMESTAMP NULL,
-      UNIQUE KEY `uq_template_code_channel` (`template_code`, `channel_id`),
-      CONSTRAINT `fk_ntf_template_channel` FOREIGN KEY (`channel_id`) REFERENCES `ntf_channel_master`(`id`),
-      CONSTRAINT `fk_ntf_template_media` FOREIGN KEY (`media_id`) REFERENCES `sys_media`(`id`)
-  ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
-  -- =========================================================
-  -- NOTIFICATION RESOLVED RECIPIENTS (Final Resolved Recipients to send Notification)
-  -- =========================================================
-  CREATE TABLE IF NOT EXISTS ntf_resolved_recipients (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `notification_id` BIGINT UNSIGNED NOT NULL,
-      `channel_id` BIGINT UNSIGNED NOT NULL,
-      -- fk to ntf_channel_master
-      `template_id` BIGINT UNSIGNED NOT NULL,
-      -- fk to ntf_templates
-      `notification_target_id` BIGINT UNSIGNED NOT NULL,
-      -- fk to ntf_notification_targets
-      `user_preference_id` BIGINT UNSIGNED NOT NULL,
-      -- fk to ntf_user_preferences
-      `resolved_user_id` BIGINT UNSIGNED NOT NULL,
-      -- fk to sys_user
-      `mobile_number` VARCHAR(15) NULL,
-      `email` VARCHAR(255) NULL,
-      `is_active` TINYINT(1) DEFAULT 1,
-      `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      `deleted_at` TIMESTAMP NULL,
-      INDEX `idx_ntf_recipient_user` (`resolved_user_id`),
-      INDEX `idx_ntf_recipient_preference` (`user_preference_id`),
-      INDEX `idx_ntf_recipient_target` (`notification_target_id`),
-      CONSTRAINT `fk_ntf_recipient_notification` FOREIGN KEY (`notification_id`) REFERENCES `ntf_notifications`(`id`),
-      CONSTRAINT `fk_ntf_recipient_channel` FOREIGN KEY (`channel_id`) REFERENCES `ntf_channel_master`(`id`),
-      CONSTRAINT `fk_ntf_recipient_template` FOREIGN KEY (`template_id`) REFERENCES `ntf_templates`(`id`),
-      CONSTRAINT `fk_ntf_recipient_preference` FOREIGN KEY (`user_preference_id`) REFERENCES `ntf_user_preferences`(`id`),
-      CONSTRAINT `fk_ntf_recipient_target` FOREIGN KEY (`notification_target_id`) REFERENCES `ntf_notification_targets`(`id`),
-      CONSTRAINT `fk_ntf_recipient_user` FOREIGN KEY (`resolved_user_id`) REFERENCES `sys_user`(`id`)
-  ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
-  -- Condition:
-  -- 1. may have multipal Records against one notification_id
-  -- 2. may have multipal Records against one user_id (if multiple channels are enabled for the user)
-  -- =========================================================
-  -- NOTIFICATION DELIVERY LOGS
-  -- =========================================================
-  CREATE TABLE IF NOT EXISTS ntf_delivery_logs (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `notification_id` BIGINT UNSIGNED NOT NULL,
-      `channel_id` BIGINT UNSIGNED NOT NULL,
-      -- fk to ntf_channel_master
-      `notification_target_id` BIGINT UNSIGNED NOT NULL,
-      -- New
-      `resolved_user_id` BIGINT UNSIGNED NOT NULL,
-      `delivery_status_id` BIGINT UNSIGNED NOT NULL,
-      -- 'SENT, FAILED, READ, CLICKED'
-      `delivered_at` DATETIME NULL,
-      `read_at` DATETIME NULL,
-      `response_payload` JSON NULL,
-      -- 'Provider response'
-      `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      `deleted_at` TIMESTAMP NULL,
-      INDEX `idx_ntf_delivery_user` (`resolved_user_id`),
-      INDEX `idx_ntf_delivery_status` (`delivery_status_id`),
-      CONSTRAINT `fk_ntf_log_notification` FOREIGN KEY (`notification_id`) REFERENCES `ntf_notifications`(`id`),
-      CONSTRAINT `fk_ntf_log_channel` FOREIGN KEY (`channel_id`) REFERENCES `ntf_channel_master`(`id`),
-      CONSTRAINT `fk_ntf_log_status` FOREIGN KEY (`delivery_status_id`) REFERENCES `sys_dropdown_table`(`id`)
-  ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+    CREATE TABLE IF NOT EXISTS ntf_channel_master (
+        `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        `code` VARCHAR(20) NOT NULL,
+        `name` VARCHAR(50) NOT NULL,
+        `description` VARCHAR(255) NULL,
+        `max_retry` INT DEFAULT 1,
+        -- Maximum number of retries for failed notifications
+        `is_active` TINYINT(1) DEFAULT 1,
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        `deleted_at` TIMESTAMP NULL,
+        INDEX `idx_ntf_channel_code` (`code`),
+        CONSTRAINT `uq_ntf_channel_code` UNIQUE (`code`),
+        CONSTRAINT `uq_ntf_channel_name` UNIQUE (`name`)
+    ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
+
+    CREATE TABLE IF NOT EXISTS ntf_notifications (
+        `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        `source_module` VARCHAR(50) NOT NULL,
+        -- Triggering module: Exam, Fee, Transport, Complaint etc
+        `notification_event` VARCHAR(50) NOT NULL,
+        -- Triggering event: Student Registered, Student Promoted, Exam Result Published, Fee Payment Reminder etc
+        `title` VARCHAR(255) NOT NULL,
+        -- Notification title
+        `description` VARCHAR(512) NULL,
+        -- Notification description
+        `template_id` BIGINT UNSIGNED NULL,
+        -- Template ID
+        `priority_id` BIGINT UNSIGNED NOT NULL,
+        -- fk to sys_dropdown_table e.g. 'LOW, NORMAL, HIGH, URGENT'
+        `confidentiality_level_id` BIGINT UNSIGNED NOT NULL,
+        -- fk to sys_dropdown_table e.g. 'PUBLIC, RESTRICTED, CONFIDENTIAL'
+        `scheduled_at` DATETIME NULL,
+        -- Scheduled time for notifications
+        `recurring` TINYINT(1) DEFAULT 0,
+        -- 0: One Time, 1: Recurring
+        `recurring_interval_id` BIGINT UNSIGNED NULL,
+        -- fk to sys_dropdown_table e.g. 'HOURLY, DAILY, WEEKLY, MONTHLY, QUARTERLY, YEARLY'
+        `recurring_end_at` DATETIME NULL,
+        -- End date or time for recurring notifications
+        `recurring_end_count` INT NULL,
+        -- End count for recurring notifications
+        `expires_at` DATETIME NULL,
+        -- Expiry date or time for notifications
+        `created_by` BIGINT UNSIGNED NOT NULL,
+        `is_active` TINYINT(1) DEFAULT 1,
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        `deleted_at` TIMESTAMP NULL,
+        INDEX `idx_ntf_schedule` (`scheduled_at`),
+        INDEX `idx_ntf_source` (`source_module`),
+        CONSTRAINT `fk_ntf_priority` FOREIGN KEY (`priority_id`) REFERENCES `sys_dropdown_table`(`id`),
+        CONSTRAINT `fk_ntf_confidentiality` FOREIGN KEY (`confidentiality_level_id`) REFERENCES `sys_dropdown_table`(`id`),
+        CONSTRAINT `fk_ntf_recurring_interval` FOREIGN KEY (`recurring_interval_id`) REFERENCES `sys_dropdown_table`(`id`)
+    ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
+
+    -- This table is used to store the notification channels for each notification
+    -- =========================================================
+    -- NOTIFICATION CHANNELS 
+    -- =========================================================
+    CREATE TABLE IF NOT EXISTS ntf_notification_channels (
+        `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        `notification_id` BIGINT UNSIGNED NOT NULL,
+        `channel_id` BIGINT UNSIGNED NOT NULL,
+        -- fk to ntf_channel_master
+        `provider_id` BIGINT UNSIGNED NULL,
+        -- fk to sys_dropdown_table e.g. 'MSG91, Twilio, AWS SES, Meta API'
+        `status_id` BIGINT UNSIGNED NOT NULL,
+        -- fk to sys_dropdown_table e.g. 'PENDING, SENT, FAILED, RETRIED'
+        `scheduled_at` DATETIME NULL,
+        -- Scheduled time for notifications
+        `sent_at` DATETIME NULL,
+        -- Actual time when notification was sent
+        `failure_reason` VARCHAR(512) NULL,
+        `retry_count` INT DEFAULT 0,
+        `max_retry` INT DEFAULT 3,
+        -- Maximum number of retries for failed notifications (Need to be fetched from ntf_channel_master)
+        `is_active` TINYINT(1) DEFAULT 1,
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        `deleted_at` TIMESTAMP NULL,
+        UNIQUE KEY `uq_notification_channel` (`notification_id`, `channel_id`),
+        INDEX `idx_ntf_channel_status` (`status_id`),
+        INDEX `idx_ntf_channel_scheduled_at` (`scheduled_at`),
+        CONSTRAINT `fk_ntf_channel_notification` FOREIGN KEY (`notification_id`) REFERENCES `ntf_notifications`(`id`),
+        CONSTRAINT `fk_ntf_channel_type` FOREIGN KEY (`channel_id`) REFERENCES `ntf_channel_master`(`id`),
+        CONSTRAINT `fk_ntf_channel_provider` FOREIGN KEY (`provider_id`) REFERENCES `sys_dropdown_table`(`id`),
+        CONSTRAINT `fk_ntf_channel_status` FOREIGN KEY (`status_id`) REFERENCES `sys_dropdown_table`(`id`)
+    ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+    -- Condition;
+    -- 1. may have multipal Records against one notification_id (if multiple channels are enabled for the notification)
+    -- 2. may have multipal Records against one notification_id and channel_id (if multiple templates are enabled for the notification)
+
+    -- =========================================================
+    -- NOTIFICATION TARGETING
+    -- =========================================================
+    CREATE TABLE IF NOT EXISTS ntf_notification_targets (
+        `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        `notification_id` BIGINT UNSIGNED NOT NULL,
+        `target_type_id` BIGINT UNSIGNED NOT NULL,
+        -- FK to sys_dropdown_table e.g. USER, ROLE, DEPARTMENT, DESIGNATION, CLASS, SECTION, SUBJECT, ENTITY_GROUP, ENTIRE_SCHOOL
+        `target_table_name` VARCHAR(60) DEFAULT NULL,
+        -- e.g. sys_user, sys_role, sch_department, sch_designation, sch_classes, sch_sections, sch_subjects, sch_entity_groups, sch_staff_groups
+        `target_selected_id` BIGINT UNSIGNED NULL,
+        -- Reference ID based on target type e.g. user_id, role_id, designation_id, etc.
+        `is_active` TINYINT(1) DEFAULT 1,
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        `deleted_at` TIMESTAMP NULL,
+        INDEX `idx_ntf_target_lookup` (`target_type_id`, `target_selected_id`),
+        CONSTRAINT `fk_ntf_target_notification` FOREIGN KEY (`notification_id`) REFERENCES `ntf_notifications`(`id`),
+        CONSTRAINT `fk_ntf_target_type` FOREIGN KEY (`target_type_id`) REFERENCES `sys_dropdown_table`(`id`)
+    ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+    -- Condition;
+    -- 1. may have multipal Records against one notification_id (if multiple targets are selected for the notification)
+    -- 2. may have multipal Records against one target_type_id (if multiple targets are selected for the notification)
+
+    -- =========================================================
+    -- USER NOTIFICATION PREFERENCES
+    -- =========================================================
+    CREATE TABLE IF NOT EXISTS ntf_user_preferences (
+        `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        `user_id` BIGINT UNSIGNED NOT NULL,
+        `channel_id` BIGINT UNSIGNED NOT NULL,
+        -- fk to ntf_channel_master
+        `is_enabled` TINYINT(1) DEFAULT 1,
+        `quiet_hours_start` TIME NULL,
+        `quiet_hours_end` TIME NULL,
+        `is_active` TINYINT(1) DEFAULT 1,
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        `deleted_at` TIMESTAMP NULL,
+        UNIQUE KEY `uq_user_channel` (`user_id`, `channel_id`),
+        CONSTRAINT `fk_ntf_pref_channel` FOREIGN KEY (`channel_id`) REFERENCES `ntf_channel_master`(`id`)
+    ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+
+    -- =========================================================
+    -- NOTIFICATION TEMPLATES
+    -- =========================================================
+    CREATE TABLE IF NOT EXISTS ntf_templates (
+        `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        `template_code` VARCHAR(50) NOT NULL,
+        `channel_id` BIGINT UNSIGNED NOT NULL,
+        -- fk to ntf_channel_master
+        `subject` VARCHAR(255) NULL,
+        -- 'Used for Email'
+        `body` TEXT NOT NULL,
+        -- 'Supports {{placeholders}}'
+        `language_code` VARCHAR(10) DEFAULT 'en',
+        `media_id` BIGINT UNSIGNED NULL,
+        `is_system_template` TINYINT(1) DEFAULT 0,
+        `is_active` TINYINT(1) DEFAULT 1,
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        `deleted_at` TIMESTAMP NULL,
+        UNIQUE KEY `uq_template_code_channel` (`template_code`, `channel_id`),
+        CONSTRAINT `fk_ntf_template_channel` FOREIGN KEY (`channel_id`) REFERENCES `ntf_channel_master`(`id`),
+        CONSTRAINT `fk_ntf_template_media` FOREIGN KEY (`media_id`) REFERENCES `sys_media`(`id`)
+    ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+
+    -- =========================================================
+    -- NOTIFICATION RESOLVED RECIPIENTS (Final Resolved Recipients to send Notification)
+    -- =========================================================
+    CREATE TABLE IF NOT EXISTS ntf_resolved_recipients (
+        `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        `notification_id` BIGINT UNSIGNED NOT NULL,
+        `channel_id` BIGINT UNSIGNED NOT NULL,
+        -- fk to ntf_channel_master
+        `template_id` BIGINT UNSIGNED NOT NULL,
+        -- fk to ntf_templates
+        `notification_target_id` BIGINT UNSIGNED NOT NULL,
+        -- fk to ntf_notification_targets
+        `user_preference_id` BIGINT UNSIGNED NOT NULL,
+        -- fk to ntf_user_preferences
+        `resolved_user_id` BIGINT UNSIGNED NOT NULL,
+        -- fk to sys_user
+        `mobile_number` VARCHAR(15) NULL,
+        `email` VARCHAR(255) NULL,
+        `is_active` TINYINT(1) DEFAULT 1,
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        `deleted_at` TIMESTAMP NULL,
+        INDEX `idx_ntf_recipient_user` (`resolved_user_id`),
+        INDEX `idx_ntf_recipient_preference` (`user_preference_id`),
+        INDEX `idx_ntf_recipient_target` (`notification_target_id`),
+        CONSTRAINT `fk_ntf_recipient_notification` FOREIGN KEY (`notification_id`) REFERENCES `ntf_notifications`(`id`),
+        CONSTRAINT `fk_ntf_recipient_channel` FOREIGN KEY (`channel_id`) REFERENCES `ntf_channel_master`(`id`),
+        CONSTRAINT `fk_ntf_recipient_template` FOREIGN KEY (`template_id`) REFERENCES `ntf_templates`(`id`),
+        CONSTRAINT `fk_ntf_recipient_preference` FOREIGN KEY (`user_preference_id`) REFERENCES `ntf_user_preferences`(`id`),
+        CONSTRAINT `fk_ntf_recipient_target` FOREIGN KEY (`notification_target_id`) REFERENCES `ntf_notification_targets`(`id`),
+        CONSTRAINT `fk_ntf_recipient_user` FOREIGN KEY (`resolved_user_id`) REFERENCES `sys_user`(`id`)
+    ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+    -- Condition:
+    -- 1. may have multipal Records against one notification_id
+    -- 2. may have multipal Records against one user_id (if multiple channels are enabled for the user)
+    
+    -- =========================================================
+    -- NOTIFICATION DELIVERY LOGS
+    -- =========================================================
+    CREATE TABLE IF NOT EXISTS ntf_delivery_logs (
+        `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        `notification_id` BIGINT UNSIGNED NOT NULL,
+        `channel_id` BIGINT UNSIGNED NOT NULL,
+        -- fk to ntf_channel_master
+        `notification_target_id` BIGINT UNSIGNED NOT NULL,
+        -- New
+        `resolved_user_id` BIGINT UNSIGNED NOT NULL,
+        `delivery_status_id` BIGINT UNSIGNED NOT NULL,
+        -- 'SENT, FAILED, READ, CLICKED'
+        `delivered_at` DATETIME NULL,
+        `read_at` DATETIME NULL,
+        `response_payload` JSON NULL,
+        -- 'Provider response'
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        `deleted_at` TIMESTAMP NULL,
+        INDEX `idx_ntf_delivery_user` (`resolved_user_id`),
+        INDEX `idx_ntf_delivery_status` (`delivery_status_id`),
+        CONSTRAINT `fk_ntf_log_notification` FOREIGN KEY (`notification_id`) REFERENCES `ntf_notifications`(`id`),
+        CONSTRAINT `fk_ntf_log_channel` FOREIGN KEY (`channel_id`) REFERENCES `ntf_channel_master`(`id`),
+        CONSTRAINT `fk_ntf_log_status` FOREIGN KEY (`delivery_status_id`) REFERENCES `sys_dropdown_table`(`id`)
+    ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
 
 -- =========================================================================
 -- 8-TIMETABLE MODULE (tt)
 -- =========================================================================
-  -- =========================================================================
+  -- ------------------------------------------------------
   --  SECTION 0: MASTER CONFIGURATION TABLES
-  -- =========================================================================
+  -- ------------------------------------------------------
 
     CREATE TABLE IF NOT EXISTS `tt_shift` (
       `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -2177,9 +2122,9 @@ CREATE TABLE IF NOT EXISTS `sys_dropdown_need_table_jnt` (
       CONSTRAINT `fk_workday_daytype` FOREIGN KEY (`day_type_id`) REFERENCES `tt_day_type` (`id`) ON DELETE RESTRICT
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-    -- =========================================================================
-    --  SECTION 1: PERIOD SET CONFIGURATION
-    -- =========================================================================
+  -- ------------------------------------------------------
+  --  SECTION 1: PERIOD SET CONFIGURATION
+  -- ------------------------------------------------------
 
     CREATE TABLE IF NOT EXISTS `tt_period_set` (
       `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -2223,9 +2168,9 @@ CREATE TABLE IF NOT EXISTS `sys_dropdown_need_table_jnt` (
       CONSTRAINT `chk_psp_time` CHECK (`end_time` > `start_time`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-    -- =========================================================================
-    --  SECTION 2: TIMETABLE TYPE (Merges tt_school_timing_profile)
-    -- =========================================================================
+  -- ------------------------------------------------------
+  --  SECTION 2: TIMETABLE TYPE (Merges tt_school_timing_profile)
+  -- ------------------------------------------------------
 
     CREATE TABLE IF NOT EXISTS `tt_timetable_type` (
       `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -2260,9 +2205,9 @@ CREATE TABLE IF NOT EXISTS `sys_dropdown_need_table_jnt` (
       CONSTRAINT `fk_tttype_day_type` FOREIGN KEY (`day_type_id`) REFERENCES `tt_day_type` (`id`) ON DELETE SET NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-    -- =========================================================================
-    --  SECTION 3: CLASS & STUDENT GROUPING
-    -- =========================================================================
+  -- ------------------------------------------------------
+  --  SECTION 3: CLASS & STUDENT GROUPING
+  -- ------------------------------------------------------
 
     CREATE TABLE IF NOT EXISTS `tt_class_mode_rule` (
       `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -2359,9 +2304,9 @@ CREATE TABLE IF NOT EXISTS `sys_dropdown_need_table_jnt` (
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
-    -- =========================================================================
-    --  SECTION 4: ACTIVITY MANAGEMENT
-    -- =========================================================================
+  -- ------------------------------------------------------
+  --  SECTION 4: ACTIVITY MANAGEMENT
+  -- ------------------------------------------------------
     -- TERMINOLOGY:
     -- duration_periods = Consecutive slots (Lab=2) | weekly_periods = Times/week
     -- priority = User importance | difficulty_score = Algorithm metric
@@ -2448,9 +2393,9 @@ CREATE TABLE IF NOT EXISTS `sys_dropdown_need_table_jnt` (
       UNIQUE KEY `uq_subact_code` (`code`),
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-    -- =========================================================================
-    --  SECTION 5: CONSTRAINT ENGINE
-    -- =========================================================================
+  -- ------------------------------------------------------
+  --  SECTION 5: CONSTRAINT ENGINE
+  -- ------------------------------------------------------
 
     CREATE TABLE IF NOT EXISTS `tt_constraint_type` (
       `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -2547,9 +2492,9 @@ CREATE TABLE IF NOT EXISTS `sys_dropdown_need_table_jnt` (
       CONSTRAINT `fk_ru_constraint` FOREIGN KEY (`constraint_id`) REFERENCES `tt_constraint` (`id`) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-    -- =========================================================================
-    --  SECTION 6: TIMETABLE GENERATION & STORAGE
-    -- =========================================================================
+  -- ------------------------------------------------------
+  --  SECTION 6: TIMETABLE GENERATION & STORAGE
+  -- ------------------------------------------------------
 
     CREATE TABLE IF NOT EXISTS `tt_timetable` (
       `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -2697,9 +2642,9 @@ CREATE TABLE IF NOT EXISTS `sys_dropdown_need_table_jnt` (
       CONSTRAINT `fk_cct_role` FOREIGN KEY (`assignment_role_id`) REFERENCES `tt_teacher_assignment_role` (`id`) ON DELETE RESTRICT
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-    -- =========================================================================
-    --  SECTION 7: SUBSTITUTION MANAGEMENT
-    -- =========================================================================
+  -- ------------------------------------------------------
+  --  SECTION 7: SUBSTITUTION MANAGEMENT
+  -- ------------------------------------------------------
 
     CREATE TABLE IF NOT EXISTS `tt_teacher_absence` (
       `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -2759,9 +2704,9 @@ CREATE TABLE IF NOT EXISTS `sys_dropdown_need_table_jnt` (
       CONSTRAINT `fk_sub_assigned_by` FOREIGN KEY (`assigned_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-    -- =========================================================================
-    --  SECTION 8: TEACHER WORKLOAD & ANALYTICS
-    -- =========================================================================
+  -- ------------------------------------------------------
+  --  SECTION 8: TEACHER WORKLOAD & ANALYTICS
+  -- ------------------------------------------------------
 
     CREATE TABLE IF NOT EXISTS `tt_teacher_workload` (
       `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -2790,9 +2735,9 @@ CREATE TABLE IF NOT EXISTS `sys_dropdown_need_table_jnt` (
       CONSTRAINT `fk_tw_timetable` FOREIGN KEY (`timetable_id`) REFERENCES `tt_timetable` (`id`) ON DELETE SET NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-    -- =========================================================================
-    --  SECTION 9: AUDIT & HISTORY
-    -- =========================================================================
+  -- ------------------------------------------------------
+  --  SECTION 9: AUDIT & HISTORY
+  -- ------------------------------------------------------
 
     CREATE TABLE IF NOT EXISTS `tt_change_log` (
       `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -3460,7 +3405,6 @@ CREATE TABLE IF NOT EXISTS `sys_dropdown_need_table_jnt` (
   CREATE TABLE IF NOT EXISTS `qns_question_usage_log` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `question_bank_id` BIGINT UNSIGNED NOT NULL,    -- FK to qns_questions_bank
-    --`usage_context` BIGINT UNSIGNED NOT NULL, -- FK to qns_question_usage_type.id
     `question_usage_type` BIGINT UNSIGNED NOT NULL, -- FK to qns_question_usage_type.id
     `context_id` BIGINT UNSIGNED NOT NULL,    -- quiz_id, assessment_id, exam_id - FK to sys_dropdowns table
     `used_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -3510,252 +3454,252 @@ CREATE TABLE IF NOT EXISTS `sys_dropdown_need_table_jnt` (
 -- ===========================================================================
 -- 11-Recommendation (rec)
 -- ===========================================================================
-    -- table for "trigger_event" ENUM values
-    CREATE TABLE IF NOT EXISTS `rec_trigger_events` (
-      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-      `event_name` VARCHAR(50) NOT NULL,  -- ON_ASSESSMENT_RESULT, ON_TOPIC_COMPLETION, ON_ATTENDANCE_LOW, MANUAL_RUN, SCHEDULED_WEEKLY
-      `description` VARCHAR(255) DEFAULT NULL,
-      `is_active` TINYINT(1) DEFAULT 1,
-      `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-      `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      `deleted_at` TIMESTAMP NULL DEFAULT NULL,
-      PRIMARY KEY (`id`),
-      UNIQUE KEY `uq_recTriggerEvent_name` (`event_name`)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci; 
+  -- table for "trigger_event" ENUM values
+  CREATE TABLE IF NOT EXISTS `rec_trigger_events` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `event_name` VARCHAR(50) NOT NULL,  -- ON_ASSESSMENT_RESULT, ON_TOPIC_COMPLETION, ON_ATTENDANCE_LOW, MANUAL_RUN, SCHEDULED_WEEKLY
+    `description` VARCHAR(255) DEFAULT NULL,
+    `is_active` TINYINT(1) DEFAULT 1,
+    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_recTriggerEvent_name` (`event_name`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci; 
 
-    -- TAB-2 : Recommendation Rules
+  -- TAB-2 : Recommendation Rules
 
-    -- table for "recommendation_mode" ENUM values
-    CREATE TABLE IF NOT EXISTS `rec_recommendation_modes` (
-      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-      `mode_name` VARCHAR(50) NOT NULL,  -- SPECIFIC_MATERIAL, SPECIFIC_BUNDLE, DYNAMIC_BY_TOPIC, DYNAMIC_BY_COMPETENCY
-      `description` VARCHAR(255) DEFAULT NULL,
-      `is_active` TINYINT(1) DEFAULT 1,
-      `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-      `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      `deleted_at` TIMESTAMP NULL DEFAULT NULL,
-      PRIMARY KEY (`id`),
-      UNIQUE KEY `uq_recRecommendationMode_name` (`mode_name`)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci; 
+  -- table for "recommendation_mode" ENUM values
+  CREATE TABLE IF NOT EXISTS `rec_recommendation_modes` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `mode_name` VARCHAR(50) NOT NULL,  -- SPECIFIC_MATERIAL, SPECIFIC_BUNDLE, DYNAMIC_BY_TOPIC, DYNAMIC_BY_COMPETENCY
+    `description` VARCHAR(255) DEFAULT NULL,
+    `is_active` TINYINT(1) DEFAULT 1,
+    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_recRecommendationMode_name` (`mode_name`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci; 
 
-    -- TAB-3 : Recommendation Rules
+  -- TAB-3 : Recommendation Rules
 
-    -- table for "dynamic_material_type" ENUM values
-    CREATE TABLE IF NOT EXISTS `rec_dynamic_material_types` (
-      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-      `type_name` VARCHAR(50) NOT NULL,  -- ANY_BEST_FIT, VIDEO, QUIZ, PDF
-      `description` VARCHAR(255) DEFAULT NULL,
-      `is_active` TINYINT(1) DEFAULT 1,
-      `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-      `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      `deleted_at` TIMESTAMP NULL DEFAULT NULL,
-      PRIMARY KEY (`id`),
-      UNIQUE KEY `uq_recDynamicMaterialType_name` (`type_name`)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci; 
+  -- table for "dynamic_material_type" ENUM values
+  CREATE TABLE IF NOT EXISTS `rec_dynamic_material_types` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `type_name` VARCHAR(50) NOT NULL,  -- ANY_BEST_FIT, VIDEO, QUIZ, PDF
+    `description` VARCHAR(255) DEFAULT NULL,
+    `is_active` TINYINT(1) DEFAULT 1,
+    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_recDynamicMaterialType_name` (`type_name`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci; 
 
-    -- TAB-4 : Recommendation Rules
+  -- TAB-4 : Recommendation Rules
 
-    -- table for "dynamic_purpose" ENUM values
-    CREATE TABLE IF NOT EXISTS `rec_dynamic_purposes` (
-      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-      `purpose_name` VARCHAR(50) NOT NULL,  -- REMEDIAL, ENRICHMENT, PRACTICE
-      `description` VARCHAR(255) DEFAULT NULL,
-      `is_active` TINYINT(1) DEFAULT 1,
-      `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-      `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      `deleted_at` TIMESTAMP NULL DEFAULT NULL,
-      PRIMARY KEY (`id`),
-      UNIQUE KEY `uq_recDynamicPurpose_name` (`purpose_name`)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci; 
+  -- table for "dynamic_purpose" ENUM values
+  CREATE TABLE IF NOT EXISTS `rec_dynamic_purposes` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `purpose_name` VARCHAR(50) NOT NULL,  -- REMEDIAL, ENRICHMENT, PRACTICE
+    `description` VARCHAR(255) DEFAULT NULL,
+    `is_active` TINYINT(1) DEFAULT 1,
+    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_recDynamicPurpose_name` (`purpose_name`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci; 
 
-    -- TAB-5 : Recommendation Rules
+  -- TAB-5 : Recommendation Rules
 
-    -- table for "assessment_type" ENUM values
-    CREATE TABLE IF NOT EXISTS `rec_assessment_types` (
-      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-      `type_name` VARCHAR(50) NOT NULL,  -- ALL, QUIZ, WEEKLY_TEST, TERM_EXAM, FINAL_EXAM
-      `description` VARCHAR(255) DEFAULT NULL,
-      `is_active` TINYINT(1) DEFAULT 1,
-      `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-      `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      `deleted_at` TIMESTAMP NULL DEFAULT NULL,
-      PRIMARY KEY (`id`),
-      UNIQUE KEY `uq_recAssessmentType_name` (`type_name`)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci; 
+  -- table for "assessment_type" ENUM values
+  CREATE TABLE IF NOT EXISTS `rec_assessment_types` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `type_name` VARCHAR(50) NOT NULL,  -- ALL, QUIZ, WEEKLY_TEST, TERM_EXAM, FINAL_EXAM
+    `description` VARCHAR(255) DEFAULT NULL,
+    `is_active` TINYINT(1) DEFAULT 1,
+    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_recAssessmentType_name` (`type_name`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci; 
 
 
-    -- ========================================================================================================
-    -- SCREEN - 2 : Tab-1 (Recommendation Materials)
-    -- ========================================================================================================
+  -- ========================================================================================================
+  -- SCREEN - 2 : Tab-1 (Recommendation Materials)
+  -- ========================================================================================================
 
-    -- 1. Master table for Recommendation Materials (Content Bank)
-    CREATE TABLE IF NOT EXISTS `rec_recommendation_materials` (
-      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-      `title` VARCHAR(255) NOT NULL,
-      `description` TEXT DEFAULT NULL,
-      -- Content Classification
-      `material_type` BIGINT UNSIGNED DEFAULT NULL,    -- fk to sys_dropdown_table (e.g. 'TEXT','VIDEO','PDF','AUDIO','QUIZ','ASSIGNMENT','LINK','INTERACTIVE')
-      `purpose` BIGINT UNSIGNED DEFAULT NULL,          -- fk to sys_dropdown_table (e.g. 'REVISION','PRACTICE','REMEDIAL','ADVANCED','ENRICHMENT','CONCEPT_BUILDING') NOT NULL DEFAULT 'PRACTICE',
-      `complexity_level` BIGINT UNSIGNED DEFAULT NULL,  -- fk to slb_complexity_level
-      -- Content Source
-      `content_source` BIGINT UNSIGNED DEFAULT NULL,    -- fk to sys_dropdown_table (e.g. 'INTERNAL_EDITOR','UPLOADED_FILE','EXTERNAL_LINK','LMS_MODULE','QUESTION_BANK')
-      `content_text` LONGTEXT DEFAULT NULL,           -- HTML content for 'TEXT' type or Internal Notes
-      `file_url` VARCHAR(500) DEFAULT NULL,           -- Direct URL for 'UPLOADED_FILE' or 'PDF' or 'VIDEO'
-      `external_url` VARCHAR(500) DEFAULT NULL,       -- YouTube link, Khan Academy link etc.
-      `media_id` BIGINT UNSIGNED DEFAULT NULL,        -- fk to qns_media_store (for stored Media)
-      -- Academic Mapping
-      `subject_id` BIGINT UNSIGNED DEFAULT NULL,      -- FK to sch_subjects
-      `class_id` INT UNSIGNED DEFAULT NULL,           -- FK to sch_classes (Target Class)
-      `topic_id` BIGINT UNSIGNED DEFAULT NULL,        -- FK to slb_topics
-      `competency_code` VARCHAR(50) DEFAULT NULL,     -- Optional link to Competency Framework
-      -- Metadata
-      `duration_seconds` INT UNSIGNED DEFAULT NULL,   -- Est. time to consume
-      `language_code` VARCHAR(10) DEFAULT 'en',       -- e.g. 'en', 'hi'
-      `tags` JSON DEFAULT NULL,                       -- Search tags
-      `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-      `created_by` BIGINT UNSIGNED DEFAULT NULL,
-      `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-      `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      `deleted_at` TIMESTAMP NULL DEFAULT NULL,
-      PRIMARY KEY (`id`),
-      KEY `idx_recMat_school` (`school_id`),
-      KEY `idx_recMat_type` (`material_type`),
-      KEY `idx_recMat_scope` (`class_id`, `subject_id`, `topic_id`),
-      CONSTRAINT `fk_recMat_school` FOREIGN KEY (`school_id`) REFERENCES `sch_organizations` (`id`),
-      CONSTRAINT `fk_recMat_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`),
-      CONSTRAINT `fk_recMat_subject` FOREIGN KEY (`subject_id`) REFERENCES `sch_subjects` (`id`),
-      CONSTRAINT `fk_recMat_topic` FOREIGN KEY (`topic_id`) REFERENCES `slb_topics` (`id`),
-      CONSTRAINT `fk_recMat_content_source` FOREIGN KEY (`content_source`) REFERENCES `sys_dropdown_table` (`id`),
-      CONSTRAINT `fk_recMat_material_type` FOREIGN KEY (`material_type`) REFERENCES `sys_dropdown_table` (`id`),
-      CONSTRAINT `fk_recMat_purpose` FOREIGN KEY (`purpose`) REFERENCES `sys_dropdown_table` (`id`),
-      CONSTRAINT `fk_recMat_complexity_level` FOREIGN KEY (`complexity_level`) REFERENCES `slb_complexity_level` (`id`),
-      CONSTRAINT `fk_recMat_media` FOREIGN KEY (`media_id`) REFERENCES `qns_media_store` (`id`)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  -- 1. Master table for Recommendation Materials (Content Bank)
+  CREATE TABLE IF NOT EXISTS `rec_recommendation_materials` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `title` VARCHAR(255) NOT NULL,
+    `description` TEXT DEFAULT NULL,
+    -- Content Classification
+    `material_type` BIGINT UNSIGNED DEFAULT NULL,    -- fk to sys_dropdown_table (e.g. 'TEXT','VIDEO','PDF','AUDIO','QUIZ','ASSIGNMENT','LINK','INTERACTIVE')
+    `purpose` BIGINT UNSIGNED DEFAULT NULL,          -- fk to sys_dropdown_table (e.g. 'REVISION','PRACTICE','REMEDIAL','ADVANCED','ENRICHMENT','CONCEPT_BUILDING') NOT NULL DEFAULT 'PRACTICE',
+    `complexity_level` BIGINT UNSIGNED DEFAULT NULL,  -- fk to slb_complexity_level
+    -- Content Source
+    `content_source` BIGINT UNSIGNED DEFAULT NULL,    -- fk to sys_dropdown_table (e.g. 'INTERNAL_EDITOR','UPLOADED_FILE','EXTERNAL_LINK','LMS_MODULE','QUESTION_BANK')
+    `content_text` LONGTEXT DEFAULT NULL,           -- HTML content for 'TEXT' type or Internal Notes
+    `file_url` VARCHAR(500) DEFAULT NULL,           -- Direct URL for 'UPLOADED_FILE' or 'PDF' or 'VIDEO'
+    `external_url` VARCHAR(500) DEFAULT NULL,       -- YouTube link, Khan Academy link etc.
+    `media_id` BIGINT UNSIGNED DEFAULT NULL,        -- fk to qns_media_store (for stored Media)
+    -- Academic Mapping
+    `subject_id` BIGINT UNSIGNED DEFAULT NULL,      -- FK to sch_subjects
+    `class_id` INT UNSIGNED DEFAULT NULL,           -- FK to sch_classes (Target Class)
+    `topic_id` BIGINT UNSIGNED DEFAULT NULL,        -- FK to slb_topics
+    `competency_code` VARCHAR(50) DEFAULT NULL,     -- Optional link to Competency Framework
+    -- Metadata
+    `duration_seconds` INT UNSIGNED DEFAULT NULL,   -- Est. time to consume
+    `language_code` VARCHAR(10) DEFAULT 'en',       -- e.g. 'en', 'hi'
+    `tags` JSON DEFAULT NULL,                       -- Search tags
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+    `created_by` BIGINT UNSIGNED DEFAULT NULL,
+    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    KEY `idx_recMat_school` (`school_id`),
+    KEY `idx_recMat_type` (`material_type`),
+    KEY `idx_recMat_scope` (`class_id`, `subject_id`, `topic_id`),
+    CONSTRAINT `fk_recMat_school` FOREIGN KEY (`school_id`) REFERENCES `sch_organizations` (`id`),
+    CONSTRAINT `fk_recMat_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`),
+    CONSTRAINT `fk_recMat_subject` FOREIGN KEY (`subject_id`) REFERENCES `sch_subjects` (`id`),
+    CONSTRAINT `fk_recMat_topic` FOREIGN KEY (`topic_id`) REFERENCES `slb_topics` (`id`),
+    CONSTRAINT `fk_recMat_content_source` FOREIGN KEY (`content_source`) REFERENCES `sys_dropdown_table` (`id`),
+    CONSTRAINT `fk_recMat_material_type` FOREIGN KEY (`material_type`) REFERENCES `sys_dropdown_table` (`id`),
+    CONSTRAINT `fk_recMat_purpose` FOREIGN KEY (`purpose`) REFERENCES `sys_dropdown_table` (`id`),
+    CONSTRAINT `fk_recMat_complexity_level` FOREIGN KEY (`complexity_level`) REFERENCES `slb_complexity_level` (`id`),
+    CONSTRAINT `fk_recMat_media` FOREIGN KEY (`media_id`) REFERENCES `qns_media_store` (`id`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-    -- ========================================================================================================
-    -- SCREEN - 2  : Tab-2 (Recommendation Bundles)
-    -- ========================================================================================================
+  -- ========================================================================================================
+  -- SCREEN - 2  : Tab-2 (Recommendation Bundles)
+  -- ========================================================================================================
 
-    -- 1. Recommendation Bundles/Collections (e.g. "Week 1 Revision Kit")
-    --    Allows grouping multiple materials into one recommendation
-    CREATE TABLE IF NOT EXISTS `rec_material_bundles` (
-      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-      `title` VARCHAR(255) NOT NULL,
-      `description` TEXT DEFAULT NULL,
-      `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-      `created_by` BIGINT UNSIGNED DEFAULT NULL,
-      `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-      `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      `deleted_at` TIMESTAMP NULL DEFAULT NULL,
-      PRIMARY KEY (`id`),
-      KEY `idx_recBundle_school` (`school_id`),
-      CONSTRAINT `fk_recBundle_school` FOREIGN KEY (`school_id`) REFERENCES `sch_organizations` (`id`) ON DELETE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  -- 1. Recommendation Bundles/Collections (e.g. "Week 1 Revision Kit")
+  --    Allows grouping multiple materials into one recommendation
+  CREATE TABLE IF NOT EXISTS `rec_material_bundles` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `title` VARCHAR(255) NOT NULL,
+    `description` TEXT DEFAULT NULL,
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+    `created_by` BIGINT UNSIGNED DEFAULT NULL,
+    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    KEY `idx_recBundle_school` (`school_id`),
+    CONSTRAINT `fk_recBundle_school` FOREIGN KEY (`school_id`) REFERENCES `sch_organizations` (`id`) ON DELETE CASCADE
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-    -- 2. Junction between Bundle and Materials
-    CREATE TABLE IF NOT EXISTS `rec_bundle_materials_jnt` (
-      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-      `bundle_id` BIGINT UNSIGNED NOT NULL,
-      `material_id` BIGINT UNSIGNED NOT NULL,
-      `sequence_order` INT UNSIGNED DEFAULT 1,
-      `is_mandatory` TINYINT(1) DEFAULT 1,
-      PRIMARY KEY (`id`),
-      UNIQUE KEY `uq_recBundleMat_rel` (`bundle_id`, `material_id`),
-      CONSTRAINT `fk_recBundleMat_bundle` FOREIGN KEY (`bundle_id`) REFERENCES `rec_material_bundles` (`id`) ON DELETE CASCADE,
-      CONSTRAINT `fk_recBundleMat_material` FOREIGN KEY (`material_id`) REFERENCES `rec_recommendation_materials` (`id`) ON DELETE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  -- 2. Junction between Bundle and Materials
+  CREATE TABLE IF NOT EXISTS `rec_bundle_materials_jnt` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `bundle_id` BIGINT UNSIGNED NOT NULL,
+    `material_id` BIGINT UNSIGNED NOT NULL,
+    `sequence_order` INT UNSIGNED DEFAULT 1,
+    `is_mandatory` TINYINT(1) DEFAULT 1,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_recBundleMat_rel` (`bundle_id`, `material_id`),
+    CONSTRAINT `fk_recBundleMat_bundle` FOREIGN KEY (`bundle_id`) REFERENCES `rec_material_bundles` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_recBundleMat_material` FOREIGN KEY (`material_id`) REFERENCES `rec_recommendation_materials` (`id`) ON DELETE CASCADE
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-    -- ========================================================================================================
-    -- SCREEN - 2  : Tab-3 (Recommendation Rules)
-    -- ========================================================================================================
+  -- ========================================================================================================
+  -- SCREEN - 2  : Tab-3 (Recommendation Rules)
+  -- ========================================================================================================
 
-    -- 1. Recommendation Rules Engine
-    --    Defines logics: WHEN (Trigger) + WHO (Performance) -> WHAT (Recommendation)
-    CREATE TABLE IF NOT EXISTS `rec_recommendation_rules` (
-      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-      -- Rule Definition
-      `name` VARCHAR(150) NOT NULL,                   -- e.g. "Math Remedial for Poor Performers in Algebra"
-      `is_automated` TINYINT(1) DEFAULT 1,            -- 1=Run by System Job, 0=Manual Helper Rule
-      -- TRIGGERS (When to Apply)
-      `trigger_event` BIGINT UNSIGNED NOT NULL,  -- FK to rec_trigger_events
-      -- CONDITIONS (The "Switch")
-      -- Narrowing Scope
-      `class_id` INT UNSIGNED DEFAULT NULL,  -- FK to sch_classes
-      `subject_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to sch_subjects
-      `topic_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to slb_topics
-      -- Performance Criteria
-      `performance_category_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to slb_performance_categories (The bucket, e.g. POOR)
-      `min_score_pct` DECIMAL(5,2) DEFAULT NULL,      -- Specific override e.g. < 40%
-      `max_score_pct` DECIMAL(5,2) DEFAULT NULL,      -- Specific override e.g. > 90%
-      -- Assessment Type Filter (Only apply if the result came from this type of exam)
-      `assessment_type` BIGINT UNSIGNED DEFAULT NULL,  -- FK to rec_assessment_types
-      -- ACTION (What to Recommend)
-      `recommendation_mode_id` BIGINT UNSIGNED NOT NULL,  -- FK to rec_recommendation_modes
-      `target_material_id` BIGINT UNSIGNED DEFAULT NULL,  -- KF TO rec_recommendation_materials
-      `target_bundle_id` BIGINT UNSIGNED DEFAULT NULL,    -- KF TO rec_recommendation_bundles
-      `dynamic_material_type_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to rec_dynamic_material_types
-      `dynamic_purpose_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to rec_dynamic_purposes
-      `priority` INT UNSIGNED DEFAULT 10,                 -- Higher priority rules override or appear first
-      `is_active` TINYINT(1) DEFAULT 1,
-      `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-      `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      `deleted_at` TIMESTAMP NULL DEFAULT NULL,
-      PRIMARY KEY (`id`),
-      KEY `idx_recRule_trigger` (`trigger_event`),
-      CONSTRAINT `fk_recRule_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE SET NULL,
-      CONSTRAINT `fk_recRule_subject` FOREIGN KEY (`subject_id`) REFERENCES `sch_subjects` (`id`) ON DELETE SET NULL,
-      CONSTRAINT `fk_recRule_topic` FOREIGN KEY (`topic_id`) REFERENCES `slb_topics` (`id`) ON DELETE SET NULL,
-      CONSTRAINT `fk_recRule_perfCat` FOREIGN KEY (`performance_category_id`) REFERENCES `slb_performance_categories` (`id`) ON DELETE SET NULL,
-      CONSTRAINT `fk_recRule_targetMat` FOREIGN KEY (`target_material_id`) REFERENCES `rec_recommendation_materials` (`id`) ON DELETE SET NULL,
-      CONSTRAINT `fk_recRule_targetBun` FOREIGN KEY (`target_bundle_id`) REFERENCES `rec_material_bundles` (`id`) ON DELETE SET NULL,
-      CONSTRAINT `fk_recRule_trigger` FOREIGN KEY (`trigger_event_id`) REFERENCES `rec_trigger_events` (`id`) ON DELETE CASCADE,
-      CONSTRAINT `fk_recRule_recMode` FOREIGN KEY (`recommendation_mode_id`) REFERENCES `rec_recommendation_modes` (`id`) ON DELETE CASCADE,
-      CONSTRAINT `fk_recRule_dynMatType` FOREIGN KEY (`dynamic_material_type_id`) REFERENCES `rec_dynamic_material_types` (`id`) ON DELETE SET NULL,
-      CONSTRAINT `fk_recRule_dynPurpose` FOREIGN KEY (`dynamic_purpose_id`) REFERENCES `rec_dynamic_purposes` (`id`) ON DELETE SET NULL,
-      CONSTRAINT `fk_recRule_assessmentType` FOREIGN KEY (`assessment_type_id`) REFERENCES `rec_assessment_types` (`id`) ON DELETE SET NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  -- 1. Recommendation Rules Engine
+  --    Defines logics: WHEN (Trigger) + WHO (Performance) -> WHAT (Recommendation)
+  CREATE TABLE IF NOT EXISTS `rec_recommendation_rules` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    -- Rule Definition
+    `name` VARCHAR(150) NOT NULL,                   -- e.g. "Math Remedial for Poor Performers in Algebra"
+    `is_automated` TINYINT(1) DEFAULT 1,            -- 1=Run by System Job, 0=Manual Helper Rule
+    -- TRIGGERS (When to Apply)
+    `trigger_event` BIGINT UNSIGNED NOT NULL,  -- FK to rec_trigger_events
+    -- CONDITIONS (The "Switch")
+    -- Narrowing Scope
+    `class_id` INT UNSIGNED DEFAULT NULL,  -- FK to sch_classes
+    `subject_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to sch_subjects
+    `topic_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to slb_topics
+    -- Performance Criteria
+    `performance_category_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to slb_performance_categories (The bucket, e.g. POOR)
+    `min_score_pct` DECIMAL(5,2) DEFAULT NULL,      -- Specific override e.g. < 40%
+    `max_score_pct` DECIMAL(5,2) DEFAULT NULL,      -- Specific override e.g. > 90%
+    -- Assessment Type Filter (Only apply if the result came from this type of exam)
+    `assessment_type` BIGINT UNSIGNED DEFAULT NULL,  -- FK to rec_assessment_types
+    -- ACTION (What to Recommend)
+    `recommendation_mode_id` BIGINT UNSIGNED NOT NULL,  -- FK to rec_recommendation_modes
+    `target_material_id` BIGINT UNSIGNED DEFAULT NULL,  -- KF TO rec_recommendation_materials
+    `target_bundle_id` BIGINT UNSIGNED DEFAULT NULL,    -- KF TO rec_recommendation_bundles
+    `dynamic_material_type_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to rec_dynamic_material_types
+    `dynamic_purpose_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to rec_dynamic_purposes
+    `priority` INT UNSIGNED DEFAULT 10,                 -- Higher priority rules override or appear first
+    `is_active` TINYINT(1) DEFAULT 1,
+    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    KEY `idx_recRule_trigger` (`trigger_event`),
+    CONSTRAINT `fk_recRule_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_recRule_subject` FOREIGN KEY (`subject_id`) REFERENCES `sch_subjects` (`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_recRule_topic` FOREIGN KEY (`topic_id`) REFERENCES `slb_topics` (`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_recRule_perfCat` FOREIGN KEY (`performance_category_id`) REFERENCES `slb_performance_categories` (`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_recRule_targetMat` FOREIGN KEY (`target_material_id`) REFERENCES `rec_recommendation_materials` (`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_recRule_targetBun` FOREIGN KEY (`target_bundle_id`) REFERENCES `rec_material_bundles` (`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_recRule_trigger` FOREIGN KEY (`trigger_event_id`) REFERENCES `rec_trigger_events` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_recRule_recMode` FOREIGN KEY (`recommendation_mode_id`) REFERENCES `rec_recommendation_modes` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_recRule_dynMatType` FOREIGN KEY (`dynamic_material_type_id`) REFERENCES `rec_dynamic_material_types` (`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_recRule_dynPurpose` FOREIGN KEY (`dynamic_purpose_id`) REFERENCES `rec_dynamic_purposes` (`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_recRule_assessmentType` FOREIGN KEY (`assessment_type_id`) REFERENCES `rec_assessment_types` (`id`) ON DELETE SET NULL
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-    -- ========================================================================================================
-    -- SCREEN - 2  : Tab-4 (Student Recommendations)
-    -- ========================================================================================================
+  -- ========================================================================================================
+  -- SCREEN - 2  : Tab-4 (Student Recommendations)
+  -- ========================================================================================================
 
-    -- 1. Student Recommendations (The Resulting Assignments)
-    --    Refined from v1.1 `rec_student_recommendations`
-    CREATE TABLE IF NOT EXISTS `rec_student_recommendations` (
-      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-      `uuid` BINARY(16) NOT NULL,                       -- Unique ID for public access/tracking
-      `student_id` BIGINT UNSIGNED NOT NULL,          -- FK to std_students (or users depending on arch. std_students preferred)
-      -- Source of Recommendation
-      `rule_id` BIGINT UNSIGNED DEFAULT NULL,         -- fk to rec_recommendation_rules. Which rule generated this?
-      `triggered_by_result_id` BIGINT UNSIGNED DEFAULT NULL, -- Optional: Link to the Exam Result ID in Exam Module
-      `manual_assigned_by` BIGINT UNSIGNED DEFAULT NULL,     -- If manually assigned by Teacher
-      -- The Content
-      `material_id` BIGINT UNSIGNED DEFAULT NULL,
-      `bundle_id` BIGINT UNSIGNED DEFAULT NULL,
-      -- Context
-      `recommendation_reason` VARCHAR(255) DEFAULT NULL, -- e.g. "Scored Low in Algebra Quiz"
-      `priority` ENUM('LOW','MEDIUM','HIGH','CRITICAL') DEFAULT 'MEDIUM',
-      `due_date` DATE DEFAULT NULL,
-      -- Status Tracking
-      `status` ENUM('PENDING','VIEWED','IN_PROGRESS','COMPLETED','SKIPPED','EXPIRED') DEFAULT 'PENDING',
-      `assigned_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      `first_viewed_at` TIMESTAMP NULL DEFAULT NULL,
-      `completed_at` TIMESTAMP NULL DEFAULT NULL,
-      -- Outcomes
-      `score_achieved` DECIMAL(5,2) DEFAULT NULL,     -- If the recommendation was a Quiz/Practice
-      `student_rating` TINYINT UNSIGNED DEFAULT NULL, -- 1-5 Stars
-      `student_feedback` VARCHAR(255) DEFAULT NULL,
-      `is_active` TINYINT(1) DEFAULT 1,
-      `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      PRIMARY KEY (`id`),
-      UNIQUE KEY `uq_recStudRec_uuid` (`uuid`),
-      KEY `idx_recStud_student` (`student_id`, `status`),
-      CONSTRAINT `fk_recStud_student` FOREIGN KEY (`student_id`) REFERENCES `std_students` (`id`) ON DELETE CASCADE,
-      CONSTRAINT `fk_recStud_rule` FOREIGN KEY (`rule_id`) REFERENCES `rec_recommendation_rules` (`id`) ON DELETE SET NULL,
-      CONSTRAINT `fk_recStud_material` FOREIGN KEY (`material_id`) REFERENCES `rec_recommendation_materials` (`id`) ON DELETE CASCADE,
-      CONSTRAINT `fk_recStud_bundle` FOREIGN KEY (`bundle_id`) REFERENCES `rec_material_bundles` (`id`) ON DELETE CASCADE,
-      CONSTRAINT `fk_recStud_teacher` FOREIGN KEY (`manual_assigned_by`) REFERENCES `sch_teachers` (`id`) ON DELETE SET NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  -- 1. Student Recommendations (The Resulting Assignments)
+  --    Refined from v1.1 `rec_student_recommendations`
+  CREATE TABLE IF NOT EXISTS `rec_student_recommendations` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `uuid` BINARY(16) NOT NULL,                       -- Unique ID for public access/tracking
+    `student_id` BIGINT UNSIGNED NOT NULL,          -- FK to std_students (or users depending on arch. std_students preferred)
+    -- Source of Recommendation
+    `rule_id` BIGINT UNSIGNED DEFAULT NULL,         -- fk to rec_recommendation_rules. Which rule generated this?
+    `triggered_by_result_id` BIGINT UNSIGNED DEFAULT NULL, -- Optional: Link to the Exam Result ID in Exam Module
+    `manual_assigned_by` BIGINT UNSIGNED DEFAULT NULL,     -- If manually assigned by Teacher
+    -- The Content
+    `material_id` BIGINT UNSIGNED DEFAULT NULL,
+    `bundle_id` BIGINT UNSIGNED DEFAULT NULL,
+    -- Context
+    `recommendation_reason` VARCHAR(255) DEFAULT NULL, -- e.g. "Scored Low in Algebra Quiz"
+    `priority` ENUM('LOW','MEDIUM','HIGH','CRITICAL') DEFAULT 'MEDIUM',
+    `due_date` DATE DEFAULT NULL,
+    -- Status Tracking
+    `status` ENUM('PENDING','VIEWED','IN_PROGRESS','COMPLETED','SKIPPED','EXPIRED') DEFAULT 'PENDING',
+    `assigned_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `first_viewed_at` TIMESTAMP NULL DEFAULT NULL,
+    `completed_at` TIMESTAMP NULL DEFAULT NULL,
+    -- Outcomes
+    `score_achieved` DECIMAL(5,2) DEFAULT NULL,     -- If the recommendation was a Quiz/Practice
+    `student_rating` TINYINT UNSIGNED DEFAULT NULL, -- 1-5 Stars
+    `student_feedback` VARCHAR(255) DEFAULT NULL,
+    `is_active` TINYINT(1) DEFAULT 1,
+    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_recStudRec_uuid` (`uuid`),
+    KEY `idx_recStud_student` (`student_id`, `status`),
+    CONSTRAINT `fk_recStud_student` FOREIGN KEY (`student_id`) REFERENCES `std_students` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_recStud_rule` FOREIGN KEY (`rule_id`) REFERENCES `rec_recommendation_rules` (`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_recStud_material` FOREIGN KEY (`material_id`) REFERENCES `rec_recommendation_materials` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_recStud_bundle` FOREIGN KEY (`bundle_id`) REFERENCES `rec_material_bundles` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_recStud_teacher` FOREIGN KEY (`manual_assigned_by`) REFERENCES `sch_teachers` (`id`) ON DELETE SET NULL
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 -- ===========================================================================
@@ -3840,31 +3784,11 @@ CREATE TABLE IF NOT EXISTS `sys_dropdown_need_table_jnt` (
     CONSTRAINT `fk_bcs_session` FOREIGN KEY (`academic_session_id`) REFERENCES `sch_org_academic_sessions_jnt` (`id`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-  -- Link Book Chapters/Sections to Topics (granular mapping)
-  CREATE TABLE IF NOT EXISTS `bok_book_topic_mapping` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `book_id` BIGINT UNSIGNED NOT NULL,
-    `topic_id` BIGINT UNSIGNED NOT NULL,          -- Can be topic or sub-topic at any level
-    `chapter_number` VARCHAR(20) DEFAULT NULL,    -- e.g., '1', '1.2', 'Unit I'
-    `chapter_title` VARCHAR(255) DEFAULT NULL,
-    `page_start` INT UNSIGNED DEFAULT NULL,
-    `page_end` INT UNSIGNED DEFAULT NULL,
-    `section_reference` VARCHAR(100) DEFAULT NULL, -- e.g., 'Section 1.3.2'
-    `remarks` VARCHAR(255) DEFAULT NULL,
-    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (`id`),
-    KEY `idx_btm_book` (`book_id`),
-    KEY `idx_btm_topic` (`topic_id`),
-    CONSTRAINT `fk_btm_book` FOREIGN KEY (`book_id`) REFERENCES `bok_books` (`id`),
-    CONSTRAINT `fk_btm_topic` FOREIGN KEY (`topic_id`) REFERENCES `bok_topics` (`id`)
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 
 -- ===========================================================================
 -- 13-Student Profile (std)
 -- ===========================================================================
-  -- Main Student Entity, linked to System User for Login/Auth
+    -- Main Student Entity, linked to System User for Login/Auth
     CREATE TABLE IF NOT EXISTS `std_students` (
       `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       -- Student Info
@@ -4456,93 +4380,91 @@ CREATE TABLE IF NOT EXISTS `sys_dropdown_need_table_jnt` (
     -- =====================================================================
     -- END OF NEP 2020 + HPC EXTENSION SCHEMA
     -- =====================================================================
+  
+  
+  -- =========================================================================
+  -- LESSON VERSION & GOVERNANCE CONTROL (NCERT / BOARD DRIVEN)
+  -- =========================================================================
+  -- Purpose:
+  -- 1. Track lesson source authority (NCERT / Board / Publisher)
+  -- 2. Track textbook & edition used to define the lesson
+  -- 3. Enforce immutability during academic session
+  -- 4. Maintain historical version traceability across years
+  -- =========================================================================
+
+  CREATE TABLE IF NOT EXISTS `hpc_lesson_version_control` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    -- Core linkage
+    `lesson_id` BIGINT UNSIGNED NOT NULL,           -- FK to slb_lessons.id
+    `academic_session_id` BIGINT UNSIGNED NOT NULL, -- Session in which this version applies
+    -- Authority & source
+    `curriculum_authority` ENUM('NCERT','CBSE','ICSE','STATE_BOARD','OTHER') NOT NULL DEFAULT 'NCERT',
+    `board_code` VARCHAR(50) DEFAULT NULL,          -- CBSE, ICSE, STATE-UK, etc.
+    `book_id` BIGINT UNSIGNED DEFAULT NULL,         -- FK to book master (if exists)
+    `book_title` VARCHAR(255) DEFAULT NULL,         -- Redundant but audit-friendly
+    `book_edition` VARCHAR(100) DEFAULT NULL,       -- e.g. "2024 Edition"
+    `publisher` VARCHAR(150) DEFAULT 'NCERT',
+    -- Versioning
+    `lesson_version` VARCHAR(20) NOT NULL,          -- e.g. v1.0, v2.0
+    `derived_from_lesson_id` BIGINT UNSIGNED DEFAULT NULL, -- Previous version reference
+    -- Governance state (SYSTEM CONTROLLED)
+    `status` ENUM('IMPORTED','ACTIVE','LOCKED','DEPRECATED','ARCHIVED') NOT NULL DEFAULT 'IMPORTED',
+    -- Control flags
+    `is_editable` TINYINT(1) NOT NULL DEFAULT 0,    -- Always 0 for system-defined lessons
+    `is_system_defined` TINYINT(1) NOT NULL DEFAULT 1,
+    -- Audit
+    `imported_on` DATE DEFAULT NULL,                -- When lesson was imported
+    `locked_on` DATE DEFAULT NULL,                  -- When lesson was locked
+    `remarks` VARCHAR(500) DEFAULT NULL,
+    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    -- Constraints
+    UNIQUE KEY `uq_lesson_session_version`(`lesson_id`, `academic_session_id`, `lesson_version`),
+    KEY `idx_lvc_lesson` (`lesson_id`),
+    KEY `idx_lvc_session` (`academic_session_id`),
+    KEY `idx_lvc_status` (`status`),
+    CONSTRAINT `fk_lvc_lesson` FOREIGN KEY (`lesson_id`) REFERENCES `slb_lessons` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_lvc_prev_lesson` FOREIGN KEY (`derived_from_lesson_id`) REFERENCES `slb_lessons` (`id`) ON DELETE SET NULL
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  -- Conditions:
+      -- NCERT Import (Once per Year)
+      --   Lessons imported from NCERT book structure
+      --   Record inserted with:
+      --     status = IMPORTED
+      --     lesson_version = v1.0
+      -- Session Lock (Before Teaching / Exams)
+      --   System marks:
+      --     status = LOCKED
+      --     locked_on = CURRENT_DATE
+      --   No updates allowed at service layer
+      -- Next Academic Year
+      --   New NCERT edition released
+      --   New lessons created
+      --   New record inserted:
+      --     lesson_version = v2.0
+      --     derived_from_lesson_id = old lesson_id
+      --   Old record marked DEPRECATED
 
 
-
-
--- =========================================================================
--- LESSON VERSION & GOVERNANCE CONTROL (NCERT / BOARD DRIVEN)
--- =========================================================================
--- Purpose:
--- 1. Track lesson source authority (NCERT / Board / Publisher)
--- 2. Track textbook & edition used to define the lesson
--- 3. Enforce immutability during academic session
--- 4. Maintain historical version traceability across years
--- =========================================================================
-
-CREATE TABLE IF NOT EXISTS `hpc_lesson_version_control` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  -- Core linkage
-  `lesson_id` BIGINT UNSIGNED NOT NULL,           -- FK to slb_lessons.id
-  `academic_session_id` BIGINT UNSIGNED NOT NULL, -- Session in which this version applies
-  -- Authority & source
-  `curriculum_authority` ENUM('NCERT','CBSE','ICSE','STATE_BOARD','OTHER') NOT NULL DEFAULT 'NCERT',
-  `board_code` VARCHAR(50) DEFAULT NULL,          -- CBSE, ICSE, STATE-UK, etc.
-  `book_id` BIGINT UNSIGNED DEFAULT NULL,         -- FK to book master (if exists)
-  `book_title` VARCHAR(255) DEFAULT NULL,         -- Redundant but audit-friendly
-  `book_edition` VARCHAR(100) DEFAULT NULL,       -- e.g. "2024 Edition"
-  `publisher` VARCHAR(150) DEFAULT 'NCERT',
-  -- Versioning
-  `lesson_version` VARCHAR(20) NOT NULL,          -- e.g. v1.0, v2.0
-  `derived_from_lesson_id` BIGINT UNSIGNED DEFAULT NULL, -- Previous version reference
-  -- Governance state (SYSTEM CONTROLLED)
-  `status` ENUM('IMPORTED','ACTIVE','LOCKED','DEPRECATED','ARCHIVED') NOT NULL DEFAULT 'IMPORTED',
-  -- Control flags
-  `is_editable` TINYINT(1) NOT NULL DEFAULT 0,    -- Always 0 for system-defined lessons
-  `is_system_defined` TINYINT(1) NOT NULL DEFAULT 1,
-  -- Audit
-  `imported_on` DATE DEFAULT NULL,                -- When lesson was imported
-  `locked_on` DATE DEFAULT NULL,                  -- When lesson was locked
-  `remarks` VARCHAR(500) DEFAULT NULL,
-  `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  -- Constraints
-  UNIQUE KEY `uq_lesson_session_version`(`lesson_id`, `academic_session_id`, `lesson_version`),
-  KEY `idx_lvc_lesson` (`lesson_id`),
-  KEY `idx_lvc_session` (`academic_session_id`),
-  KEY `idx_lvc_status` (`status`),
-  CONSTRAINT `fk_lvc_lesson` FOREIGN KEY (`lesson_id`) REFERENCES `slb_lessons` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_lvc_prev_lesson` FOREIGN KEY (`derived_from_lesson_id`) REFERENCES `slb_lessons` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
--- Conditions:
-    -- NCERT Import (Once per Year)
-    --   Lessons imported from NCERT book structure
-    --   Record inserted with:
-    --     status = IMPORTED
-    --     lesson_version = v1.0
-    -- Session Lock (Before Teaching / Exams)
-    --   System marks:
-    --     status = LOCKED
-    --     locked_on = CURRENT_DATE
-    --   No updates allowed at service layer
-    -- Next Academic Year
-    --   New NCERT edition released
-    --   New lessons created
-    --   New record inserted:
-    --     lesson_version = v2.0
-    --     derived_from_lesson_id = old lesson_id
-    --   Old record marked DEPRECATED
-
-
--- =========================================================
--- CURRICULUM CHANGE MANAGEMENT
--- =========================================================
-CREATE TABLE hpc_curriculum_change_request (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  `entity_type` ENUM('SUBJECT','LESSON','TOPIC','COMPETENCY') NOT NULL,
-  `entity_id` BIGINT UNSIGNED NOT NULL,
-  `change_type` ENUM('ADD','UPDATE','DELETE') NOT NULL,
-  `change_summary` VARCHAR(500),
-  `impact_analysis` JSON,
-  `status` ENUM('DRAFT','SUBMITTED','APPROVED','REJECTED') DEFAULT 'DRAFT',
-  `requested_by` BIGINT UNSIGNED,
-  `requested_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  `is_active` TINYINT(1) DEFAULT 1,
-  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `deleted_at` TIMESTAMP DEFAULT NULL,
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  -- =========================================================
+  -- CURRICULUM CHANGE MANAGEMENT
+  -- =========================================================
+  CREATE TABLE hpc_curriculum_change_request (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `entity_type` ENUM('SUBJECT','LESSON','TOPIC','COMPETENCY') NOT NULL,
+    `entity_id` BIGINT UNSIGNED NOT NULL,
+    `change_type` ENUM('ADD','UPDATE','DELETE') NOT NULL,
+    `change_summary` VARCHAR(500),
+    `impact_analysis` JSON,
+    `status` ENUM('DRAFT','SUBMITTED','APPROVED','REJECTED') DEFAULT 'DRAFT',
+    `requested_by` BIGINT UNSIGNED,
+    `requested_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `is_active` TINYINT(1) DEFAULT 1,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP DEFAULT NULL,
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 

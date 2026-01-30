@@ -1,0 +1,114 @@
+# LMS Online Exam Module - Architecture Overview
+**Version:** 1.0
+**Date:** 2026-01-29
+
+## 1. High-Level Architecture
+The **LMS Online Exam Module** is designed as a centralized assessment engine that unifies Quizzes, Quests, and Formal Exams (Online/Offline). It sits on top of the **Question Bank Module** and integrates tightly with the **School ERP (Academic)** core.
+
+### Core Modules
+1.  **Exam Management**: creation, blueprinting, scheduling.
+2.  **Execution Engine**: Online test taking, proctoring integration, offline mark entry.
+3.  **Evaluation Engine**: Auto-grading (MCQ), Manual grading interface (Descriptive), Grievance handling.
+4.  **Analytics Service**: Student performance analysis, Question Bank difficulty calibration.
+
+## 2. Entity Relationship Diagram (ERD)
+
+```mermaid
+erDiagram
+    %% Core ERP
+    ACADEMIC_SESSION ||--o{ EXAM : "defines context"
+    SUBJECT ||--o{ EXAM_SCOPE : "covered in"
+    STUDENT ||--o{ ATTEMPT : "takes"
+    TEACHER ||--o{ EXAM : "creates"
+    
+    %% Config
+    ASSESSMENT_TYPE ||--o{ EXAM : "categorizes"
+    DIFFICULTY_CONFIG ||--o{ EXAM : "structures"
+    
+    %% Exam Definition
+    EXAM ||--o{ EXAM_SCOPE : "has"
+    EXAM ||--o{ EXAM_BLUEPRINT : "structured by"
+    EXAM_BLUEPRINT ||--o{ EXAM_QUESTION : "contains"
+    EXAM ||--o{ EXAM_ALLOCATION : "assigned via"
+    
+    %% Question Bank Integration
+    QUESTION_BANK ||--o{ EXAM_QUESTION : "used in"
+    
+    %% Execution
+    EXAM_ALLOCATION ||--o{ ATTEMPT : "generates"
+    ATTEMPT ||--o{ ANSWER : "contains"
+    EXAM_QUESTION ||--o{ ANSWER : "responds to"
+    
+    %% Results
+    ATTEMPT ||--|| EXAM_RESULT : "produces"
+    EXAM_RESULT ||--o{ GRIEVANCE : "has"
+    
+    EXAM {
+        string code
+        string mode "Online/Offline"
+        bool is_proctored
+    }
+    
+    ATTEMPT {
+        string status
+        datetime started_at
+        int violations
+    }
+    
+    EXAM_RESULT {
+        decimal total_marks
+        string grade
+        bool is_published
+    }
+```
+
+## 3. Process Flows
+
+### A. Online Exam Lifecycle
+```mermaid
+sequenceDiagram
+    participant Teacher
+    participant System
+    participant Student
+    participant Evaluator
+    
+    Teacher->>System: Create Exam (Blueprint, Scope, Difficulty)
+    System->>System: Generate Question Paper (from Bank)
+    Teacher->>System: Publish & Assign (to Class/Section)
+    
+    Note over Student, System: Exam Scheduled Date
+    
+    Student->>System: Start Attempt
+    System->>Student: Serve Questions (Proctored)
+    Student->>System: Submit Answers
+    
+    Note over System: Auto-Evaluation (MCQ)
+    
+    Evaluator->>System: Evaluation Dashboard
+    Evaluator->>System: Grade Descriptive Answers
+    Evaluator->>System: Publish Results
+    
+    Student->>System: View Result Card
+    opt Grievance
+        Student->>System: Raise Grievance (Question X)
+        Teacher->>System: adjudicate
+    end
+```
+
+### B. Offline Exam Lifecycle
+```mermaid
+sequenceDiagram
+    participant Teacher
+    participant System
+    participant Student
+    
+    Teacher->>System: Create Exam (Mode: Offline)
+    System->>Teacher: Generate PDF Question Paper
+    
+    Note over Teacher, Student: Physical Exam Conducted
+    
+    Teacher->>System: Bulk Data Entry / Upload CSV
+    System->>System: Calculate Grades & Ranks
+    Teacher->>System: Publish Results
+    Student->>System: View Result on App
+```
