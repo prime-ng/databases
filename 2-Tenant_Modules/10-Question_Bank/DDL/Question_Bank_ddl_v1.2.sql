@@ -248,7 +248,6 @@ CREATE TABLE IF NOT EXISTS `qns_question_performance_category_jnt` (
 CREATE TABLE IF NOT EXISTS `qns_question_usage_log` (
   `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   `question_bank_id` BIGINT UNSIGNED NOT NULL,    -- FK to qns_questions_bank
-  --`usage_context` BIGINT UNSIGNED NOT NULL, -- FK to qns_question_usage_type.id
   `question_usage_type` BIGINT UNSIGNED NOT NULL, -- FK to qns_question_usage_type.id
   `context_id` BIGINT UNSIGNED NOT NULL,    -- quiz_id, assessment_id, exam_id - FK to sys_dropdowns table
   `used_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -283,8 +282,8 @@ CREATE TABLE IF NOT EXISTS `qns_question_review_log` (
 -- Question Usage Type (Quiz / Quest / Exam)
 CREATE TABLE `qns_question_usage_type` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `code` VARCHAR(50) NOT NULL,  -- e.g. 'QUIZ','QUEST','ONLINE_EXAM','OFFLINE_EXAM','UT_TEST'
-    `name` VARCHAR(100) NOT NULL, -- e.g. 'Quiz','Quest','Online Exam','Offline Exam','Unit Test'
+    `code` VARCHAR(50) NOT NULL,  -- e.g. 'QUIZ','QUEST','ONLINE_EXAM','OFFLINE_EXAM'
+    `name` VARCHAR(100) NOT NULL, -- e.g. 'Quiz','Quest','Online Exam','Offline Exam'
     `description` TEXT DEFAULT NULL,
     `is_active` TINYINT(1) DEFAULT 1,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -298,6 +297,5 @@ INSERT INTO qns_question_usage_type (code, name, description) VALUES
 ('QUIZ','Quiz', 'Quiz'),
 ('QUEST','Quest', 'Quest'),
 ('ONLINE_EXAM','Online Exam', 'Online Exam'),
-('OFFLINE_EXAM','Offline Exam', 'Offline Exam'),
-('UT_TEST','Unit Test', 'Unit Test');
+('OFFLINE_EXAM','Offline Exam', 'Offline Exam');
 

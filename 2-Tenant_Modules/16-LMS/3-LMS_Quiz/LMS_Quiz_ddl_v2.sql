@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS `lms_difficulty_distribution_configs` (
   `code` VARCHAR(50) NOT NULL,              -- e.g. 'STD_QUIZ_EASY', STD_QUIZ_Medium, STD_QUIZ_Hard, 'EXAM_BALANCED'
   `name` VARCHAR(100) NOT NULL,             -- e.g. 'Standard Quiz Easy'
   `description` VARCHAR(255) DEFAULT NULL,
-  `usage_type_id` BIGINT UNSIGNED NOT NULL, -- FK to qns_question_usage_type (e.g. 'QUIZ','QUEST','ONLINE_EXAM','OFFLINE_EXAM','UT_TEST')
+  `usage_type_id` BIGINT UNSIGNED NOT NULL, -- FK to qns_question_usage_type (e.g. 'QUIZ','QUEST','ONLINE_EXAM','OFFLINE_EXAM')
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
   `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS `lms_assessment_types` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `code` VARCHAR(20) NOT NULL,              -- (e.g. 'Challenge', 'Enrichment', 'Practice', 'Revision', 'Re-Test', 'Diagnostic', 'Remedial')
   `name` VARCHAR(100) NOT NULL,             -- (e.g. 'Challenge', 'Enrichment', 'Practice', 'Revision', 'Re-Test', 'Diagnostic', 'Remedial')
-  `assessment_usage_type_id` BIGINT UNSIGNED NOT NULL, -- FK to qns_question_usage_type.id (e.g. 'QUIZ','QUEST','ONLINE_EXAM','OFFLINE_EXAM','UT_TEST')
+  `assessment_usage_type_id` BIGINT UNSIGNED NOT NULL, -- FK to qns_question_usage_type.id (e.g. 'QUIZ','QUEST','ONLINE_EXAM','OFFLINE_EXAM')
   `description` VARCHAR(255) DEFAULT NULL,  -- 
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
   `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
