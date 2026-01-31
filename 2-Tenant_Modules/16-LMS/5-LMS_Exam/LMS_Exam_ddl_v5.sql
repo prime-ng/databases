@@ -7,10 +7,11 @@
 -- =========================================================================
 -- 1. CONFIGURATION & MASTERS
 -- =========================================================================
-Screen Exam Master (Tab -1 Exam Types)
 
--- Exam Types (e.g., Unit Test, Half Yearly, Annual)
--- If not present in Common Masters, this table defines the category of exams.
+-- --------------------------------------------------------------------------------------
+-- Screen Exam Master (Tab -1 Exam Types)
+-- This table will store the exam types (e.g., Unit Test, Half Yearly, Annual)
+-- --------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `lms_exam_types` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `code` VARCHAR(50) NOT NULL,              -- e.g. 'UT-1','UT-2','UT-3','UT-4','HY-EXAM','ANNUAL-EXAM'
@@ -24,7 +25,10 @@ CREATE TABLE IF NOT EXISTS `lms_exam_types` (
   UNIQUE KEY `uq_exam_type_code` (`code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-Screen Exam Master (Tab -2 Exam Status Events)
+-- --------------------------------------------------------------------------------------
+-- Screen Exam Master (Tab -2 Exam Status Events)
+-- This table will store the exam status events (e.g., DRAFT, PUBLISHED, CONCLUDED, ARCHIVED)
+-- --------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `lms_exam_status_events` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `code` VARCHAR(50) NOT NULL,  -- (e.g. 'DRAFT','PUBLISHED','CONCLUDED','ARCHIVED')
@@ -45,7 +49,8 @@ CREATE TABLE IF NOT EXISTS `lms_exam_status_events` (
 -- Result - ('NOT_STARTED','IN_PROGRESS','SUBMITTED','EVALUATION_PENDING','EVALUATED','RESULT_PUBLISHED','ABSENT','CANCELLED')
 -- Attempt - ('NOT_STARTED','IN_PROGRESS','SUBMITTED','EVALUATION_PENDING','EVALUATED','RESULT_PUBLISHED','ABSENT','CANCELLED')
 
-Screen Exam Master (Tab -3 Student Groups)
+-- --------------------------------------------------------------------------------------
+-- Screen Exam Master (Tab -3 Student Groups)
 -- Student Groups for Exam Purposes
 -- Allows creating ad-hoc groups (e.g., "Class 9 Adv Math") derived from classes/sections
 -- --------------------------------------------------------------------------------------
@@ -68,12 +73,13 @@ CREATE TABLE IF NOT EXISTS `lms_exam_student_groups` (
   CONSTRAINT `fk_esg_section` FOREIGN KEY (`section_id`) REFERENCES `sch_sections` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-Screen Exam Master (Tab -4 Student Group Members)
--- Members of the Ad-hoc Group
+-- --------------------------------------------------------------------------------------
+-- Screen Exam Master (Tab -4 Student Group Members)
+-- Members of the Ad-hoc Groups (e.g., "Class 9th-A, Group SET-A")
 -- --------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `lms_exam_student_group_members` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `group_id` BIGINT UNSIGNED NOT NULL,
+  `group_id` BIGINT UNSIGNED NOT NULL,            -- FK to lms_exam_student_groups.id
   `student_id` BIGINT UNSIGNED NOT NULL,          -- FK to sch_students / sys_users
   `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -84,14 +90,14 @@ CREATE TABLE IF NOT EXISTS `lms_exam_student_group_members` (
   CONSTRAINT `fk_esgm_student` FOREIGN KEY (`student_id`) REFERENCES `std_students` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-SCREEN Name - EXAM Creation (Tab -1 Exam)
+
 -- =========================================================================
 -- 2. EXAM DEFINITION HIERARCHY
 -- =========================================================================
 
--- LEVEL 1: EXAM (The Event)
+-- -------------------------------------------------------------------------------------- 
+-- SCREEN Name - EXAM Creation (Tab -1 Exam)
 -- This table is used to define the exam event and its basic details. 
--- Represents the overarching event, e.g., "Annual Examination 2025-26"
 -- --------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `lms_exams` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -100,7 +106,7 @@ CREATE TABLE IF NOT EXISTS `lms_exams` (
   `class_id` BIGINT UNSIGNED NOT NULL,            -- FK to sch_classes.id
   `exam_type_id` INT UNSIGNED NOT NULL,        -- FK to lms_exam_types.id (e.g. 'UT-1','UT-2','UT-3','UT-4','HY-EXAM','ANNUAL-EXAM')
   `code` VARCHAR(50) NOT NULL,                    -- e.g. 'EXAM_2025_ANNUAL'
-  `title` VARCHAR(150) NOT NULL,                  -- e.g. 'Annual Examination 2025'
+  `title` VARCHAR(150) NOT NULL,                  -- e.g. 'Annual Examination 2025-26'
   `description` TEXT DEFAULT NULL,
   `start_date` DATE NOT NULL,
   `end_date` DATE NOT NULL,
@@ -123,8 +129,8 @@ CREATE TABLE IF NOT EXISTS `lms_exams` (
   CONSTRAINT `fk_exam_creator` FOREIGN KEY (`created_by`) REFERENCES `sys_users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-SCREEN Name - EXAM Creation (Tab -2 Exam Papers)
--- LEVEL 2: EXAM PAPERS (The Subject Specific Entity)
+-- --------------------------------------------------------------------------------------
+-- SCREEN Name - EXAM Creation (Tab -2 Exam Papers)
 -- This table is used to define the exam paper and its basic details. 
 -- Represents a specific paper for a specific mode, e.g., "Class 9 - Math - Online"
 -- --------------------------------------------------------------------------------------
@@ -140,6 +146,8 @@ CREATE TABLE IF NOT EXISTS `lms_exam_papers` (
   `passing_marks` DECIMAL(8,2) NOT NULL DEFAULT 0.00,
   `duration_minutes` INT UNSIGNED DEFAULT NULL,   -- Relevant for Online, Guide for Offline
   `instructions` TEXT DEFAULT NULL,
+  `only_unused_questions` TINYINT(1) NOT NULL DEFAULT 0, -- Only Unused Questions (Question should not be in qns_question_usage_log)
+  `only_authorised_questions` TINYINT(1) NOT NULL DEFAULT 0, -- If this will be 1 then use only questions where qns_questions_bank.for_quiz = 1
   -- Online Specific Config
   `is_proctored` TINYINT(1) NOT NULL DEFAULT 0,
   `is_ai_proctored` TINYINT(1) NOT NULL DEFAULT 0,
@@ -164,9 +172,9 @@ CREATE TABLE IF NOT EXISTS `lms_exam_papers` (
   CONSTRAINT `fk_paper_status` FOREIGN KEY (`status_id`) REFERENCES `lms_exam_status_events` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-SCREEN Name - EXAM Creation (Tab -3 Exam Paper Sets)
--- LEVEL 3: PAPER SETS (The Variants)
--- Represents variants of the paper, e.g., "Set A", "Set B" OR 'Set 1', 'Set 2'
+-- --------------------------------------------------------------------------------------
+-- SCREEN Name - EXAM Creation (Tab -3 Exam Paper Sets)
+-- This table will be used to define variants of the papers
 -- --------------------------------------------------------------------------------------
 
 -- only un sused qestion display -> checkbox
@@ -186,9 +194,10 @@ CREATE TABLE IF NOT EXISTS `lms_exam_paper_sets` (
   CONSTRAINT `fk_set_paper` FOREIGN KEY (`exam_paper_id`) REFERENCES `lms_exam_papers` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-SCREEN Name - EXAM Creation (Tab -4 Add Question to Paper Sets)
--- LEVEL 4: SET QUESTIONS (The Content)
--- Links questions from Question Bank to a specific Set
+
+-- --------------------------------------------------------------------------------------
+-- SCREEN Name - EXAM Creation (Tab -4 Add Question to Paper Sets)
+-- This Table will be used to link questions from Question Bank to a specific Exam Paper Set
 -- --------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `lms_paper_set_questions` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -211,8 +220,8 @@ CREATE TABLE IF NOT EXISTS `lms_paper_set_questions` (
 
 
 -- --------------------------------------------------------------------------------------
-SCREEN Name - EXAM Creation (Tab -5 Student Allocations)
--- Allocations: Mapping Papers/Sets to Students/Groups
+-- SCREEN Name - EXAM Creation (Tab -5 Student Allocations)
+-- This table will be used to define allocations: Mapping Papers/Sets to Students/Groups
 -- --------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `lms_exam_allocations` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
