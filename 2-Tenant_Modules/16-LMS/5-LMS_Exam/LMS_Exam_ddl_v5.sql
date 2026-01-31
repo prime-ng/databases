@@ -168,6 +168,9 @@ SCREEN Name - EXAM Creation (Tab -3 Exam Paper Sets)
 -- LEVEL 3: PAPER SETS (The Variants)
 -- Represents variants of the paper, e.g., "Set A", "Set B" OR 'Set 1', 'Set 2'
 -- --------------------------------------------------------------------------------------
+
+-- only un sused qestion display -> checkbox
+
 CREATE TABLE IF NOT EXISTS `lms_exam_paper_sets` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `exam_paper_id` BIGINT UNSIGNED NOT NULL,       -- FK to lms_exam_papers.id
@@ -246,9 +249,6 @@ CREATE TABLE IF NOT EXISTS `lms_exam_allocations` (
 -- Flow & Conditions
 -- =========================================================================
 
-
-
-
 -- Schools may have 2 type of Exam - Online & Offline for different Assessment type (Unit Test, Term Test, Half Yearly Exam, Annual Exam, etc)
 -- Multipal papers for different Subject for every class+section will be conducted.
 -- School may use both Method (Online & Offline) for the same Exam for different Class/Section or for different Subject.
@@ -269,3 +269,29 @@ CREATE TABLE IF NOT EXISTS `lms_exam_allocations` (
 -- All Descriptive type questions Marks whcih will be evaluated by teacher will be uploaded in Excel format or entered manually into system.
 -- Answeres for all Descriptive type questions in Online Exams will be uploaded in Excel/PDF format or entered manually into system
 -- Grading & Division will be calculated by system by using pre-defined config table
+
+
+-- student group ke andar jab me member dalu ga tab vo ek hi class ke hone chahute section alag alag ho skate hai
+--group module addf rom chnage mutiple student 
+--Add Question to Paper Set mutiple filter vise qestuion display and filter
+-- class , subject and total qestion number , -> ai same filter -> used qestion use or fresh use  -> qns_question_usage_log entry 
+-- qns_question_usage_log ->qestion papper set time store
+
+
+  --`for_quiz` TINYINT(1) NOT NULL DEFAULT 1,        -- True if this question is for quiz
+  --`for_assessment` TINYINT(1) NOT NULL DEFAULT 0,  -- True if this question is for assessment
+  --`for_exam` TINYINT(1) NOT NULL DEFAULT 0,        -- True if this question is for exam
+  -- `for_offline_exam` TINYINT(1) NOT NULL DEFAULT 0, -- True if this question is for offline exam
+  -- exam creatte time filter this 
+  
+  --quize qeuest and exam assing time checkbox unsed qestion display or not check box 
+  --only authourize qestion shud be use true onlt this display -> qns_questions_bank -> check 
+  -- `for_quiz` TINYINT(1) NOT NULL DEFAULT 1,        -- True if this question is for quiz
+  -- `for_assessment` TINYINT(1) NOT NULL DEFAULT 0,  -- True if this question is for assessment
+  -- `for_exam` TINYINT(1) NOT NULL DEFAULT 0,        -- True if this question is for exam
+  -- `for_offline_exam` TINYINT(1) NOT NULL DEFAULT 0, -- True if this question is for offline exam
+
+  -- Add Question to Paper Set add time check condtion difficulty level -> diffculty level
+  -- new qestion -> dificlyu level , already added tab vise
+
+  --quize and qeuest allocation type check -> same exma vise
