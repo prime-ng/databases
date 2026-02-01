@@ -602,6 +602,16 @@ CREATE TABLE IF NOT EXISTS `sys_dropdown_need_table_jnt` (
     `subject_id` int unsigned NOT NULL,                       -- FK to 'sch_subjects'
     `subject_type_id` int unsigned NOT NULL,                  -- FK to 'sch_subject_types'
     `subject_study_format_id` bigint unsigned NOT NULL,       -- FK to 'sch_subject_study_format_jnt'
+    `is_compulsory` tinyint(1) NOT NULL DEFAULT '0',          -- Is this Subject compulsory for Student or Optional
+    `min_periods_per_week` TINYINT UNSIGNED DEFAULT NULL,  -- Minimum periods required per week
+    `max_periods_per_week` TINYINT UNSIGNED DEFAULT NULL,  -- Maximum periods required per week
+    `max_per_day` TINYINT UNSIGNED DEFAULT NULL,  -- Maximum periods per day
+    `min_per_day` TINYINT UNSIGNED DEFAULT NULL,  -- Minimum periods per day
+    `min_gap_periods` TINYINT UNSIGNED DEFAULT NULL,  -- Minimum gap periods
+    `allow_consecutive` TINYINT(1) NOT NULL DEFAULT 0,  -- Whether consecutive periods are allowed
+    `max_consecutive` TINYINT UNSIGNED DEFAULT 2,  -- Maximum consecutive periods
+    `priority` SMALLINT UNSIGNED DEFAULT 50,  -- Priority of this requirement
+    `compulsory_room_type` INT UNSIGNED DEFAULT NULL,  -- FK to sch_room_types.id
     `is_active` tinyint(1) NOT NULL DEFAULT '1',
     `deleted_at` timestamp NULL DEFAULT NULL,
     `created_at` timestamp NULL DEFAULT NULL,
@@ -614,6 +624,8 @@ CREATE TABLE IF NOT EXISTS `sys_dropdown_need_table_jnt` (
     CONSTRAINT `fk_subjGrpSubj_subjectTypeId` FOREIGN KEY (`subject_type_id`) REFERENCES `sch_subject_types` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_subjGrpSubj_subjectStudyFormatId` FOREIGN KEY (`subject_study_format_id`) REFERENCES `sch_subject_study_format_jnt` (`id`) ON DELETE CASCADE
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Add new Field for Timetable -
+-- is_compulsory, min_periods_per_week, max_periods_per_week, max_per_day, min_per_day, min_gap_periods, allow_consecutive, max_consecutive, priority, compulsory_room_type
 
   -- Tables for Room types, this will be used to define different types of rooms like Science Lab, Computer Lab, Sports Room etc.
   CREATE TABLE IF NOT EXISTS `sch_rooms_type` (

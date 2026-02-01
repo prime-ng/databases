@@ -15,8 +15,9 @@ Field Name - 'Allow_different_pickup_and_drop_point'
 
 Field Name - 'trip_usage_needs_to_be_updated_into_vendor_usage_log' (True/False)
             (This key will be used to define whether School has taken Vendor Module and Entry into Vendor usage log is required ot not?)
-Field Name - 
-Field Name - 
-Field Name - 
+Field Name - `Avreage_no_of_student_per_section`
+             (This will Capture standard)
+Field Name - `Minimum_no_of_student_per_section`
+Field Name - `Maximum_no_of_student_per_section`
 Field Name - 
 
