@@ -143,19 +143,27 @@ CREATE TABLE IF NOT EXISTS `lms_exam_papers` (
   `title` VARCHAR(150) NOT NULL,                  -- e.g. 'Unit Test 1 - 2025-26 - Mathematics - Online'
   `mode` ENUM('ONLINE', 'OFFLINE') NOT NULL,
   `total_marks` DECIMAL(8,2) NOT NULL DEFAULT 0.00,
-  `passing_marks` DECIMAL(8,2) NOT NULL DEFAULT 0.00,
+  --`passing_marks` DECIMAL(8,2) NOT NULL DEFAULT 0.00,  -- New ( Changed)
+  `passing_percentage` DECIMAL(5,2) NOT NULL DEFAULT 0.00,  -- New
   `duration_minutes` INT UNSIGNED DEFAULT NULL,   -- Relevant for Online, Guide for Offline
+  `total_questions` INT UNSIGNED NOT NULL DEFAULT 0,   -- New
+  `negative_marks` DECIMAL(5,2) DEFAULT 0.00,     -- Negative marks (if any). -- New
   `instructions` TEXT DEFAULT NULL,
   `only_unused_questions` TINYINT(1) NOT NULL DEFAULT 0, -- Only Unused Questions (Question should not be in qns_question_usage_log)
   `only_authorised_questions` TINYINT(1) NOT NULL DEFAULT 0, -- If this will be 1 then use only questions where qns_questions_bank.for_quiz = 1
   `difficulty_config_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to lms_difficulty_distribution_configs
   `ignore_difficulty_config` TINYINT(1) NOT NULL DEFAULT 0, -- Ignore Difficulty Config (If this will be 1 then difficulty_config_id will be ignored)
+  `allow_calculator` TINYINT(1) NOT NULL DEFAULT 0,  -- Allow Calculator (If this will be 1 then calculator will be allowed). -- New
+  `show_marks_per_question` TINYINT(1) NOT NULL DEFAULT 1,  -- Show Marks Per Question (If this will be 1 then marks per question will be shown). -- New
+  `is_randomized` TINYINT(1) NOT NULL DEFAULT 0,  -- Randomize Questions (If this will be 1 then questions will be randomized). -- New
   -- Online Specific Config
   `is_proctored` TINYINT(1) NOT NULL DEFAULT 0,
   `is_ai_proctored` TINYINT(1) NOT NULL DEFAULT 0,
   `fullscreen_required` TINYINT(1) NOT NULL DEFAULT 0,
   `browser_lock_required` TINYINT(1) NOT NULL DEFAULT 0,
   `shuffle_questions` TINYINT(1) NOT NULL DEFAULT 0,
+  `shuffle_options` TINYINT(1) NOT NULL DEFAULT 0,  -- Randomize Options (If this will be 1 then options will be randomized). -- New
+  `timer_enforced` TINYINT(1) NOT NULL DEFAULT 1,  -- Enforce Timer (If Timer is enforced then timer will be shown). -- New
   `show_result_type` ENUM('IMMEDIATE','SCHEDULED','MANUAL') NOT NULL DEFAULT 'MANUAL',
   `scheduled_result_at` DATETIME DEFAULT NULL,
   -- Offline Specific Config
@@ -194,6 +202,51 @@ CREATE TABLE IF NOT EXISTS `lms_exam_paper_sets` (
   CONSTRAINT `fk_set_paper` FOREIGN KEY (`exam_paper_id`) REFERENCES `lms_exam_papers` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- --------------------------------------------------------------------------------------
+-- SCREEN Name - EXAM Creation (Tab -4 Exam Scopes)
+-- This table will be used to define variants of the papers (New Table)
+-- --------------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `lms_exam_scopes` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `exam_paper_id` BIGINT UNSIGNED NOT NULL,       -- FK to lms_exam_papers.id
+  `lesson_id` INT UNSIGNED DEFAULT NULL,     -- FK to slb_lessons (Optional, if specific lesson)
+  `topic_id` BIGINT UNSIGNED DEFAULT NULL,      -- FK to slb_topics (Optional, if specific topic)
+  `question_type_id` INT UNSIGNED DEFAULT NULL,     -- FK to slb_question_types.id (e.g. MCQs, True/False, Fill in the Blanks, etc.)
+  `target_question_count` INT UNSIGNED DEFAULT 0,   -- Target Question Count (If this will be 0 then all the questions of the topic will be included)
+  `weightage_percent` DECIMAL(5,2) DEFAULT NULL, -- Weightage of this scope(Lesson,Topic,Sub-Topic) in the exam
+  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+  `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  CONSTRAINT `fk_es_exam` FOREIGN KEY (`exam_paper_id`) REFERENCES `lms_exam_papers` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_es_lesson` FOREIGN KEY (`lesson_id`) REFERENCES `slb_lessons` (`id`),
+  CONSTRAINT `fk_es_topic` FOREIGN KEY (`topic_id`) REFERENCES `slb_topics` (`id`),
+  CONSTRAINT `fk_es_question_type` FOREIGN KEY (`question_type_id`) REFERENCES `slb_question_types` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -------------------------------------------------------------------------------------------------------
+-- SCREEN Name - EXAM Creation (Tab -5 Exam Blueprints). (New Table)
+-- This table will be used to define the structure of the exam. Useful for generating question papers automatically.
+-- -------------------------------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `lms_exam_blueprints` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `exam_paper_id` BIGINT UNSIGNED NOT NULL,       -- FK to lms_exam_papers.id
+  `section_name` VARCHAR(50) DEFAULT 'Section A', -- e.g., 'Part 1', 'Section A - Objective'
+  `question_type_id` INT UNSIGNED DEFAULT NULL,     -- FK to slb_question_types.id (e.g. MCQs, Descriptive, Fill in the Blanks, etc.)
+  `instruction_text` TEXT DEFAULT NULL,
+  `total_questions` INT UNSIGNED NOT NULL DEFAULT 0,
+  `marks_per_question` DECIMAL(5,2) DEFAULT NULL, -- If fixed marks for this section
+  `total_marks` DECIMAL(8,2) NOT NULL DEFAULT 0.00,
+  `ordinal` TINYINT UNSIGNED NOT NULL DEFAULT 1,
+  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+  `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  CONSTRAINT `fk_eb_exam` FOREIGN KEY (`exam_paper_id`) REFERENCES `lms_exam_papers` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_eb_question_type` FOREIGN KEY (`question_type_id`) REFERENCES `slb_question_types` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------------------------------------
 -- SCREEN Name - EXAM Creation (Tab -4 Add Question to Paper Sets)
