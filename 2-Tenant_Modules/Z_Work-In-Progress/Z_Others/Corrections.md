@@ -31,3 +31,13 @@
 
 ## Module - Recommendation
 
+
+
+**-------------------------------------------------------------------------------------------------------------------------------------------------**
+Prime App
+Category - Foundation 
+Main Menu - Role & Permission
+Tab - 
+  1. User
+  2. Role & Permission
+There should be 3 Tabs (User, Role, Permission)

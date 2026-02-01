@@ -372,11 +372,17 @@ CREATE TABLE IF NOT EXISTS `slb_grade_division_master` (
 
 
 
+
+
+
+
+
+-- -------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 -- -------------------------------------------------------------------------
 -- LESSON PLANNING
 -- This should be Part of Standard Timetable
 -- -------------------------------------------------------------------------
-
 -- This table is used for Lesson Planning (scheduling topics to classes and sections)
 CREATE TABLE IF NOT EXISTS `slb_syllabus_schedule` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -501,4 +507,8 @@ CREATE TABLE hpc_curriculum_change_request (
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `deleted_at` TIMESTAMP DEFAULT NULL,
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -------------------------------------------------------------------------------------------------------------
+--Correction :
+-- Table slb_lesson Added 1 New Fields (`bok_books_id` BIGINT UNSIGNED NOT NULL, -- FK to bok_books.id)
 

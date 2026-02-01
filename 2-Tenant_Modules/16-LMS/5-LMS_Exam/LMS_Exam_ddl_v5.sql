@@ -148,6 +148,8 @@ CREATE TABLE IF NOT EXISTS `lms_exam_papers` (
   `instructions` TEXT DEFAULT NULL,
   `only_unused_questions` TINYINT(1) NOT NULL DEFAULT 0, -- Only Unused Questions (Question should not be in qns_question_usage_log)
   `only_authorised_questions` TINYINT(1) NOT NULL DEFAULT 0, -- If this will be 1 then use only questions where qns_questions_bank.for_quiz = 1
+  `difficulty_config_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to lms_difficulty_distribution_configs
+  `ignore_difficulty_config` TINYINT(1) NOT NULL DEFAULT 0, -- Ignore Difficulty Config (If this will be 1 then difficulty_config_id will be ignored)
   -- Online Specific Config
   `is_proctored` TINYINT(1) NOT NULL DEFAULT 0,
   `is_ai_proctored` TINYINT(1) NOT NULL DEFAULT 0,
@@ -169,6 +171,7 @@ CREATE TABLE IF NOT EXISTS `lms_exam_papers` (
   CONSTRAINT `fk_paper_exam` FOREIGN KEY (`exam_id`) REFERENCES `lms_exams` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_paper_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`),
   CONSTRAINT `fk_paper_subject` FOREIGN KEY (`subject_id`) REFERENCES `sch_subjects` (`id`),
+  CONSTRAINT `fk_paper_difficulty_config` FOREIGN KEY (`difficulty_config_id`) REFERENCES `lms_difficulty_distribution_configs` (`id`),
   CONSTRAINT `fk_paper_status` FOREIGN KEY (`status_id`) REFERENCES `lms_exam_status_events` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
