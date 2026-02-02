@@ -238,8 +238,8 @@
     -- 3. If not, Developer need to create a new Dropdown Need first as per the requirement.
     -- 4. If yes, System will use the existing Dropdown Need.
 
--- This table will be Junction table for sys_dropdown_needs & sys_dropdown_table
-CREATE TABLE IF NOT EXISTS `sys_dropdown_need_table_jnt` (
+  -- This table will be Junction table for sys_dropdown_needs & sys_dropdown_table
+  CREATE TABLE IF NOT EXISTS `sys_dropdown_need_table_jnt` (
     `id` bigint unsigned NOT NULL AUTO_INCREMENT,
     `dropdown_needs_id` bigint unsigned NOT NULL,  -- FK to sys_dropdown_needs.id
     `dropdown_table_id` bigint unsigned NOT NULL,  -- FK to sys_dropdown_table.id
@@ -353,7 +353,6 @@ CREATE TABLE IF NOT EXISTS `sys_dropdown_need_table_jnt` (
     CONSTRAINT `fk_boardOrg_boardId` FOREIGN KEY (`board_id`) REFERENCES `glb_boards` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_boardOrg_academicSessionId` FOREIGN KEY (`academic_sessions_id`) REFERENCES `sch_org_academic_sessions_jnt` (`id`) ON DELETE CASCADE
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 
   CREATE TABLE IF NOT EXISTS `sch_department` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -534,21 +533,6 @@ CREATE TABLE IF NOT EXISTS `sys_dropdown_need_table_jnt` (
     CONSTRAINT `fk_subStudyFormat_studyFormatId` FOREIGN KEY (`study_format_id`) REFERENCES `sch_study_formats` (`id`) ON DELETE CASCADE
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-  -- Building Coding format is - 2 Digit for Buildings(10-99)
-  CREATE TABLE IF NOT EXISTS `sch_buildings` (
-    `id` int unsigned NOT NULL AUTO_INCREMENT,
-    `code` char(2) NOT NULL,                      -- 2 digits code (10,11,12) 
-    `short_name` varchar(30) NOT NULL,            -- e.g., 'Junior Wing','Primary Wing','Middle Wing','Senior Wing','Administration Wings'
-    `name` varchar(50) NOT NULL,                  -- Detailed Name of the Building
-    `is_active` tinyint(1) NOT NULL DEFAULT '1',
-    `deleted_at` timestamp NULL DEFAULT NULL,
-    `created_at` timestamp NULL DEFAULT NULL,
-    `updated_at` timestamp NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_buildings_code` (`code`),
-    UNIQUE KEY `uq_buildings_name` (`short_name`)
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
   -- Ths table will be used to define different Class Groups like 10th-A Science Lecture Major, 7th-B Commerce Optional etc.
   -- old name 'sch_subject_study_format_class_subj_types_jnt' changed to 'sch_class_groups_jnt'
   CREATE TABLE IF NOT EXISTS `sch_class_groups_jnt` (
@@ -603,6 +587,7 @@ CREATE TABLE IF NOT EXISTS `sys_dropdown_need_table_jnt` (
     `subject_type_id` int unsigned NOT NULL,                  -- FK to 'sch_subject_types'
     `subject_study_format_id` bigint unsigned NOT NULL,       -- FK to 'sch_subject_study_format_jnt'
     `is_compulsory` tinyint(1) NOT NULL DEFAULT '0',          -- Is this Subject compulsory for Student or Optional
+    `weekly_periods` TINYINT UNSIGNED NOT NULL,  -- Total periods required per week
     `min_periods_per_week` TINYINT UNSIGNED DEFAULT NULL,  -- Minimum periods required per week
     `max_periods_per_week` TINYINT UNSIGNED DEFAULT NULL,  -- Maximum periods required per week
     `max_per_day` TINYINT UNSIGNED DEFAULT NULL,  -- Maximum periods per day
@@ -624,98 +609,115 @@ CREATE TABLE IF NOT EXISTS `sys_dropdown_need_table_jnt` (
     CONSTRAINT `fk_subjGrpSubj_subjectTypeId` FOREIGN KEY (`subject_type_id`) REFERENCES `sch_subject_types` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_subjGrpSubj_subjectStudyFormatId` FOREIGN KEY (`subject_study_format_id`) REFERENCES `sch_subject_study_format_jnt` (`id`) ON DELETE CASCADE
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
--- Add new Field for Timetable -
--- is_compulsory, min_periods_per_week, max_periods_per_week, max_per_day, min_per_day, min_gap_periods, allow_consecutive, max_consecutive, priority, compulsory_room_type
+  -- Add new Field for Timetable -
+  -- is_compulsory, min_periods_per_week, max_periods_per_week, max_per_day, min_per_day, min_gap_periods, allow_consecutive, max_consecutive, priority, compulsory_room_type
 
-  -- Tables for Room types, this will be used to define different types of rooms like Science Lab, Computer Lab, Sports Room etc.
-  CREATE TABLE IF NOT EXISTS `sch_rooms_type` (
+
+  -- Building Coding format is - 2 Digit for Buildings(10-99)
+  CREATE TABLE IF NOT EXISTS `sch_buildings` (
     `id` int unsigned NOT NULL AUTO_INCREMENT,
-    `code` CHAR(7) NOT NULL,                        -- e.g., 'SCI_LAB','BIO_LAB','CRI_GRD','TT_ROOM','BDM_CRT'
-    `short_name` varchar(30) NOT NULL,              -- e.g., 'Science Lab','Biology Lab','Cricket Ground','Table Tanis Room','Badminton Court'
-    `name` varchar(100) NOT NULL,
-    `required_resources` text DEFAULT NULL,         -- e.g., 'Microscopes, Lab Coats, Safety Goggles' for Science Lab
+    `code` char(2) NOT NULL,                      -- 2 digits code (10,11,12) 
+    `short_name` varchar(30) NOT NULL,            -- e.g., 'Junior Wing','Primary Wing','Middle Wing','Senior Wing','Administration Wings'
+    `name` varchar(50) NOT NULL,                  -- Detailed Name of the Building
     `is_active` tinyint(1) NOT NULL DEFAULT '1',
     `deleted_at` timestamp NULL DEFAULT NULL,
     `created_at` timestamp NULL DEFAULT NULL,
     `updated_at` timestamp NULL DEFAULT NULL,
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_roomType_code` (`code`),
-    UNIQUE KEY `uq_roomType_shortName` (`short_name`)
+    UNIQUE KEY `uq_buildings_code` (`code`),
+    UNIQUE KEY `uq_buildings_name` (`short_name`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-  -- Room Coding format is - 2 Digit for Buildings(10-99), 1 Digit-Building Floor(G,F,S,T,F / A,B,C,D,E), & Last 3 Character defin Class+Section (09A,10A,12B)
-  CREATE TABLE IF NOT EXISTS `sch_rooms` (
-    `id` int unsigned NOT NULL AUTO_INCREMENT,
-    `building_id` int unsigned NOT NULL,      -- FK to 'sch_buildings' table
-    `room_type_id` int NOT NULL,              -- FK to 'sch_rooms_type' table
-    `code` CHAR(7) NOT NULL,                  -- e.g., '11G-10A','12F-11A','11S-12A' and so on (This will be used for Timetable)
-    `short_name` varchar(30) NOT NULL,        -- e.g., 'Junior Wing','Primary Wing','Middle Wing','Senior Wing','Administration Wings'
-    `name` varchar(50) NOT NULL,
-    `capacity` int unsigned DEFAULT NULL,     -- Seating Capacity of the Room
-    `max_limit` int unsigned DEFAULT NULL,    -- Maximum Limit of the Room, Maximum how many students can accomodate in the room
-    `resource_tags` text DEFAULT NULL,        -- e.g., 'Projector, Smart Board, AC, Lab Equipment' etc.
-    `is_active` tinyint(1) NOT NULL DEFAULT '1',
-    `deleted_at` timestamp NULL DEFAULT NULL,
-    `created_at` timestamp NULL DEFAULT NULL,
-    `updated_at` timestamp NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_rooms_code` (`code`),
-    UNIQUE KEY `uq_rooms_shortName` (`short_name`),
-    CONSTRAINT `fk_rooms_buildingId` FOREIGN KEY (`building_id`) REFERENCES `sch_buildings` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_rooms_roomTypeId` FOREIGN KEY (`room_type_id`) REFERENCES `sch_rooms_type` (`id`) ON DELETE CASCADE
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    -- Tables for Room types, this will be used to define different types of rooms like Science Lab, Computer Lab, Sports Room etc.
+    CREATE TABLE IF NOT EXISTS `sch_rooms_type` (
+      `id` int unsigned NOT NULL AUTO_INCREMENT,
+      `code` CHAR(7) NOT NULL,                        -- e.g., 'SCI_LAB','BIO_LAB','CRI_GRD','TT_ROOM','BDM_CRT'
+      `short_name` varchar(30) NOT NULL,              -- e.g., 'Science Lab','Biology Lab','Cricket Ground','Table Tanis Room','Badminton Court'
+      `name` varchar(100) NOT NULL,
+      `required_resources` text DEFAULT NULL,         -- e.g., 'Microscopes, Lab Coats, Safety Goggles' for Science Lab
+      `is_active` tinyint(1) NOT NULL DEFAULT '1',
+      `deleted_at` timestamp NULL DEFAULT NULL,
+      `created_at` timestamp NULL DEFAULT NULL,
+      `updated_at` timestamp NULL DEFAULT NULL,
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `uq_roomType_code` (`code`),
+      UNIQUE KEY `uq_roomType_shortName` (`short_name`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-  -- Teacher table will store additional information about teachers
-  CREATE TABLE IF NOT EXISTS `sch_teachers` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `user_id` BIGINT UNSIGNED NOT NULL,  -- fk to sys_users.id
-    `emp_code` VARCHAR(20) NOT NULL,     -- Employee Code (Unique code for each user)
-    `joining_date` DATE NOT NULL,
-    `total_experience_years` DECIMAL(4,1) DEFAULT NULL,       -- Total teaching experience
-    `highest_qualification` VARCHAR(100) DEFAULT NULL,        -- e.g. M.Sc., Ph.D.
-    `specialization` VARCHAR(150) DEFAULT NULL,               -- e.g. Mathematics, Physics
-    `last_institution` VARCHAR(200) DEFAULT NULL,             -- e.g. DPS Delhi
-    `awards` TEXT DEFAULT NULL,                               -- brief summary
-    `skills` TEXT DEFAULT NULL,                               -- general skills list (comma/JSON)
-    `qualifications_json` JSON DEFAULT NULL,   -- Array of {degree, specialization, university, year, grade}
-    `certifications_json` JSON DEFAULT NULL,   -- Array of {name, issued_by, issue_date, expiry_date, verified}
-    `experiences_json` JSON DEFAULT NULL,      -- Array of {institution, role, from_date, to_date, subject, remarks}
-    `notes` TEXT COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
-    `created_at` TIMESTAMP NULL DEFAULT NULL,
-    `updated_at` TIMESTAMP NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `teachers_emp_code_unique` (`emp_code`),
-    KEY `teachers_user_id_foreign` (`user_id`),
-    CONSTRAINT `fk_teachers_userId` FOREIGN KEY (`user_id`) REFERENCES `sys_users` (`id`) ON DELETE CASCADE
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    -- Room Coding format is - 2 Digit for Buildings(10-99), 1 Digit-Building Floor(G,F,S,T,F / A,B,C,D,E), & Last 3 Character defin Class+Section (09A,10A,12B)
+    CREATE TABLE IF NOT EXISTS `sch_rooms` (
+      `id` int unsigned NOT NULL AUTO_INCREMENT,
+      `building_id` int unsigned NOT NULL,      -- FK to 'sch_buildings' table
+      `room_type_id` int NOT NULL,              -- FK to 'sch_rooms_type' table
+      `code` CHAR(7) NOT NULL,                  -- e.g., '11G-10A','12F-11A','11S-12A' and so on (This will be used for Timetable)
+      `short_name` varchar(30) NOT NULL,        -- e.g., 'Junior Wing','Primary Wing','Middle Wing','Senior Wing','Administration Wings'
+      `name` varchar(50) NOT NULL,
+      `capacity` int unsigned DEFAULT NULL,     -- Seating Capacity of the Room
+      `max_limit` int unsigned DEFAULT NULL,    -- Maximum Limit of the Room, Maximum how many students can accomodate in the room
+      `resource_tags` text DEFAULT NULL,        -- e.g., 'Projector, Smart Board, AC, Lab Equipment' etc.
+      `is_active` tinyint(1) NOT NULL DEFAULT '1',
+      `deleted_at` timestamp NULL DEFAULT NULL,
+      `created_at` timestamp NULL DEFAULT NULL,
+      `updated_at` timestamp NULL DEFAULT NULL,
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `uq_rooms_code` (`code`),
+      UNIQUE KEY `uq_rooms_shortName` (`short_name`),
+      CONSTRAINT `fk_rooms_buildingId` FOREIGN KEY (`building_id`) REFERENCES `sch_buildings` (`id`) ON DELETE CASCADE,
+      CONSTRAINT `fk_rooms_roomTypeId` FOREIGN KEY (`room_type_id`) REFERENCES `sch_rooms_type` (`id`) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-  -- Teacher Profile table will store detailed proficiency to teach specific subjects, study formats, and classes
-  CREATE TABLE IF NOT EXISTS `sch_teachers_profile` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `teacher_id` BIGINT UNSIGNED NOT NULL,
-    `subject_id` BIGINT UNSIGNED NOT NULL,            -- FK to 'subjects' table
-    `study_format_id` INT UNSIGNED NOT NULL,       -- FK to 'sch_study_formats' table 
-    `class_id` INT UNSIGNED NOT NULL,                 -- FK to 'sch_classes' table
-    `priority` ENUM('PRIMARY','SECONDARY') NOT NULL DEFAULT 'PRIMARY',
-    `proficiency` INT UNSIGNED DEFAULT NULL,          -- 1–10 rating or %
-    `special_skill_area` VARCHAR(100) DEFAULT NULL,   -- e.g. Robotics, AI, Debate
-    `certified_for_lab` TINYINT(1) DEFAULT 0,         -- allowed to conduct practicals
-    `assignment_meta` JSON DEFAULT NULL,              -- e.g. { "qualification": "M.Sc Physics", "experience": "7 years" }
-    `notes` TEXT NULL,
-    `effective_from` DATE DEFAULT NULL,               -- when this profile becomes effective
-    `effective_to` DATE DEFAULT NULL,                 -- when this profile ends 
-    `is_active` TINYINT(1) NOT NULL DEFAULT '1',
-    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
-    `created_at` TIMESTAMP NULL DEFAULT NULL,
-    `updated_at` TIMESTAMP NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_teachersProfile_teacher` (`teacher_id`,`subject_id`,`study_format_id`,class_id),
-    CONSTRAINT `fk_teachersProfile_teacherId` FOREIGN KEY (`teacher_id`) REFERENCES `sch_teachers` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_teachersProfile_subjectId` FOREIGN KEY (`subject_id`) REFERENCES `sch_subjects` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_teachersProfile_studyFormatId` FOREIGN KEY (`study_format_id`) REFERENCES `sch_study_formats` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_teachersProfile_classId` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE CASCADE
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+    -- Teacher table will store additional information about teachers
+    CREATE TABLE IF NOT EXISTS `sch_teachers` (
+      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `user_id` BIGINT UNSIGNED NOT NULL,  -- fk to sys_users.id
+      `emp_code` VARCHAR(20) NOT NULL,     -- Employee Code (Unique code for each user)
+      `joining_date` DATE NOT NULL,
+      `total_experience_years` DECIMAL(4,1) DEFAULT NULL,       -- Total teaching experience
+      `highest_qualification` VARCHAR(100) DEFAULT NULL,        -- e.g. M.Sc., Ph.D.
+      `specialization` VARCHAR(150) DEFAULT NULL,               -- e.g. Mathematics, Physics
+      `last_institution` VARCHAR(200) DEFAULT NULL,             -- e.g. DPS Delhi
+      `awards` TEXT DEFAULT NULL,                               -- brief summary
+      `skills` TEXT DEFAULT NULL,                               -- general skills list (comma/JSON)
+      `qualifications_json` JSON DEFAULT NULL,   -- Array of {degree, specialization, university, year, grade}
+      `certifications_json` JSON DEFAULT NULL,   -- Array of {name, issued_by, issue_date, expiry_date, verified}
+      `experiences_json` JSON DEFAULT NULL,      -- Array of {institution, role, from_date, to_date, subject, remarks}
+      `notes` TEXT COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+      `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+      `created_at` TIMESTAMP NULL DEFAULT NULL,
+      `updated_at` TIMESTAMP NULL DEFAULT NULL,
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `teachers_emp_code_unique` (`emp_code`),
+      KEY `teachers_user_id_foreign` (`user_id`),
+      CONSTRAINT `fk_teachers_userId` FOREIGN KEY (`user_id`) REFERENCES `sys_users` (`id`) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+    -- Teacher Profile table will store detailed proficiency to teach specific subjects, study formats, and classes
+    CREATE TABLE IF NOT EXISTS `sch_teachers_profile` (
+      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `teacher_id` BIGINT UNSIGNED NOT NULL,
+      `subject_id` BIGINT UNSIGNED NOT NULL,            -- FK to 'subjects' table
+      `study_format_id` INT UNSIGNED NOT NULL,       -- FK to 'sch_study_formats' table 
+      `class_id` INT UNSIGNED NOT NULL,                 -- FK to 'sch_classes' table
+      `priority` ENUM('PRIMARY','SECONDARY') NOT NULL DEFAULT 'PRIMARY',
+      `proficiency` INT UNSIGNED DEFAULT NULL,          -- 1–10 rating or %
+      `special_skill_area` VARCHAR(100) DEFAULT NULL,   -- e.g. Robotics, AI, Debate
+      `certified_for_lab` TINYINT(1) DEFAULT 0,         -- allowed to conduct practicals
+      `assignment_meta` JSON DEFAULT NULL,              -- e.g. { "qualification": "M.Sc Physics", "experience": "7 years" }
+      `notes` TEXT NULL,
+      `effective_from` DATE DEFAULT NULL,               -- when this profile becomes effective
+      `effective_to` DATE DEFAULT NULL,                 -- when this profile ends 
+      `is_active` TINYINT(1) NOT NULL DEFAULT '1',
+      `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+      `created_at` TIMESTAMP NULL DEFAULT NULL,
+      `updated_at` TIMESTAMP NULL DEFAULT NULL,
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `uq_teachersProfile_teacher` (`teacher_id`,`subject_id`,`study_format_id`,class_id),
+      CONSTRAINT `fk_teachersProfile_teacherId` FOREIGN KEY (`teacher_id`) REFERENCES `sch_teachers` (`id`) ON DELETE CASCADE,
+      CONSTRAINT `fk_teachersProfile_subjectId` FOREIGN KEY (`subject_id`) REFERENCES `sch_subjects` (`id`) ON DELETE CASCADE,
+      CONSTRAINT `fk_teachersProfile_studyFormatId` FOREIGN KEY (`study_format_id`) REFERENCES `sch_study_formats` (`id`) ON DELETE CASCADE,
+      CONSTRAINT `fk_teachersProfile_classId` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 -- ===========================================================================
@@ -2017,7 +2019,6 @@ CREATE TABLE IF NOT EXISTS `sys_dropdown_need_table_jnt` (
         CONSTRAINT `fk_ntf_log_channel` FOREIGN KEY (`channel_id`) REFERENCES `ntf_channel_master`(`id`),
         CONSTRAINT `fk_ntf_log_status` FOREIGN KEY (`delivery_status_id`) REFERENCES `sys_dropdown_table`(`id`)
     ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
-
 
 -- =========================================================================
 -- 8-TIMETABLE MODULE (tt)
