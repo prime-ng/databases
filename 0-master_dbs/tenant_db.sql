@@ -418,7 +418,7 @@
     `id` int unsigned NOT NULL AUTO_INCREMENT,
     `name` varchar(50) NOT NULL,                -- e.g. 'Grade 1' or 'Class 10'
     `short_name` varchar(10) DEFAULT NULL,      -- e.g. 'G1' or '10A'
-    `ordinal` tinyint DEFAULT NULL,             -- will have sequence order for Classes
+    `ordinal` tinyint DEFAULT NULL,             -- will have sequence order for Classes NURSARY = -3, LKG = -2, UKG = -1, 1st = 1, 2nd = 2, 3rd = 3, 4th = 4, 5th = 5, 6th = 6, 7th = 7, 8th = 8, 9th = 9, 10th = 10, 11th = 11, 12th = 12
     `code` CHAR(3) NOT NULL,                    -- e.g., 'BV1','BV2','1st','1' and so on (This will be used for Timetable)
     `is_active` tinyint(1) NOT NULL DEFAULT 1,
     `created_at` timestamp NULL DEFAULT NULL,
@@ -668,10 +668,15 @@
 
 
     -- Teacher table will store additional information about teachers
-    CREATE TABLE IF NOT EXISTS `sch_teachers` (
+    CREATE TABLE IF NOT EXISTS `sch_employees` (
       `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
       `user_id` BIGINT UNSIGNED NOT NULL,  -- fk to sys_users.id
-      `emp_code` VARCHAR(20) NOT NULL,     -- Employee Code (Unique code for each user)
+      -- Employee id details
+      `emp_code` VARCHAR(20) NOT NULL,     -- Employee Code (Unique code for each user) (This will be used for QR Code)
+      `emp_id_card_type` ENUM('QR','RFID','NFC','Barcode') NOT NULL DEFAULT 'QR',
+      `emp_smart_card_id` VARCHAR(100) DEFAULT NULL,       -- RFID/NFC Tag ID
+      -- 
+      `is_teacher` TINYINT(1) NOT NULL DEFAULT 0,
       `joining_date` DATE NOT NULL,
       `total_experience_years` DECIMAL(4,1) DEFAULT NULL,       -- Total teaching experience
       `highest_qualification` VARCHAR(100) DEFAULT NULL,        -- e.g. M.Sc., Ph.D.
@@ -692,18 +697,92 @@
       CONSTRAINT `fk_teachers_userId` FOREIGN KEY (`user_id`) REFERENCES `sys_users` (`id`) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+    -- Similer way we need to create profile table for other Employees also
+
+    CREATE TABLE IF NOT EXISTS `sch_employees_profile` (
+      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `employee_id` BIGINT UNSIGNED NOT NULL,              -- FK to sch_employees.id
+      `user_id` BIGINT UNSIGNED NOT NULL,                  -- FK to sys_users.id
+      `role_id` BIGINT UNSIGNED NOT NULL,                  -- FK to employee_roles table (Principal, Accountant, Admin, etc.)
+      `department_id` BIGINT UNSIGNED DEFAULT NULL,        -- FK to sch_departments (Administration, Accounts, IT, etc.)
+      -- Core Competencies & Qualifications
+      `specialization_area` VARCHAR(100) DEFAULT NULL,     -- e.g., Finance Management, HR Administration, IT Infrastructure
+      `qualification_level` VARCHAR(50) DEFAULT NULL,      -- e.g., Bachelor's, Master's, Certified Accountant
+      `qualification_field` VARCHAR(100) DEFAULT NULL,     -- e.g., Business Administration, Computer Science
+      `certifications` JSON DEFAULT NULL,                  -- JSON array of certifications: ["CPA", "CISSP", "PMP"]
+      -- Work Capacity & Availability
+      `work_hours_daily` DECIMAL(4,2) DEFAULT 8.0,         -- Standard daily work hours
+      `max_hours_daily` DECIMAL(4,2) DEFAULT 10.0,         -- Maximum daily work hours
+      `work_hours_weekly` DECIMAL(5,2) DEFAULT 40.0,       -- Standard weekly work hours
+      `max_hours_weekly` DECIMAL(5,2) DEFAULT 50.0,        -- Maximum weekly work hours
+      `preferred_shift` ENUM('morning', 'evening', 'flexible') DEFAULT 'morning',
+      `is_full_time` TINYINT(1) DEFAULT 1,                 -- 1=Full-time, 0=Part-time
+      -- Skills & Responsibilities (JSON for flexibility)
+      `core_responsibilities` JSON DEFAULT NULL,           -- e.g., ["budget_management", "staff_supervision", "policy_implementation"]
+      `technical_skills` JSON DEFAULT NULL,                -- e.g., ["quickbooks", "ms_expert", "erp_systems"]
+      `soft_skills` JSON DEFAULT NULL,                     -- e.g., ["leadership", "communication", "problem_solving"]
+      -- Performance & Experience
+      `experience_months` SMALLINT UNSIGNED DEFAULT NULL,  -- Relevant experience in months
+      `performance_rating` TINYINT UNSIGNED DEFAULT NULL,  -- rating out of (1 to 10)
+      `last_performance_review` DATE DEFAULT NULL,
+      -- Administrative Controls
+      `security_clearance_done` TINYINT(1) DEFAULT 0,
+      `reporting_to` BIGINT UNSIGNED DEFAULT NULL,         -- FK to sch_employees.id (who they report to)
+      `can_approve_budget` TINYINT(1) DEFAULT 0,
+      `can_manage_staff` TINYINT(1) DEFAULT 0,
+      `can_access_sensitive_data` TINYINT(1) DEFAULT 0,
+      -- Additional Details
+      `assignment_meta` JSON DEFAULT NULL,                 -- e.g., { "previous_role": "Assistant Principal", "achievements": ["System Upgrade 2023"] }
+      `notes` TEXT DEFAULT NULL,
+      `effective_from` DATE DEFAULT NULL,
+      `effective_to` DATE DEFAULT NULL,
+      `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+      `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+      `created_at` TIMESTAMP NULL DEFAULT NULL,
+      `updated_at` TIMESTAMP NULL DEFAULT NULL,
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `uq_employee_role_active` (`employee_id`, `role_id`, `effective_to`),
+      -- Foreign Key Constraints
+      CONSTRAINT `fk_employeeProfile_employeeId` FOREIGN KEY (`employee_id`) REFERENCES `sch_employees` (`id`),
+      CONSTRAINT `fk_employeeProfile_roleId` FOREIGN KEY (`role_id`) REFERENCES `sch_employee_roles` (`id`),
+      CONSTRAINT `fk_employeeProfile_departmentId` FOREIGN KEY (`department_id`) REFERENCES `sch_departments` (`id`),
+      CONSTRAINT `fk_employeeProfile_reportingTo` FOREIGN KEY (`reporting_to`) REFERENCES `sch_employees` (`id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
     -- Teacher Profile table will store detailed proficiency to teach specific subjects, study formats, and classes
     CREATE TABLE IF NOT EXISTS `sch_teachers_profile` (
       `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-      `teacher_id` BIGINT UNSIGNED NOT NULL,
+      `employee_id` BIGINT UNSIGNED NOT NULL,         -- FK to sch_employee.id
+      `user_id` BIGINT UNSIGNED NOT NULL,             -- FK to sys_users.id
+      `role_id` BIGINT UNSIGNED NOT NULL,                  -- FK to employee_roles table (Principal, Accountant, Admin, etc.)
+      `department_id` BIGINT UNSIGNED DEFAULT NULL,        -- FK to sch_departments (Administration, Accounts, IT, etc.)
+      -- Teaching Capacity & Availability
       `subject_id` BIGINT UNSIGNED NOT NULL,            -- FK to 'subjects' table
       `study_format_id` INT UNSIGNED NOT NULL,       -- FK to 'sch_study_formats' table 
       `class_id` INT UNSIGNED NOT NULL,                 -- FK to 'sch_classes' table
-      `priority` ENUM('PRIMARY','SECONDARY') NOT NULL DEFAULT 'PRIMARY',
-      `proficiency` INT UNSIGNED DEFAULT NULL,          -- 1–10 rating or %
+      `proficiency_percentage` TINYINT UNSIGNED DEFAULT NULL,  -- 1–100 %
+      `teaching_experience_months` TINYINT UNSIGNED DEFAULT NULL,  -- teaching experience in months
+      `is_primary_subject` TINYINT(1) NOT NULL DEFAULT 1,  -- 1=Primary, 0=Secondary
+      `max_periods_daily` TINYINT UNSIGNED DEFAULT 6,     -- Maximum number of periods per day
+      `min_periods_daily` TINYINT UNSIGNED DEFAULT 1,     -- Minimum number of periods per day
+      `max_periods_weekly` TINYINT UNSIGNED DEFAULT 48,   -- Maximum weekly periods
+      `min_periods_weekly` TINYINT UNSIGNED DEFAULT 15,   -- Minimum weekly periods
+      `preferred_shift` ENUM('morning', 'evening', 'flexible') DEFAULT 'morning',
+      `is_full_time` TINYINT(1) DEFAULT 1,                 -- 1=Full-time, 0=Part-time
+      `is_capable_of_handling_multiple_classes` TINYINT(1) DEFAULT 0, -- 1=Yes, 0=No
+      `is_proficient_with_computer` TINYINT(1) DEFAULT 0, -- 1=Yes, 0=No
+      -- Skills & Responsibilities (JSON for flexibility)
       `special_skill_area` VARCHAR(100) DEFAULT NULL,   -- e.g. Robotics, AI, Debate
       `certified_for_lab` TINYINT(1) DEFAULT 0,         -- allowed to conduct practicals
       `assignment_meta` JSON DEFAULT NULL,              -- e.g. { "qualification": "M.Sc Physics", "experience": "7 years" }
+      `soft_skills` JSON DEFAULT NULL,                     -- e.g., ["leadership", "communication", "problem_solving"]
+      `performance_rating` TINYINT UNSIGNED DEFAULT NULL,  -- rating out of (1 to 10)
+      `last_performance_review` DATE DEFAULT NULL,
+      -- Administrative Controls
+      `security_clearance_done` TINYINT(1) DEFAULT 0, --
+      `reporting_to` BIGINT UNSIGNED DEFAULT NULL,         -- FK to sch_employees.id (who they report to)
+      `can_manage_staff` TINYINT(1) DEFAULT 0,
+      `can_access_sensitive_data` TINYINT(1) DEFAULT 0,
       `notes` TEXT NULL,
       `effective_from` DATE DEFAULT NULL,               -- when this profile becomes effective
       `effective_to` DATE DEFAULT NULL,                 -- when this profile ends 
@@ -712,8 +791,8 @@
       `created_at` TIMESTAMP NULL DEFAULT NULL,
       `updated_at` TIMESTAMP NULL DEFAULT NULL,
       PRIMARY KEY (`id`),
-      UNIQUE KEY `uq_teachersProfile_teacher` (`teacher_id`,`subject_id`,`study_format_id`,class_id),
-      CONSTRAINT `fk_teachersProfile_teacherId` FOREIGN KEY (`teacher_id`) REFERENCES `sch_teachers` (`id`) ON DELETE CASCADE,
+      UNIQUE KEY `uq_teachersProfile_employee` (`employee_id`,`subject_id`,`study_format_id`,`class_id`),
+      CONSTRAINT `fk_teachersProfile_employeeId` FOREIGN KEY (`employee_id`) REFERENCES `sch_employees` (`id`) ON DELETE CASCADE,
       CONSTRAINT `fk_teachersProfile_subjectId` FOREIGN KEY (`subject_id`) REFERENCES `sch_subjects` (`id`) ON DELETE CASCADE,
       CONSTRAINT `fk_teachersProfile_studyFormatId` FOREIGN KEY (`study_format_id`) REFERENCES `sch_study_formats` (`id`) ON DELETE CASCADE,
       CONSTRAINT `fk_teachersProfile_classId` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE CASCADE
