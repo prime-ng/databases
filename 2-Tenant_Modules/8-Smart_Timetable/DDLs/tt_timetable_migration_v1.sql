@@ -71,13 +71,22 @@ CREATE TABLE `tt_timing_profile_period` (
   CONSTRAINT `tt_timing_profile_period_timing_profile_id_foreign` FOREIGN KEY (`timing_profile_id`) REFERENCES `tt_timing_profile` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE `tt_periods` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `label` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `ordinal` int unsigned NOT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 
 -- -------------------------------------------------
 --  SECTION 1: MASTER TABLES
 -- -------------------------------------------------
-
 CREATE TABLE `tt_shifts` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
   `code` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
@@ -326,8 +335,6 @@ CREATE TABLE `tt_class_subgroup_members` (
   CONSTRAINT `tt_class_subgroup_members_section_id_foreign` FOREIGN KEY (`section_id`) REFERENCES `sch_sections` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-
-
 CREATE TABLE `tt_class_groups_jnt` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
   `class_id` bigint unsigned NOT NULL,
@@ -358,7 +365,6 @@ CREATE TABLE `tt_class_groups_jnt` (
 -- -------------------------------------------------
 --  SECTION 2: CONSTRAINT ENGINE
 -- -------------------------------------------------
-
 CREATE TABLE `tt_constraint_types` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
   `code` varchar(60) COLLATE utf8mb4_unicode_ci NOT NULL,
@@ -461,7 +467,6 @@ CREATE TABLE `tt_room_unavailables` (
 -- -------------------------------------------------
 --  SECTION 3: TIMETABLE OPERATION TABLES
 -- -------------------------------------------------
-
 CREATE TABLE `tt_class_group_requirements` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
   `class_group_id` bigint unsigned DEFAULT NULL,
@@ -578,7 +583,6 @@ CREATE TABLE `tt_sub_activities` (
 -- -------------------------------------------------
 --  SECTION 4: TIMETABLE GENERATION TABLES
 -- -------------------------------------------------
-
 CREATE TABLE `tt_timetables` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
   `uuid` varbinary(16) NOT NULL,
@@ -727,24 +731,12 @@ CREATE TABLE `tt_timetable_cell_teachers` (
 -- -------------------------------------------------
 
 
-
 -- -------------------------------------------------
 --  SECTION 6: SUBSTITUTION MANAGEMENT
 -- -------------------------------------------------
 
 
-CREATE TABLE `tt_periods` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `label` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `ordinal` int unsigned NOT NULL,
-  `is_active` tinyint(1) NOT NULL DEFAULT '1',
-  `deleted_at` timestamp NULL DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT NULL,
-  `updated_at` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-
 -- -------------------------------------------------
 --  REFERENCE TABLES FROM OTHER MODULE
 -- -------------------------------------------------
+
