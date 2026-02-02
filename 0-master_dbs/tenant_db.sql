@@ -549,8 +549,8 @@
     `created_at` timestamp NULL DEFAULT NULL,
     `updated_at` timestamp NULL DEFAULT NULL,
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_classGroups_cls_Sec_subStdFmt_SubTyp` (`class_id`,`section_id`,`subject_Study_format_id`,`subject_type_id`),
-    UNIQUE KEY `uq_classGroups_subStdformatCode` (`code`),
+    UNIQUE KEY `uq_classGroups_cls_Sec_subStdFmt_SubTyp` (`class_id`,`section_id`,`subject_Study_format_id`),
+    UNIQUE KEY `uq_classGroups_subStdformatCode` (`code`), 
     CONSTRAINT `fk_classGroups_classId` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_classGroups_sectionId` FOREIGN KEY (`section_id`) REFERENCES `sch_sections` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_classGroups_subjStudyFormatId` FOREIGN KEY (`subject_Study_format_id`) REFERENCES `sch_subject_study_format_jnt` (`id`) ON DELETE CASCADE,
@@ -1154,8 +1154,6 @@
     CONSTRAINT `fk_payLog_triggeredBy` FOREIGN KEY (`triggered_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-  -- Single Screen - 5 tab (Fuel, Inspection, Service Request, Maintenance, Approval)
-
   CREATE TABLE IF NOT EXISTS `tpt_vehicle_fuel` (
       `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       `vehicle_id` BIGINT UNSIGNED NOT NULL,
@@ -1239,7 +1237,6 @@
       -- 4. Once Request i Approved by Authorised Person, a new entry will be created in 'tpt_vehicle_maintenance' table with available information.
       -- 5. Direct Entry in 'tpt_vehicle_maintenance' table is not allowed. 
       -- 6. Once Entry is created in 'tpt_vehicle_service_request' table, it will be redirected to 'tpt_vehicle_maintenance' table.
-
 
   CREATE TABLE IF NOT EXISTS `tpt_vehicle_maintenance` (
       `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -1444,14 +1441,13 @@
   -- related_entity_type = (Vehicle, Asset, Service, etc.) will have table name as `additional_info` in `sys_dropdown_table` table.
   -- e.g. related_entity_type = 'Vehicle' will have table_name as `tpt_vehicle` in 'additional_info' field of `sys_dropdown_table` table.
   -- related_entity_id will be the id of the entity in the related_entity_type table.
-
   --Example
-  Drop Down - Vehicle 
-  sys_dropdown_table
-  Key                                             Value                   Additional_Info(JSON)
-  vnd_agreement_items_jnt.related_entity_type     Vehicle                 {"table_name": "tpt_vehicle"}
-  vnd_agreement_items_jnt.related_entity_type     Asset                   {"table_name": "sch_asset"}
-  vnd_agreement_items_jnt.related_entity_type     Service                 {"table_name": "sch_service"}
+    Drop Down - Vehicle 
+    sys_dropdown_table
+    Key                                             Value                   Additional_Info(JSON)
+    vnd_agreement_items_jnt.related_entity_type     Vehicle                 {"table_name": "tpt_vehicle"}
+    vnd_agreement_items_jnt.related_entity_type     Asset                   {"table_name": "sch_asset"}
+    vnd_agreement_items_jnt.related_entity_type     Service                 {"table_name": "sch_service"}
 
 
   -- This table is used to log the usage of services/products by vendors.
@@ -1643,7 +1639,6 @@
   -- -------------------------------------------------------------------------
   -- MASTER COMPLAINT TABLE
   -- -------------------------------------------------------------------------
-
   CREATE TABLE IF NOT EXISTS `cmp_complaints` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `ticket_no` VARCHAR(30) NOT NULL, -- Auto-generated unique ticket ID (e.g., CMP-2025-0001)
@@ -1719,7 +1714,6 @@
   -- -------------------------------------------------------------------------
   -- COMPLAINT ACTIONS (AUDIT TRAIL)
   -- -------------------------------------------------------------------------
-
   CREATE TABLE IF NOT EXISTS `cmp_complaint_actions` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `complaint_id` BIGINT UNSIGNED NOT NULL,
@@ -1744,7 +1738,6 @@
   -- -------------------------------------------------------------------------
   -- MEDICAL & SAFETY CHECKS (TRANSPORT COMPLIANCE)
   -- -------------------------------------------------------------------------
-
   CREATE TABLE IF NOT EXISTS `cmp_medical_checks` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `complaint_id` BIGINT UNSIGNED NOT NULL,
@@ -1767,7 +1760,6 @@
   -- AI ANALYTICS & INSIGHTS
   -- -------------------------------------------------------------------------
   -- Stores processed insights for complaints (Prediction, Sentiment, Risk)
-
   CREATE TABLE IF NOT EXISTS `cmp_ai_insights` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `complaint_id` BIGINT UNSIGNED NOT NULL,
@@ -1787,7 +1779,6 @@
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   SET FOREIGN_KEY_CHECKS = 1;
-
   -- Condition: 
   -- 1. How to calculate all required fields is mentioned in '/Complaint_Module/Screen_Design/cmp_AI_Calc_Logic.md'
   -- The Approach We will be using is Laravel (ERP) → Python ML Microservice → Prediction → Store in MySQL
@@ -1797,7 +1788,7 @@
 -- 7-NOTIFICATION MODULE (ntf)
 -- ===========================================================================
 
-    CREATE TABLE IF NOT EXISTS ntf_channel_master (
+    CREATE TABLE IF NOT EXISTS `ntf_channel_master` (
         `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
         `code` VARCHAR(20) NOT NULL,
         `name` VARCHAR(50) NOT NULL,
@@ -1813,7 +1804,7 @@
         CONSTRAINT `uq_ntf_channel_name` UNIQUE (`name`)
     ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
-    CREATE TABLE IF NOT EXISTS ntf_notifications (
+    CREATE TABLE IF NOT EXISTS `ntf_notifications` (
         `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
         `source_module` VARCHAR(50) NOT NULL,
         -- Triggering module: Exam, Fee, Transport, Complaint etc
@@ -1857,7 +1848,7 @@
     -- =========================================================
     -- NOTIFICATION CHANNELS 
     -- =========================================================
-    CREATE TABLE IF NOT EXISTS ntf_notification_channels (
+    CREATE TABLE IF NOT EXISTS `ntf_notification_channels` (
         `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
         `notification_id` BIGINT UNSIGNED NOT NULL,
         `channel_id` BIGINT UNSIGNED NOT NULL,
@@ -1893,7 +1884,7 @@
     -- =========================================================
     -- NOTIFICATION TARGETING
     -- =========================================================
-    CREATE TABLE IF NOT EXISTS ntf_notification_targets (
+    CREATE TABLE IF NOT EXISTS `ntf_notification_targets` (
         `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
         `notification_id` BIGINT UNSIGNED NOT NULL,
         `target_type_id` BIGINT UNSIGNED NOT NULL,
@@ -1917,7 +1908,7 @@
     -- =========================================================
     -- USER NOTIFICATION PREFERENCES
     -- =========================================================
-    CREATE TABLE IF NOT EXISTS ntf_user_preferences (
+    CREATE TABLE IF NOT EXISTS `ntf_user_preferences` (
         `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
         `user_id` BIGINT UNSIGNED NOT NULL,
         `channel_id` BIGINT UNSIGNED NOT NULL,
@@ -1936,7 +1927,7 @@
     -- =========================================================
     -- NOTIFICATION TEMPLATES
     -- =========================================================
-    CREATE TABLE IF NOT EXISTS ntf_templates (
+    CREATE TABLE IF NOT EXISTS `ntf_templates` (
         `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
         `template_code` VARCHAR(50) NOT NULL,
         `channel_id` BIGINT UNSIGNED NOT NULL,
@@ -1960,7 +1951,7 @@
     -- =========================================================
     -- NOTIFICATION RESOLVED RECIPIENTS (Final Resolved Recipients to send Notification)
     -- =========================================================
-    CREATE TABLE IF NOT EXISTS ntf_resolved_recipients (
+    CREATE TABLE IF NOT EXISTS `ntf_resolved_recipients` (
         `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
         `notification_id` BIGINT UNSIGNED NOT NULL,
         `channel_id` BIGINT UNSIGNED NOT NULL,
@@ -1996,7 +1987,7 @@
     -- =========================================================
     -- NOTIFICATION DELIVERY LOGS
     -- =========================================================
-    CREATE TABLE IF NOT EXISTS ntf_delivery_logs (
+    CREATE TABLE IF NOT EXISTS `ntf_delivery_logs` (
         `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
         `notification_id` BIGINT UNSIGNED NOT NULL,
         `channel_id` BIGINT UNSIGNED NOT NULL,
@@ -3450,7 +3441,7 @@
   );
 
   -- Question Usage Type (Quiz / Quest / Exam)
-  CREATE TABLE `qns_question_usage_type` (
+  CREATE TABLE IF NOT EXISTS `qns_question_usage_type` (
       `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       `code` VARCHAR(50) NOT NULL,  -- e.g. 'QUIZ','QUEST','ONLINE_EXAM','OFFLINE_EXAM','UT_TEST'
       `name` VARCHAR(100) NOT NULL, -- e.g. 'Quiz','Quest','Online Exam','Offline Exam','Unit Test'
@@ -4164,7 +4155,7 @@
     -- =========================================================
     -- CIRCULAR GOALS (NEP / PARAKH)
     -- =========================================================
-    CREATE TABLE hpc_circular_goals (
+    CREATE TABLE IF NOT EXISTS hpc_circular_goals (
       `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       `code` VARCHAR(50) NOT NULL,
       `name` VARCHAR(150) NOT NULL,
@@ -4197,7 +4188,7 @@
     -- =========================================================
     -- LEARNING OUTCOMES (NORMALIZED)
     -- =========================================================
-    CREATE TABLE hpc_learning_outcomes (
+    CREATE TABLE IF NOT EXISTS hpc_learning_outcomes (
       `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       `code` VARCHAR(50) NOT NULL,
       `description` VARCHAR(255) NOT NULL,
@@ -4213,7 +4204,7 @@
       CONSTRAINT `fk_lo_domain` FOREIGN KEY (`domain`) REFERENCES `sys_dropdown_table`(`id`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-    CREATE TABLE hpc_outcome_entity_jnt (
+    CREATE TABLE IF NOT EXISTS hpc_outcome_entity_jnt (
       `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       `outcome_id` BIGINT UNSIGNED NOT NULL,
       `class_id` INT UNSIGNED NOT NULL,  -- Fk to sch_classes
@@ -4231,7 +4222,7 @@
     -- =========================================================
     -- OUTCOME ↔ QUESTION MAPPING (will be used for HPC)
     -- =========================================================
-    CREATE TABLE hpc_outcome_question_jnt (
+    CREATE TABLE IF NOT EXISTS hpc_outcome_question_jnt (
       `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       `outcome_id` BIGINT UNSIGNED NOT NULL,
       `question_id` BIGINT UNSIGNED NOT NULL,  -- fk to qns_questions_bank.id
@@ -4249,7 +4240,7 @@
     -- =========================================================
     -- KNOWLEDGE GRAPH VALIDATION
     -- =========================================================
-    CREATE TABLE hpc_knowledge_graph_validation (
+    CREATE TABLE IF NOT EXISTS hpc_knowledge_graph_validation (
       `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       `topic_id` BIGINT UNSIGNED NOT NULL,
       `issue_type` ENUM('NO_COMPETENCY','NO_OUTCOME','NO_WEIGHTAGE','ORPHAN_NODE') NOT NULL,
@@ -4268,7 +4259,7 @@
     -- =========================================================
     -- MULTI-SYLLABUS TOPIC EQUIVALENCY
     -- =========================================================
-    CREATE TABLE hpc_topic_equivalency (
+    CREATE TABLE IF NOT EXISTS hpc_topic_equivalency (
       `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       `source_topic_id` BIGINT UNSIGNED NOT NULL,
       `target_topic_id` BIGINT UNSIGNED NOT NULL,
@@ -4286,7 +4277,7 @@
     -- =========================================================
     -- SYLLABUS COVERAGE SNAPSHOT (ANALYTICS)
     -- =========================================================
-    CREATE TABLE hpc_syllabus_coverage_snapshot (
+    CREATE TABLE IF NOT EXISTS hpc_syllabus_coverage_snapshot (
       `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       `academic_session_id` BIGINT UNSIGNED NOT NULL,
       `class_id` INT UNSIGNED NOT NULL,
@@ -4303,7 +4294,7 @@
     -- =========================================================
     -- HPC PARAMETERS
     -- =========================================================
-    CREATE TABLE hpc_hpc_parameters (
+    CREATE TABLE IF NOT EXISTS hpc_hpc_parameters (
       `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       `code` VARCHAR(20) NOT NULL,      -- AWARENESS, SENSITIVITY, CREATIVITY
       `name` VARCHAR(100) NOT NULL,
@@ -4319,7 +4310,7 @@
     -- =========================================================
     -- HPC PERFORMANCE LEVELS
     -- =========================================================
-    CREATE TABLE hpc_hpc_levels (
+    CREATE TABLE IF NOT EXISTS hpc_hpc_levels (
       `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       `code` VARCHAR(20) NOT NULL,      -- BEGINNER, PROFICIENT, ADVANCED
       `ordinal` TINYINT UNSIGNED NOT NULL,
@@ -4335,7 +4326,7 @@
     -- =========================================================
     -- STUDENT HPC EVALUATION
     -- =========================================================
-    CREATE TABLE hpc_student_hpc_evaluation (
+    CREATE TABLE IF NOT EXISTS hpc_student_hpc_evaluation (
       `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       `academic_session_id` BIGINT UNSIGNED NOT NULL,
       `student_id` BIGINT UNSIGNED NOT NULL,
@@ -4359,7 +4350,7 @@
     -- =========================================================
     -- LEARNING ACTIVITIES (HPC EVIDENCE)
     -- =========================================================
-    CREATE TABLE hpc_learning_activities (
+    CREATE TABLE IF NOT EXISTS hpc_learning_activities (
       `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       `topic_id` BIGINT UNSIGNED NOT NULL,
       `activity_type` BIGINT UNSIGNED NOT NULL,   FK TO sys_dropdown_table e.g. ('PROJECT','OBSERVATION','FIELD_WORK','GROUP_WORK','ART','SPORT','DISCUSSION')
@@ -4377,7 +4368,7 @@
     -- =========================================================
     -- HOLISTIC PROGRESS CARD SNAPSHOT
     -- =========================================================
-    CREATE TABLE hpc_student_hpc_snapshot (
+    CREATE TABLE IF NOT EXISTS hpc_student_hpc_snapshot (
       `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       `academic_session_id` BIGINT UNSIGNED NOT NULL,
       `student_id` BIGINT UNSIGNED NOT NULL,
