@@ -18,38 +18,65 @@
 
 
 
-3. Dropdown List
-┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│ Dropdown List                                                                                                   │
-├─────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│                                                                                                                 │
-│ *Category : [ Category ▼        ]    *Main Menu : [ Main Menu ▼        ]     Sub Menu : [ Sub Menu ▼]           |
-│  Tab Name : [ Sub Sub Menu ▼    ]    *Coloumn   : [ Coloumn ▼          ][Search] [Add] [Edit] [Delete]          │
-├─────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ Order | Dropdown Options Name                | Type         |Additional Info.                                   │
-├─────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ 1     | Dropdown Options Name                | Type         |Additional Info.                                   │
-│ 2     | Dropdown Options Name                | Type         |Additional Info.                                   │
-│ 3     | Dropdown Options Name                | Type         |Additional Info.                                   │
-│ 4     | Dropdown Options Name                | Type         |Additional Info.                                   │
-│ 5     | Dropdown Options Name                | Type         |Additional Info.                                   │
-│ 6     | Dropdown Options Name                | Type         |Additional Info.                                   │
-│ 7     | Dropdown Options Name                | Type         |Additional Info.                                   │
-│ 8     | Dropdown Options Name                | Type         |Additional Info.                                   │
-│ 9     | Dropdown Options Name                | Type         |Additional Info.                                   │
-│ 10    | Dropdown Options Name                | Type         |Additional Info.                                   │
-└─────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+Dropdown List (If user belongs to PrimeGurukul)
+┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│  Dropdown List                                                                                                                              │
+├─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                                                                             │
+│ *Category : [ Category                 ▼ ]  *Main Menu : [ Main Menu                    ▼ ] Sub Menu : [ Sub Menu                       ▼ ] │
+│ *Category    : [ Category             ▼ ] *Main Menu  : [ Main Menu                     ▼ ] Sub Menu : [ Sub Menu                       ▼ ] │
+│ Tab Name     : [ Sub Sub Menu         ▼ ] *Coloumn    : [ Coloumn                       ▼ ]                  [Search] [Add] [Edit] [Delete] │
+│ Dropdown Key : cmp_complaints.target_user_type_id                                                                                           │
+├─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Order | Dropdown Options Name                | Type         |Additional Info.                                                               │
+├─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ 1     | Dropdown Options Name                | Type         |Additional Info.                                                               │
+│ 2     | Dropdown Options Name                | Type         |Additional Info.                                                               │
+│ 3     | Dropdown Options Name                | Type         |Additional Info.                                                               │
+│ 4     | Dropdown Options Name                | Type         |Additional Info.                                                               │
+│ 5     | Dropdown Options Name                | Type         |Additional Info.                                                               │
+│ 6     | Dropdown Options Name                | Type         |Additional Info.                                                               │
+│ 7     | Dropdown Options Name                | Type         |Additional Info.                                                               │
+│ 8     | Dropdown Options Name                | Type         |Additional Info.                                                               │
+│ 9     | Dropdown Options Name                | Type         |Additional Info.                                                               │
+│ 10    | Dropdown Options Name                | Type         |Additional Info.                                                               │
+└─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘ 
+
+Dropdown List (If user belongs to Tenant)
+┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ Dropdown List                                                                                                                               │
+├─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                                                                             │
+│ *Category    : [ Category             ▼ ] *Main Menu  : [ Main Menu                     ▼ ] Sub Menu : [ Sub Menu                       ▼ ] │
+│ Tab Name     : [ Sub Sub Menu         ▼ ] *Coloumn    : [ Coloumn                       ▼ ]      [Search]                           [Edit]  │
+│ Dropdown Key : cmp_complaints.target_user_type_id                                                                                           │
+├─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Order | Dropdown Options Name                | Type         |Additional Info.                                                               │
+├─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ 1     | Dropdown Options Name                | Type         |Additional Info.                                                               │
+│ 2     | Dropdown Options Name                | Type         |Additional Info.                                                               │
+│ 3     | Dropdown Options Name                | Type         |Additional Info.                                                               │
+│ 4     | Dropdown Options Name                | Type         |Additional Info.                                                               │
+│ 5     | Dropdown Options Name                | Type         |Additional Info.                                                               │
+│ 6     | Dropdown Options Name                | Type         |Additional Info.                                                               │
+│ 7     | Dropdown Options Name                | Type         |Additional Info.                                                               │
+│ 8     | Dropdown Options Name                | Type         |Additional Info.                                                               │
+│ 9     | Dropdown Options Name                | Type         |Additional Info.                                                               │
+│ 10    | Dropdown Options Name                | Type         |Additional Info.                                                               │
+└─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
 
-4. Create Dropdown
+
+
+4. Edit Dropdown (If user belongs to Tenant)
 ┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
 │  CREATE DROPDOWN                                                                                                                            │
 ├─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                                                                             │
 │ *Category : [ Category                 ▼ ]  *Main Menu : [ Main Menu                    ▼ ] Sub Menu : [ Sub Menu                       ▼ ] │
-│  Tab Name : [ Sub Sub Menu             ▼ ]    *Coloumn   : [ Coloumn                    ▼ ]                  [Search] [Add] [Edit] [Delete] │
+│  Tab Name : [ Sub Sub Menu             ▼ ]    *Coloumn   : [ Coloumn                    ▼ ]       [Search]                          [Edit]  │
 │  Dropdown Key : cmp_complaints.target_user_type_id                                                                                          │
-├─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+├─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤ 
 │ Order | Dropdown Value               | Type         |Additional Info.                                                                       │
 ├─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
 │ 1     | Student                      | BIGINT       | {"table_name": "cmp_complaints", "column_name": "target_user_type_id"}                │
@@ -64,7 +91,9 @@
 │ 10    | Other                        | BIGINT       | {"table_name": "cmp_complaints", "column_name": "target_user_type_id"}                │
 └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
                                                                                                                                        [Save] 
-5. Create Dropdown (PG)
+
+
+5. Add / Edit Dropdown (PG)
 ┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
 │  CREATE DROPDOWN                                                                                                                            │
 ├─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
@@ -88,7 +117,7 @@
 └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
                                                                                                                                        [Save] 
 
-6. Dropdown Need & Table Mapping
+6. Dropdown Need & Table Mapping (Only for PG Users)
 ┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
 │  CREATE DROPDOWN                                                                                                                            │
 ├─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
