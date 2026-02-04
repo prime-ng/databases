@@ -170,6 +170,7 @@
     `is_system` TINYINT(1) DEFAULT 1,     -- If true, this Dropdown can be created by Tenant
     `tenant_creation_allowed` TINYINT(1) DEFAULT 0,  -- If true, this Dropdown can be created by Tenant
     `compulsory` TINYINT(1) DEFAULT 1,    -- If true, this Dropdown is compulsory for Application fuctioning
+    `dropdown_tabel_record_exist` TINYINT(1) DEFAULT 0, 
     `is_active` TINYINT(1) DEFAULT 1,     -- If true, this Dropdown is active
     `created_at` timestamp NULL DEFAULT NULL,
     `updated_at` timestamp NULL DEFAULT NULL,
