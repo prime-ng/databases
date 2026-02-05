@@ -175,9 +175,8 @@
     `created_at` timestamp NULL DEFAULT NULL,
     `updated_at` timestamp NULL DEFAULT NULL,
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_DDNeeds_dbType_tableName_columnName` (`db_type`,`table_name`,`column_name`),
-    UNIQUE KEY `uq_DDNeeds_category_mainMenu_subMenu_tabName_fieldName` (`menu_category`,`main_menu`,`sub_menu`,`tab_name`,`field_name`),
-    UNIQUE KEY `uq_DDNeeds_dropdownTableId` (`dropdown_table_id`)
+    UNIQUE KEY `uq_ddn_dbType_tblName_colName` (`db_type`,`table_name`,`column_name`),
+    UNIQUE KEY `uq_ddn_cat_main_subMenu_tabName_fldName` (`menu_category`,`main_menu`,`sub_menu`,`tab_name`,`field_name`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
   -- Conditions:
     -- 1. If tenant_creation_allowed = 1, then it is must to have menu_category, main_menu, sub_menu, tab_name, field_name. This needs to be managed at Application Level.
@@ -208,8 +207,8 @@
     `created_at` timestamp NULL DEFAULT NULL,
     `updated_at` timestamp NULL DEFAULT NULL,
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_dropdownTable_ordinal` (`dropdown_needs_id`,`ordinal`),
-    UNIQUE KEY `uq_dropdownTable_key` (`dropdown_needs_id`,`key`)
+    UNIQUE KEY `uq_ddt_key_ordinal` (`key`,`ordinal`),
+    UNIQUE KEY `uq_ddt_key_value` (`key`,`value`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
   -- conditions:
     -- 1. When we go to create a New Dropdown, 
@@ -248,10 +247,9 @@
     `created_at` timestamp NULL DEFAULT NULL,
     `updated_at` timestamp NULL DEFAULT NULL,
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_dropdownNeedTableJnt_dropdownNeedsId` (`dropdown_needs_id`),
-    UNIQUE KEY `uq_dropdownNeedTableJnt_dropdownTableId` (`dropdown_table_id`),
-    CONSTRAINT `fk_dropdownNeedTableJnt_dropdownNeedsId` FOREIGN KEY (`dropdown_needs_id`) REFERENCES `sys_dropdown_needs` (`id`),
-    CONSTRAINT `fk_dropdownNeedTableJnt_dropdownTableId` FOREIGN KEY (`dropdown_table_id`) REFERENCES `sys_dropdown_table` (`id`)
+    UNIQUE KEY `uq_ddNTJ_dropdownNeedsId_dropdownTableId` (`dropdown_needs_id`,`dropdown_table_id`),
+    CONSTRAINT `fk_ddNTJ_dropdownNeedsId` FOREIGN KEY (`dropdown_needs_id`) REFERENCES `sys_dropdown_needs` (`id`),
+    CONSTRAINT `fk_ddNTJ_dropdownTableId` FOREIGN KEY (`dropdown_table_id`) REFERENCES `sys_dropdown_table` (`id`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
