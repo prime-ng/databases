@@ -168,27 +168,27 @@ CREATE TABLE IF NOT EXISTS `sys_settings` (
 
   -- Ths Table will capture the detail of which Field of Which Table fo Which Databse Type, I can create a Dropdown in sys_dropdown_table of?
   -- This will help us to make sure we can only create create a Dropdown in sys_dropdown_table whcih has been configured by Developer.
-CREATE TABLE IF NOT EXISTS `sys_dropdown_needs` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `db_type` ENUM('Prime','Tenant','Global') NOT NULL,  -- Which Database this Dropdown is for? (prime_db,tenant_db,global_db)
-  `table_name` varchar(150) NOT NULL,  -- Table Name
-  `column_name` varchar(150) NOT NULL,  -- Column Name
-  `menu_category` varchar(150) NULL,    -- Menu Category (e.g. School Setup, Foundation Setup, Operations, Reports)
-  `main_menu` varchar(150) NULL,        -- Main Menu (e.g. Student Mgmt., Sullabus Mgmt.)
-  `sub_menu` varchar(150) NULL,         -- Sub Menu (e.g. Student Details, Teacher Details)
-  `tab_name` varchar(100) NULL,         -- Tab Name (e.g. Student Details, Teacher Details)
-  `field_name` varchar(100) NULL,       -- Field Name (e.g. Student Details, Teacher Details)
-  `is_system` TINYINT(1) DEFAULT 1,     -- If true, this Dropdown can be created by Tenant
-  `tenant_creation_allowed` TINYINT(1) DEFAULT 0,  -- If true, this Dropdown can be created by Tenant
-  `compulsory` TINYINT(1) DEFAULT 1,    -- If true, this Dropdown is compulsory for Application fuctioning
-  `is_active` TINYINT(1) DEFAULT 1,     -- If true, this Dropdown is active
-  `created_at` timestamp NULL DEFAULT NULL,
-  `updated_at` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_DDNeeds_dbType_tableName_columnName` (`db_type`,`table_name`,`column_name`),
-  UNIQUE KEY `uq_DDNeeds_category_mainMenu_subMenu_tabName_fieldName` (`menu_category`,`main_menu`,`sub_menu`,`tab_name`,`field_name`),
-  UNIQUE KEY `uq_DDNeeds_dropdownTableId` (`dropdown_table_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  CREATE TABLE IF NOT EXISTS `sys_dropdown_needs` (
+    `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+    `db_type` ENUM('Prime','Tenant','Global') NOT NULL,  -- Which Database this Dropdown is for? (prime_db,tenant_db,global_db)
+    `table_name` varchar(150) NOT NULL,  -- Table Name
+    `column_name` varchar(150) NOT NULL,  -- Column Name
+    `menu_category` varchar(150) NULL,    -- Menu Category (e.g. School Setup, Foundation Setup, Operations, Reports)
+    `main_menu` varchar(150) NULL,        -- Main Menu (e.g. Student Mgmt., Sullabus Mgmt.)
+    `sub_menu` varchar(150) NULL,         -- Sub Menu (e.g. Student Details, Teacher Details)
+    `tab_name` varchar(100) NULL,         -- Tab Name (e.g. Student Details, Teacher Details)
+    `field_name` varchar(100) NULL,       -- Field Name (e.g. Student Details, Teacher Details)
+    `is_system` TINYINT(1) DEFAULT 1,     -- If true, this Dropdown can be created by Tenant
+    `tenant_creation_allowed` TINYINT(1) DEFAULT 0,  -- If true, this Dropdown can be created by Tenant
+    `compulsory` TINYINT(1) DEFAULT 1,    -- If true, this Dropdown is compulsory for Application fuctioning
+    `dropdown_tabel_record_exist` TINYINT(1) DEFAULT 0, 
+    `is_active` TINYINT(1) DEFAULT 1,     -- If true, this Dropdown is active
+    `created_at` timestamp NULL DEFAULT NULL,
+    `updated_at` timestamp NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_DDNeeds_dbType_tableName_columnName` (`db_type`,`table_name`,`column_name`),
+    UNIQUE KEY `uq_DDNeeds_category_mainMenu_subMenu_tabName_fieldName` (`menu_category`,`main_menu`,`sub_menu`,`tab_name`,`field_name`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
   -- Conditions:
     -- 1. If tenant_creation_allowed = 1, then it is must to have menu_category, main_menu, sub_menu, tab_name, field_name. This needs to be managed at Application Level.
     -- 2. When PG-Admin/PG-Support will create a Dropdown, it will get 2 option to select -
@@ -217,9 +217,9 @@ CREATE TABLE IF NOT EXISTS `sys_dropdown_table` (
   `is_active` TINYINT(1) DEFAULT 1,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_dropdownTable_ordinal` (`dropdown_needs_id`,`ordinal`),
-  UNIQUE KEY `uq_dropdownTable_key` (`dropdown_needs_id`,`key`)
+  PRIMARY KEY (`id`)
+  UNIQUE KEY `uq_dropdownTable_key_ordinal` (`key`,`ordinal`),
+  UNIQUE KEY `uq_dropdownTable_key_value` (`key`,`value`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
   -- conditions:
   -- 1. When we go to create a New Dropdown, 
