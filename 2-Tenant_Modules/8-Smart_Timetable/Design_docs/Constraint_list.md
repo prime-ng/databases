@@ -15,7 +15,7 @@ Hard / Soft nature
 
 Typical usage
 
-🔹 A. TEACHER-LEVEL CONSTRAINTS
+A. TEACHER-LEVEL CONSTRAINTS
 1. MAX_PERIODS_PER_DAY
     { "type": "MAX_PERIODS_PER_DAY", "value": 5 }
 
