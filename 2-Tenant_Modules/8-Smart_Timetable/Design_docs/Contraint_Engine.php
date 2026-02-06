@@ -1,3 +1,4 @@
+<?php
 // Key Features of This Implementation:
 //-------------------------------------
 
@@ -5,18 +6,20 @@
 // 2. Modular Design: Each constraint type has its own method
 // 3. Condition Checking: Supports complex conditions and filters
 // 4. Performance Optimized: With caching option
-// 5. Extensible: Easy to add new constraint types  
+// 5. Extensible: Easy to add new constraint types
 // 6. Testable: Clear separation of concerns
 // 7. Real-world Ready: Handles edge cases and complex scenarios
-// 8. This implementation will efficiently handle all the constraint types defined in your schema and support the complex requirements from your school-specific constraints document.
+// 8. This implementation will efficiently handle all the constraint types defined in your schema and support the
+// complex requirements from your school-specific constraints document.
 
 // COMPLETE CONSTRAINT APPLICATION LOGIC
 //--------------------------------------
-// Here's the complete doesConstraintApply function implementation with all the required helper functions for your timetable system:
+// Here's the complete doesConstraintApply function implementation with all the required helper functions for your
+// timetable system:
 //
 // 1. Core Constraint Application Logic
 
-<?php
+
 // app/Services/Timetable/Constraints/ConstraintApplication.php
 
 namespace App\Services\Timetable\Constraints;
@@ -36,9 +39,9 @@ class ConstraintApplication
     {
         // Get constraint type details
         $constraintType = $constraint->constraintType;
-        
+
         // Determine application based on target type
-        return match($constraint->target_type) {
+        return match ($constraint->target_type) {
             'GLOBAL' => $this->appliesToGlobal($activity, $constraint),
             'TEACHER' => $this->appliesToTeacher($activity, $constraint),
             'STUDENT_SET' => $this->appliesToStudentSet($activity, $constraint),
@@ -62,7 +65,7 @@ class ConstraintApplication
     private function appliesToGlobal(TtActivity $activity, TtConstraint $constraint): bool
     {
         $params = json_decode($constraint->params_json, true);
-        
+
         // Check if there are any global filters
         if (isset($params['filters'])) {
             foreach ($params['filters'] as $filter) {
@@ -71,17 +74,17 @@ class ConstraintApplication
                 }
             }
         }
-        
+
         // Check effective dates
         if (!$this->isWithinEffectiveDates($constraint)) {
             return false;
         }
-        
+
         // Check applicable days
         if (!$this->appliesToDays($constraint)) {
             return false;
         }
-        
+
         return true;
     }
 
@@ -92,18 +95,18 @@ class ConstraintApplication
     {
         // Get teachers assigned to this activity
         $activityTeachers = $activity->teachers()->pluck('teacher_id')->toArray();
-        
+
         // Check if constraint target matches any activity teacher
         if ($constraint->target_id && in_array($constraint->target_id, $activityTeachers)) {
             return $this->checkConstraintConditions($activity, $constraint);
         }
-        
+
         // Check if constraint applies to all teachers (target_id is null but params specify)
         $params = json_decode($constraint->params_json, true);
         if (isset($params['apply_to_all_teachers']) && $params['apply_to_all_teachers']) {
             return $this->checkConstraintConditions($activity, $constraint);
         }
-        
+
         return false;
     }
 
@@ -114,16 +117,16 @@ class ConstraintApplication
     {
         // Get student set from activity
         $studentSet = $this->getStudentSetForActivity($activity);
-        
+
         if (!$studentSet) {
             return false;
         }
-        
+
         // Check if constraint target matches student set
         if ($constraint->target_id == $studentSet->id) {
             return $this->checkConstraintConditions($activity, $constraint);
         }
-        
+
         // Check if constraint applies to class/section
         $params = json_decode($constraint->params_json, true);
         if (isset($params['class_id']) || isset($params['section_id'])) {
@@ -131,18 +134,18 @@ class ConstraintApplication
             if (!$classGroup) {
                 return false;
             }
-            
+
             if (isset($params['class_id']) && $classGroup->class_id != $params['class_id']) {
                 return false;
             }
-            
+
             if (isset($params['section_id']) && $classGroup->section_id != $params['section_id']) {
                 return false;
             }
-            
+
             return $this->checkConstraintConditions($activity, $constraint);
         }
-        
+
         return false;
     }
 
@@ -154,26 +157,26 @@ class ConstraintApplication
         // Get preferred rooms for activity
         $preferredRoomIds = json_decode($activity->preferred_room_ids ?? '[]', true);
         $preferredRoomType = $activity->preferred_room_type_id;
-        
+
         // Check if constraint target matches preferred rooms
         if ($constraint->target_id) {
             if (in_array($constraint->target_id, $preferredRoomIds)) {
                 return $this->checkConstraintConditions($activity, $constraint);
             }
-            
+
             // Check room type
             $room = SchRoom::find($constraint->target_id);
             if ($room && $room->room_type_id == $preferredRoomType) {
                 return $this->checkConstraintConditions($activity, $constraint);
             }
         }
-        
+
         // Check room type constraints
         $params = json_decode($constraint->params_json, true);
         if (isset($params['room_type_id']) && $params['room_type_id'] == $preferredRoomType) {
             return $this->checkConstraintConditions($activity, $constraint);
         }
-        
+
         return false;
     }
 
@@ -186,16 +189,16 @@ class ConstraintApplication
         if ($constraint->target_id == $activity->id) {
             return $this->checkConstraintConditions($activity, $constraint);
         }
-        
+
         // Check activity properties match
         $params = json_decode($constraint->params_json, true);
-        
+
         if (isset($params['activity_code_pattern'])) {
             if (preg_match($params['activity_code_pattern'], $activity->code)) {
                 return $this->checkConstraintConditions($activity, $constraint);
             }
         }
-        
+
         // Check activity type
         if (isset($params['activity_type'])) {
             $activityType = $this->determineActivityType($activity);
@@ -203,7 +206,7 @@ class ConstraintApplication
                 return $this->checkConstraintConditions($activity, $constraint);
             }
         }
-        
+
         return false;
     }
 
@@ -216,23 +219,23 @@ class ConstraintApplication
         if (!$classGroup) {
             return false;
         }
-        
+
         // Direct class match
         if ($constraint->target_id == $classGroup->class_id) {
             return $this->checkConstraintConditions($activity, $constraint);
         }
-        
+
         // Check class range
         $params = json_decode($constraint->params_json, true);
         if (isset($params['class_range'])) {
             list($minClass, $maxClass) = explode('-', $params['class_range']);
             $class = SchClass::find($classGroup->class_id);
-            
+
             if ($class && $class->level >= $minClass && $class->level <= $maxClass) {
                 return $this->checkConstraintConditions($activity, $constraint);
             }
         }
-        
+
         return false;
     }
 
@@ -245,7 +248,7 @@ class ConstraintApplication
         if ($constraint->target_id == $activity->subject_id) {
             return $this->checkConstraintConditions($activity, $constraint);
         }
-        
+
         // Check subject group
         $params = json_decode($constraint->params_json, true);
         if (isset($params['subject_group'])) {
@@ -254,7 +257,7 @@ class ConstraintApplication
                 return $this->checkConstraintConditions($activity, $constraint);
             }
         }
-        
+
         // Check subject type (Core, Elective, etc.)
         if (isset($params['subject_type'])) {
             $subjectType = $this->getSubjectTypeForActivity($activity);
@@ -262,7 +265,7 @@ class ConstraintApplication
                 return $this->checkConstraintConditions($activity, $constraint);
             }
         }
-        
+
         return false;
     }
 
@@ -275,7 +278,7 @@ class ConstraintApplication
         if ($constraint->target_id == $activity->study_format_id) {
             return $this->checkConstraintConditions($activity, $constraint);
         }
-        
+
         // Check study format type
         $params = json_decode($constraint->params_json, true);
         if (isset($params['format_type'])) {
@@ -284,7 +287,7 @@ class ConstraintApplication
                 return $this->checkConstraintConditions($activity, $constraint);
             }
         }
-        
+
         return false;
     }
 
@@ -297,7 +300,7 @@ class ConstraintApplication
         if ($constraint->target_id == $activity->class_group_id) {
             return $this->checkConstraintConditions($activity, $constraint);
         }
-        
+
         // Check class group properties
         $params = json_decode($constraint->params_json, true);
         if (isset($params['class_group_code_pattern'])) {
@@ -306,7 +309,7 @@ class ConstraintApplication
                 return $this->checkConstraintConditions($activity, $constraint);
             }
         }
-        
+
         return false;
     }
 
@@ -319,7 +322,7 @@ class ConstraintApplication
         if ($constraint->target_id == $activity->class_subgroup_id) {
             return $this->checkConstraintConditions($activity, $constraint);
         }
-        
+
         // Check if activity belongs to any subgroup matching criteria
         $params = json_decode($constraint->params_json, true);
         if (isset($params['subgroup_type'])) {
@@ -328,7 +331,7 @@ class ConstraintApplication
                 return $this->checkConstraintConditions($activity, $constraint);
             }
         }
-        
+
         return false;
     }
 
@@ -338,7 +341,7 @@ class ConstraintApplication
     private function appliesToTeacherSubject(TtActivity $activity, TtConstraint $constraint): bool
     {
         $params = json_decode($constraint->params_json, true);
-        
+
         // Check if activity has required teacher
         if (isset($params['teacher_id'])) {
             $activityTeachers = $activity->teachers()->pluck('teacher_id')->toArray();
@@ -346,17 +349,17 @@ class ConstraintApplication
                 return false;
             }
         }
-        
+
         // Check if activity has required subject
         if (isset($params['subject_id']) && $activity->subject_id != $params['subject_id']) {
             return false;
         }
-        
+
         // Check if activity has required study format
         if (isset($params['study_format_id']) && $activity->study_format_id != $params['study_format_id']) {
             return false;
         }
-        
+
         return $this->checkConstraintConditions($activity, $constraint);
     }
 
@@ -366,16 +369,16 @@ class ConstraintApplication
     private function appliesToCrossClass(TtActivity $activity, TtConstraint $constraint): bool
     {
         // Check if this is a cross-class activity
-        $isCrossClass = $activity->class_subgroup_id && 
-                       $activity->classSubgroup && 
-                       $activity->classSubgroup->is_shared_across_classes;
-        
+        $isCrossClass = $activity->class_subgroup_id &&
+            $activity->classSubgroup &&
+            $activity->classSubgroup->is_shared_across_classes;
+
         if (!$isCrossClass) {
             return false;
         }
-        
+
         $params = json_decode($constraint->params_json, true);
-        
+
         // Check cross-class type
         if (isset($params['coordination_type'])) {
             $coordination = $this->getCrossClassCoordination($activity);
@@ -383,7 +386,7 @@ class ConstraintApplication
                 return false;
             }
         }
-        
+
         return $this->checkConstraintConditions($activity, $constraint);
     }
 
@@ -393,7 +396,7 @@ class ConstraintApplication
     private function appliesToTimeSlot(TtActivity $activity, TtConstraint $constraint): bool
     {
         $params = json_decode($constraint->params_json, true);
-        
+
         // Check days
         if (isset($params['days'])) {
             $activityDays = $this->getPreferredDaysForActivity($activity);
@@ -401,7 +404,7 @@ class ConstraintApplication
                 return false;
             }
         }
-        
+
         // Check periods
         if (isset($params['periods'])) {
             $activityPeriods = $this->getPreferredPeriodsForActivity($activity);
@@ -409,7 +412,7 @@ class ConstraintApplication
                 return false;
             }
         }
-        
+
         // Check time range
         if (isset($params['time_range'])) {
             $activityTimeSlots = $this->getTimeSlotsForActivity($activity);
@@ -417,7 +420,7 @@ class ConstraintApplication
                 return false;
             }
         }
-        
+
         return $this->checkConstraintConditions($activity, $constraint);
     }
 
@@ -427,26 +430,26 @@ class ConstraintApplication
     private function checkConstraintConditions(TtActivity $activity, TtConstraint $constraint): bool
     {
         $params = json_decode($constraint->params_json, true);
-        
+
         // Check effective dates
         if (!$this->isWithinEffectiveDates($constraint)) {
             return false;
         }
-        
+
         // Check applicable days
         if (!$this->appliesToDays($constraint)) {
             return false;
         }
-        
+
         // Check academic term
         if (!$this->appliesToAcademicTerm($activity, $constraint)) {
             return false;
         }
-        
+
         // Check additional conditions based on constraint type
         $constraintType = $constraint->constraintType->code;
-        
-        return match($constraintType) {
+
+        return match ($constraintType) {
             'TEACHER_NOT_AVAILABLE' => $this->checkTeacherUnavailableConditions($activity, $params),
             'ROOM_NOT_AVAILABLE' => $this->checkRoomUnavailableConditions($activity, $params),
             'MAX_HOURS_DAILY_TEACHER' => $this->checkMaxHoursConditions($activity, $params),
@@ -466,15 +469,15 @@ class ConstraintApplication
     private function isWithinEffectiveDates(TtConstraint $constraint): bool
     {
         $now = now();
-        
+
         if ($constraint->effective_from && $now->lt($constraint->effective_from)) {
             return false;
         }
-        
+
         if ($constraint->effective_to && $now->gt($constraint->effective_to)) {
             return false;
         }
-        
+
         return true;
     }
 
@@ -486,10 +489,10 @@ class ConstraintApplication
         if (empty($constraint->applies_to_days_json)) {
             return true; // Applies to all days
         }
-        
+
         $appliesToDays = json_decode($constraint->applies_to_days_json, true);
         $today = now()->dayOfWeekIso; // 1=Monday, 7=Sunday
-        
+
         return in_array($today, $appliesToDays);
     }
 
@@ -499,11 +502,11 @@ class ConstraintApplication
     private function appliesToAcademicTerm(TtActivity $activity, TtConstraint $constraint): bool
     {
         $params = json_decode($constraint->params_json, true);
-        
+
         if (!isset($params['academic_term_ids'])) {
             return true; // Applies to all terms
         }
-        
+
         $activityTerm = $activity->academic_session_id; // Assuming activity has term association
         return in_array($activityTerm, $params['academic_term_ids']);
     }
@@ -511,180 +514,180 @@ class ConstraintApplication
     /**
      * Specific constraint condition checkers
      */
-    
+
     private function checkTeacherUnavailableConditions(TtActivity $activity, array $params): bool
     {
         // This constraint applies if activity has teachers who are unavailable
         $activityTeachers = $activity->teachers()->pluck('teacher_id')->toArray();
-        
+
         foreach ($activityTeachers as $teacherId) {
             if ($this->isTeacherUnavailable($teacherId, $params)) {
                 return true;
             }
         }
-        
+
         return false;
     }
-    
+
     private function checkRoomUnavailableConditions(TtActivity $activity, array $params): bool
     {
         $preferredRoomIds = json_decode($activity->preferred_room_ids ?? '[]', true);
-        
+
         foreach ($preferredRoomIds as $roomId) {
             if ($this->isRoomUnavailable($roomId, $params)) {
                 return true;
             }
         }
-        
+
         // Also check room type
         if ($activity->preferred_room_type_id) {
             $roomsOfType = SchRoom::where('room_type_id', $activity->preferred_room_type_id)
                 ->pluck('id')
                 ->toArray();
-            
+
             foreach ($roomsOfType as $roomId) {
                 if ($this->isRoomUnavailable($roomId, $params)) {
                     return true;
                 }
             }
         }
-        
+
         return false;
     }
-    
+
     private function checkMaxHoursConditions(TtActivity $activity, array $params): bool
     {
         // Check if activity would exceed max hours for any teacher
         $maxHours = $params['max_hours'] ?? 6;
         $activityTeachers = $activity->teachers()->pluck('teacher_id')->toArray();
-        
+
         foreach ($activityTeachers as $teacherId) {
             $currentHours = $this->getTeacherCurrentHours($teacherId, $activity);
             $activityDuration = $activity->duration_periods;
-            
+
             if (($currentHours + $activityDuration) > $maxHours) {
                 return true;
             }
         }
-        
+
         return false;
     }
-    
+
     private function checkMinHoursConditions(TtActivity $activity, array $params): bool
     {
         // Check if activity is needed to meet min hours
         $minHours = $params['min_hours'] ?? 4;
         $activityTeachers = $activity->teachers()->pluck('teacher_id')->toArray();
-        
+
         foreach ($activityTeachers as $teacherId) {
             $currentHours = $this->getTeacherCurrentHours($teacherId, $activity);
-            
+
             if ($currentHours < $minHours) {
                 // Teacher needs more hours, this activity helps
                 return true;
             }
         }
-        
+
         return false;
     }
-    
+
     private function checkConsecutivePeriodsConditions(TtActivity $activity, array $params): bool
     {
         $maxConsecutive = $params['max_consecutive'] ?? 4;
-        
+
         // This would need timetable context to check
         // For now, return true if activity duration exceeds max consecutive
         return $activity->duration_periods > $maxConsecutive;
     }
-    
+
     private function checkPreferredRoomConditions(TtActivity $activity, array $params): bool
     {
         $preferredRoomIds = $params['room_ids'] ?? [];
         $activityRoomIds = json_decode($activity->preferred_room_ids ?? '[]', true);
-        
+
         // Check if activity prefers any of the specified rooms
         return !empty(array_intersect($activityRoomIds, $preferredRoomIds));
     }
-    
+
     private function checkAvoidFreeFirstPeriod(TtActivity $activity, array $params): bool
     {
         // This constraint applies to teachers who have free first period
         $activityTeachers = $activity->teachers()->pluck('teacher_id')->toArray();
-        
+
         foreach ($activityTeachers as $teacherId) {
             if ($this->teacherHasFreeFirstPeriod($teacherId)) {
                 return true; // Constraint applies to avoid giving this activity
             }
         }
-        
+
         return false;
     }
-    
+
     private function checkBalanceSubjectLoad(TtActivity $activity, array $params): bool
     {
         $maxPerDay = $params['max_per_day'] ?? 2;
-        
+
         // Check if this subject already has max periods per day for this class
         $subjectPeriodsToday = $this->getSubjectPeriodsToday($activity);
-        
+
         return $subjectPeriodsToday >= $maxPerDay;
     }
 
     /**
      * Additional helper functions
      */
-    
+
     private function isTeacherUnavailable(int $teacherId, array $params): bool
     {
         // Check teacher's unavailable slots
         $unavailable = TtTeacherUnavailable::where('teacher_id', $teacherId)
             ->where('is_active', true)
             ->get();
-        
+
         foreach ($unavailable as $slot) {
             if ($this->matchesTimeParams($slot, $params)) {
                 return true;
             }
         }
-        
+
         return false;
     }
-    
+
     private function isRoomUnavailable(int $roomId, array $params): bool
     {
         $unavailable = TtRoomUnavailable::where('room_id', $roomId)
             ->where('is_active', true)
             ->get();
-        
+
         foreach ($unavailable as $slot) {
             if ($this->matchesTimeParams($slot, $params)) {
                 return true;
             }
         }
-        
+
         return false;
     }
-    
+
     private function matchesTimeParams($slot, array $params): bool
     {
         if (isset($params['days']) && !in_array($slot->day_of_week, $params['days'])) {
             return false;
         }
-        
+
         if (isset($params['periods']) && $slot->period_ord && !in_array($slot->period_ord, $params['periods'])) {
             return false;
         }
-        
+
         if (isset($params['time_range'])) {
             $slotTime = $slot->start_time ?: '00:00:00';
             if (!$this->timeInRange($slotTime, $params['time_range'])) {
                 return false;
             }
         }
-        
+
         return true;
     }
-    
+
     private function getTeacherCurrentHours(int $teacherId, TtActivity $activity): int
     {
         // Get hours already assigned to this teacher in the same timetable
@@ -695,21 +698,21 @@ class ConstraintApplication
             ->where('tt_activity_teacher.is_active', true)
             ->sum('tt_activity.duration_periods') ?? 0;
     }
-    
+
     private function teacherHasFreeFirstPeriod(int $teacherId): bool
     {
         // Check if teacher has any activity in first period
         // This would need timetable context
         return false; // Simplified
     }
-    
+
     private function getSubjectPeriodsToday(TtActivity $activity): int
     {
         // Get number of periods this subject already has today
         // This would need timetable context
         return 0; // Simplified
     }
-    
+
     private function getStudentSetForActivity(TtActivity $activity)
     {
         if ($activity->class_group_id) {
@@ -723,7 +726,7 @@ class ConstraintApplication
                 ];
             }
         }
-        
+
         if ($activity->class_subgroup_id) {
             $subgroup = $activity->classSubgroup;
             if ($subgroup) {
@@ -734,10 +737,10 @@ class ConstraintApplication
                 ];
             }
         }
-        
+
         return null;
     }
-    
+
     private function determineActivityType(TtActivity $activity): string
     {
         if ($activity->class_subgroup_id) {
@@ -746,17 +749,17 @@ class ConstraintApplication
                 return $subgroup->subgroup_type;
             }
         }
-        
+
         if ($activity->study_format_id) {
             $studyFormat = $activity->studyFormat;
             if ($studyFormat) {
                 return $studyFormat->code . '_ACTIVITY';
             }
         }
-        
+
         return 'STANDARD';
     }
-    
+
     private function getSubjectTypeForActivity(TtActivity $activity): ?string
     {
         if ($activity->class_group_id) {
@@ -768,51 +771,51 @@ class ConstraintApplication
                 }
             }
         }
-        
+
         return null;
     }
-    
+
     private function getCrossClassCoordination(TtActivity $activity)
     {
         // Get cross-class coordination record
         // Assuming we have a table tt_cross_class_coordination
         return null; // Simplified
     }
-    
+
     private function getPreferredDaysForActivity(TtActivity $activity): array
     {
         $preferences = json_decode($activity->preferred_time_slots_json ?? '[]', true);
         $days = [];
-        
+
         foreach ($preferences as $pref) {
             if (isset($pref['day'])) {
                 $days[] = $pref['day'];
             }
         }
-        
+
         return array_unique($days);
     }
-    
+
     private function getPreferredPeriodsForActivity(TtActivity $activity): array
     {
         $preferences = json_decode($activity->preferred_time_slots_json ?? '[]', true);
         $periods = [];
-        
+
         foreach ($preferences as $pref) {
             if (isset($pref['period'])) {
                 $periods[] = $pref['period'];
             }
         }
-        
+
         return array_unique($periods);
     }
-    
+
     private function getTimeSlotsForActivity(TtActivity $activity): array
     {
         // Convert preferred time slots to actual time ranges
         $preferences = json_decode($activity->preferred_time_slots_json ?? '[]', true);
         $timeSlots = [];
-        
+
         foreach ($preferences as $pref) {
             if (isset($pref['start_time']) && isset($pref['end_time'])) {
                 $timeSlots[] = [
@@ -821,34 +824,36 @@ class ConstraintApplication
                 ];
             }
         }
-        
+
         return $timeSlots;
     }
-    
+
     private function timeSlotsOverlap(array $activitySlots, array $constraintRange): bool
     {
         foreach ($activitySlots as $slot) {
-            if ($this->timeInRange($slot['start'], $constraintRange) ||
-                $this->timeInRange($slot['end'], $constraintRange)) {
+            if (
+                $this->timeInRange($slot['start'], $constraintRange) ||
+                $this->timeInRange($slot['end'], $constraintRange)
+            ) {
                 return true;
             }
         }
-        
+
         return false;
     }
-    
+
     private function timeInRange(string $time, array $range): bool
     {
         $time = strtotime($time);
         $rangeStart = strtotime($range['start'] ?? '00:00:00');
         $rangeEnd = strtotime($range['end'] ?? '23:59:59');
-        
+
         return $time >= $rangeStart && $time <= $rangeEnd;
     }
-    
+
     private function matchesGlobalFilter(TtActivity $activity, array $filter): bool
     {
-        return match($filter['field'] ?? '') {
+        return match ($filter['field'] ?? '') {
             'subject_id' => $activity->subject_id == $filter['value'],
             'study_format_id' => $activity->study_format_id == $filter['value'],
             'class_level' => $this->checkClassLevel($activity, $filter['value']),
@@ -857,7 +862,7 @@ class ConstraintApplication
             default => true,
         };
     }
-    
+
     private function checkClassLevel(TtActivity $activity, $level): bool
     {
         if ($activity->class_group_id) {
@@ -869,7 +874,7 @@ class ConstraintApplication
                 }
             }
         }
-        
+
         return false;
     }
 }
@@ -877,28 +882,30 @@ class ConstraintApplication
 // 2. Usage Example in Timetable Generation
 // -----------------------------------------------------------
 
+?>
 <?php
+
 // Example usage in your timetable generation service
 
 class TimetableGenerator
 {
     private ConstraintApplication $constraintApp;
-    
+
     public function __construct(ConstraintApplication $constraintApp)
     {
         $this->constraintApp = $constraintApp;
     }
-    
+
     public function canPlaceActivity(TtActivity $activity, int $day, int $period): array
     {
         $violations = [];
-        
+
         // Get all constraints for this academic session
         $constraints = TtConstraint::where('academic_session_id', $activity->academic_session_id)
             ->where('status', 'ACTIVE')
             ->where('is_active', true)
             ->get();
-        
+
         foreach ($constraints as $constraint) {
             // Check if constraint applies to this activity
             if ($this->constraintApp->doesConstraintApply($activity, $constraint)) {
@@ -913,19 +920,19 @@ class TimetableGenerator
                 }
             }
         }
-        
+
         return [
             'can_place' => empty(array_filter($violations, fn($v) => $v['type'] === 'HARD')),
             'violations' => $violations,
             'penalty_score' => array_sum(array_column($violations, 'weight')),
         ];
     }
-    
+
     private function violatesConstraintAtTime(TtActivity $activity, TtConstraint $constraint, int $day, int $period): bool
     {
         $params = json_decode($constraint->params_json, true);
-        
-        return match($constraint->constraintType->code) {
+
+        return match ($constraint->constraintType->code) {
             'TEACHER_NOT_AVAILABLE' => $this->checkTeacherUnavailableAtTime($activity, $params, $day, $period),
             'ROOM_NOT_AVAILABLE' => $this->checkRoomUnavailableAtTime($activity, $params, $day, $period),
             'MAX_HOURS_DAILY_TEACHER' => $this->checkMaxHoursAtTime($activity, $params, $day, $period),
@@ -939,6 +946,7 @@ class TimetableGenerator
 // 3. Factory Pattern for Constraint Application
 // ---------------------------------------------
 
+?>
 <?php
 // Factory for creating constraint application instances
 
@@ -946,7 +954,7 @@ class ConstraintApplicationFactory
 {
     public static function create(string $type = 'default'): ConstraintApplicationInterface
     {
-        return match($type) {
+        return match ($type) {
             'simple' => new SimpleConstraintApplication(),
             'advanced' => new AdvancedConstraintApplication(),
             'cached' => new CachedConstraintApplication(),
@@ -963,6 +971,7 @@ $applies = $constraintApp->doesConstraintApply($activity, $constraint);
 // 4. Testing the Constraint Application
 // -------------------------------------
 
+?>
 <?php
 // Test cases for constraint application
 
@@ -974,30 +983,30 @@ class ConstraintApplicationTest extends TestCase
             'subject_id' => 1, // Mathematics
             'study_format_id' => 1, // Lecture
         ]);
-        
+
         $teacher = SchTeacher::factory()->create();
         $activity->teachers()->attach($teacher->id);
-        
+
         $constraint = TtConstraint::factory()->create([
             'target_type' => 'TEACHER',
             'target_id' => $teacher->id,
             'constraint_type_id' => 1, // TEACHER_NOT_AVAILABLE
             'params_json' => json_encode(['days' => [1, 2], 'periods' => [1, 2]]),
         ]);
-        
+
         $constraintApp = new ConstraintApplication();
         $result = $constraintApp->doesConstraintApply($activity, $constraint);
-        
+
         $this->assertTrue($result, 'Constraint should apply to teacher');
     }
-    
+
     public function testGlobalConstraintWithFilters()
     {
         $activity = TtActivity::factory()->create([
             'subject_id' => 2, // Science
             'study_format_id' => 2, // Lab
         ]);
-        
+
         $constraint = TtConstraint::factory()->create([
             'target_type' => 'GLOBAL',
             'constraint_type_id' => 10, // AVOID_FREE_FIRST_PERIOD
@@ -1008,10 +1017,10 @@ class ConstraintApplicationTest extends TestCase
                 ]
             ]),
         ]);
-        
+
         $constraintApp = new ConstraintApplication();
         $result = $constraintApp->doesConstraintApply($activity, $constraint);
-        
+
         $this->assertTrue($result, 'Global constraint with filters should apply');
     }
 }
@@ -1020,6 +1029,7 @@ class ConstraintApplicationTest extends TestCase
 // 5. Performance Optimizations
 // -----------------------------
 
+?>
 <?php
 // Cached version for better performance
 
@@ -1027,28 +1037,30 @@ class CachedConstraintApplication extends ConstraintApplication
 {
     private array $cache = [];
     private const CACHE_TTL = 300; // 5 minutes
-    
+
     public function doesConstraintApply(TtActivity $activity, TtConstraint $constraint): bool
     {
         $cacheKey = "constraint_{$constraint->id}_activity_{$activity->id}";
-        
-        if (isset($this->cache[$cacheKey]) && 
-            time() - $this->cache[$cacheKey]['timestamp'] < self::CACHE_TTL) {
+
+        if (
+            isset($this->cache[$cacheKey]) &&
+            time() - $this->cache[$cacheKey]['timestamp'] < self::CACHE_TTL
+        ) {
             return $this->cache[$cacheKey]['result'];
         }
-        
+
         $result = parent::doesConstraintApply($activity, $constraint);
-        
+
         $this->cache[$cacheKey] = [
             'result' => $result,
             'timestamp' => time(),
         ];
-        
+
         // Limit cache size
         if (count($this->cache) > 1000) {
             $this->cache = array_slice($this->cache, -500, null, true);
         }
-        
+
         return $result;
     }
 }

@@ -312,17 +312,13 @@ PARTITION BY RANGE (YEAR(queued_at)) (
 -- 3.2 Add Composite Indexes for Common Queries
 -- ---------------------------------------------------------------------
 -- Add indexes for timetable generation queries
-CREATE INDEX `idx_activity_generation` ON `tt_activity` 
-    (`academic_session_id`, `difficulty_score`, `status`, `is_active`);
+CREATE INDEX `idx_activity_generation` ON `tt_activity` (`academic_session_id`, `difficulty_score`, `status`, `is_active`);
 
-CREATE INDEX `idx_constraint_lookup` ON `tt_constraint` 
-    (`academic_session_id`, `target_type`, `target_id`, `status`, `is_active`);
+CREATE INDEX `idx_constraint_lookup` ON `tt_constraint` (`academic_session_id`, `target_type`, `target_id`, `status`, `is_active`);
 
-CREATE INDEX `idx_timetable_cell_lookup` ON `tt_timetable_cell` 
-    (`timetable_id`, `day_of_week`, `period_ord`, `class_group_id`, `is_active`);
+CREATE INDEX `idx_timetable_cell_lookup` ON `tt_timetable_cell` (`timetable_id`, `day_of_week`, `period_ord`, `class_group_id`, `is_active`);
 
-CREATE INDEX `idx_teacher_availability` ON `tt_teacher_unavailable` 
-    (`teacher_id`, `day_of_week`, `period_ord`, `is_active`);
+CREATE INDEX `idx_teacher_availability` ON `tt_teacher_unavailable` (`teacher_id`, `day_of_week`, `period_ord`, `is_active`);
 
 -- WHY NEEDED:
 -- 1. 10-100x faster query performance for generation algorithm
