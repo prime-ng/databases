@@ -27,6 +27,128 @@ SET FOREIGN_KEY_CHECKS = 0;
   -- `section_of_a_class_has_home_room`
   -- `teacher_has_home_room`
 
+-- -------------------------------------------------
+--  NEWLY ADDED : TABLES
+-- -------------------------------------------------
+
+-- ---------------------------------------------------------------------
+-- Timetable Generation Queue & Strategy Tables
+-- ---------------------------------------------------------------------
+-- ESSENTIAL: For handling asynchronous timetable generation
+CREATE TABLE IF NOT EXISTS `tt_generation_strategy` (
+    `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+    `strategy_code` VARCHAR(50) NOT NULL,
+    `strategy_name` VARCHAR(100) NOT NULL,
+    `description` VARCHAR(255) NULL,
+    `algorithm_type` ENUM('FET_RECURSIVE','GENETIC','SIMULATED_ANNEALING','TABU_SEARCH','HYBRID') DEFAULT 'FET_RECURSIVE',
+    `parameters_json` JSON NOT NULL DEFAULT '{"max_recursion_depth": 14, "max_placement_attempts": 2000, "tabu_size": 100, "cooling_rate": 0.95, "population_size": 50, "generations": 100}',
+    `activity_sorting_method` ENUM('DIFFICULTY_FIRST','CONSTRAINT_COUNT','DURATION_FIRST','RANDOM') DEFAULT 'DIFFICULTY_FIRST',
+    `timeout_seconds` INT UNSIGNED DEFAULT 300,
+    `is_default` TINYINT(1) DEFAULT 0,
+    `is_active` TINYINT(1) DEFAULT 1,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_generation_strategy_code` (`strategy_code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Timetable generation algorithms and parameters';
+
+CREATE TABLE IF NOT EXISTS `tt_generation_queue` (
+    `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+    `uuid` CHAR(36) NOT NULL DEFAULT (UUID()),
+    `timetable_id` BIGINT UNSIGNED NOT NULL,
+    `strategy_id` BIGINT UNSIGNED,
+    `priority` TINYINT UNSIGNED DEFAULT 50,
+    `status` ENUM('PENDING','PROCESSING','COMPLETED','FAILED','CANCELLED') DEFAULT 'PENDING',
+    `queued_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `started_at` TIMESTAMP NULL,
+    `completed_at` TIMESTAMP NULL,
+    `processing_node` VARCHAR(100),
+    `progress_percent` TINYINT UNSIGNED DEFAULT 0,
+    `error_message` TEXT,
+    `result_json` JSON,
+    `retry_count` TINYINT UNSIGNED DEFAULT 0,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    INDEX `idx_generation_queue_status` (`status`),
+    INDEX `idx_generation_queue_priority` (`priority`, `queued_at`),
+    CONSTRAINT `fk_idx_generation_queue_timetable`FOREIGN KEY (`timetable_id`) REFERENCES `tt_timetable`(`id`),
+    CONSTRAINT `fk_idx_generation_queue_strategy`FOREIGN KEY (`strategy_id`) REFERENCES `tt_generation_strategy`(`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Queue for asynchronous timetable generation jobs';
+
+-- WHY NEEDED:
+  -- 1. Timetable generation can take minutes/hours - must be async
+  -- 2. Allows multiple generation strategies for different scenarios
+  -- 3. Provides job tracking and monitoring
+  -- 4. Enables retry logic for failed generations
+  -- 5. Essential for handling large schools (5000+ students)
+
+
+-- ---------------------------------------------------------------------
+-- Real-time Conflict Detection Table
+-- ---------------------------------------------------------------------
+-- IMPORTANT: For tracking and resolving scheduling conflicts
+CREATE TABLE IF NOT EXISTS `tt_conflict_detection` (
+    `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+    `timetable_id` BIGINT UNSIGNED NOT NULL,
+    `detection_type` ENUM('REAL_TIME','BATCH','VALIDATION','GENERATION') NOT NULL,
+    `detected_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `conflict_count` INT UNSIGNED DEFAULT 0,
+    `hard_conflicts` INT UNSIGNED DEFAULT 0,
+    `soft_conflicts` INT UNSIGNED DEFAULT 0,
+    `conflicts_json` JSON,
+    `resolution_suggestions_json` JSON,
+    `resolved_at` TIMESTAMP NULL,
+    `is_active` TINYINT(1) DEFAULT 1,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    INDEX `idx_conflict_detection_timetable` (`timetable_id`, `detected_at`),
+    CONSTRAINT `fk_idx_conflict_detection_timetable`FOREIGN KEY (`timetable_id`) REFERENCES `tt_timetable`(`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Log of conflict detection events and resolutions';
+
+-- WHY NEEDED:
+-- 1. Supports your requirement: "Real-time conflict detection capabilities"
+-- 2. Tracks all conflicts during generation and manual adjustments
+-- 3. Provides audit trail for conflict resolution
+-- 4. Enables smart conflict resolution suggestions
+
+-- ---------------------------------------------------------------------
+-- Resource Booking & Equipment Tracking
+-- ---------------------------------------------------------------------
+-- IMPORTANT: For lab equipment and special resource management
+CREATE TABLE IF NOT EXISTS `tt_resource_booking` (
+    `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+    `resource_type` ENUM('ROOM','LAB','EQUIPMENT','SPORTS','SPECIAL') NOT NULL,
+    `resource_id` BIGINT UNSIGNED NOT NULL,
+    `booking_date` DATE NOT NULL,
+    `day_of_week` TINYINT UNSIGNED,
+    `period_ord` TINYINT UNSIGNED,
+    `start_time` TIME,
+    `end_time` TIME,
+    `booked_for_type` ENUM('ACTIVITY','EXAM','EVENT','MAINTENANCE') NOT NULL,
+    `booked_for_id` BIGINT UNSIGNED NOT NULL,
+    `purpose` VARCHAR(500),
+    `supervisor_id` BIGINT UNSIGNED,
+    `status` ENUM('BOOKED','IN_USE','COMPLETED','CANCELLED') DEFAULT 'BOOKED',
+    `is_active` TINYINT UNSIGNED DEFAULT 1,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    INDEX `idx_resource_booking_date` (`booking_date`, `resource_type`, `resource_id`),
+    INDEX `idx_resource_booking_time` (`start_time`, `end_time`),
+    CONSTRAINT `fk_idx_resource_booking_supervisor`FOREIGN KEY (`supervisor_id`) REFERENCES `sch_teachers`(`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Resource booking and allocation tracking';
+
+-- WHY NEEDED:
+-- 1. Supports your lab requirements from the document
+-- 2. Manages equipment sharing across labs
+-- 3. Prevents double-booking of specialized equipment
+-- 4. Essential for science labs, computer labs, robotics labs
 
 -- -------------------------------------------------
 --  SECTION 0: CONFIGURATION TABLES
@@ -35,7 +157,7 @@ SET FOREIGN_KEY_CHECKS = 0;
   -- This table is created in the School_Setup module but will will be shown & can be Modified in Timetable as well.
   -- This will be used in Lesson Planning for creating Schedule for all the Subjects for Entire Session
   CREATE TABLE IF NOT EXISTS `sch_academic_term` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `id` bigint unsigned NOT NULL AUTO_INCREMENT,
     `academic_session_id` BIGINT UNSIGNED NOT NULL,
     `academic_year_start_date` DATE NOT NULL, -- Academic Year Start Date
     `academic_year_end_date` DATE NOT NULL, -- Academic Year End Date
@@ -58,10 +180,11 @@ SET FOREIGN_KEY_CHECKS = 0;
     `is_active` BOOLEAN DEFAULT TRUE, -- Is Active
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Created At
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, -- Updated At
+    PRIMARY KEY (`id`),
     UNIQUE KEY `uq_term_session_code` (`academic_session_id`, `term_code`),
     INDEX `idx_term_dates` (`start_date`, `end_date`),
     INDEX `idx_term_current` (`is_current`),
-    FOREIGN KEY (`academic_session_id`) REFERENCES `sch_org_academic_sessions_jnt`(`id`) ON DELETE CASCADE
+    FOREIGN KEY (`academic_session_id`) REFERENCES `sch_org_academic_sessions_jnt`(`id`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   COMMENT='Academic term/quarter/semester structure';
 
@@ -85,21 +208,22 @@ SET FOREIGN_KEY_CHECKS = 0;
     `deleted_at` timestamp NULL DEFAULT NULL,
     `created_at` timestamp NULL DEFAULT NULL,
     `updated_at` timestamp NULL DEFAULT NULL,
-    PRIMARY KEY (`id`)
-    UNIQUE KEY `uq_settings_key` (`key`,`ordinal`),
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_settings_key` (`key`,`ordinal`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
   -- Data Seed for tt_config
-  INSERT INTO `tt_config` (`ordinal`,`key`,`key_name`,`value`,`value_type`,`description`,`additional_info`,`tenant_can_modify`,`mandatory`,`used_by_app`,`is_active`,`deleted_at`,`created_at`,`updated_at`) VALUES
-  (1,'total_number_of_period_per_day', 'Total Number of Period per Day', '8', 'NUMBER', 'Total Periods per Day', NULL, 0, 1, 1, 1, NULL, NULL, NULL),
-  (1,'school_open_days_per_week', 'School Open Days per Week', '6', 'NUMBER', 'School Open Days per Week', NULL, 0, 1, 1, 1, NULL, NULL, NULL),
-  (1,'school_closed_days_per_week', 'School Closed Days per Week', '1', 'NUMBER', 'School Closed Days per Week', NULL, 0, 1, 1, 1, NULL, NULL, NULL),
-  (1,'number_of_short_breaks_daily_before_lunch', 'Number of Short Breaks Daily Before Lunch', '1', 'NUMBER', 'Number of Short Breaks Daily Before Lunch', NULL, 0, 1, 1, 1, NULL, NULL, NULL),
-  (1,'number_of_short_breaks_daily_after_lunch', 'Number of Short Breaks Daily After Lunch', '1', 'NUMBER', 'Number of Short Breaks Daily After Lunch', NULL, 0, 1, 1, 1, NULL, NULL, NULL),
-  (1,'total_number_of_short_breaks_daily', 'Total Number of Short Breaks Daily', '2', 'NUMBER', 'Total Number of Short Breaks Daily', NULL, 0, 1, 1, 1, NULL, NULL, NULL),
-  (1,'total_number_of_period_before_lunch', 'Total Number of Periods Before Lunch', '4', 'NUMBER', 'Total Number of Periods Before Lunch', NULL, 0, 1, 1, 1, NULL, NULL, NULL),
-  (1,'total_number_of_period_after_lunch', 'Total Number of Periods After Lunch', '4', 'NUMBER', 'Total Number of Periods After Lunch', NULL, 0, 1, 1, 1, NULL, NULL, NULL),
-  (1,'minimum_student_required_for_class_subgroup', 'Minimum Number of Student Required for Class Subgroup', '10', 'NUMBER', 'Minimum Number of Student Required for Class Subgroup', NULL, 0, 1, 1, 1, NULL, NULL, NULL),
-  (1,'maximum_student_required_for_class_subgroup', 'Maximum Number of Student Required for Class Subgroup', '25', 'NUMBER', 'Maximum Number of Student Required for Class Subgroup', NULL, 0, 1, 1, 1, NULL, NULL, NULL);
+  -- INSERT INTO `tt_config` (`ordinal`,`key`,`key_name`,`value`,`value_type`,`description`,`additional_info`,`tenant_can_modify`,`mandatory`,`used_by_app`,`is_active`,`deleted_at`,`created_at`,`updated_at`) VALUES
+  -- (1,'total_number_of_period_per_day', 'Total Number of Period per Day', '8', 'NUMBER', 'Total Periods per Day', NULL, 0, 1, 1, 1, NULL, NULL, NULL),
+  -- (1,'school_open_days_per_week', 'School Open Days per Week', '6', 'NUMBER', 'School Open Days per Week', NULL, 0, 1, 1, 1, NULL, NULL, NULL),
+  -- (1,'school_closed_days_per_week', 'School Closed Days per Week', '1', 'NUMBER', 'School Closed Days per Week', NULL, 0, 1, 1, 1, NULL, NULL, NULL),
+  -- (1,'number_of_short_breaks_daily_before_lunch', 'Number of Short Breaks Daily Before Lunch', '1', 'NUMBER', 'Number of Short Breaks Daily Before Lunch', NULL, 0, 1, 1, 1, NULL, NULL, NULL),
+  -- (1,'number_of_short_breaks_daily_after_lunch', 'Number of Short Breaks Daily After Lunch', '1', 'NUMBER', 'Number of Short Breaks Daily After Lunch', NULL, 0, 1, 1, 1, NULL, NULL, NULL),
+  -- (1,'total_number_of_short_breaks_daily', 'Total Number of Short Breaks Daily', '2', 'NUMBER', 'Total Number of Short Breaks Daily', NULL, 0, 1, 1, 1, NULL, NULL, NULL),
+  -- (1,'total_number_of_period_before_lunch', 'Total Number of Periods Before Lunch', '4', 'NUMBER', 'Total Number of Periods Before Lunch', NULL, 0, 1, 1, 1, NULL, NULL, NULL),
+  -- (1,'total_number_of_period_after_lunch', 'Total Number of Periods After Lunch', '4', 'NUMBER', 'Total Number of Periods After Lunch', NULL, 0, 1, 1, 1, NULL, NULL, NULL),
+  -- (1,'minimum_student_required_for_class_subgroup', 'Minimum Number of Student Required for Class Subgroup', '10', 'NUMBER', 'Minimum Number of Student Required for Class Subgroup', NULL, 0, 1, 1, 1, NULL, NULL, NULL),
+  -- (1,'maximum_student_required_for_class_subgroup', 'Maximum Number of Student Required for Class Subgroup', '25', 'NUMBER', 'Maximum Number of Student Required for Class Subgroup', NULL, 0, 1, 1, 1, NULL, NULL, NULL);
 
 
 
@@ -344,6 +468,7 @@ SET FOREIGN_KEY_CHECKS = 0;
     `name` varchar(50) NOT NULL,
     `code` char(30) NOT NULL,
     `student_count` INT UNSIGNED DEFAULT NULL,  -- Number of students in this subgroup
+    `eligible_teacher_count` INT UNSIGNED DEFAULT NULL,  -- Number of teachers for this group
     `is_active` tinyint(1) NOT NULL DEFAULT '1',
     `deleted_at` timestamp NULL DEFAULT NULL,
     `created_at` timestamp NULL DEFAULT NULL,
@@ -379,6 +504,7 @@ SET FOREIGN_KEY_CHECKS = 0;
     `max_students` INT UNSIGNED DEFAULT NULL,  -- Maximum number of students allowed in a subgroup
     `is_shared_across_sections` TINYINT(1) NOT NULL DEFAULT 0,  -- Whether this subgroup is shared across sections
     `is_shared_across_classes` TINYINT(1) NOT NULL DEFAULT 0,  -- Whether this subgroup is shared across classes
+    `eligible_teacher_count` INT UNSIGNED DEFAULT NULL,  -- Number of teachers for this subgroup
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -440,7 +566,7 @@ SET FOREIGN_KEY_CHECKS = 0;
     `name` VARCHAR(200) DEFAULT NULL,
     `description` VARCHAR(500) DEFAULT NULL,
     `academic_session_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to sch_academic_sessions.id
-    `target_type` ENUM('GLOBAL','TEACHER','STUDENT_SET','ROOM','ACTIVITY','CLASS','SUBJECT','STUDY_FORMAT','CLASS_GROUP','CLASS_SUBGROUP') NOT NULL,
+    `target_type` ENUM('GLOBAL','TEACHER','STUDENT_SET','ROOM','ACTIVITY','CLASS','SUBJECT','STUDY_FORMAT','CLASS_GROUP','CLASS_SUBGROUP','TEACHER_SUBJECT', 'CROSS_CLASS', 'TIME_SLOT') NOT NULL,
     `target_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to target_type.id
     `is_hard` TINYINT(1) NOT NULL DEFAULT 0,  -- Whether this constraint is hard
     `weight` TINYINT UNSIGNED NOT NULL DEFAULT 100,  -- Weight of this constraint
@@ -449,6 +575,9 @@ SET FOREIGN_KEY_CHECKS = 0;
     `effective_to` DATE DEFAULT NULL,  -- Expiry date of this constraint
     `applies_to_days_json` JSON DEFAULT NULL,  -- JSON array of days this constraint applies to
     `status` ENUM('DRAFT','ACTIVE','DISABLED') NOT NULL DEFAULT 'ACTIVE',  -- Status of this constraint
+    -- Newly Addedd
+    `impact_score` TINYINT UNSIGNED DEFAULT 50 COMMENT 'Estimated impact on timetable generation difficulty (1-100)',
+    `applies_to_terms_json` JSON DEFAULT NULL COMMENT 'Which academic terms this constraint applies to',
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,  -- Whether this constraint is active
     `created_by` BIGINT UNSIGNED DEFAULT NULL,  -- FK to sys_users.id
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
@@ -456,10 +585,12 @@ SET FOREIGN_KEY_CHECKS = 0;
     `deleted_at` TIMESTAMP NULL DEFAULT NULL,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_constraint_uuid` (`uuid`),
-    KEY `idx_constraint_type` (`constraint_type_id`),
-    KEY `idx_constraint_target` (`target_type`, `target_id`),
-    KEY `idx_constraint_session` (`academic_session_id`),
-    KEY `idx_constraint_status` (`status`),
+    INDEX `idx_constraint_type` (`constraint_type_id`),
+    INDEX `idx_constraint_target` (`target_type`, `target_id`),
+    INDEX `idx_constraint_session` (`academic_session_id`),
+    INDEX `idx_constraint_status` (`status`),
+    INDEX `idx_constraint_impact` (`impact_score`),
+    INDEX `idx_constraint_lookup` ON `tt_constraint` (`academic_session_id`, `target_type`, `target_id`, `status`, `is_active`);
     CONSTRAINT `fk_constraint_type` FOREIGN KEY (`constraint_type_id`) REFERENCES `tt_constraint_type` (`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_constraint_session` FOREIGN KEY (`academic_session_id`) REFERENCES `sch_org_academic_sessions_jnt` (`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_constraint_created_by` FOREIGN KEY (`created_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
@@ -595,6 +726,7 @@ SET FOREIGN_KEY_CHECKS = 0;
     INDEX `idx_activity_subgroup` (`class_subgroup_id`),
     INDEX `idx_activity_subject` (`subject_id`),
     INDEX `idx_activity_status` (`status`),
+    INDEX `idx_activity_generation` ON `tt_activity` (`academic_term_id`, `difficulty_score`, `status`, `is_active`);
     CONSTRAINT `fk_activity_session` FOREIGN KEY (`academic_term_id`) REFERENCES `tt_academic_term` (`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_activity_class_group` FOREIGN KEY (`class_group_id`) REFERENCES `sch_class_groups_jnt` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_activity_subgroup` FOREIGN KEY (`class_subgroup_id`) REFERENCES `tt_class_subgroup` (`id`) ON DELETE CASCADE,
@@ -606,6 +738,51 @@ SET FOREIGN_KEY_CHECKS = 0;
     CONSTRAINT `chk_activity_target` CHECK ((`class_group_id` IS NOT NULL AND `class_subgroup_id` IS NULL) OR (`class_group_id` IS NULL AND `class_subgroup_id` IS NOT NULL))
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- IMPORTANT: Add triggers to maintain data integrity
+  DELIMITER $$
+
+  CREATE TRIGGER `trg_tt_activity_difficulty_calc`
+  BEFORE INSERT ON `tt_activity`
+  FOR EACH ROW
+  BEGIN
+      -- Calculate difficulty score automatically
+      SET NEW.difficulty_score_calculated = (
+          SELECT 
+              COUNT(DISTINCT c.id) * 10 + -- Constraint count
+              (100 - COALESCE(NEW.teacher_availability_score, 100)) * 0.5 + -- Teacher availability
+              (100 - COALESCE(NEW.room_availability_score, 100)) * 0.3 + -- Room availability
+              CASE WHEN NEW.duration_periods > 1 THEN 15 ELSE 0 END + -- Duration penalty
+              CASE WHEN NEW.requires_special_room THEN 10 ELSE 0 END -- Special room penalty
+      );
+      -- Ensure difficulty score is within bounds
+      IF NEW.difficulty_score_calculated > 100 THEN
+          SET NEW.difficulty_score_calculated = 100;
+      END IF;
+      -- Update the main difficulty score
+      SET NEW.difficulty_score = NEW.difficulty_score_calculated;
+  END$$
+
+  CREATE TRIGGER `trg_tt_timetable_cell_date_consistency`
+  BEFORE INSERT ON `tt_timetable_cell`
+  FOR EACH ROW
+  BEGIN
+      -- Ensure day_of_week matches cell_date
+      IF NEW.cell_date IS NOT NULL THEN
+          SET NEW.day_of_week = DAYOFWEEK(NEW.cell_date);
+      END IF;
+      -- Auto-set generation_run_id if not provided
+      IF NEW.generation_run_id IS NULL THEN
+          SET NEW.generation_run_id = (
+              SELECT id FROM tt_generation_run 
+              WHERE timetable_id = NEW.timetable_id 
+              AND status = 'COMPLETED'
+              ORDER BY finished_at DESC 
+              LIMIT 1
+          );
+      END IF;
+  END$$
+
+  DELIMITER ;
 
 
   CREATE TABLE IF NOT EXISTS `tt_activity_teacher` (
@@ -672,6 +849,13 @@ SET FOREIGN_KEY_CHECKS = 0;
     `constraint_violations` INT UNSIGNED DEFAULT 0,  -- Number of constraint violations in this timetable
     `soft_score` DECIMAL(8,2) DEFAULT NULL,  -- Soft score of this timetable
     `stats_json` JSON DEFAULT NULL,  -- Statistics about this timetable
+    -- Newly Added
+    `generation_strategy_id` BIGINT UNSIGNED AFTER `generation_method`,
+    `optimization_cycles` INT UNSIGNED DEFAULT 0 AFTER `soft_score`,
+    `last_optimized_at` TIMESTAMP NULL AFTER `published_at`,
+    `quality_score` DECIMAL(5,2) DEFAULT NULL COMMENT 'Overall quality score (0-100) based on constraint satisfaction',
+    `teacher_satisfaction_score` DECIMAL(5,2) DEFAULT NULL COMMENT 'Score based on teacher preferences satisfaction',
+    `room_utilization_score` DECIMAL(5,2) DEFAULT NULL COMMENT 'Score based on room utilization efficiency',
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,  -- Whether this timetable is active
     `created_by` BIGINT UNSIGNED DEFAULT NULL,  -- FK to sys_users.id
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
@@ -689,8 +873,9 @@ SET FOREIGN_KEY_CHECKS = 0;
     CONSTRAINT `fk_tt_period_set` FOREIGN KEY (`period_set_id`) REFERENCES `tt_period_set` (`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_tt_parent` FOREIGN KEY (`parent_timetable_id`) REFERENCES `tt_timetable` (`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_tt_published_by` FOREIGN KEY (`published_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_tt_generation_strategy` FOREIGN KEY (`generation_strategy_id`) REFERENCES `tt_generation_strategy`(`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_tt_created_by` FOREIGN KEY (`created_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci; 
 
   CREATE TABLE IF NOT EXISTS `tt_constraint_violation` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -1100,36 +1285,34 @@ SET FOREIGN_KEY_CHECKS = 0;
     CONSTRAINT `fk_subStudyFormat_studyFormatId` FOREIGN KEY (`study_format_id`) REFERENCES `sch_study_formats` (`id`) ON DELETE CASCADE
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-
   -- Ths table will be used to define different Class Groups like 10th-A Science Lecture Major, 7th-B Commerce Optional etc.
   -- old name 'sch_subject_study_format_class_subj_types_jnt' changed to 'sch_class_groups_jnt'
   CREATE TABLE IF NOT EXISTS `sch_class_groups_jnt` (
-    `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-    `class_id` bigint unsigned NOT NULL,
-    `section_id` bigint unsigned DEFAULT NULL,
-    `sub_stdy_frmt_id` bigint unsigned NOT NULL,
-    --  `subject_Study_format_id` bigint unsigned NOT NULL,   -- FK to 'sch_subject_study_format_jnt'
-    `subject_type_id` bigint unsigned NOT NULL,
-    `rooms_type_id` bigint unsigned NOT NULL,
-    `name` varchar(50) NOT NULL,
-    `code` char(30) NOT NULL,
+    `id` bigint unsigned NOT NULL AUTO_INCREMENT,           -- FK
+    `class_id` int unsigned NOT NULL,                       -- FK to 'sch_classes'
+    `section_id` int unsigned NULL,                         -- FK to 'sch_sections'
+    `sub_stdy_frmt_id` bigint unsigned NOT NULL,            -- FK to 'sch_subject_study_format_jnt'
+    -- `subject_Study_format_id` bigint unsigned NOT NULL, -- FK to 'sch_subject_study_format_jnt'
+    `subject_type_id` int unsigned NOT NULL,                -- FK to 'sch_subject_types'
+    `rooms_type_id` int unsigned NOT NULL,                  -- FK to 'sch_rooms_type'
+    `class_house_roome_id` int unsigned NOT NULL,           -- FK to 'sch_rooms
+    `name` varchar(50) NOT NULL,                            -- 10th-A Science Lacture Major
+    `code` CHAR(17) NOT NULL, -- Combination of (Class+Section+Subject+StudyFormat+SubjType) e.g., '10h_A_SCI_LAC_MAJ','8th_MAT_LAC_OPT' (This will be used for Timetable)
     `is_active` tinyint(1) NOT NULL DEFAULT '1',
     `deleted_at` timestamp NULL DEFAULT NULL,
     `created_at` timestamp NULL DEFAULT NULL,
     `updated_at` timestamp NULL DEFAULT NULL,
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_classGroup_code` (`code`),
-    UNIQUE KEY `uq_classGroup_subStdFmt_class_section_subjectType` (`sub_stdy_frmt_id`,`class_id`,`section_id`,`subject_type_id`),
-    KEY `sch_class_groups_jnt_class_id_foreign` (`class_id`),
-    KEY `sch_class_groups_jnt_section_id_foreign` (`section_id`),
-    KEY `sch_class_groups_jnt_subject_type_id_foreign` (`subject_type_id`),
-    KEY `sch_class_groups_jnt_rooms_type_id_foreign` (`rooms_type_id`),
-    CONSTRAINT `sch_class_groups_jnt_class_id_foreign` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE RESTRICT,
-    CONSTRAINT `sch_class_groups_jnt_rooms_type_id_foreign` FOREIGN KEY (`rooms_type_id`) REFERENCES `sch_rooms_type` (`id`) ON DELETE RESTRICT,
-    CONSTRAINT `sch_class_groups_jnt_section_id_foreign` FOREIGN KEY (`section_id`) REFERENCES `sch_sections` (`id`) ON DELETE RESTRICT,
-    CONSTRAINT `sch_class_groups_jnt_sub_stdy_frmt_id_foreign` FOREIGN KEY (`sub_stdy_frmt_id`) REFERENCES `sch_subject_study_format_jnt` (`id`) ON DELETE RESTRICT,
-    CONSTRAINT `sch_class_groups_jnt_subject_type_id_foreign` FOREIGN KEY (`subject_type_id`) REFERENCES `sch_subject_types` (`id`) ON DELETE RESTRICT
+    UNIQUE KEY `uq_classGroups_cls_Sec_subStdFmt_SubTyp` (`class_id`,`section_id`,`subject_Study_format_id`),
+    UNIQUE KEY `uq_classGroups_subStdformatCode` (`code`), 
+    CONSTRAINT `fk_classGroups_classId` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_classGroups_sectionId` FOREIGN KEY (`section_id`) REFERENCES `sch_sections` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_classGroups_subjStudyFormatId` FOREIGN KEY (`sub_stdy_frmt_id`) REFERENCES `sch_subject_study_format_jnt` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_classGroups_subTypeId` FOREIGN KEY (`subject_type_id`) REFERENCES `sch_subject_types` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_classGroups_roomTypeId` FOREIGN KEY (`rooms_type_id`) REFERENCES `sch_rooms_type` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_classGroups_classHouseRoomId` FOREIGN KEY (`class_house_roome_id`) REFERENCES `sch_rooms` (`id`) ON DELETE CASCADE
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 
   -- Table 'sch_subject_groups' will be used to assign all subjects to the students
   -- There will be a Variable in 'sch_settings' table named 'SubjGroup_For_All_Sections' (Subj_Group_will_be_used_for_all_sections_of_a_class)
@@ -1160,6 +1343,7 @@ SET FOREIGN_KEY_CHECKS = 0;
     `subject_type_id` int unsigned NOT NULL,                  -- FK to 'sch_subject_types'
     `subject_study_format_id` bigint unsigned NOT NULL,       -- FK to 'sch_subject_study_format_jnt'
     `is_compulsory` tinyint(1) NOT NULL DEFAULT '0',          -- Is this Subject compulsory for Student or Optional
+    `weekly_periods` TINYINT UNSIGNED NOT NULL,  -- Total periods required per week
     `min_periods_per_week` TINYINT UNSIGNED DEFAULT NULL,  -- Minimum periods required per week
     `max_periods_per_week` TINYINT UNSIGNED DEFAULT NULL,  -- Maximum periods required per week
     `max_per_day` TINYINT UNSIGNED DEFAULT NULL,  -- Maximum periods per day
@@ -1183,6 +1367,8 @@ SET FOREIGN_KEY_CHECKS = 0;
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
   -- Add new Field for Timetable -
   -- is_compulsory, min_periods_per_week, max_periods_per_week, max_per_day, min_per_day, min_gap_periods, allow_consecutive, max_consecutive, priority, compulsory_room_type
+
+
 
 
   -- Building Coding format is - 2 Digit for Buildings(10-99)
@@ -1238,11 +1424,16 @@ SET FOREIGN_KEY_CHECKS = 0;
     CONSTRAINT `fk_rooms_roomTypeId` FOREIGN KEY (`room_type_id`) REFERENCES `sch_rooms_type` (`id`) ON DELETE CASCADE
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-  -- Teacher table will store additional information about teachers
-  CREATE TABLE IF NOT EXISTS `sch_teachers` (
+    -- Teacher table will store additional information about teachers
+  CREATE TABLE IF NOT EXISTS `sch_employees` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `user_id` BIGINT UNSIGNED NOT NULL,  -- fk to sys_users.id
-    `emp_code` VARCHAR(20) NOT NULL,     -- Employee Code (Unique code for each user)
+    -- Employee id details
+    `emp_code` VARCHAR(20) NOT NULL,     -- Employee Code (Unique code for each user) (This will be used for QR Code)
+    `emp_id_card_type` ENUM('QR','RFID','NFC','Barcode') NOT NULL DEFAULT 'QR',
+    `emp_smart_card_id` VARCHAR(100) DEFAULT NULL,       -- RFID/NFC Tag ID
+    -- 
+    `is_teacher` TINYINT(1) NOT NULL DEFAULT 0,
     `joining_date` DATE NOT NULL,
     `total_experience_years` DECIMAL(4,1) DEFAULT NULL,       -- Total teaching experience
     `highest_qualification` VARCHAR(100) DEFAULT NULL,        -- e.g. M.Sc., Ph.D.
@@ -1263,18 +1454,91 @@ SET FOREIGN_KEY_CHECKS = 0;
     CONSTRAINT `fk_teachers_userId` FOREIGN KEY (`user_id`) REFERENCES `sys_users` (`id`) ON DELETE CASCADE
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+  CREATE TABLE IF NOT EXISTS `sch_employees_profile` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `employee_id` BIGINT UNSIGNED NOT NULL,              -- FK to sch_employees.id
+    `user_id` BIGINT UNSIGNED NOT NULL,                  -- FK to sys_users.id
+    `role_id` BIGINT UNSIGNED NOT NULL,                  -- FK to employee_roles table (Principal, Accountant, Admin, etc.)
+    `department_id` BIGINT UNSIGNED DEFAULT NULL,        -- FK to sch_departments (Administration, Accounts, IT, etc.)
+    -- Core Competencies & Qualifications
+    `specialization_area` VARCHAR(100) DEFAULT NULL,     -- e.g., Finance Management, HR Administration, IT Infrastructure
+    `qualification_level` VARCHAR(50) DEFAULT NULL,      -- e.g., Bachelor's, Master's, Certified Accountant
+    `qualification_field` VARCHAR(100) DEFAULT NULL,     -- e.g., Business Administration, Computer Science
+    `certifications` JSON DEFAULT NULL,                  -- JSON array of certifications: ["CPA", "CISSP", "PMP"]
+    -- Work Capacity & Availability
+    `work_hours_daily` DECIMAL(4,2) DEFAULT 8.0,         -- Standard daily work hours
+    `max_hours_daily` DECIMAL(4,2) DEFAULT 10.0,         -- Maximum daily work hours
+    `work_hours_weekly` DECIMAL(5,2) DEFAULT 40.0,       -- Standard weekly work hours
+    `max_hours_weekly` DECIMAL(5,2) DEFAULT 50.0,        -- Maximum weekly work hours
+    `preferred_shift` ENUM('morning', 'evening', 'flexible') DEFAULT 'morning',
+    `is_full_time` TINYINT(1) DEFAULT 1,                 -- 1=Full-time, 0=Part-time
+    -- Skills & Responsibilities (JSON for flexibility)
+    `core_responsibilities` JSON DEFAULT NULL,           -- e.g., ["budget_management", "staff_supervision", "policy_implementation"]
+    `technical_skills` JSON DEFAULT NULL,                -- e.g., ["quickbooks", "ms_expert", "erp_systems"]
+    `soft_skills` JSON DEFAULT NULL,                     -- e.g., ["leadership", "communication", "problem_solving"]
+    -- Performance & Experience
+    `experience_months` SMALLINT UNSIGNED DEFAULT NULL,  -- Relevant experience in months
+    `performance_rating` TINYINT UNSIGNED DEFAULT NULL,  -- rating out of (1 to 10)
+    `last_performance_review` DATE DEFAULT NULL,
+    -- Administrative Controls
+    `security_clearance_done` TINYINT(1) DEFAULT 0,
+    `reporting_to` BIGINT UNSIGNED DEFAULT NULL,         -- FK to sch_employees.id (who they report to)
+    `can_approve_budget` TINYINT(1) DEFAULT 0,
+    `can_manage_staff` TINYINT(1) DEFAULT 0,
+    `can_access_sensitive_data` TINYINT(1) DEFAULT 0,
+    -- Additional Details
+    `assignment_meta` JSON DEFAULT NULL,                 -- e.g., { "previous_role": "Assistant Principal", "achievements": ["System Upgrade 2023"] }
+    `notes` TEXT DEFAULT NULL,
+    `effective_from` DATE DEFAULT NULL,
+    `effective_to` DATE DEFAULT NULL,
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    `created_at` TIMESTAMP NULL DEFAULT NULL,
+    `updated_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_employee_role_active` (`employee_id`, `role_id`, `effective_to`),
+    -- Foreign Key Constraints
+    CONSTRAINT `fk_employeeProfile_employeeId` FOREIGN KEY (`employee_id`) REFERENCES `sch_employees` (`id`),
+    CONSTRAINT `fk_employeeProfile_roleId` FOREIGN KEY (`role_id`) REFERENCES `sch_employee_roles` (`id`),
+    CONSTRAINT `fk_employeeProfile_departmentId` FOREIGN KEY (`department_id`) REFERENCES `sch_departments` (`id`),
+    CONSTRAINT `fk_employeeProfile_reportingTo` FOREIGN KEY (`reporting_to`) REFERENCES `sch_employees` (`id`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
   -- Teacher Profile table will store detailed proficiency to teach specific subjects, study formats, and classes
   CREATE TABLE IF NOT EXISTS `sch_teachers_profile` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `teacher_id` BIGINT UNSIGNED NOT NULL,
+    `employee_id` BIGINT UNSIGNED NOT NULL,         -- FK to sch_employee.id
+    `user_id` BIGINT UNSIGNED NOT NULL,             -- FK to sys_users.id
+    `role_id` BIGINT UNSIGNED NOT NULL,                  -- FK to employee_roles table (Principal, Accountant, Admin, etc.)
+    `department_id` BIGINT UNSIGNED DEFAULT NULL,        -- FK to sch_departments (Administration, Accounts, IT, etc.)
+    `teacher_house_room_id` int unsigned NULL,          -- FK to 'sch_rooms.id'
+    -- Teaching Capacity & Availability
     `subject_id` BIGINT UNSIGNED NOT NULL,            -- FK to 'subjects' table
     `study_format_id` INT UNSIGNED NOT NULL,       -- FK to 'sch_study_formats' table 
     `class_id` INT UNSIGNED NOT NULL,                 -- FK to 'sch_classes' table
-    `priority` ENUM('PRIMARY','SECONDARY') NOT NULL DEFAULT 'PRIMARY',
-    `proficiency` INT UNSIGNED DEFAULT NULL,          -- 1–10 rating or %
+    `proficiency_percentage` TINYINT UNSIGNED DEFAULT NULL,  -- 1–100 %
+    `teaching_experience_months` TINYINT UNSIGNED DEFAULT NULL,  -- teaching experience in months
+    `is_primary_subject` TINYINT(1) NOT NULL DEFAULT 1,  -- 1=Primary, 0=Secondary
+    `max_periods_daily` TINYINT UNSIGNED DEFAULT 6,     -- Maximum number of periods per day
+    `min_periods_daily` TINYINT UNSIGNED DEFAULT 1,     -- Minimum number of periods per day
+    `max_periods_weekly` TINYINT UNSIGNED DEFAULT 48,   -- Maximum weekly periods
+    `min_periods_weekly` TINYINT UNSIGNED DEFAULT 15,   -- Minimum weekly periods
+    `preferred_shift` ENUM('morning', 'evening', 'flexible') DEFAULT 'morning',
+    `is_full_time` TINYINT(1) DEFAULT 1,                 -- 1=Full-time, 0=Part-time
+    `is_capable_of_handling_multiple_classes` TINYINT(1) DEFAULT 0, -- 1=Yes, 0=No
+    `is_proficient_with_computer` TINYINT(1) DEFAULT 0, -- 1=Yes, 0=No
+    -- Skills & Responsibilities (JSON for flexibility)
     `special_skill_area` VARCHAR(100) DEFAULT NULL,   -- e.g. Robotics, AI, Debate
     `certified_for_lab` TINYINT(1) DEFAULT 0,         -- allowed to conduct practicals
     `assignment_meta` JSON DEFAULT NULL,              -- e.g. { "qualification": "M.Sc Physics", "experience": "7 years" }
+    `soft_skills` JSON DEFAULT NULL,                     -- e.g., ["leadership", "communication", "problem_solving"]
+    `performance_rating` TINYINT UNSIGNED DEFAULT NULL,  -- rating out of (1 to 10)
+    `last_performance_review` DATE DEFAULT NULL,
+    -- Administrative Controls
+    `security_clearance_done` TINYINT(1) DEFAULT 0, --
+    `reporting_to` BIGINT UNSIGNED DEFAULT NULL,         -- FK to sch_employees.id (who they report to)
+    `can_manage_staff` TINYINT(1) DEFAULT 0,
+    `can_access_sensitive_data` TINYINT(1) DEFAULT 0,
     `notes` TEXT NULL,
     `effective_from` DATE DEFAULT NULL,               -- when this profile becomes effective
     `effective_to` DATE DEFAULT NULL,                 -- when this profile ends 
@@ -1283,8 +1547,8 @@ SET FOREIGN_KEY_CHECKS = 0;
     `created_at` TIMESTAMP NULL DEFAULT NULL,
     `updated_at` TIMESTAMP NULL DEFAULT NULL,
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_teachersProfile_teacher` (`teacher_id`,`subject_id`,`study_format_id`,class_id),
-    CONSTRAINT `fk_teachersProfile_teacherId` FOREIGN KEY (`teacher_id`) REFERENCES `sch_teachers` (`id`) ON DELETE CASCADE,
+    UNIQUE KEY `uq_teachersProfile_employee` (`employee_id`,`subject_id`,`study_format_id`,`class_id`),
+    CONSTRAINT `fk_teachersProfile_employeeId` FOREIGN KEY (`employee_id`) REFERENCES `sch_employees` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_teachersProfile_subjectId` FOREIGN KEY (`subject_id`) REFERENCES `sch_subjects` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_teachersProfile_studyFormatId` FOREIGN KEY (`study_format_id`) REFERENCES `sch_study_formats` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_teachersProfile_classId` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE CASCADE
@@ -1362,5 +1626,6 @@ SET FOREIGN_KEY_CHECKS = 0;
     CONSTRAINT `fk_sas_status` FOREIGN KEY (`session_status_id`) REFERENCES `sys_dropdown_table` (`id`) ON DELETE RESTRICT
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+SET FOREIGN_KEY_CHECKS = 1;
 
 -- =====================================================================================================================================================

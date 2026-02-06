@@ -282,7 +282,7 @@
 
 
 -- ===========================================================================
--- 3-SCHOOL SETUP MODULE (sch)
+-- 3 - SCHOOL SETUP MODULE (sch)
 -- ===========================================================================
 
   -- This table is a replica of 'prm_tenant' table in 'prmprime_db' database
@@ -412,6 +412,25 @@
     -- We will be storing table name to use for selecting entities in `additional_info` in `sys_dropdown_table` table alongwith entity_type menu items e.g. for entity_type=1, table_name="sch_class", for entity_type=9, table_name="sch_vehicle"
     -- entity_table_name will be fetched from `additional_info` in `sys_dropdown_table` table e.g. (sch_class, sch_section, sch_subject, sch_designation, sch_department, sch_role, sch_students, sch_staff, sch_vehicle, sch_facility, sch_event, sch_location, sch_other)
 
+-- ===========================================================================
+-- 3.1 - CLASS SETUP SUB-MODULE (sch)
+-- ===========================================================================
+
+  CREATE TABLE IF NOT EXISTS `sch_sections` (
+    `id` int unsigned NOT NULL AUTO_INCREMENT,
+    `name` varchar(20) NOT NULL,            -- e.g. 'A', 'B'
+    `ordinal` tinyint unsigned DEFAULT 1,   -- will have sequence order for Sections
+    `code` CHAR(1) NOT NULL,                -- e.g., 'A','B','C','D' and so on (This will be used for Timetable)
+    `is_active` tinyint(1) NOT NULL DEFAULT 1,
+    `created_at` timestamp NULL DEFAULT NULL,
+    `updated_at` timestamp NULL DEFAULT NULL,
+    `deleted_at` timestamp NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_sections_name` (`name`),
+    UNIQUE KEY `uq_sections_code` (`code`),
+    UNIQUE KEY `uq_sections_ordinal` (`ordinal`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
   -- Tables for Classes, Sections, Subjects, Subject Types, Study Formats, Class-Section Junctions, Subject-StudyFormat Junctions, Class Groups, Subject Groups
   CREATE TABLE IF NOT EXISTS `sch_classes` (
     `id` int unsigned NOT NULL AUTO_INCREMENT,
@@ -428,21 +447,6 @@
     UNIQUE KEY `uq_classes_code` (`code`),
     UNIQUE KEY `uq_classes_name` (`name`),
     UNIQUE KEY `uq_classes_ordinal` (`ordinal`)
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-  CREATE TABLE IF NOT EXISTS `sch_sections` (
-    `id` int unsigned NOT NULL AUTO_INCREMENT,
-    `name` varchar(20) NOT NULL,            -- e.g. 'A', 'B'
-    `ordinal` tinyint unsigned DEFAULT 1,   -- will have sequence order for Sections
-    `code` CHAR(1) NOT NULL,                -- e.g., 'A','B','C','D' and so on (This will be used for Timetable)
-    `is_active` tinyint(1) NOT NULL DEFAULT 1,
-    `created_at` timestamp NULL DEFAULT NULL,
-    `updated_at` timestamp NULL DEFAULT NULL,
-    `deleted_at` timestamp NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_sections_name` (`name`),
-    UNIQUE KEY `uq_sections_code` (`code`),
-    UNIQUE KEY `uq_sections_ordinal` (`ordinal`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `sch_class_section_jnt` (
@@ -537,7 +541,7 @@
   CREATE TABLE IF NOT EXISTS `sch_class_groups_jnt` (
     `id` bigint unsigned NOT NULL AUTO_INCREMENT,                  -- FK
     `class_id` int unsigned NOT NULL,                              -- FK to 'sch_classes'
-    `section_id` int unsigned NOT NULL,                            -- FK to 'sch_sections'
+    `section_id` int unsigned NULL,                            -- FK to 'sch_sections'
     `subject_Study_format_id` bigint unsigned NOT NULL,   -- FK to 'sch_subject_study_format_jnt'
     `subject_type_id` int unsigned NOT NULL,              -- FK to 'sch_subject_types'
     `rooms_type_id` int unsigned NOT NULL,             -- FK to 'sch_rooms_type'
@@ -612,7 +616,9 @@
   -- Add new Field for Timetable -
   -- is_compulsory, min_periods_per_week, max_periods_per_week, max_per_day, min_per_day, min_gap_periods, allow_consecutive, max_consecutive, priority, compulsory_room_type
 
- `subject_study_format_id`
+-- ===========================================================================
+-- 3.2 - INFRA SETUP SUB-MODULE (sch)
+-- ===========================================================================
 
   -- Building Coding format is - 2 Digit for Buildings(10-99)
   CREATE TABLE IF NOT EXISTS `sch_buildings` (
@@ -667,6 +673,9 @@
     CONSTRAINT `fk_rooms_roomTypeId` FOREIGN KEY (`room_type_id`) REFERENCES `sch_rooms_type` (`id`) ON DELETE CASCADE
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- ===========================================================================
+-- 3.3 - EMPLOYEE SETUP SUB-MODULE (sch)
+-- ===========================================================================
 
   -- Teacher table will store additional information about teachers
   CREATE TABLE IF NOT EXISTS `sch_employees` (
