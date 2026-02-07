@@ -66,6 +66,7 @@
     `assistance_class_teacher_id` bigint unsigned NOT NULL,  -- FK to sch_users
     `rooms_type_id` int unsigned NOT NULL,  -- FK to 'sch_rooms_type' (Added new)
     `class_house_roome_id` int unsigned NOT NULL,  -- FK to 'sch_rooms' (Added new)
+    `total_periods_daily` tinyint unsigned DEFAULT NULL,  -- Total Number of Periods in a day for this class+section (Added new)
     `is_active` tinyint(1) NOT NULL DEFAULT 1,
     `created_at` timestamp NULL DEFAULT NULL,
     `updated_at` timestamp NULL DEFAULT NULL,
@@ -161,22 +162,22 @@
     `section_id` int unsigned NULL,               -- FK to 'sch_sections' (Optional)
     `subject_Study_format_id` bigint unsigned NOT NULL,   -- FK to 'sch_subject_study_format_jnt'
     `subject_type_id` int unsigned NOT NULL,      -- FK to 'sch_subject_types'
-    `code` CHAR(17) NOT NULL, -- Combination of (Class+Section+Subject+StudyFormat+SubjType) e.g., '10h_A_SCI_LAC_MAJ','8th_MAT_LAC_OPT' (This will be used for Timetable)
-    `name` varchar(50) NOT NULL,                          -- 10th-A Science Lacture Major
+    `code` CHAR(30) NOT NULL, -- Combination of (Class+Section+Subject+StudyFormat+SubjType) e.g., '10h_A_SCI_LAC_MAJ','8th_MAT_LAC_OPT' (This will be used for Timetable)
+    `name` varchar(100) NOT NULL,                          -- 10th-A Science Lacture Major
     -- Information for Timetable Module
     `is_compulsory` tinyint(1) NOT NULL DEFAULT '0',       -- Is this Subject compulsory for Student or Optional
-    `required_weekly_periods` TINYINT UNSIGNED NOT NULL DEFAULT 1,   -- Total periods required per week
-    `min_weekly_periods` TINYINT UNSIGNED DEFAULT NULL,    -- Minimum periods required per week
-    `max_weekly_periods` TINYINT UNSIGNED DEFAULT NULL,    -- Maximum periods required per week
-    `min_daily_periods` TINYINT UNSIGNED DEFAULT NULL,     -- Minimum periods per day
-    `max_daily_periods` TINYINT UNSIGNED DEFAULT NULL,     -- Maximum periods per day
-    `min_gap_between_periods` TINYINT UNSIGNED DEFAULT NULL,       -- Minimum gap periods
-    `allow_consecutive_periods` TINYINT(1) NOT NULL DEFAULT 0,     -- Whether consecutive periods are allowed
+    `required_weekly_periods` TINYINT UNSIGNED NOT NULL DEFAULT 1,   -- Total periods required per week for this Class Group (Class+{Section}+Subject+StudyFormat)
+    `min_weekly_periods` TINYINT UNSIGNED DEFAULT NULL,    -- Minimum periods required per week for this Class Group
+    `max_weekly_periods` TINYINT UNSIGNED DEFAULT NULL,    -- Maximum periods required per week for this Class Group
+    `min_daily_periods` TINYINT UNSIGNED DEFAULT NULL,     -- Minimum periods per day for this Class Group
+    `max_daily_periods` TINYINT UNSIGNED DEFAULT NULL,     -- Maximum periods per day for this Class Group
+    `min_gap_between_periods` TINYINT UNSIGNED DEFAULT NULL,       -- Minimum gap periods for this Class Group
+    `allow_consecutive_periods` TINYINT(1) NOT NULL DEFAULT 0,     -- Whether consecutive periods are allowed for this Class Group
     `max_consecutive_periods` TINYINT UNSIGNED DEFAULT 1,          -- Maximum consecutive periods
     `priority_score` SMALLINT UNSIGNED DEFAULT 10,                 -- Priority of this requirement on 1-100 scale
     `compulsory_specific_room_type` TINYINT(1) NOT NULL DEFAULT 0, -- Whether specific room type is required (TRUE - if Specific Room Type is Must)
-    `required_room_type_id` INT UNSIGNED DEFAULT NULL,      -- FK to sch_room_types.id
-    `required_room_id` INT UNSIGNED DEFAULT NULL,      -- FK to sch_rooms.id
+    `required_room_type_id` INT UNSIGNED NOT NULL,      -- FK to sch_room_types.id (Required)
+    `required_room_id` INT UNSIGNED DEFAULT NULL,      -- FK to sch_rooms.id (Optional)
     -- Audit Fields
     `is_active` tinyint(1) NOT NULL DEFAULT '1',
     `deleted_at` timestamp NULL DEFAULT NULL,
@@ -206,7 +207,7 @@
     `short_name` varchar(50) NOT NULL,  -- 7th Science, 7th Commerce, 7th-A Science etc.
     `name` varchar(100) NOT NULL,       -- '7th (Sci,Mth,Eng,Hindi,SST with Sanskrit,Dance)'
     `registered_students_count` int NOT NULL DEFAULT 0, -- Total registered students in this group
-    `default_group_for_class` tinyint(1) NOT NULL DEFAULT '0', -- Whether this group is default for the class
+    `default_group_for_class` tinyint(1) NOT NULL DEFAULT 0, -- Whether this group is default for the class
     `is_active` tinyint(1) NOT NULL DEFAULT '1',
     `deleted_at` timestamp NULL DEFAULT NULL,
     `created_at` timestamp NULL DEFAULT NULL,
@@ -242,3 +243,4 @@
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
   -- Add new Field for Timetable -
   -- is_compulsory, min_periods_per_week, max_periods_per_week, max_per_day, min_per_day, min_gap_periods, allow_consecutive, max_consecutive, priority, compulsory_room_type
+
