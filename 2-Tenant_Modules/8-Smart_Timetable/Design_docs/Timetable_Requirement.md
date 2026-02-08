@@ -413,3 +413,62 @@ Condition discussed with Tarun :
 2. We need to create Slot availability of Slots, Availibility of Teacher & Availability of Rooms just like we have created Class Group/Sub-Group requirement
 3. Timetable need to Calculate Tottal registered Student in every Class+Section and store it to sch_class_section_jnt
 4. Calculate the Final Formula to calculate Teachers Availability Score, Room Availability Score, Slot Availability Score and Final Score of Timetable
+5. tt_activity -
+    **IMPORTANT: Add triggers to maintain data integrity on tt_activity table**
+        DELIMITER $$
+        
+            CREATE TRIGGER `trg_tt_activity_difficulty_calc`
+            BEFORE INSERT ON `tt_activity`
+            FOR EACH ROW
+            BEGIN
+                -- Calculate difficulty score automatically
+                SET NEW.difficulty_score_calculated = (
+                    SELECT 
+                        COUNT(DISTINCT c.id) * 10 + -- Constraint count
+                        (100 - COALESCE(NEW.teacher_availability_score, 100)) * 0.5 + -- Teacher availability
+                        (100 - COALESCE(NEW.room_availability_score, 100)) * 0.3 + -- Room availability
+                        CASE WHEN NEW.duration_periods > 1 THEN 15 ELSE 0 END + -- Duration penalty
+                        CASE WHEN NEW.requires_special_room THEN 10 ELSE 0 END -- Special room penalty
+                );
+                -- Ensure difficulty score is within bounds
+                IF NEW.difficulty_score_calculated > 100 THEN
+                    SET NEW.difficulty_score_calculated = 100;
+                END IF;
+                -- Update the main difficulty score
+                SET NEW.difficulty_score = NEW.difficulty_score_calculated;
+            END$$
+
+            CREATE TRIGGER `trg_tt_timetable_cell_date_consistency`
+            BEFORE INSERT ON `tt_timetable_cell`
+            FOR EACH ROW
+            BEGIN
+                -- Ensure day_of_week matches cell_date
+                IF NEW.cell_date IS NOT NULL THEN
+                    SET NEW.day_of_week = DAYOFWEEK(NEW.cell_date);
+                END IF;
+                -- Auto-set generation_run_id if not provided
+                IF NEW.generation_run_id IS NULL THEN
+                    SET NEW.generation_run_id = (
+                        SELECT id FROM tt_generation_run 
+                        WHERE timetable_id = NEW.timetable_id 
+                        AND status = 'COMPLETED'
+                        ORDER BY finished_at DESC 
+                        LIMIT 1
+                    );
+                END IF;
+            END$$
+
+        DELIMITER ;
+
+6. tt_teacher_availability - Teachers availability will be calculated based on the following conditions:
+    1. Total weekly available Periods
+    2. Total Number of Subjects/class he can teach in a week
+    3. Total weekly assigned Periods
+    The FormulaThe standard formula for the Teacher Availability Ratio is:
+    TAR = Total Assigned Periods \ Total Available Periods * 100 
+    Total Assigned Periods: The sum of all classes/subjects a teacher is can teach in a week.
+    Total Available Periods: The maximum number of slots in the school week where the teacher is physically present and capable of teaching.
+
+Later after Timetable Generated - Same Formula will be used to check workload of a Teacher
+
+

@@ -139,7 +139,7 @@
     `subject_id` bigint unsigned NOT NULL,        -- FK to 'sch_subjects'
     `study_format_id` int unsigned NOT NULL,      -- FK to 'sch_study_formats'
     `subject_type_id` int unsigned NOT NULL,      -- FK to 'sch_subject_types'
-    `code` CHAR(10) NOT NULL,                     -- e.g., 'SCI_LAC','SCI_LAB','SST_LAC','ENG_LAC' (Changed from 'subject_studyformat_code')
+    `code` CHAR(30) NOT NULL,                     -- e.g., 'SCI_LAC','SCI_LAB','SST_LAC','ENG_LAC' (Changed from 'subject_studyformat_code')
     `name` varchar(50) NOT NULL,                  -- e.g., 'Science Lecture','Science Lab','Math Lecture','Math Lab' and so on
     `is_active` tinyint(1) NOT NULL DEFAULT '1',
     `deleted_at` timestamp NULL DEFAULT NULL,
@@ -162,7 +162,7 @@
     `section_id` int unsigned NOT NULL,           -- FK to 'sch_sections' (Optional)
     `subject_Study_format_id` bigint unsigned NOT NULL,  -- FK to 'sch_subject_study_format_jnt'
     `subject_type_id` int unsigned NOT NULL,      -- FK to 'sch_subject_types'
-    `code` CHAR(30) NOT NULL, -- Combination of (Class+Section+Subject+StudyFormat+SubjType) e.g., '10h_A_SCI_LAC_MAJ','8th_MAT_LAC_OPT' (This will be used for Timetable)
+    `code` CHAR(50) NOT NULL, -- Combination of (Class+Section+Subject+StudyFormat+SubjType) e.g., '10h_A_SCI_LAC_MAJ','8th_MAT_LAC_OPT' (This will be used for Timetable)
     `name` varchar(100) NOT NULL,                 -- 10th-A Science Lacture Major
     -- Information for Timetable Module
     `is_compulsory` tinyint(1) NOT NULL DEFAULT '0',       -- Is this Subject compulsory for Student or Optional
