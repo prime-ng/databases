@@ -416,8 +416,9 @@ COMMENT='Timetable generation algorithms and parameters';
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   -- This table will be used to define different Class Groups like 10th-A Science Lecture Major, 7th-B Commerce Optional etc.
-  -- old name 'sch_subject_study_format_class_subj_types_jnt' changed to 'sch_class_groups_jnt'
-  CREATE TABLE IF NOT EXISTS `tt_class_groups_jnt` (
+  -- old name 'sch_subject_study_format_class_subj_types_jnt' changed to 'tt_class_groups_jnt'
+  -- changed below Table name to - `tt_class_subject_groups` from `tt_class_groups_jnt`
+  CREATE TABLE IF NOT EXISTS `tt_class_subject_groups` (
     `id` bigint unsigned NOT NULL AUTO_INCREMENT,
     `code` char(50) NOT NULL,
     `name` varchar(100) NOT NULL,
@@ -459,12 +460,13 @@ COMMENT='Timetable generation algorithms and parameters';
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   -- This table is used to define the subgroups for a particular class (e.g. In Class 10th A Student can choose from French / Sanskrit / German as optional 2nd Language)
-  CREATE TABLE IF NOT EXISTS `tt_class_subgroup` (
+  -- changed below Table name to - `tt_requirement_subgroups` from `tt_class_subgroup`
+  CREATE TABLE IF NOT EXISTS `tt_class_subject_subgroups` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `code` VARCHAR(50) NOT NULL,   -- e.g., '10TH_FRENCH_OPT','8TH_HOBBY_GRP', 8th-12th_CRICKET, 8th-12th_FOOTBALL
     `name` VARCHAR(100) NOT NULL,  -- e.g., 'French(Optional) 10th Class(All Sections)'
     -- Add Or Change on 7th Feb 2025 -- (Added New field below)
-    `class_group_id` bigint unsigned NOT NULL,  -- FK to sch_class_groups.id
+    `class_subject_group_id` bigint unsigned NOT NULL,  -- FK to tt_class_subject_groups.id
     -- Add Or Change on 7th Feb 2025 -- (Removed subject_group_subject_id field)
     -- `subject_group_subject_id` bigint unsigned NOT NULL,  -- FK to sch_subject_group_subjects.id
     `class_id` bigint unsigned NOT NULL,
@@ -496,7 +498,7 @@ COMMENT='Timetable generation algorithms and parameters';
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_subgroup_code` (`code`),
     KEY `idx_subgroup_type` (`subgroup_type`),
-    CONSTRAINT `fk_subgroup_class_group` FOREIGN KEY (`class_group_id`) REFERENCES `sch_class_groups_jnt` (`id`) ON DELETE SET NULL
+    CONSTRAINT `fk_subgroup_class_group` FOREIGN KEY (`class_subject_group_id`) REFERENCES `tt_class_subject_groups` (`id`) ON DELETE SET NULL
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- -------------------------------------------------
@@ -607,11 +609,11 @@ COMMENT='Timetable generation algorithms and parameters';
 -- -------------------------------------------------
 --  SECTION 3: TIMETABLE OPERATION TABLES
 -- -------------------------------------------------
-
-  CREATE TABLE IF NOT EXISTS `tt_class_group_requirement` (
+  -- changed below Table name to - tt_requirement_consolidation from tt_class_group_requirement
+  CREATE TABLE IF NOT EXISTS `tt_requirement_consolidation` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `class_group_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to sch_class_groups_jnt.id
-    `class_subgroup_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to tt_class_subgroup.id
+    `class_subgroup_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to tt_requirement_subgroups.id
     -- `academic_session_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to tt_academic_session.id
     `academic_term_id` BIGINT UNSIGNED NOT NULL,  -- FK to tt_academic_term.id  -- This is the Term for which this timetable is being generated (New)
     -- Requirement Parameters
@@ -626,23 +628,32 @@ COMMENT='Timetable generation algorithms and parameters';
     `preferred_periods_json` JSON DEFAULT NULL,  -- Preferred periods
     `avoid_periods_json` JSON DEFAULT NULL,  -- Avoid periods
     `spread_evenly` TINYINT(1) DEFAULT 1,  -- Whether periods should be spread evenly
-    `priority` SMALLINT UNSIGNED DEFAULT 50,  -- Priority of this requirement
-    `tot_students` SMALLINT UNSIGNED DEFAULT NULL,  -- Total students in this class group
+    -- Add Or Change on 7th Feb 2025 -- (Changed from SMALLINT to DECIMAL(8,3))
+    `priority` DECIMAL(8,3) DEFAULT 50.000,  -- Priority of this requirement (0.000 to 100.000)
+    --`tot_students` SMALLINT UNSIGNED DEFAULT NULL,  -- Total students in this class group (replaced by student_count)
+    -- Below 5 Fileds will be captured from tt_requirement_groups & tt_requirement_subgroups
+    `student_count` INT UNSIGNED DEFAULT NULL,  -- Number of students in this subgroup
+    `eligible_teacher_count` INT UNSIGNED DEFAULT NULL,  -- Number of teachers for this group
+    `min_teacher_availability_score` DECIMAL(7,2) UNSIGNED DEFAULT 1 -- Percentage of available teachers for this Class Group (Will capture from Teachers profile)
+    `max_teacher_availability_score` DECIMAL(7,2) UNSIGNED DEFAULT 1 -- Percentage of available teachers for this Class Group (Will capture from Teachers profile)
+    `is_shared_across_sections` TINYINT(1) NOT NULL DEFAULT 0,  -- Whether this subgroup is shared across sections
+    `is_shared_across_classes` TINYINT(1) NOT NULL DEFAULT 0,  -- Whether this subgroup is shared across classes
+    --
     `weekly_activity_required` TINYINT(1) UNSIGNED DEFAULT 0,  -- Whether weekly activity is required
     `compulsory_room_type` INT UNSIGNED DEFAULT NULL,  -- FK to sch_room_types.id
-    -- Below 3 Fileds will be captured from sch_class_groups_jnt
+    -- Add Or Change on 7th Feb 2025 --
     `compulsory_specific_room_type` TINYINT(1) NOT NULL DEFAULT 0, -- Whether specific room type is required (TRUE - if Specific Room Type is Must)
     `required_room_type_id` INT UNSIGNED NOT NULL,      -- FK to sch_room_types.id (MUST)
-    `required_room_id` INT UNSIGNED DEFAULT NULL,      -- FK to sch_rooms.id (OPTIONAL)
+    `required_room_id` INT UNSIGNED DEFAULT NULL,       -- FK to sch_rooms.id (OPTIONAL)
     -- Audit Fields
-    `is_active` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,  -- Whether this requirement is active
+    `is_active` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1, -- Whether this requirement is active
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at` TIMESTAMP NULL DEFAULT NULL,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_cgr_group_session` (`class_group_id`, `class_subgroup_id`, `academic_session_id`),
     CONSTRAINT `fk_cgr_class_group` FOREIGN KEY (`class_group_id`) REFERENCES `sch_class_groups_jnt` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_cgr_subgroup` FOREIGN KEY (`class_subgroup_id`) REFERENCES `tt_class_subgroup` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_cgr_subgroup` FOREIGN KEY (`class_subgroup_id`) REFERENCES `tt_requirement_subgroups` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_cgr_session` FOREIGN KEY (`academic_session_id`) REFERENCES `sch_org_academic_sessions_jnt` (`id`) ON DELETE SET NULL,
     CONSTRAINT `chk_cgr_target` CHECK ((`class_group_id` IS NOT NULL AND `class_subgroup_id` IS NULL) OR (`class_group_id` IS NULL AND `class_subgroup_id` IS NOT NULL))
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -661,7 +672,7 @@ COMMENT='Timetable generation algorithms and parameters';
     `academic_term_id` BIGINT UNSIGNED NOT NULL,  -- FK to tt_academic_term.id  -- This is the Term for which this timetable is being generated (New)
     -- Target (one of class_group_id or class_subgroup_id must be set)
     `class_group_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to 'sch_class_groups_jnt'
-    `class_subgroup_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to 'tt_class_subgroup'
+    `class_subgroup_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to 'tt_requirement_subgroups'
     -- Subject & Study Format (denormalized for fast access)
     `subject_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to 'sch_subjects'
     `study_format_id` INT UNSIGNED DEFAULT NULL,  -- FK to 'sch_study_formats'
@@ -708,7 +719,7 @@ COMMENT='Timetable generation algorithms and parameters';
     INDEX `idx_activity_generation` ON `tt_activity` (`academic_term_id`, `difficulty_score`, `status`, `is_active`);
     CONSTRAINT `fk_activity_session` FOREIGN KEY (`academic_term_id`) REFERENCES `tt_academic_term` (`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_activity_class_group` FOREIGN KEY (`class_group_id`) REFERENCES `sch_class_groups_jnt` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_activity_subgroup` FOREIGN KEY (`class_subgroup_id`) REFERENCES `tt_class_subgroup` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_activity_subgroup` FOREIGN KEY (`class_subgroup_id`) REFERENCES `tt_requirement_subgroups` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_activity_subject` FOREIGN KEY (`subject_id`) REFERENCES `sch_subjects` (`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_activity_study_format` FOREIGN KEY (`study_format_id`) REFERENCES `sch_study_formats` (`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_activity_room_type` FOREIGN KEY (`preferred_room_type_id`) REFERENCES `sch_rooms_type` (`id`) ON DELETE SET NULL,
@@ -997,7 +1008,7 @@ COMMENT='Resource booking and allocation tracking';
     CONSTRAINT `fk_cell_timetable` FOREIGN KEY (`timetable_id`) REFERENCES `tt_timetable` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_cell_gen_run` FOREIGN KEY (`generation_run_id`) REFERENCES `tt_generation_run` (`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_cell_class_group` FOREIGN KEY (`class_group_id`) REFERENCES `sch_class_groups_jnt` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_cell_subgroup` FOREIGN KEY (`class_subgroup_id`) REFERENCES `tt_class_subgroup` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_cell_subgroup` FOREIGN KEY (`class_subgroup_id`) REFERENCES `tt_requirement_subgroups` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_cell_activity` FOREIGN KEY (`activity_id`) REFERENCES `tt_activity` (`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_cell_sub_activity` FOREIGN KEY (`sub_activity_id`) REFERENCES `tt_sub_activity` (`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_cell_room` FOREIGN KEY (`room_id`) REFERENCES `sch_rooms` (`id`) ON DELETE SET NULL,

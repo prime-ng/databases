@@ -412,3 +412,4 @@ Condition discussed with Tarun :
 1. Multipal Type of Timetable need to be calculated in parralel
 2. We need to create Slot availability of Slots, Availibility of Teacher & Availability of Rooms just like we have created Class Group/Sub-Group requirement
 3. Timetable need to Calculate Tottal registered Student in every Class+Section and store it to sch_class_section_jnt
+4. Calculate the Final Formula to calculate Teachers Availability Score, Room Availability Score, Slot Availability Score and Final Score of Timetable
