@@ -159,11 +159,11 @@
     `id` bigint unsigned NOT NULL AUTO_INCREMENT,
     `ordinal` tinyint DEFAULT NULL,     -- will have sequence order (Auto Update by Drag & Drop)
     `class_id` int unsigned NOT NULL,             -- FK to 'sch_classes'
-    `section_id` int unsigned NULL,               -- FK to 'sch_sections' (Optional)
-    `subject_Study_format_id` bigint unsigned NOT NULL,   -- FK to 'sch_subject_study_format_jnt'
+    `section_id` int unsigned NOT NULL,           -- FK to 'sch_sections' (Optional)
+    `subject_Study_format_id` bigint unsigned NOT NULL,  -- FK to 'sch_subject_study_format_jnt'
     `subject_type_id` int unsigned NOT NULL,      -- FK to 'sch_subject_types'
     `code` CHAR(30) NOT NULL, -- Combination of (Class+Section+Subject+StudyFormat+SubjType) e.g., '10h_A_SCI_LAC_MAJ','8th_MAT_LAC_OPT' (This will be used for Timetable)
-    `name` varchar(100) NOT NULL,                          -- 10th-A Science Lacture Major
+    `name` varchar(100) NOT NULL,                 -- 10th-A Science Lacture Major
     -- Information for Timetable Module
     `is_compulsory` tinyint(1) NOT NULL DEFAULT '0',       -- Is this Subject compulsory for Student or Optional
     `required_weekly_periods` TINYINT UNSIGNED NOT NULL DEFAULT 1,   -- Total periods required per week for this Class Group (Class+{Section}+Subject+StudyFormat)
