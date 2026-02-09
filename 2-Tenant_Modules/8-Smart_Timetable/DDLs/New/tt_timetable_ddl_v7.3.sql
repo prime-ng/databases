@@ -317,9 +317,11 @@ COMMENT='Timetable generation algorithms and parameters';
     UNIQUE KEY `uq_tttype_code` (`code`),
     KEY `idx_tttype_shift` (`shift_id`),
     CONSTRAINT `fk_tttype_shift` FOREIGN KEY (`shift_id`) REFERENCES `tt_shift` (`id`),
-
     CONSTRAINT `chk_tttype_time` CHECK (`school_end_time` > `school_start_time`) AND (`effective_from_date` <= `effective_to_date`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  -- Condition :
+  -- 1. Application need to check and not allowed to insert/update overlapping school start/end time for 2 or more tTimetable type for same shift
+
 
   -- Here we are setting Period Set (Different No of Periods for different classes e.g. 3rd-12th Normal 8P, 4th-12th Exam 3P, 5th-12th Half Day 4P, BV1-2nd Toddler 6P)
   CREATE TABLE IF NOT EXISTS `tt_period_set` (
@@ -378,7 +380,8 @@ COMMENT='Timetable generation algorithms and parameters';
     `timetable_type_id` BIGINT UNSIGNED NOT NULL,          -- FK to tt_timetable_type.id 
     `class_id` INT UNSIGNED NOT NULL,                      -- FK to sch_classes.id
     `section_id` INT UNSIGNED NOT NULL,                    -- FK to sch_sections.id
-    `period_set_id` BIGINT UNSIGNED NOT NULL,              -- FK to tt_period_set.id 
+    `period_set_id` BIGINT UNSIGNED NOT NULL,              -- FK to tt_period_set.id
+    `applies_to_all_sections` TINYINT(1) NOT NULL DEFAULT 1, -- If 1 then all section of same class will have same timetable type
     `has_teaching` TINYINT(1) NOT NULL DEFAULT 1,          -- Whether this class is allowed to have teaching
     `has_exam` TINYINT(1) NOT NULL DEFAULT 0,              -- Whether this class is allowed to have exam
     `weekly_exam_period_count` TINYINT UNSIGNED DEFAULT NULL,     -- Number of exam periods (Will fetch from tt_period_set_period_jnt)
@@ -399,6 +402,10 @@ COMMENT='Timetable generation algorithms and parameters';
     CONSTRAINT `fk_cttj_period_set` FOREIGN KEY (`period_set_id`) REFERENCES `tt_period_set` (`id`),
     CONSTRAINT `chk_valid_effective_range` CHECK (effective_from < effective_to)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  -- Condition :
+  -- 1. Application need to check and not allowed to insert/update overlapping period set for same class and section
+  -- 2. 
+
 
   -- changed below Table name to - `tt_class_subject_groups` from `tt_class_groups_jnt`
   CREATE TABLE IF NOT EXISTS `tt_class_subject_groups` (
@@ -652,7 +659,7 @@ COMMENT='Timetable generation algorithms and parameters';
     `timetable_type_id` bigint unsigned NOT NULL,  -- FK to tt_timetable_type.id
     `class_timetable_type_id` bigint unsigned NOT NULL,  -- FK to tt_class_timetable_type_jnt.id    
     `class_id` bigint unsigned NOT NULL,  -- FK to sch_classes.id
-    `section_id` bigint unsigned DEFAULT NULL,  -- FK to sch_sections.id
+    `section_id` bigint unsigned NOT NULL,  -- FK to sch_sections.id
     `weekly_total_slots` TINYINT UNSIGNED NOT NULL,  -- 1-8 How many slots that Class+section have everyday
     `weekly_teaching_slots` TINYINT UNSIGNED NOT NULL,  -- 1-8 How many teaching slots that Class+section have everyday
     `weekly_exam_slots` TINYINT UNSIGNED NOT NULL,  -- 1-8 How many exam slots that Class+section have everyday
