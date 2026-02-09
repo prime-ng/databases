@@ -422,7 +422,7 @@ COMMENT='Timetable generation algorithms and parameters';
     `required_room_type_id` INT UNSIGNED NOT NULL,                    -- FK to sch_room_types.id (Required)
     `required_room_id` INT UNSIGNED DEFAULT NULL,                     -- FK to sch_rooms.id (Optional)
     `student_count` INT UNSIGNED DEFAULT NULL,                        -- Number of students in this subgroup (Need to be taken from sch_class_section_jnt)
-    `eligible_teacher_count` INT UNSIGNED DEFAULT NULL,               -- Number of teachers for this group (Will capture from Teachers profile)
+    `eligible_teacher_count` INT UNSIGNED DEFAULT NULL,               -- Number of teachers available for this group (Will capture from Teachers profile)
     `min_teacher_availability_score` DECIMAL(7,2) UNSIGNED DEFAULT 1  -- Percentage of available teachers for this Class Group (Will capture from Teachers profile)
     `max_teacher_availability_score` DECIMAL(7,2) UNSIGNED DEFAULT 1  -- Percentage of available teachers for this Class Group (Will capture from Teachers profile)
     `is_active` tinyint(1) NOT NULL DEFAULT '1',
@@ -459,7 +459,7 @@ COMMENT='Timetable generation algorithms and parameters';
     `required_room_type_id` INT UNSIGNED NOT NULL,                       -- FK to sch_room_types.id (Required)
     `required_room_id` INT UNSIGNED DEFAULT NULL,                        -- FK to sch_rooms.id (Optional)
     `student_count` INT UNSIGNED DEFAULT NULL,                           -- Number of students in this subgroup
-    `eligible_teacher_count` INT UNSIGNED DEFAULT NULL,                  -- Number of teachers for this group
+    `eligible_teacher_count` INT UNSIGNED DEFAULT NULL,                  -- Number of teachers available for this group (Will capture from Teachers profile)
     `min_teacher_availability_score` DECIMAL(7,2) UNSIGNED DEFAULT 1,    -- Percentage of available teachers for this Class Group (Will capture from Teachers profile)
     `max_teacher_availability_score` DECIMAL(7,2) UNSIGNED DEFAULT 1,    -- Percentage of available teachers for this Class Group (Will capture from Teachers profile)
     `is_shared_across_sections` TINYINT(1) NOT NULL DEFAULT 0,           -- Whether this subgroup is shared across sections
@@ -621,21 +621,28 @@ COMMENT='Timetable generation algorithms and parameters';
     `preferred_periods_json` JSON DEFAULT NULL,  -- On Screen User will see Multiselection of Periods but it will be saved as JSON
     `avoid_periods_json` JSON DEFAULT NULL,  -- On Screen User will see Multiselection of Periods but it will be saved as JSON
     `spread_evenly` TINYINT(1) DEFAULT 1,  -- Whether periods should be spread evenly
-    -- Till here Paremeter will be Editable by User
- 
-    -- Add Or Change on 7th Feb 2025 -- (Changed from SMALLINT to DECIMAL(8,3))
-    `priority` DECIMAL(8,3) DEFAULT 50.000,  -- Priority of this requirement (0.000 to 100.000) Auto-Calculated
-    `tot_students` INT UNSIGNED DEFAULT NULL,  -- Total students in this requirement group (tt_class_subject_groups.student_count)
-    -- Below 5 Fileds will be captured from tt_requirement_groups & tt_requirement_subgroups
-    `eligible_teacher_count` INT UNSIGNED DEFAULT NULL,  -- Number of teachers for this group
-    `min_teacher_availability_score` DECIMAL(7,2) UNSIGNED DEFAULT 1 -- Percentage of available teachers for this Class Group (Will capture from Teachers profile)
-    `max_teacher_availability_score` DECIMAL(7,2) UNSIGNED DEFAULT 1 -- Percentage of available teachers for this Class Group (Will capture from Teachers profile)
     `is_shared_across_sections` TINYINT(1) NOT NULL DEFAULT 0,  -- Whether this subgroup is shared across sections (Editable)
     `is_shared_across_classes` TINYINT(1) NOT NULL DEFAULT 0,  -- Whether this subgroup is shared across classes (Editable)
-    -- Add Or Change on 7th Feb 2025 -- (Removed compulsory_room_type & weekly_activity_required)
-    -- `weekly_activity_required` TINYINT(1) UNSIGNED DEFAULT 0,  -- (No use)
-    -- `compulsory_room_type` INT UNSIGNED DEFAULT NULL,  -- FK to sch_room_types.id (will be replaced by required_room_type_id & required_room_id)
-    -- Add Or Change on 7th Feb 2025 -- Added elow 3 Fields
+    -- Till here Paremeter will be Editable by User
+
+    -- 9th Feb 2025 -- (Below fields are non-editable and will be used to calculate 'Activity_Priority')
+    `tot_students` INT UNSIGNED DEFAULT NULL,  -- Total students in this requirement group (tt_class_subject_groups.student_count)
+    `teacher_scarcity_index` DECIMAL(7,2) UNSIGNED DEFAULT 1 -- (Here we will count the number of qualified teachers for a subject+Study Format for Every Class+Section)
+    `weekly_load_ratio` DECIMAL(7,2) UNSIGNED DEFAULT 1 -- (Required Periods per Week, (Required Periods per Week / Total Periods in a Week))
+    `teacher_availability_ratio` DECIMAL(7,2) UNSIGNED DEFAULT 1 -- (TAR = (Total Allocated Periods / Weekly Available Working Periods) * 100)
+    `rigidity_score` DECIMAL(7,2) UNSIGNED DEFAULT 1 -- (If an activity can happen only in limited slots, it must go first.) Rigidity_Score = Allowed_Slots / Total_Slots
+    `resource_scarcity` DECIMAL(7,2) UNSIGNED DEFAULT 1 -- (If only 1 lab serves 8 sections, must be placed early) Resource_Scarcity = Required_Resource_Count / Available_Resources
+    `subject_difficulty_index` DECIMAL(7,2) UNSIGNED DEFAULT 1 -- (Harder subjects like Physics/Chemistry/Maths should be placed early)
+
+    -- 9th Feb 2025 -- (Removed priority, we will be calculating priority in 'activities' table)
+    -- `priority` DECIMAL(8,3) DEFAULT 50.000,  -- Priority of this requirement (0.000 to 100.000) Auto-Calculated
+
+    -- Teacher availability from tt_requirement_groups & tt_requirement_subgroups
+    `eligible_teacher_count` INT UNSIGNED DEFAULT NULL,  -- How many Teacher are available to teach this Requirement
+    `min_teacher_availability_score` DECIMAL(7,2) UNSIGNED DEFAULT 1 -- Percentage of available teachers for this Class Group (Will capture from Teachers profile)
+    `max_teacher_availability_score` DECIMAL(7,2) UNSIGNED DEFAULT 1 -- Percentage of available teachers for this Class Group (Will capture from Teachers profile)
+
+    -- Room Requirement
     `compulsory_specific_room_type` TINYINT(1) NOT NULL DEFAULT 0, -- Whether specific room type is required (TRUE - if Specific Room Type is Must)
     `required_room_type_id` INT UNSIGNED NOT NULL,      -- FK to sch_room_types.id (MUST)
     `required_room_id` INT UNSIGNED DEFAULT NULL,       -- FK to sch_rooms.id (OPTIONAL)
@@ -678,7 +685,7 @@ CREATE TABLE IF NOT EXISTS `tt_teacher_availability` (
     `timetable_type_id` bigint unsigned NOT NULL,  -- FK to tt_timetable_type.id
     `class_timetable_type_id` bigint unsigned NOT NULL,  -- FK to tt_class_timetable_type_jnt.id    
     `class_id` bigint unsigned NOT NULL,  -- FK to sch_classes.id
-    `section_id` bigint unsigned DEFAULT NULL,  -- FK to sch_sections.id
+    `section_id` bigint unsigned NOT NULL,  -- FK to sch_sections.id
     `subject_study_format_id` bigint unsigned NOT NULL,  -- FK to sch_study_formats.id. e.g SCI_LEC, SCI_LAB, COM_LEC, COM_OPT, etc.
     `teacher_id` bigint unsigned NOT NULL,  -- FK to sch_teachers.id
     `start_time` time NOT NULL,
