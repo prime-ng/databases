@@ -6,9 +6,6 @@
 -- Architecture: Multi-tenant, Constraint-based Auto-Scheduling
 -- TABLE PREFIX: tt_ - Timetable Module
 -- =====================================================================
--- ENHANCEMENTS IN V6.0:
--- Added Reference Tables from Other Modules
--- =====================================================================
 
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
@@ -26,8 +23,6 @@ SET FOREIGN_KEY_CHECKS = 0;
   -- `Maximum_no_of_student_per_section`
   -- `section_of_a_class_has_home_room`
   -- `teacher_has_home_room`
-
-
 
 -- -------------------------------------------------
 --  SECTION 0: CONFIGURATION TABLES
@@ -68,7 +63,6 @@ SET FOREIGN_KEY_CHECKS = 0;
     FOREIGN KEY (`academic_session_id`) REFERENCES `sch_org_academic_sessions_jnt`(`id`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   COMMENT='Academic term/quarter/semester structure';
-
 
   -- Here we are setting what all Settings will be used for the Timetable Module
   -- Only Edit Functionality is require. No one can Add or Delete any record.
@@ -625,23 +619,6 @@ COMMENT='Timetable generation algorithms and parameters';
     `is_shared_across_classes` TINYINT(1) NOT NULL DEFAULT 0,  -- Whether this subgroup is shared across classes (Editable)
     -- Till here Paremeter will be Editable by User
 
-    -- 9th Feb 2025 -- (Below fields are non-editable and will be used to calculate 'Activity_Priority')
-    `tot_students` INT UNSIGNED DEFAULT NULL,  -- Total students in this requirement group (tt_class_subject_groups.student_count)
-    `teacher_scarcity_index` DECIMAL(7,2) UNSIGNED DEFAULT 1 -- (Here we will count the number of qualified teachers for a subject+Study Format for Every Class+Section)
-    `weekly_load_ratio` DECIMAL(7,2) UNSIGNED DEFAULT 1 -- (Required Periods per Week, (Required Periods per Week / Total Periods in a Week))
-    `teacher_availability_ratio` DECIMAL(7,2) UNSIGNED DEFAULT 1 -- (TAR = (Total Allocated Periods / Weekly Available Working Periods) * 100)
-    `rigidity_score` DECIMAL(7,2) UNSIGNED DEFAULT 1 -- (If an activity can happen only in limited slots, it must go first.) Rigidity_Score = Allowed_Slots / Total_Slots
-    `resource_scarcity` DECIMAL(7,2) UNSIGNED DEFAULT 1 -- (If only 1 lab serves 8 sections, must be placed early) Resource_Scarcity = Required_Resource_Count / Available_Resources
-    `subject_difficulty_index` DECIMAL(7,2) UNSIGNED DEFAULT 1 -- (Harder subjects like Physics/Chemistry/Maths should be placed early)
-
-    -- 9th Feb 2025 -- (Removed priority, we will be calculating priority in 'activities' table)
-    -- `priority` DECIMAL(8,3) DEFAULT 50.000,  -- Priority of this requirement (0.000 to 100.000) Auto-Calculated
-
-    -- Teacher availability from tt_requirement_groups & tt_requirement_subgroups
-    `eligible_teacher_count` INT UNSIGNED DEFAULT NULL,  -- How many Teacher are available to teach this Requirement
-    `min_teacher_availability_score` DECIMAL(7,2) UNSIGNED DEFAULT 1 -- Percentage of available teachers for this Class Group (Will capture from Teachers profile)
-    `max_teacher_availability_score` DECIMAL(7,2) UNSIGNED DEFAULT 1 -- Percentage of available teachers for this Class Group (Will capture from Teachers profile)
-
     -- Room Requirement
     `compulsory_specific_room_type` TINYINT(1) NOT NULL DEFAULT 0, -- Whether specific room type is required (TRUE - if Specific Room Type is Must)
     `required_room_type_id` INT UNSIGNED NOT NULL,      -- FK to sch_room_types.id (MUST)
@@ -658,6 +635,42 @@ COMMENT='Timetable generation algorithms and parameters';
     CONSTRAINT `fk_cgr_session` FOREIGN KEY (`academic_session_id`) REFERENCES `sch_org_academic_sessions_jnt` (`id`) ON DELETE SET NULL,
     CONSTRAINT `chk_cgr_target` CHECK ((`class_group_id` IS NOT NULL AND `class_subgroup_id` IS NULL) OR (`class_group_id` IS NULL AND `class_subgroup_id` IS NOT NULL))
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- ---------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+
+  -- 9th Feb 2025 -- (New Table)
+  -- This table will store the Priority Configuration for the Timetable Generation Process
+  CREATE TABLE IF NOT EXISTS `tt_priority_config` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `priority_type` VARCHAR(50) NOT NULL,  -- 'Teacher_Preference', 'Student_Preference', 'Academic_Requirement', 'Resource_Constraint', 'Time_Constraint', 'Activity_Priority'
+    `priority_name` VARCHAR(100) NOT NULL,  -- 'Maths_Preference', 'Physics_Preference', 'Class_12_Preference', 'Lab_Preference', 'Morning_Preference', 'Hard_Subject'
+    `priority_value` DECIMAL(8,3) NOT NULL,  -- Priority of this requirement (0.000 to 100.000) Auto-Calculated
+    `priority_description` TEXT DEFAULT NULL,  -- Description of the priority
+
+    `tot_students` INT UNSIGNED DEFAULT NULL,  -- Total students in this requirement group (tt_class_subject_groups.student_count)
+    `teacher_scarcity_index` DECIMAL(7,2) UNSIGNED DEFAULT 1 -- (Here we will count the number of qualified teachers for a subject+Study Format for Every Class+Section)
+    `weekly_load_ratio` DECIMAL(7,2) UNSIGNED DEFAULT 1 -- (Required Periods per Week, (Required Periods per Week / Total Periods in a Week))
+    `teacher_availability_ratio` DECIMAL(7,2) UNSIGNED DEFAULT 1 -- (TAR = (Total Allocated Periods / Weekly Available Working Periods) * 100)
+    `rigidity_score` DECIMAL(7,2) UNSIGNED DEFAULT 1 -- (If an activity can happen only in limited slots, it must go first.) Rigidity_Score = Allowed_Slots / Total_Slots
+    `resource_scarcity` DECIMAL(7,2) UNSIGNED DEFAULT 1 -- (If only 1 lab serves 8 sections, must be placed early) Resource_Scarcity = Required_Resource_Count / Available_Resources
+    `subject_difficulty_index` DECIMAL(7,2) UNSIGNED DEFAULT 1 -- (Harder subjects like Physics/Chemistry/Maths should be placed early)
+
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1,  -- Whether this priority is active
+    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_priority_type_name` (`priority_type`, `priority_name`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+
+
 
    -- Create Slot Availability / Class+section (This will fetch data from tt_class_timetable_type_jnt & tt_timetable_type)
    -- There will be no Audit Fields as this table will be used for calculation purpose only
@@ -834,26 +847,6 @@ CREATE TABLE IF NOT EXISTS `tt_room_availability` (
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
-
-  CREATE TABLE IF NOT EXISTS `tt_activity_teacher` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `activity_id` BIGINT UNSIGNED NOT NULL,  -- FK to tt_activity.id
-    `teacher_id` BIGINT UNSIGNED NOT NULL,  -- FK to sch_teachers.id
-    `assignment_role_id` BIGINT UNSIGNED NOT NULL,  -- FK to tt_assignment_roles.id
-    `is_required` TINYINT(1) DEFAULT 1,  -- Whether this teacher is required for the activity
-    `ordinal` TINYINT UNSIGNED DEFAULT 1,  -- Order of this teacher in the activity
-    `is_active` TINYINT(1) NOT NULL DEFAULT 1,  -- Whether this teacher is active
-    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_at_activity_teacher` (`activity_id`, `teacher_id`),
-    KEY `idx_at_teacher` (`teacher_id`),
-    CONSTRAINT `fk_at_activity` FOREIGN KEY (`activity_id`) REFERENCES `tt_activity` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_at_teacher` FOREIGN KEY (`teacher_id`) REFERENCES `sch_teachers` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_at_role` FOREIGN KEY (`assignment_role_id`) REFERENCES `tt_teacher_assignment_role` (`id`) ON DELETE RESTRICT
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
   CREATE TABLE IF NOT EXISTS `tt_sub_activity` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `parent_activity_id` BIGINT UNSIGNED NOT NULL,  -- FK to tt_activity.id
@@ -874,6 +867,45 @@ CREATE TABLE IF NOT EXISTS `tt_room_availability` (
     KEY `idx_subact_parent` (`parent_activity_id`),
     CONSTRAINT `fk_subact_parent` FOREIGN KEY (`parent_activity_id`) REFERENCES `tt_activity` (`id`) ON DELETE CASCADE,
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+
+
+  -- 10th Feb 2025 -- (New Table)
+  -- This table will store the Activity Priority Scores for the Timetable Generation Process
+  CREATE TABLE IF NOT EXISTS `tt_activity_priority` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `activity_id` BIGINT UNSIGNED NOT NULL,  -- FK to tt_activities.id
+    `priority_score` DECIMAL(5,2) NOT NULL,  -- 0.00 to 100.00
+    `priority_reason` TEXT DEFAULT NULL,  -- Reason for the priority score
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1,  -- Whether this activity priority is active
+    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_activity_priority` (`activity_id`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+  CREATE TABLE IF NOT EXISTS `tt_activity_teacher` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `activity_id` BIGINT UNSIGNED NOT NULL,  -- FK to tt_activity.id
+    `teacher_id` BIGINT UNSIGNED NOT NULL,  -- FK to sch_teachers.id
+    `assignment_role_id` BIGINT UNSIGNED NOT NULL,  -- FK to tt_assignment_roles.id
+    `is_required` TINYINT(1) DEFAULT 1,  -- Whether this teacher is required for the activity
+    `ordinal` TINYINT UNSIGNED DEFAULT 1,  -- Order of this teacher in the activity
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1,  -- Whether this teacher is active
+    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_at_activity_teacher` (`activity_id`, `teacher_id`),
+    KEY `idx_at_teacher` (`teacher_id`),
+    CONSTRAINT `fk_at_activity` FOREIGN KEY (`activity_id`) REFERENCES `tt_activity` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_at_teacher` FOREIGN KEY (`teacher_id`) REFERENCES `sch_teachers` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_at_role` FOREIGN KEY (`assignment_role_id`) REFERENCES `tt_teacher_assignment_role` (`id`) ON DELETE RESTRICT
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 
 
 -- -------------------------------------------------

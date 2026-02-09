@@ -140,7 +140,7 @@
     `min_periods_weekly` TINYINT UNSIGNED DEFAULT 15,
     `can_be_split_across_sections` TINYINT(1) DEFAULT 0,
     -- PRIORITY MATRIX INTELLIGENCE
-    `priority_weight` TINYINT UNSIGNED DEFAULT NULL,   -- manual / computed weight (1–10)
+    `priority_weight` TINYINT UNSIGNED DEFAULT NULL,   -- manual / computed weight (1–10) (Even if teachers are available, how important is THIS activity to the school?)
     `scarcity_index` TINYINT UNSIGNED DEFAULT NULL,    -- 1=abundant, 10=very rare
     `is_hard_constraint` TINYINT(1) DEFAULT 0,         -- if true cannot be voilated e.g. Physics Lab teacher for Class 12
     `allocation_strictness` ENUM('hard','medium','soft') DEFAULT 'medium', e.g. Senior Maths teacher - Hard, Preferred English teacher - Medium, Art / Sports / Activity - Soft
