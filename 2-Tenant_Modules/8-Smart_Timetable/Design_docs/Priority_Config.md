@@ -3,6 +3,7 @@
 Prioritising activities that will break the timetable if delayed.
 
 1. Number of Qualified Teachers (Scarcity Index)
+   - Here we will count the number of qualified teachers for a subject+Study Format for Every Class+Section
    - Fewer teachers ⇒ higher priority
    - Instead of “count is high”, use inverse scarcity:
 
@@ -24,24 +25,27 @@ Prioritising activities that will break the timetable if delayed.
    - Perfect. Also add minimum TAR, not just sum:
    - Min_TAR among qualified teachers
    - One teacher with TAR = 95% can destroy feasibility even if others are free.
+   - TAR = (Total Allocated Periods / Weekly Available Working Periods) * 100
 
-Now: Critical Parameters You Must Add (These Matter a LOT)
+New: Critical Parameters we Must Add (These Matter a LOT)
 4. Time Window Constraints (Rigidity Score)
    - If an activity can happen only in limited slots, it must go first.
-   - Examples:
-   - Lab only in periods 3–6
-   - PT only morning
-   - Art only twice a week after lunch
-   - Rigidity_Score = Allowed_Slots / Total_Slots
-   - Priority ∝ 1 / Rigidity_Score
-   - This is one of the most important parameters
+   - This is one of the most important parameters.
+   - **Examples:**
+        - Lab only in periods 3–6
+        - PT only morning
+        - Art only twice a week after lunch
+   - **Formula:**
+        - Rigidity_Score = Allowed_Slots / Total_Slots
+        - Priority ∝ 1 / Rigidity_Score
+
 
 5. Room / Resource Scarcity
    - Especially for:
-   - Labs
-   - Computer rooms
-   - Sports ground
-   - Music / Dance rooms
+        - Labs
+        - Computer rooms
+        - Sports ground
+        - Music / Dance rooms
    - Resource_Scarcity = Required_Resource_Count / Available_Resources
    - If only 1 lab serves 8 sections, this activity must be placed early.
 
@@ -166,14 +170,7 @@ This turns your scheduler into a constraint-aware greedy + backtracking hybrid (
 
 
 
-
-
-
-
-
-
-
-------------------------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------------------------------------------
 
 2. Activity Duration (Total Hours)
    - Longer activities → higher priority

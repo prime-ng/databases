@@ -758,54 +758,90 @@
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   -- Teacher Profile table will store detailed proficiency to teach specific subjects, study formats, and classes
-  CREATE TABLE IF NOT EXISTS `sch_teachers_profile` (
+  CREATE TABLE IF NOT EXISTS `sch_teacher_profile` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `employee_id` BIGINT UNSIGNED NOT NULL,         -- FK to sch_employee.id
-    `user_id` BIGINT UNSIGNED NOT NULL,             -- FK to sys_users.id
-    `role_id` BIGINT UNSIGNED NOT NULL,                  -- FK to employee_roles table (Principal, Accountant, Admin, etc.)
-    `department_id` BIGINT UNSIGNED DEFAULT NULL,        -- FK to sch_departments (Administration, Accounts, IT, etc.)
-    `teacher_house_room_id` int unsigned NULL,          -- FK to 'sch_rooms.id'
-    -- Teaching Capacity & Availability
-    `subject_id` BIGINT UNSIGNED NOT NULL,            -- FK to 'subjects' table
-    `study_format_id` INT UNSIGNED NOT NULL,       -- FK to 'sch_study_formats' table 
-    `class_id` INT UNSIGNED NOT NULL,                 -- FK to 'sch_classes' table
-    `proficiency_percentage` TINYINT UNSIGNED DEFAULT NULL,  -- 1–100 %
-    `teaching_experience_months` TINYINT UNSIGNED DEFAULT NULL,  -- teaching experience in months
-    `is_primary_subject` TINYINT(1) NOT NULL DEFAULT 1,  -- 1=Primary, 0=Secondary
-    `max_periods_daily` TINYINT UNSIGNED DEFAULT 6,     -- Maximum number of periods per day
-    `min_periods_daily` TINYINT UNSIGNED DEFAULT 1,     -- Minimum number of periods per day
-    `max_periods_weekly` TINYINT UNSIGNED DEFAULT 48,   -- Maximum weekly periods
-    `min_periods_weekly` TINYINT UNSIGNED DEFAULT 15,   -- Minimum weekly periods
-    `preferred_shift` ENUM('morning', 'evening', 'flexible') DEFAULT 'morning',
-    `is_full_time` TINYINT(1) DEFAULT 1,                 -- 1=Full-time, 0=Part-time
-    `is_capable_of_handling_multiple_classes` TINYINT(1) DEFAULT 0, -- 1=Yes, 0=No
-    `is_proficient_with_computer` TINYINT(1) DEFAULT 0, -- 1=Yes, 0=No
+    `employee_id` BIGINT UNSIGNED NOT NULL,             -- FK sch_employees.id
+    `user_id` BIGINT UNSIGNED NOT NULL,                 -- FK sys_users.id
+    `role_id` BIGINT UNSIGNED NOT NULL,                 -- FK to   Teacher / Principal / etc.
+    `department_id` BIGINT UNSIGNED NOT NULL,           -- sch_department.id 
+    `designation_id` BIGINT UNSIGNED NOT NULL,          -- sch_designation.id
+    `teacher_house_room_id` INT UNSIGNED DEFAULT NULL,  -- FK to sch_rooms.id
+    -- Employment nature & capability
+    `is_full_time` TINYINT(1) DEFAULT 1,
+    `preferred_shift` BIGINT UNSIGNED DEFAULT NULL,    -- FK to sch_shift.id
+    `capable_handling_multiple_classes` TINYINT(1) DEFAULT 0,
+    `can_be_used_for_substitution` TINYINT(1) DEFAULT 1,
     -- Skills & Responsibilities (JSON for flexibility)
-    `special_skill_area` VARCHAR(100) DEFAULT NULL,   -- e.g. Robotics, AI, Debate
-    `certified_for_lab` TINYINT(1) DEFAULT 0,         -- allowed to conduct practicals
-    `assignment_meta` JSON DEFAULT NULL,              -- e.g. { "qualification": "M.Sc Physics", "experience": "7 years" }
+    `certified_for_lab` TINYINT(1) DEFAULT 0,          -- allowed to conduct practicals
+    `is_proficient_with_computer` TINYINT(1) DEFAULT 0,
+    `can_manage_staff` TINYINT(1) DEFAULT 0,
+    `special_skill_area` VARCHAR(100) DEFAULT NULL,
     `soft_skills` JSON DEFAULT NULL,                     -- e.g., ["leadership", "communication", "problem_solving"]
+    `assignment_meta` JSON DEFAULT NULL,                 -- e.g. { "qualification": "M.Sc Physics", "experience": "7 years" }
+    -- Performance & compliance
     `performance_rating` TINYINT UNSIGNED DEFAULT NULL,  -- rating out of (1 to 10)
     `last_performance_review` DATE DEFAULT NULL,
-    -- Administrative Controls
-    `security_clearance_done` TINYINT(1) DEFAULT 0, --
-    `reporting_to` BIGINT UNSIGNED DEFAULT NULL,         -- FK to sch_employees.id (who they report to)
-    `can_manage_staff` TINYINT(1) DEFAULT 0,
+    `security_clearance_done` TINYINT(1) DEFAULT 0,
+    `reporting_to` BIGINT UNSIGNED DEFAULT NULL,
     `can_access_sensitive_data` TINYINT(1) DEFAULT 0,
     `notes` TEXT NULL,
-    `effective_from` DATE DEFAULT NULL,               -- when this profile becomes effective
-    `effective_to` DATE DEFAULT NULL,                 -- when this profile ends 
-    `is_active` TINYINT(1) NOT NULL DEFAULT '1',
+    `effective_from` DATE DEFAULT NULL,
+    `effective_to` DATE DEFAULT NULL,
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
     `deleted_at` TIMESTAMP NULL DEFAULT NULL,
-    `created_at` TIMESTAMP NULL DEFAULT NULL,
-    `updated_at` TIMESTAMP NULL DEFAULT NULL,
+    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_teachersProfile_employee` (`employee_id`,`subject_id`,`study_format_id`,`class_id`),
-    CONSTRAINT `fk_teachersProfile_employeeId` FOREIGN KEY (`employee_id`) REFERENCES `sch_employees` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_teachersProfile_subjectId` FOREIGN KEY (`subject_id`) REFERENCES `sch_subjects` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_teachersProfile_studyFormatId` FOREIGN KEY (`study_format_id`) REFERENCES `sch_study_formats` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_teachersProfile_classId` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE CASCADE
+    UNIQUE KEY `uq_teacher_employee` (`employee_id`),
+    CONSTRAINT `fk_teacher_employee` FOREIGN KEY (`employee_id`) REFERENCES `sch_employees` (`id`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+  CREATE TABLE IF NOT EXISTS `sch_teacher_capabilities` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    -- CORE RELATIONSHIP
+    `teacher_profile_id` BIGINT UNSIGNED NOT NULL,   -- FK sch_teacher_profile.id
+    `class_id` INT UNSIGNED NOT NULL,                 -- FK sch_classes.id
+    `section_id` INT UNSIGNED DEFAULT NULL,           -- FK sch_sections.id (NULL = all sections)
+    `subject_study_format_id` BIGINT UNSIGNED NOT NULL,   -- FK sch_subject_study_format_jnt.id
+    -- TEACHING STRENGTH
+    `proficiency_percentage` TINYINT UNSIGNED DEFAULT NULL, -- 1–100
+    `teaching_experience_months` SMALLINT UNSIGNED DEFAULT NULL,
+    `is_primary_subject` TINYINT(1) NOT NULL DEFAULT 1,  -- 1=Yes, 0=No
+    `competancy_level` ENUM('Basic','Intermediate','Advanced','Expert') DEFAULT 'Basic',
+    -- LOAD & SCHEDULING CONSTRAINTS
+    `max_periods_daily` TINYINT UNSIGNED DEFAULT 6,
+    `min_periods_daily` TINYINT UNSIGNED DEFAULT 1,
+    `max_periods_weekly` TINYINT UNSIGNED DEFAULT 48,
+    `min_periods_weekly` TINYINT UNSIGNED DEFAULT 15,
+    `can_be_split_across_sections` TINYINT(1) DEFAULT 0,
+    -- PRIORITY MATRIX INTELLIGENCE
+    `priority_weight` TINYINT UNSIGNED DEFAULT NULL,   -- manual / computed weight (1–10)
+    `scarcity_index` TINYINT UNSIGNED DEFAULT NULL,    -- 1=abundant, 10=very rare
+    `is_hard_constraint` TINYINT(1) DEFAULT 0,         -- if true cannot be voilated e.g. Physics Lab teacher for Class 12
+    `allocation_strictness` ENUM('hard','medium','soft') DEFAULT 'medium', e.g. Senior Maths teacher - Hard, Preferred English teacher - Medium, Art / Sports / Activity - Soft
+    -- AI / HISTORICAL FEEDBACK
+    `historical_success_ratio` TINYINT UNSIGNED DEFAULT NULL, -- 1–100 (sessions_completed_without_change / total_sessions_allocated ) * 100)
+    `last_allocation_score` TINYINT UNSIGNED DEFAULT NULL,   -- last run score
+    -- GOVERNANCE & OVERRIDE
+    `override_priority` TINYINT UNSIGNED DEFAULT NULL, -- admin override
+    `override_reason` VARCHAR(255) DEFAULT NULL,
+    -- EFFECTIVITY & STATUS
+    `effective_from` DATE DEFAULT NULL,
+    `effective_to` DATE DEFAULT NULL,
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY `uq_teacher_capability` (`teacher_profile_id`, `class_id`, `section_id`, `subject_id`, `study_format_id`),
+    CONSTRAINT `fk_tc_teacher_profile` FOREIGN KEY (`teacher_profile_id`) REFERENCES `sch_teacher_profile`(id) ON DELETE CASCADE,
+    CONSTRAINT `fk_tc_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes`(id),
+    CONSTRAINT `fk_tc_section` FOREIGN KEY (`section_id`) REFERENCES `sch_sections`(id),
+    CONSTRAINT `fk_tc_subject_study_format` FOREIGN KEY (`subject_study_format_id`) REFERENCES `sch_subject_study_format_jnt`(id)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  -- Condition:
+  -- Formula: historical_success_ratio = (sessions_completed_without_change / total_sessions_allocated ) * 100)
+  -- last_allocation_score = (proficiency_percentage * 0.4) + (load_balance * 0.3) + (strictness_match * 0.2) + (historical_success_ratio * 0.1)
+  -- Importance - “Teacher selected because last allocation score = 87 (highest)”
 
 
 -- ===========================================================================
@@ -2102,6 +2138,7 @@
 -- =========================================================================
 -- 8-TIMETABLE MODULE (tt)
 -- =========================================================================
+
   -- ------------------------------------------------------
   --  SECTION 0: MASTER CONFIGURATION TABLES
   -- ------------------------------------------------------
