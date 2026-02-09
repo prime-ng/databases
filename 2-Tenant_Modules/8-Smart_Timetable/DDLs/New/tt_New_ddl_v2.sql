@@ -6,6 +6,7 @@
 -- Cross-Class Subject Coordination Table
 -- ---------------------------------------------------------------------
 -- IMPORTANT: For handling subjects taught across multiple classes/sections
+-- This is not require as we have already cover this while creating Activities & Sub-Activities
 CREATE TABLE IF NOT EXISTS `tt_cross_class_coordination` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `master_activity_id` BIGINT UNSIGNED NOT NULL,
@@ -37,6 +38,7 @@ COMMENT='Coordinates subjects taught across multiple classes (hobby, sports, etc
 -- Timetable Generation Queue & Strategy Tables
 -- ---------------------------------------------------------------------
 -- ESSENTIAL: For handling asynchronous timetable generation
+-- This has been added into Timetable_ddl_v7.1
 CREATE TABLE IF NOT EXISTS `tt_generation_strategy` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `strategy_code` VARCHAR(50) NOT NULL,
@@ -61,6 +63,7 @@ CREATE TABLE IF NOT EXISTS `tt_generation_strategy` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Timetable generation algorithms and parameters';
 
+-- This is not reuired, I have added 
 CREATE TABLE IF NOT EXISTS `tt_generation_queue` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `uuid` CHAR(36) NOT NULL DEFAULT (UUID()),
