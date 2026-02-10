@@ -42,31 +42,6 @@ Step 2: Create Records where [tt_class_timetable_type_jnt.applies_to_all_section
    EndLoop
 
 
-
-
-
-
-Step 3: Create Records where [tt_class_timetable_type_jnt.applies_to_all_sections] = 0
-   Loop through all the records from [tt_class_timetable_type_jnt]
-   Check [tt_class_timetable_type_jnt.applies_to_all_sections]
-   If True
-      Insert into [tt_slot_availability] Select * from [tt_class_timetable_type_jnt] where 
-	   [tt_class_timetable_type_jnt.class_id] = [tt_class_timetable_type_jnt.class_id] AND
-	   [tt_class_timetable_type_jnt.section_id] = [tt_class_timetable_type_jnt.section_id] AND
-	   [tt_class_timetable_type_jnt.is_active] = 1
-	Update [tt_slot_availability.class_id] = [tt_class_timetable_type_jnt.class_id] AND
-	Update [tt_slot_availability.timetable_type_id] = [tt_class_timetable_type_jnt.timetable_type_id]
-
-	Else
-		Select all the records from [sch_class_section_jnt] where 
-		   [sch_class_section_jnt.class_id] = [tt_class_timetable_type_jnt.class_id] AND
-		   [sch_class_section_jnt.is_active] = 1
-		Update [tt_slot_availability.class_id] = [sch_class_section_jnt.class_id] AND
-		[tt_slot_availability.section_id] = [sch_class_section_jnt.section_id] AND
-		[tt_slot_availability.timetable_type_id] = [tt_class_timetable_type_jnt.timetable_type_id]
-		Insert all those records into [tt_slot_availability]
-   EndIf
-
 ## 2. Generate (tt_class_subject_groups & tt_class_subject_subgroups)
 
 ### 2.1 Fill Data into [tt_class_subject_groups & tt_class_subject_subgroups]
