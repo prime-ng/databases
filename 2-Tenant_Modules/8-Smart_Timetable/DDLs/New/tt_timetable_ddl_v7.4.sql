@@ -106,8 +106,8 @@ SET FOREIGN_KEY_CHECKS = 0;
     -- (10,'maximum_student_required_for_class_subgroup', 'Maximum Number of Student Required for Class Subgroup', '25', 'NUMBER', 'Maximum Number of Student Required for Class Subgroup', NULL, 0, 1, 1, 1, NULL, NULL, NULL);
     -- 
 
--- Timetable Generation Queue & Strategy Tables (For handling asynchronous timetable generation)
-CREATE TABLE IF NOT EXISTS `tt_generation_strategy` (
+  -- Timetable Generation Queue & Strategy Tables (For handling asynchronous timetable generation)
+  CREATE TABLE IF NOT EXISTS `tt_generation_strategy` (
     `id` SMALLINT unsigned NOT NULL AUTO_INCREMENT,
     `code` VARCHAR(20) NOT NULL,
     `name` VARCHAR(100) NOT NULL,
@@ -128,8 +128,8 @@ CREATE TABLE IF NOT EXISTS `tt_generation_strategy` (
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_generation_strategy_code` (`code`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-COMMENT='Timetable generation algorithms and parameters';
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  COMMENT='Timetable generation algorithms and parameters';
 
 
 -- -------------------------------------------------
@@ -292,34 +292,6 @@ COMMENT='Timetable generation algorithms and parameters';
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
-  -- This is the table for which we will be creating Timetable (e.g., 'STANDARD_3rd-12th', 'STANDARD_BV1-2nd','EXTENDED_9th-12th')
-  CREATE TABLE IF NOT EXISTS `tt_timetable_type` (
-    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `code` VARCHAR(30) NOT NULL,                      -- e.g., 'STANDARD','UNIT_TEST-1', 'HALF_DAY','HALF_YEARLY','FINAL_EXAM'
-    `name` VARCHAR(100) NOT NULL,                     -- e.g., 'Standard Timetable','Half Day Timetable','Unit Test-1 Timetable','Half Yearly Timetable','Final Exam Timetable'
-    `description` VARCHAR(255) DEFAULT NULL,
-    `shift_id` INT UNSIGNED DEFAULT NULL,          -- FK to tt_shift.id (e.g., 'MORNING','AFTERNOON','EVENING')
-    `effective_from_date` DATE DEFAULT NULL,
-    `effective_to_date` DATE DEFAULT NULL,
-    `school_start_time` TIME DEFAULT NULL,
-    `school_end_time` TIME DEFAULT NULL,
-    `has_exam` TINYINT(1) NOT NULL DEFAULT 0,
-    `has_teaching` TINYINT(1) NOT NULL DEFAULT 1,
-    `ordinal` SMALLINT UNSIGNED DEFAULT 1,
-    `is_default` TINYINT(1) DEFAULT 0,
-    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_tttype_code` (`code`),
-    KEY `idx_tttype_shift` (`shift_id`),
-    CONSTRAINT `fk_tttype_shift` FOREIGN KEY (`shift_id`) REFERENCES `tt_shift` (`id`),
-    CONSTRAINT `chk_tttype_time` CHECK (`school_end_time` > `school_start_time`) AND (`effective_from_date` <= `effective_to_date`)
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-  -- Condition :
-  -- 1. Application need to check and not allowed to insert/update overlapping school start/end time for 2 or more tTimetable type for same shift
-
 
   -- Here we are setting Period Set (Different No of Periods for different classes e.g. 3rd-12th Normal 8P, 4th-12th Exam 3P, 5th-12th Half Day 4P, BV1-2nd Toddler 6P)
   CREATE TABLE IF NOT EXISTS `tt_period_set` (
@@ -370,21 +342,50 @@ COMMENT='Timetable generation algorithms and parameters';
     CONSTRAINT `chk_psp_time` CHECK (`end_time` > `start_time`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+
+  -- This is the table for which we will be creating Timetable (e.g., 'STANDARD_3rd-12th', 'STANDARD_BV1-2nd','EXTENDED_9th-12th')
+  CREATE TABLE IF NOT EXISTS `tt_timetable_type` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `code` VARCHAR(30) NOT NULL,                      -- e.g., 'STANDARD','UNIT_TEST-1', 'HALF_DAY','HALF_YEARLY','FINAL_EXAM'
+    `name` VARCHAR(100) NOT NULL,                     -- e.g., 'Standard Timetable','Half Day Timetable','Unit Test-1 Timetable','Half Yearly Timetable','Final Exam Timetable'
+    `description` VARCHAR(255) DEFAULT NULL,
+    `shift_id` INT UNSIGNED DEFAULT NULL,          -- FK to tt_shift.id (e.g., 'MORNING','AFTERNOON','EVENING')
+    `effective_from_date` DATE DEFAULT NULL,
+    `effective_to_date` DATE DEFAULT NULL,
+    `school_start_time` TIME DEFAULT NULL,
+    `school_end_time` TIME DEFAULT NULL,
+    `has_exam` TINYINT(1) NOT NULL DEFAULT 0,
+    `has_teaching` TINYINT(1) NOT NULL DEFAULT 1,
+    `ordinal` SMALLINT UNSIGNED DEFAULT 1,
+    `is_default` TINYINT(1) DEFAULT 0,
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_tttype_code` (`code`),
+    KEY `idx_tttype_shift` (`shift_id`),
+    CONSTRAINT `fk_tttype_shift` FOREIGN KEY (`shift_id`) REFERENCES `tt_shift` (`id`),
+    CONSTRAINT `chk_tttype_time` CHECK (`school_end_time` > `school_start_time`) AND (`effective_from_date` <= `effective_to_date`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  -- Condition :
+  -- 1. Application need to check and not allowed to insert/update overlapping school start/end time for 2 or more tTimetable type for same shift
+
   -- This table is used to define the rules for a particular class
   -- Change Table Name to 'tt_class_timetable_type_jnt' from 'tt_class_mode_rule'
   CREATE TABLE IF NOT EXISTS `tt_class_timetable_type_jnt` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `academic_term_id` INT UNSIGNED DEFAULT NULL,   -- FK to sch_academic_term.id 
-    `timetable_type_id` INT UNSIGNED NOT NULL,          -- FK to tt_timetable_type.id 
-    `class_id` INT UNSIGNED NOT NULL,                      -- FK to sch_classes.id
-    `section_id` INT UNSIGNED NOT NULL,                    -- FK to sch_sections.id
-    `period_set_id` INT UNSIGNED NOT NULL,              -- FK to tt_period_set.id
+    `academic_term_id` INT UNSIGNED DEFAULT NULL,            -- FK to sch_academic_term.id 
+    `timetable_type_id` INT UNSIGNED NOT NULL,               -- FK to tt_timetable_type.id 
+    `class_id` INT UNSIGNED NOT NULL,                        -- FK to sch_classes.id
+    `section_id` INT UNSIGNED NULL,                          -- FK to sch_sections.id (This can be Null if it is applicable to all section of the class)
+    `period_set_id` INT UNSIGNED NOT NULL,                   -- FK to tt_period_set.id
     `applies_to_all_sections` TINYINT(1) NOT NULL DEFAULT 1, -- If 1 then all section of same class will have same timetable type
-    `has_teaching` TINYINT(1) NOT NULL DEFAULT 1,          -- Whether this class is allowed to have teaching
-    `has_exam` TINYINT(1) NOT NULL DEFAULT 0,              -- Whether this class is allowed to have exam
-    `weekly_exam_period_count` TINYINT UNSIGNED DEFAULT NULL,     -- Number of exam periods (Will fetch from tt_period_set_period_jnt)
-    `weekly_teaching_period_count` TINYINT UNSIGNED DEFAULT NULL, -- Number of teaching periods (Will fetch from tt_period_set_period_jnt)
-    `weekly_free_period_count` TINYINT UNSIGNED DEFAULT NULL,     -- Number of free periods (Will fetch from tt_period_set_period_jnt)
+    `has_teaching` TINYINT(1) NOT NULL DEFAULT 1,            -- Whether this class is allowed to have teaching
+    `has_exam` TINYINT(1) NOT NULL DEFAULT 0,                -- Whether this class is allowed to have exam
+    `weekly_exam_period_count` TINYINT UNSIGNED DEFAULT NULL,     -- Number of exam periods (Will fetch from tt_period_set)
+    `weekly_teaching_period_count` TINYINT UNSIGNED DEFAULT NULL, -- Number of teaching periods (Will fetch from tt_period_set)
+    `weekly_free_period_count` TINYINT UNSIGNED DEFAULT NULL,     -- Number of free periods (Will fetch from tt_period_set)
     `effective_from` DATE DEFAULT NULL,
     `effective_to` DATE DEFAULT NULL,
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
@@ -399,10 +400,48 @@ COMMENT='Timetable generation algorithms and parameters';
     CONSTRAINT `fk_cttj_section` FOREIGN KEY (`section_id`) REFERENCES `sch_sections` (`id`),
     CONSTRAINT `fk_cttj_period_set` FOREIGN KEY (`period_set_id`) REFERENCES `tt_period_set` (`id`),
     CONSTRAINT `chk_valid_effective_range` CHECK (effective_from < effective_to)
+    CONSTRAINT `chk_cttj_apply_to_all_section` CHECK ((`section_id` IS NULL AND `applies_to_all_sections` = 1 ) OR (`section_id` IS NOT NULL AND `applies_to_all_sections` = 0 ))
+  )
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
   -- Condition :
   -- 1. Application need to check and not allowed to insert/update overlapping period set for same class and section
-  -- 2. 
+
+-- -------------------------------------------------
+--  SECTION 2: TIMETABLE REQUIREMENT
+-- -------------------------------------------------
+
+   -- Create Slot Availability / Class+section (This will fetch data from tt_class_timetable_type_jnt & tt_timetable_type)
+   -- There will be no Audit Fields as this table will be used for calculation purpose only
+   CREATE TABLE IF NOT EXISTS `tt_slot_availability` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `academic_term_id` INT unsigned NOT NULL,  -- FK to tt_academic_term.id
+    `timetable_type_id` INT unsigned NOT NULL,  -- FK to tt_timetable_type.id
+    `class_timetable_type_id` INT unsigned NOT NULL,  -- FK to tt_class_timetable_type_jnt.id    
+    `class_id` INT unsigned NOT NULL,  -- FK to sch_classes.id
+    `section_id` INT unsigned NOT NULL,  -- FK to sch_sections.id
+    `weekly_total_slots` TINYINT UNSIGNED NOT NULL,  -- 1-8 How many slots that Class+section have everyday
+    `weekly_teaching_slots` TINYINT UNSIGNED NOT NULL,  -- 1-8 How many teaching slots that Class+section have everyday
+    `weekly_exam_slots` TINYINT UNSIGNED NOT NULL,  -- 1-8 How many exam slots that Class+section have everyday
+    `weekly_free_slots` TINYINT UNSIGNED NOT NULL,  -- 1-8 How many free slots that Class+section have everyday
+    `activity_id` INT unsigned NULL,               -- FK to tt_activity.id
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_sa_class_section` (`timetable_type_id`,`class_timetable_type_id`,`class_id`, `section_id`),
+    CONSTRAINT `fk_sa_academic_term` FOREIGN KEY (`academic_term_id`) REFERENCES `tt_academic_term` (`id`),
+    CONSTRAINT `fk_sa_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`), 
+    CONSTRAINT `fk_sa_section` FOREIGN KEY (`section_id`) REFERENCES `sch_sections` (`id`),
+    CONSTRAINT `fk_sa_timetable_type` FOREIGN KEY (`timetable_type_id`) REFERENCES `tt_timetable_type` (`id`),
+    CONSTRAINT `fk_sa_class_timetable_type` FOREIGN KEY (`class_timetable_type_id`) REFERENCES `tt_class_timetable_type_jnt` (`id`),
+    CONSTRAINT `fk_sa_activity` FOREIGN KEY (`activity_id`) REFERENCES `tt_activity` (`id`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+  -- Data Example:
+    -- 2025-26 TERM-1  Class-LKG A   TOTAL Period-6   Study Period - 6
+    -- 2025-26 TERM-1  Class-LKG B   Period-6         Study Period - 6
+    -- 2025-26 TERM-1  Class-3RD A   Period-8         Study Period - 6    Exam Period - 2
+    -- 2025-26 TERM-1  Class-5th A   Period-8         Study Period - 5    Exam Period - 2   Free Period -1
+    -- 2025-26 TERM-1  Class-10th A  Period-8         Study Period - 0    Exam Period - 3   Free Period -5
+    -- 2025-26 TERM-1  Class-5th A   Period-8         Study Period - 0    Exam Period - 3   Free Period -5
 
 
   -- changed below Table name to - `tt_class_subject_groups` from `tt_class_groups_jnt`
@@ -422,8 +461,8 @@ COMMENT='Timetable generation algorithms and parameters';
     `class_house_room_id` INT UNSIGNED NOT NULL,                      -- FK to 'sch_rooms' (Added new)
     `student_count` INT UNSIGNED DEFAULT NULL,                        -- Number of students in this subgroup (Need to be taken from sch_class_section_jnt)
     `eligible_teacher_count` INT UNSIGNED DEFAULT NULL,               -- Number of teachers available for this group (Will capture from Teachers profile)
-    `min_teacher_availability_score` DECIMAL(7,2) UNSIGNED DEFAULT 1  -- Percentage of available teachers for this Class Group (Will capture from Teachers profile)
-    `max_teacher_availability_score` DECIMAL(7,2) UNSIGNED DEFAULT 1  -- Percentage of available teachers for this Class Group (Will capture from Teachers profile)
+    --`min_teacher_availability_score` DECIMAL(7,2) UNSIGNED DEFAULT 1  -- Percentage of available teachers for this Class Group (Will capture from Teachers profile)
+    --`max_teacher_availability_score` DECIMAL(7,2) UNSIGNED DEFAULT 1  -- Percentage of available teachers for this Class Group (Will capture from Teachers profile)
     `is_active` tinyint(1) NOT NULL DEFAULT '1',
     `deleted_at` timestamp NULL DEFAULT NULL,
     `created_at` timestamp NULL DEFAULT NULL,
@@ -461,8 +500,8 @@ COMMENT='Timetable generation algorithms and parameters';
     `class_house_room_id` INT UNSIGNED NOT NULL,                         -- FK to 'sch_rooms' (Added new). (Fetch from sch_class_section_jnt)
     `student_count` INT UNSIGNED DEFAULT NULL,                           -- Number of students in this subgroup
     `eligible_teacher_count` INT UNSIGNED DEFAULT NULL,                  -- Number of teachers available for this group (Will capture from Teachers profile)
-    `min_teacher_availability_score` DECIMAL(7,2) UNSIGNED DEFAULT 1,    -- Percentage of available teachers for this Class Group (Will capture from Teachers profile)
-    `max_teacher_availability_score` DECIMAL(7,2) UNSIGNED DEFAULT 1,    -- Percentage of available teachers for this Class Group (Will capture from Teachers profile)
+    --`min_teacher_availability_score` DECIMAL(7,2) UNSIGNED DEFAULT 1,    -- Percentage of available teachers for this Class Group (Will capture from Teachers profile)
+    --`max_teacher_availability_score` DECIMAL(7,2) UNSIGNED DEFAULT 1,    -- Percentage of available teachers for this Class Group (Will capture from Teachers profile)
     `is_shared_across_sections` TINYINT(1) NOT NULL DEFAULT 0,           -- Whether this subgroup is shared across sections
     `is_shared_across_classes` TINYINT(1) NOT NULL DEFAULT 0,            -- Whether this subgroup is shared across classes
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
@@ -484,10 +523,10 @@ COMMENT='Timetable generation algorithms and parameters';
   --             sch_subject_group_subject_jnt.subject_study_format_id = tt_class_subject_subgroups.subject_study_format_id
 
 
-
 -- -------------------------------------------------
 --  SECTION 2: CONSTRAINT ENGINE
 -- -------------------------------------------------
+ 
   -- Important Note - Constraint Category & Scope can not be defined by User but it will defined by PRIME only
   CREATE TABLE IF NOT EXISTS `tt_constraint_category_scope` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -651,7 +690,7 @@ COMMENT='Timetable generation algorithms and parameters';
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- ---------------------------------------------------------------------------------------------------------------------------------------------------
+  -- ---------------------------------------------------------------------------------------------------------------------------------------------------
 
 
 
@@ -683,30 +722,7 @@ COMMENT='Timetable generation algorithms and parameters';
 
 
 
-   -- Create Slot Availability / Class+section (This will fetch data from tt_class_timetable_type_jnt & tt_timetable_type)
-   -- There will be no Audit Fields as this table will be used for calculation purpose only
-   CREATE TABLE IF NOT EXISTS `tt_slot_availability` (
-    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `academic_term_id` INT unsigned NOT NULL,  -- FK to tt_academic_term.id
-    `timetable_type_id` INT unsigned NOT NULL,  -- FK to tt_timetable_type.id
-    `class_timetable_type_id` INT unsigned NOT NULL,  -- FK to tt_class_timetable_type_jnt.id    
-    `class_id` INT unsigned NOT NULL,  -- FK to sch_classes.id
-    `section_id` INT unsigned NOT NULL,  -- FK to sch_sections.id
-    `weekly_total_slots` TINYINT UNSIGNED NOT NULL,  -- 1-8 How many slots that Class+section have everyday
-    `weekly_teaching_slots` TINYINT UNSIGNED NOT NULL,  -- 1-8 How many teaching slots that Class+section have everyday
-    `weekly_exam_slots` TINYINT UNSIGNED NOT NULL,  -- 1-8 How many exam slots that Class+section have everyday
-    `weekly_free_slots` TINYINT UNSIGNED NOT NULL,  -- 1-8 How many free slots that Class+section have everyday
-    `activity_id` INT unsigned NULL,               -- FK to tt_activity.id
-    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_sa_class_section` (`timetable_type_id`,`class_timetable_type_id`,`class_id`, `section_id`),
-    CONSTRAINT `fk_sa_academic_term` FOREIGN KEY (`academic_term_id`) REFERENCES `tt_academic_term` (`id`),
-    CONSTRAINT `fk_sa_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`), 
-    CONSTRAINT `fk_sa_section` FOREIGN KEY (`section_id`) REFERENCES `sch_sections` (`id`),
-    CONSTRAINT `fk_sa_timetable_type` FOREIGN KEY (`timetable_type_id`) REFERENCES `tt_timetable_type` (`id`),
-    CONSTRAINT `fk_sa_class_timetable_type` FOREIGN KEY (`class_timetable_type_id`) REFERENCES `tt_class_timetable_type_jnt` (`id`),
-    CONSTRAINT `fk_sa_activity` FOREIGN KEY (`activity_id`) REFERENCES `tt_activity` (`id`)
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 
 -- Create Teachers Availability Class wise for entire Academic Session
 CREATE TABLE IF NOT EXISTS `tt_teacher_availability` (
@@ -800,7 +816,14 @@ CREATE TABLE IF NOT EXISTS `tt_room_availability` (
     `preferred_periods_json` JSON DEFAULT NULL,  -- On Screen User will see Multiselection of Periods but it will be saved as JSON
     `avoid_periods_json` JSON DEFAULT NULL,  -- On Screen User will see Multiselection of Periods but it will be saved as JSON
     `spread_evenly` TINYINT(1) DEFAULT 1,  -- Whether periods should be spread evenly
-    
+
+
+    `eligible_teacher_count` INT UNSIGNED DEFAULT NULL,                  -- Number of teachers available for this group (Will capture from Teachers profile)
+    `min_teacher_availability_score` DECIMAL(7,2) UNSIGNED DEFAULT 1,    -- Percentage of available teachers for this Class Group (Will capture from Teachers profile)
+    `max_teacher_availability_score` DECIMAL(7,2) UNSIGNED DEFAULT 1,    -- Percentage of available teachers for this Class Group (Will capture from Teachers profile)
+
+
+
     `duration_periods` TINYINT UNSIGNED NOT NULL DEFAULT 1,  -- If 1 Activity can not be done in 1 Period then this will how many periods required for one activity (e.g. Lab = 2 but will be count as 1 Activity)
     `weekly_periods` TINYINT UNSIGNED NOT NULL DEFAULT 1,  -- Number of times per week this activity is scheduled
     `total_periods` SMALLINT UNSIGNED GENERATED ALWAYS AS (`duration_periods` * `weekly_periods`) STORED,
