@@ -2,7 +2,7 @@
 -- ---------
 
 CREATE TABLE IF NOT EXISTS `glb_countries` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
   `name` varchar(50) NOT NULL,
   `short_name` varchar(10) NOT NULL,
   `global_code` varchar(10) DEFAULT NULL,
@@ -17,8 +17,8 @@ CREATE TABLE IF NOT EXISTS `glb_countries` (
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `glb_states` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `country_id` bigint unsigned NOT NULL,    -- fk
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
+  `country_id` INT unsigned NOT NULL,    -- fk
   `name` varchar(50) NOT NULL,
   `short_name` varchar(10) NOT NULL,
   `global_code` varchar(10) DEFAULT NULL,
@@ -32,8 +32,8 @@ CREATE TABLE IF NOT EXISTS `glb_states` (
 ) ENGINE=InnoDB AUTO_INCREMENT=71 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `glb_districts` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `state_id` bigint unsigned NOT NULL,    -- fk
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
+  `state_id` INT unsigned NOT NULL,    -- fk
   `name` varchar(50) NOT NULL,
   `short_name` varchar(10) NOT NULL,
   `global_code` varchar(10) DEFAULT NULL,
@@ -47,8 +47,8 @@ CREATE TABLE IF NOT EXISTS `glb_districts` (
 ) ENGINE=InnoDB AUTO_INCREMENT=290 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `glb_cities` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `district_id` bigint unsigned NOT NULL,    -- fk
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
+  `district_id` INT unsigned NOT NULL,    -- fk
   `name` varchar(100) NOT NULL,
   `short_name` varchar(20) NOT NULL,
   `global_code` varchar(20) DEFAULT NULL,
@@ -62,7 +62,7 @@ CREATE TABLE IF NOT EXISTS `glb_cities` (
 ) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `glb_academic_sessions` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
   `short_name` varchar(20) NOT NULL,
   `name` varchar(50) NOT NULL,
   `start_date` date NOT NULL,
@@ -78,7 +78,7 @@ CREATE TABLE IF NOT EXISTS `glb_academic_sessions` (
 ) ENGINE=InnoDB AUTO_INCREMENT=31 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `glb_boards` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL,
   `short_name` varchar(20) NOT NULL,
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
@@ -92,7 +92,7 @@ CREATE TABLE IF NOT EXISTS `glb_boards` (
 
 -- ----------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `glb_languages` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   `code` VARCHAR(10) NOT NULL,                  -- ISO code: en, hi, fr, ar
   `name` VARCHAR(50) NOT NULL,                  -- English, Hindi, French...
   `native_name` VARCHAR(50) DEFAULT NULL,       -- "हिन्दी", "Français"
@@ -102,8 +102,8 @@ CREATE TABLE IF NOT EXISTS `glb_languages` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `glb_menus` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `parent_id` bigint unsigned DEFAULT NULL,     -- FK to self
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
+  `parent_id` INT unsigned DEFAULT NULL,     -- FK to self
   `is_category` tinyint(1) NOT NULL DEFAULT '0',
   `code` varchar(60) NOT NULL,
   `slug` VARCHAR(150) NOT NULL,
@@ -124,8 +124,8 @@ CREATE TABLE IF NOT EXISTS `glb_menus` (
 ) ENGINE=InnoDB AUTO_INCREMENT=29 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `glb_modules` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `parent_id` bigint unsigned DEFAULT NULL,    -- fk to self
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
+  `parent_id` INT unsigned DEFAULT NULL,    -- fk to self
   `name` varchar(50) NOT NULL,
   `version` tinyint NOT NULL DEFAULT '1',
   `is_sub_module` tinyint(1) NOT NULL DEFAULT '0',    -- kept for CONSTRAINT `chk_isSubModule_parentId`
@@ -150,9 +150,9 @@ CREATE TABLE IF NOT EXISTS `glb_modules` (
 ) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `glb_menu_model_jnt` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `menu_id` bigint unsigned NOT NULL,
-  `module_id` bigint unsigned NOT NULL,
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
+  `menu_id` INT unsigned NOT NULL,
+  `module_id` INT unsigned NOT NULL,
   PRIMARY KEY (`id`),
   CONSTRAINT `fk_menuModel_menuId` FOREIGN KEY (`menu_id`) REFERENCES `glb_menus` (`id`)  ON DELETE RESTRICT,
   CONSTRAINT `fk_menuModel_moduleId` FOREIGN KEY (`module_id`) REFERENCES `glb_modules` (`id`)  ON DELETE RESTRICT
@@ -162,9 +162,9 @@ CREATE TABLE IF NOT EXISTS `glb_menu_model_jnt` (
 -- ------------------------------------------------------------------
 -- Old_Table - Need to be verified
 -- CREATE TABLE IF NOT EXISTS `sys_masters_translations` (
---   `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+--   `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
 --   `model_type` VARCHAR(190) NOT NULL,   -- Laravel morph type (e.g., 'App\\Models\\Menu')
---   `model_id` BIGINT UNSIGNED NOT NULL,  -- The actual record ID in that model
+--   `model_id` INT UNSIGNED NOT NULL,  -- The actual record ID in that model
 --   `language_code` VARCHAR(10) NOT NULL, -- e.g., 'en', 'hi', 'fr'
 --   `field_name` VARCHAR(100) NOT NULL,   -- e.g., 'name', 'description', 'title'
 --   `translated_value` TEXT NOT NULL,     -- the actual translation
@@ -172,10 +172,10 @@ CREATE TABLE IF NOT EXISTS `glb_menu_model_jnt` (
 -- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `glb_translations` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
   `translatable_type` varchar(255) NOT NULL,
-  `translatable_id` bigint unsigned NOT NULL,
-  `language_id` bigint unsigned NOT NULL,
+  `translatable_id` INT unsigned NOT NULL,
+  `language_id` INT unsigned NOT NULL,
   `key` varchar(255) NOT NULL,
   `value` text NOT NULL,
   `created_at` timestamp NULL DEFAULT NULL,

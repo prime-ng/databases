@@ -17,18 +17,18 @@ SET FOREIGN_KEY_CHECKS = 0;
 
 -- Custom learning paths for personalized education
 CREATE TABLE IF NOT EXISTS `slb_learning_pathways` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `uuid` CHAR(36) NOT NULL,
   `name` VARCHAR(150) NOT NULL,
   `description` TEXT DEFAULT NULL,
   `pathway_type` ENUM('REMEDIAL','ENRICHMENT','STANDARD','ACCELERATED','SPECIAL_NEEDS') NOT NULL,
   `class_id` INT UNSIGNED DEFAULT NULL,
-  `subject_id` BIGINT UNSIGNED DEFAULT NULL,
+  `subject_id` INT UNSIGNED DEFAULT NULL,
   `target_performance_category_id` INT UNSIGNED DEFAULT NULL, -- Target student level
   `estimated_duration_days` INT UNSIGNED DEFAULT NULL,
   `is_ai_generated` TINYINT(1) DEFAULT 0,
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-  `created_by` BIGINT UNSIGNED DEFAULT NULL,
+  `created_by` INT UNSIGNED DEFAULT NULL,
   `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -39,11 +39,11 @@ CREATE TABLE IF NOT EXISTS `slb_learning_pathways` (
 
 -- Nodes within a learning pathway
 CREATE TABLE IF NOT EXISTS `slb_learning_pathway_nodes` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `pathway_id` BIGINT UNSIGNED NOT NULL,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `pathway_id` INT UNSIGNED NOT NULL,
   `ordinal` SMALLINT UNSIGNED NOT NULL,
   `node_type` ENUM('TOPIC','QUIZ','STUDY_MATERIAL','ASSESSMENT','CHECKPOINT') NOT NULL,
-  `reference_id` BIGINT UNSIGNED NOT NULL,  -- ID of topic/quiz/material based on type
+  `reference_id` INT UNSIGNED NOT NULL,  -- ID of topic/quiz/material based on type
   `is_mandatory` TINYINT(1) DEFAULT 1,
   `pass_criteria` JSON DEFAULT NULL,        -- {"min_score": 60, "max_attempts": 3}
   `estimated_minutes` INT UNSIGNED DEFAULT NULL,
@@ -55,17 +55,17 @@ CREATE TABLE IF NOT EXISTS `slb_learning_pathway_nodes` (
 
 -- Student progress through learning pathways
 CREATE TABLE IF NOT EXISTS `sch_student_pathway_progress` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `student_id` BIGINT UNSIGNED NOT NULL,
-  `pathway_id` BIGINT UNSIGNED NOT NULL,
-  `current_node_id` BIGINT UNSIGNED DEFAULT NULL,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `student_id` INT UNSIGNED NOT NULL,
+  `pathway_id` INT UNSIGNED NOT NULL,
+  `current_node_id` INT UNSIGNED DEFAULT NULL,
   `status` ENUM('NOT_STARTED','IN_PROGRESS','PAUSED','COMPLETED','ABANDONED') DEFAULT 'NOT_STARTED',
   `started_at` TIMESTAMP NULL DEFAULT NULL,
   `completed_at` TIMESTAMP NULL DEFAULT NULL,
   `total_time_spent_minutes` INT UNSIGNED DEFAULT 0,
   `nodes_completed` INT UNSIGNED DEFAULT 0,
   `overall_score` DECIMAL(5,2) DEFAULT NULL,
-  `assigned_by` BIGINT UNSIGNED DEFAULT NULL,
+  `assigned_by` INT UNSIGNED DEFAULT NULL,
   `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -81,7 +81,7 @@ CREATE TABLE IF NOT EXISTS `sch_student_pathway_progress` (
 
 -- Achievement/Badge definitions
 CREATE TABLE IF NOT EXISTS `sch_achievements` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `code` VARCHAR(50) NOT NULL,
   `name` VARCHAR(100) NOT NULL,
   `description` VARCHAR(255) DEFAULT NULL,
@@ -98,9 +98,9 @@ CREATE TABLE IF NOT EXISTS `sch_achievements` (
 
 -- Student achievements earned
 CREATE TABLE IF NOT EXISTS `sch_student_achievements` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `student_id` BIGINT UNSIGNED NOT NULL,
-  `achievement_id` BIGINT UNSIGNED NOT NULL,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `student_id` INT UNSIGNED NOT NULL,
+  `achievement_id` INT UNSIGNED NOT NULL,
   `earned_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `context` JSON DEFAULT NULL,              -- What triggered this achievement
   `notified` TINYINT(1) DEFAULT 0,
@@ -112,12 +112,12 @@ CREATE TABLE IF NOT EXISTS `sch_student_achievements` (
 
 -- Leaderboard snapshots (daily/weekly/monthly)
 CREATE TABLE IF NOT EXISTS `sch_leaderboard_snapshots` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `snapshot_date` DATE NOT NULL,
   `period_type` ENUM('DAILY','WEEKLY','MONTHLY','TERM','YEARLY') NOT NULL,
   `class_id` INT UNSIGNED NOT NULL,
   `section_id` INT UNSIGNED DEFAULT NULL,
-  `subject_id` BIGINT UNSIGNED DEFAULT NULL,
+  `subject_id` INT UNSIGNED DEFAULT NULL,
   `leaderboard_data` JSON NOT NULL,         -- [{student_id, rank, score, change}]
   `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -126,8 +126,8 @@ CREATE TABLE IF NOT EXISTS `sch_leaderboard_snapshots` (
 
 -- Student streaks (consecutive days of activity)
 CREATE TABLE IF NOT EXISTS `sch_student_streaks` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `student_id` BIGINT UNSIGNED NOT NULL,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `student_id` INT UNSIGNED NOT NULL,
   `streak_type` ENUM('LOGIN','QUIZ','STUDY','PRACTICE') NOT NULL,
   `current_streak` INT UNSIGNED DEFAULT 0,
   `longest_streak` INT UNSIGNED DEFAULT 0,
@@ -146,13 +146,13 @@ CREATE TABLE IF NOT EXISTS `sch_student_streaks` (
 
 -- Study groups
 CREATE TABLE IF NOT EXISTS `sch_study_groups` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `name` VARCHAR(100) NOT NULL,
   `description` VARCHAR(500) DEFAULT NULL,
   `class_id` INT UNSIGNED NOT NULL,
   `section_id` INT UNSIGNED DEFAULT NULL,
-  `subject_id` BIGINT UNSIGNED DEFAULT NULL,
-  `created_by` BIGINT UNSIGNED NOT NULL,    -- Teacher or Student
+  `subject_id` INT UNSIGNED DEFAULT NULL,
+  `created_by` INT UNSIGNED NOT NULL,    -- Teacher or Student
   `max_members` TINYINT UNSIGNED DEFAULT 10,
   `is_public` TINYINT(1) DEFAULT 0,
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
@@ -163,9 +163,9 @@ CREATE TABLE IF NOT EXISTS `sch_study_groups` (
 
 -- Study group members
 CREATE TABLE IF NOT EXISTS `sch_study_group_members` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `group_id` BIGINT UNSIGNED NOT NULL,
-  `student_id` BIGINT UNSIGNED NOT NULL,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `group_id` INT UNSIGNED NOT NULL,
+  `student_id` INT UNSIGNED NOT NULL,
   `role` ENUM('LEADER','MEMBER') DEFAULT 'MEMBER',
   `joined_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
@@ -177,10 +177,10 @@ CREATE TABLE IF NOT EXISTS `sch_study_group_members` (
 
 -- Peer tutoring requests and matches
 CREATE TABLE IF NOT EXISTS `sch_peer_tutoring` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `requester_student_id` BIGINT UNSIGNED NOT NULL,
-  `tutor_student_id` BIGINT UNSIGNED DEFAULT NULL,
-  `topic_id` BIGINT UNSIGNED NOT NULL,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `requester_student_id` INT UNSIGNED NOT NULL,
+  `tutor_student_id` INT UNSIGNED DEFAULT NULL,
+  `topic_id` INT UNSIGNED NOT NULL,
   `request_type` ENUM('HELP_NEEDED','CAN_HELP') NOT NULL,
   `status` ENUM('OPEN','MATCHED','IN_PROGRESS','COMPLETED','CANCELLED') DEFAULT 'OPEN',
   `description` VARCHAR(500) DEFAULT NULL,
@@ -204,9 +204,9 @@ CREATE TABLE IF NOT EXISTS `sch_peer_tutoring` (
 
 -- AI question generation requests
 CREATE TABLE IF NOT EXISTS `sch_ai_question_requests` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `requested_by` BIGINT UNSIGNED NOT NULL,
-  `topic_id` BIGINT UNSIGNED NOT NULL,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `requested_by` INT UNSIGNED NOT NULL,
+  `topic_id` INT UNSIGNED NOT NULL,
   `question_type_id` INT UNSIGNED NOT NULL,
   `complexity_level_id` INT UNSIGNED DEFAULT NULL,
   `bloom_id` INT UNSIGNED DEFAULT NULL,
@@ -227,13 +227,13 @@ CREATE TABLE IF NOT EXISTS `sch_ai_question_requests` (
 
 -- AI-generated questions pending review
 CREATE TABLE IF NOT EXISTS `sch_ai_generated_questions` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `request_id` BIGINT UNSIGNED NOT NULL,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `request_id` INT UNSIGNED NOT NULL,
   `question_data` JSON NOT NULL,            -- Full question structure
   `review_status` ENUM('PENDING','APPROVED','REJECTED','MODIFIED') DEFAULT 'PENDING',
-  `reviewed_by` BIGINT UNSIGNED DEFAULT NULL,
+  `reviewed_by` INT UNSIGNED DEFAULT NULL,
   `reviewed_at` TIMESTAMP NULL DEFAULT NULL,
-  `approved_question_id` BIGINT UNSIGNED DEFAULT NULL, -- If approved, link to sch_questions
+  `approved_question_id` INT UNSIGNED DEFAULT NULL, -- If approved, link to sch_questions
   `rejection_reason` VARCHAR(255) DEFAULT NULL,
   `quality_score` DECIMAL(5,2) DEFAULT NULL, -- AI confidence score
   `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
@@ -250,9 +250,9 @@ CREATE TABLE IF NOT EXISTS `sch_ai_generated_questions` (
 
 -- Parent notification preferences
 CREATE TABLE IF NOT EXISTS `sch_parent_notification_prefs` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `parent_id` BIGINT UNSIGNED NOT NULL,     -- FK to sys_users (parent)
-  `student_id` BIGINT UNSIGNED NOT NULL,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `parent_id` INT UNSIGNED NOT NULL,     -- FK to sys_users (parent)
+  `student_id` INT UNSIGNED NOT NULL,
   `notify_quiz_assigned` TINYINT(1) DEFAULT 1,
   `notify_quiz_completed` TINYINT(1) DEFAULT 1,
   `notify_low_score` TINYINT(1) DEFAULT 1,
@@ -274,12 +274,12 @@ CREATE TABLE IF NOT EXISTS `sch_parent_notification_prefs` (
 
 -- Parent activity log (what parents viewed)
 CREATE TABLE IF NOT EXISTS `sch_parent_activity_log` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `parent_id` BIGINT UNSIGNED NOT NULL,
-  `student_id` BIGINT UNSIGNED NOT NULL,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `parent_id` INT UNSIGNED NOT NULL,
+  `student_id` INT UNSIGNED NOT NULL,
   `activity_type` ENUM('VIEW_DASHBOARD','VIEW_REPORT','VIEW_QUIZ','VIEW_RECOMMENDATION','ACKNOWLEDGE_ALERT') NOT NULL,
   `reference_type` VARCHAR(50) DEFAULT NULL,
-  `reference_id` BIGINT UNSIGNED DEFAULT NULL,
+  `reference_id` INT UNSIGNED DEFAULT NULL,
   `activity_timestamp` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `ip_address` VARCHAR(45) DEFAULT NULL,
   `device_info` JSON DEFAULT NULL,
@@ -297,19 +297,19 @@ CREATE TABLE IF NOT EXISTS `sch_parent_activity_log` (
 
 -- Reusable assessment templates
 CREATE TABLE IF NOT EXISTS `sch_assessment_templates` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `name` VARCHAR(150) NOT NULL,
   `description` TEXT DEFAULT NULL,
   `template_type` ENUM('QUIZ','ASSESSMENT','EXAM','HOMEWORK') NOT NULL,
   `class_id` INT UNSIGNED DEFAULT NULL,
-  `subject_id` BIGINT UNSIGNED DEFAULT NULL,
+  `subject_id` INT UNSIGNED DEFAULT NULL,
   `blueprint` JSON NOT NULL,                -- Structure definition
   -- Example: {"sections": [{"name": "Part A", "question_count": 10, "marks_each": 1, "complexity": "EASY"}]}
   `total_marks` DECIMAL(7,2) DEFAULT NULL,
   `duration_minutes` INT UNSIGNED DEFAULT NULL,
   `is_public` TINYINT(1) DEFAULT 0,         -- Shareable with other teachers
   `usage_count` INT UNSIGNED DEFAULT 0,
-  `created_by` BIGINT UNSIGNED DEFAULT NULL,
+  `created_by` INT UNSIGNED DEFAULT NULL,
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
   `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -320,11 +320,11 @@ CREATE TABLE IF NOT EXISTS `sch_assessment_templates` (
 
 -- Question paper blueprints (for board exam style papers)
 CREATE TABLE IF NOT EXISTS `sch_question_paper_blueprints` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `name` VARCHAR(150) NOT NULL,
-  `board_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to glb_boards
+  `board_id` INT UNSIGNED DEFAULT NULL,  -- FK to glb_boards
   `class_id` INT UNSIGNED NOT NULL,
-  `subject_id` BIGINT UNSIGNED NOT NULL,
+  `subject_id` INT UNSIGNED NOT NULL,
   `academic_year` YEAR DEFAULT NULL,
   `paper_pattern` JSON NOT NULL,
   -- {"sections": [{"name": "Part A", "marks": 20, "complexity_distribution": {"EASY": 60, "MEDIUM": 30, "HARD": 10}}]}
@@ -333,7 +333,7 @@ CREATE TABLE IF NOT EXISTS `sch_question_paper_blueprints` (
   `is_board_pattern` TINYINT(1) DEFAULT 0,
   `source` VARCHAR(100) DEFAULT NULL,       -- e.g., "CBSE 2024", "Custom"
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-  `created_by` BIGINT UNSIGNED DEFAULT NULL,
+  `created_by` INT UNSIGNED DEFAULT NULL,
   `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_qpb_class_subject` (`class_id`, `subject_id`),
@@ -348,15 +348,15 @@ CREATE TABLE IF NOT EXISTS `sch_question_paper_blueprints` (
 
 -- Question feedback from students/teachers
 CREATE TABLE IF NOT EXISTS `sch_question_feedback` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `question_id` BIGINT UNSIGNED NOT NULL,
-  `user_id` BIGINT UNSIGNED NOT NULL,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `question_id` INT UNSIGNED NOT NULL,
+  `user_id` INT UNSIGNED NOT NULL,
   `user_type` ENUM('STUDENT','TEACHER') NOT NULL,
   `feedback_type` ENUM('DIFFICULTY','CLARITY','ERROR','SUGGESTION','APPRECIATION') NOT NULL,
   `rating` TINYINT UNSIGNED DEFAULT NULL,   -- 1-5
   `comment` VARCHAR(500) DEFAULT NULL,
   `is_resolved` TINYINT(1) DEFAULT 0,
-  `resolved_by` BIGINT UNSIGNED DEFAULT NULL,
+  `resolved_by` INT UNSIGNED DEFAULT NULL,
   `resolution_notes` VARCHAR(255) DEFAULT NULL,
   `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -368,8 +368,8 @@ CREATE TABLE IF NOT EXISTS `sch_question_feedback` (
 
 -- Question usage statistics
 CREATE TABLE IF NOT EXISTS `sch_question_usage_stats` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `question_id` BIGINT UNSIGNED NOT NULL,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `question_id` INT UNSIGNED NOT NULL,
   `year_month` CHAR(7) NOT NULL,            -- YYYY-MM
   `times_used` INT UNSIGNED DEFAULT 0,
   `times_answered_correctly` INT UNSIGNED DEFAULT 0,
@@ -390,8 +390,8 @@ CREATE TABLE IF NOT EXISTS `sch_question_usage_stats` (
 
 -- Academic calendar events (exams, holidays, etc.)
 CREATE TABLE IF NOT EXISTS `sch_academic_calendar` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `academic_session_id` BIGINT UNSIGNED NOT NULL,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `academic_session_id` INT UNSIGNED NOT NULL,
   `event_type` ENUM('EXAM','QUIZ_WEEK','REVISION','HOLIDAY','PTM','ACTIVITY','OTHER') NOT NULL,
   `title` VARCHAR(150) NOT NULL,
   `description` TEXT DEFAULT NULL,
@@ -401,7 +401,7 @@ CREATE TABLE IF NOT EXISTS `sch_academic_calendar` (
   `subject_ids` JSON DEFAULT NULL,          -- Applicable subjects (NULL = all)
   `is_school_wide` TINYINT(1) DEFAULT 0,
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-  `created_by` BIGINT UNSIGNED DEFAULT NULL,
+  `created_by` INT UNSIGNED DEFAULT NULL,
   `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -412,14 +412,14 @@ CREATE TABLE IF NOT EXISTS `sch_academic_calendar` (
 
 -- Exam seat allocation
 CREATE TABLE IF NOT EXISTS `sch_exam_seat_allocation` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `exam_id` BIGINT UNSIGNED NOT NULL,
-  `student_id` BIGINT UNSIGNED NOT NULL,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `exam_id` INT UNSIGNED NOT NULL,
+  `student_id` INT UNSIGNED NOT NULL,
   `room_id` INT UNSIGNED DEFAULT NULL,      -- FK to sch_rooms
   `seat_number` VARCHAR(20) DEFAULT NULL,
   `row_number` TINYINT UNSIGNED DEFAULT NULL,
   `allocated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-  `allocated_by` BIGINT UNSIGNED DEFAULT NULL,
+  `allocated_by` INT UNSIGNED DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_examseat_exam_student` (`exam_id`, `student_id`),
   UNIQUE KEY `uq_examseat_exam_room_seat` (`exam_id`, `room_id`, `seat_number`),
@@ -435,11 +435,11 @@ CREATE TABLE IF NOT EXISTS `sch_exam_seat_allocation` (
 
 -- Predicted performance scores
 CREATE TABLE IF NOT EXISTS `sch_performance_predictions` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `student_id` BIGINT UNSIGNED NOT NULL,
-  `subject_id` BIGINT UNSIGNED NOT NULL,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `student_id` INT UNSIGNED NOT NULL,
+  `subject_id` INT UNSIGNED NOT NULL,
   `prediction_type` ENUM('TERM_END','ANNUAL','BOARD','TOPIC') NOT NULL,
-  `reference_id` BIGINT UNSIGNED DEFAULT NULL, -- Topic ID if type=TOPIC
+  `reference_id` INT UNSIGNED DEFAULT NULL, -- Topic ID if type=TOPIC
   `predicted_score` DECIMAL(5,2) NOT NULL,
   `confidence_level` DECIMAL(5,2) DEFAULT NULL, -- 0-100
   `prediction_factors` JSON DEFAULT NULL,   -- Contributing factors
@@ -457,17 +457,17 @@ CREATE TABLE IF NOT EXISTS `sch_performance_predictions` (
 
 -- At-risk student alerts
 CREATE TABLE IF NOT EXISTS `sch_at_risk_alerts` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `student_id` BIGINT UNSIGNED NOT NULL,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `student_id` INT UNSIGNED NOT NULL,
   `alert_type` ENUM('FAILING','DECLINING','DISENGAGED','ATTENDANCE','BEHAVIOR') NOT NULL,
   `severity` ENUM('LOW','MEDIUM','HIGH','CRITICAL') NOT NULL,
-  `subject_id` BIGINT UNSIGNED DEFAULT NULL,
-  `topic_id` BIGINT UNSIGNED DEFAULT NULL,
+  `subject_id` INT UNSIGNED DEFAULT NULL,
+  `topic_id` INT UNSIGNED DEFAULT NULL,
   `alert_message` VARCHAR(500) NOT NULL,
   `supporting_data` JSON DEFAULT NULL,
   `status` ENUM('ACTIVE','ACKNOWLEDGED','RESOLVED','ESCALATED') DEFAULT 'ACTIVE',
   `generated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `acknowledged_by` BIGINT UNSIGNED DEFAULT NULL,
+  `acknowledged_by` INT UNSIGNED DEFAULT NULL,
   `acknowledged_at` TIMESTAMP NULL DEFAULT NULL,
   `resolved_at` TIMESTAMP NULL DEFAULT NULL,
   `resolution_notes` TEXT DEFAULT NULL,
@@ -485,11 +485,11 @@ CREATE TABLE IF NOT EXISTS `sch_at_risk_alerts` (
 
 -- School comparison data (anonymized)
 CREATE TABLE IF NOT EXISTS `sch_school_benchmark_data` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `year_month` CHAR(7) NOT NULL,
   `class_id` INT UNSIGNED NOT NULL,
-  `subject_id` BIGINT UNSIGNED NOT NULL,
-  `topic_id` BIGINT UNSIGNED DEFAULT NULL,
+  `subject_id` INT UNSIGNED NOT NULL,
+  `topic_id` INT UNSIGNED DEFAULT NULL,
   `school_avg_score` DECIMAL(5,2) DEFAULT NULL,
   `city_avg_score` DECIMAL(5,2) DEFAULT NULL,
   `state_avg_score` DECIMAL(5,2) DEFAULT NULL,

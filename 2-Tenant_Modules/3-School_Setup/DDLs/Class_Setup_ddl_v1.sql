@@ -42,8 +42,8 @@
     `class_secton_code` char(5) NOT NULL,           -- Combination of class Code + section Code i.e. '8th_A', '10h_B'  
     `capacity` tinyint unsigned DEFAULT NULL,       -- Targeted / Planned Quantity of stundets in Each Sections of every class.
     `total_student` tinyint unsigned DEFAULT NULL,  -- Actual Number of Student in the Class+Section
-    `class_teacher_id` bigint unsigned NOT NULL,    -- FK to sch_users
-    `assistance_class_teacher_id` bigint unsigned NOT NULL,  -- FK to sch_users
+    `class_teacher_id` INT unsigned NOT NULL,    -- FK to sch_users
+    `assistance_class_teacher_id` INT unsigned NOT NULL,  -- FK to sch_users
     `is_active` tinyint(1) NOT NULL DEFAULT 1,
     `created_at` timestamp NULL DEFAULT NULL,
     `updated_at` timestamp NULL DEFAULT NULL,
@@ -89,7 +89,7 @@
   -- Data Seed for Study_Format - LECTURE, LAB, PRACTICAL, TUTORIAL, SEMINAR, WORKSHOP, GROUP_DISCUSSION, OTHER
 
   CREATE TABLE IF NOT EXISTS `sch_subjects` (
-    `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+    `id` INT unsigned NOT NULL AUTO_INCREMENT,
     `short_name` varchar(20) NOT NULL,  -- e.g. 'SCIENCE','MATH','SST','ENGLISH' and so on
     `name` varchar(50) NOT NULL,
     `code` CHAR(3) NOT NULL,         -- e.g., 'SCI','MTH','SST','ENG' and so on (This will be used for Timetable)
@@ -106,8 +106,8 @@
   -- I have removed 'sub_types' from 'sch_subject_study_format_jnt' because one Subject_StudyFormat may belongs to different Subject_type for different classes
   -- Removed 'short_name' as we can use `sub_stdformat_code`
   CREATE TABLE IF NOT EXISTS `sch_subject_study_format_jnt` (
-    `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-    `subject_id` bigint unsigned NOT NULL,            -- FK to 'sch_subjects'
+    `id` INT unsigned NOT NULL AUTO_INCREMENT,
+    `subject_id` INT unsigned NOT NULL,            -- FK to 'sch_subjects'
     `study_format_id` int unsigned NOT NULL,          -- FK to 'sch_study_formats'
     `name` varchar(50) NOT NULL,                      -- e.g., 'Science Lecture','Science Lab','Math Lecture','Math Lab' and so on
     `subj_stdformat_code` CHAR(7) NOT NULL,         -- Will be combination of (Subject.codee+'-'+StudyFormat.code) e.g., 'SCI_LAC','SCI_LAB','SST_LAC','ENG_LAC' (This will be used for Timetable)
@@ -125,10 +125,10 @@
   -- Ths table will be used to define different Class Groups like 10th-A Science Lecture Major, 7th-B Commerce Optional etc.
   -- old name 'sch_subject_study_format_class_subj_types_jnt' changed to 'sch_class_groups_jnt'
   CREATE TABLE IF NOT EXISTS `sch_class_groups_jnt` (
-    `id` bigint unsigned NOT NULL AUTO_INCREMENT,                  -- FK
+    `id` INT unsigned NOT NULL AUTO_INCREMENT,                  -- FK
     `class_id` int unsigned NOT NULL,                              -- FK to 'sch_classes'
     `section_id` int unsigned NULL,                            -- FK to 'sch_sections'
-    `subject_Study_format_id` bigint unsigned NOT NULL,   -- FK to 'sch_subject_study_format_jnt'
+    `subject_Study_format_id` INT unsigned NOT NULL,   -- FK to 'sch_subject_study_format_jnt'
     `subject_type_id` int unsigned NOT NULL,              -- FK to 'sch_subject_types'
     `rooms_type_id` int unsigned NOT NULL,             -- FK to 'sch_rooms_type'
     `class_house_roome_id` int unsigned NOT NULL,             -- FK to 'sch_rooms
@@ -153,7 +153,7 @@
   -- if above variable is True then section_id will be Nul in below table and
   -- Every Group will eb avalaible accross sections for a particuler class
   CREATE TABLE IF NOT EXISTS `sch_subject_groups` (
-    `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+    `id` INT unsigned NOT NULL AUTO_INCREMENT,
     `class_id` int UNSIGNED NOT NULL,                        -- FK to 'sch_classes'
     `section_id` int UNSIGNED NULL,                          -- FK (Section can be null if Group will be used for all sectons)
     `short_name` varchar(30) NOT NULL,              -- 7th Science, 7th Commerce, 7th-A Science etc.
@@ -170,12 +170,12 @@
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `sch_subject_group_subject_jnt` (
-    `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-    `subject_group_id` bigint unsigned NOT NULL,              -- FK to 'sch_subject_groups'
-    `class_group_id` bigint unsigned NOT NULL,                -- FK to 'sch_class_groups_jnt'
+    `id` INT unsigned NOT NULL AUTO_INCREMENT,
+    `subject_group_id` INT unsigned NOT NULL,              -- FK to 'sch_subject_groups'
+    `class_group_id` INT unsigned NOT NULL,                -- FK to 'sch_class_groups_jnt'
     `subject_id` int unsigned NOT NULL,                       -- FK to 'sch_subjects'
     `subject_type_id` int unsigned NOT NULL,                  -- FK to 'sch_subject_types'
-    `subject_study_format_id` bigint unsigned NOT NULL,       -- FK to 'sch_subject_study_format_jnt'
+    `subject_study_format_id` INT unsigned NOT NULL,       -- FK to 'sch_subject_study_format_jnt'
     `is_compulsory` tinyint(1) NOT NULL DEFAULT '0',          -- Is this Subject compulsory for Student or Optional
     `weekly_periods` TINYINT UNSIGNED NOT NULL,  -- Total periods required per week
     `min_periods_per_week` TINYINT UNSIGNED DEFAULT NULL,  -- Minimum periods required per week

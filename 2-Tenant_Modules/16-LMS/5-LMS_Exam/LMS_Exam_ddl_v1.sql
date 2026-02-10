@@ -15,7 +15,7 @@
 -- Purpose: Master table for all Exam Types (Online and Offline).
 -- -------------------------------------------------------------------------------------------------------
 CREATE TABLE `lms_exam_types` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `code` VARCHAR(20) NOT NULL,  -- e.g. 'UT-1','UT-2','UT-3','UT-4','HY-EXAM','ANNUAL-EXAM'
     `name` VARCHAR(100) NOT NULL, -- e.g. 'Unit Test 1','Unit Test 2','Unit Test 3','Unit Test 4','Half Yearly Exam','Annual Exam'
     `description` TEXT DEFAULT NULL,
@@ -32,16 +32,16 @@ CREATE TABLE `lms_exam_types` (
 -- Purpose: Header table for all Exams (Online and Offline).
 -- -------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `lms_exam` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `uuid` BINARY(16) NOT NULL,                       -- Unique Identifier
-  `academic_session_id` BIGINT UNSIGNED NOT NULL,   -- FK to glb_academic_sessions.id
-  `class_id` BIGINT UNSIGNED NOT NULL,              -- FK to sch_classes.id
-  `subject_id` BIGINT UNSIGNED NOT NULL,            -- FK to sch_subjects.id
+  `academic_session_id` INT UNSIGNED NOT NULL,   -- FK to glb_academic_sessions.id
+  `class_id` INT UNSIGNED NOT NULL,              -- FK to sch_classes.id
+  `subject_id` INT UNSIGNED NOT NULL,            -- FK to sch_subjects.id
   `code` VARCHAR(50) NOT NULL,                      -- <EXAM_MODE>+<EXAM_TYPE>+<ACADEMIC_SESSION_CODE>+<CLASS_CODE>  e.g. 'ONLINE_EXAM_2025_HY_7A', 'OFFLINE_EXAM_2025_HY_7A'
   `title` VARCHAR(150) NOT NULL,                    -- e.g. '7th Grade Half Yearly Exam 2025'
   `description` TEXT DEFAULT NULL,
   `exam_mode` ENUM('ONLINE', 'OFFLINE') NOT NULL DEFAULT 'ONLINE',
-  `exam_type_id` BIGINT UNSIGNED NOT NULL,          -- FK to lms_exam_types.id
+  `exam_type_id` INT UNSIGNED NOT NULL,          -- FK to lms_exam_types.id
   `exam_paper_set` SMALLINT UNSIGNED NOT NULL DEFAULT 1,   -- Exam Paper Set (1, 2, 3, ...) 1 type of Exam can have multiple exam paper sets
   `scheduled_exam_date` DATE NOT NULL,              -- Exam Date
 
@@ -56,7 +56,7 @@ CREATE TABLE IF NOT EXISTS `lms_exam` (
   `scheduled_result_publish_at` DATETIME DEFAULT NULL,  -- Scheduled Result Publish Time (If this will be set then result will be published at this time)
   `allow_calculator` TINYINT(1) NOT NULL DEFAULT 0,  -- Allow Calculator (If this will be 1 then calculator will be allowed)
   `show_marks_per_question` TINYINT(1) NOT NULL DEFAULT 1,  -- Show Marks Per Question (If this will be 1 then marks per question will be shown)
-  `difficulty_config_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to lms_difficulty_distribution_configs
+  `difficulty_config_id` INT UNSIGNED DEFAULT NULL,  -- FK to lms_difficulty_distribution_configs
   `ignore_difficulty_config` TINYINT(1) NOT NULL DEFAULT 0, -- Ignore Difficulty Config (If this will be 1 then difficulty_config_id will be ignored)
 
   -- Configuration for ONLINE Only
@@ -72,7 +72,7 @@ CREATE TABLE IF NOT EXISTS `lms_exam` (
   `timer_enforced` TINYINT(1) NOT NULL DEFAULT 1,  -- Enforce Timer (If Timer is enforced then timer will be shown)
   -- Status (Both)
   `status` ENUM('DRAFT','PUBLISHED','CONCLUDED','ARCHIVED') NOT NULL DEFAULT 'DRAFT',
-  `created_by` BIGINT UNSIGNED DEFAULT NULL,        -- FK to sys_users.id
+  `created_by` INT UNSIGNED DEFAULT NULL,        -- FK to sys_users.id
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
   `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -94,10 +94,10 @@ CREATE TABLE IF NOT EXISTS `lms_exam` (
 -- Purpose: Defines the syllabus scope for the exam (Lessons/Topics).
 -- -------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `lms_exam_scopes` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `exam_id` BIGINT UNSIGNED NOT NULL,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `exam_id` INT UNSIGNED NOT NULL,
   `lesson_id` INT UNSIGNED DEFAULT NULL,     -- FK to slb_lessons (Optional, if specific lesson)
-  `topic_id` BIGINT UNSIGNED DEFAULT NULL,      -- FK to slb_topics (Optional, if specific topic)
+  `topic_id` INT UNSIGNED DEFAULT NULL,      -- FK to slb_topics (Optional, if specific topic)
   `question_type_id` INT UNSIGNED DEFAULT NULL,     -- FK to qns_question_types.id (e.g. MCQs, True/False, Fill in the Blanks, etc.)
   `target_question_count` INT UNSIGNED DEFAULT 0,   -- Target Question Count (If this will be 0 then all the questions of the topic will be included)
   `weightage_percent` DECIMAL(5,2) DEFAULT NULL, -- Weightage of this scope(Lesson,Topic,Sub-Topic) in the exam
@@ -117,10 +117,10 @@ CREATE TABLE IF NOT EXISTS `lms_exam_scopes` (
 -- Purpose: Structure of the exam. Useful for generating question papers automatically.
 -- -------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `lms_exam_blueprints` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `exam_id` BIGINT UNSIGNED NOT NULL,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `exam_id` INT UNSIGNED NOT NULL,
   `section_name` VARCHAR(50) DEFAULT 'Section A', -- e.g., 'Part 1', 'Section A - Objective'
-  `subject_id` BIGINT UNSIGNED DEFAULT NULL,      -- If exam is multi-subject, this section belongs to which subject?
+  `subject_id` INT UNSIGNED DEFAULT NULL,      -- If exam is multi-subject, this section belongs to which subject?
   `question_type_group` ENUM('MCQ','DESCRIPTIVE','MIXED') NOT NULL DEFAULT 'MIXED',
   `instruction_text` TEXT DEFAULT NULL,
   `total_questions` INT UNSIGNED NOT NULL DEFAULT 0,
@@ -141,10 +141,10 @@ CREATE TABLE IF NOT EXISTS `lms_exam_blueprints` (
 -- Purpose: The actual questions in the exam.
 -- -------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `lms_exam_questions` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `exam_id` BIGINT UNSIGNED NOT NULL,
-  `blueprint_id` BIGINT UNSIGNED DEFAULT NULL,    -- FK to lms_exam_blueprints
-  `question_id` BIGINT UNSIGNED NOT NULL,         -- FK to qns_questions_bank
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `exam_id` INT UNSIGNED NOT NULL,
+  `blueprint_id` INT UNSIGNED DEFAULT NULL,    -- FK to lms_exam_blueprints
+  `question_id` INT UNSIGNED NOT NULL,         -- FK to qns_questions_bank
   `ordinal` INT UNSIGNED NOT NULL DEFAULT 0,      -- Order in the exam/blueprint
   `marks` DECIMAL(5,2) NOT NULL,                  -- Marks for this question in THIS exam (can override question default)
   `negative_marks` DECIMAL(5,2) DEFAULT 0.00,
@@ -165,18 +165,18 @@ CREATE TABLE IF NOT EXISTS `lms_exam_questions` (
 -- Purpose: Assigning exams to students/classes.
 -- -------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `lms_exam_allocations` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `exam_id` BIGINT UNSIGNED NOT NULL,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `exam_id` INT UNSIGNED NOT NULL,
   `allocation_type` ENUM('CLASS','SECTION','GROUP','STUDENT') NOT NULL,
   `target_table_name` VARCHAR(60) NOT NULL,     -- 'sch_classes', 'sch_sections', 'sch_entity_groups', 'sys_users' (students)
-  `target_id` BIGINT UNSIGNED NOT NULL,         -- ID from the respective table
+  `target_id` INT UNSIGNED NOT NULL,         -- ID from the respective table
   
   -- Schedule overrides (if different for specific allocation)
   `scheduled_start_at` DATETIME DEFAULT NULL,
   `scheduled_end_at` DATETIME DEFAULT NULL,     -- Strict window for exam
   `extended_submission_time_minutes` INT UNSIGNED DEFAULT 0, -- Extra time for this group/student
   
-  `assigned_by` BIGINT UNSIGNED DEFAULT NULL,   -- FK to sys_users
+  `assigned_by` INT UNSIGNED DEFAULT NULL,   -- FK to sys_users
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
   `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -199,11 +199,11 @@ CREATE TABLE IF NOT EXISTS `lms_exam_allocations` (
 -- Purpose: Tracks a student's attempt at an exam (or quiz/quest if consolidated, but here specifically Exam).
 -- -------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `lms_student_attempts` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `uuid` BINARY(16) NOT NULL,
-  `exam_id` BIGINT UNSIGNED NOT NULL,           -- FK to lms_exams
-  `student_id` BIGINT UNSIGNED NOT NULL,        -- FK to sch_students (or sys_users)
-  `allocation_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to lms_exam_allocations
+  `exam_id` INT UNSIGNED NOT NULL,           -- FK to lms_exams
+  `student_id` INT UNSIGNED NOT NULL,        -- FK to sch_students (or sys_users)
+  `allocation_id` INT UNSIGNED DEFAULT NULL, -- FK to lms_exam_allocations
   
   -- Timing
   `started_at` DATETIME DEFAULT NULL,
@@ -222,7 +222,7 @@ CREATE TABLE IF NOT EXISTS `lms_student_attempts` (
   `violation_count` INT UNSIGNED DEFAULT 0,     -- Proctoring violations detected
   
   -- Offline Metadata
-  `offline_paper_uploaded_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to sys_media (Scanned answer sheet)
+  `offline_paper_uploaded_id` INT UNSIGNED DEFAULT NULL, -- FK to sys_media (Scanned answer sheet)
   
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
   `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
@@ -241,25 +241,25 @@ CREATE TABLE IF NOT EXISTS `lms_student_attempts` (
 -- Purpose: Stores student responses to questions.
 -- -------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `lms_exam_answers` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `attempt_id` BIGINT UNSIGNED NOT NULL,        -- FK to lms_student_attempts
-  `question_id` BIGINT UNSIGNED NOT NULL,       -- FK to qns_questions_bank
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `attempt_id` INT UNSIGNED NOT NULL,        -- FK to lms_student_attempts
+  `question_id` INT UNSIGNED NOT NULL,       -- FK to qns_questions_bank
   `question_type_id` INT UNSIGNED NOT NULL,  -- Cached type for logic
   
   -- Usage Context (Since this table might be large, identifying if it's exam or quiz answer helps partitioning if needed)
   -- But here we imply it's for the 'attempt_id' which is tied to an exam.
   
   -- The Answer
-  `selected_option_id` BIGINT UNSIGNED DEFAULT NULL, -- For Single MCQ
+  `selected_option_id` INT UNSIGNED DEFAULT NULL, -- For Single MCQ
   `selected_option_ids` JSON DEFAULT NULL,           -- For Multi MCQ (Array of IDs)
   `descriptive_answer` TEXT DEFAULT NULL,            -- For Text answers
-  `attachment_id` BIGINT UNSIGNED DEFAULT NULL,      -- FK to sys_media (if file upload required)
+  `attachment_id` INT UNSIGNED DEFAULT NULL,      -- FK to sys_media (if file upload required)
   
   -- Evaluation
   `is_correct` TINYINT(1) DEFAULT NULL,              -- 1=Correct, 0=Incorrect, NULL=Not Evaluated
   `marks_obtained` DECIMAL(5,2) DEFAULT 0.00,
   `is_evaluated` TINYINT(1) NOT NULL DEFAULT 0,
-  `evaluated_by` BIGINT UNSIGNED DEFAULT NULL,       -- FK to sys_users (Teacher) or NULL if Auto
+  `evaluated_by` INT UNSIGNED DEFAULT NULL,       -- FK to sys_users (Teacher) or NULL if Auto
   `evaluation_remarks` TEXT DEFAULT NULL,
   `evaluated_at` DATETIME DEFAULT NULL,
   
@@ -282,10 +282,10 @@ CREATE TABLE IF NOT EXISTS `lms_exam_answers` (
 -- Purpose: Final consolidated result for the student.
 -- -------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `lms_exam_results` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `exam_id` BIGINT UNSIGNED NOT NULL,
-  `student_id` BIGINT UNSIGNED NOT NULL,
-  `attempt_id` BIGINT UNSIGNED DEFAULT NULL,     -- Optional, if based on a specific attempt
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `exam_id` INT UNSIGNED NOT NULL,
+  `student_id` INT UNSIGNED NOT NULL,
+  `attempt_id` INT UNSIGNED DEFAULT NULL,     -- Optional, if based on a specific attempt
   
   -- Scores
   `total_marks_possible` DECIMAL(8,2) NOT NULL,
@@ -319,13 +319,13 @@ CREATE TABLE IF NOT EXISTS `lms_exam_results` (
 -- Purpose: Student grievance against evaluation.
 -- -------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `lms_exam_grievances` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `exam_result_id` BIGINT UNSIGNED NOT NULL,     -- FK to lms_exam_results
-  `question_id` BIGINT UNSIGNED NOT NULL,        -- FK to qns_questions_bank
-  `student_id` BIGINT UNSIGNED NOT NULL,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `exam_result_id` INT UNSIGNED NOT NULL,     -- FK to lms_exam_results
+  `question_id` INT UNSIGNED NOT NULL,        -- FK to qns_questions_bank
+  `student_id` INT UNSIGNED NOT NULL,
   `grievance_text` TEXT NOT NULL,
   `status` ENUM('OPEN','UNDER_REVIEW','RESOLVED','REJECTED') NOT NULL DEFAULT 'OPEN',
-  `reviewer_id` BIGINT UNSIGNED DEFAULT NULL,    -- Teacher who reviewed
+  `reviewer_id` INT UNSIGNED DEFAULT NULL,    -- Teacher who reviewed
   `resolution_remarks` TEXT DEFAULT NULL,
   `marks_changed` TINYINT(1) DEFAULT 0,
   `old_marks` DECIMAL(5,2) DEFAULT NULL,
@@ -351,8 +351,8 @@ CREATE TABLE IF NOT EXISTS `lms_exam_grievances` (
 -- Purpose: Technical logs of student behavior during exam (tab switch, etc.)
 -- -------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `lms_attempt_activity_logs` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `attempt_id` BIGINT UNSIGNED NOT NULL,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `attempt_id` INT UNSIGNED NOT NULL,
   `activity_type` ENUM('FOCUS_LOST','FULLSCREEN_EXIT','BROWSER_RESIZE','KEY_PRESS_BLOCKED','MOUSE_LEAVE','IP_CHANGE') NOT NULL,
   `activity_data` JSON DEFAULT NULL,
   `occurred_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

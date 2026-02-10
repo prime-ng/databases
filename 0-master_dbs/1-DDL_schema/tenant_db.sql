@@ -25,7 +25,7 @@
 
   -- Tables for Role Based Access Control (RBAC) using spatie/laravel-permission package
   CREATE TABLE IF NOT EXISTS `sys_permissions` (
-    `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+    `id` INT unsigned NOT NULL AUTO_INCREMENT,
     `short_name` VARCHAR(20) NOT NULL,            -- This will be used for dropdown
     `name` varchar(100) NOT NULL,
     `guard_name` varchar(255) NOT NULL,           -- used by Laravel routing
@@ -38,7 +38,7 @@
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `sys_roles` (
-    `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+    `id` INT unsigned NOT NULL AUTO_INCREMENT,
     `name` varchar(50) NOT NULL,
     `short_name` VARCHAR(20) NOT NULL,
     `description` VARCHAR(255) NULL,
@@ -54,8 +54,8 @@
 
   -- Junction Tables for Many-to-Many Relationships
   CREATE TABLE IF NOT EXISTS `sys_role_has_permissions_jnt` (
-    `permission_id` bigint unsigned NOT NULL,   -- FK to sys_permissions
-    `role_id` bigint unsigned NOT NULL,         -- FK to sys_roles
+    `permission_id` INT unsigned NOT NULL,   -- FK to sys_permissions
+    `role_id` INT unsigned NOT NULL,         -- FK to sys_roles
     PRIMARY KEY (`permission_id`,`role_id`),
     KEY `idx_roleHasPermissions_roleId` (`role_id`),
     CONSTRAINT `fk_roleHasPermissions_permissionId` FOREIGN KEY (`permission_id`) REFERENCES `sys_permissions` (`id`),
@@ -64,9 +64,9 @@
 
   -- Junction Tables for Polymorphic Many-to-Many Relationships
   CREATE TABLE IF NOT EXISTS `sys_model_has_permissions_jnt` (
-    `permission_id` bigint unsigned NOT NULL,   -- FK to sys_permissions
+    `permission_id` INT unsigned NOT NULL,   -- FK to sys_permissions
     `model_type` varchar(190) NOT NULL,         -- E.g., 'App\Models\User'
-    `model_id` bigint unsigned NOT NULL,        -- E.g., User ID
+    `model_id` INT unsigned NOT NULL,        -- E.g., User ID
     PRIMARY KEY (`permission_id`,`model_id`,`model_type`),
     KEY `idx_modelHasPermissions_modelId_modelType` (`model_id`,`model_type`),
     CONSTRAINT `fk_modelHasPermissions_permissionId` FOREIGN KEY (`permission_id`) REFERENCES `sys_permissions` (`id`),
@@ -75,9 +75,9 @@
 
   -- Junction Tables for Polymorphic Many-to-Many Relationships
   CREATE TABLE IF NOT EXISTS `sys_model_has_roles_jnt` (
-    `role_id` bigint unsigned NOT NULL,       -- FK to sys_roles
+    `role_id` INT unsigned NOT NULL,       -- FK to sys_roles
     `model_type` varchar(190) NOT NULL,       -- E.g., 'App\Models\User'
-    `model_id` bigint unsigned NOT NULL,      -- E.g., User ID
+    `model_id` INT unsigned NOT NULL,      -- E.g., User ID
     PRIMARY KEY (`role_id`,`model_id`,`model_type`),
     KEY `idx_modelHasRoles_modelId_modelType` (`model_id`,`model_type`),
     CONSTRAINT `fk_modelHasRoles_roleId` FOREIGN KEY (`role_id`) REFERENCES `sys_roles` (`id`),
@@ -85,7 +85,7 @@
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `sys_users` (
-    `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+    `id` INT unsigned NOT NULL AUTO_INCREMENT,
     `emp_code` VARCHAR(20) NOT NULL,        -- Employee Code (Unique code for each user)
     `short_name` varchar(30) NOT NULL,      -- This Field will be used for showing Dropdown of Users i.e. Teachers, Students, Parents
     `name` varchar(100) NOT NULL,           -- Full Name (First Name, Middle Name, Last Name)
@@ -100,7 +100,7 @@
     `last_login_at` datetime DEFAULT NULL,                        -- Last Login Timestamp
     `super_admin_flag` tinyint GENERATED ALWAYS AS ((case when (`is_super_admin` = 1) then 1 else NULL end)) STORED,  -- To ensure only one super admin
     `remember_token` varchar(100) DEFAULT NULL,                   -- For "Remember Me" functionality
-    `prefered_language` bigint unsigned NOT NULL,                 -- fk to glb_languages
+    `prefered_language` INT unsigned NOT NULL,                 -- fk to glb_languages
     `is_active` tinyint(1) NOT NULL DEFAULT '1',
     `is_pg_user` tinyint(1) NOT NULL DEFAULT '0',
     `created_at` timestamp NULL DEFAULT NULL,
@@ -142,7 +142,7 @@
   -- --------------------------------------------------------------------------------------------------------
   -- This table will store various system-wide settings and configurations
   CREATE TABLE IF NOT EXISTS `sys_settings` (
-    `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+    `id` INT unsigned NOT NULL AUTO_INCREMENT,
     `description` varchar(255) NULL,    -- Here we will describe the use of the variable
     `key` varchar(100) NOT NULL,        -- This will be the Key to connect Value with it
     `value` varchar(255) DEFAULT NULL,          -- Actual stored setting value. Could be string, JSON, or serialized data depending on type
@@ -158,7 +158,7 @@
   -- Ths Table will capture the detail of which Field of Which Table fo Which Databse Type, I can create a Dropdown in sys_dropdown_table of?
   -- This will help us to make sure we can only create create a Dropdown in sys_dropdown_table whcih has been configured by Developer.
   CREATE TABLE IF NOT EXISTS `sys_dropdown_needs` (
-    `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+    `id` INT unsigned NOT NULL AUTO_INCREMENT,
     `db_type` ENUM('Prime','Tenant','Global') NOT NULL,  -- Which Database this Dropdown is for? (prime_db,tenant_db,global_db)
     `table_name` varchar(150) NOT NULL,  -- Table Name
     `column_name` varchar(150) NOT NULL,  -- Column Name
@@ -197,7 +197,7 @@
   -- Dropdown Table to store various dropdown values used across the system
   -- Enhanced sys_dropdown_table to accomodate Menu Detail (Category,Main Menu, Sub-Menu ID) for Easy identification.
   CREATE TABLE IF NOT EXISTS `sys_dropdown_table` (
-    `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+    `id` INT unsigned NOT NULL AUTO_INCREMENT,
     `ordinal` tinyint unsigned NOT NULL,
     `key` varchar(160) NOT NULL,      -- Key will be Combination of Table Name + Column Name (e.g. 'cmp_complaint_actions.action_type)
     `value` varchar(100) NOT NULL,
@@ -240,9 +240,9 @@
 
   -- This table will be Junction table for sys_dropdown_needs & sys_dropdown_table
   CREATE TABLE IF NOT EXISTS `sys_dropdown_need_table_jnt` (
-    `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-    `dropdown_needs_id` bigint unsigned NOT NULL,  -- FK to sys_dropdown_needs.id
-    `dropdown_table_id` bigint unsigned NOT NULL,  -- FK to sys_dropdown_table.id
+    `id` INT unsigned NOT NULL AUTO_INCREMENT,
+    `dropdown_needs_id` INT unsigned NOT NULL,  -- FK to sys_dropdown_needs.id
+    `dropdown_table_id` INT unsigned NOT NULL,  -- FK to sys_dropdown_table.id
     `is_active` TINYINT(1) DEFAULT 1,
     `created_at` timestamp NULL DEFAULT NULL,
     `updated_at` timestamp NULL DEFAULT NULL,
@@ -256,9 +256,9 @@
   -- --------------------------------------------------------------------------------------------------------
   -- Table to store media files associated with various models (e.g., users, posts)
   CREATE TABLE IF NOT EXISTS `sys_media` (
-    `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+    `id` INT unsigned NOT NULL AUTO_INCREMENT,
     `model_type` varchar(255) NOT NULL,           -- E.g., 'App\Models\User'
-    `model_id` bigint unsigned NOT NULL,          -- E.g., User ID
+    `model_id` INT unsigned NOT NULL,          -- E.g., User ID
     `uuid` char(36) DEFAULT NULL,                 -- Universally Unique Identifier for the media
     `collection_name` varchar(255) NOT NULL,      -- E.g., 'avatars', 'documents'
     `name` varchar(255) NOT NULL,                 -- Original file name without extension
@@ -266,7 +266,7 @@
     `mime_type` varchar(255) DEFAULT NULL,        -- E.g., 'image/jpeg', 'application/pdf'
     `disk` varchar(255) NOT NULL,                 -- Storage disk (e.g., 'local', 's3')
     `conversions_disk` varchar(255) DEFAULT NULL, -- Disk for storing converted files
-    `size` bigint unsigned NOT NULL,              -- File size in bytes  
+    `size` INT unsigned NOT NULL,              -- File size in bytes  
     `manipulations` json NOT NULL,                -- JSON field to store any manipulations applied to the media
     `custom_properties` json NOT NULL,            -- JSON field for any custom properties
     `generated_conversions` json NOT NULL,        -- JSON field to track generated conversions
@@ -287,7 +287,7 @@
 
   -- This table is a replica of 'prm_tenant' table in 'prmprime_db' database
   CREATE TABLE IF NOT EXISTS `sch_organizations` (
-    `id` bigint unsigned NOT NULL,              -- it will have same id as it is in 'prm_tenant'
+    `id` SMALLINT unsigned NOT NULL,              -- it will have same id as it is in 'prm_tenant'
     `group_code` varchar(20) NOT NULL,          -- Code for Grouping of Organizations/Schools
     `group_short_name` varchar(50) NOT NULL,
     `group_name` varchar(150) NOT NULL,
@@ -301,7 +301,7 @@
     `address_1` varchar(200) DEFAULT NULL,
     `address_2` varchar(200) DEFAULT NULL,
     `area` varchar(100) DEFAULT NULL,
-    `city_id` bigint unsigned NOT NULL,
+    `city_id` INT unsigned NOT NULL,
     `pincode` varchar(10) DEFAULT NULL,
     `phone_1` varchar(20) DEFAULT NULL,
     `phone_2` varchar(20) DEFAULT NULL,
@@ -323,8 +323,8 @@
 
   -- Junction Table to link Organizations with Academic Sessions
   CREATE TABLE IF NOT EXISTS `sch_org_academic_sessions_jnt` (
-    `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-    `academic_sessions_id` bigint unsigned NOT NULL,  -- Added New
+    `id` SMALLINT unsigned NOT NULL AUTO_INCREMENT,
+    `academic_sessions_id` INT unsigned NOT NULL,  -- Added New
     `short_name` varchar(10) NOT NULL,
     `name` varchar(50) NOT NULL,
     `start_date` date NOT NULL,
@@ -343,9 +343,9 @@
 
   -- Junction Table to link Organizations with Boards
   CREATE TABLE IF NOT EXISTS `sch_board_organization_jnt` (
-    `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-    `academic_sessions_id` bigint unsigned NOT NULL,
-    `board_id` bigint unsigned NOT NULL,
+    `id` INT unsigned NOT NULL AUTO_INCREMENT,
+    `academic_sessions_id` INT unsigned NOT NULL,
+    `board_id` INT unsigned NOT NULL,
     `created_at` timestamp NULL DEFAULT NULL,
     `updated_at` timestamp NULL DEFAULT NULL,
     PRIMARY KEY (`id`),
@@ -354,7 +354,7 @@
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `sch_department` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `name` VARCHAR(100) NOT NULL, -- e.g. "Transport", "Academic", "Rash Driving"
     `code` VARCHAR(30) DEFAULT NULL, -- Optional short code e.g. "TPT", "ACD"
     `is_active` TINYINT(1) DEFAULT 1,
@@ -364,7 +364,7 @@
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `sch_designation` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `name` VARCHAR(100) NOT NULL, -- e.g. "Teacher", "Staff", "Student"
     `code` VARCHAR(30) DEFAULT NULL, -- Optional short code e.g. "TCH", "STF", "STD"
     `is_active` TINYINT(1) DEFAULT 1,
@@ -375,8 +375,8 @@
 
   -- This table will facilitate to create Groups of different department, Roles, Designations etc.
   CREATE TABLE IF NOT EXISTS `sch_entity_groups` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `entity_purpose_id` BIGINT UNSIGNED NOT NULL, -- FK to sys_dropdown_table e.g. (escalation_management, notification, event_supervision, exam_supervision)
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `entity_purpose_id` INT UNSIGNED NOT NULL, -- FK to sys_dropdown_table e.g. (escalation_management, notification, event_supervision, exam_supervision)
     `code` VARCHAR(30) DEFAULT NULL, -- Optional short code e.g. "All_Class_Teachers", "Stundets_Play_Cricket", "Students_Participate_Annual_day"
     `name` VARCHAR(100) NOT NULL, -- e.g. "Class Teachers for all the classes", "Students Registered for Cricket", "All Students Participate in Annual Day"
     `description` VARCHAR(512) DEFAULT NULL,
@@ -393,11 +393,11 @@
 
   -- This table will be used to store the members of the Entity Group.
   CREATE TABLE IF NOT EXISTS `sch_entity_groups_members` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `entity_group_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to sch_entity_groups
-    `entity_type_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to sys_dropdown_table (1=Class, 2=Section, 3=Subject, 4=Designation, 5=Department, 6=Role etc.)
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `entity_group_id` INT UNSIGNED DEFAULT NULL, -- FK to sch_entity_groups
+    `entity_type_id` INT UNSIGNED DEFAULT NULL, -- FK to sys_dropdown_table (1=Class, 2=Section, 3=Subject, 4=Designation, 5=Department, 6=Role etc.)
     `entity_table_name` VARCHAR(60) DEFAULT NULL, -- Entity Table Name e.g. "sch_class", "sch_section", "sch_subject", "sch_designation", "sch_department", "sch_role"
-    `entity_selected_id` BIGINT UNSIGNED DEFAULT NULL, -- Foriegn Key will be managed at Application Level as it will be different for different entities e.g. sch_class.id, sch_section.id, sch_subject.id, sch_designation.id, sch_department.id, sch_role.id etc.
+    `entity_selected_id` INT UNSIGNED DEFAULT NULL, -- Foriegn Key will be managed at Application Level as it will be different for different entities e.g. sch_class.id, sch_section.id, sch_subject.id, sch_designation.id, sch_department.id, sch_role.id etc.
     `entity_name` VARCHAR(100) DEFAULT NULL, -- Entity Name e.g. "Students of Class-1st", "Students of Section-7th_A", "Students of Subject-English", "Students of Designation-Teacher", "Students of Department-Transport", "Role-School Principal"
     `entity_code` VARCHAR(30) DEFAULT NULL, -- Entity Code e.g. "STD_CLS_1", "STD_SEC_7th_A", "STD_SUB_English", "STU_DES_Teacher", "STU_DEP_Transport", "ROL_School_Principal"
     `is_active` TINYINT(1) DEFAULT 1,
@@ -456,8 +456,8 @@
     `class_secton_code` char(5) NOT NULL,           -- Combination of class Code + section Code i.e. '8th_A', '10h_B'  
     `capacity` tinyint unsigned DEFAULT NULL,       -- Targeted / Planned Quantity of stundets in Each Sections of every class.
     `total_student` tinyint unsigned DEFAULT NULL,  -- Actual Number of Student in the Class+Section
-    `class_teacher_id` bigint unsigned NOT NULL,    -- FK to sch_users
-    `assistance_class_teacher_id` bigint unsigned NOT NULL,  -- FK to sch_users
+    `class_teacher_id` INT unsigned NOT NULL,    -- FK to sch_users
+    `assistance_class_teacher_id` INT unsigned NOT NULL,  -- FK to sch_users
     `is_active` tinyint(1) NOT NULL DEFAULT 1,
     `created_at` timestamp NULL DEFAULT NULL,
     `updated_at` timestamp NULL DEFAULT NULL,
@@ -503,7 +503,7 @@
   -- Data Seed for Study_Format - LECTURE, LAB, PRACTICAL, TUTORIAL, SEMINAR, WORKSHOP, GROUP_DISCUSSION, OTHER
 
   CREATE TABLE IF NOT EXISTS `sch_subjects` (
-    `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+    `id` INT unsigned NOT NULL AUTO_INCREMENT,
     `short_name` varchar(20) NOT NULL,  -- e.g. 'SCIENCE','MATH','SST','ENGLISH' and so on
     `name` varchar(50) NOT NULL,
     `code` CHAR(3) NOT NULL,         -- e.g., 'SCI','MTH','SST','ENG' and so on (This will be used for Timetable)
@@ -520,8 +520,8 @@
   -- I have removed 'sub_types' from 'sch_subject_study_format_jnt' because one Subject_StudyFormat may belongs to different Subject_type for different classes
   -- Removed 'short_name' as we can use `sub_stdformat_code`
   CREATE TABLE IF NOT EXISTS `sch_subject_study_format_jnt` (
-    `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-    `subject_id` bigint unsigned NOT NULL,            -- FK to 'sch_subjects'
+    `id` INT unsigned NOT NULL AUTO_INCREMENT,
+    `subject_id` INT unsigned NOT NULL,            -- FK to 'sch_subjects'
     `study_format_id` int unsigned NOT NULL,          -- FK to 'sch_study_formats'
     `name` varchar(50) NOT NULL,                      -- e.g., 'Science Lecture','Science Lab','Math Lecture','Math Lab' and so on
     `subj_stdformat_code` CHAR(7) NOT NULL,         -- Will be combination of (Subject.codee+'-'+StudyFormat.code) e.g., 'SCI_LAC','SCI_LAB','SST_LAC','ENG_LAC' (This will be used for Timetable)
@@ -539,10 +539,10 @@
   -- Ths table will be used to define different Class Groups like 10th-A Science Lecture Major, 7th-B Commerce Optional etc.
   -- old name 'sch_subject_study_format_class_subj_types_jnt' changed to 'sch_class_groups_jnt'
   CREATE TABLE IF NOT EXISTS `sch_class_groups_jnt` (
-    `id` bigint unsigned NOT NULL AUTO_INCREMENT,                  -- FK
+    `id` INT unsigned NOT NULL AUTO_INCREMENT,                  -- FK
     `class_id` int unsigned NOT NULL,                              -- FK to 'sch_classes'
     `section_id` int unsigned NULL,                            -- FK to 'sch_sections'
-    `subject_Study_format_id` bigint unsigned NOT NULL,   -- FK to 'sch_subject_study_format_jnt'
+    `subject_Study_format_id` INT unsigned NOT NULL,   -- FK to 'sch_subject_study_format_jnt'
     `subject_type_id` int unsigned NOT NULL,              -- FK to 'sch_subject_types'
     `rooms_type_id` int unsigned NOT NULL,             -- FK to 'sch_rooms_type'
     `class_house_roome_id` int unsigned NOT NULL,             -- FK to 'sch_rooms
@@ -567,7 +567,7 @@
   -- if above variable is True then section_id will be Nul in below table and
   -- Every Group will eb avalaible accross sections for a particuler class
   CREATE TABLE IF NOT EXISTS `sch_subject_groups` (
-    `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+    `id` INT unsigned NOT NULL AUTO_INCREMENT,
     `class_id` int UNSIGNED NOT NULL,                        -- FK to 'sch_classes'
     `section_id` int UNSIGNED NULL,                          -- FK (Section can be null if Group will be used for all sectons)
     `short_name` varchar(30) NOT NULL,              -- 7th Science, 7th Commerce, 7th-A Science etc.
@@ -584,12 +584,12 @@
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `sch_subject_group_subject_jnt` (
-    `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-    `subject_group_id` bigint unsigned NOT NULL,              -- FK to 'sch_subject_groups'
-    `class_group_id` bigint unsigned NOT NULL,                -- FK to 'sch_class_groups_jnt'
+    `id` INT unsigned NOT NULL AUTO_INCREMENT,
+    `subject_group_id` INT unsigned NOT NULL,              -- FK to 'sch_subject_groups'
+    `class_group_id` INT unsigned NOT NULL,                -- FK to 'sch_class_groups_jnt'
     `subject_id` int unsigned NOT NULL,                       -- FK to 'sch_subjects'
     `subject_type_id` int unsigned NOT NULL,                  -- FK to 'sch_subject_types'
-    `subject_study_format_id` bigint unsigned NOT NULL,       -- FK to 'sch_subject_study_format_jnt'
+    `subject_study_format_id` INT unsigned NOT NULL,       -- FK to 'sch_subject_study_format_jnt'
     `is_compulsory` tinyint(1) NOT NULL DEFAULT '0',          -- Is this Subject compulsory for Student or Optional
     `weekly_periods` TINYINT UNSIGNED NOT NULL,  -- Total periods required per week
     `min_periods_per_week` TINYINT UNSIGNED DEFAULT NULL,  -- Minimum periods required per week
@@ -679,8 +679,8 @@
 
   -- Teacher table will store additional information about teachers
   CREATE TABLE IF NOT EXISTS `sch_employees` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `user_id` BIGINT UNSIGNED NOT NULL,  -- fk to sys_users.id
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `user_id` INT UNSIGNED NOT NULL,  -- fk to sys_users.id
     -- Employee id details
     `emp_code` VARCHAR(20) NOT NULL,     -- Employee Code (Unique code for each user) (This will be used for QR Code)
     `emp_id_card_type` ENUM('QR','RFID','NFC','Barcode') NOT NULL DEFAULT 'QR',
@@ -708,11 +708,11 @@
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `sch_employees_profile` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `employee_id` BIGINT UNSIGNED NOT NULL,              -- FK to sch_employees.id
-    `user_id` BIGINT UNSIGNED NOT NULL,                  -- FK to sys_users.id
-    `role_id` BIGINT UNSIGNED NOT NULL,                  -- FK to employee_roles table (Principal, Accountant, Admin, etc.)
-    `department_id` BIGINT UNSIGNED DEFAULT NULL,        -- FK to sch_departments (Administration, Accounts, IT, etc.)
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `employee_id` INT UNSIGNED NOT NULL,              -- FK to sch_employees.id
+    `user_id` INT UNSIGNED NOT NULL,                  -- FK to sys_users.id
+    `role_id` INT UNSIGNED NOT NULL,                  -- FK to employee_roles table (Principal, Accountant, Admin, etc.)
+    `department_id` INT UNSIGNED DEFAULT NULL,        -- FK to sch_departments (Administration, Accounts, IT, etc.)
     -- Core Competencies & Qualifications
     `specialization_area` VARCHAR(100) DEFAULT NULL,     -- e.g., Finance Management, HR Administration, IT Infrastructure
     `qualification_level` VARCHAR(50) DEFAULT NULL,      -- e.g., Bachelor's, Master's, Certified Accountant
@@ -735,7 +735,7 @@
     `last_performance_review` DATE DEFAULT NULL,
     -- Administrative Controls
     `security_clearance_done` TINYINT(1) DEFAULT 0,
-    `reporting_to` BIGINT UNSIGNED DEFAULT NULL,         -- FK to sch_employees.id (who they report to)
+    `reporting_to` INT UNSIGNED DEFAULT NULL,         -- FK to sch_employees.id (who they report to)
     `can_approve_budget` TINYINT(1) DEFAULT 0,
     `can_manage_staff` TINYINT(1) DEFAULT 0,
     `can_access_sensitive_data` TINYINT(1) DEFAULT 0,
@@ -759,16 +759,16 @@
 
   -- Teacher Profile table will store detailed proficiency to teach specific subjects, study formats, and classes
   CREATE TABLE IF NOT EXISTS `sch_teacher_profile` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `employee_id` BIGINT UNSIGNED NOT NULL,             -- FK sch_employees.id
-    `user_id` BIGINT UNSIGNED NOT NULL,                 -- FK sys_users.id
-    `role_id` BIGINT UNSIGNED NOT NULL,                 -- FK to   Teacher / Principal / etc.
-    `department_id` BIGINT UNSIGNED NOT NULL,           -- sch_department.id 
-    `designation_id` BIGINT UNSIGNED NOT NULL,          -- sch_designation.id
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `employee_id` INT UNSIGNED NOT NULL,             -- FK sch_employees.id
+    `user_id` INT UNSIGNED NOT NULL,                 -- FK sys_users.id
+    `role_id` INT UNSIGNED NOT NULL,                 -- FK to   Teacher / Principal / etc.
+    `department_id` INT UNSIGNED NOT NULL,           -- sch_department.id 
+    `designation_id` INT UNSIGNED NOT NULL,          -- sch_designation.id
     `teacher_house_room_id` INT UNSIGNED DEFAULT NULL,  -- FK to sch_rooms.id
     -- Employment nature & capability
     `is_full_time` TINYINT(1) DEFAULT 1,
-    `preferred_shift` BIGINT UNSIGNED DEFAULT NULL,    -- FK to sch_shift.id
+    `preferred_shift` INT UNSIGNED DEFAULT NULL,    -- FK to sch_shift.id
     `capable_handling_multiple_classes` TINYINT(1) DEFAULT 0,
     `can_be_used_for_substitution` TINYINT(1) DEFAULT 1,
     -- Skills & Responsibilities (JSON for flexibility)
@@ -782,7 +782,7 @@
     `performance_rating` TINYINT UNSIGNED DEFAULT NULL,  -- rating out of (1 to 10)
     `last_performance_review` DATE DEFAULT NULL,
     `security_clearance_done` TINYINT(1) DEFAULT 0,
-    `reporting_to` BIGINT UNSIGNED DEFAULT NULL,
+    `reporting_to` INT UNSIGNED DEFAULT NULL,
     `can_access_sensitive_data` TINYINT(1) DEFAULT 0,
     `notes` TEXT NULL,
     `effective_from` DATE DEFAULT NULL,
@@ -797,12 +797,12 @@
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `sch_teacher_capabilities` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     -- CORE RELATIONSHIP
-    `teacher_profile_id` BIGINT UNSIGNED NOT NULL,   -- FK sch_teacher_profile.id
+    `teacher_profile_id` INT UNSIGNED NOT NULL,   -- FK sch_teacher_profile.id
     `class_id` INT UNSIGNED NOT NULL,                 -- FK sch_classes.id
     `section_id` INT UNSIGNED DEFAULT NULL,           -- FK sch_sections.id (NULL = all sections)
-    `subject_study_format_id` BIGINT UNSIGNED NOT NULL,   -- FK sch_subject_study_format_jnt.id
+    `subject_study_format_id` INT UNSIGNED NOT NULL,   -- FK sch_subject_study_format_jnt.id
     -- TEACHING STRENGTH
     `proficiency_percentage` TINYINT UNSIGNED DEFAULT NULL, -- 1–100
     `teaching_experience_months` SMALLINT UNSIGNED DEFAULT NULL,
@@ -849,21 +849,21 @@
 -- ===========================================================================
 
   CREATE TABLE IF NOT EXISTS `tpt_vehicle` (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       `vehicle_no` VARCHAR(20) NOT NULL,              -- Vehicle number(Vehicle Identification Number (VIN)/Chassis Number: A unique 17-character code stamped on the vehicle's chassis)
       `registration_no` VARCHAR(30) NOT NULL,         -- Unique govt registration number
       `model` VARCHAR(50),                            -- Vehicle model
       `manufacturer` VARCHAR(50),                     -- Vehicle manufacturer 
-      `vehicle_type_id` BIGINT UNSIGNED NOT NULL,     -- fk to sys_dropdown_table ('BUS','VAN','CAR')
-      `fuel_type_id` BIGINT UNSIGNED NOT NULL,        -- fk to sys_dropdown_table ('Diesel','Petrol','CNG','Electric')
+      `vehicle_type_id` INT UNSIGNED NOT NULL,     -- fk to sys_dropdown_table ('BUS','VAN','CAR')
+      `fuel_type_id` INT UNSIGNED NOT NULL,        -- fk to sys_dropdown_table ('Diesel','Petrol','CNG','Electric')
       `capacity` INT UNSIGNED NOT NULL DEFAULT 40,    -- Seating capacity
       `max_capacity` INT UNSIGNED NOT NULL DEFAULT 40, -- Maximum allowed capacity including standing
-      `ownership_type_id` BIGINT UNSIGNED NOT NULL,   -- fk to sys_dropdown_table ('Owned','Leased','Rented')
-      `vendor_id` BIGINT UNSIGNED NOT NULL,           -- fk to tpt_vendor
+      `ownership_type_id` INT UNSIGNED NOT NULL,   -- fk to sys_dropdown_table ('Owned','Leased','Rented')
+      `vendor_id` INT UNSIGNED NOT NULL,           -- fk to tpt_vendor
       `fitness_valid_upto` DATE NOT NULL,             -- Fitness certificate expiry date
       `insurance_valid_upto` DATE NOT NULL,           -- Insurance expiry date
       `pollution_valid_upto` DATE NOT NULL,           -- Pollution certificate expiry date
-      `vehicle_emission_class_id` BIGINT UNSIGNED NOT NULL,  -- fk to sys_dropdown_table ('BS IV', 'BS V', 'BS VI')
+      `vehicle_emission_class_id` INT UNSIGNED NOT NULL,  -- fk to sys_dropdown_table ('BS IV', 'BS V', 'BS VI')
       `fire_extinguisher_valid_upto` DATE NOT NULL,    -- Fire extinguisher expiry date
       `gps_device_id` VARCHAR(50),                    -- Installed GPS device identifier
       `vehicle_photo_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (vehicle photo will be uploaded in sys.media)
@@ -889,8 +889,8 @@
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `tpt_personnel` (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `user_id` BIGINT UNSIGNED DEFAULT NULL,
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `user_id` INT UNSIGNED DEFAULT NULL,
       `user_qr_code` VARCHAR(30) NOT NULL,
       `id_card_type` ENUM('QR','RFID','NFC','Barcode') NOT NULL DEFAULT 'QR',
       `name` VARCHAR(100) NOT NULL,
@@ -900,7 +900,7 @@
       `role` VARCHAR(20) NOT NULL,            -- Role (e.g., Driver, Helper, Transport Manager etc.)
       `license_no` VARCHAR(50) DEFAULT NULL,  -- License Number
       `license_valid_upto` DATE DEFAULT NULL,  -- License Valid Upto
-      `assigned_vehicle_id` BIGINT UNSIGNED DEFAULT NULL,  -- fk to tpt_vehicle
+      `assigned_vehicle_id` INT UNSIGNED DEFAULT NULL,  -- fk to tpt_vehicle
       `driving_exp_months` SMALLINT UNSIGNED DEFAULT NULL,  -- Driving Experience in Months
       `police_verification_done` TINYINT(1) NOT NULL DEFAULT 0,  -- 0: Not Done, 1: Done
       `address` VARCHAR(512) DEFAULT NULL,
@@ -918,7 +918,7 @@
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `tpt_shift` (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       `code` VARCHAR(20) NOT NULL,
       `name` VARCHAR(100) NOT NULL,
       `effective_from` DATE NOT NULL,
@@ -932,12 +932,12 @@
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `tpt_route` (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       `code` VARCHAR(50) NOT NULL,
       `name` VARCHAR(200) NOT NULL,
       `description` VARCHAR(500) DEFAULT NULL,
       `pickup_drop` ENUM('Pickup','Drop') NOT NULL DEFAULT 'Pickup',
-      `shift_id` BIGINT UNSIGNED NOT NULL,
+      `shift_id` INT UNSIGNED NOT NULL,
       `route_geometry` LINESTRING SRID 4326 DEFAULT NULL,
       `is_active` TINYINT(1) NOT NULL DEFAULT 1,
       `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -950,8 +950,8 @@
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `tpt_pickup_points` (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `shift_id` BIGINT UNSIGNED NOT NULL,
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `shift_id` INT UNSIGNED NOT NULL,
       `code` VARCHAR(50) NOT NULL,
       `name` VARCHAR(200) NOT NULL,
       `latitude` DECIMAL(10,7) DEFAULT NULL,
@@ -971,11 +971,11 @@
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `tpt_pickup_points_route_jnt` (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `shift_id` BIGINT UNSIGNED NOT NULL,
-      `route_id` BIGINT UNSIGNED NOT NULL,
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `shift_id` INT UNSIGNED NOT NULL,
+      `route_id` INT UNSIGNED NOT NULL,
       `pickup_drop` ENUM('Pickup','Drop') NOT NULL DEFAULT 'Pickup',
-      `pickup_point_id` BIGINT UNSIGNED NOT NULL,
+      `pickup_point_id` INT UNSIGNED NOT NULL,
       `ordinal` SMALLINT UNSIGNED NOT NULL DEFAULT 1,
       `total_distance` DECIMAL(7,2) DEFAULT NULL,
       `arrival_time` INT DEFAULT NULL,
@@ -995,12 +995,12 @@
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `tpt_driver_route_vehicle_jnt` (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `shift_id` BIGINT UNSIGNED NOT NULL,
-      `route_id` BIGINT UNSIGNED NOT NULL,
-      `vehicle_id` BIGINT UNSIGNED NOT NULL,
-      `driver_id` BIGINT UNSIGNED NOT NULL,
-      `helper_id` BIGINT UNSIGNED DEFAULT NULL,
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `shift_id` INT UNSIGNED NOT NULL,
+      `route_id` INT UNSIGNED NOT NULL,
+      `vehicle_id` INT UNSIGNED NOT NULL,
+      `driver_id` INT UNSIGNED NOT NULL,
+      `helper_id` INT UNSIGNED DEFAULT NULL,
       `pickup_drop` ENUM('Pickup','Drop') NOT NULL DEFAULT 'Pickup',
       `effective_from` DATE NOT NULL,
       `effective_to` DATE DEFAULT NULL,
@@ -1042,13 +1042,13 @@
     DELIMITER ;
 
   CREATE TABLE IF NOT EXISTS `tpt_route_scheduler_jnt` (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       `scheduled_date` DATE NOT NULL,
-      `shift_id` BIGINT UNSIGNED NOT NULL,
-      `route_id` BIGINT UNSIGNED NOT NULL,
-      `vehicle_id` BIGINT UNSIGNED NOT NULL,
-      `driver_id` BIGINT UNSIGNED NOT NULL,
-      `helper_id` BIGINT UNSIGNED DEFAULT NULL,
+      `shift_id` INT UNSIGNED NOT NULL,
+      `route_id` INT UNSIGNED NOT NULL,
+      `vehicle_id` INT UNSIGNED NOT NULL,
+      `driver_id` INT UNSIGNED NOT NULL,
+      `helper_id` INT UNSIGNED DEFAULT NULL,
       `pickup_drop` ENUM('Pickup','Drop') NOT NULL DEFAULT 'Pickup',
       `is_active` TINYINT(1) NOT NULL DEFAULT 1,
       `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
@@ -1066,13 +1066,13 @@
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `tpt_trip` (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       `trip_date` DATE NOT NULL,      --  Date of the trip
-      `route_scheduler_id` BIGINT UNSIGNED NOT NULL, -- FK to tpt_route_scheduler_jnt
-      `route_id` BIGINT UNSIGNED NOT NULL, -- FK to tpt_route
-      `vehicle_id` BIGINT UNSIGNED NOT NULL, -- FK to tpt_vehicle
-      `driver_id` BIGINT UNSIGNED NOT NULL, -- FK to tpt_personnel
-      `helper_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to tpt_personnel
+      `route_scheduler_id` INT UNSIGNED NOT NULL, -- FK to tpt_route_scheduler_jnt
+      `route_id` INT UNSIGNED NOT NULL, -- FK to tpt_route
+      `vehicle_id` INT UNSIGNED NOT NULL, -- FK to tpt_vehicle
+      `driver_id` INT UNSIGNED NOT NULL, -- FK to tpt_personnel
+      `helper_id` INT UNSIGNED DEFAULT NULL, -- FK to tpt_personnel
       `start_time` DATETIME DEFAULT NULL, -- Start time of the trip
       `end_time` DATETIME DEFAULT NULL, -- End time of the trip
       `start_odometer_reading` DECIMAL(11, 2) DEFAULT 0.00,
@@ -1081,7 +1081,7 @@
       `end_fuel_reading` DECIMAL(8, 3) DEFAULT 0.00,
       `status` VARCHAR(20) NOT NULL DEFAULT 'Scheduled',
       `approved` TINYINT(1) NOT NULL DEFAULT 0,
-      `approved_by` BIGINT UNSIGNED DEFAULT NULL,
+      `approved_by` INT UNSIGNED DEFAULT NULL,
       `approved_at` TIMESTAMP NULL DEFAULT NULL,
       `remarks` VARCHAR(512) DEFAULT NULL, 
       `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -1096,9 +1096,9 @@
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `tpt_trip_stop_detail` (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `trip_id` BIGINT UNSIGNED NOT NULL,     -- fk to tpt_trip
-      `stop_id` BIGINT UNSIGNED DEFAULT NULL, -- fk to tpt_stop
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `trip_id` INT UNSIGNED NOT NULL,     -- fk to tpt_trip
+      `stop_id` INT UNSIGNED DEFAULT NULL, -- fk to tpt_stop
       `pickup_drop` ENUM('Pickup','Drop') NOT NULL DEFAULT 'Pickup',
       `sch_arrival_time` DATETIME DEFAULT NULL, -- scheduled arrival time
       `sch_departure_time` DATETIME DEFAULT NULL, -- scheduled departure time
@@ -1110,7 +1110,7 @@
       `emergency_remarks` VARCHAR(512) DEFAULT NULL, -- remarks for emergency
       `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      `updated_by` BIGINT UNSIGNED DEFAULT NULL,
+      `updated_by` INT UNSIGNED DEFAULT NULL,
       `deleted_at` TIMESTAMP NULL DEFAULT NULL,
       CONSTRAINT `fk_trip_stop_detail_trip` FOREIGN KEY (`trip_id`) REFERENCES `tpt_trip`(`id`) ON DELETE CASCADE,
       CONSTRAINT `fk_trip_stop_detail_stop` FOREIGN KEY (`stop_id`) REFERENCES `tpt_pickup_points`(`id`) ON DELETE SET NULL,
@@ -1118,12 +1118,12 @@
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `tpt_attendance_device` (
-      `id` BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
-      `user_id` BIGINT UNSIGNED NOT NULL,     -- fk to tpt_personnel
+      `id` INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+      `user_id` INT UNSIGNED NOT NULL,     -- fk to tpt_personnel
       `device_uuid` CHAR(36) NOT NULL,        -- Unique identifier of the device
       `device_type` ENUM('Mobile','Tablet','Laptop','Desktop') NOT NULL,
       `location` VARCHAR(150) NULL,
-      `device_os` BIGINT NOT NULL,            -- fk to sys_dropdown_table ('android','ios','windows','linux','mac')
+      `device_os` INT NOT NULL,            -- fk to sys_dropdown_table ('android','ios','windows','linux','mac')
       `os_version` VARCHAR(50),               -- OS version
       `device_name` VARCHAR(100) NOT NULL,
       `device_model` VARCHAR(100),            -- Device model e.g. iPhone 12 Pro
@@ -1142,13 +1142,13 @@
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `tpt_driver_attendance` (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `driver_id` BIGINT UNSIGNED NOT NULL,
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `driver_id` INT UNSIGNED NOT NULL,
       `attendance_date` DATE NOT NULL,
       `first_in_time` DATETIME NULL,
       `last_out_time` DATETIME NULL,
       `total_work_minutes` INT NULL,
-      `attendance_status` BIGINT NOT NULL, -- fk to sys_dropdown_table ('Present','Absent','Half-Day','Late')
+      `attendance_status` INT NOT NULL, -- fk to sys_dropdown_table ('Present','Absent','Half-Day','Late')
       `via_app` TINYINT(1) NOT NULL DEFAULT 1,
       `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       UNIQUE KEY `uq_driver_day` (`driver_id`, `attendance_date`),
@@ -1157,12 +1157,12 @@
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `tpt_driver_attendance_log` (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `attendance_id` BIGINT UNSIGNED NOT NULL,
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `attendance_id` INT UNSIGNED NOT NULL,
       `scan_time` DATETIME NOT NULL,
       `attendance_type` ENUM('IN','OUT') NOT NULL,
       `scan_method` ENUM('QR','RFID','NFC','Manual') NOT NULL,
-      `device_id` BIGINT UNSIGNED NOT NULL,
+      `device_id` INT UNSIGNED NOT NULL,
       `latitude` DECIMAL(10,6) NULL,
       `longitude` DECIMAL(10,6) NULL,
       `scan_status` ENUM('Valid','Duplicate','Rejected') NOT NULL DEFAULT 'Valid',
@@ -1173,13 +1173,13 @@
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `tpt_student_route_allocation_jnt` (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `student_session_id` BIGINT UNSIGNED NOT NULL,
-      `student_id` BIGINT UNSIGNED NOT NULL,
-      `pickup_route_id` BIGINT UNSIGNED NOT NULL,
-      `pickup_stop_id` BIGINT UNSIGNED NOT NULL,
-      `drop_route_id` BIGINT UNSIGNED NOT NULL,
-      `drop_stop_id` BIGINT UNSIGNED NOT NULL,
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `student_session_id` INT UNSIGNED NOT NULL,
+      `student_id` INT UNSIGNED NOT NULL,
+      `pickup_route_id` INT UNSIGNED NOT NULL,
+      `pickup_stop_id` INT UNSIGNED NOT NULL,
+      `drop_route_id` INT UNSIGNED NOT NULL,
+      `drop_stop_id` INT UNSIGNED NOT NULL,
       `fare` DECIMAL(10,2) NOT NULL,
       `effective_from` DATE NOT NULL,
       `active_status` TINYINT(1) NOT NULL DEFAULT 1,
@@ -1193,8 +1193,8 @@
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `tpt_fine_master` (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `std_academic_sessions_id` BIGINT UNSIGNED NOT NULL,
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `std_academic_sessions_id` INT UNSIGNED NOT NULL,
       `fine_from_days` TINYINT DEFAULT 0,
       `fine_to_days` TINYINT DEFAULT 0,
       `fine_type` ENUM('Fixed','Percentage') DEFAULT 'Fixed',
@@ -1206,8 +1206,8 @@
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `tpt_student_fee_detail` (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `std_academic_sessions_id` BIGINT UNSIGNED NOT NULL,
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `std_academic_sessions_id` INT UNSIGNED NOT NULL,
       `month` DATE NOT NULL,
       `amount` DECIMAL(10,2) NOT NULL,
       `fine_amount` DECIMAL(10,2) DEFAULT 0.00,
@@ -1220,9 +1220,9 @@
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `tpt_student_fine_detail` (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `student_fee_detail_id` BIGINT UNSIGNED NOT NULL,
-      `fine_master_id` BIGINT UNSIGNED NOT NULL,
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `student_fee_detail_id` INT UNSIGNED NOT NULL,
+      `fine_master_id` INT UNSIGNED NOT NULL,
       `fine_days` TINYINT DEFAULT 0,
       `fine_type` ENUM('Fixed','Percentage') DEFAULT 'Fixed',
       `fine_rate` DECIMAL(5,2) DEFAULT 0.00,
@@ -1237,8 +1237,8 @@
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `tpt_student_fee_collection` (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `student_fee_detail_id` BIGINT UNSIGNED NOT NULL,
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `student_fee_detail_id` INT UNSIGNED NOT NULL,
       `payment_date` DATE NOT NULL,
       `total_delay_days` INT DEFAULT 0,
       `paid_amount` DECIMAL(10,2) NOT NULL,
@@ -1254,17 +1254,17 @@
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `std_student_pay_log` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `student_id` BIGINT UNSIGNED NOT NULL,
-    `academic_session_id` BIGINT UNSIGNED NOT NULL,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `student_id` INT UNSIGNED NOT NULL,
+    `academic_session_id` INT UNSIGNED NOT NULL,
     `module_name` VARCHAR(50) NOT NULL,
     `activity_type` VARCHAR(50) NOT NULL,
     `amount` DECIMAL(10,2) DEFAULT NULL,
     `log_date` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `reference_id` BIGINT UNSIGNED DEFAULT NULL,
+    `reference_id` INT UNSIGNED DEFAULT NULL,
     `reference_table` VARCHAR(100) DEFAULT NULL,
     `description` VARCHAR(512) DEFAULT NULL,
-    `triggered_by` BIGINT UNSIGNED DEFAULT NULL,
+    `triggered_by` INT UNSIGNED DEFAULT NULL,
     `is_system_generated` TINYINT(1) DEFAULT 0,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `deleted_at` TIMESTAMP NULL DEFAULT NULL,
@@ -1279,14 +1279,14 @@
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `tpt_vehicle_fuel` (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `vehicle_id` BIGINT UNSIGNED NOT NULL,
-      `driver_id` BIGINT UNSIGNED DEFAULT NULL,
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `vehicle_id` INT UNSIGNED NOT NULL,
+      `driver_id` INT UNSIGNED DEFAULT NULL,
       `date` DATE NOT NULL,
       `quantity` DECIMAL(10,3) NOT NULL,
       `cost` DECIMAL(12,2) NOT NULL,
-      `fuel_type` BIGINT UNSIGNED NOT NULL,
-      `odometer_reading` BIGINT UNSIGNED DEFAULT NULL,
+      `fuel_type` INT UNSIGNED NOT NULL,
+      `odometer_reading` INT UNSIGNED DEFAULT NULL,
       `remarks` VARCHAR(512) DEFAULT NULL,
       `status` ENUM('Approved','Pending','Rejected') NOT NULL DEFAULT 'Pending',
       `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
@@ -1300,11 +1300,11 @@
       -- 2. To make sure the availaibility of Approval to the Authorise Person only, we need to keep Approval on Fuel & Maintenance on a seperate Tab.
 
   Create Table if not EXISTS `tpt_daily_vehicle_inspection` (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `vehicle_id` BIGINT UNSIGNED NOT NULL,
-      `driver_id` BIGINT UNSIGNED DEFAULT NULL,
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `vehicle_id` INT UNSIGNED NOT NULL,
+      `driver_id` INT UNSIGNED DEFAULT NULL,
       `inspection_date` TIMESTAMP NOT NULL,
-      `odometer_reading` BIGINT UNSIGNED DEFAULT NULL,
+      `odometer_reading` INT UNSIGNED DEFAULT NULL,
       `fuel_level_reading` DECIMAL(6,2) DEFAULT NULL,
       `tire_condition_ok` TINYINT(1) NOT NULL DEFAULT 0,
       `lights_condition_ok` TINYINT(1) NOT NULL DEFAULT 0,
@@ -1325,7 +1325,7 @@
       `issues_description` VARCHAR(512) DEFAULT NULL,
       `remarks` VARCHAR(512) DEFAULT NULL,
       `inspection_status` ENUM('Passed','Failed','Pending') NOT NULL DEFAULT 'Pending',
-      `inspected_by` BIGINT UNSIGNED DEFAULT NULL, 
+      `inspected_by` INT UNSIGNED DEFAULT NULL, 
       `inspected_at` TIMESTAMP NULL DEFAULT NULL,
       `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -1339,14 +1339,14 @@
       -- 2. If Inspection is Failed, application will change Status in the "tpt_Vehicle make '`availability_status` to 'Not Available'
 
   Create Table if not EXISTS `tpt_vehicle_service_request` (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `vehicle_inspection_id` BIGINT UNSIGNED NOT NULL,
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `vehicle_inspection_id` INT UNSIGNED NOT NULL,
       `request_date` TIMESTAMP NOT NULL,
       `reason` VARCHAR(512) DEFAULT NULL,  -- Reason can be filled by anyone
-      `Vehicle_status` BIGINT UNSIGNED DEFAULT NULL,  -- fk to sys_dropdown_table ('Due for Service', 'In-Service', 'Service Done')
+      `Vehicle_status` INT UNSIGNED DEFAULT NULL,  -- fk to sys_dropdown_table ('Due for Service', 'In-Service', 'Service Done')
       `service_completion_date` TIMESTAMP NULL DEFAULT NULL,
       `request_approval_status` ENUM('Approved','Pending','Rejected') NOT NULL DEFAULT 'Pending',
-      `approved_by` BIGINT UNSIGNED DEFAULT NULL,
+      `approved_by` INT UNSIGNED DEFAULT NULL,
       `approved_at` TIMESTAMP NULL DEFAULT NULL,
       `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
       `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -1363,8 +1363,8 @@
       -- 6. Once Entry is created in 'tpt_vehicle_service_request' table, it will be redirected to 'tpt_vehicle_maintenance' table.
 
   CREATE TABLE IF NOT EXISTS `tpt_vehicle_maintenance` (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `vehicle_service_request_id` BIGINT UNSIGNED NOT NULL,
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `vehicle_service_request_id` INT UNSIGNED NOT NULL,
       `maintenance_initiation_date` DATE NOT NULL,  -- Date of Service Initiated (Vehicle reached in garage)
       `maintenance_type` VARCHAR(120) NOT NULL,    -- Mannual Entry
       `cost` DECIMAL(12,2) NOT NULL,
@@ -1374,7 +1374,7 @@
       `next_due_date` DATE DEFAULT NULL,     -- Next Due Date (if Any)
       `remarks` VARCHAR(512) DEFAULT NULL,
       `status` ENUM('Approved','Pending','Rejected') NOT NULL DEFAULT 'Pending',
-      `approved_by` BIGINT UNSIGNED DEFAULT NULL,
+      `approved_by` INT UNSIGNED DEFAULT NULL,
       `approved_at` TIMESTAMP NULL DEFAULT NULL,
       `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -1384,19 +1384,19 @@
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `tpt_trip_incidents` (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `trip_id` BIGINT UNSIGNED NOT NULL,
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `trip_id` INT UNSIGNED NOT NULL,
       `incident_time` TIMESTAMP NOT NULL,
-      `incident_type` BIGINT UNSIGNED NOT NULL,
+      `incident_type` INT UNSIGNED NOT NULL,
       `severity` ENUM('LOW','MEDIUM','HIGH') DEFAULT 'MEDIUM',
       `latitude` DECIMAL(10,7) DEFAULT NULL,
       `longitude` DECIMAL(10,7) DEFAULT NULL,
       `description` VARCHAR(512) DEFAULT NULL,
-      `status` BIGINT UNSIGNED DEFAULT NULL,
-      `raised_by` BIGINT UNSIGNED DEFAULT NULL,  -- fk to sys_users
+      `status` INT UNSIGNED DEFAULT NULL,
+      `raised_by` INT UNSIGNED DEFAULT NULL,  -- fk to sys_users
       `raised_at` TIMESTAMP NULL DEFAULT NULL,    -- When Incident is Raised
       `resolved_at` TIMESTAMP NULL DEFAULT NULL,  -- When Incident is Resolved
-      `resolved_by` BIGINT UNSIGNED DEFAULT NULL,  -- fk to sys_users
+      `resolved_by` INT UNSIGNED DEFAULT NULL,  -- fk to sys_users
       `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       `deleted_at` TIMESTAMP NULL DEFAULT NULL,
@@ -1406,19 +1406,19 @@
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `tpt_student_boarding_log` (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       `trip_date` DATE NOT NULL,
-      `student_id` BIGINT UNSIGNED DEFAULT NULL,      -- FK to tpt_students
-      `student_session_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to tpt_student_session
-      `boarding_route_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to tpt_routes
-      `boarding_trip_id` BIGINT UNSIGNED DEFAULT NULL,   -- FK to tpt_trip
-      `boarding_stop_id` BIGINT UNSIGNED DEFAULT NULL,   -- FK to tpt_pickup_points
+      `student_id` INT UNSIGNED DEFAULT NULL,      -- FK to tpt_students
+      `student_session_id` INT UNSIGNED DEFAULT NULL,  -- FK to tpt_student_session
+      `boarding_route_id` INT UNSIGNED DEFAULT NULL,  -- FK to tpt_routes
+      `boarding_trip_id` INT UNSIGNED DEFAULT NULL,   -- FK to tpt_trip
+      `boarding_stop_id` INT UNSIGNED DEFAULT NULL,   -- FK to tpt_pickup_points
       `boarding_time` DATETIME DEFAULT NULL,
-      `unboarding_route_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to tpt_routes
-      `unboarding_trip_id` BIGINT UNSIGNED DEFAULT NULL,   -- FK to tpt_trip
-      `unboarding_stop_id` BIGINT UNSIGNED DEFAULT NULL,   -- FK to tpt_pickup_points
+      `unboarding_route_id` INT UNSIGNED DEFAULT NULL,  -- FK to tpt_routes
+      `unboarding_trip_id` INT UNSIGNED DEFAULT NULL,   -- FK to tpt_trip
+      `unboarding_stop_id` INT UNSIGNED DEFAULT NULL,   -- FK to tpt_pickup_points
       `unboarding_time` DATETIME DEFAULT NULL,
-      `device_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to tpt_attendance_device
+      `device_id` INT UNSIGNED DEFAULT NULL,  -- FK to tpt_attendance_device
       `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       `deleted_at` TIMESTAMP NULL DEFAULT NULL,
@@ -1434,10 +1434,10 @@
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `tpt_notification_log` (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `student_session_id` BIGINT UNSIGNED DEFAULT NULL,
-      `trip_id` BIGINT UNSIGNED DEFAULT NULL,
-      `boarding_stop_id` BIGINT UNSIGNED DEFAULT NULL,
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `student_session_id` INT UNSIGNED DEFAULT NULL,
+      `trip_id` INT UNSIGNED DEFAULT NULL,
+      `boarding_stop_id` INT UNSIGNED DEFAULT NULL,
       `notification_type` ENUM('TripStart','ApproachingStop','ReachedStop','Delayed','Cancelled') DEFAULT NULL,
       `sent_time` DATETIME DEFAULT NULL,
       `app_notification_status` ENUM('NotRegistered','Sent','Failed') DEFAULT NULL,
@@ -1459,9 +1459,9 @@
 
   -- 1-Screen Name - Vendor Master
   CREATE TABLE IF NOT EXISTS `vnd_vendors` (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       `vendor_name` VARCHAR(100) NOT NULL,
-      `vendor_type_id` BIGINT UNSIGNED NOT NULL,  -- FK to sys_dropdown_table (e.g., 'Transport', 'Canteen', 'Security')
+      `vendor_type_id` INT UNSIGNED NOT NULL,  -- FK to sys_dropdown_table (e.g., 'Transport', 'Canteen', 'Security')
       `contact_person` VARCHAR(100) NOT NULL,
       `contact_number` VARCHAR(30) NOT NULL,
       `email` VARCHAR(100) DEFAULT NULL,
@@ -1486,13 +1486,13 @@
 
   -- 2-Screen Name - Item Master
   CREATE TABLE IF NOT EXISTS `vnd_items` (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       `item_code` VARCHAR(50) DEFAULT NULL,       -- SKU or Internal Item Code (Can be used for barcode printing)
       `item_name` VARCHAR(100) NOT NULL,
       `item_type` ENUM('SERVICE', 'PRODUCT') NOT NULL,
       `item_nature` ENUM('CONSUMABLE', 'ASSET', 'SERVICE', 'NA') NOT NULL DEFAULT 'NA', -- Inventory Hook
-      `category_id` BIGINT UNSIGNED NOT NULL,     -- FK to sys_dropdown_table (e.g., 'Stationery', 'Bus Rental', 'Plumbing')
-      `unit_id` BIGINT UNSIGNED NOT NULL,         -- FK to sys_dropdown_table (e.g., 'Km', 'Day', 'Month', 'Piece', 'Visit')
+      `category_id` INT UNSIGNED NOT NULL,     -- FK to sys_dropdown_table (e.g., 'Stationery', 'Bus Rental', 'Plumbing')
+      `unit_id` INT UNSIGNED NOT NULL,         -- FK to sys_dropdown_table (e.g., 'Km', 'Day', 'Month', 'Piece', 'Visit')
       `hsn_sac_code` VARCHAR(20) DEFAULT NULL,    -- For GST/Tax compliance
       `default_price` DECIMAL(12, 2) DEFAULT 0.00,-- Standard buying price
       `reorder_level` DECIMAL(12, 2) DEFAULT 0.00,-- Low stock alert threshold (Inventory Hook)
@@ -1512,8 +1512,8 @@
 
   -- 3-Screen Name - Agreement Master
   CREATE TABLE IF NOT EXISTS `vnd_agreements` (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `vendor_id` BIGINT UNSIGNED NOT NULL,
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `vendor_id` INT UNSIGNED NOT NULL,
       `agreement_ref_no` VARCHAR(50) DEFAULT NULL,  -- Physical contract reference
       `start_date` DATE NOT NULL,
       `end_date` DATE NOT NULL,
@@ -1532,9 +1532,9 @@
 
   -- 3-Screen Name - Agreement Master (Agreement Items). This will be part of above Screen
   CREATE TABLE IF NOT EXISTS `vnd_agreement_items_jnt` (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `agreement_id` BIGINT UNSIGNED NOT NULL,
-      `item_id` BIGINT UNSIGNED NOT NULL,
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `agreement_id` INT UNSIGNED NOT NULL,
+      `item_id` INT UNSIGNED NOT NULL,
       -- Billing Logic
       `billing_model` ENUM('FIXED', 'PER_UNIT', 'HYBRID') NOT NULL DEFAULT 'FIXED', 
       -- FIXED: Flat rate per month/cycle.
@@ -1548,9 +1548,9 @@
       `tax3_percent` DECIMAL(5, 2) DEFAULT 0.00,
       `tax4_percent` DECIMAL(5, 2) DEFAULT 0.00,
       -- Context (For hooking to specific assets)
-      `related_entity_type` BIGINT UNSIGNED DEFAULT NULL,  -- FK to sys_dropdown_table ('Vehicle', 'Asset', 'Service', etc.)
+      `related_entity_type` INT UNSIGNED DEFAULT NULL,  -- FK to sys_dropdown_table ('Vehicle', 'Asset', 'Service', etc.)
       `related_entity_table` VARCHAR(60) DEFAULT NULL, -- e.g., tpt_vehicle, sch_asset, sch_service, etc.
-      `related_entity_id` BIGINT UNSIGNED DEFAULT NULL, -- e.g., vehicle_id, asset_id, service_id, etc.
+      `related_entity_id` INT UNSIGNED DEFAULT NULL, -- e.g., vehicle_id, asset_id, service_id, etc.
       `description` VARCHAR(255) DEFAULT NULL,
       `is_active` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,
       `is_deleted` TINYINT(1) UNSIGNED NOT NULL DEFAULT 0,
@@ -1577,13 +1577,13 @@
   -- This table is used to log the usage of services/products by vendors.
   -- 4-Screen Name - Usage Log
   CREATE TABLE IF NOT EXISTS `vnd_usage_logs` (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `vendor_id` BIGINT UNSIGNED NOT NULL,
-      `agreement_item_id` BIGINT UNSIGNED NOT NULL, -- Optional, can map to specific agreement line
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `vendor_id` INT UNSIGNED NOT NULL,
+      `agreement_item_id` INT UNSIGNED NOT NULL, -- Optional, can map to specific agreement line
       `usage_date` DATE NOT NULL,
       `qty_used` DECIMAL(10, 2) NOT NULL DEFAULT 0.00,  -- Quantity used e.g. Vehicle distance(Km), hours, etc.
       `remarks` VARCHAR(255) DEFAULT NULL,
-      `logged_by` BIGINT UNSIGNED DEFAULT NULL, -- FK to sys_users (will be NULL for auto log)
+      `logged_by` INT UNSIGNED DEFAULT NULL, -- FK to sys_users (will be NULL for auto log)
       `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       CONSTRAINT `fk_vnd_usage_vendor` FOREIGN KEY (`vendor_id`) REFERENCES `vnd_vendors`(`id`) ON DELETE CASCADE,
@@ -1595,10 +1595,10 @@
 
   -- 5-Screen Name - Invoice
   CREATE TABLE IF NOT EXISTS `vnd_invoices` (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `vendor_id` BIGINT UNSIGNED NOT NULL,
-      `agreement_id` BIGINT UNSIGNED DEFAULT NULL, -- Optional, if invoice covers one agreement
-      `agreement_item_id` BIGINT UNSIGNED DEFAULT NULL, -- Optional, if invoice covers one agreement item
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `vendor_id` INT UNSIGNED NOT NULL,
+      `agreement_id` INT UNSIGNED DEFAULT NULL, -- Optional, if invoice covers one agreement
+      `agreement_item_id` INT UNSIGNED DEFAULT NULL, -- Optional, if invoice covers one agreement item
       `item_description` VARCHAR(255) NOT NULL, -- Snapshot of item name
       `invoice_number` VARCHAR(50) NOT NULL,       -- Vendor's Invoice ID
       `invoice_date` DATE NOT NULL,
@@ -1621,7 +1621,7 @@
       `amount_paid` DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
       `balance_due` DECIMAL(12, 2) GENERATED ALWAYS AS (net_payable - amount_paid) STORED,
       `due_date` DATE DEFAULT NULL,   --  Payment due date (Invoice date + Credit days)
-      `status` BIGINT UNSIGNED NOT NULL, -- FK to sys_dropdown_table (Approval Pending, Approved, Payment Pending, Paid, Overdue)
+      `status` INT UNSIGNED NOT NULL, -- FK to sys_dropdown_table (Approval Pending, Approved, Payment Pending, Paid, Overdue)
       `remarks` VARCHAR(512) DEFAULT NULL,
       `is_active` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,
       `is_deleted` TINYINT(1) UNSIGNED NOT NULL DEFAULT 0,
@@ -1638,17 +1638,17 @@
 
   -- 6-Screen Name - Payment
   CREATE TABLE IF NOT EXISTS `vnd_payments` (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `vendor_id` BIGINT UNSIGNED NOT NULL,
-      `invoice_id` BIGINT UNSIGNED NOT NULL,
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `vendor_id` INT UNSIGNED NOT NULL,
+      `invoice_id` INT UNSIGNED NOT NULL,
       `payment_date` DATE NOT NULL,
       `amount` DECIMAL(14, 2) NOT NULL,
-      `payment_mode` BIGINT UNSIGNED NOT NULL, -- FK sys_dropdown (Cheque, NEFT, Cash)
+      `payment_mode` INT UNSIGNED NOT NULL, -- FK sys_dropdown (Cheque, NEFT, Cash)
       `reference_no` VARCHAR(100) DEFAULT NULL, -- Trx ID, Cheque No
       `status` ENUM('INITIATED', 'SUCCESS', 'FAILED') DEFAULT 'SUCCESS',
-      `paid_by` BIGINT UNSIGNED DEFAULT NULL, -- FK sys_users
+      `paid_by` INT UNSIGNED DEFAULT NULL, -- FK sys_users
       `reconciled` TINYINT(1) UNSIGNED NOT NULL DEFAULT 0, -- 0: Not Reconciled, 1: Reconciled
-      `reconciled_by` BIGINT UNSIGNED DEFAULT NULL, -- FK sys_users
+      `reconciled_by` INT UNSIGNED DEFAULT NULL, -- FK sys_users
       `reconciled_at` TIMESTAMP NULL DEFAULT NULL,
       `remarks` TEXT DEFAULT NULL,
       `is_deleted` TINYINT(1) UNSIGNED NOT NULL DEFAULT 0,
@@ -1668,24 +1668,24 @@
 -- ===========================================================================
 
   CREATE TABLE IF NOT EXISTS `cmp_complaint_categories` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `parent_id` BIGINT UNSIGNED DEFAULT NULL, -- NULL = Main Category, Value = Sub-category
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `parent_id` INT UNSIGNED DEFAULT NULL, -- NULL = Main Category, Value = Sub-category
     `name` VARCHAR(100) NOT NULL, -- e.g. "Transport", "Academic", "Rash Driving"
     `code` VARCHAR(30) DEFAULT NULL, -- Optional short code e.g. "TPT", "ACAD", "RASH_DRIVE"
     `description` VARCHAR(512) DEFAULT NULL,
-    `severity_level_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to sys_dropdown_table (1-10) e.g. "1-Low", "2-Medium", "3-High", "10-Critical"
-    `priority_score_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to sys_dropdown_table (1-5) e.g. 1=Critical, 2=Urgent, 3=High, 4=Medium, 5=Low
+    `severity_level_id` INT UNSIGNED DEFAULT NULL, -- FK to sys_dropdown_table (1-10) e.g. "1-Low", "2-Medium", "3-High", "10-Critical"
+    `priority_score_id` INT UNSIGNED DEFAULT NULL, -- FK to sys_dropdown_table (1-5) e.g. 1=Critical, 2=Urgent, 3=High, 4=Medium, 5=Low
     `default_expected_resolution_hours` INT UNSIGNED NOT NULL,  -- This must be less than escalation_l1_hours
     `default_escalation_hours_l1` INT UNSIGNED NOT NULL, -- Time before escalating to L1 (This must be less than escalation_l2_hours)
     `default_escalation_hours_l2` INT UNSIGNED NOT NULL, -- Time before escalating to L2 (This must be less than escalation_l3_hours)
     `default_escalation_hours_l3` INT UNSIGNED NOT NULL, -- Time before escalating to L3 (This must be less than escalation_l4_hours)
     `default_escalation_hours_l4` INT UNSIGNED NOT NULL, -- Time before escalating to L4 (This must be less than escalation_l5_hours)
     `default_escalation_hours_l5` INT UNSIGNED NOT NULL, -- Time before escalating to L5
-    `default_escalation_l1_entity_group_id` BIGINT UNSIGNED DEFAULT NULL,    -- FK to sys_groups
-    `default_escalation_l2_entity_group_id` BIGINT UNSIGNED DEFAULT NULL,    -- FK to sys_groups
-    `default_escalation_l3_entity_group_id` BIGINT UNSIGNED DEFAULT NULL,    -- FK to sys_groups
-    `default_escalation_l4_entity_group_id` BIGINT UNSIGNED DEFAULT NULL,    -- FK to sys_groups
-    `default_escalation_l5_entity_group_id` BIGINT UNSIGNED DEFAULT NULL,    -- FK to sys_groups
+    `default_escalation_l1_entity_group_id` INT UNSIGNED DEFAULT NULL,    -- FK to sys_groups
+    `default_escalation_l2_entity_group_id` INT UNSIGNED DEFAULT NULL,    -- FK to sys_groups
+    `default_escalation_l3_entity_group_id` INT UNSIGNED DEFAULT NULL,    -- FK to sys_groups
+    `default_escalation_l4_entity_group_id` INT UNSIGNED DEFAULT NULL,    -- FK to sys_groups
+    `default_escalation_l5_entity_group_id` INT UNSIGNED DEFAULT NULL,    -- FK to sys_groups
     `is_medical_check_required` TINYINT(1) DEFAULT 0, -- If true, then medical check is required
     `is_active` TINYINT(1) DEFAULT 1,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -1709,20 +1709,20 @@
   -- -------------------------------------------------------------------------
   -- This table will capture the detail of complaint categories and sub-categories (like whom to escalate, expected resolution time, escalation time etc.)
   CREATE TABLE IF NOT EXISTS `cmp_department_sla` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `complaint_category_id` BIGINT UNSIGNED NOT NULL,       -- FK to cmp_complaint_categories
-    `complaint_subcategory_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to cmp_complaint_categories (if sub-category is Null then it will be applied to all sub-categories exept those defined in the sub-category)
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `complaint_category_id` INT UNSIGNED NOT NULL,       -- FK to cmp_complaint_categories
+    `complaint_subcategory_id` INT UNSIGNED DEFAULT NULL, -- FK to cmp_complaint_categories (if sub-category is Null then it will be applied to all sub-categories exept those defined in the sub-category)
   -- Group wise SLA
-    `target_department_id` BIGINT UNSIGNED DEFAULT NULL,    -- FK to sys_departments
-    `target_designation_id` BIGINT UNSIGNED DEFAULT NULL,   -- FK to sys_designations
-    `target_role_id` BIGINT UNSIGNED DEFAULT NULL,          -- FK to sys_roles
-    `target_entity_group_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to sys_groups
+    `target_department_id` INT UNSIGNED DEFAULT NULL,    -- FK to sys_departments
+    `target_designation_id` INT UNSIGNED DEFAULT NULL,   -- FK to sys_designations
+    `target_role_id` INT UNSIGNED DEFAULT NULL,          -- FK to sys_roles
+    `target_entity_group_id` INT UNSIGNED DEFAULT NULL,  -- FK to sys_groups
   -- User wise SLA
-    `target_user_id` BIGINT UNSIGNED DEFAULT NULL,          -- FK to sys_users
+    `target_user_id` INT UNSIGNED DEFAULT NULL,          -- FK to sys_users
   -- Vehicle wise SLA
-    `target_vehicle_id` BIGINT UNSIGNED DEFAULT NULL,       -- FK to sys_vehicles
+    `target_vehicle_id` INT UNSIGNED DEFAULT NULL,       -- FK to sys_vehicles
   -- Vendor wise SLA
-    `target_vendor_id` BIGINT UNSIGNED DEFAULT NULL,        -- FK to tpt_vendor
+    `target_vendor_id` INT UNSIGNED DEFAULT NULL,        -- FK to tpt_vendor
   -- SLA (Expected Resolution Time & Escalation Time)
     `dept_expected_resolution_hours` INT UNSIGNED NOT NULL, -- This must be less than escalation_l1_hours
     `dept_escalation_hours_l1` INT UNSIGNED NOT NULL,       -- Time before escalating to L1 (This must be less than escalation_l2_hours)
@@ -1730,11 +1730,11 @@
     `dept_escalation_hours_l3` INT UNSIGNED NOT NULL,       -- Time before escalating to L3 (This must be less than escalation_l4_hours)
     `dept_escalation_hours_l4` INT UNSIGNED NOT NULL,       -- Time before escalating to L4 (This must be less than escalation_l5_hours)
     `dept_escalation_hours_l5` INT UNSIGNED NOT NULL,       -- Time before escalating to L5
-    `escalation_l1_entity_group_id` BIGINT UNSIGNED DEFAULT NULL,    -- FK to sys_groups
-    `escalation_l2_entity_group_id` BIGINT UNSIGNED DEFAULT NULL,    -- FK to sys_groups
-    `escalation_l3_entity_group_id` BIGINT UNSIGNED DEFAULT NULL,    -- FK to sys_groups
-    `escalation_l4_entity_group_id` BIGINT UNSIGNED DEFAULT NULL,    -- FK to sys_groups
-    `escalation_l5_entity_group_id` BIGINT UNSIGNED DEFAULT NULL,    -- FK to sys_groups
+    `escalation_l1_entity_group_id` INT UNSIGNED DEFAULT NULL,    -- FK to sys_groups
+    `escalation_l2_entity_group_id` INT UNSIGNED DEFAULT NULL,    -- FK to sys_groups
+    `escalation_l3_entity_group_id` INT UNSIGNED DEFAULT NULL,    -- FK to sys_groups
+    `escalation_l4_entity_group_id` INT UNSIGNED DEFAULT NULL,    -- FK to sys_groups
+    `escalation_l5_entity_group_id` INT UNSIGNED DEFAULT NULL,    -- FK to sys_groups
     `is_active` TINYINT(1) DEFAULT 1,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -1764,25 +1764,25 @@
   -- MASTER COMPLAINT TABLE
   -- -------------------------------------------------------------------------
   CREATE TABLE IF NOT EXISTS `cmp_complaints` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `ticket_no` VARCHAR(30) NOT NULL, -- Auto-generated unique ticket ID (e.g., CMP-2025-0001)
     `ticket_date` DATE NOT NULL DEFAULT CURRENT_DATE(), -- Date when the complaint was raised
     -- Complainant Info (Who raised it)
-    `complainant_type_id` BIGINT UNSIGNED NOT NULL, -- FK to sys_dropdown_table (Parent, Student, Staff, Vendor, Anonymous, Public)
-    `complainant_user_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to sys_users (NULL if Public/Anonymous)
+    `complainant_type_id` INT UNSIGNED NOT NULL, -- FK to sys_dropdown_table (Parent, Student, Staff, Vendor, Anonymous, Public)
+    `complainant_user_id` INT UNSIGNED DEFAULT NULL, -- FK to sys_users (NULL if Public/Anonymous)
     `complainant_name` VARCHAR(100) DEFAULT NULL, -- Captured if not a system user (Public/Anonymous)
     `complainant_contact` VARCHAR(50) DEFAULT NULL, -- Captured if not a system user (Public/Anonymous)
     -- Target Entity (Against whom/what)
-    `target_user_type_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to sys_dropdown_table (1=Student, 2=Staff, 3=Group, 4=Department, 5=Role, 6=Designation, 7=Facility, 8=Vehicle, 9=Event, 10=Location, 11-Vendor, 12-Other)
+    `target_user_type_id` INT UNSIGNED DEFAULT NULL, -- FK to sys_dropdown_table (1=Student, 2=Staff, 3=Group, 4=Department, 5=Role, 6=Designation, 7=Facility, 8=Vehicle, 9=Event, 10=Location, 11-Vendor, 12-Other)
     `target_table_name` VARCHAR(60) DEFAULT NULL, -- e.g. "sch_class", "sch_section", "sch_subject", "sch_designation", "sch_department", "sch_role", "sch_students", "sch_staff", "sch_vehicle", "sch_facility", "sch_event", "sch_location", "sch_other"
-    `target_selected_id` BIGINT UNSIGNED DEFAULT NULL, -- Foriegn Key will be managed at Application Level as it will be different for different entities e.g. sch_class, sch_section, sch_subject, sch_students, sch_staff, sch_vehicle etc.
+    `target_selected_id` INT UNSIGNED DEFAULT NULL, -- Foriegn Key will be managed at Application Level as it will be different for different entities e.g. sch_class, sch_section, sch_subject, sch_students, sch_staff, sch_vehicle etc.
     `target_code` VARCHAR(50) DEFAULT NULL, -- Optional short code e.g. "Transport", "Academic", "Account Manager"
     `target_name` VARCHAR(100) DEFAULT NULL, -- Optional name e.g. "Transport", "Academic", "Account Manager"
     -- Complaint Classification
-    `category_id` BIGINT UNSIGNED NOT NULL, -- FK to cmp_complaint_categories
-    `subcategory_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to cmp_complaint_categories
-    `severity_level_id` BIGINT UNSIGNED NOT NULL, -- It will not be asked to Complaint Form but will be auto fetched from 'cmp_complaint_categories' table
-    `priority_score_id` BIGINT UNSIGNED NOT NULL, -- It will not be asked to Complaint Form but will be auto fetched from 'cmp_complaint_categories' table
+    `category_id` INT UNSIGNED NOT NULL, -- FK to cmp_complaint_categories
+    `subcategory_id` INT UNSIGNED DEFAULT NULL, -- FK to cmp_complaint_categories
+    `severity_level_id` INT UNSIGNED NOT NULL, -- It will not be asked to Complaint Form but will be auto fetched from 'cmp_complaint_categories' table
+    `priority_score_id` INT UNSIGNED NOT NULL, -- It will not be asked to Complaint Form but will be auto fetched from 'cmp_complaint_categories' table
     -- Complaint Content
     `title` VARCHAR(200) NOT NULL,
     `description` TEXT DEFAULT NULL,
@@ -1790,19 +1790,19 @@
     `incident_date` DATETIME DEFAULT NULL,
     `incident_time` TIME DEFAULT NULL,
     -- Status & Resolution
-    `status_id` BIGINT UNSIGNED NOT NULL, -- FK to sys_dropdown_table (Open, In-Progress, Escalated, Resolved, Closed, Rejected)
-    `assigned_to_role_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to sys_roles (Current Role handling it)
-    `assigned_to_user_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to sys_users (Specific Officer)
+    `status_id` INT UNSIGNED NOT NULL, -- FK to sys_dropdown_table (Open, In-Progress, Escalated, Resolved, Closed, Rejected)
+    `assigned_to_role_id` INT UNSIGNED DEFAULT NULL, -- FK to sys_roles (Current Role handling it)
+    `assigned_to_user_id` INT UNSIGNED DEFAULT NULL, -- FK to sys_users (Specific Officer)
     `resolution_due_at` DATETIME DEFAULT NULL, -- Calculated from 'cmp_department_sla'. If not available then use 'default_expected_resolution_hours' from 'cmp_complaint_categories'.
     `actual_resolved_at` DATETIME DEFAULT NULL, -- When it was actually resolved
-    `resolved_by_role_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to sys_roles (Role who resolved it)
-    `resolved_by_user_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to sys_users (Officer who resolved it)
+    `resolved_by_role_id` INT UNSIGNED DEFAULT NULL, -- FK to sys_roles (Role who resolved it)
+    `resolved_by_user_id` INT UNSIGNED DEFAULT NULL, -- FK to sys_users (Officer who resolved it)
     `resolution_summary` TEXT DEFAULT NULL,
     -- Escalation
     `is_escalated` TINYINT(1) DEFAULT 0,
     `current_escalation_level` TINYINT UNSIGNED DEFAULT 0, -- 0=None, 1=L1, 2=L2...
     -- Meta
-    `source_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to sys_dropdown_table (App, Web, Email, Walk-in, Call)
+    `source_id` INT UNSIGNED DEFAULT NULL, -- FK to sys_dropdown_table (App, Web, Email, Walk-in, Call)
     `is_anonymous` TINYINT(1) DEFAULT 0,
     `dept_specific_info` JSON DEFAULT NULL, -- Department-specific additional info (e.g., Student ID, Parent ID, route_id, vehicle_id)
     `is_medical_check_required` TINYINT(1) DEFAULT 0, -- Fetch from 'cmp_complaint_categories' table. If true, then system will capture medical check details in 'cmp_medical_checks' table.
@@ -1839,13 +1839,13 @@
   -- COMPLAINT ACTIONS (AUDIT TRAIL)
   -- -------------------------------------------------------------------------
   CREATE TABLE IF NOT EXISTS `cmp_complaint_actions` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `complaint_id` BIGINT UNSIGNED NOT NULL,
-    `action_type_id` BIGINT UNSIGNED NOT NULL, -- FK to sys_dropdown_table (Created, Assigned, Comment, StatusChange, Investigation, Escalated, Resolved)
-    `performed_by_user_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to sys_users (NULL for System)
-    `performed_by_role_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to sys_roles (NULL for System)
-    `assigned_to_user_id` BIGINT UNSIGNED DEFAULT NULL, -- If reassigned
-    `assigned_to_role_id` BIGINT UNSIGNED DEFAULT NULL, -- If reassigned
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `complaint_id` INT UNSIGNED NOT NULL,
+    `action_type_id` INT UNSIGNED NOT NULL, -- FK to sys_dropdown_table (Created, Assigned, Comment, StatusChange, Investigation, Escalated, Resolved)
+    `performed_by_user_id` INT UNSIGNED DEFAULT NULL, -- FK to sys_users (NULL for System)
+    `performed_by_role_id` INT UNSIGNED DEFAULT NULL, -- FK to sys_roles (NULL for System)
+    `assigned_to_user_id` INT UNSIGNED DEFAULT NULL, -- If reassigned
+    `assigned_to_role_id` INT UNSIGNED DEFAULT NULL, -- If reassigned
     `notes` TEXT DEFAULT NULL,
     `is_private_note` TINYINT(1) DEFAULT 0, -- If true, not visible to complainant
     `action_timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -1863,9 +1863,9 @@
   -- MEDICAL & SAFETY CHECKS (TRANSPORT COMPLIANCE)
   -- -------------------------------------------------------------------------
   CREATE TABLE IF NOT EXISTS `cmp_medical_checks` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `complaint_id` BIGINT UNSIGNED NOT NULL,
-    `check_type_id` BIGINT UNSIGNED NOT NULL, -- FK to sys_dropdown_table (AlcoholTest, DrugTest, FitnessCheck)
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `complaint_id` INT UNSIGNED NOT NULL,
+    `check_type_id` INT UNSIGNED NOT NULL, -- FK to sys_dropdown_table (AlcoholTest, DrugTest, FitnessCheck)
     `conducted_by` VARCHAR(100) DEFAULT NULL, -- Doctor/Officer Name
     `conducted_at` DATETIME NOT NULL,
     `result` VARCHAR(20) NOT NULL, -- FK to sys_dropdown_table (Positive, Negative, Inconclusive)
@@ -1885,12 +1885,12 @@
   -- -------------------------------------------------------------------------
   -- Stores processed insights for complaints (Prediction, Sentiment, Risk)
   CREATE TABLE IF NOT EXISTS `cmp_ai_insights` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `complaint_id` BIGINT UNSIGNED NOT NULL,
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `complaint_id` INT UNSIGNED NOT NULL,
     `sentiment_score` DECIMAL(4,3) DEFAULT NULL, -- -1.0 (Negative) to +1.0 (Positive) calculated by AI e.g. -0.8
-    `sentiment_label_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to sys_dropdown_table (Angry, Urgent, Calm, Neutral) calculated by AI e.g. Angry
+    `sentiment_label_id` INT UNSIGNED DEFAULT NULL, -- FK to sys_dropdown_table (Angry, Urgent, Calm, Neutral) calculated by AI e.g. Angry
     `escalation_risk_score` DECIMAL(5,2) DEFAULT NULL, -- 0-100% Probability calculated by AI e.g. 80% 
-    `predicted_category_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to cmp_complaint_categories calculated by AI e.g. Rash Driving
+    `predicted_category_id` INT UNSIGNED DEFAULT NULL, -- FK to cmp_complaint_categories calculated by AI e.g. Rash Driving
     `safety_risk_score` DECIMAL(5,2) DEFAULT NULL, -- 0-100% Probability calculated by AI e.g. 80%
     `model_version` VARCHAR(20) DEFAULT NULL, -- model version used for prediction e.g. v1.0
     `processed_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -1913,7 +1913,7 @@
 -- ===========================================================================
 
     CREATE TABLE IF NOT EXISTS `ntf_channel_master` (
-        `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
         `code` VARCHAR(20) NOT NULL,
         `name` VARCHAR(50) NOT NULL,
         `description` VARCHAR(255) NULL,
@@ -1929,7 +1929,7 @@
     ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
     CREATE TABLE IF NOT EXISTS `ntf_notifications` (
-        `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
         `source_module` VARCHAR(50) NOT NULL,
         -- Triggering module: Exam, Fee, Transport, Complaint etc
         `notification_event` VARCHAR(50) NOT NULL,
@@ -1938,17 +1938,17 @@
         -- Notification title
         `description` VARCHAR(512) NULL,
         -- Notification description
-        `template_id` BIGINT UNSIGNED NULL,
+        `template_id` INT UNSIGNED NULL,
         -- Template ID
-        `priority_id` BIGINT UNSIGNED NOT NULL,
+        `priority_id` INT UNSIGNED NOT NULL,
         -- fk to sys_dropdown_table e.g. 'LOW, NORMAL, HIGH, URGENT'
-        `confidentiality_level_id` BIGINT UNSIGNED NOT NULL,
+        `confidentiality_level_id` INT UNSIGNED NOT NULL,
         -- fk to sys_dropdown_table e.g. 'PUBLIC, RESTRICTED, CONFIDENTIAL'
         `scheduled_at` DATETIME NULL,
         -- Scheduled time for notifications
         `recurring` TINYINT(1) DEFAULT 0,
         -- 0: One Time, 1: Recurring
-        `recurring_interval_id` BIGINT UNSIGNED NULL,
+        `recurring_interval_id` INT UNSIGNED NULL,
         -- fk to sys_dropdown_table e.g. 'HOURLY, DAILY, WEEKLY, MONTHLY, QUARTERLY, YEARLY'
         `recurring_end_at` DATETIME NULL,
         -- End date or time for recurring notifications
@@ -1956,7 +1956,7 @@
         -- End count for recurring notifications
         `expires_at` DATETIME NULL,
         -- Expiry date or time for notifications
-        `created_by` BIGINT UNSIGNED NOT NULL,
+        `created_by` INT UNSIGNED NOT NULL,
         `is_active` TINYINT(1) DEFAULT 1,
         `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -1973,13 +1973,13 @@
     -- NOTIFICATION CHANNELS 
     -- =========================================================
     CREATE TABLE IF NOT EXISTS `ntf_notification_channels` (
-        `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-        `notification_id` BIGINT UNSIGNED NOT NULL,
-        `channel_id` BIGINT UNSIGNED NOT NULL,
+        `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        `notification_id` INT UNSIGNED NOT NULL,
+        `channel_id` INT UNSIGNED NOT NULL,
         -- fk to ntf_channel_master
-        `provider_id` BIGINT UNSIGNED NULL,
+        `provider_id` INT UNSIGNED NULL,
         -- fk to sys_dropdown_table e.g. 'MSG91, Twilio, AWS SES, Meta API'
-        `status_id` BIGINT UNSIGNED NOT NULL,
+        `status_id` INT UNSIGNED NOT NULL,
         -- fk to sys_dropdown_table e.g. 'PENDING, SENT, FAILED, RETRIED'
         `scheduled_at` DATETIME NULL,
         -- Scheduled time for notifications
@@ -2009,13 +2009,13 @@
     -- NOTIFICATION TARGETING
     -- =========================================================
     CREATE TABLE IF NOT EXISTS `ntf_notification_targets` (
-        `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-        `notification_id` BIGINT UNSIGNED NOT NULL,
-        `target_type_id` BIGINT UNSIGNED NOT NULL,
+        `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        `notification_id` INT UNSIGNED NOT NULL,
+        `target_type_id` INT UNSIGNED NOT NULL,
         -- FK to sys_dropdown_table e.g. USER, ROLE, DEPARTMENT, DESIGNATION, CLASS, SECTION, SUBJECT, ENTITY_GROUP, ENTIRE_SCHOOL
         `target_table_name` VARCHAR(60) DEFAULT NULL,
         -- e.g. sys_user, sys_role, sch_department, sch_designation, sch_classes, sch_sections, sch_subjects, sch_entity_groups, sch_staff_groups
-        `target_selected_id` BIGINT UNSIGNED NULL,
+        `target_selected_id` INT UNSIGNED NULL,
         -- Reference ID based on target type e.g. user_id, role_id, designation_id, etc.
         `is_active` TINYINT(1) DEFAULT 1,
         `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -2033,9 +2033,9 @@
     -- USER NOTIFICATION PREFERENCES
     -- =========================================================
     CREATE TABLE IF NOT EXISTS `ntf_user_preferences` (
-        `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-        `user_id` BIGINT UNSIGNED NOT NULL,
-        `channel_id` BIGINT UNSIGNED NOT NULL,
+        `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        `user_id` INT UNSIGNED NOT NULL,
+        `channel_id` INT UNSIGNED NOT NULL,
         -- fk to ntf_channel_master
         `is_enabled` TINYINT(1) DEFAULT 1,
         `quiet_hours_start` TIME NULL,
@@ -2052,16 +2052,16 @@
     -- NOTIFICATION TEMPLATES
     -- =========================================================
     CREATE TABLE IF NOT EXISTS `ntf_templates` (
-        `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
         `template_code` VARCHAR(50) NOT NULL,
-        `channel_id` BIGINT UNSIGNED NOT NULL,
+        `channel_id` INT UNSIGNED NOT NULL,
         -- fk to ntf_channel_master
         `subject` VARCHAR(255) NULL,
         -- 'Used for Email'
         `body` TEXT NOT NULL,
         -- 'Supports {{placeholders}}'
         `language_code` VARCHAR(10) DEFAULT 'en',
-        `media_id` BIGINT UNSIGNED NULL,
+        `media_id` INT UNSIGNED NULL,
         `is_system_template` TINYINT(1) DEFAULT 0,
         `is_active` TINYINT(1) DEFAULT 1,
         `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -2076,17 +2076,17 @@
     -- NOTIFICATION RESOLVED RECIPIENTS (Final Resolved Recipients to send Notification)
     -- =========================================================
     CREATE TABLE IF NOT EXISTS `ntf_resolved_recipients` (
-        `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-        `notification_id` BIGINT UNSIGNED NOT NULL,
-        `channel_id` BIGINT UNSIGNED NOT NULL,
+        `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        `notification_id` INT UNSIGNED NOT NULL,
+        `channel_id` INT UNSIGNED NOT NULL,
         -- fk to ntf_channel_master
-        `template_id` BIGINT UNSIGNED NOT NULL,
+        `template_id` INT UNSIGNED NOT NULL,
         -- fk to ntf_templates
-        `notification_target_id` BIGINT UNSIGNED NOT NULL,
+        `notification_target_id` INT UNSIGNED NOT NULL,
         -- fk to ntf_notification_targets
-        `user_preference_id` BIGINT UNSIGNED NOT NULL,
+        `user_preference_id` INT UNSIGNED NOT NULL,
         -- fk to ntf_user_preferences
-        `resolved_user_id` BIGINT UNSIGNED NOT NULL,
+        `resolved_user_id` INT UNSIGNED NOT NULL,
         -- fk to sys_user
         `mobile_number` VARCHAR(15) NULL,
         `email` VARCHAR(255) NULL,
@@ -2112,14 +2112,14 @@
     -- NOTIFICATION DELIVERY LOGS
     -- =========================================================
     CREATE TABLE IF NOT EXISTS `ntf_delivery_logs` (
-        `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-        `notification_id` BIGINT UNSIGNED NOT NULL,
-        `channel_id` BIGINT UNSIGNED NOT NULL,
+        `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        `notification_id` INT UNSIGNED NOT NULL,
+        `channel_id` INT UNSIGNED NOT NULL,
         -- fk to ntf_channel_master
-        `notification_target_id` BIGINT UNSIGNED NOT NULL,
+        `notification_target_id` INT UNSIGNED NOT NULL,
         -- New
-        `resolved_user_id` BIGINT UNSIGNED NOT NULL,
-        `delivery_status_id` BIGINT UNSIGNED NOT NULL,
+        `resolved_user_id` INT UNSIGNED NOT NULL,
+        `delivery_status_id` INT UNSIGNED NOT NULL,
         -- 'SENT, FAILED, READ, CLICKED'
         `delivered_at` DATETIME NULL,
         `read_at` DATETIME NULL,
@@ -2144,7 +2144,7 @@
   -- ------------------------------------------------------
 
     CREATE TABLE IF NOT EXISTS `tt_shift` (
-      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
       `code` VARCHAR(20) NOT NULL,
       `name` VARCHAR(100) NOT NULL,
       `description` VARCHAR(255) DEFAULT NULL,
@@ -2161,7 +2161,7 @@
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
     CREATE TABLE IF NOT EXISTS `tt_day_type` (
-      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
       `code` VARCHAR(20) NOT NULL,  -- e.g., 'WD', 'HD', 'SD'
       `name` VARCHAR(100) NOT NULL,
       `description` VARCHAR(255) DEFAULT NULL,
@@ -2178,7 +2178,7 @@
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
     CREATE TABLE IF NOT EXISTS `tt_period_type` (
-      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
       `code` VARCHAR(30) NOT NULL,  -- 
       `name` VARCHAR(100) NOT NULL,
       `description` VARCHAR(255) DEFAULT NULL,
@@ -2199,7 +2199,7 @@
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
     CREATE TABLE IF NOT EXISTS `tt_teacher_assignment_role` (
-      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
       `code` VARCHAR(30) NOT NULL,
       `name` VARCHAR(100) NOT NULL,
       `description` VARCHAR(255) DEFAULT NULL,
@@ -2218,7 +2218,7 @@
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
     CREATE TABLE IF NOT EXISTS `tt_school_days` (
-      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
       `code` VARCHAR(10) NOT NULL,  -- "Monday", "Tuesday", etc.
       `name` VARCHAR(20) NOT NULL,
       `short_name` VARCHAR(5) NOT NULL,
@@ -2236,9 +2236,9 @@
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
     CREATE TABLE IF NOT EXISTS `tt_working_day` (
-      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
       `date` DATE NOT NULL,
-      `day_type_id` BIGINT UNSIGNED NOT NULL,
+      `day_type_id` INT UNSIGNED NOT NULL,
       `is_school_day` TINYINT(1) NOT NULL DEFAULT 1,
       `remarks` VARCHAR(255) DEFAULT NULL,
       `is_active` TINYINT(1) NOT NULL DEFAULT 1,
@@ -2256,7 +2256,7 @@
   -- ------------------------------------------------------
 
     CREATE TABLE IF NOT EXISTS `tt_period_set` (
-      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
       `code` VARCHAR(30) NOT NULL,
       `name` VARCHAR(100) NOT NULL,
       `description` VARCHAR(255) DEFAULT NULL,
@@ -2275,9 +2275,9 @@
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
     CREATE TABLE IF NOT EXISTS `tt_period_set_period_jnt` (
-      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-      `period_set_id` BIGINT UNSIGNED NOT NULL,
-      `period_type_id` BIGINT UNSIGNED NOT NULL,
+      `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `period_set_id` INT UNSIGNED NOT NULL,
+      `period_type_id` INT UNSIGNED NOT NULL,
       `code` VARCHAR(20) NOT NULL,
       `short_name` VARCHAR(10) DEFAULT NULL,
       `period_ord` TINYINT UNSIGNED NOT NULL,
@@ -2302,13 +2302,13 @@
   -- ------------------------------------------------------
 
     CREATE TABLE IF NOT EXISTS `tt_timetable_type` (
-      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
       `code` VARCHAR(30) NOT NULL,   -- e.g., 'Standard', 'Extended'
       `name` VARCHAR(100) NOT NULL,
       `description` VARCHAR(255) DEFAULT NULL,
-      `shift_id` BIGINT UNSIGNED DEFAULT NULL,   -- FK to tt_shift.id
-      `default_period_set_id` BIGINT UNSIGNED DEFAULT NULL,   -- FK to tt_period_set.id
-      `day_type_id` BIGINT UNSIGNED DEFAULT NULL,   -- FK to tt_day_type.id
+      `shift_id` INT UNSIGNED DEFAULT NULL,   -- FK to tt_shift.id
+      `default_period_set_id` INT UNSIGNED DEFAULT NULL,   -- FK to tt_period_set.id
+      `day_type_id` INT UNSIGNED DEFAULT NULL,   -- FK to tt_day_type.id
       `effective_from_date` DATE DEFAULT NULL,  -- Start date for this timetable type
       `effective_to_date` DATE DEFAULT NULL,    -- End date for this timetable type
       `school_start_time` TIME DEFAULT NULL,    -- School start time
@@ -2339,11 +2339,11 @@
   -- ------------------------------------------------------
 
     CREATE TABLE IF NOT EXISTS `tt_class_mode_rule` (
-      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
       `class_id` INT UNSIGNED NOT NULL,
-      `timetable_type_id` BIGINT UNSIGNED NOT NULL,
-      `period_set_id` BIGINT UNSIGNED NOT NULL,
-      `academic_session_id` BIGINT UNSIGNED DEFAULT NULL,
+      `timetable_type_id` INT UNSIGNED NOT NULL,
+      `period_set_id` INT UNSIGNED NOT NULL,
+      `academic_session_id` INT UNSIGNED DEFAULT NULL,
       `allow_teaching` TINYINT(1) NOT NULL DEFAULT 1,
       `allow_exam` TINYINT(1) NOT NULL DEFAULT 0,
       `exam_period_count` TINYINT UNSIGNED DEFAULT NULL,
@@ -2364,11 +2364,11 @@
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
     CREATE TABLE IF NOT EXISTS `tt_class_subgroup` (
-      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
       `code` VARCHAR(50) NOT NULL,
       `name` VARCHAR(150) NOT NULL,
       `description` VARCHAR(255) DEFAULT NULL,
-      `class_group_id` BIGINT UNSIGNED DEFAULT NULL,
+      `class_group_id` INT UNSIGNED DEFAULT NULL,
       `subgroup_type` ENUM('OPTIONAL_SUBJECT','HOBBY','SKILL','LANGUAGE','STREAM','ACTIVITY','SPORTS','OTHER') NOT NULL DEFAULT 'OTHER',
       `student_count` INT UNSIGNED DEFAULT NULL,
       `min_students` INT UNSIGNED DEFAULT NULL,
@@ -2386,8 +2386,8 @@
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
     CREATE TABLE IF NOT EXISTS `tt_class_subgroup_member` (
-      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-      `class_subgroup_id` BIGINT UNSIGNED NOT NULL,
+      `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `class_subgroup_id` INT UNSIGNED NOT NULL,
       `class_id` INT UNSIGNED NOT NULL,
       `section_id` INT UNSIGNED DEFAULT NULL,
       `is_primary` TINYINT(1) DEFAULT 0,
@@ -2403,11 +2403,11 @@
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
     CREATE TABLE IF NOT EXISTS `tt_class_group_requirement` (
-      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
 
-      `class_group_id` BIGINT UNSIGNED DEFAULT NULL,
-      `class_subgroup_id` BIGINT UNSIGNED DEFAULT NULL,
-      `academic_session_id` BIGINT UNSIGNED DEFAULT NULL,
+      `class_group_id` INT UNSIGNED DEFAULT NULL,
+      `class_subgroup_id` INT UNSIGNED DEFAULT NULL,
+      `academic_session_id` INT UNSIGNED DEFAULT NULL,
       `weekly_periods` TINYINT UNSIGNED NOT NULL,  -- Total periods required per week
       `min_periods_per_week` TINYINT UNSIGNED DEFAULT NULL,  -- Minimum periods required per week
       `max_periods_per_week` TINYINT UNSIGNED DEFAULT NULL,  -- Maximum periods required per week
@@ -2441,15 +2441,15 @@
     -- priority = User importance | difficulty_score = Algorithm metric
 
     CREATE TABLE IF NOT EXISTS `tt_activity` (
-      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
       `uuid` BINARY(16) NOT NULL,
       `code` VARCHAR(50) NOT NULL,
       `name` VARCHAR(200) NOT NULL,
       `description` VARCHAR(500) DEFAULT NULL,
-      `academic_session_id` BIGINT UNSIGNED NOT NULL,
-      `class_group_id` BIGINT UNSIGNED DEFAULT NULL,
-      `class_subgroup_id` BIGINT UNSIGNED DEFAULT NULL,
-      `subject_id` BIGINT UNSIGNED DEFAULT NULL,
+      `academic_session_id` INT UNSIGNED NOT NULL,
+      `class_group_id` INT UNSIGNED DEFAULT NULL,
+      `class_subgroup_id` INT UNSIGNED DEFAULT NULL,
+      `subject_id` INT UNSIGNED DEFAULT NULL,
       `study_format_id` INT UNSIGNED DEFAULT NULL,
       `duration_periods` TINYINT UNSIGNED NOT NULL DEFAULT 1,
       `weekly_periods` TINYINT UNSIGNED NOT NULL DEFAULT 1,
@@ -2463,7 +2463,7 @@
       `preferred_room_ids` JSON DEFAULT NULL,
       `status` ENUM('DRAFT','ACTIVE','LOCKED','ARCHIVED') NOT NULL DEFAULT 'ACTIVE',
       `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-      `created_by` BIGINT UNSIGNED DEFAULT NULL,
+      `created_by` INT UNSIGNED DEFAULT NULL,
       `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
       `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       `deleted_at` TIMESTAMP NULL DEFAULT NULL,
@@ -2487,10 +2487,10 @@
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
     CREATE TABLE IF NOT EXISTS `tt_activity_teacher` (
-      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-      `activity_id` BIGINT UNSIGNED NOT NULL,  -- Activity ID
-      `teacher_id` BIGINT UNSIGNED NOT NULL,  -- Teacher ID
-      `assignment_role_id` BIGINT UNSIGNED NOT NULL,  -- Assignment role ID
+      `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `activity_id` INT UNSIGNED NOT NULL,  -- Activity ID
+      `teacher_id` INT UNSIGNED NOT NULL,  -- Teacher ID
+      `assignment_role_id` INT UNSIGNED NOT NULL,  -- Assignment role ID
       `is_required` TINYINT(1) DEFAULT 1,  -- Whether this teacher is required for the activity
       `ordinal` TINYINT UNSIGNED DEFAULT 1,  -- Order of this teacher in the activity
       `is_active` TINYINT(1) NOT NULL DEFAULT 1,  -- Whether this teacher is active
@@ -2506,8 +2506,8 @@
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
     CREATE TABLE IF NOT EXISTS `tt_sub_activity` (
-      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-      `parent_activity_id` BIGINT UNSIGNED NOT NULL,
+      `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `parent_activity_id` INT UNSIGNED NOT NULL,
       `sub_activity_ord` TINYINT UNSIGNED NOT NULL,
       `code` VARCHAR(60) NOT NULL,
       `duration_periods` TINYINT UNSIGNED NOT NULL DEFAULT 1,
@@ -2527,7 +2527,7 @@
   -- ------------------------------------------------------
 
     CREATE TABLE IF NOT EXISTS `tt_constraint_type` (
-      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
       `code` VARCHAR(60) NOT NULL,
       `name` VARCHAR(150) NOT NULL,
       `description` TEXT DEFAULT NULL,
@@ -2548,14 +2548,14 @@
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
     CREATE TABLE IF NOT EXISTS `tt_constraint` (
-      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
       `uuid` BINARY(16) NOT NULL,
-      `constraint_type_id` BIGINT UNSIGNED NOT NULL,
+      `constraint_type_id` INT UNSIGNED NOT NULL,
       `name` VARCHAR(200) DEFAULT NULL,
       `description` VARCHAR(500) DEFAULT NULL,
-      `academic_session_id` BIGINT UNSIGNED DEFAULT NULL,
+      `academic_session_id` INT UNSIGNED DEFAULT NULL,
       `target_type` ENUM('GLOBAL','TEACHER','STUDENT_SET','ROOM','ACTIVITY','CLASS','SUBJECT','STUDY_FORMAT','CLASS_GROUP','CLASS_SUBGROUP') NOT NULL,
-      `target_id` BIGINT UNSIGNED DEFAULT NULL,
+      `target_id` INT UNSIGNED DEFAULT NULL,
       `is_hard` TINYINT(1) NOT NULL DEFAULT 0,
       `weight` TINYINT UNSIGNED NOT NULL DEFAULT 100,
       `params_json` JSON NOT NULL,
@@ -2564,7 +2564,7 @@
       `applies_to_days_json` JSON DEFAULT NULL,
       `status` ENUM('DRAFT','ACTIVE','DISABLED') NOT NULL DEFAULT 'ACTIVE',
       `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-      `created_by` BIGINT UNSIGNED DEFAULT NULL,
+      `created_by` INT UNSIGNED DEFAULT NULL,
       `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
       `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       `deleted_at` TIMESTAMP NULL DEFAULT NULL,
@@ -2580,9 +2580,9 @@
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
     CREATE TABLE IF NOT EXISTS `tt_teacher_unavailable` (
-      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-      `teacher_id` BIGINT UNSIGNED NOT NULL,
-      `constraint_id` BIGINT UNSIGNED DEFAULT NULL,
+      `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `teacher_id` INT UNSIGNED NOT NULL,
+      `constraint_id` INT UNSIGNED DEFAULT NULL,
       `day_of_week` TINYINT UNSIGNED NOT NULL,
       `period_ord` TINYINT UNSIGNED DEFAULT NULL,
       `start_date` DATE DEFAULT NULL,
@@ -2601,9 +2601,9 @@
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
     CREATE TABLE IF NOT EXISTS `tt_room_unavailable` (
-      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
       `room_id` INT UNSIGNED NOT NULL,
-      `constraint_id` BIGINT UNSIGNED DEFAULT NULL,
+      `constraint_id` INT UNSIGNED DEFAULT NULL,
       `day_of_week` TINYINT UNSIGNED NOT NULL,
       `period_ord` TINYINT UNSIGNED DEFAULT NULL,
       `start_date` DATE DEFAULT NULL,
@@ -2626,27 +2626,27 @@
   -- ------------------------------------------------------
 
     CREATE TABLE IF NOT EXISTS `tt_timetable` (
-      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
       `uuid` BINARY(16) NOT NULL,
       `code` VARCHAR(50) NOT NULL,
       `name` VARCHAR(200) NOT NULL,
       `description` TEXT DEFAULT NULL,
-      `academic_session_id` BIGINT UNSIGNED NOT NULL,
-      `timetable_type_id` BIGINT UNSIGNED NOT NULL,
-      `period_set_id` BIGINT UNSIGNED NOT NULL,
+      `academic_session_id` INT UNSIGNED NOT NULL,
+      `timetable_type_id` INT UNSIGNED NOT NULL,
+      `period_set_id` INT UNSIGNED NOT NULL,
       `effective_from` DATE NOT NULL,
       `effective_to` DATE DEFAULT NULL,
       `generation_method` ENUM('MANUAL','SEMI_AUTO','FULL_AUTO') NOT NULL DEFAULT 'MANUAL',
       `version` SMALLINT UNSIGNED NOT NULL DEFAULT 1,
-      `parent_timetable_id` BIGINT UNSIGNED DEFAULT NULL,
+      `parent_timetable_id` INT UNSIGNED DEFAULT NULL,
       `status` ENUM('DRAFT','GENERATING','GENERATED','PUBLISHED','ARCHIVED') NOT NULL DEFAULT 'DRAFT',
       `published_at` TIMESTAMP NULL DEFAULT NULL,
-      `published_by` BIGINT UNSIGNED DEFAULT NULL,
+      `published_by` INT UNSIGNED DEFAULT NULL,
       `constraint_violations` INT UNSIGNED DEFAULT 0,
       `soft_score` DECIMAL(8,2) DEFAULT NULL,
       `stats_json` JSON DEFAULT NULL,
       `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-      `created_by` BIGINT UNSIGNED DEFAULT NULL,
+      `created_by` INT UNSIGNED DEFAULT NULL,
       `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
       `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       `deleted_at` TIMESTAMP NULL DEFAULT NULL,
@@ -2666,9 +2666,9 @@
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
     CREATE TABLE IF NOT EXISTS `tt_constraint_violation` (
-      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-      `timetable_id` BIGINT UNSIGNED NOT NULL,
-      `constraint_id` BIGINT UNSIGNED NOT NULL,
+      `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `timetable_id` INT UNSIGNED NOT NULL,
+      `constraint_id` INT UNSIGNED NOT NULL,
       `violation_type` ENUM('HARD','SOFT') NOT NULL,
       `violation_count` INT UNSIGNED NOT NULL,
       `violation_details` JSON DEFAULT NULL,
@@ -2682,9 +2682,9 @@
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
     CREATE TABLE IF NOT EXISTS `tt_generation_run` (
-      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
       `uuid` BINARY(16) NOT NULL,
-      `timetable_id` BIGINT UNSIGNED NOT NULL,
+      `timetable_id` INT UNSIGNED NOT NULL,
       `run_number` INT UNSIGNED NOT NULL DEFAULT 1,
       `started_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
       `finished_at` TIMESTAMP NULL DEFAULT NULL,
@@ -2701,7 +2701,7 @@
       `soft_score` DECIMAL(10,4) DEFAULT NULL,
       `stats_json` JSON DEFAULT NULL,
       `error_message` TEXT DEFAULT NULL,
-      `triggered_by` BIGINT UNSIGNED DEFAULT NULL,
+      `triggered_by` INT UNSIGNED DEFAULT NULL,
       `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
       `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       `deleted_at` TIMESTAMP NULL DEFAULT NULL,
@@ -2714,20 +2714,20 @@
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
     CREATE TABLE IF NOT EXISTS `tt_timetable_cell` (
-      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-      `timetable_id` BIGINT UNSIGNED NOT NULL,
-      `generation_run_id` BIGINT UNSIGNED DEFAULT NULL,
+      `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `timetable_id` INT UNSIGNED NOT NULL,
+      `generation_run_id` INT UNSIGNED DEFAULT NULL,
       `day_of_week` TINYINT UNSIGNED NOT NULL,
       `period_ord` TINYINT UNSIGNED NOT NULL,
       `cell_date` DATE DEFAULT NULL,
-      `class_group_id` BIGINT UNSIGNED DEFAULT NULL,
-      `class_subgroup_id` BIGINT UNSIGNED DEFAULT NULL,
-      `activity_id` BIGINT UNSIGNED DEFAULT NULL,
-      `sub_activity_id` BIGINT UNSIGNED DEFAULT NULL,
+      `class_group_id` INT UNSIGNED DEFAULT NULL,
+      `class_subgroup_id` INT UNSIGNED DEFAULT NULL,
+      `activity_id` INT UNSIGNED DEFAULT NULL,
+      `sub_activity_id` INT UNSIGNED DEFAULT NULL,
       `room_id` INT UNSIGNED DEFAULT NULL,
       `source` ENUM('AUTO','MANUAL','SWAP','LOCK') NOT NULL DEFAULT 'AUTO',
       `is_locked` TINYINT(1) NOT NULL DEFAULT 0,
-      `locked_by` BIGINT UNSIGNED DEFAULT NULL,
+      `locked_by` INT UNSIGNED DEFAULT NULL,
       `locked_at` TIMESTAMP NULL DEFAULT NULL,
       `has_conflict` TINYINT(1) DEFAULT 0,
       `conflict_details_json` JSON DEFAULT NULL,
@@ -2754,10 +2754,10 @@
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
     CREATE TABLE IF NOT EXISTS `tt_timetable_cell_teacher` (
-      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-      `cell_id` BIGINT UNSIGNED NOT NULL,
-      `teacher_id` BIGINT UNSIGNED NOT NULL,
-      `assignment_role_id` BIGINT UNSIGNED NOT NULL,
+      `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `cell_id` INT UNSIGNED NOT NULL,
+      `teacher_id` INT UNSIGNED NOT NULL,
+      `assignment_role_id` INT UNSIGNED NOT NULL,
       `is_substitute` TINYINT(1) DEFAULT 0,
       `is_active` TINYINT(1) NOT NULL DEFAULT 1,
       `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
@@ -2776,20 +2776,20 @@
   -- ------------------------------------------------------
 
     CREATE TABLE IF NOT EXISTS `tt_teacher_absence` (
-      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-      `teacher_id` BIGINT UNSIGNED NOT NULL,
+      `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `teacher_id` INT UNSIGNED NOT NULL,
       `absence_date` DATE NOT NULL,
       `absence_type` ENUM('LEAVE','SICK','TRAINING','OFFICIAL_DUTY','OTHER') NOT NULL,
       `start_period` TINYINT UNSIGNED DEFAULT NULL,
       `end_period` TINYINT UNSIGNED DEFAULT NULL,
       `reason` VARCHAR(500) DEFAULT NULL,
       `status` ENUM('PENDING','APPROVED','REJECTED','CANCELLED') NOT NULL DEFAULT 'PENDING',
-      `approved_by` BIGINT UNSIGNED DEFAULT NULL,
+      `approved_by` INT UNSIGNED DEFAULT NULL,
       `approved_at` TIMESTAMP NULL DEFAULT NULL,
       `substitution_required` TINYINT(1) DEFAULT 1,
       `substitution_completed` TINYINT(1) DEFAULT 0,
       `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-      `created_by` BIGINT UNSIGNED DEFAULT NULL,
+      `created_by` INT UNSIGNED DEFAULT NULL,
       `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
       `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       `deleted_at` TIMESTAMP NULL DEFAULT NULL,
@@ -2803,12 +2803,12 @@
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
     CREATE TABLE IF NOT EXISTS `tt_substitution_log` (
-      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-      `teacher_absence_id` BIGINT UNSIGNED DEFAULT NULL,
-      `cell_id` BIGINT UNSIGNED NOT NULL,
+      `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `teacher_absence_id` INT UNSIGNED DEFAULT NULL,
+      `cell_id` INT UNSIGNED NOT NULL,
       `substitution_date` DATE NOT NULL,
-      `absent_teacher_id` BIGINT UNSIGNED NOT NULL,
-      `substitute_teacher_id` BIGINT UNSIGNED NOT NULL,
+      `absent_teacher_id` INT UNSIGNED NOT NULL,
+      `substitute_teacher_id` INT UNSIGNED NOT NULL,
       `assignment_method` ENUM('AUTO','MANUAL','SWAP') NOT NULL DEFAULT 'MANUAL',
       `reason` VARCHAR(500) DEFAULT NULL,
       `status` ENUM('ASSIGNED','COMPLETED','CANCELLED') NOT NULL DEFAULT 'ASSIGNED',
@@ -2816,7 +2816,7 @@
       `accepted_at` TIMESTAMP NULL DEFAULT NULL,
       `completed_at` TIMESTAMP NULL DEFAULT NULL,
       `feedback` TEXT DEFAULT NULL,
-      `assigned_by` BIGINT UNSIGNED DEFAULT NULL,
+      `assigned_by` INT UNSIGNED DEFAULT NULL,
       `is_active` TINYINT(1) NOT NULL DEFAULT 1,
       `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
       `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -2838,10 +2838,10 @@
   -- ------------------------------------------------------
 
     CREATE TABLE IF NOT EXISTS `tt_teacher_workload` (
-      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-      `teacher_id` BIGINT UNSIGNED NOT NULL,
-      `academic_session_id` BIGINT UNSIGNED NOT NULL,
-      `timetable_id` BIGINT UNSIGNED DEFAULT NULL,
+      `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `teacher_id` INT UNSIGNED NOT NULL,
+      `academic_session_id` INT UNSIGNED NOT NULL,
+      `timetable_id` INT UNSIGNED DEFAULT NULL,
       `weekly_periods_assigned` SMALLINT UNSIGNED DEFAULT 0,
       `weekly_periods_max` SMALLINT UNSIGNED DEFAULT NULL,
       `weekly_periods_min` SMALLINT UNSIGNED DEFAULT NULL,
@@ -2869,15 +2869,15 @@
   -- ------------------------------------------------------
 
     CREATE TABLE IF NOT EXISTS `tt_change_log` (
-      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-      `timetable_id` BIGINT UNSIGNED NOT NULL,
-      `cell_id` BIGINT UNSIGNED DEFAULT NULL,
+      `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `timetable_id` INT UNSIGNED NOT NULL,
+      `cell_id` INT UNSIGNED DEFAULT NULL,
       `change_type` ENUM('CREATE','UPDATE','DELETE','LOCK','UNLOCK','SWAP','SUBSTITUTE') NOT NULL,
       `change_date` DATE NOT NULL,
       `old_values_json` JSON DEFAULT NULL,
       `new_values_json` JSON DEFAULT NULL,
       `reason` VARCHAR(500) DEFAULT NULL,
-      `changed_by` BIGINT UNSIGNED DEFAULT NULL,
+      `changed_by` INT UNSIGNED DEFAULT NULL,
       `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
       `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       `deleted_at` TIMESTAMP NULL DEFAULT NULL,
@@ -2902,7 +2902,7 @@
   -- User can Not change slb_topics.analytics_code, But he can change slb_topics.code as per their choice.
   -- This Table will be set by PG_Team and will not be available for change to School.
   CREATE TABLE IF NOT EXISTS `slb_topic_level_types` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `level` TINYINT UNSIGNED NOT NULL,              -- e.g., 0=Topic, 1=Sub-topic, 2=Mini Topic, 3=Sub-Mini Topic, 4=Micro Topic, 5=Sub-Micro Topic, 6=Nano Topic, 7=Ultra Topic,
     `code` VARCHAR(3) NOT NULL,                    -- e.g., 'TOP','SUB',`MIN`,`SMT`, `MIC`, `SMT`, `NAN`, `ULT`
     `name` VARCHAR(150) NOT NULL,                   -- e.g., `TOPIC`, `SUB-TOPIC`, `MINI-TOPIC`, `SUB-MINI-TOPIC`, `MICRO-TOPIC`, `SUB-MICRO-TOPIC`, `NANO-TOPIC`, `ULTRA-TOPIC`
@@ -2918,11 +2918,11 @@
 
 
   CREATE TABLE IF NOT EXISTS `slb_lessons` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `uuid` BINARY(16) NOT NULL,                       -- Unique identifier for analytics tracking
-    `academic_session_id` BIGINT UNSIGNED NOT NULL, -- FK to sch_org_academic_sessions_jnt
+    `academic_session_id` INT UNSIGNED NOT NULL, -- FK to sch_org_academic_sessions_jnt
     `class_id` INT UNSIGNED NOT NULL,               -- FK to sch_classes
-    `subject_id` BIGINT UNSIGNED NOT NULL,          -- FK to sch_subjects
+    `subject_id` INT UNSIGNED NOT NULL,          -- FK to sch_subjects
     `code` VARCHAR(20) NOT NULL,                    -- e.g., '9TH_SCI_L01' (Auto-generated) It will be combination of class code, subject code and lesson code
     `name` VARCHAR(150) NOT NULL,                   -- e.g., 'Chapter 1: Matter in Our Surroundings'
     `short_name` VARCHAR(50) DEFAULT NULL,          -- e.g., 'Matter Around Us' 
@@ -2960,12 +2960,12 @@
   -- level: 0=Topic, 1=Sub-topic, 2=Mini Topic, 3=Sub-Mini Topic, 4=Micro Topic, 5=Sub-Micro Topic, 6=Nano Topic, 7=Ultra Topic,
   -- -------------------------------------------------------------------------
   CREATE TABLE IF NOT EXISTS `slb_topics` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `uuid` BINARY(16) NOT NULL,                       -- Unique analytics identifier e.g. '123e4567-e89b-12d3-a456-426614174000'
-    `parent_id` BIGINT UNSIGNED DEFAULT NULL,       -- FK to self (NULL for root topics)
-    `lesson_id` BIGINT UNSIGNED NOT NULL,           -- FK to slb_lessons
+    `parent_id` INT UNSIGNED DEFAULT NULL,       -- FK to self (NULL for root topics)
+    `lesson_id` INT UNSIGNED NOT NULL,           -- FK to slb_lessons
     `class_id` INT UNSIGNED NOT NULL,               -- Denormalized for fast queries
-    `subject_id` BIGINT UNSIGNED NOT NULL,          -- Denormalized for fast queries
+    `subject_id` INT UNSIGNED NOT NULL,          -- Denormalized for fast queries
     -- Materialized Path columns
     `path` VARCHAR(500) NOT NULL,                   -- e.g., '/1/5/23/' (ancestor path) e.g. "/1/5/23/145/" (ancestor IDs separated by /)
     `path_names` VARCHAR(2000) DEFAULT NULL,        -- e.g., 'Algebra > Linear Equations > Solving Methods'
@@ -2982,7 +2982,7 @@
     `learning_objectives` JSON DEFAULT NULL,        -- Array of objectives
     `keywords` JSON DEFAULT NULL,                   -- Search keywords array
     `prerequisite_topic_ids` JSON DEFAULT NULL,     -- Dependency tracking
-    `base_topic_id` BIGINT UNSIGNED DEFAULT NULL,   -- Primary prerequisite from previous class
+    `base_topic_id` INT UNSIGNED DEFAULT NULL,   -- Primary prerequisite from previous class
     `is_assessable` TINYINT(1) DEFAULT 1,           -- Whether the topic is assessable
     -- Analytics identifiers
     `analytics_code` VARCHAR(60) NOT NULL,          -- Unique code for tracking e.g. '9TH_SCI_L01_TOP01_SUB02_MIN01_SMT02_MIC01_SMT02_NAN01_ULT02'
@@ -3024,15 +3024,15 @@
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `slb_competencies` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `uuid` BINARY(16) NOT NULL,
-    `parent_id` BIGINT UNSIGNED DEFAULT NULL,     -- FK to self (NULL for root competencies)
+    `parent_id` INT UNSIGNED DEFAULT NULL,     -- FK to self (NULL for root competencies)
     `code` VARCHAR(60) NOT NULL,                 -- e.g. 'KNOWLEDGE','SKILL','ATTITUDE'
     `name` VARCHAR(150) NOT NULL,                -- e.g. 'Knowledge of Linear Equations'
     `short_name` VARCHAR(50) DEFAULT NULL,       -- e.g. 'Linear Equations'
     `description` VARCHAR(255) DEFAULT NULL,     -- e.g. 'Description of Knowledge of Linear Equations'
     `class_id` INT UNSIGNED DEFAULT NULL,         -- FK to sch_classes.id
-    `subject_id` BIGINT UNSIGNED DEFAULT NULL,    -- FK to sch_subjects.id
+    `subject_id` INT UNSIGNED DEFAULT NULL,    -- FK to sch_subjects.id
     `competency_type_id` INT UNSIGNED NOT NULL,   -- FK to slb_competency_types.id
     `domain` ENUM('COGNITIVE', 'AFFECTIVE', 'PSYCHOMOTOR') NOT NULL DEFAULT 'COGNITIVE', -- e.g. 'COGNITIVE'
     `nep_framework_ref` VARCHAR(100) DEFAULT NULL,    -- e.g. 'NEP Framework Reference'
@@ -3057,9 +3057,9 @@
 
   -- Link topics to competencies
   CREATE TABLE IF NOT EXISTS `slb_topic_competency_jnt` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `topic_id` BIGINT UNSIGNED NOT NULL,
-    `competency_id` BIGINT UNSIGNED NOT NULL, -- FK to slb_competencies.id
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `topic_id` INT UNSIGNED NOT NULL,
+    `competency_id` INT UNSIGNED NOT NULL, -- FK to slb_competencies.id
     `weightage` DECIMAL(5,2) DEFAULT NULL,    -- How much topic contributes to competency
     `is_primary` TINYINT(1) DEFAULT 0, -- True if this is the primary competency for this topic
     `is_active` TINYINT(1) DEFAULT 1,
@@ -3148,7 +3148,7 @@
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `slb_performance_categories` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     -- Identity
     `code` VARCHAR(20) NOT NULL,    -- TOPPER, EXCELLENT, GOOD, AVERAGE, BELOW_AVERAGE, NEED_IMPROVEMENT, POOR etc.
     `name` VARCHAR(100) NOT NULL,
@@ -3166,7 +3166,7 @@
     `icon_code` VARCHAR(50),              -- e.g. trophy, warning, alert
     -- Scope & governance
     `scope` ENUM('SCHOOL','CLASS') DEFAULT 'SCHOOL',
-    `class_id` BIGINT UNSIGNED DEFAULT NULL,
+    `class_id` INT UNSIGNED DEFAULT NULL,
     -- Control
     `is_system_defined` TINYINT(1) DEFAULT 1, -- system vs school editable
     `auto_retest_required` TINYINT(1) DEFAULT 0, -- Auto Retest Required or Not (if 'True' then System will auto create a Test for the Topic and assign to Student)
@@ -3202,7 +3202,7 @@
 
 
   CREATE TABLE IF NOT EXISTS `slb_grade_division_master` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     -- Identity
     `code` VARCHAR(20) NOT NULL,        -- A, B, C, 1st, 2nd
     `name` VARCHAR(100) NOT NULL,       -- Grade A, First Division
@@ -3214,13 +3214,13 @@
     `max_percentage` DECIMAL(5,2) NOT NULL,
     -- Board & compliance
     `board_code` VARCHAR(50),           -- CBSE, ICSE, STATE
-    `academic_session_id` BIGINT UNSIGNED NULL,
+    `academic_session_id` INT UNSIGNED NULL,
     -- UX
     `display_order` SMALLINT UNSIGNED DEFAULT 1,
     `color_code` VARCHAR(10),
     -- Scope
     `scope` ENUM('SCHOOL','BOARD','CLASS') DEFAULT 'SCHOOL',
-    `class_id` BIGINT UNSIGNED DEFAULT NULL,
+    `class_id` INT UNSIGNED DEFAULT NULL,
     -- Control
     `is_locked` TINYINT(1) DEFAULT 0,   -- locked after result publishing
     `is_active` TINYINT(1) DEFAULT 1,
@@ -3255,21 +3255,21 @@
     --    Classes 9–12 → Topper / Excellent / Good / Average / Below Average / Need Improvement / Poor
 
   CREATE TABLE IF NOT EXISTS `slb_syllabus_schedule` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `academic_session_id` BIGINT UNSIGNED NOT NULL,
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `academic_session_id` INT UNSIGNED NOT NULL,
     `class_id` INT UNSIGNED NOT NULL,           -- FK to sch_classes.id. NULL = applies to all classes
     `section_id` INT UNSIGNED DEFAULT NULL,       -- FK to sch_sections.id. NULL = applies to all sections
-    `subject_id` BIGINT UNSIGNED NOT NULL,       -- FK to sch_subjects.id
-    `topic_id` BIGINT UNSIGNED NOT NULL,         -- FK to slb_topics.id
+    `subject_id` INT UNSIGNED NOT NULL,       -- FK to sch_subjects.id
+    `topic_id` INT UNSIGNED NOT NULL,         -- FK to slb_topics.id
     `scheduled_start_date` DATE NOT NULL,
     `scheduled_end_date` DATE NOT NULL,
-    `assigned_teacher_id` BIGINT UNSIGNED DEFAULT NULL,   -- FK to sch_teachers.id (who assigned to teach this topic)
-    `taught_by_teacher_id` BIGINT UNSIGNED DEFAULT NULL,   -- FK to sch_teachers.id (who Actually taught this topic)
+    `assigned_teacher_id` INT UNSIGNED DEFAULT NULL,   -- FK to sch_teachers.id (who assigned to teach this topic)
+    `taught_by_teacher_id` INT UNSIGNED DEFAULT NULL,   -- FK to sch_teachers.id (who Actually taught this topic)
     `planned_periods` SMALLINT UNSIGNED DEFAULT NULL,  -- Number of periods planned for this topic
     `priority` ENUM('HIGH','MEDIUM','LOW') DEFAULT 'MEDIUM',
     `notes` VARCHAR(500) DEFAULT NULL,
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-    `created_by` BIGINT UNSIGNED DEFAULT NULL,
+    `created_by` INT UNSIGNED DEFAULT NULL,
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
@@ -3289,13 +3289,13 @@
 -- ===========================================================================
 
   CREATE TABLE IF NOT EXISTS `qns_questions_bank` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `uuid` BINARY(16) NOT NULL,                 -- Unique identifier for tracking ("INSERT INTO slb_questions_bank (uuid) VALUES (UUID_TO_BIN(UUID()))")
     `class_id` INT UNSIGNED NOT NULL,       --  fk -> sch_classes.id optional denormalized FK
-    `subject_id` BIGINT UNSIGNED NOT NULL,  --  fk -> sch_subjects.id optional denormalized FK
+    `subject_id` INT UNSIGNED NOT NULL,  --  fk -> sch_subjects.id optional denormalized FK
     `lesson_id` INT UNSIGNED NOT NULL,      --  fk -> slb_lessons.id optional denormalized FK
-    `topic_id` BIGINT UNSIGNED NOT NULL,    -- FK -> sch_topics.id (can be root topic or sub-topic depending on level)
-    `competency_id` BIGINT UNSIGNED NOT NULL, -- FK to slb_competencies.id
+    `topic_id` INT UNSIGNED NOT NULL,    -- FK -> sch_topics.id (can be root topic or sub-topic depending on level)
+    `competency_id` INT UNSIGNED NOT NULL, -- FK to slb_competencies.id
     -- Question Text
     `ques_title` VARCHAR(255) NOT NULL,       -- title of the question (For System use)
     `ques_title_display` TINYINT(1) NOT NULL DEFAULT 0,    -- display title? (1=Yes, 0=No)
@@ -3314,7 +3314,7 @@
     `negative_marks` DECIMAL(5,2) DEFAULT 0.00,
     -- Question Audit & Versioning
     -- `ques_reviewed` TINYINT(1) NOT NULL DEFAULT 0,              -- True if this question is reviewed
-    -- `ques_reviewed_by` BIGINT UNSIGNED DEFAULT NULL,            --  fk -> sch_users.id (if reviewed by teacher)
+    -- `ques_reviewed_by` INT UNSIGNED DEFAULT NULL,            --  fk -> sch_users.id (if reviewed by teacher)
     -- `ques_reviewed_at` TIMESTAMP NULL DEFAULT NULL,
     -- `ques_reviewed_status` ENUM('PENDING','APPROVED','REJECTED') DEFAULT 'PENDING',
     `current_version` TINYINT UNSIGNED NOT NULL DEFAULT 1,       -- version of the question (for history) 
@@ -3326,15 +3326,15 @@
     -- Question Ownership
     `ques_owner` ENUM('PrimeGurukul','School') NOT NULL DEFAULT 'PrimeGurukul',
     `created_by_AI` TINYINT(1) DEFAULT 0,            -- True if this question is created by AI
-    `created_by` BIGINT UNSIGNED DEFAULT NULL,       -- fk -> sch_users.id or teachers.id. If created by AI then this will be NULL
+    `created_by` INT UNSIGNED DEFAULT NULL,       -- fk -> sch_users.id or teachers.id. If created by AI then this will be NULL
     `is_school_specific` TINYINT(1) DEFAULT 0,       -- True if this question is school-specific
     -- QUESTIONS AVAILABILITY
     `availability` ENUM('GLOBAL','SCHOOL_ONLY','CLASS_ONLY','SECTION_ONLY','ENTITY_ONLY','STUDENT_ONLY') DEFAULT 'GLOBAL',  -- visibility of the question
-    `selected_entity_group_id` BIGINT UNSIGNED DEFAULT NULL,  -- fk -> slb_entity_groups.id (if selected availability is 'ENTITY_ONLY')
-    `selected_section_id` BIGINT UNSIGNED DEFAULT NULL,       -- fk -> sch_sections.id (if selected availability is 'SECTION_ONLY')
-    `selected_student_id` BIGINT UNSIGNED DEFAULT NULL,       -- fk -> sch_students.id (if selected availability is 'STUDENT_ONLY')
+    `selected_entity_group_id` INT UNSIGNED DEFAULT NULL,  -- fk -> slb_entity_groups.id (if selected availability is 'ENTITY_ONLY')
+    `selected_section_id` INT UNSIGNED DEFAULT NULL,       -- fk -> sch_sections.id (if selected availability is 'SECTION_ONLY')
+    `selected_student_id` INT UNSIGNED DEFAULT NULL,       -- fk -> sch_students.id (if selected availability is 'STUDENT_ONLY')
     -- QUESTION SOURCE & REFERENCE
-    `book_id` BIGINT UNSIGNED DEFAULT NULL,         -- book id (FK -> slb_books.id)
+    `book_id` INT UNSIGNED DEFAULT NULL,         -- book id (FK -> slb_books.id)
     `book_page_ref` VARCHAR(50) DEFAULT NULL,       -- book page reference (e.g., "Chapter 3, Page 12")
     `external_ref` VARCHAR(100) DEFAULT NULL,       -- for mapping to external banks
     `reference_material` TEXT DEFAULT NULL,         -- e.g., book section, web link
@@ -3377,8 +3377,8 @@
   -- To Read UUID back as string from BINARY(16) use: SELECT BIN_TO_UUID(uuid) FROM slb_questions_bank;
 
   CREATE TABLE IF NOT EXISTS `qns_question_options` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `question_bank_id` BIGINT UNSIGNED NOT NULL,
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `question_bank_id` INT UNSIGNED NOT NULL,
     `ordinal` SMALLINT UNSIGNED DEFAULT NULL,    -- ordinal position of this option
     `option_text` TEXT NOT NULL,                 -- text of the option
     `is_correct` TINYINT(1) NOT NULL DEFAULT 0,  -- whether this option is correct
@@ -3393,11 +3393,11 @@
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `qns_question_media_jnt` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `question_bank_id` BIGINT UNSIGNED NOT NULL,          -- fk to qns_questions_bank.id
-    `question_option_id` BIGINT UNSIGNED DEFAULT NULL,    -- fk to qns_question_options.id
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `question_bank_id` INT UNSIGNED NOT NULL,          -- fk to qns_questions_bank.id
+    `question_option_id` INT UNSIGNED DEFAULT NULL,    -- fk to qns_question_options.id
     `media_purpose` ENUM('QUESTION','OPTION','QUES_EXPLANATION','OPT_EXPLANATION','RECOMMENDATION') DEFAULT 'QUESTION',
-    `media_id` BIGINT UNSIGNED NOT NULL,                   -- fk to qns_media_store.id
+    `media_id` INT UNSIGNED NOT NULL,                   -- fk to qns_media_store.id
     `media_type` ENUM('IMAGE','AUDIO','VIDEO','ATTACHMENT') DEFAULT 'IMAGE',        -- e.g., 'IMAGE','AUDIO','VIDEO','ATTACHMENT'
     `ordinal` SMALLINT UNSIGNED DEFAULT 1,                 -- ordinal position of this media
     `is_active` TINYINT(1) DEFAULT 1,
@@ -3413,7 +3413,7 @@
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `qns_question_tags` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `short_name` VARCHAR(100) NOT NULL,
     `name` VARCHAR(255) NOT NULL,
     `is_active` TINYINT(1) DEFAULT 1,
@@ -3426,9 +3426,9 @@
 
   -- Laravel Morph Relationship
   CREATE TABLE IF NOT EXISTS `qns_question_questiontag_jnt` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `question_bank_id` BIGINT UNSIGNED NOT NULL,
-    `tag_id` BIGINT UNSIGNED NOT NULL,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `question_bank_id` INT UNSIGNED NOT NULL,
+    `tag_id` INT UNSIGNED NOT NULL,
     `is_active` TINYINT(1) DEFAULT 1,
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -3440,11 +3440,11 @@
 
   -- In this Table data will be entered on Modification only. No CRUD required
   CREATE TABLE IF NOT EXISTS `qns_question_versions` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `question_bank_id` BIGINT UNSIGNED NOT NULL,
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `question_bank_id` INT UNSIGNED NOT NULL,
     `version` INT UNSIGNED NOT NULL,
     `data` JSON NOT NULL,                       -- full snapshot of question (Question_content, options, metadata)
-    `version_created_by` BIGINT UNSIGNED DEFAULT NULL,
+    `version_created_by` INT UNSIGNED DEFAULT NULL,
     `change_reason` VARCHAR(255) DEFAULT NULL,  -- why was this version modified?
     `is_active` TINYINT(1) DEFAULT 1,
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
@@ -3456,16 +3456,16 @@
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `qns_media_store` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `uuid` BINARY(16) NOT NULL,
     `owner_type` ENUM('QUESTION','OPTION','EXPLANATION','RECOMMENDATION') NOT NULL,
-    `owner_id` BIGINT UNSIGNED NOT NULL,
+    `owner_id` INT UNSIGNED NOT NULL,
     `media_type` ENUM('IMAGE','AUDIO','VIDEO','PDF') NOT NULL,
     `file_name` VARCHAR(255),
     `file_path` VARCHAR(255),
     `mime_type` VARCHAR(100),
     `disk` VARCHAR(50) DEFAULT NULL,     -- storage disk
-    `size` BIGINT UNSIGNED DEFAULT NULL, -- file size in bytes
+    `size` INT UNSIGNED DEFAULT NULL, -- file size in bytes
     `checksum` CHAR(64) DEFAULT NULL,    -- file checksum
     `ordinal` SMALLINT UNSIGNED DEFAULT 1,
     `is_active` TINYINT(1) DEFAULT 1,
@@ -3477,9 +3477,9 @@
   );
 
   CREATE TABLE IF NOT EXISTS `qns_question_topic_jnt` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `question_bank_id` BIGINT UNSIGNED NOT NULL,
-    `topic_id` BIGINT UNSIGNED NOT NULL,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `question_bank_id` INT UNSIGNED NOT NULL,
+    `topic_id` INT UNSIGNED NOT NULL,
     `weightage` DECIMAL(5,2) DEFAULT 100.00,  -- weightage of question in topic
     `is_active` TINYINT(1) DEFAULT 1,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -3493,8 +3493,8 @@
   -- Required a backend Service to calculate the statistics
   -- Display Only
   CREATE TABLE IF NOT EXISTS `qns_question_statistics` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `question_bank_id` BIGINT UNSIGNED NOT NULL,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `question_bank_id` INT UNSIGNED NOT NULL,
     `difficulty_index` DECIMAL(5,2),       -- % students answered correctly
     `discrimination_index` DECIMAL(5,2),   -- Top vs bottom performer delta
     `guessing_factor` DECIMAL(5,2),        -- MCQ only
@@ -3512,10 +3512,10 @@
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `qns_question_performance_category_jnt` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `question_bank_id` BIGINT UNSIGNED NOT NULL,
-    `performance_category_id` BIGINT UNSIGNED NOT NULL,  -- FK to slb_performance_categories.id
-    `recommendation_type` BIGINT UNSIGNED NOT NULL,  -- FK to sys_dropdowns table e.g. 'REVISION','PRACTICE','CHALLENGE'
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `question_bank_id` INT UNSIGNED NOT NULL,
+    `performance_category_id` INT UNSIGNED NOT NULL,  -- FK to slb_performance_categories.id
+    `recommendation_type` INT UNSIGNED NOT NULL,  -- FK to sys_dropdowns table e.g. 'REVISION','PRACTICE','CHALLENGE'
     `priority` SMALLINT UNSIGNED DEFAULT 1,  -- priority of the question in the performance category
     `is_active` TINYINT(1) DEFAULT 1,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -3532,10 +3532,10 @@
 
   -- Display Only
   CREATE TABLE IF NOT EXISTS `qns_question_usage_log` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `question_bank_id` BIGINT UNSIGNED NOT NULL,    -- FK to qns_questions_bank
-    `question_usage_type` BIGINT UNSIGNED NOT NULL, -- FK to qns_question_usage_type.id
-    `context_id` BIGINT UNSIGNED NOT NULL,    -- quiz_id, assessment_id, exam_id - FK to sys_dropdowns table
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `question_bank_id` INT UNSIGNED NOT NULL,    -- FK to qns_questions_bank
+    `question_usage_type` INT UNSIGNED NOT NULL, -- FK to qns_question_usage_type.id
+    `context_id` INT UNSIGNED NOT NULL,    -- quiz_id, assessment_id, exam_id - FK to sys_dropdowns table
     `used_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `is_active` TINYINT(1) DEFAULT 1,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -3548,10 +3548,10 @@
   -- -----------------------------------------------------------------------------------------------------------------------
   -- Question Review & Approval Audit
   CREATE TABLE IF NOT EXISTS `qns_question_review_log` (
-      `review_log_id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `question_id` BIGINT UNSIGNED NOT NULL,  -- FK to qns_questions_bank.id
-      `reviewer_id` BIGINT UNSIGNED NOT NULL,  -- FK to users.id
-      `review_status_id` BIGINT UNSIGNED NOT NULL,  -- FK to sys_dropdowns.id e.g. 'PENDING','APPROVED','REJECTED'
+      `review_log_id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `question_id` INT UNSIGNED NOT NULL,  -- FK to qns_questions_bank.id
+      `reviewer_id` INT UNSIGNED NOT NULL,  -- FK to users.id
+      `review_status_id` INT UNSIGNED NOT NULL,  -- FK to sys_dropdowns.id e.g. 'PENDING','APPROVED','REJECTED'
       `review_comment` TEXT DEFAULT NULL,
       `reviewed_at` DATETIME NOT NULL,
       `is_active` TINYINT(1) DEFAULT 1,
@@ -3567,7 +3567,7 @@
 
   -- Question Usage Type (Quiz / Quest / Exam)
   CREATE TABLE IF NOT EXISTS `qns_question_usage_type` (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       `code` VARCHAR(50) NOT NULL,  -- e.g. 'QUIZ','QUEST','ONLINE_EXAM','OFFLINE_EXAM','UT_TEST'
       `name` VARCHAR(100) NOT NULL, -- e.g. 'Quiz','Quest','Online Exam','Offline Exam','Unit Test'
       `description` TEXT DEFAULT NULL,
@@ -3585,7 +3585,7 @@
 -- ===========================================================================
   -- table for "trigger_event" ENUM values
   CREATE TABLE IF NOT EXISTS `rec_trigger_events` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `event_name` VARCHAR(50) NOT NULL,  -- ON_ASSESSMENT_RESULT, ON_TOPIC_COMPLETION, ON_ATTENDANCE_LOW, MANUAL_RUN, SCHEDULED_WEEKLY
     `description` VARCHAR(255) DEFAULT NULL,
     `is_active` TINYINT(1) DEFAULT 1,
@@ -3600,7 +3600,7 @@
 
   -- table for "recommendation_mode" ENUM values
   CREATE TABLE IF NOT EXISTS `rec_recommendation_modes` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `mode_name` VARCHAR(50) NOT NULL,  -- SPECIFIC_MATERIAL, SPECIFIC_BUNDLE, DYNAMIC_BY_TOPIC, DYNAMIC_BY_COMPETENCY
     `description` VARCHAR(255) DEFAULT NULL,
     `is_active` TINYINT(1) DEFAULT 1,
@@ -3615,7 +3615,7 @@
 
   -- table for "dynamic_material_type" ENUM values
   CREATE TABLE IF NOT EXISTS `rec_dynamic_material_types` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `type_name` VARCHAR(50) NOT NULL,  -- ANY_BEST_FIT, VIDEO, QUIZ, PDF
     `description` VARCHAR(255) DEFAULT NULL,
     `is_active` TINYINT(1) DEFAULT 1,
@@ -3630,7 +3630,7 @@
 
   -- table for "dynamic_purpose" ENUM values
   CREATE TABLE IF NOT EXISTS `rec_dynamic_purposes` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `purpose_name` VARCHAR(50) NOT NULL,  -- REMEDIAL, ENRICHMENT, PRACTICE
     `description` VARCHAR(255) DEFAULT NULL,
     `is_active` TINYINT(1) DEFAULT 1,
@@ -3645,7 +3645,7 @@
 
   -- table for "assessment_type" ENUM values
   CREATE TABLE IF NOT EXISTS `rec_assessment_types` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `type_name` VARCHAR(50) NOT NULL,  -- ALL, QUIZ, WEEKLY_TEST, TERM_EXAM, FINAL_EXAM
     `description` VARCHAR(255) DEFAULT NULL,
     `is_active` TINYINT(1) DEFAULT 1,
@@ -3663,30 +3663,30 @@
 
   -- 1. Master table for Recommendation Materials (Content Bank)
   CREATE TABLE IF NOT EXISTS `rec_recommendation_materials` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `title` VARCHAR(255) NOT NULL,
     `description` TEXT DEFAULT NULL,
     -- Content Classification
-    `material_type` BIGINT UNSIGNED DEFAULT NULL,    -- fk to sys_dropdown_table (e.g. 'TEXT','VIDEO','PDF','AUDIO','QUIZ','ASSIGNMENT','LINK','INTERACTIVE')
-    `purpose` BIGINT UNSIGNED DEFAULT NULL,          -- fk to sys_dropdown_table (e.g. 'REVISION','PRACTICE','REMEDIAL','ADVANCED','ENRICHMENT','CONCEPT_BUILDING') NOT NULL DEFAULT 'PRACTICE',
-    `complexity_level` BIGINT UNSIGNED DEFAULT NULL,  -- fk to slb_complexity_level
+    `material_type` INT UNSIGNED DEFAULT NULL,    -- fk to sys_dropdown_table (e.g. 'TEXT','VIDEO','PDF','AUDIO','QUIZ','ASSIGNMENT','LINK','INTERACTIVE')
+    `purpose` INT UNSIGNED DEFAULT NULL,          -- fk to sys_dropdown_table (e.g. 'REVISION','PRACTICE','REMEDIAL','ADVANCED','ENRICHMENT','CONCEPT_BUILDING') NOT NULL DEFAULT 'PRACTICE',
+    `complexity_level` INT UNSIGNED DEFAULT NULL,  -- fk to slb_complexity_level
     -- Content Source
-    `content_source` BIGINT UNSIGNED DEFAULT NULL,    -- fk to sys_dropdown_table (e.g. 'INTERNAL_EDITOR','UPLOADED_FILE','EXTERNAL_LINK','LMS_MODULE','QUESTION_BANK')
+    `content_source` INT UNSIGNED DEFAULT NULL,    -- fk to sys_dropdown_table (e.g. 'INTERNAL_EDITOR','UPLOADED_FILE','EXTERNAL_LINK','LMS_MODULE','QUESTION_BANK')
     `content_text` LONGTEXT DEFAULT NULL,           -- HTML content for 'TEXT' type or Internal Notes
     `file_url` VARCHAR(500) DEFAULT NULL,           -- Direct URL for 'UPLOADED_FILE' or 'PDF' or 'VIDEO'
     `external_url` VARCHAR(500) DEFAULT NULL,       -- YouTube link, Khan Academy link etc.
-    `media_id` BIGINT UNSIGNED DEFAULT NULL,        -- fk to qns_media_store (for stored Media)
+    `media_id` INT UNSIGNED DEFAULT NULL,        -- fk to qns_media_store (for stored Media)
     -- Academic Mapping
-    `subject_id` BIGINT UNSIGNED DEFAULT NULL,      -- FK to sch_subjects
+    `subject_id` INT UNSIGNED DEFAULT NULL,      -- FK to sch_subjects
     `class_id` INT UNSIGNED DEFAULT NULL,           -- FK to sch_classes (Target Class)
-    `topic_id` BIGINT UNSIGNED DEFAULT NULL,        -- FK to slb_topics
+    `topic_id` INT UNSIGNED DEFAULT NULL,        -- FK to slb_topics
     `competency_code` VARCHAR(50) DEFAULT NULL,     -- Optional link to Competency Framework
     -- Metadata
     `duration_seconds` INT UNSIGNED DEFAULT NULL,   -- Est. time to consume
     `language_code` VARCHAR(10) DEFAULT 'en',       -- e.g. 'en', 'hi'
     `tags` JSON DEFAULT NULL,                       -- Search tags
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-    `created_by` BIGINT UNSIGNED DEFAULT NULL,
+    `created_by` INT UNSIGNED DEFAULT NULL,
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at` TIMESTAMP NULL DEFAULT NULL,
@@ -3712,11 +3712,11 @@
   -- 1. Recommendation Bundles/Collections (e.g. "Week 1 Revision Kit")
   --    Allows grouping multiple materials into one recommendation
   CREATE TABLE IF NOT EXISTS `rec_material_bundles` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `title` VARCHAR(255) NOT NULL,
     `description` TEXT DEFAULT NULL,
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-    `created_by` BIGINT UNSIGNED DEFAULT NULL,
+    `created_by` INT UNSIGNED DEFAULT NULL,
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at` TIMESTAMP NULL DEFAULT NULL,
@@ -3727,9 +3727,9 @@
 
   -- 2. Junction between Bundle and Materials
   CREATE TABLE IF NOT EXISTS `rec_bundle_materials_jnt` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `bundle_id` BIGINT UNSIGNED NOT NULL,
-    `material_id` BIGINT UNSIGNED NOT NULL,
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `bundle_id` INT UNSIGNED NOT NULL,
+    `material_id` INT UNSIGNED NOT NULL,
     `sequence_order` INT UNSIGNED DEFAULT 1,
     `is_mandatory` TINYINT(1) DEFAULT 1,
     PRIMARY KEY (`id`),
@@ -3745,29 +3745,29 @@
   -- 1. Recommendation Rules Engine
   --    Defines logics: WHEN (Trigger) + WHO (Performance) -> WHAT (Recommendation)
   CREATE TABLE IF NOT EXISTS `rec_recommendation_rules` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     -- Rule Definition
     `name` VARCHAR(150) NOT NULL,                   -- e.g. "Math Remedial for Poor Performers in Algebra"
     `is_automated` TINYINT(1) DEFAULT 1,            -- 1=Run by System Job, 0=Manual Helper Rule
     -- TRIGGERS (When to Apply)
-    `trigger_event` BIGINT UNSIGNED NOT NULL,  -- FK to rec_trigger_events
+    `trigger_event` INT UNSIGNED NOT NULL,  -- FK to rec_trigger_events
     -- CONDITIONS (The "Switch")
     -- Narrowing Scope
     `class_id` INT UNSIGNED DEFAULT NULL,  -- FK to sch_classes
-    `subject_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to sch_subjects
-    `topic_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to slb_topics
+    `subject_id` INT UNSIGNED DEFAULT NULL,  -- FK to sch_subjects
+    `topic_id` INT UNSIGNED DEFAULT NULL,  -- FK to slb_topics
     -- Performance Criteria
-    `performance_category_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to slb_performance_categories (The bucket, e.g. POOR)
+    `performance_category_id` INT UNSIGNED DEFAULT NULL, -- FK to slb_performance_categories (The bucket, e.g. POOR)
     `min_score_pct` DECIMAL(5,2) DEFAULT NULL,      -- Specific override e.g. < 40%
     `max_score_pct` DECIMAL(5,2) DEFAULT NULL,      -- Specific override e.g. > 90%
     -- Assessment Type Filter (Only apply if the result came from this type of exam)
-    `assessment_type` BIGINT UNSIGNED DEFAULT NULL,  -- FK to rec_assessment_types
+    `assessment_type` INT UNSIGNED DEFAULT NULL,  -- FK to rec_assessment_types
     -- ACTION (What to Recommend)
-    `recommendation_mode_id` BIGINT UNSIGNED NOT NULL,  -- FK to rec_recommendation_modes
-    `target_material_id` BIGINT UNSIGNED DEFAULT NULL,  -- KF TO rec_recommendation_materials
-    `target_bundle_id` BIGINT UNSIGNED DEFAULT NULL,    -- KF TO rec_recommendation_bundles
-    `dynamic_material_type_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to rec_dynamic_material_types
-    `dynamic_purpose_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to rec_dynamic_purposes
+    `recommendation_mode_id` INT UNSIGNED NOT NULL,  -- FK to rec_recommendation_modes
+    `target_material_id` INT UNSIGNED DEFAULT NULL,  -- KF TO rec_recommendation_materials
+    `target_bundle_id` INT UNSIGNED DEFAULT NULL,    -- KF TO rec_recommendation_bundles
+    `dynamic_material_type_id` INT UNSIGNED DEFAULT NULL,  -- FK to rec_dynamic_material_types
+    `dynamic_purpose_id` INT UNSIGNED DEFAULT NULL,  -- FK to rec_dynamic_purposes
     `priority` INT UNSIGNED DEFAULT 10,                 -- Higher priority rules override or appear first
     `is_active` TINYINT(1) DEFAULT 1,
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
@@ -3795,16 +3795,16 @@
   -- 1. Student Recommendations (The Resulting Assignments)
   --    Refined from v1.1 `rec_student_recommendations`
   CREATE TABLE IF NOT EXISTS `rec_student_recommendations` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `uuid` BINARY(16) NOT NULL,                       -- Unique ID for public access/tracking
-    `student_id` BIGINT UNSIGNED NOT NULL,          -- FK to std_students (or users depending on arch. std_students preferred)
+    `student_id` INT UNSIGNED NOT NULL,          -- FK to std_students (or users depending on arch. std_students preferred)
     -- Source of Recommendation
-    `rule_id` BIGINT UNSIGNED DEFAULT NULL,         -- fk to rec_recommendation_rules. Which rule generated this?
-    `triggered_by_result_id` BIGINT UNSIGNED DEFAULT NULL, -- Optional: Link to the Exam Result ID in Exam Module
-    `manual_assigned_by` BIGINT UNSIGNED DEFAULT NULL,     -- If manually assigned by Teacher
+    `rule_id` INT UNSIGNED DEFAULT NULL,         -- fk to rec_recommendation_rules. Which rule generated this?
+    `triggered_by_result_id` INT UNSIGNED DEFAULT NULL, -- Optional: Link to the Exam Result ID in Exam Module
+    `manual_assigned_by` INT UNSIGNED DEFAULT NULL,     -- If manually assigned by Teacher
     -- The Content
-    `material_id` BIGINT UNSIGNED DEFAULT NULL,
-    `bundle_id` BIGINT UNSIGNED DEFAULT NULL,
+    `material_id` INT UNSIGNED DEFAULT NULL,
+    `bundle_id` INT UNSIGNED DEFAULT NULL,
     -- Context
     `recommendation_reason` VARCHAR(255) DEFAULT NULL, -- e.g. "Scored Low in Algebra Quiz"
     `priority` ENUM('LOW','MEDIUM','HIGH','CRITICAL') DEFAULT 'MEDIUM',
@@ -3837,7 +3837,7 @@
   -- Master table for Books/Publications used across schools
   -- Master table for Books/Publications used across schools
   CREATE TABLE IF NOT EXISTS `bok_books` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `uuid` BINARY(16) NOT NULL,  -- UUID 
     `isbn` VARCHAR(20) DEFAULT NULL,              -- International Standard Book Number
     `title` VARCHAR(100) NOT NULL,
@@ -3846,9 +3846,9 @@
     `edition` VARCHAR(50) DEFAULT NULL,           -- e.g., '5th Edition', 'Revised 2024'
     `publication_year` YEAR DEFAULT NULL,         -- e.g., 2024
     `publisher_name` VARCHAR(150) DEFAULT NULL,   -- e.g., 'NCERT', 'S.Chand', 'Pearson'
-    `language` BIGINT UNSIGNED NOT NULL,          -- FK to sys_dropdown_table e.g "English", "Hindi", "Sanskrit"
+    `language` INT UNSIGNED NOT NULL,          -- FK to sys_dropdown_table e.g "English", "Hindi", "Sanskrit"
     `total_pages` INT UNSIGNED DEFAULT NULL,
-    `cover_image_media_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to media_files.id
+    `cover_image_media_id` INT UNSIGNED DEFAULT NULL,  -- FK to media_files.id
     `tags` JSON DEFAULT NULL,                     -- Additional search tags
     `is_ncert` TINYINT(1) DEFAULT 0,              -- Flag for NCERT books
     `is_cbse_recommended` TINYINT(1) DEFAULT 0,
@@ -3868,7 +3868,7 @@
 
   -- Authors table (Many-to-Many with Books)
   CREATE TABLE IF NOT EXISTS `bok_book_authors` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `name` VARCHAR(150) NOT NULL,
     `qualification` VARCHAR(200) DEFAULT NULL,
     `bio` TEXT DEFAULT NULL,
@@ -3882,8 +3882,8 @@
 
   -- Junction: Book-Author relationship
   CREATE TABLE IF NOT EXISTS `bok_book_author_jnt` (
-    `book_id` BIGINT UNSIGNED NOT NULL,
-    `author_id` BIGINT UNSIGNED NOT NULL,
+    `book_id` INT UNSIGNED NOT NULL,
+    `author_id` INT UNSIGNED NOT NULL,
     `author_role` ENUM('PRIMARY','CO_AUTHOR','EDITOR','CONTRIBUTOR') DEFAULT 'PRIMARY',
     `ordinal` TINYINT UNSIGNED DEFAULT 1,
     PRIMARY KEY (`book_id`, `author_id`),
@@ -3893,11 +3893,11 @@
 
   -- Link Books to Class/Subject (which books are used for which class/subject)
   CREATE TABLE IF NOT EXISTS `bok_book_class_subject_jnt` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `book_id` BIGINT UNSIGNED NOT NULL,  -- FK to slb_books.id
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `book_id` INT UNSIGNED NOT NULL,  -- FK to slb_books.id
     `class_id` INT UNSIGNED NOT NULL,    -- FK to sch_classes.id
-    `subject_id` BIGINT UNSIGNED NOT NULL, -- FK to sch_subjects.id
-    `academic_session_id` BIGINT UNSIGNED NOT NULL, -- FK to sch_org_academic_sessions_jnt.id
+    `subject_id` INT UNSIGNED NOT NULL, -- FK to sch_subjects.id
+    `academic_session_id` INT UNSIGNED NOT NULL, -- FK to sch_org_academic_sessions_jnt.id
     `is_primary` TINYINT(1) DEFAULT 1,            -- Primary textbook vs reference
     `is_mandatory` TINYINT(1) DEFAULT 1,
     `remarks` VARCHAR(255) DEFAULT NULL,
@@ -3919,9 +3919,9 @@
 -- ===========================================================================
     -- Main Student Entity, linked to System User for Login/Auth
     CREATE TABLE IF NOT EXISTS `std_students` (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       -- Student Info
-      `user_id` BIGINT UNSIGNED NOT NULL,              -- Link to sys_users for login credentials
+      `user_id` INT UNSIGNED NOT NULL,              -- Link to sys_users for login credentials
       `admission_no` VARCHAR(50) NOT NULL,             -- Unique School Admission Number
       `admission_date` DATE NOT NULL,                  -- Date of admission
       -- ID Cards
@@ -3940,9 +3940,9 @@
       `gender` ENUM('Male','Female','Transgender','Prefer Not to Say') NOT NULL DEFAULT 'Male',
       `dob` DATE NOT NULL,
       `photo_file_name` VARCHAR(100) DEFAULT NULL,     -- Fk to sys_media (file name to show in UI)
-      `media_id` BIGINT UNSIGNED DEFAULT NULL,         -- Optional if using sys_media table
+      `media_id` INT UNSIGNED DEFAULT NULL,         -- Optional if using sys_media table
       -- Status
-      `current_status_id` BIGINT UNSIGNED NOT NULL,    -- FK to sys_dropdown_table (Active, Left, Suspended, Alumni, Withdrawn)
+      `current_status_id` INT UNSIGNED NOT NULL,    -- FK to sys_dropdown_table (Active, Left, Suspended, Alumni, Withdrawn)
       `is_active` TINYINT(1) NOT NULL DEFAULT 1,
       -- Meta
       `note` VARCHAR(255) DEFAULT NULL,
@@ -3961,16 +3961,16 @@
 
     -- Extended Personal Profile
     CREATE TABLE IF NOT EXISTS `std_student_profiles` (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       -- Student Info
-      `student_id` BIGINT UNSIGNED NOT NULL,
+      `student_id` INT UNSIGNED NOT NULL,
       `mobile` VARCHAR(20) DEFAULT NULL,               -- Student/Parent mobile (This will be saved as mobile in sys_users table)
       `email` VARCHAR(150) DEFAULT NULL,               -- Student/Parent email (This will be saved as email in sys_users table)
       -- Social / Category
-      `religion` BIGINT UNSIGNED DEFAULT NULL,         -- FK to sys_dropdown_table
-      `caste_category` BIGINT UNSIGNED DEFAULT NULL,   -- FK to sys_dropdown_table
-      `nationality` BIGINT UNSIGNED DEFAULT NULL,      -- FK to sys_dropdown_table
-      `mother_tongue` BIGINT UNSIGNED DEFAULT NULL,    -- FK to sys_dropdown_table
+      `religion` INT UNSIGNED DEFAULT NULL,         -- FK to sys_dropdown_table
+      `caste_category` INT UNSIGNED DEFAULT NULL,   -- FK to sys_dropdown_table
+      `nationality` INT UNSIGNED DEFAULT NULL,      -- FK to sys_dropdown_table
+      `mother_tongue` INT UNSIGNED DEFAULT NULL,    -- FK to sys_dropdown_table
       -- Financial / Banking
       `bank_account_no` VARCHAR(100) DEFAULT NULL,
       `bank_name` VARCHAR(100) DEFAULT NULL,
@@ -4002,11 +4002,11 @@
 
     -- Student Addresses (1:N)
     CREATE TABLE IF NOT EXISTS `std_student_addresses` (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `student_id` BIGINT UNSIGNED NOT NULL,
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `student_id` INT UNSIGNED NOT NULL,
       `address_type` ENUM('Permanent','Correspondence','Guardian','Local') NOT NULL DEFAULT 'Correspondence',
       `address` VARCHAR(512) NOT NULL,
-      `city_id` BIGINT UNSIGNED NOT NULL,  -- FK to glb_cities
+      `city_id` INT UNSIGNED NOT NULL,  -- FK to glb_cities
       `pincode` VARCHAR(10) NOT NULL,
       `is_primary` TINYINT(1) DEFAULT 0, -- To mark primary communication address
       `is_active` TINYINT(1) DEFAULT 1, -- To mark address as active
@@ -4024,10 +4024,10 @@
     -- Guardians can be parents to multiple students (Siblings). 
     -- Optional link to sys_users if Parent Portal access is granted.
     CREATE TABLE IF NOT EXISTS `std_guardians` (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       `user_code` VARCHAR(20) NOT NULL,  -- Unique code for guardian (this will be saved as emp_code in sys_users table) 
       -- User Info
-      `user_id` BIGINT UNSIGNED DEFAULT NOT NULL,        -- Nullable. Set when Parent Portal access is created.
+      `user_id` INT UNSIGNED DEFAULT NOT NULL,        -- Nullable. Set when Parent Portal access is created.
       `first_name` VARCHAR(50) NOT NULL,                 -- First_name+last_name will be saved as name in sys_users table
       `last_name` VARCHAR(50) DEFAULT NULL,              -- First_name+last_name will be saved as name in sys_users table
       -- Personal Info
@@ -4039,10 +4039,10 @@
       `occupation` VARCHAR(100) DEFAULT NULL,
       `qualification` VARCHAR(100) DEFAULT NULL,
       `annual_income` DECIMAL(15,2) DEFAULT NULL,
-      `preferred_language` bigint unsigned NOT NULL,   -- fk to glb_languages
+      `preferred_language` INT unsigned NOT NULL,   -- fk to glb_languages
       -- Media & Status
       `photo_file_name` VARCHAR(100) DEFAULT NULL,     -- Fk to sys_media (file name to show in UI)
-      `media_id` BIGINT UNSIGNED DEFAULT NULL,         -- Optional if using sys_media table
+      `media_id` INT UNSIGNED DEFAULT NULL,         -- Optional if using sys_media table
       `is_active` TINYINT(1) DEFAULT 1,
       -- Meta
       `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
@@ -4059,9 +4059,9 @@
     -- Student-Guardian Junction
     -- M:N Relationship (Student has Father, Mother; Parent has multiple kids)
     CREATE TABLE IF NOT EXISTS `std_student_guardian_jnt` (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `student_id` BIGINT UNSIGNED NOT NULL,
-      `guardian_id` BIGINT UNSIGNED NOT NULL,
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `student_id` INT UNSIGNED NOT NULL,
+      `guardian_id` INT UNSIGNED NOT NULL,
       -- 
       `relation_type` ENUM('Father','Mother','Guardian') NOT NULL, 
       `relationship` VARCHAR(50) NOT NULL, -- Father, Mother, Uncle, Brother, Sister, Grandfather, Grandmother
@@ -4086,18 +4086,18 @@
 
     -- Tracks chronological academic history (Class/Section allocation per session)
     CREATE TABLE IF NOT EXISTS `std_student_academic_sessions` (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT,
-      `student_id` BIGINT UNSIGNED NOT NULL,
+      `id` INT UNSIGNED AUTO_INCREMENT,
+      `student_id` INT UNSIGNED NOT NULL,
       -- Academic Session
-      `academic_session_id` BIGINT UNSIGNED NOT NULL,   -- FK to glb_academic_sessions (or sch_org_academic_sessions_jnt)
+      `academic_session_id` INT UNSIGNED NOT NULL,   -- FK to glb_academic_sessions (or sch_org_academic_sessions_jnt)
       `class_section_id` INT UNSIGNED NOT NULL,         -- FK to sch_class_section_jnt
       `roll_no` INT UNSIGNED DEFAULT NULL,
-      `subject_group_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to sch_subject_groups (if streams apply)
+      `subject_group_id` INT UNSIGNED DEFAULT NULL,  -- FK to sch_subject_groups (if streams apply)
       -- Other Detail
-      `house` BIGINT UNSIGNED DEFAULT NULL,             -- FK to sys_dropdown_table
+      `house` INT UNSIGNED DEFAULT NULL,             -- FK to sys_dropdown_table
       `is_current` TINYINT(1) DEFAULT 0,                -- Only one active record per student
-      `current_flag` bigint GENERATED ALWAYS AS ((case when (`is_current` = 1) then `student_id` else NULL end)) STORED,
-      `session_status_id` BIGINT UNSIGNED NOT NULL DEFAULT 'ACTIVE',    -- FK to sys_dropdown_table (PROMOTED, ACTIVE, LEFT, SUSPENDED, ALUMNI, WITHDRAWN)
+      `current_flag` INT GENERATED ALWAYS AS ((case when (`is_current` = 1) then `student_id` else NULL end)) STORED,
+      `session_status_id` INT UNSIGNED NOT NULL DEFAULT 'ACTIVE',    -- FK to sys_dropdown_table (PROMOTED, ACTIVE, LEFT, SUSPENDED, ALUMNI, WITHDRAWN)
       `leaving_date` DATE DEFAULT NULL,
       `count_as_attrition` TINYINT(1) NOT NULL,         -- Can we count this record as Attrition
       `reason_quit` int NULL,                           -- FK to `sys_dropdown_table` (Reason for leaving the Session)
@@ -4122,8 +4122,8 @@
 
     -- Student's Previous Education History (e.g. Previous Schools attended)
     CREATE TABLE IF NOT EXISTS `std_previous_education` (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `student_id` BIGINT UNSIGNED NOT NULL,
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `student_id` INT UNSIGNED NOT NULL,
       -- School Details
       `school_name` VARCHAR(150) NOT NULL,
       `school_address` VARCHAR(255) DEFAULT NULL,
@@ -4145,19 +4145,19 @@
 
     -- Student Documents (Uploads for Previous Education, ID Proofs, etc.)
     CREATE TABLE IF NOT EXISTS `std_student_documents` (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `student_id` BIGINT UNSIGNED NOT NULL,
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `student_id` INT UNSIGNED NOT NULL,
       `document_name` VARCHAR(100) NOT NULL,           -- e.g. 'Transfer Certificate', 'Mark Sheet', 'Aadhar Card'
-      `document_type_id` BIGINT UNSIGNED NOT NULL,     -- FK to sys_dropdown_table (Category of doc)
+      `document_type_id` INT UNSIGNED NOT NULL,     -- FK to sys_dropdown_table (Category of doc)
       `document_number` VARCHAR(100) DEFAULT NULL,     -- e.g. TC No, Serial No
       `issue_date` DATE DEFAULT NULL,
       `expiry_date` DATE DEFAULT NULL,
       `issuing_authority` VARCHAR(150) DEFAULT NULL,
       `is_verified` TINYINT(1) DEFAULT 0,              -- Verified by school admin
-      `verified_by` BIGINT UNSIGNED DEFAULT NULL,      -- FK to sys_users
+      `verified_by` INT UNSIGNED DEFAULT NULL,      -- FK to sys_users
       `verification_date` DATETIME DEFAULT NULL,
       `file_name` VARCHAR(100) DEFAULT NULL,           -- Fk to sys_media (file name to show in UI)
-      `media_id` BIGINT UNSIGNED DEFAULT NULL,         -- Optional if using sys_media table
+      `media_id` INT UNSIGNED DEFAULT NULL,         -- Optional if using sys_media table
       `notes` TEXT DEFAULT NULL,
       `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
       `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -4173,8 +4173,8 @@
 
     -- Medical Profile
     CREATE TABLE IF NOT EXISTS `std_health_profiles` (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `student_id` BIGINT UNSIGNED NOT NULL,
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `student_id` INT UNSIGNED NOT NULL,
       -- 
       `blood_group` ENUM('A+','A-','B+','B-','AB+','AB-','O+','O-') DEFAULT NULL,
       `height_cm` DECIMAL(5,2) DEFAULT NULL,    -- Last recorded
@@ -4195,8 +4195,8 @@
 
     -- Vaccination History
     CREATE TABLE IF NOT EXISTS `std_vaccination_records` (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `student_id` BIGINT UNSIGNED NOT NULL,
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `student_id` INT UNSIGNED NOT NULL,
       `vaccine_name` VARCHAR(100) NOT NULL,
       `date_administered` DATE DEFAULT NULL,
       `next_due_date` DATE DEFAULT NULL,
@@ -4207,15 +4207,15 @@
 
     -- Medical Incidents (School Clinic Log)
     CREATE TABLE IF NOT EXISTS `std_medical_incidents` (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `student_id` BIGINT UNSIGNED NOT NULL,
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `student_id` INT UNSIGNED NOT NULL,
       `incident_date` DATETIME NOT NULL,
-      `incident_type_id` BIGINT UNSIGNED NOT NULL, -- FK to sys_dropdown_table (e.g. Injury, Sickness, Fainting)
+      `incident_type_id` INT UNSIGNED NOT NULL, -- FK to sys_dropdown_table (e.g. Injury, Sickness, Fainting)
       `location` VARCHAR(100) DEFAULT NULL,     -- Playground, Classroom
       `description` TEXT NOT NULL,
       `first_aid_given` TEXT DEFAULT NULL,
       `action_taken` VARCHAR(255) DEFAULT NULL, -- Sent home, Rested in sick bay, Taken to hospital
-      `reported_by` BIGINT UNSIGNED DEFAULT NULL, --  fk to sys_users (Teacher/Staff)
+      `reported_by` INT UNSIGNED DEFAULT NULL, --  fk to sys_users (Teacher/Staff)
       `parent_notified` TINYINT(1) DEFAULT 0,
       `closure_date` DATE DEFAULT NULL,
       `follow_up_required` TINYINT(1) DEFAULT 0,
@@ -4233,15 +4233,15 @@
     -- Variable in sys_setting (Key "Period_wise_Student_Attendance", Value-TRUE/FALSE)
     -- Daily Attendance Log
     CREATE TABLE IF NOT EXISTS `std_student_attendance` (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `student_id` BIGINT UNSIGNED NOT NULL,
-      `academic_session_id` BIGINT UNSIGNED NOT NULL,
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `student_id` INT UNSIGNED NOT NULL,
+      `academic_session_id` INT UNSIGNED NOT NULL,
       `class_section_id` INT UNSIGNED NOT NULL,
       `attendance_date` DATE NOT NULL, -- Date of attendance
       `attendance_period` TINYINT UNSIGNED NOT NULL DEFAULT 0,
       `status` ENUM('Present','Absent','Late','Half Day','Short Leave','Leave') NOT NULL,
       `remarks` VARCHAR(255) DEFAULT NULL,
-      `marked_by` BIGINT UNSIGNED DEFAULT NULL,        -- User ID who marked attendance
+      `marked_by` INT UNSIGNED DEFAULT NULL,        -- User ID who marked attendance
       `marked_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
       `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -4255,15 +4255,15 @@
 
     -- Attendance Correction Requests
     CREATE TABLE IF NOT EXISTS `std_attendance_corrections` (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `attendance_id` BIGINT UNSIGNED NOT NULL,        -- FK to std_student_attendance
-      `requested_by` BIGINT UNSIGNED NOT NULL,         -- Parent or Student User ID
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `attendance_id` INT UNSIGNED NOT NULL,        -- FK to std_student_attendance
+      `requested_by` INT UNSIGNED NOT NULL,         -- Parent or Student User ID
       `requested_status` ENUM('Present','Absent','Late','Half Day','Short Leave','Leave') NOT NULL,
       `requested_period` TINYINT UNSIGNED NOT NULL DEFAULT 0,
       `reason` TEXT NOT NULL,
       `status` ENUM('Pending','Approved','Rejected') NOT NULL DEFAULT 'Pending',
       `admin_remarks` VARCHAR(255) DEFAULT NULL,       -- Admin/Teacher Remark on approval/rejection
-      `action_by` BIGINT UNSIGNED DEFAULT NULL,        -- Admin/Teacher who approved/rejected
+      `action_by` INT UNSIGNED DEFAULT NULL,        -- Admin/Teacher who approved/rejected
       `action_at` TIMESTAMP NULL DEFAULT NULL,         -- When approved/rejected
       `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
       `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -4281,7 +4281,7 @@
     -- CIRCULAR GOALS (NEP / PARAKH)
     -- =========================================================
     CREATE TABLE IF NOT EXISTS hpc_circular_goals (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       `code` VARCHAR(50) NOT NULL,
       `name` VARCHAR(150) NOT NULL,
       `class_id` INT UNSIGNED NOT NULL,  -- Fk to sch_classes
@@ -4296,9 +4296,9 @@
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
     CREATE TABLE hpc_circular_goal_competency_jnt (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `circular_goal_id` BIGINT UNSIGNED NOT NULL,
-      `competency_id` BIGINT UNSIGNED NOT NULL,
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `circular_goal_id` INT UNSIGNED NOT NULL,
+      `competency_id` INT UNSIGNED NOT NULL,
       `is_primary` TINYINT(1) DEFAULT 0,
       `is_active` TINYINT(1) DEFAULT 1,
       `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -4314,10 +4314,10 @@
     -- LEARNING OUTCOMES (NORMALIZED)
     -- =========================================================
     CREATE TABLE IF NOT EXISTS hpc_learning_outcomes (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       `code` VARCHAR(50) NOT NULL,
       `description` VARCHAR(255) NOT NULL,
-      `domain` BIGINT UNSIGNED NOT NULL,   -- FK TO sys_dropdown_table e.g. ('COGNITIVE','AFFECTIVE','PSYCHOMOTOR') DEFAULT 'COGNITIVE'
+      `domain` INT UNSIGNED NOT NULL,   -- FK TO sys_dropdown_table e.g. ('COGNITIVE','AFFECTIVE','PSYCHOMOTOR') DEFAULT 'COGNITIVE'
       `bloom_id` INT UNSIGNED DEFAULT NULL,
       `level` TINYINT UNSIGNED DEFAULT 1,
       `is_active` TINYINT(1) DEFAULT 1,
@@ -4330,11 +4330,11 @@
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
     CREATE TABLE IF NOT EXISTS hpc_outcome_entity_jnt (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `outcome_id` BIGINT UNSIGNED NOT NULL,
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `outcome_id` INT UNSIGNED NOT NULL,
       `class_id` INT UNSIGNED NOT NULL,  -- Fk to sch_classes
       `entity_type` ENUM('SUBJECT','LESSON','TOPIC') NOT NULL,
-      `entity_id` BIGINT UNSIGNED NOT NULL,  -- Dropdown from sch_subjects, slb_lessons, slb_topics (Depend upon selection of entity_type)
+      `entity_id` INT UNSIGNED NOT NULL,  -- Dropdown from sch_subjects, slb_lessons, slb_topics (Depend upon selection of entity_type)
       `is_active` TINYINT(1) DEFAULT 1,
       `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -4348,9 +4348,9 @@
     -- OUTCOME ↔ QUESTION MAPPING (will be used for HPC)
     -- =========================================================
     CREATE TABLE IF NOT EXISTS hpc_outcome_question_jnt (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `outcome_id` BIGINT UNSIGNED NOT NULL,
-      `question_id` BIGINT UNSIGNED NOT NULL,  -- fk to qns_questions_bank.id
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `outcome_id` INT UNSIGNED NOT NULL,
+      `question_id` INT UNSIGNED NOT NULL,  -- fk to qns_questions_bank.id
       `weightage` DECIMAL(5,2) DEFAULT NULL,
       `is_active` TINYINT(1) DEFAULT 1,
       `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -4366,8 +4366,8 @@
     -- KNOWLEDGE GRAPH VALIDATION
     -- =========================================================
     CREATE TABLE IF NOT EXISTS hpc_knowledge_graph_validation (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `topic_id` BIGINT UNSIGNED NOT NULL,
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `topic_id` INT UNSIGNED NOT NULL,
       `issue_type` ENUM('NO_COMPETENCY','NO_OUTCOME','NO_WEIGHTAGE','ORPHAN_NODE') NOT NULL,
       `severity` ENUM('LOW','MEDIUM','HIGH','CRITICAL') DEFAULT 'LOW',
       `detected_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -4385,9 +4385,9 @@
     -- MULTI-SYLLABUS TOPIC EQUIVALENCY
     -- =========================================================
     CREATE TABLE IF NOT EXISTS hpc_topic_equivalency (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `source_topic_id` BIGINT UNSIGNED NOT NULL,
-      `target_topic_id` BIGINT UNSIGNED NOT NULL,
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `source_topic_id` INT UNSIGNED NOT NULL,
+      `target_topic_id` INT UNSIGNED NOT NULL,
       `equivalency_type` ENUM('FULL','PARTIAL','PREREQUISITE') DEFAULT 'FULL',
       `is_active` TINYINT(1) DEFAULT 1,
       `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -4403,10 +4403,10 @@
     -- SYLLABUS COVERAGE SNAPSHOT (ANALYTICS)
     -- =========================================================
     CREATE TABLE IF NOT EXISTS hpc_syllabus_coverage_snapshot (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `academic_session_id` BIGINT UNSIGNED NOT NULL,
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `academic_session_id` INT UNSIGNED NOT NULL,
       `class_id` INT UNSIGNED NOT NULL,
-      `subject_id` BIGINT UNSIGNED NOT NULL,
+      `subject_id` INT UNSIGNED NOT NULL,
       `coverage_percentage` DECIMAL(5,2) NOT NULL,
       `snapshot_date` DATE NOT NULL,
       `is_active` TINYINT(1) DEFAULT 1,
@@ -4452,17 +4452,17 @@
     -- STUDENT HPC EVALUATION
     -- =========================================================
     CREATE TABLE IF NOT EXISTS hpc_student_hpc_evaluation (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `academic_session_id` BIGINT UNSIGNED NOT NULL,
-      `student_id` BIGINT UNSIGNED NOT NULL,
-      `subject_id` BIGINT UNSIGNED NOT NULL,
-      `competency_id` BIGINT UNSIGNED NOT NULL,
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `academic_session_id` INT UNSIGNED NOT NULL,
+      `student_id` INT UNSIGNED NOT NULL,
+      `subject_id` INT UNSIGNED NOT NULL,
+      `competency_id` INT UNSIGNED NOT NULL,
       `hpc_parameter_id` INT UNSIGNED NOT NULL,
       `hpc_level_id` INT UNSIGNED NOT NULL,
-      `evidence_type` BIGINT UNSIGNED NOT NULL,   -- FK TO sys_dropdown_table e.g. ('ACTIVITY','ASSESSMENT','OBSERVATION')
-      `evidence_id` BIGINT UNSIGNED,
+      `evidence_type` INT UNSIGNED NOT NULL,   -- FK TO sys_dropdown_table e.g. ('ACTIVITY','ASSESSMENT','OBSERVATION')
+      `evidence_id` INT UNSIGNED,
       `remarks` VARCHAR(500),
-      `assessed_by` BIGINT UNSIGNED,
+      `assessed_by` INT UNSIGNED,
       `assessed_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       `is_active` TINYINT(1) DEFAULT 1,
       `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -4476,9 +4476,9 @@
     -- LEARNING ACTIVITIES (HPC EVIDENCE)
     -- =========================================================
     CREATE TABLE IF NOT EXISTS hpc_learning_activities (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `topic_id` BIGINT UNSIGNED NOT NULL,
-      `activity_type` BIGINT UNSIGNED NOT NULL,   FK TO sys_dropdown_table e.g. ('PROJECT','OBSERVATION','FIELD_WORK','GROUP_WORK','ART','SPORT','DISCUSSION')
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `topic_id` INT UNSIGNED NOT NULL,
+      `activity_type` INT UNSIGNED NOT NULL,   FK TO sys_dropdown_table e.g. ('PROJECT','OBSERVATION','FIELD_WORK','GROUP_WORK','ART','SPORT','DISCUSSION')
       `description` TEXT NOT NULL,
       `expected_outcome` TEXT,
       `is_active` TINYINT(1) DEFAULT 1,
@@ -4494,9 +4494,9 @@
     -- HOLISTIC PROGRESS CARD SNAPSHOT
     -- =========================================================
     CREATE TABLE IF NOT EXISTS hpc_student_hpc_snapshot (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `academic_session_id` BIGINT UNSIGNED NOT NULL,
-      `student_id` BIGINT UNSIGNED NOT NULL,
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `academic_session_id` INT UNSIGNED NOT NULL,
+      `student_id` INT UNSIGNED NOT NULL,
       `snapshot_json` JSON NOT NULL,
       `generated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       `is_active` TINYINT(1) DEFAULT 1,
@@ -4522,20 +4522,20 @@
   -- =========================================================================
 
   CREATE TABLE IF NOT EXISTS `hpc_lesson_version_control` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     -- Core linkage
-    `lesson_id` BIGINT UNSIGNED NOT NULL,           -- FK to slb_lessons.id
-    `academic_session_id` BIGINT UNSIGNED NOT NULL, -- Session in which this version applies
+    `lesson_id` INT UNSIGNED NOT NULL,           -- FK to slb_lessons.id
+    `academic_session_id` INT UNSIGNED NOT NULL, -- Session in which this version applies
     -- Authority & source
     `curriculum_authority` ENUM('NCERT','CBSE','ICSE','STATE_BOARD','OTHER') NOT NULL DEFAULT 'NCERT',
     `board_code` VARCHAR(50) DEFAULT NULL,          -- CBSE, ICSE, STATE-UK, etc.
-    `book_id` BIGINT UNSIGNED DEFAULT NULL,         -- FK to book master (if exists)
+    `book_id` INT UNSIGNED DEFAULT NULL,         -- FK to book master (if exists)
     `book_title` VARCHAR(255) DEFAULT NULL,         -- Redundant but audit-friendly
     `book_edition` VARCHAR(100) DEFAULT NULL,       -- e.g. "2024 Edition"
     `publisher` VARCHAR(150) DEFAULT 'NCERT',
     -- Versioning
     `lesson_version` VARCHAR(20) NOT NULL,          -- e.g. v1.0, v2.0
-    `derived_from_lesson_id` BIGINT UNSIGNED DEFAULT NULL, -- Previous version reference
+    `derived_from_lesson_id` INT UNSIGNED DEFAULT NULL, -- Previous version reference
     -- Governance state (SYSTEM CONTROLLED)
     `status` ENUM('IMPORTED','ACTIVE','LOCKED','DEPRECATED','ARCHIVED') NOT NULL DEFAULT 'IMPORTED',
     -- Control flags
@@ -4580,14 +4580,14 @@
   -- CURRICULUM CHANGE MANAGEMENT
   -- =========================================================
   CREATE TABLE hpc_curriculum_change_request (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `entity_type` ENUM('SUBJECT','LESSON','TOPIC','COMPETENCY') NOT NULL,
-    `entity_id` BIGINT UNSIGNED NOT NULL,
+    `entity_id` INT UNSIGNED NOT NULL,
     `change_type` ENUM('ADD','UPDATE','DELETE') NOT NULL,
     `change_summary` VARCHAR(500),
     `impact_analysis` JSON,
     `status` ENUM('DRAFT','SUBMITTED','APPROVED','REJECTED') DEFAULT 'DRAFT',
-    `requested_by` BIGINT UNSIGNED,
+    `requested_by` INT UNSIGNED,
     `requested_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `is_active` TINYINT(1) DEFAULT 1,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

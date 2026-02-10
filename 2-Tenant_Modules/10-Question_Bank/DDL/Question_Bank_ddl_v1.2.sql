@@ -3,13 +3,13 @@
 -- =========================================================================
 
 CREATE TABLE IF NOT EXISTS `qns_questions_bank` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `uuid` BINARY(16) NOT NULL,                 -- Unique identifier for tracking ("INSERT INTO slb_questions_bank (uuid) VALUES (UUID_TO_BIN(UUID()))")
   `class_id` INT UNSIGNED NOT NULL,       --  fk -> sch_classes.id optional denormalized FK
-  `subject_id` BIGINT UNSIGNED NOT NULL,  --  fk -> sch_subjects.id optional denormalized FK
+  `subject_id` INT UNSIGNED NOT NULL,  --  fk -> sch_subjects.id optional denormalized FK
   `lesson_id` INT UNSIGNED NOT NULL,      --  fk -> slb_lessons.id optional denormalized FK
-  `topic_id` BIGINT UNSIGNED NOT NULL,    -- FK -> sch_topics.id (can be root topic or sub-topic depending on level)
-  `competency_id` BIGINT UNSIGNED NOT NULL, -- FK to slb_competencies.id
+  `topic_id` INT UNSIGNED NOT NULL,    -- FK -> sch_topics.id (can be root topic or sub-topic depending on level)
+  `competency_id` INT UNSIGNED NOT NULL, -- FK to slb_competencies.id
   -- Question Text
   `ques_title` VARCHAR(255) NOT NULL,       -- title of the question (For System use)
   `ques_title_display` TINYINT(1) NOT NULL DEFAULT 0,    -- display title? (1=Yes, 0=No)
@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS `qns_questions_bank` (
   `negative_marks` DECIMAL(5,2) DEFAULT 0.00,
   -- Question Audit & Versioning
   -- `ques_reviewed` TINYINT(1) NOT NULL DEFAULT 0,              -- True if this question is reviewed
-  -- `ques_reviewed_by` BIGINT UNSIGNED DEFAULT NULL,            --  fk -> sch_users.id (if reviewed by teacher)
+  -- `ques_reviewed_by` INT UNSIGNED DEFAULT NULL,            --  fk -> sch_users.id (if reviewed by teacher)
   -- `ques_reviewed_at` TIMESTAMP NULL DEFAULT NULL,
   -- `ques_reviewed_status` ENUM('PENDING','APPROVED','REJECTED') DEFAULT 'PENDING',
   `current_version` TINYINT UNSIGNED NOT NULL DEFAULT 1,       -- version of the question (for history) 
@@ -40,15 +40,15 @@ CREATE TABLE IF NOT EXISTS `qns_questions_bank` (
   -- Question Ownership
   `ques_owner` ENUM('PrimeGurukul','School') NOT NULL DEFAULT 'PrimeGurukul',
   `created_by_AI` TINYINT(1) DEFAULT 0,            -- True if this question is created by AI
-  `created_by` BIGINT UNSIGNED DEFAULT NULL,       -- fk -> sch_users.id or teachers.id. If created by AI then this will be NULL
+  `created_by` INT UNSIGNED DEFAULT NULL,       -- fk -> sch_users.id or teachers.id. If created by AI then this will be NULL
   `is_school_specific` TINYINT(1) DEFAULT 0,       -- True if this question is school-specific
   -- QUESTIONS AVAILABILITY
   `availability` ENUM('GLOBAL','SCHOOL_ONLY','CLASS_ONLY','SECTION_ONLY','ENTITY_ONLY','STUDENT_ONLY') DEFAULT 'GLOBAL',  -- visibility of the question
-  `selected_entity_group_id` BIGINT UNSIGNED DEFAULT NULL,  -- fk -> slb_entity_groups.id (if selected availability is 'ENTITY_ONLY')
-  `selected_section_id` BIGINT UNSIGNED DEFAULT NULL,       -- fk -> sch_sections.id (if selected availability is 'SECTION_ONLY')
-  `selected_student_id` BIGINT UNSIGNED DEFAULT NULL,       -- fk -> sch_students.id (if selected availability is 'STUDENT_ONLY')
+  `selected_entity_group_id` INT UNSIGNED DEFAULT NULL,  -- fk -> slb_entity_groups.id (if selected availability is 'ENTITY_ONLY')
+  `selected_section_id` INT UNSIGNED DEFAULT NULL,       -- fk -> sch_sections.id (if selected availability is 'SECTION_ONLY')
+  `selected_student_id` INT UNSIGNED DEFAULT NULL,       -- fk -> sch_students.id (if selected availability is 'STUDENT_ONLY')
   -- QUESTION SOURCE & REFERENCE
-  `book_id` BIGINT UNSIGNED DEFAULT NULL,         -- book id (FK -> slb_books.id)
+  `book_id` INT UNSIGNED DEFAULT NULL,         -- book id (FK -> slb_books.id)
   `book_page_ref` VARCHAR(50) DEFAULT NULL,       -- book page reference (e.g., "Chapter 3, Page 12")
   `external_ref` VARCHAR(100) DEFAULT NULL,       -- for mapping to external banks
   `reference_material` TEXT DEFAULT NULL,         -- e.g., book section, web link
@@ -91,8 +91,8 @@ CREATE TABLE IF NOT EXISTS `qns_questions_bank` (
 -- To Read UUID back as string from BINARY(16) use: SELECT BIN_TO_UUID(uuid) FROM slb_questions_bank;
 
 CREATE TABLE IF NOT EXISTS `qns_question_options` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `question_bank_id` BIGINT UNSIGNED NOT NULL,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `question_bank_id` INT UNSIGNED NOT NULL,
   `ordinal` SMALLINT UNSIGNED DEFAULT NULL,    -- ordinal position of this option
   `option_text` TEXT NOT NULL,                 -- text of the option
   `is_correct` TINYINT(1) NOT NULL DEFAULT 0,  -- whether this option is correct
@@ -107,11 +107,11 @@ CREATE TABLE IF NOT EXISTS `qns_question_options` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `qns_question_media_jnt` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `question_bank_id` BIGINT UNSIGNED NOT NULL,          -- fk to qns_questions_bank.id
-  `question_option_id` BIGINT UNSIGNED DEFAULT NULL,    -- fk to qns_question_options.id
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `question_bank_id` INT UNSIGNED NOT NULL,          -- fk to qns_questions_bank.id
+  `question_option_id` INT UNSIGNED DEFAULT NULL,    -- fk to qns_question_options.id
   `media_purpose` ENUM('QUESTION','OPTION','QUES_EXPLANATION','OPT_EXPLANATION','RECOMMENDATION') DEFAULT 'QUESTION',
-  `media_id` BIGINT UNSIGNED NOT NULL,                   -- fk to qns_media_store.id
+  `media_id` INT UNSIGNED NOT NULL,                   -- fk to qns_media_store.id
   `media_type` ENUM('IMAGE','AUDIO','VIDEO','ATTACHMENT') DEFAULT 'IMAGE',        -- e.g., 'IMAGE','AUDIO','VIDEO','ATTACHMENT'
   `ordinal` SMALLINT UNSIGNED DEFAULT 1,                 -- ordinal position of this media
   `is_active` TINYINT(1) DEFAULT 1,
@@ -127,7 +127,7 @@ CREATE TABLE IF NOT EXISTS `qns_question_media_jnt` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `qns_question_tags` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `short_name` VARCHAR(100) NOT NULL,
   `name` VARCHAR(255) NOT NULL,
   `is_active` TINYINT(1) DEFAULT 1,
@@ -140,9 +140,9 @@ CREATE TABLE IF NOT EXISTS `qns_question_tags` (
 
 -- Laravel Morph Relationship
 CREATE TABLE IF NOT EXISTS `qns_question_questiontag_jnt` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  `question_bank_id` BIGINT UNSIGNED NOT NULL,
-  `tag_id` BIGINT UNSIGNED NOT NULL,
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `question_bank_id` INT UNSIGNED NOT NULL,
+  `tag_id` INT UNSIGNED NOT NULL,
   `is_active` TINYINT(1) DEFAULT 1,
   `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -154,11 +154,11 @@ CREATE TABLE IF NOT EXISTS `qns_question_questiontag_jnt` (
 
 -- In this Table data will be entered on Modification only. No CRUD required
 CREATE TABLE IF NOT EXISTS `qns_question_versions` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `question_bank_id` BIGINT UNSIGNED NOT NULL,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `question_bank_id` INT UNSIGNED NOT NULL,
   `version` INT UNSIGNED NOT NULL,
   `data` JSON NOT NULL,                       -- full snapshot of question (Question_content, options, metadata)
-  `version_created_by` BIGINT UNSIGNED DEFAULT NULL,
+  `version_created_by` INT UNSIGNED DEFAULT NULL,
   `change_reason` VARCHAR(255) DEFAULT NULL,  -- why was this version modified?
   `is_active` TINYINT(1) DEFAULT 1,
   `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
@@ -170,16 +170,16 @@ CREATE TABLE IF NOT EXISTS `qns_question_versions` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `qns_media_store` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   `uuid` BINARY(16) NOT NULL,
   `owner_type` ENUM('QUESTION','OPTION','EXPLANATION','RECOMMENDATION') NOT NULL,
-  `owner_id` BIGINT UNSIGNED NOT NULL,
+  `owner_id` INT UNSIGNED NOT NULL,
   `media_type` ENUM('IMAGE','AUDIO','VIDEO','PDF') NOT NULL,
   `file_name` VARCHAR(255),
   `file_path` VARCHAR(255),
   `mime_type` VARCHAR(100),
   `disk` VARCHAR(50) DEFAULT NULL,     -- storage disk
-  `size` BIGINT UNSIGNED DEFAULT NULL, -- file size in bytes
+  `size` INT UNSIGNED DEFAULT NULL, -- file size in bytes
   `checksum` CHAR(64) DEFAULT NULL,    -- file checksum
   `ordinal` SMALLINT UNSIGNED DEFAULT 1,
   `is_active` TINYINT(1) DEFAULT 1,
@@ -191,9 +191,9 @@ CREATE TABLE IF NOT EXISTS `qns_media_store` (
 );
 
 CREATE TABLE IF NOT EXISTS `qns_question_topic_jnt` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  `question_bank_id` BIGINT UNSIGNED NOT NULL,
-  `topic_id` BIGINT UNSIGNED NOT NULL,
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `question_bank_id` INT UNSIGNED NOT NULL,
+  `topic_id` INT UNSIGNED NOT NULL,
   `weightage` DECIMAL(5,2) DEFAULT 100.00,  -- weightage of question in topic
   `is_active` TINYINT(1) DEFAULT 1,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -207,8 +207,8 @@ CREATE TABLE IF NOT EXISTS `qns_question_topic_jnt` (
 -- Required a backend Service to calculate the statistics
 -- Display Only
 CREATE TABLE IF NOT EXISTS `qns_question_statistics` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  `question_bank_id` BIGINT UNSIGNED NOT NULL,
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `question_bank_id` INT UNSIGNED NOT NULL,
   `difficulty_index` DECIMAL(5,2),       -- % students answered correctly
   `discrimination_index` DECIMAL(5,2),   -- Top vs bottom performer delta
   `guessing_factor` DECIMAL(5,2),        -- MCQ only
@@ -226,10 +226,10 @@ CREATE TABLE IF NOT EXISTS `qns_question_statistics` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `qns_question_performance_category_jnt` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  `question_bank_id` BIGINT UNSIGNED NOT NULL,
-  `performance_category_id` BIGINT UNSIGNED NOT NULL,  -- FK to slb_performance_categories.id
-  `recommendation_type` BIGINT UNSIGNED NOT NULL,  -- FK to sys_dropdowns table e.g. 'REVISION','PRACTICE','CHALLENGE'
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `question_bank_id` INT UNSIGNED NOT NULL,
+  `performance_category_id` INT UNSIGNED NOT NULL,  -- FK to slb_performance_categories.id
+  `recommendation_type` INT UNSIGNED NOT NULL,  -- FK to sys_dropdowns table e.g. 'REVISION','PRACTICE','CHALLENGE'
   `priority` SMALLINT UNSIGNED DEFAULT 1,  -- priority of the question in the performance category
   `is_active` TINYINT(1) DEFAULT 1,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -246,10 +246,10 @@ CREATE TABLE IF NOT EXISTS `qns_question_performance_category_jnt` (
 
 -- Display Only
 CREATE TABLE IF NOT EXISTS `qns_question_usage_log` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  `question_bank_id` BIGINT UNSIGNED NOT NULL,    -- FK to qns_questions_bank
-  `question_usage_type` BIGINT UNSIGNED NOT NULL, -- FK to qns_question_usage_type.id
-  `context_id` BIGINT UNSIGNED NOT NULL,    -- quiz_id, assessment_id, exam_id - FK to sys_dropdowns table
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `question_bank_id` INT UNSIGNED NOT NULL,    -- FK to qns_questions_bank
+  `question_usage_type` INT UNSIGNED NOT NULL, -- FK to qns_question_usage_type.id
+  `context_id` INT UNSIGNED NOT NULL,    -- quiz_id, assessment_id, exam_id - FK to sys_dropdowns table
   `used_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `is_active` TINYINT(1) DEFAULT 1,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -262,10 +262,10 @@ CREATE TABLE IF NOT EXISTS `qns_question_usage_log` (
 -- -----------------------------------------------------------------------------------------------------------------------
 -- Question Review & Approval Audit
 CREATE TABLE IF NOT EXISTS `qns_question_review_log` (
-    `review_log_id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `question_id` BIGINT UNSIGNED NOT NULL,  -- FK to qns_questions_bank.id
-    `reviewer_id` BIGINT UNSIGNED NOT NULL,  -- FK to users.id
-    `review_status_id` BIGINT UNSIGNED NOT NULL,  -- FK to sys_dropdowns.id e.g. 'PENDING','APPROVED','REJECTED'
+    `review_log_id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `question_id` INT UNSIGNED NOT NULL,  -- FK to qns_questions_bank.id
+    `reviewer_id` INT UNSIGNED NOT NULL,  -- FK to users.id
+    `review_status_id` INT UNSIGNED NOT NULL,  -- FK to sys_dropdowns.id e.g. 'PENDING','APPROVED','REJECTED'
     `review_comment` TEXT DEFAULT NULL,
     `reviewed_at` DATETIME NOT NULL,
     `is_active` TINYINT(1) DEFAULT 1,
@@ -281,7 +281,7 @@ CREATE TABLE IF NOT EXISTS `qns_question_review_log` (
 
 -- Question Usage Type (Quiz / Quest / Exam)
 CREATE TABLE `qns_question_usage_type` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `code` VARCHAR(50) NOT NULL,  -- e.g. 'QUIZ','QUEST','ONLINE_EXAM','OFFLINE_EXAM'
     `name` VARCHAR(100) NOT NULL, -- e.g. 'Quiz','Quest','Online Exam','Offline Exam'
     `description` TEXT DEFAULT NULL,

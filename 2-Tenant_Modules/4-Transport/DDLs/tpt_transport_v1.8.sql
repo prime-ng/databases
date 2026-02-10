@@ -11,7 +11,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- =======================================================================
 
 CREATE TABLE IF NOT EXISTS `tpt_vehicle` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `vehicle_no` VARCHAR(20) NOT NULL,
     `registration_no` VARCHAR(30) NOT NULL,         -- Unique govt registration number
     `model` VARCHAR(50),                            -- Vehicle model
@@ -43,8 +43,8 @@ CREATE TABLE IF NOT EXISTS `tpt_vehicle` (
     -- 8. App logic to enforce capacity checks during student allocation based on 'Allow_extra_student_in_vehicale_beyond_capacity' setting.
 
 CREATE TABLE IF NOT EXISTS `tpt_personnel` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `user_id` BIGINT UNSIGNED DEFAULT NULL,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `user_id` INT UNSIGNED DEFAULT NULL,
     `user_qr_code` VARCHAR(30) NOT NULL,     -- User code Auto generated (This will be used to generate QR token)    `qr_token` VARCHAR(100) NOT NULL,       -- QR token Auto generated using user_code
     `id_card_type` ENUM('QR','RFID','NFC','Barcode') NOT NULL DEFAULT 'QR',
     `name` VARCHAR(100) NOT NULL,
@@ -54,7 +54,7 @@ CREATE TABLE IF NOT EXISTS `tpt_personnel` (
     `role` VARCHAR(20) NOT NULL,                -- fk to sys_role ('Driver','Helper','Conductor','Substitute Driver','Substitute Helper')
     `license_no` VARCHAR(50) DEFAULT NULL,      -- Driver's license number
     `license_valid_upto` DATE DEFAULT NULL,                 -- License expiry date
-    `assigned_vehicle_id` BIGINT UNSIGNED DEFAULT NULL,     -- fk to tpt_vehicle
+    `assigned_vehicle_id` INT UNSIGNED DEFAULT NULL,     -- fk to tpt_vehicle
     `driving_exp_months` SMALLINT UNSIGNED DEFAULT NULL,    -- Total driving experience in months
     `address` VARCHAR(512) DEFAULT NULL,
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
@@ -90,7 +90,7 @@ CREATE TABLE IF NOT EXISTS `tpt_personnel` (
     -- 23. App logic to manage active assignments and ensure no conflicts.
 
 CREATE TABLE IF NOT EXISTS `tpt_shift` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `code` VARCHAR(20) NOT NULL,        --  Shift code e.g., 'MORNING', 'AFTERNOON'
     `name` VARCHAR(100) NOT NULL,
     `effective_from` DATE NOT NULL,     --  Shift validity period
@@ -114,12 +114,12 @@ CREATE TABLE IF NOT EXISTS `tpt_shift` (
 -- =======================================================================
 
 CREATE TABLE IF NOT EXISTS `tpt_route` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `code` VARCHAR(50) NOT NULL,        -- Route code
     `name` VARCHAR(200) NOT NULL,       -- Route name
     `description` VARCHAR(500) DEFAULT NULL,
     `pickup_drop` ENUM('Pickup','Drop','Both') NOT NULL DEFAULT 'Both',
-    `shift_id` BIGINT UNSIGNED NOT NULL,                    -- fk to 'tpt_shift'
+    `shift_id` INT UNSIGNED NOT NULL,                    -- fk to 'tpt_shift'
     `route_geometry` LINESTRING SRID 4326 DEFAULT NULL,     -- WGS84 route path
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -138,8 +138,8 @@ CREATE TABLE IF NOT EXISTS `tpt_route` (
 
 -- -----------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `tpt_pickup_points` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `shift_id` BIGINT UNSIGNED NOT NULL,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `shift_id` INT UNSIGNED NOT NULL,
     `code` VARCHAR(50) NOT NULL,
     `name` VARCHAR(200) NOT NULL,
     `latitude` DECIMAL(10,7) DEFAULT NULL,      -- WGS84 latitude
@@ -170,12 +170,12 @@ CREATE TABLE IF NOT EXISTS `tpt_pickup_points` (
 -- Table 'sch_settings' has a Variable named 'Allow_different_pickup_and_drop_point' to indicate if school allow different pickup & drop fare.
 -- If 'Allow_only_one_side_transport_charges' OR 'Allow_different_pickup_and_drop_point' is true, then app logic will enforce appropriate validations.
 CREATE TABLE IF NOT EXISTS `tpt_pickup_points_route_jnt` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `shift_id` BIGINT UNSIGNED NOT NULL,            -- fk to tpt_shift
-    `route_id` BIGINT UNSIGNED NOT NULL,            -- fk to tpt_route
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `shift_id` INT UNSIGNED NOT NULL,            -- fk to tpt_shift
+    `route_id` INT UNSIGNED NOT NULL,            -- fk to tpt_route
     `pickup_drop` ENUM('Pickup','Drop') NOT NULL DEFAULT 'Pickup',  -- Indicates if this entry is for Pickup or Drop point, can not be 'Both'. Both have different ordinal & fare.
 -- All below fields will move while doing Drag & Drp Function -----------------------
-    `pickup_point_id` BIGINT UNSIGNED NOT NULL,     -- fk to tpt_pickup_points
+    `pickup_point_id` INT UNSIGNED NOT NULL,     -- fk to tpt_pickup_points
     `ordinal` SMALLINT UNSIGNED NOT NULL DEFAULT 1, -- Sequence of the pickup point / drop point in the route.
     `total_distance` DECIMAL(7,2) DEFAULT NULL,     -- Distance of pickup point/drop point from school in KM
     `arrival_time` INT DEFAULT NULL,                -- Arrival time at this point
@@ -213,12 +213,12 @@ CREATE TABLE IF NOT EXISTS `tpt_pickup_points_route_jnt` (
 -- =======================================================================
 -- Junction table to assign Drivers and Vehicles to Routes for specific Shifts with effective date ranges.
 CREATE TABLE IF NOT EXISTS `tpt_driver_route_vehicle_jnt` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `shift_id` BIGINT UNSIGNED NOT NULL,        -- fk to 'tpt_shift'
-    `route_id` BIGINT UNSIGNED NOT NULL,        -- fk to 'tpt_route'
-    `vehicle_id` BIGINT UNSIGNED NOT NULL,      -- fk to 'tpt_vehicle'
-    `driver_id` BIGINT UNSIGNED NOT NULL,       -- fk to 'tpt_personnel'
-    `helper_id` BIGINT UNSIGNED DEFAULT NULL,   -- fk to 'tpt_personnel'
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `shift_id` INT UNSIGNED NOT NULL,        -- fk to 'tpt_shift'
+    `route_id` INT UNSIGNED NOT NULL,        -- fk to 'tpt_route'
+    `vehicle_id` INT UNSIGNED NOT NULL,      -- fk to 'tpt_vehicle'
+    `driver_id` INT UNSIGNED NOT NULL,       -- fk to 'tpt_personnel'
+    `helper_id` INT UNSIGNED DEFAULT NULL,   -- fk to 'tpt_personnel'
     `pickup_drop` ENUM('Pickup','Drop','Both') NOT NULL DEFAULT 'Both',
     `effective_from` DATE NOT NULL,             -- Assignment validity period
     `effective_to` DATE DEFAULT NULL,           -- Assignment validity period
@@ -275,13 +275,13 @@ DELIMITER ;
 
 -- Prevent overlapping assignments for same vehicle/driver on same shift+route should be enforced at app or via triggers
 CREATE TABLE IF NOT EXISTS `tpt_route_scheduler_jnt` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `scheduled_date` DATE NOT NULL,
-    `shift_id` BIGINT UNSIGNED NOT NULL,
-    `route_id` BIGINT UNSIGNED NOT NULL,
-    `vehicle_id` BIGINT UNSIGNED NOT NULL,
-    `driver_id` BIGINT UNSIGNED NOT NULL,
-    `helper_id` BIGINT UNSIGNED DEFAULT NULL,
+    `shift_id` INT UNSIGNED NOT NULL,
+    `route_id` INT UNSIGNED NOT NULL,
+    `vehicle_id` INT UNSIGNED NOT NULL,
+    `driver_id` INT UNSIGNED NOT NULL,
+    `helper_id` INT UNSIGNED DEFAULT NULL,
     `pickup_drop` ENUM('Pickup','Drop') NOT NULL DEFAULT 'Pickup',
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
@@ -313,12 +313,12 @@ CREATE TABLE IF NOT EXISTS `tpt_route_scheduler_jnt` (
 -- =======================================================================
 -- 'tpt_route_scheduler_jnt' will be used to get schedule details for trip creation, whereas 'tpt_trip' will store actual trip details.
 CREATE TABLE IF NOT EXISTS `tpt_trip` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `trip_date` DATE NOT NULL,                      -- Date of the trip
-    `route_scheduler_id` BIGINT UNSIGNED NOT NULL,  -- FK to 'tpt_route_scheduler_jnt' for getting schedule details
-    `vehicle_id` BIGINT UNSIGNED NOT NULL,          -- FK to 'tpt_vehicle' (Actual vehicle used for the trip)
-    `driver_id` BIGINT UNSIGNED NOT NULL,           -- FK to 'tpt_personnel' (Actual driver for the trip)
-    `helper_id` BIGINT UNSIGNED DEFAULT NULL,       -- FK to 'tpt_personnel' (Actual helper for the trip)
+    `route_scheduler_id` INT UNSIGNED NOT NULL,  -- FK to 'tpt_route_scheduler_jnt' for getting schedule details
+    `vehicle_id` INT UNSIGNED NOT NULL,          -- FK to 'tpt_vehicle' (Actual vehicle used for the trip)
+    `driver_id` INT UNSIGNED NOT NULL,           -- FK to 'tpt_personnel' (Actual driver for the trip)
+    `helper_id` INT UNSIGNED DEFAULT NULL,       -- FK to 'tpt_personnel' (Actual helper for the trip)
     `start_time` DATETIME DEFAULT NULL,             -- Actual start time
     `end_time` DATETIME DEFAULT NULL,               -- Actual end time
     `status` VARCHAR(20) NOT NULL DEFAULT 'Scheduled', -- fk to sys_dropdown_table e.g. 'Scheduled', 'Completed', 'Cancelled'
@@ -347,9 +347,9 @@ CREATE TABLE IF NOT EXISTS `tpt_trip` (
 -- Table to track live status of trips including current stop, ETA, and emergency situations.
 -- This table needs to be filled and updated in real-time by GPS tracking system or mobile app. No Entry Screen needed.
 CREATE TABLE IF NOT EXISTS `tpt_trip_stop_detail` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `trip_id` BIGINT UNSIGNED NOT NULL,                 -- FK to 'tpt_trip'
-    `stop_id` BIGINT UNSIGNED DEFAULT NULL,             -- FK to 'tpt_pickup_points'
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `trip_id` INT UNSIGNED NOT NULL,                 -- FK to 'tpt_trip'
+    `stop_id` INT UNSIGNED DEFAULT NULL,             -- FK to 'tpt_pickup_points'
     `pickup_drop` ENUM('Pickup','Drop') NOT NULL DEFAULT 'Pickup',
     `sch_arrival_time` DATETIME DEFAULT NULL,          -- Scheduled time of arrival at next stop
     `sch_departure_time` DATETIME DEFAULT NULL,         -- Scheduled time of departure from next stop
@@ -361,7 +361,7 @@ CREATE TABLE IF NOT EXISTS `tpt_trip_stop_detail` (
     `emergency_remarks` VARCHAR(512) DEFAULT NULL,      -- Remarks for emergency situation
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    `updated_by` BIGINT UNSIGNED DEFAULT NULL,           -- FK to 'tpt_personnel'
+    `updated_by` INT UNSIGNED DEFAULT NULL,           -- FK to 'tpt_personnel'
     `deleted_at` TIMESTAMP NULL DEFAULT NULL,
     CONSTRAINT `fk_trip_stop_detail_trip` FOREIGN KEY (`trip_id`) REFERENCES `tpt_trip`(`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_trip_stop_detail_stop` FOREIGN KEY (`stop_id`) REFERENCES `tpt_pickup_points`(`id`) ON DELETE SET NULL,
@@ -427,7 +427,7 @@ CREATE TABLE IF NOT EXISTS `tpt_trip_stop_detail` (
 -- Attendance can be done from at School Gate, Depot, Mobile App; hence Devices must be tracked for security & audit
 -- Devices must be tracked for security & audit
 CREATE TABLE IF NOT EXISTS `tpt_attendance_device` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `device_code` VARCHAR(50) NOT NULL UNIQUE,
     `device_name` VARCHAR(100) NOT NULL,
     `device_type` ENUM('Mobile','Scanner','Tablet','Gate') NOT NULL,    -- Type of device
@@ -452,8 +452,8 @@ CREATE TABLE IF NOT EXISTS `tpt_attendance_device` (
 
 -- Daily Attendance Summary for Performance Optimization. ERP dashboards & payroll reports need fast daily status.
 CREATE TABLE IF NOT EXISTS `tpt_driver_attendance` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `driver_id` BIGINT UNSIGNED NOT NULL,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `driver_id` INT UNSIGNED NOT NULL,
     `attendance_date` DATE NOT NULL,
     `first_in_time` DATETIME NULL,              --  First check-in time of the day
     `last_out_time` DATETIME NULL,              --  Last check-out time of the day
@@ -479,12 +479,12 @@ CREATE TABLE IF NOT EXISTS `tpt_driver_attendance` (
 
 -- Event-Based Attendance Logging. Allows: Multiple scans, Fraud detection, Late entry detection
 CREATE TABLE IF NOT EXISTS `tpt_driver_attendance_log` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `attendance_id` BIGINT UNSIGNED NOT NULL,   -- fk to tpt_driver_attendance
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `attendance_id` INT UNSIGNED NOT NULL,   -- fk to tpt_driver_attendance
     `scan_time` DATETIME NOT NULL,          
     `attendance_type` ENUM('IN','OUT') NOT NULL,
     `scan_method` ENUM('QR','RFID','NFC','Manual') NOT NULL,        
-    `device_id` BIGINT UNSIGNED NOT NULL,
+    `device_id` INT UNSIGNED NOT NULL,
     `latitude` DECIMAL(10,6) NULL,      
     `longitude` DECIMAL(10,6) NULL,
     `scan_status` ENUM('Valid','Duplicate','Rejected') NOT NULL DEFAULT 'Valid',
@@ -516,11 +516,11 @@ CREATE TABLE IF NOT EXISTS `tpt_driver_attendance_log` (
 -- =======================================================================
 
 CREATE TABLE IF NOT EXISTS `tpt_student_route_allocation_jnt` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `student_session_id` BIGINT UNSIGNED NOT NULL,  -- FK to 'std_student_sessions_jnt'
-    `route_id` BIGINT UNSIGNED NOT NULL,            -- FK to 'tpt_route'
-    `pickup_stop_id` BIGINT UNSIGNED NOT NULL,
-    `drop_stop_id` BIGINT UNSIGNED NOT NULL,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `student_session_id` INT UNSIGNED NOT NULL,  -- FK to 'std_student_sessions_jnt'
+    `route_id` INT UNSIGNED NOT NULL,            -- FK to 'tpt_route'
+    `pickup_stop_id` INT UNSIGNED NOT NULL,
+    `drop_stop_id` INT UNSIGNED NOT NULL,
     `fare` DECIMAL(10,2) NOT NULL,
     `effective_from` DATE NOT NULL,
     `active_status` TINYINT(1) NOT NULL DEFAULT 1,
@@ -558,8 +558,8 @@ CREATE TABLE IF NOT EXISTS `tpt_student_route_allocation_jnt` (
 
 -- define fines based on delay days
 CREATE TABLE IF NOT EXISTS `tpt_fine_master` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `std_academic_sessions_id` BIGINT UNSIGNED NOT NULL,    -- FK to 'std_academic_sessions'
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `std_academic_sessions_id` INT UNSIGNED NOT NULL,    -- FK to 'std_academic_sessions'
     `fine_from_days` TINYINT DEFAULT 0,
     `fine_to_days` TINYINT DEFAULT 0,
     `fine_type` ENUM('Fixed','Percentage') DEFAULT 'Fixed',
@@ -585,8 +585,8 @@ CREATE TABLE IF NOT EXISTS `tpt_fine_master` (
     -- 14. App logic to enforce capacity checks during student allocation based on 'Allow_extra_student_in_vehicale_beyond_capacity' setting.
 
 CREATE TABLE IF NOT EXISTS `tpt_student_fee_detail` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `std_academic_sessions_id` BIGINT UNSIGNED NOT NULL,    -- FK to 'std_academic_sessions'
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `std_academic_sessions_id` INT UNSIGNED NOT NULL,    -- FK to 'std_academic_sessions'
     `month` DATE NOT NULL,
     `amount` DECIMAL(10,2) NOT NULL,
     `fine_amount` DECIMAL(10,2) DEFAULT 0.00,
@@ -609,9 +609,9 @@ CREATE TABLE IF NOT EXISTS `tpt_student_fee_detail` (
 -- link fines to fee master
 -- old table name - tpt_fee_fine_detail
 CREATE TABLE IF NOT EXISTS `tpt_student_fine_detail` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `student_fee_detail_id` BIGINT UNSIGNED NOT NULL,    -- FK to 'tpt_student_fee_detail'
-    `fine_master_id` BIGINT UNSIGNED NOT NULL,   -- FK to 'tpt_fine_master'
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `student_fee_detail_id` INT UNSIGNED NOT NULL,    -- FK to 'tpt_student_fee_detail'
+    `fine_master_id` INT UNSIGNED NOT NULL,   -- FK to 'tpt_fine_master'
     `fine_days` TINYINT DEFAULT 0,
     `fine_type` ENUM('Fixed','Percentage') DEFAULT 'Fixed',
     `fine_rate` DECIMAL(5,2) DEFAULT 0.00,
@@ -636,8 +636,8 @@ CREATE TABLE IF NOT EXISTS `tpt_student_fine_detail` (
 -- record fee payment against student allocation
 -- old table name - tpt_fee_collection
 CREATE TABLE IF NOT EXISTS `tpt_student_fee_collection` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `student_fee_detail_id` BIGINT UNSIGNED NOT NULL,    -- FK to 'tpt_student_fee_detail'
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `student_fee_detail_id` INT UNSIGNED NOT NULL,    -- FK to 'tpt_student_fee_detail'
     `payment_date` DATE NOT NULL,
     `total_delay_days` INT DEFAULT 0,
     `paid_amount` DECIMAL(10,2) NOT NULL,
@@ -661,17 +661,17 @@ CREATE TABLE IF NOT EXISTS `tpt_student_fee_collection` (
 -- Table to capture all Payment related activities across modules (Transport, Hostel, Tuition, etc.)
 -- --------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `std_student_pay_log` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  `student_id` BIGINT UNSIGNED NOT NULL,              -- FK to std_students
-  `academic_session_id` BIGINT UNSIGNED NOT NULL,     -- FK to sch_org_academic_sessions_jnt (Mandatory for session-scoped filtering)
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `student_id` INT UNSIGNED NOT NULL,              -- FK to std_students
+  `academic_session_id` INT UNSIGNED NOT NULL,     -- FK to sch_org_academic_sessions_jnt (Mandatory for session-scoped filtering)
   `module_name` VARCHAR(50) NOT NULL,                 -- e.g. 'Transport', 'Tuition', 'Hostel', 'Library'
   `activity_type` VARCHAR(50) NOT NULL,               -- e.g. 'Invoice Generated', 'Payment Received', 'Payment Overdue', 'Reminder Sent', 'Part Payment'
   `amount` DECIMAL(10,2) DEFAULT NULL,                -- Amount involved in the activity (if any)
   `log_date` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `reference_id` BIGINT UNSIGNED DEFAULT NULL,        -- ID of the related record (Polymorphic Reference to the source record (e.g. Invoice ID or Collection ID))
+  `reference_id` INT UNSIGNED DEFAULT NULL,        -- ID of the related record (Polymorphic Reference to the source record (e.g. Invoice ID or Collection ID))
   `reference_table` VARCHAR(100) DEFAULT NULL,        -- Table name of the reference record (e.g. 'tpt_student_fee_detail', 'tpt_student_fee_collection')
   `description` VARCHAR(512) DEFAULT NULL,                    -- Detailed description or remarks
-  `triggered_by` BIGINT UNSIGNED DEFAULT NULL,        -- FK to sys_users (User who performed the action, NULL for System/Job)
+  `triggered_by` INT UNSIGNED DEFAULT NULL,        -- FK to sys_users (User who performed the action, NULL for System/Job)
   `is_system_generated` TINYINT(1) DEFAULT 0,         -- 1 = Auto-generated by System (e.g. daily job), 0 = Manual Action
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `deleted_at` TIMESTAMP NULL DEFAULT NULL,
@@ -693,14 +693,14 @@ CREATE TABLE IF NOT EXISTS `std_student_pay_log` (
 -- =======================================================================
 
 CREATE TABLE IF NOT EXISTS `tpt_vehicle_fuel_log` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `vehicle_id` BIGINT UNSIGNED NOT NULL,
-    `driver_id` BIGINT UNSIGNED DEFAULT NULL,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `vehicle_id` INT UNSIGNED NOT NULL,
+    `driver_id` INT UNSIGNED DEFAULT NULL,
     `date` DATE NOT NULL,
     `quantity` DECIMAL(10,3) NOT NULL,
     `cost` DECIMAL(12,2) NOT NULL,
-    `fuel_type` BIGINT UNSIGNED NOT NULL,   -- FK to 'sys_dropdown_table'
-    `odometer_reading` BIGINT UNSIGNED DEFAULT NULL,
+    `fuel_type` INT UNSIGNED NOT NULL,   -- FK to 'sys_dropdown_table'
+    `odometer_reading` INT UNSIGNED DEFAULT NULL,
     `remarks` VARCHAR(512) DEFAULT NULL,
     `status` ENUM('Approved','Pending','Rejected') NOT NULL DEFAULT 'Pending',
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
@@ -714,11 +714,11 @@ CREATE TABLE IF NOT EXISTS `tpt_vehicle_fuel_log` (
 -- 2. Variable "tpt_vehicle_fuel_maintenance_approved_by" in 'sch_settings' table will be used to store the Role ID of the persons who can approve the fuel & maintenance logs  (Multiple Role IDs can be separated by comma)
 
 Create Table if not EXISTS `tpt_daily_vehicle_inspection_log` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `vehicle_id` BIGINT UNSIGNED NOT NULL,
-    `driver_id` BIGINT UNSIGNED DEFAULT NULL,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `vehicle_id` INT UNSIGNED NOT NULL,
+    `driver_id` INT UNSIGNED DEFAULT NULL,
     `inspection_date` DATE NOT NULL,
-    `odometer_reading` BIGINT UNSIGNED DEFAULT NULL,
+    `odometer_reading` INT UNSIGNED DEFAULT NULL,
     `fuel_level_percentage` DECIMAL(6,2) DEFAULT NULL, -- Percentage of fuel remaining
     `tire_condition_ok` TINYINT(1) NOT NULL DEFAULT 0,
     `lights_condition_ok` TINYINT(1) NOT NULL DEFAULT 0,
@@ -730,7 +730,7 @@ Create Table if not EXISTS `tpt_daily_vehicle_inspection_log` (
     `issues_description` VARCHAR(512) DEFAULT NULL,
     `remarks` VARCHAR(512) DEFAULT NULL,
     `inspection_status` ENUM('Passed','Failed','Pending') NOT NULL DEFAULT 'Pending',
-    `inspected_by` BIGINT UNSIGNED DEFAULT NULL,  -- FK to sys_users
+    `inspected_by` INT UNSIGNED DEFAULT NULL,  -- FK to sys_users
     `inspected_at` TIMESTAMP NULL DEFAULT NULL,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -741,15 +741,15 @@ Create Table if not EXISTS `tpt_daily_vehicle_inspection_log` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 Create Table if not EXISTS `tpt_vehicle_service_log` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `vehicle_id` BIGINT UNSIGNED NOT NULL, 
-    `driver_id` BIGINT UNSIGNED DEFAULT NULL,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `vehicle_id` INT UNSIGNED NOT NULL, 
+    `driver_id` INT UNSIGNED DEFAULT NULL,
     `date_from` TIMESTAMP NOT NULL,
     `date_to` TIMESTAMP NOT NULL,
     `reason` VARCHAR(512) NOT NULL,
-    `Vehicle_status` BIGINT UNSIGNED DEFAULT NULL,  -- FK to sys_dropdown_table e.g. 'Available','Not Available','Under Maintenance','In Garage','Breakdown','Repaired','Not in Service','Other'
+    `Vehicle_status` INT UNSIGNED DEFAULT NULL,  -- FK to sys_dropdown_table e.g. 'Available','Not Available','Under Maintenance','In Garage','Breakdown','Repaired','Not in Service','Other'
     `status` ENUM('Approved','Pending','Rejected') NOT NULL DEFAULT 'Pending',  -- Approval Status for Maintenance
-    `approved_by` BIGINT UNSIGNED DEFAULT NULL,  -- FK to sys_users
+    `approved_by` INT UNSIGNED DEFAULT NULL,  -- FK to sys_users
     `approved_at` TIMESTAMP NULL DEFAULT NULL,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -760,9 +760,9 @@ Create Table if not EXISTS `tpt_vehicle_service_log` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `tpt_vehicle_maintenance` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `vehicle_service_log_id` BIGINT UNSIGNED NOT NULL,
-    `driver_id` BIGINT UNSIGNED DEFAULT NULL,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `vehicle_service_log_id` INT UNSIGNED NOT NULL,
+    `driver_id` INT UNSIGNED DEFAULT NULL,
     `date` DATE NOT NULL,
     `maintenance_type` VARCHAR(120) NOT NULL,   -- e.g. 'Oil Change', 'Brake Inspection', 'Tire Rotation', 'Routine Service', 'Major Service', 'Other'
     `cost` DECIMAL(12,2) NOT NULL,
@@ -773,7 +773,7 @@ CREATE TABLE IF NOT EXISTS `tpt_vehicle_maintenance` (
     `next_due_date` DATE DEFAULT NULL,
     `remarks` VARCHAR(512) DEFAULT NULL,
     `status` ENUM('Approved','Pending','Rejected') NOT NULL DEFAULT 'Pending',
-    `approved_by` BIGINT UNSIGNED DEFAULT NULL,  -- FK to sys_users
+    `approved_by` INT UNSIGNED DEFAULT NULL,  -- FK to sys_users
     `approved_at` TIMESTAMP NULL DEFAULT NULL,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -788,20 +788,20 @@ CREATE TABLE IF NOT EXISTS `tpt_vehicle_maintenance` (
 -- =======================================================================
 
 CREATE TABLE IF NOT EXISTS `tpt_trip_incidents` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `trip_id` BIGINT UNSIGNED NOT NULL,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `trip_id` INT UNSIGNED NOT NULL,
     `incident_time` TIMESTAMP NOT NULL,
-    `incident_type` BIGINT UNSIGNED NOT NULL,  -- FK to sys_dropdown_table e.g. 'Accident', 'Breakdown', 'Fire', 'Theft', 'Tire Flat', 'Other'
+    `incident_type` INT UNSIGNED NOT NULL,  -- FK to sys_dropdown_table e.g. 'Accident', 'Breakdown', 'Fire', 'Theft', 'Tire Flat', 'Other'
     `severity` ENUM('LOW','MEDIUM','HIGH') DEFAULT 'MEDIUM',
     `latitude` DECIMAL(10,7) DEFAULT NULL,
     `longitude` DECIMAL(10,7) DEFAULT NULL,
     `description` VARCHAR(512) DEFAULT NULL,
-    `status` BIGINT UNSIGNED DEFAULT NULL,  -- FK to sys_dropdown_table e.g. 'Resolved', 'Pending', 'Investigating', 'Raised'
-    `raised_by` BIGINT UNSIGNED DEFAULT NULL,  -- FK to sys_users
-    `raised_to` BIGINT UNSIGNED DEFAULT NULL,  -- FK to sys_users
+    `status` INT UNSIGNED DEFAULT NULL,  -- FK to sys_dropdown_table e.g. 'Resolved', 'Pending', 'Investigating', 'Raised'
+    `raised_by` INT UNSIGNED DEFAULT NULL,  -- FK to sys_users
+    `raised_to` INT UNSIGNED DEFAULT NULL,  -- FK to sys_users
     `raised_at` TIMESTAMP NULL DEFAULT NULL,
     `resolved_at` TIMESTAMP NULL DEFAULT NULL,
-    `resolved_by` BIGINT UNSIGNED DEFAULT NULL,  -- FK to sys_users
+    `resolved_by` INT UNSIGNED DEFAULT NULL,  -- FK to sys_users
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at` TIMESTAMP NULL DEFAULT NULL,
@@ -835,13 +835,13 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- Add a Key Value paid in Table 'sch_settings' with Variable named 'Allow_different_pickup_and_drop_point' to indicate if school allow different pickup & drop fare.
 -- ---------------------------------------------------------------------------------------------------------------------------
 -- Change Filed Type - Table (tpt_trip) - Change column 'trip_type' ENUM('Morning','Afternoon','Evening','Custom') DEFAULT 'Morning') to FK to tpt_shift
--- ALTER TABLE `tpt_trip` MODIFY COLUMN `trip_type` BIGINT UNSIGNED DEFAULT NULL;
+-- ALTER TABLE `tpt_trip` MODIFY COLUMN `trip_type` INT UNSIGNED DEFAULT NULL;
 -- Add foreign key constraint
 -- ALTER TABLE `tpt_trip` ADD CONSTRAINT `fk_trip_tripType` FOREIGN KEY (`trip_type`) REFERENCES `tpt_shift`(`id`) ON DELETE SET NULL;
 -- ALTER TABLE `tpt_trip` MODIFY COLUMN `status` VARCHAR(20) NOT NULL DEFAULT 'Scheduled';
 -- ALTER TABLE `tpt_trip` ADD COLUMN `remarks` VARCHAR(512) DEFAULT NULL,
 -- ALTER TABLE `tpt_trip` MODIFY COLUMN `pickup_route_id` - Make it 'pickup_drop' ENUM('Pickup','Drop') NOT NULL DEFAULT 'Pickup',
--- Alter Table 'tpt_trip' Add Column 'route_scheduler_id' BIGINT UNSIGNED NOT NULL AFTER 'trip_date';
+-- Alter Table 'tpt_trip' Add Column 'route_scheduler_id' INT UNSIGNED NOT NULL AFTER 'trip_date';
 -- Add foreign key constraint
 -- ALTER TABLE `tpt_trip` ADD CONSTRAINT `fk_trip_route` FOREIGN KEY (`route_scheduler_id`) REFERENCES `tpt_route_scheduler_jnt`(`id`) ON DELETE RESTRICT;
 -- Reason: To link trip to route schedule for getting shift, route, vehicle, driver, helper & pickup/drop info.

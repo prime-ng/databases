@@ -8,8 +8,8 @@
 -- IMPORTANT: For handling subjects taught across multiple classes/sections
 -- This is not require as we have already cover this while creating Activities & Sub-Activities
 CREATE TABLE IF NOT EXISTS `tt_cross_class_coordination` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `master_activity_id` BIGINT UNSIGNED NOT NULL,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `master_activity_id` INT UNSIGNED NOT NULL,
     `linked_activity_ids` JSON NOT NULL, -- Array of activity IDs that should be scheduled together
     `coordination_type` ENUM('PARALLEL','ROTATIONAL','COMBINED','STAGGERED') NOT NULL,
     `requires_same_teacher` BOOLEAN DEFAULT TRUE,
@@ -40,7 +40,7 @@ COMMENT='Coordinates subjects taught across multiple classes (hobby, sports, etc
 -- ESSENTIAL: For handling asynchronous timetable generation
 -- This has been added into Timetable_ddl_v7.1
 CREATE TABLE IF NOT EXISTS `tt_generation_strategy` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `strategy_code` VARCHAR(50) NOT NULL,
     `strategy_name` VARCHAR(100) NOT NULL,
     `description` TEXT,
@@ -65,10 +65,10 @@ COMMENT='Timetable generation algorithms and parameters';
 
 -- This is not reuired, I have added 
 CREATE TABLE IF NOT EXISTS `tt_generation_queue` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `uuid` CHAR(36) NOT NULL DEFAULT (UUID()),
-    `timetable_id` BIGINT UNSIGNED NOT NULL,
-    `strategy_id` BIGINT UNSIGNED,
+    `timetable_id` INT UNSIGNED NOT NULL,
+    `strategy_id` INT UNSIGNED,
     `priority` TINYINT UNSIGNED DEFAULT 50,
     `status` ENUM('PENDING','PROCESSING','COMPLETED','FAILED','CANCELLED') DEFAULT 'PENDING',
     `queued_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -79,7 +79,7 @@ CREATE TABLE IF NOT EXISTS `tt_generation_queue` (
     `error_message` TEXT,
     `result_json` JSON,
     `retry_count` TINYINT UNSIGNED DEFAULT 0,
-    `created_by` BIGINT UNSIGNED,
+    `created_by` INT UNSIGNED,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX `idx_generation_queue_status` (`status`),
@@ -103,8 +103,8 @@ COMMENT='Queue for asynchronous timetable generation jobs';
 -- ---------------------------------------------------------------------
 -- IMPORTANT: For tracking and resolving scheduling conflicts
 CREATE TABLE IF NOT EXISTS `tt_conflict_detection` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `timetable_id` BIGINT UNSIGNED NOT NULL,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `timetable_id` INT UNSIGNED NOT NULL,
     `detection_type` ENUM('REAL_TIME','BATCH','VALIDATION','GENERATION') NOT NULL,
     `detected_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `conflict_count` INT UNSIGNED DEFAULT 0,
@@ -112,9 +112,9 @@ CREATE TABLE IF NOT EXISTS `tt_conflict_detection` (
     `soft_conflicts` INT UNSIGNED DEFAULT 0,
     `conflicts_json` JSON,
     `resolution_suggestions_json` JSON,
-    `detected_by` BIGINT UNSIGNED,
+    `detected_by` INT UNSIGNED,
     `resolved_at` TIMESTAMP NULL,
-    `resolved_by` BIGINT UNSIGNED,
+    `resolved_by` INT UNSIGNED,
     `is_active` BOOLEAN DEFAULT TRUE,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -134,18 +134,18 @@ COMMENT='Log of conflict detection events and resolutions';
 -- ---------------------------------------------------------------------
 -- IMPORTANT: For lab equipment and special resource management
 CREATE TABLE IF NOT EXISTS `tt_resource_booking` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `resource_type` ENUM('ROOM','LAB','EQUIPMENT','SPORTS','SPECIAL') NOT NULL,
-    `resource_id` BIGINT UNSIGNED NOT NULL,
+    `resource_id` INT UNSIGNED NOT NULL,
     `booking_date` DATE NOT NULL,
     `day_of_week` TINYINT UNSIGNED,
     `period_ord` TINYINT UNSIGNED,
     `start_time` TIME,
     `end_time` TIME,
     `booked_for_type` ENUM('ACTIVITY','EXAM','EVENT','MAINTENANCE') NOT NULL,
-    `booked_for_id` BIGINT UNSIGNED NOT NULL,
+    `booked_for_id` INT UNSIGNED NOT NULL,
     `purpose` VARCHAR(500),
-    `supervisor_id` BIGINT UNSIGNED,
+    `supervisor_id` INT UNSIGNED,
     `status` ENUM('BOOKED','IN_USE','COMPLETED','CANCELLED') DEFAULT 'BOOKED',
     `is_active` BOOLEAN DEFAULT TRUE,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -191,7 +191,7 @@ ADD INDEX `idx_activity_difficulty` (`difficulty_score`, `constraint_count`);
 -- ---------------------------------------------------------------------
 -- ADD THESE COLUMNS to `tt_timetable`:
 ALTER TABLE `tt_timetable`
-ADD COLUMN `generation_strategy_id` BIGINT UNSIGNED AFTER `generation_method`,
+ADD COLUMN `generation_strategy_id` INT UNSIGNED AFTER `generation_method`,
 ADD COLUMN `optimization_cycles` INT UNSIGNED DEFAULT 0 AFTER `soft_score`,
 ADD COLUMN `last_optimized_at` TIMESTAMP NULL AFTER `published_at`,
 ADD COLUMN `quality_score` DECIMAL(5,2) DEFAULT NULL COMMENT 'Overall quality score (0-100) based on constraint satisfaction',

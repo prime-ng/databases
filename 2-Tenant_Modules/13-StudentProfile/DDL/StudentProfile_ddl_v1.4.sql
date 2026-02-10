@@ -33,9 +33,9 @@
 
   -- Main Student Entity, linked to System User for Login/Auth
   CREATE TABLE IF NOT EXISTS `std_students` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     -- Student Info
-    `user_id` BIGINT UNSIGNED NOT NULL,              -- Link to sys_users for login credentials
+    `user_id` INT UNSIGNED NOT NULL,              -- Link to sys_users for login credentials
     `admission_no` VARCHAR(50) NOT NULL,             -- Unique School Admission Number
     `admission_date` DATE NOT NULL,                  -- Date of admission
     -- ID Cards
@@ -54,9 +54,9 @@
     `gender` ENUM('Male','Female','Transgender','Prefer Not to Say') NOT NULL DEFAULT 'Male',
     `dob` DATE NOT NULL,
     `photo_file_name` VARCHAR(100) DEFAULT NULL,     -- Fk to sys_media (file name to show in UI)
-    `media_id` BIGINT UNSIGNED DEFAULT NULL,         -- Optional if using sys_media table
+    `media_id` INT UNSIGNED DEFAULT NULL,         -- Optional if using sys_media table
     -- Status
-    `current_status_id` BIGINT UNSIGNED NOT NULL,    -- FK to sys_dropdown_table (Active, Left, Suspended, Alumni, Withdrawn)
+    `current_status_id` INT UNSIGNED NOT NULL,    -- FK to sys_dropdown_table (Active, Left, Suspended, Alumni, Withdrawn)
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
     -- Meta
     `note` VARCHAR(255) DEFAULT NULL,
@@ -75,16 +75,16 @@
 
   -- Extended Personal Profile
   CREATE TABLE IF NOT EXISTS `std_student_profiles` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     -- Student Info
-    `student_id` BIGINT UNSIGNED NOT NULL,
+    `student_id` INT UNSIGNED NOT NULL,
     `mobile` VARCHAR(20) DEFAULT NULL,               -- Student/Parent mobile (This will be saved as mobile in sys_users table)
     `email` VARCHAR(150) DEFAULT NULL,               -- Student/Parent email (This will be saved as email in sys_users table)
     -- Social / Category
-    `religion` BIGINT UNSIGNED DEFAULT NULL,         -- FK to sys_dropdown_table
-    `caste_category` BIGINT UNSIGNED DEFAULT NULL,   -- FK to sys_dropdown_table
-    `nationality` BIGINT UNSIGNED DEFAULT NULL,      -- FK to sys_dropdown_table
-    `mother_tongue` BIGINT UNSIGNED DEFAULT NULL,    -- FK to sys_dropdown_table
+    `religion` INT UNSIGNED DEFAULT NULL,         -- FK to sys_dropdown_table
+    `caste_category` INT UNSIGNED DEFAULT NULL,   -- FK to sys_dropdown_table
+    `nationality` INT UNSIGNED DEFAULT NULL,      -- FK to sys_dropdown_table
+    `mother_tongue` INT UNSIGNED DEFAULT NULL,    -- FK to sys_dropdown_table
     -- Financial / Banking
     `bank_account_no` VARCHAR(100) DEFAULT NULL,
     `bank_name` VARCHAR(100) DEFAULT NULL,
@@ -116,11 +116,11 @@
 
   -- Student Addresses (1:N)
   CREATE TABLE IF NOT EXISTS `std_student_addresses` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `student_id` BIGINT UNSIGNED NOT NULL,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `student_id` INT UNSIGNED NOT NULL,
     `address_type` ENUM('Permanent','Correspondence','Guardian','Local') NOT NULL DEFAULT 'Correspondence',
     `address` VARCHAR(512) NOT NULL,
-    `city_id` BIGINT UNSIGNED NOT NULL,  -- FK to glb_cities
+    `city_id` INT UNSIGNED NOT NULL,  -- FK to glb_cities
     `pincode` VARCHAR(10) NOT NULL,
     `is_primary` TINYINT(1) DEFAULT 0, -- To mark primary communication address
     `is_active` TINYINT(1) DEFAULT 1, -- To mark address as active
@@ -138,10 +138,10 @@
   -- Guardians can be parents to multiple students (Siblings). 
   -- Optional link to sys_users if Parent Portal access is granted.
   CREATE TABLE IF NOT EXISTS `std_guardians` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `user_code` VARCHAR(20) NOT NULL,  -- Unique code for guardian (this will be saved as emp_code in sys_users table) 
     -- User Info
-    `user_id` BIGINT UNSIGNED DEFAULT NOT NULL,        -- Nullable. Set when Parent Portal access is created.
+    `user_id` INT UNSIGNED DEFAULT NOT NULL,        -- Nullable. Set when Parent Portal access is created.
     `first_name` VARCHAR(50) NOT NULL,                 -- First_name+last_name will be saved as name in sys_users table
     `last_name` VARCHAR(50) DEFAULT NULL,              -- First_name+last_name will be saved as name in sys_users table
     -- Personal Info
@@ -153,10 +153,10 @@
     `occupation` VARCHAR(100) DEFAULT NULL,
     `qualification` VARCHAR(100) DEFAULT NULL,
     `annual_income` DECIMAL(15,2) DEFAULT NULL,
-    `preferred_language` bigint unsigned NOT NULL,   -- fk to glb_languages
+    `preferred_language` INT unsigned NOT NULL,   -- fk to glb_languages
     -- Media & Status
     `photo_file_name` VARCHAR(100) DEFAULT NULL,     -- Fk to sys_media (file name to show in UI)
-    `media_id` BIGINT UNSIGNED DEFAULT NULL,         -- Optional if using sys_media table
+    `media_id` INT UNSIGNED DEFAULT NULL,         -- Optional if using sys_media table
     `is_active` TINYINT(1) DEFAULT 1,
     -- Meta
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
@@ -173,9 +173,9 @@
   -- Student-Guardian Junction
   -- M:N Relationship (Student has Father, Mother; Parent has multiple kids)
   CREATE TABLE IF NOT EXISTS `std_student_guardian_jnt` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `student_id` BIGINT UNSIGNED NOT NULL,
-    `guardian_id` BIGINT UNSIGNED NOT NULL,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `student_id` INT UNSIGNED NOT NULL,
+    `guardian_id` INT UNSIGNED NOT NULL,
     -- 
     `relation_type` ENUM('Father','Mother','Guardian') NOT NULL, 
     `relationship` VARCHAR(50) NOT NULL, -- Father, Mother, Uncle, Brother, Sister, Grandfather, Grandmother
@@ -200,18 +200,18 @@
 
   -- Tracks chronological academic history (Class/Section allocation per session)
   CREATE TABLE IF NOT EXISTS `std_student_academic_sessions` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT,
-    `student_id` BIGINT UNSIGNED NOT NULL,
+    `id` INT UNSIGNED AUTO_INCREMENT,
+    `student_id` INT UNSIGNED NOT NULL,
     -- Academic Session
-    `academic_session_id` BIGINT UNSIGNED NOT NULL,   -- FK to glb_academic_sessions (or sch_org_academic_sessions_jnt)
+    `academic_session_id` INT UNSIGNED NOT NULL,   -- FK to glb_academic_sessions (or sch_org_academic_sessions_jnt)
     `class_section_id` INT UNSIGNED NOT NULL,         -- FK to sch_class_section_jnt
     `roll_no` INT UNSIGNED DEFAULT NULL,
-    `subject_group_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to sch_subject_groups (if streams apply)
+    `subject_group_id` INT UNSIGNED DEFAULT NULL,  -- FK to sch_subject_groups (if streams apply)
     -- Other Detail
-    `house` BIGINT UNSIGNED DEFAULT NULL,             -- FK to sys_dropdown_table
+    `house` INT UNSIGNED DEFAULT NULL,             -- FK to sys_dropdown_table
     `is_current` TINYINT(1) DEFAULT 0,                -- Only one active record per student
-    `current_flag` bigint GENERATED ALWAYS AS ((case when (`is_current` = 1) then `student_id` else NULL end)) STORED,
-    `session_status_id` BIGINT UNSIGNED NOT NULL DEFAULT 'ACTIVE',    -- FK to sys_dropdown_table (PROMOTED, ACTIVE, LEFT, SUSPENDED, ALUMNI, WITHDRAWN)
+    `current_flag` INT GENERATED ALWAYS AS ((case when (`is_current` = 1) then `student_id` else NULL end)) STORED,
+    `session_status_id` INT UNSIGNED NOT NULL DEFAULT 'ACTIVE',    -- FK to sys_dropdown_table (PROMOTED, ACTIVE, LEFT, SUSPENDED, ALUMNI, WITHDRAWN)
     `leaving_date` DATE DEFAULT NULL,
     `count_as_attrition` TINYINT(1) NOT NULL,         -- Can we count this record as Attrition
     `reason_quit` int NULL,                           -- FK to `sys_dropdown_table` (Reason for leaving the Session)
@@ -236,8 +236,8 @@
 
   -- Student's Previous Education History (e.g. Previous Schools attended)
   CREATE TABLE IF NOT EXISTS `std_previous_education` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `student_id` BIGINT UNSIGNED NOT NULL,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `student_id` INT UNSIGNED NOT NULL,
     -- School Details
     `school_name` VARCHAR(150) NOT NULL,
     `school_address` VARCHAR(255) DEFAULT NULL,
@@ -259,19 +259,19 @@
 
   -- Student Documents (Uploads for Previous Education, ID Proofs, etc.)
   CREATE TABLE IF NOT EXISTS `std_student_documents` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `student_id` BIGINT UNSIGNED NOT NULL,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `student_id` INT UNSIGNED NOT NULL,
     `document_name` VARCHAR(100) NOT NULL,           -- e.g. 'Transfer Certificate', 'Mark Sheet', 'Aadhar Card'
-    `document_type_id` BIGINT UNSIGNED NOT NULL,     -- FK to sys_dropdown_table (Category of doc)
+    `document_type_id` INT UNSIGNED NOT NULL,     -- FK to sys_dropdown_table (Category of doc)
     `document_number` VARCHAR(100) DEFAULT NULL,     -- e.g. TC No, Serial No
     `issue_date` DATE DEFAULT NULL,
     `expiry_date` DATE DEFAULT NULL,
     `issuing_authority` VARCHAR(150) DEFAULT NULL,
     `is_verified` TINYINT(1) DEFAULT 0,              -- Verified by school admin
-    `verified_by` BIGINT UNSIGNED DEFAULT NULL,      -- FK to sys_users
+    `verified_by` INT UNSIGNED DEFAULT NULL,      -- FK to sys_users
     `verification_date` DATETIME DEFAULT NULL,
     `file_name` VARCHAR(100) DEFAULT NULL,           -- Fk to sys_media (file name to show in UI)
-    `media_id` BIGINT UNSIGNED DEFAULT NULL,         -- Optional if using sys_media table
+    `media_id` INT UNSIGNED DEFAULT NULL,         -- Optional if using sys_media table
     `notes` TEXT DEFAULT NULL,
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -287,8 +287,8 @@
 
   -- Medical Profile
   CREATE TABLE IF NOT EXISTS `std_health_profiles` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `student_id` BIGINT UNSIGNED NOT NULL,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `student_id` INT UNSIGNED NOT NULL,
     -- 
     `blood_group` ENUM('A+','A-','B+','B-','AB+','AB-','O+','O-') DEFAULT NULL,
     `height_cm` DECIMAL(5,2) DEFAULT NULL,    -- Last recorded
@@ -309,8 +309,8 @@
 
   -- Vaccination History
   CREATE TABLE IF NOT EXISTS `std_vaccination_records` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `student_id` BIGINT UNSIGNED NOT NULL,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `student_id` INT UNSIGNED NOT NULL,
     `vaccine_name` VARCHAR(100) NOT NULL,
     `date_administered` DATE DEFAULT NULL,
     `next_due_date` DATE DEFAULT NULL,
@@ -321,15 +321,15 @@
 
   -- Medical Incidents (School Clinic Log)
   CREATE TABLE IF NOT EXISTS `std_medical_incidents` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `student_id` BIGINT UNSIGNED NOT NULL,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `student_id` INT UNSIGNED NOT NULL,
     `incident_date` DATETIME NOT NULL,
-    `incident_type_id` BIGINT UNSIGNED NOT NULL, -- FK to sys_dropdown_table (e.g. Injury, Sickness, Fainting)
+    `incident_type_id` INT UNSIGNED NOT NULL, -- FK to sys_dropdown_table (e.g. Injury, Sickness, Fainting)
     `location` VARCHAR(100) DEFAULT NULL,     -- Playground, Classroom
     `description` TEXT NOT NULL,
     `first_aid_given` TEXT DEFAULT NULL,
     `action_taken` VARCHAR(255) DEFAULT NULL, -- Sent home, Rested in sick bay, Taken to hospital
-    `reported_by` BIGINT UNSIGNED DEFAULT NULL, --  fk to sys_users (Teacher/Staff)
+    `reported_by` INT UNSIGNED DEFAULT NULL, --  fk to sys_users (Teacher/Staff)
     `parent_notified` TINYINT(1) DEFAULT 0,
     `closure_date` DATE DEFAULT NULL,
     `follow_up_required` TINYINT(1) DEFAULT 0,
@@ -347,15 +347,15 @@
   -- Variable in sys_setting (Key "Period_wise_Student_Attendance", Value-TRUE/FALSE)
   -- Daily Attendance Log
   CREATE TABLE IF NOT EXISTS `std_student_attendance` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `student_id` BIGINT UNSIGNED NOT NULL,
-    `academic_session_id` BIGINT UNSIGNED NOT NULL,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `student_id` INT UNSIGNED NOT NULL,
+    `academic_session_id` INT UNSIGNED NOT NULL,
     `class_section_id` INT UNSIGNED NOT NULL,
     `attendance_date` DATE NOT NULL, -- Date of attendance
     `attendance_period` TINYINT UNSIGNED NOT NULL DEFAULT 0,
     `status` ENUM('Present','Absent','Late','Half Day','Short Leave','Leave') NOT NULL,
     `remarks` VARCHAR(255) DEFAULT NULL,
-    `marked_by` BIGINT UNSIGNED DEFAULT NULL,        -- User ID who marked attendance
+    `marked_by` INT UNSIGNED DEFAULT NULL,        -- User ID who marked attendance
     `marked_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -369,15 +369,15 @@
 
   -- Attendance Correction Requests
   CREATE TABLE IF NOT EXISTS `std_attendance_corrections` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `attendance_id` BIGINT UNSIGNED NOT NULL,        -- FK to std_student_attendance
-    `requested_by` BIGINT UNSIGNED NOT NULL,         -- Parent or Student User ID
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `attendance_id` INT UNSIGNED NOT NULL,        -- FK to std_student_attendance
+    `requested_by` INT UNSIGNED NOT NULL,         -- Parent or Student User ID
     `requested_status` ENUM('Present','Absent','Late','Half Day','Short Leave','Leave') NOT NULL,
     `requested_period` TINYINT UNSIGNED NOT NULL DEFAULT 0,
     `reason` TEXT NOT NULL,
     `status` ENUM('Pending','Approved','Rejected') NOT NULL DEFAULT 'Pending',
     `admin_remarks` VARCHAR(255) DEFAULT NULL,       -- Admin/Teacher Remark on approval/rejection
-    `action_by` BIGINT UNSIGNED DEFAULT NULL,        -- Admin/Teacher who approved/rejected
+    `action_by` INT UNSIGNED DEFAULT NULL,        -- Admin/Teacher who approved/rejected
     `action_at` TIMESTAMP NULL DEFAULT NULL,         -- When approved/rejected
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

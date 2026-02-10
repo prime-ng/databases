@@ -10,7 +10,7 @@ Relationship: referenced by most tt_* tables
 Growth: low cardinality (one row per tenant)
 */
 -- CREATE TABLE IF NOT EXISTS tt_school (
---   org_id BIGINT UNSIGNED PRIMARY KEY,
+--   org_id INT UNSIGNED PRIMARY KEY,
 --   name VARCHAR(255) NOT NULL
 -- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -33,8 +33,8 @@ CREATE TABLE IF NOT EXISTS tt_school_timing_profile (
 
 -- TIMING & CALENDAR
 CREATE TABLE IF NOT EXISTS tt_days (
-  day_id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
-  org_id BIGINT UNSIGNED NOT NULL,
+  day_id INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  org_id INT UNSIGNED NOT NULL,
   label VARCHAR(30) NOT NULL,
   ordinal INT UNSIGNED NOT NULL,
   is_active TINYINT(1) NOT NULL DEFAULT 1,
@@ -48,8 +48,8 @@ CREATE TABLE IF NOT EXISTS tt_days (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS tt_periods (
-  period_id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
-  org_id BIGINT UNSIGNED NOT NULL,
+  period_id INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  org_id INT UNSIGNED NOT NULL,
   label VARCHAR(50) NOT NULL,
   start_time TIME NOT NULL,
   end_time TIME NOT NULL,
@@ -64,8 +64,8 @@ CREATE TABLE IF NOT EXISTS tt_periods (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS tt_timing_profile (
-  timing_profile_id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
-  org_id BIGINT UNSIGNED NOT NULL,
+  timing_profile_id INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  org_id INT UNSIGNED NOT NULL,
   name VARCHAR(100) NOT NULL,
   days_json JSON NOT NULL, -- {"day_ordinals":[1,2,3..],"period_map":[{"segment_ordinal":1,"period_id":11},...]}
   is_active TINYINT(1) NOT NULL DEFAULT 1,
@@ -75,11 +75,11 @@ CREATE TABLE IF NOT EXISTS tt_timing_profile (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS tt_room_unavailable (
-  unavail_id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
-  org_id BIGINT UNSIGNED NOT NULL,
-  room_id BIGINT UNSIGNED NOT NULL,
-  day_id BIGINT UNSIGNED NULL,
-  period_id BIGINT UNSIGNED NULL,
+  unavail_id INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  org_id INT UNSIGNED NOT NULL,
+  room_id INT UNSIGNED NOT NULL,
+  day_id INT UNSIGNED NULL,
+  period_id INT UNSIGNED NULL,
   date_from DATE NULL,
   date_to DATE NULL,
   reason VARCHAR(255) NULL,
@@ -96,8 +96,8 @@ CREATE TABLE IF NOT EXISTS tt_room_unavailable (
 
 -- SUBJECTS / FORMATS / TAGS (use existing sch_subjects where possible)
 CREATE TABLE IF NOT EXISTS tt_study_format (
-  format_id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
-  org_id BIGINT UNSIGNED NOT NULL,
+  format_id INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  org_id INT UNSIGNED NOT NULL,
   code VARCHAR(50) NOT NULL,
   name VARCHAR(100) NOT NULL,
   description TEXT NULL,
@@ -108,8 +108,8 @@ CREATE TABLE IF NOT EXISTS tt_study_format (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS tt_activity_tag (
-  tag_id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
-  org_id BIGINT UNSIGNED NOT NULL,
+  tag_id INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  org_id INT UNSIGNED NOT NULL,
   name VARCHAR(100) NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_tag_school FOREIGN KEY (org_id) REFERENCES tt_school(org_id) ON DELETE CASCADE,
@@ -119,19 +119,19 @@ CREATE TABLE IF NOT EXISTS tt_activity_tag (
 
 -- CLASS GROUPS & SUBGROUPS
 CREATE TABLE IF NOT EXISTS tt_class_group (
-  class_group_id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
-  org_id BIGINT UNSIGNED NOT NULL,
-  class_id BIGINT UNSIGNED NOT NULL,   -- FK to sch_classes.id
-  subject_id BIGINT UNSIGNED NOT NULL, -- FK to sch_subjects.id
-  default_format_id BIGINT UNSIGNED NULL,
+  class_group_id INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  org_id INT UNSIGNED NOT NULL,
+  class_id INT UNSIGNED NOT NULL,   -- FK to sch_classes.id
+  subject_id INT UNSIGNED NOT NULL, -- FK to sch_subjects.id
+  default_format_id INT UNSIGNED NULL,
   notes VARCHAR(255) NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_cg_school FOREIGN KEY (org_id) REFERENCES tt_school(org_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS tt_class_subgroup (
-  class_subgroup_id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
-  class_group_id BIGINT UNSIGNED NOT NULL,
+  class_subgroup_id INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  class_group_id INT UNSIGNED NOT NULL,
   name VARCHAR(100) NOT NULL,
   student_count INT UNSIGNED DEFAULT NULL,
   CONSTRAINT fk_csg_cg FOREIGN KEY (class_group_id) REFERENCES tt_class_group(class_group_id) ON DELETE CASCADE,
@@ -140,10 +140,10 @@ CREATE TABLE IF NOT EXISTS tt_class_subgroup (
 
 -- CLASS GROUP REQUIREMENTS (weekly requirements)
 CREATE TABLE IF NOT EXISTS tt_class_group_requirement (
-  req_id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
-  org_id BIGINT UNSIGNED NOT NULL,
-  class_group_id BIGINT UNSIGNED NOT NULL,
-  format_id BIGINT UNSIGNED NULL,
+  req_id INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  org_id INT UNSIGNED NOT NULL,
+  class_group_id INT UNSIGNED NOT NULL,
+  format_id INT UNSIGNED NULL,
   weekly_periods INT UNSIGNED NOT NULL,
   max_per_day TINYINT UNSIGNED NULL,
   min_gap_periods TINYINT UNSIGNED NULL,
@@ -164,16 +164,16 @@ CREATE TABLE IF NOT EXISTS tt_class_group_requirement (
 
 -- GENERATION RUNS (versioning)
 CREATE TABLE IF NOT EXISTS tt_generation_run (
-  run_id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
-  org_id BIGINT UNSIGNED NOT NULL,
-  session_id BIGINT UNSIGNED NULL, -- fk to academic session in ERP
+  run_id INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  org_id INT UNSIGNED NOT NULL,
+  session_id INT UNSIGNED NULL, -- fk to academic session in ERP
   started_at DATETIME NOT NULL,
   finished_at DATETIME NULL,
   status ENUM('RUNNING','SUCCESS','FAILED','CANCELLED') NOT NULL DEFAULT 'RUNNING',
   algorithm VARCHAR(50) NULL DEFAULT 'heuristic',
   params_json JSON NULL,
   stats_json JSON NULL,
-  created_by BIGINT UNSIGNED NULL,
+  created_by INT UNSIGNED NULL,
   is_active TINYINT(1) NOT NULL DEFAULT 1,
   is_deleted TINYINT(1) NOT NULL DEFAULT 0,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -185,17 +185,17 @@ CREATE TABLE IF NOT EXISTS tt_generation_run (
 
 -- TIMETABLE CELLS (placements)
 CREATE TABLE IF NOT EXISTS tt_timetable_cell (
-  cell_id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
-  org_id BIGINT UNSIGNED NOT NULL,
-  run_id BIGINT UNSIGNED NULL,
+  cell_id INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  org_id INT UNSIGNED NOT NULL,
+  run_id INT UNSIGNED NULL,
   date DATE NOT NULL,
-  timing_profile_id BIGINT UNSIGNED NOT NULL,
+  timing_profile_id INT UNSIGNED NOT NULL,
   segment_ordinal INT UNSIGNED NOT NULL,
   period_ordinal INT UNSIGNED NULL,
-  class_group_id BIGINT UNSIGNED NOT NULL,
-  subject_id BIGINT UNSIGNED NOT NULL,
-  format_id BIGINT UNSIGNED NULL,
-  room_id BIGINT UNSIGNED NULL,
+  class_group_id INT UNSIGNED NOT NULL,
+  subject_id INT UNSIGNED NOT NULL,
+  format_id INT UNSIGNED NULL,
+  room_id INT UNSIGNED NULL,
   locked TINYINT(1) NOT NULL DEFAULT 0,
   source ENUM('AUTO','MANUAL','ADJUST') NOT NULL DEFAULT 'AUTO',
   notes VARCHAR(255) NULL,
@@ -216,8 +216,8 @@ CREATE TABLE IF NOT EXISTS tt_timetable_cell (
 
 -- which subgroups are participating in a cell (supports A+B combined or separate)
 CREATE TABLE IF NOT EXISTS tt_timetable_cell_subgroup (
-  cell_id BIGINT UNSIGNED NOT NULL,
-  class_subgroup_id BIGINT UNSIGNED NOT NULL,
+  cell_id INT UNSIGNED NOT NULL,
+  class_subgroup_id INT UNSIGNED NOT NULL,
   PRIMARY KEY (cell_id, class_subgroup_id),
   CONSTRAINT fk_tcs_cell FOREIGN KEY (cell_id) REFERENCES tt_timetable_cell(cell_id) ON DELETE CASCADE,
   CONSTRAINT fk_tcs_csg FOREIGN KEY (class_subgroup_id) REFERENCES tt_class_subgroup(class_subgroup_id) ON DELETE CASCADE
@@ -226,8 +226,8 @@ CREATE TABLE IF NOT EXISTS tt_timetable_cell_subgroup (
 
 -- teacher participation
 CREATE TABLE IF NOT EXISTS tt_timetable_cell_teacher (
-  cell_id BIGINT UNSIGNED NOT NULL,
-  teacher_id BIGINT UNSIGNED NOT NULL, -- FK to tt_teacher
+  cell_id INT UNSIGNED NOT NULL,
+  teacher_id INT UNSIGNED NOT NULL, -- FK to tt_teacher
   role ENUM('LEAD','CO_TEACH','SUBSTITUTE') NOT NULL DEFAULT 'LEAD',
   PRIMARY KEY (cell_id, teacher_id),
   CONSTRAINT fk_tct_cell FOREIGN KEY (cell_id) REFERENCES tt_timetable_cell(cell_id) ON DELETE CASCADE
@@ -236,11 +236,11 @@ CREATE TABLE IF NOT EXISTS tt_timetable_cell_teacher (
 
 -- substitution log
 CREATE TABLE IF NOT EXISTS tt_substitution_log (
-  sub_id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
-  org_id BIGINT UNSIGNED NOT NULL,
-  cell_id BIGINT UNSIGNED NOT NULL,
-  absent_teacher_id BIGINT UNSIGNED NOT NULL,
-  substitute_teacher_id BIGINT UNSIGNED NOT NULL,
+  sub_id INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  org_id INT UNSIGNED NOT NULL,
+  cell_id INT UNSIGNED NOT NULL,
+  absent_teacher_id INT UNSIGNED NOT NULL,
+  substitute_teacher_id INT UNSIGNED NOT NULL,
   decided_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   reason VARCHAR(255) NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -253,11 +253,11 @@ CREATE TABLE IF NOT EXISTS tt_substitution_log (
 
 -- GENERIC CONSTRAINTS TABLE (flexible)
 CREATE TABLE IF NOT EXISTS tt_constraint (
-  constraint_id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
-  org_id BIGINT UNSIGNED NOT NULL,
+  constraint_id INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  org_id INT UNSIGNED NOT NULL,
   name VARCHAR(200) NOT NULL,
   target_type ENUM('TEACHER','CLASS_GROUP','ROOM','ACTIVITY','GLOBAL') NOT NULL,
-  target_id BIGINT UNSIGNED NULL,
+  target_id INT UNSIGNED NULL,
   is_hard TINYINT(1) NOT NULL DEFAULT 0, -- 1 = hard constraint (100%), 0 = soft
   weight INT UNSIGNED NOT NULL DEFAULT 100, -- 0..100
   rule_json JSON NOT NULL, -- expressive rule body
@@ -269,10 +269,10 @@ CREATE TABLE IF NOT EXISTS tt_constraint (
 
 -- PUBLISH/LOCK metadata
 CREATE TABLE IF NOT EXISTS tt_timetable_publish (
-  publish_id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
-  org_id BIGINT UNSIGNED NOT NULL,
-  run_id BIGINT UNSIGNED NOT NULL,
-  published_by BIGINT UNSIGNED NULL,
+  publish_id INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  org_id INT UNSIGNED NOT NULL,
+  run_id INT UNSIGNED NOT NULL,
+  published_by INT UNSIGNED NULL,
   published_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   scope ENUM('RUN','DAY','CLASS_GROUP','CUSTOM') NOT NULL DEFAULT 'RUN',
   scope_detail JSON NULL,

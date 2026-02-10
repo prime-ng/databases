@@ -12,9 +12,9 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- =======================================================================
 
 CREATE TABLE IF NOT EXISTS `vnd_vendors` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `vendor_name` VARCHAR(100) NOT NULL,
-    `vendor_type_id` BIGINT UNSIGNED NOT NULL,  -- FK to sys_dropdown_table (e.g., 'Transport', 'Canteen', 'Security')
+    `vendor_type_id` INT UNSIGNED NOT NULL,  -- FK to sys_dropdown_table (e.g., 'Transport', 'Canteen', 'Security')
     `contact_person` VARCHAR(100) NOT NULL,
     `contact_number` VARCHAR(30) NOT NULL,
     `email` VARCHAR(100) DEFAULT NULL,
@@ -37,13 +37,13 @@ CREATE TABLE IF NOT EXISTS `vnd_vendors` (
 -- =======================================================================
 
 CREATE TABLE IF NOT EXISTS `vnd_items` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `item_code` VARCHAR(50) DEFAULT NULL,       -- SKU or Internal Item Code (Can be used for barcode printing)
     `item_name` VARCHAR(100) NOT NULL,
     `item_type` ENUM('SERVICE', 'PRODUCT') NOT NULL,
     `item_nature` ENUM('CONSUMABLE', 'ASSET', 'SERVICE', 'NA') NOT NULL DEFAULT 'NA', -- Inventory Hook
-    `category_id` BIGINT UNSIGNED NOT NULL,     -- FK to sys_dropdown_table (e.g., 'Stationery', 'Bus Rental', 'Plumbing')
-    `unit_id` BIGINT UNSIGNED NOT NULL,         -- FK to sys_dropdown_table (e.g., 'Km', 'Day', 'Month', 'Piece', 'Visit')
+    `category_id` INT UNSIGNED NOT NULL,     -- FK to sys_dropdown_table (e.g., 'Stationery', 'Bus Rental', 'Plumbing')
+    `unit_id` INT UNSIGNED NOT NULL,         -- FK to sys_dropdown_table (e.g., 'Km', 'Day', 'Month', 'Piece', 'Visit')
     `hsn_sac_code` VARCHAR(20) DEFAULT NULL,    -- For GST/Tax compliance
     `default_price` DECIMAL(12, 2) DEFAULT 0.00,-- Standard buying price
     `reorder_level` DECIMAL(12, 2) DEFAULT 0.00,-- Low stock alert threshold (Inventory Hook)
@@ -65,8 +65,8 @@ CREATE TABLE IF NOT EXISTS `vnd_items` (
 -- =======================================================================
 
 CREATE TABLE IF NOT EXISTS `vnd_agreements` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `vendor_id` BIGINT UNSIGNED NOT NULL,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `vendor_id` INT UNSIGNED NOT NULL,
     `agreement_ref_no` VARCHAR(50) DEFAULT NULL,  -- Physical contract reference
     `start_date` DATE NOT NULL,
     `end_date` DATE NOT NULL,
@@ -88,9 +88,9 @@ CREATE TABLE IF NOT EXISTS `vnd_agreements` (
 -- =======================================================================
 
 CREATE TABLE IF NOT EXISTS `vnd_agreement_items_jnt` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `agreement_id` BIGINT UNSIGNED NOT NULL,
-    `item_id` BIGINT UNSIGNED NOT NULL,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `agreement_id` INT UNSIGNED NOT NULL,
+    `item_id` INT UNSIGNED NOT NULL,
     -- Billing Logic
     `billing_model` ENUM('FIXED', 'PER_UNIT', 'HYBRID') NOT NULL DEFAULT 'FIXED', 
     -- FIXED: Flat rate per month/cycle.
@@ -104,9 +104,9 @@ CREATE TABLE IF NOT EXISTS `vnd_agreement_items_jnt` (
     `tax3_percent` DECIMAL(5, 2) DEFAULT 0.00,
     `tax4_percent` DECIMAL(5, 2) DEFAULT 0.00,
     -- Context (For hooking to specific assets)
-    `related_entity_type` BIGINT UNSIGNED DEFAULT NULL,  -- FK to sys_dropdown_table ('Vehicle', 'Asset', 'Service', etc.)
+    `related_entity_type` INT UNSIGNED DEFAULT NULL,  -- FK to sys_dropdown_table ('Vehicle', 'Asset', 'Service', etc.)
     `related_entity_table` VARCHAR(60) DEFAULT NULL, -- e.g., vehicle, asset, service, etc.
-    `related_entity_id` BIGINT UNSIGNED DEFAULT NULL, -- e.g., vehicle_id, asset_id, service_id, etc.
+    `related_entity_id` INT UNSIGNED DEFAULT NULL, -- e.g., vehicle_id, asset_id, service_id, etc.
     `description` VARCHAR(255) DEFAULT NULL,
     `is_active` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,
     `is_deleted` TINYINT(1) UNSIGNED NOT NULL DEFAULT 0,
@@ -130,13 +130,13 @@ CREATE TABLE IF NOT EXISTS `vnd_agreement_items_jnt` (
 -- =======================================================================
 -- This table is used to log the usage of services/products by vendors.
 CREATE TABLE IF NOT EXISTS `vnd_usage_logs` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `vendor_id` BIGINT UNSIGNED NOT NULL,
-    `agreement_item_id` BIGINT UNSIGNED NOT NULL, -- Optional, can map to specific agreement line
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `vendor_id` INT UNSIGNED NOT NULL,
+    `agreement_item_id` INT UNSIGNED NOT NULL, -- Optional, can map to specific agreement line
     `usage_date` DATE NOT NULL,
     `qty_used` DECIMAL(10, 2) NOT NULL DEFAULT 0.00,  -- Quantity used e.g. Vehicle distance(Km), hours, etc.
     `remarks` VARCHAR(255) DEFAULT NULL,
-    `logged_by` BIGINT UNSIGNED DEFAULT NULL, -- FK to sys_users (will be NULL for auto log)
+    `logged_by` INT UNSIGNED DEFAULT NULL, -- FK to sys_users (will be NULL for auto log)
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT `fk_vnd_usage_vendor` FOREIGN KEY (`vendor_id`) REFERENCES `vnd_vendors`(`id`) ON DELETE CASCADE,
@@ -151,10 +151,10 @@ CREATE TABLE IF NOT EXISTS `vnd_usage_logs` (
 -- =======================================================================
 
 CREATE TABLE IF NOT EXISTS `vnd_invoices` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `vendor_id` BIGINT UNSIGNED NOT NULL,
-    `agreement_id` BIGINT UNSIGNED DEFAULT NULL, -- Optional, if invoice covers one agreement
-    `agreement_item_id` BIGINT UNSIGNED DEFAULT NULL, -- Optional, if invoice covers one agreement item
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `vendor_id` INT UNSIGNED NOT NULL,
+    `agreement_id` INT UNSIGNED DEFAULT NULL, -- Optional, if invoice covers one agreement
+    `agreement_item_id` INT UNSIGNED DEFAULT NULL, -- Optional, if invoice covers one agreement item
     `item_description` VARCHAR(255) NOT NULL, -- Snapshot of item name
     `invoice_number` VARCHAR(50) NOT NULL,       -- Vendor's Invoice ID
     `invoice_date` DATE NOT NULL,
@@ -177,7 +177,7 @@ CREATE TABLE IF NOT EXISTS `vnd_invoices` (
     `amount_paid` DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
     `balance_due` DECIMAL(12, 2) GENERATED ALWAYS AS (net_payable - amount_paid) STORED,
     `due_date` DATE DEFAULT NULL,
-    `status` BIGINT UNSIGNED NOT NULL, -- FK to sys_dropdown_table (Approval Pending, Approved, Payment Pending, Paid, Overdue)
+    `status` INT UNSIGNED NOT NULL, -- FK to sys_dropdown_table (Approval Pending, Approved, Payment Pending, Paid, Overdue)
     `remarks` VARCHAR(512) DEFAULT NULL,
     `is_active` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,
     `is_deleted` TINYINT(1) UNSIGNED NOT NULL DEFAULT 0,
@@ -198,15 +198,15 @@ CREATE TABLE IF NOT EXISTS `vnd_invoices` (
 -- =======================================================================
 
 CREATE TABLE IF NOT EXISTS `vnd_payments` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `vendor_id` BIGINT UNSIGNED NOT NULL,
-    `invoice_id` BIGINT UNSIGNED NOT NULL,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `vendor_id` INT UNSIGNED NOT NULL,
+    `invoice_id` INT UNSIGNED NOT NULL,
     `payment_date` DATE NOT NULL,
     `amount` DECIMAL(14, 2) NOT NULL,
-    `payment_mode` BIGINT UNSIGNED NOT NULL, -- FK sys_dropdown (Cheque, NEFT, Cash)
+    `payment_mode` INT UNSIGNED NOT NULL, -- FK sys_dropdown (Cheque, NEFT, Cash)
     `reference_no` VARCHAR(100) DEFAULT NULL, -- Trx ID, Cheque No
     `status` ENUM('INITIATED', 'SUCCESS', 'FAILED') DEFAULT 'SUCCESS',
-    `paid_by` BIGINT UNSIGNED DEFAULT NULL, -- FK sys_users
+    `paid_by` INT UNSIGNED DEFAULT NULL, -- FK sys_users
     `remarks` TEXT DEFAULT NULL,
     `is_deleted` TINYINT(1) UNSIGNED NOT NULL DEFAULT 0,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -224,14 +224,14 @@ CREATE TABLE IF NOT EXISTS `vnd_payments` (
 -- =======================================================================
 
 -- CREATE TABLE IF NOT EXISTS `vnd_complaints` (
---     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
---     `vendor_id` BIGINT UNSIGNED NOT NULL,
+--     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+--     `vendor_id` INT UNSIGNED NOT NULL,
 --     `title` VARCHAR(150) NOT NULL,  -- Short title of complaint
 --     `description` TEXT NOT NULL,     -- Detailed description of complaint
 --     `priority` ENUM('LOW', 'MEDIUM', 'HIGH', 'CRITICAL') DEFAULT 'MEDIUM',
 --     `status` ENUM('OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED') DEFAULT 'OPEN',
---     `raised_by` BIGINT UNSIGNED DEFAULT NULL, -- FK sys_users (e.g. Transport Manager)
---     `resolved_by` BIGINT UNSIGNED DEFAULT NULL,
+--     `raised_by` INT UNSIGNED DEFAULT NULL, -- FK sys_users (e.g. Transport Manager)
+--     `resolved_by` INT UNSIGNED DEFAULT NULL,
 --     `resolution_notes` TEXT DEFAULT NULL,
 --     `is_active` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,
 --     `is_deleted` TINYINT(1) UNSIGNED NOT NULL DEFAULT 0,

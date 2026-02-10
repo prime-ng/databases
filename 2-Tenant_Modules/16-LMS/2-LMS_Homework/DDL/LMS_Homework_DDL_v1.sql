@@ -4,7 +4,7 @@
 
 -- we need to create a table for trigger events
 CREATE TABLE IF NOT EXISTS `lms_trigger_event` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `code` VARCHAR(50) NOT NULL UNIQUE,   -- e.g., 'ON_HOMEWORK_SUBMISSION', 'ON_HOMEWORK_OVERDUE', 'ON_QUIZ_COMPLETION'
     `name` VARCHAR(100) NOT NULL,         -- e.g., 'On Homework Submission', 'On Homework Overdue', 'On Quiz Completion'
     `description` TEXT DEFAULT NULL,
@@ -23,7 +23,7 @@ INSERT INTO lms_trigger_event (code, name, description, event_logic, is_active, 
 
 -- This table will be used to define the actions that can be triggered by the rule engine
 CREATE TABLE IF NOT EXISTS `lms_action_type` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `code` VARCHAR(50) NOT NULL UNIQUE,   -- e.g., 'AUTO_ASSIGN_QUIZ', 'AUTO_ASSIGN_REMEDIAL', 'NOTIFY_PARENT'
     `name` VARCHAR(100) NOT NULL,         -- e.g., 'Auto Assign Remedial', 'Notify Parent'
     `description` TEXT DEFAULT NULL,
@@ -42,14 +42,14 @@ INSERT INTO lms_action_type (code, name, description, action_logic, is_active, c
 
 -- This table will be used to define the rules that can be triggered by the rule engine
 CREATE TABLE IF NOT EXISTS `lms_rule_engine_config` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `rule_code` VARCHAR(50) NOT NULL UNIQUE,       -- e.g., 'RETEST_POLICY_A', 'GRADING_STD_10'
     `rule_name` VARCHAR(100) NOT NULL,
     `description` TEXT DEFAULT NULL,
-    `trigger_event_id` BIGINT UNSIGNED NOT NULL,   -- FK to lms_trigger_event.id (ON_HOMEWORK_SUBMISSION, ON_HOMEWORK_OVERDUE, ON_QUIZ_COMPLETION)
-    `applicable_class_group_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to sch_class_groups_jnt.id (Target Audience)
+    `trigger_event_id` INT UNSIGNED NOT NULL,   -- FK to lms_trigger_event.id (ON_HOMEWORK_SUBMISSION, ON_HOMEWORK_OVERDUE, ON_QUIZ_COMPLETION)
+    `applicable_class_group_id` INT UNSIGNED DEFAULT NULL, -- FK to sch_class_groups_jnt.id (Target Audience)
     `logic_config` JSON NOT NULL,                  -- The logic payload { "min_score": 33, "attempts": 2 }
-    `action_type_id` BIGINT UNSIGNED NOT NULL,     -- FK to lms_action_type.id (AUTO_ASSIGN_REMEDIAL, NOTIFY_PARENT)
+    `action_type_id` INT UNSIGNED NOT NULL,     -- FK to lms_action_type.id (AUTO_ASSIGN_REMEDIAL, NOTIFY_PARENT)
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,     -- 1 = Active, 0 = Inactive
     `created_at` TIMESTAMP NULL DEFAULT NULL,
     `updated_at` TIMESTAMP NULL DEFAULT NULL,
@@ -73,32 +73,32 @@ INSERT INTO lms_rule_engine_config (rule_code, rule_name, description, trigger_e
 -- ==============================================================================================================
 
 CREATE TABLE IF NOT EXISTS `lms_homework` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `academic_session_id` BIGINT UNSIGNED NOT NULL,       -- FK to sch_academic_sessions.id
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `academic_session_id` INT UNSIGNED NOT NULL,       -- FK to sch_academic_sessions.id
     `class_id` INT UNSIGNED NOT NULL,                     -- FK to sch_classes.id
     `section_id` INT UNSIGNED DEFAULT NULL,               -- FK to sch_sections.id (Null = All Sections)
-    `subject_id` BIGINT UNSIGNED NOT NULL,                -- FK to sch_subjects.id
+    `subject_id` INT UNSIGNED NOT NULL,                -- FK to sch_subjects.id
     -- Content Alignment
-    `topic_id` BIGINT UNSIGNED DEFAULT NULL,              -- FK to slb_topics.id (Null = All Topics) It can be anything like Topic/Sub-Topic/Mini-Topic/Micro-Topic etc.
+    `topic_id` INT UNSIGNED DEFAULT NULL,              -- FK to slb_topics.id (Null = All Topics) It can be anything like Topic/Sub-Topic/Mini-Topic/Micro-Topic etc.
     `title` VARCHAR(255) NOT NULL,
     `description` LONGTEXT NOT NULL,                      -- Supports HTML/Markdown
-    `submission_type_id` BIGINT UNSIGNED NOT NULL,        -- FK to sys_dropdown_table.id (TEXT, FILE, HYBRID, OFFLINE_CHECK)
+    `submission_type_id` INT UNSIGNED NOT NULL,        -- FK to sys_dropdown_table.id (TEXT, FILE, HYBRID, OFFLINE_CHECK)
     -- Settings
     `is_gradable` TINYINT(1) NOT NULL DEFAULT 1,          -- 1 = Gradable, 0 = Not Gradable
     `max_marks` DECIMAL(5,2) DEFAULT NULL,                -- Maximum Marks
     `passing_marks` DECIMAL(5,2) DEFAULT NULL,            -- Passing Marks
-    `difficulty_level_id` BIGINT UNSIGNED DEFAULT NULL,   -- FK to slb_complexity_level.id (EASY, MEDIUM, HARD)
+    `difficulty_level_id` INT UNSIGNED DEFAULT NULL,   -- FK to slb_complexity_level.id (EASY, MEDIUM, HARD)
     -- Scheduling
     `assign_date` DATETIME NOT NULL,
     `due_date` DATETIME NOT NULL,
     `allow_late_submission` TINYINT(1) DEFAULT 0,         -- 1 = Allow Late Submission, 0 = Not Allow Late Submission
     `auto_publish_score` TINYINT(1) DEFAULT 0,            -- 1 = Auto Publish Score, 0 = Not Auto Publish Score
     -- Auto-Release Logic
-    `release_condition_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to sys_dropdown.id (IMMEDIATE, ON_TOPIC_COMPLETE)    
-    `status_id` BIGINT UNSIGNED NOT NULL,                 -- FK to sys_dropdown.id (DRAFT, PUBLISHED, ARCHIVED)
+    `release_condition_id` INT UNSIGNED DEFAULT NULL,  -- FK to sys_dropdown.id (IMMEDIATE, ON_TOPIC_COMPLETE)    
+    `status_id` INT UNSIGNED NOT NULL,                 -- FK to sys_dropdown.id (DRAFT, PUBLISHED, ARCHIVED)
     `is_active` TINYINT(1) DEFAULT 1,
-    `created_by` BIGINT UNSIGNED NOT NULL,
-    `updated_by` BIGINT UNSIGNED DEFAULT NULL,
+    `created_by` INT UNSIGNED NOT NULL,
+    `updated_by` INT UNSIGNED DEFAULT NULL,
     `created_at` TIMESTAMP NULL DEFAULT NULL,
     `updated_at` TIMESTAMP NULL DEFAULT NULL,
     `deleted_at` TIMESTAMP NULL DEFAULT NULL,    
@@ -130,17 +130,17 @@ INSERT INTO  lms_homework (academic_session_id, class_id, section_id, subject_id
 
 -- 2.1 Homework Submissions
 CREATE TABLE IF NOT EXISTS `lms_homework_submissions` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `homework_id` BIGINT UNSIGNED NOT NULL,
-    `student_id` BIGINT UNSIGNED NOT NULL,                -- FK to sys_users (Student)
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `homework_id` INT UNSIGNED NOT NULL,
+    `student_id` INT UNSIGNED NOT NULL,                -- FK to sys_users (Student)
     `submitted_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
     `submission_text` LONGTEXT DEFAULT NULL,              -- Student Submission Text
-    `attachment_media_id` BIGINT UNSIGNED DEFAULT NULL,   -- FK to sys_media (Handwritten scan)
+    `attachment_media_id` INT UNSIGNED DEFAULT NULL,   -- FK to sys_media (Handwritten scan)
     -- Evaluation
-    `status_id` BIGINT UNSIGNED NOT NULL,                 -- FK to sys_dropdown_table (SUBMITTED, CHECKED, REJECTED)    
+    `status_id` INT UNSIGNED NOT NULL,                 -- FK to sys_dropdown_table (SUBMITTED, CHECKED, REJECTED)    
     `marks_obtained` DECIMAL(5,2) DEFAULT NULL,          -- Obtained Marks
     `teacher_feedback` TEXT DEFAULT NULL,                 -- Teacher Feedback
-    `graded_by` BIGINT UNSIGNED DEFAULT NULL,             -- Graded By
+    `graded_by` INT UNSIGNED DEFAULT NULL,             -- Graded By
     `graded_at` DATETIME DEFAULT NULL,                    -- Graded At
     `is_late` TINYINT(1) DEFAULT 0,                      -- Is Late
     -- Metadata

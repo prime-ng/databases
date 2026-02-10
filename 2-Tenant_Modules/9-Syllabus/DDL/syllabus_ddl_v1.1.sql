@@ -14,7 +14,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- User can Not change slb_topics.analytics_code, But he can change slb_topics.code as per their choice.
 -- This Table will be set by PG_Team and will not be available for change to School.
 CREATE TABLE IF NOT EXISTS `slb_topic_level_types` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `level` TINYINT UNSIGNED NOT NULL,              -- e.g., 0=Topic, 1=Sub-topic, 2=Mini Topic, 3=Sub-Mini Topic, 4=Micro Topic, 5=Sub-Micro Topic, 6=Nano Topic, 7=Sub-Nano Topic, 8=Ultra Topic, 9=Sub-Ultra Topic
   `code` VARCHAR(3) NOT NULL,                    -- e.g., (TOP, SBT, MIN, SMN, MIC, SMC, NAN, SNN, ULT, SUT)
   `name` VARCHAR(150) NOT NULL,                   -- e.g., (TOPIC, SUB-TOPIC, MINI TOPIC, SUB-MINI TOPIC, MICRO TOPIC, SUB-MICRO TOPIC, NANO TOPIC, SUB-NANO TOPIC, ULTRA TOPIC, SUB-ULTRA TOPIC)
@@ -30,12 +30,12 @@ CREATE TABLE IF NOT EXISTS `slb_topic_level_types` (
 
 
 CREATE TABLE IF NOT EXISTS `slb_lessons` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `uuid` BINARY(16) NOT NULL,                       -- Unique identifier for analytics tracking
-  `academic_session_id` BIGINT UNSIGNED NOT NULL, -- FK to sch_org_academic_sessions_jnt
+  `academic_session_id` INT UNSIGNED NOT NULL, -- FK to sch_org_academic_sessions_jnt
   `class_id` INT UNSIGNED NOT NULL,               -- FK to sch_classes
-  `subject_id` BIGINT UNSIGNED NOT NULL,          -- FK to sch_subjects
-  `bok_books_id` BIGINT UNSIGNED NOT NULL,        -- FK to bok_books.id
+  `subject_id` INT UNSIGNED NOT NULL,          -- FK to sch_subjects
+  `bok_books_id` INT UNSIGNED NOT NULL,        -- FK to bok_books.id
   `code` VARCHAR(20) NOT NULL,                    -- e.g., '9TH_SCI_L01' (Auto-generated) It will be combination of class code, subject code and lesson code
   `name` VARCHAR(150) NOT NULL,                   -- e.g., 'Chapter 1: Matter in Our Surroundings'
   `short_name` VARCHAR(50) DEFAULT NULL,          -- e.g., 'Matter Around Us' 
@@ -73,12 +73,12 @@ CREATE TABLE IF NOT EXISTS `slb_lessons` (
 -- level: 0=Topic, 1=Sub-topic, 2=Mini Topic, 3=Sub-Mini Topic, 4=Micro Topic, 5=Sub-Micro Topic, 6=Nano Topic, 7=Ultra Topic,
 -- -------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `slb_topics` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `uuid` BINARY(16) NOT NULL,                       -- Unique analytics identifier e.g. '123e4567-e89b-12d3-a456-426614174000'
-  `parent_id` BIGINT UNSIGNED DEFAULT NULL,       -- FK to self (NULL for root topics)
-  `lesson_id` BIGINT UNSIGNED NOT NULL,           -- FK to slb_lessons
+  `parent_id` INT UNSIGNED DEFAULT NULL,       -- FK to self (NULL for root topics)
+  `lesson_id` INT UNSIGNED NOT NULL,           -- FK to slb_lessons
   `class_id` INT UNSIGNED NOT NULL,               -- Denormalized for fast queries
-  `subject_id` BIGINT UNSIGNED NOT NULL,          -- Denormalized for fast queries
+  `subject_id` INT UNSIGNED NOT NULL,          -- Denormalized for fast queries
   -- Materialized Path columns
   `path` VARCHAR(500) NOT NULL,                   -- e.g., '/1/5/23/' (ancestor path) e.g. "/1/5/23/145/" (ancestor IDs separated by /)
   `path_names` VARCHAR(2000) DEFAULT NULL,        -- e.g., 'Algebra > Linear Equations > Solving Methods'
@@ -95,7 +95,7 @@ CREATE TABLE IF NOT EXISTS `slb_topics` (
   `learning_objectives` JSON DEFAULT NULL,        -- Array of objectives
   `keywords` JSON DEFAULT NULL,                   -- Search keywords array
   `prerequisite_topic_ids` JSON DEFAULT NULL,     -- Dependency tracking
-  `base_topic_id` BIGINT UNSIGNED DEFAULT NULL,   -- Primary prerequisite from previous class
+  `base_topic_id` INT UNSIGNED DEFAULT NULL,   -- Primary prerequisite from previous class
   `is_assessable` TINYINT(1) DEFAULT 1,           -- Whether the topic is assessable
   -- Analytics identifiers (With New Width analytics_code = "'09TH_SCINC_LES01_TOP01_SUB02_MIN01_SMT02_MIC01_SMT02_NAN01_ULT02'")
   `analytics_code` VARCHAR(60) NOT NULL,          -- Unique code for tracking e.g. '9TH_SCI_L01_TOP01_SUB02_MIN01_SMT02_MIC01_SMT02_NAN01_ULT02'
@@ -137,15 +137,15 @@ CREATE TABLE IF NOT EXISTS `slb_competency_types` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `slb_competencies` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `uuid` BINARY(16) NOT NULL,
-  `parent_id` BIGINT UNSIGNED DEFAULT NULL,     -- FK to self (NULL for root competencies)
+  `parent_id` INT UNSIGNED DEFAULT NULL,     -- FK to self (NULL for root competencies)
   `code` VARCHAR(60) NOT NULL,                 -- e.g. 'KNOWLEDGE','SKILL','ATTITUDE'
   `name` VARCHAR(150) NOT NULL,                -- e.g. 'Knowledge of Linear Equations'
   `short_name` VARCHAR(50) DEFAULT NULL,       -- e.g. 'Linear Equations'
   `description` VARCHAR(255) DEFAULT NULL,     -- e.g. 'Description of Knowledge of Linear Equations'
   `class_id` INT UNSIGNED DEFAULT NULL,         -- FK to sch_classes.id
-  `subject_id` BIGINT UNSIGNED DEFAULT NULL,    -- FK to sch_subjects.id
+  `subject_id` INT UNSIGNED DEFAULT NULL,    -- FK to sch_subjects.id
   `competency_type_id` INT UNSIGNED NOT NULL,   -- FK to slb_competency_types.id
   `domain` ENUM('COGNITIVE', 'AFFECTIVE', 'PSYCHOMOTOR') NOT NULL DEFAULT 'COGNITIVE', -- e.g. 'COGNITIVE'
   `nep_framework_ref` VARCHAR(100) DEFAULT NULL,    -- e.g. 'NEP Framework Reference'
@@ -170,9 +170,9 @@ CREATE TABLE IF NOT EXISTS `slb_competencies` (
 
 -- Link topics to competencies
 CREATE TABLE IF NOT EXISTS `slb_topic_competency_jnt` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `topic_id` BIGINT UNSIGNED NOT NULL,
-  `competency_id` BIGINT UNSIGNED NOT NULL, -- FK to slb_competencies.id
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `topic_id` INT UNSIGNED NOT NULL,
+  `competency_id` INT UNSIGNED NOT NULL, -- FK to slb_competencies.id
   `weightage` DECIMAL(5,2) DEFAULT NULL,    -- How much topic contributes to competency
   `is_primary` TINYINT(1) DEFAULT 0, -- True if this is the primary competency for this topic
   `is_active` TINYINT(1) DEFAULT 1,
@@ -261,7 +261,7 @@ CREATE TABLE IF NOT EXISTS `slb_question_types` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `slb_performance_categories` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   -- Identity
   `code` VARCHAR(20) NOT NULL,    -- TOPPER, EXCELLENT, GOOD, AVERAGE, BELOW_AVERAGE, NEED_IMPROVEMENT, POOR etc.
   `name` VARCHAR(100) NOT NULL,
@@ -279,7 +279,7 @@ CREATE TABLE IF NOT EXISTS `slb_performance_categories` (
   `icon_code` VARCHAR(50),              -- e.g. trophy, warning, alert
   -- Scope & governance
   `scope` ENUM('SCHOOL','CLASS') DEFAULT 'SCHOOL',
-  `class_id` BIGINT UNSIGNED DEFAULT NULL,
+  `class_id` INT UNSIGNED DEFAULT NULL,
   -- Control
   `is_system_defined` TINYINT(1) DEFAULT 1, -- system vs school editable
   `auto_retest_required` TINYINT(1) DEFAULT 0, -- Auto Retest Required or Not (if 'True' then System will auto create a Test for the Topic and assign to Student)
@@ -315,7 +315,7 @@ CREATE TABLE IF NOT EXISTS `slb_performance_categories` (
 
 
 CREATE TABLE IF NOT EXISTS `slb_grade_division_master` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   -- Identity
   `code` VARCHAR(20) NOT NULL,        -- A, B, C, 1st, 2nd
   `name` VARCHAR(100) NOT NULL,       -- Grade A, First Division
@@ -327,13 +327,13 @@ CREATE TABLE IF NOT EXISTS `slb_grade_division_master` (
   `max_percentage` DECIMAL(5,2) NOT NULL,
   -- Board & compliance
   `board_code` VARCHAR(50),           -- CBSE, ICSE, STATE
-  `academic_session_id` BIGINT UNSIGNED NULL,
+  `academic_session_id` INT UNSIGNED NULL,
   -- UX
   `display_order` SMALLINT UNSIGNED DEFAULT 1,
   `color_code` VARCHAR(10),
   -- Scope
   `scope` ENUM('SCHOOL','BOARD','CLASS') DEFAULT 'SCHOOL',
-  `class_id` BIGINT UNSIGNED DEFAULT NULL,
+  `class_id` INT UNSIGNED DEFAULT NULL,
   -- Control
   `is_locked` TINYINT(1) DEFAULT 0,   -- locked after result publishing
   `is_active` TINYINT(1) DEFAULT 1,
@@ -385,21 +385,21 @@ CREATE TABLE IF NOT EXISTS `slb_grade_division_master` (
 -- -------------------------------------------------------------------------
 -- This table is used for Lesson Planning (scheduling topics to classes and sections)
 CREATE TABLE IF NOT EXISTS `slb_syllabus_schedule` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `academic_session_id` BIGINT UNSIGNED NOT NULL,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `academic_session_id` INT UNSIGNED NOT NULL,
   `class_id` INT UNSIGNED NOT NULL,           -- FK to sch_classes.id. NULL = applies to all classes
   `section_id` INT UNSIGNED DEFAULT NULL,       -- FK to sch_sections.id. NULL = applies to all sections
-  `subject_id` BIGINT UNSIGNED NOT NULL,       -- FK to sch_subjects.id
-  `topic_id` BIGINT UNSIGNED NOT NULL,         -- FK to slb_topics.id (It can be Topic, Sub-Topic, Mini-Topic, Micro-Topic etc.)
+  `subject_id` INT UNSIGNED NOT NULL,       -- FK to sch_subjects.id
+  `topic_id` INT UNSIGNED NOT NULL,         -- FK to slb_topics.id (It can be Topic, Sub-Topic, Mini-Topic, Micro-Topic etc.)
   `scheduled_start_date` DATE NOT NULL,
   `scheduled_end_date` DATE NOT NULL,
-  `assigned_teacher_id` BIGINT UNSIGNED DEFAULT NULL,   -- FK to sch_teachers.id (who assigned to teach this topic)
-  `taught_by_teacher_id` BIGINT UNSIGNED DEFAULT NULL,   -- FK to sch_teachers.id (who Actually taught this topic)
+  `assigned_teacher_id` INT UNSIGNED DEFAULT NULL,   -- FK to sch_teachers.id (who assigned to teach this topic)
+  `taught_by_teacher_id` INT UNSIGNED DEFAULT NULL,   -- FK to sch_teachers.id (who Actually taught this topic)
   `planned_periods` SMALLINT UNSIGNED DEFAULT NULL,  -- Number of periods planned for this topic
   `priority` ENUM('HIGH','MEDIUM','LOW') DEFAULT 'MEDIUM',
   `notes` VARCHAR(500) DEFAULT NULL,
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-  `created_by` BIGINT UNSIGNED DEFAULT NULL,
+  `created_by` INT UNSIGNED DEFAULT NULL,
   `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -435,20 +435,20 @@ CREATE TABLE IF NOT EXISTS `slb_syllabus_schedule` (
 -- =========================================================================
 
 CREATE TABLE IF NOT EXISTS `hpc_lesson_version_control` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   -- Core linkage
-  `lesson_id` BIGINT UNSIGNED NOT NULL,           -- FK to slb_lessons.id
-  `academic_session_id` BIGINT UNSIGNED NOT NULL, -- Session in which this version applies
+  `lesson_id` INT UNSIGNED NOT NULL,           -- FK to slb_lessons.id
+  `academic_session_id` INT UNSIGNED NOT NULL, -- Session in which this version applies
   -- Authority & source
   `curriculum_authority` ENUM('NCERT','CBSE','ICSE','STATE_BOARD','OTHER') NOT NULL DEFAULT 'NCERT',
   `board_code` VARCHAR(50) DEFAULT NULL,          -- CBSE, ICSE, STATE-UK, etc.
-  `book_id` BIGINT UNSIGNED DEFAULT NULL,         -- FK to book master (if exists)
+  `book_id` INT UNSIGNED DEFAULT NULL,         -- FK to book master (if exists)
   `book_title` VARCHAR(255) DEFAULT NULL,         -- Redundant but audit-friendly
   `book_edition` VARCHAR(100) DEFAULT NULL,       -- e.g. "2024 Edition"
   `publisher` VARCHAR(150) DEFAULT 'NCERT',
   -- Versioning
   `lesson_version` VARCHAR(20) NOT NULL,          -- e.g. v1.0, v2.0
-  `derived_from_lesson_id` BIGINT UNSIGNED DEFAULT NULL, -- Previous version reference
+  `derived_from_lesson_id` INT UNSIGNED DEFAULT NULL, -- Previous version reference
   -- Governance state (SYSTEM CONTROLLED)
   `status` ENUM('IMPORTED','ACTIVE','LOCKED','DEPRECATED','ARCHIVED') NOT NULL DEFAULT 'IMPORTED',
   -- Control flags
@@ -493,14 +493,14 @@ CREATE TABLE IF NOT EXISTS `hpc_lesson_version_control` (
 -- CURRICULUM CHANGE MANAGEMENT
 -- =========================================================
 CREATE TABLE hpc_curriculum_change_request (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   `entity_type` ENUM('SUBJECT','LESSON','TOPIC','COMPETENCY') NOT NULL,
-  `entity_id` BIGINT UNSIGNED NOT NULL,
+  `entity_id` INT UNSIGNED NOT NULL,
   `change_type` ENUM('ADD','UPDATE','DELETE') NOT NULL,
   `change_summary` VARCHAR(500),
   `impact_analysis` JSON,
   `status` ENUM('DRAFT','SUBMITTED','APPROVED','REJECTED') DEFAULT 'DRAFT',
-  `requested_by` BIGINT UNSIGNED,
+  `requested_by` INT UNSIGNED,
   `requested_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `is_active` TINYINT(1) DEFAULT 1,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -510,5 +510,5 @@ CREATE TABLE hpc_curriculum_change_request (
 
 -- -------------------------------------------------------------------------------------------------------------
 --Correction :
--- Table slb_lesson Added 1 New Fields (`bok_books_id` BIGINT UNSIGNED NOT NULL, -- FK to bok_books.id)
+-- Table slb_lesson Added 1 New Fields (`bok_books_id` INT UNSIGNED NOT NULL, -- FK to bok_books.id)
 

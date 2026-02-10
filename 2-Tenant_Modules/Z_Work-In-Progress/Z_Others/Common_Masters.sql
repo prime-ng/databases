@@ -3,7 +3,7 @@
 -- SYSTEM MODULE (sys)
 -- ===========================================================================
   CREATE TABLE IF NOT EXISTS `sys_users` (
-    `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+    `id` INT unsigned NOT NULL AUTO_INCREMENT,
     `emp_code` VARCHAR(20) NOT NULL,        -- Employee Code (Unique code for each user)
     `short_name` varchar(30) NOT NULL,      -- This Field will be used for showing Dropdown of Users i.e. Teachers, Students, Parents
     `name` varchar(100) NOT NULL,           -- Full Name (First Name, Middle Name, Last Name)
@@ -18,7 +18,7 @@
     `last_login_at` datetime DEFAULT NULL,                        -- Last Login Timestamp
     `super_admin_flag` tinyint GENERATED ALWAYS AS ((case when (`is_super_admin` = 1) then 1 else NULL end)) STORED,  -- To ensure only one super admin
     `remember_token` varchar(100) DEFAULT NULL,                   -- For "Remember Me" functionality
-    `prefered_language` bigint unsigned NOT NULL,                 -- fk to glb_languages
+    `prefered_language` INT unsigned NOT NULL,                 -- fk to glb_languages
     `is_active` tinyint(1) NOT NULL DEFAULT '1',
     `is_pg_user` tinyint(1) NOT NULL DEFAULT '0',
     `created_at` timestamp NULL DEFAULT NULL,
@@ -34,7 +34,7 @@
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `sys_settings` (
-    `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+    `id` INT unsigned NOT NULL AUTO_INCREMENT,
     `description` varchar(255) NULL,    -- Here we will describe the use of the variable
     `key` varchar(100) NOT NULL,        -- This will be the Key to connect Value with it
     `value` varchar(255) DEFAULT NULL,          -- Actual stored setting value. Could be string, JSON, or serialized data depending on type
@@ -47,7 +47,7 @@
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `sys_dropdown_needs` (
-    `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+    `id` INT unsigned NOT NULL AUTO_INCREMENT,
     `db_type` ENUM('Prime','Tenant','Global') NOT NULL,  -- Which Database this Dropdown is for? (prime_db,tenant_db,global_db)
     `table_name` varchar(150) NOT NULL,  -- Table Name
     `column_name` varchar(150) NOT NULL,  -- Column Name
@@ -69,7 +69,7 @@
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
     CREATE TABLE IF NOT EXISTS `sys_dropdown_table` (
-    `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+    `id` INT unsigned NOT NULL AUTO_INCREMENT,
     `ordinal` tinyint unsigned NOT NULL,
     `key` varchar(160) NOT NULL,      -- Key will be Combination of Table Name + Column Name (e.g. 'cmp_complaint_actions.action_type)
     `value` varchar(100) NOT NULL,
@@ -84,9 +84,9 @@
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
     CREATE TABLE IF NOT EXISTS `sys_media` (
-    `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+    `id` INT unsigned NOT NULL AUTO_INCREMENT,
     `model_type` varchar(255) NOT NULL,           -- E.g., 'App\Models\User'
-    `model_id` bigint unsigned NOT NULL,          -- E.g., User ID
+    `model_id` INT unsigned NOT NULL,          -- E.g., User ID
     `uuid` char(36) DEFAULT NULL,                 -- Universally Unique Identifier for the media
     `collection_name` varchar(255) NOT NULL,      -- E.g., 'avatars', 'documents'
     `name` varchar(255) NOT NULL,                 -- Original file name without extension
@@ -94,7 +94,7 @@
     `mime_type` varchar(255) DEFAULT NULL,        -- E.g., 'image/jpeg', 'application/pdf'
     `disk` varchar(255) NOT NULL,                 -- Storage disk (e.g., 'local', 's3')
     `conversions_disk` varchar(255) DEFAULT NULL, -- Disk for storing converted files
-    `size` bigint unsigned NOT NULL,              -- File size in bytes  
+    `size` INT unsigned NOT NULL,              -- File size in bytes  
     `manipulations` json NOT NULL,                -- JSON field to store any manipulations applied to the media
     `custom_properties` json NOT NULL,            -- JSON field for any custom properties
     `generated_conversions` json NOT NULL,        -- JSON field to track generated conversions
@@ -114,8 +114,8 @@
 -- ===========================================================================
   -- Junction Table to link Organizations with Academic Sessions
   CREATE TABLE IF NOT EXISTS `sch_org_academic_sessions_jnt` (
-    `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-    `academic_sessions_id` bigint unsigned NOT NULL,  -- Added New
+    `id` INT unsigned NOT NULL AUTO_INCREMENT,
+    `academic_sessions_id` INT unsigned NOT NULL,  -- Added New
     `short_name` varchar(10) NOT NULL,
     `name` varchar(50) NOT NULL,
     `start_date` date NOT NULL,
@@ -134,9 +134,9 @@
 
     -- Junction Table to link Organizations with Boards
   CREATE TABLE IF NOT EXISTS `sch_board_organization_jnt` (
-    `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-    `academic_sessions_id` bigint unsigned NOT NULL,
-    `board_id` bigint unsigned NOT NULL,
+    `id` INT unsigned NOT NULL AUTO_INCREMENT,
+    `academic_sessions_id` INT unsigned NOT NULL,
+    `board_id` INT unsigned NOT NULL,
     `created_at` timestamp NULL DEFAULT NULL,
     `updated_at` timestamp NULL DEFAULT NULL,
     PRIMARY KEY (`id`),
@@ -145,7 +145,7 @@
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `sch_department` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `name` VARCHAR(100) NOT NULL, -- e.g. "Transport", "Academic", "Rash Driving"
     `code` VARCHAR(30) DEFAULT NULL, -- Optional short code e.g. "TPT", "ACD"
     `is_active` TINYINT(1) DEFAULT 1,
@@ -155,7 +155,7 @@
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `sch_designation` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `name` VARCHAR(100) NOT NULL, -- e.g. "Teacher", "Staff", "Student"
     `code` VARCHAR(30) DEFAULT NULL, -- Optional short code e.g. "TCH", "STF", "STD"
     `is_active` TINYINT(1) DEFAULT 1,
@@ -166,8 +166,8 @@
 
   -- This table will facilitate to create Groups of different department, Roles, Designations etc.
   CREATE TABLE IF NOT EXISTS `sch_entity_groups` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `entity_purpose_id` BIGINT UNSIGNED NOT NULL, -- FK to sys_dropdown_table e.g. (escalation_management, notification, event_supervision, exam_supervision)
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `entity_purpose_id` INT UNSIGNED NOT NULL, -- FK to sys_dropdown_table e.g. (escalation_management, notification, event_supervision, exam_supervision)
     `code` VARCHAR(30) DEFAULT NULL, -- Optional short code e.g. "All_Class_Teachers", "Stundets_Play_Cricket", "Students_Participate_Annual_day"
     `name` VARCHAR(100) NOT NULL, -- e.g. "Class Teachers for all the classes", "Students Registered for Cricket", "All Students Participate in Annual Day"
     `description` VARCHAR(512) DEFAULT NULL,
@@ -179,11 +179,11 @@
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `sch_entity_groups_members` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `entity_group_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to sch_entity_groups
-    `entity_type_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to sys_dropdown_table (1=Class, 2=Section, 3=Subject, 4=Designation, 5=Department, 6=Role etc.)
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `entity_group_id` INT UNSIGNED DEFAULT NULL, -- FK to sch_entity_groups
+    `entity_type_id` INT UNSIGNED DEFAULT NULL, -- FK to sys_dropdown_table (1=Class, 2=Section, 3=Subject, 4=Designation, 5=Department, 6=Role etc.)
     `entity_table_name` VARCHAR(60) DEFAULT NULL, -- Entity Table Name e.g. "sch_class", "sch_section", "sch_subject", "sch_designation", "sch_department", "sch_role"
-    `entity_selected_id` BIGINT UNSIGNED DEFAULT NULL, -- Foriegn Key will be managed at Application Level as it will be different for different entities e.g. sch_class.id, sch_section.id, sch_subject.id, sch_designation.id, sch_department.id, sch_role.id etc.
+    `entity_selected_id` INT UNSIGNED DEFAULT NULL, -- Foriegn Key will be managed at Application Level as it will be different for different entities e.g. sch_class.id, sch_section.id, sch_subject.id, sch_designation.id, sch_department.id, sch_role.id etc.
     `entity_name` VARCHAR(100) DEFAULT NULL, -- Entity Name e.g. "Students of Class-1st", "Students of Section-7th_A", "Students of Subject-English", "Students of Designation-Teacher", "Students of Department-Transport", "Role-School Principal"
     `entity_code` VARCHAR(30) DEFAULT NULL, -- Entity Code e.g. "STD_CLS_1", "STD_SEC_7th_A", "STD_SUB_English", "STU_DES_Teacher", "STU_DEP_Transport", "ROL_School_Principal"
     `is_active` TINYINT(1) DEFAULT 1,
@@ -233,8 +233,8 @@
     `class_secton_code` char(5) NOT NULL,           -- Combination of class Code + section Code i.e. '8th_A', '10h_B'  
     `capacity` tinyint unsigned DEFAULT NULL,       -- Targeted / Planned Quantity of stundets in Each Sections of every class.
     `total_student` tinyint unsigned DEFAULT NULL,  -- Actual Number of Student in the Class+Section
-    `class_teacher_id` bigint unsigned NOT NULL,    -- FK to sch_users
-    `assistance_class_teacher_id` bigint unsigned NOT NULL,  -- FK to sch_users
+    `class_teacher_id` INT unsigned NOT NULL,    -- FK to sch_users
+    `assistance_class_teacher_id` INT unsigned NOT NULL,  -- FK to sch_users
     `is_active` tinyint(1) NOT NULL DEFAULT 1,
     `created_at` timestamp NULL DEFAULT NULL,
     `updated_at` timestamp NULL DEFAULT NULL,
@@ -280,7 +280,7 @@
   -- Data Seed for Study_Format - LECTURE, LAB, PRACTICAL, TUTORIAL, SEMINAR, WORKSHOP, GROUP_DISCUSSION, OTHER
 
   CREATE TABLE IF NOT EXISTS `sch_subjects` (
-    `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+    `id` INT unsigned NOT NULL AUTO_INCREMENT,
     `short_name` varchar(20) NOT NULL,  -- e.g. 'SCIENCE','MATH','SST','ENGLISH' and so on
     `name` varchar(50) NOT NULL,
     `code` CHAR(3) NOT NULL,         -- e.g., 'SCI','MTH','SST','ENG' and so on (This will be used for Timetable)
@@ -294,8 +294,8 @@
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
     CREATE TABLE IF NOT EXISTS `sch_subject_study_format_jnt` (
-    `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-    `subject_id` bigint unsigned NOT NULL,            -- FK to 'sch_subjects'
+    `id` INT unsigned NOT NULL AUTO_INCREMENT,
+    `subject_id` INT unsigned NOT NULL,            -- FK to 'sch_subjects'
     `study_format_id` int unsigned NOT NULL,          -- FK to 'sch_study_formats'
     `name` varchar(50) NOT NULL,                      -- e.g., 'Science Lecture','Science Lab','Math Lecture','Math Lab' and so on
     `subj_stdformat_code` CHAR(7) NOT NULL,         -- Will be combination of (Subject.codee+'-'+StudyFormat.code) e.g., 'SCI_LAC','SCI_LAB','SST_LAC','ENG_LAC' (This will be used for Timetable)
@@ -331,7 +331,7 @@
 -- 4-TRANSPORT MODULE (tpt)
 -- ===========================================================================
   CREATE TABLE IF NOT EXISTS `tpt_shift` (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       `code` VARCHAR(20) NOT NULL,
       `name` VARCHAR(100) NOT NULL,
       `effective_from` DATE NOT NULL,
@@ -345,8 +345,8 @@
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
     CREATE TABLE IF NOT EXISTS `tpt_fine_master` (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `std_academic_sessions_id` BIGINT UNSIGNED NOT NULL,
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `std_academic_sessions_id` INT UNSIGNED NOT NULL,
       `fine_from_days` TINYINT DEFAULT 0,
       `fine_to_days` TINYINT DEFAULT 0,
       `fine_type` ENUM('Fixed','Percentage') DEFAULT 'Fixed',
@@ -358,9 +358,9 @@
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
     CREATE TABLE IF NOT EXISTS `tpt_student_fine_detail` (
-      `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      `student_fee_detail_id` BIGINT UNSIGNED NOT NULL,
-      `fine_master_id` BIGINT UNSIGNED NOT NULL,
+      `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      `student_fee_detail_id` INT UNSIGNED NOT NULL,
+      `fine_master_id` INT UNSIGNED NOT NULL,
       `fine_days` TINYINT DEFAULT 0,
       `fine_type` ENUM('Fixed','Percentage') DEFAULT 'Fixed',
       `fine_rate` DECIMAL(5,2) DEFAULT 0.00,
@@ -379,7 +379,7 @@
 -- 8-TIMETABLE MODULE (tt)
 -- ============================================================================================================
     CREATE TABLE IF NOT EXISTS `tt_shift` (
-      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
       `code` VARCHAR(20) NOT NULL,
       `name` VARCHAR(100) NOT NULL,
       `description` VARCHAR(255) DEFAULT NULL,
@@ -396,7 +396,7 @@
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 	    CREATE TABLE IF NOT EXISTS `tt_day_type` (
-      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
       `code` VARCHAR(20) NOT NULL,  -- e.g., 'WD', 'HD', 'SD'
       `name` VARCHAR(100) NOT NULL,
       `description` VARCHAR(255) DEFAULT NULL,
@@ -413,7 +413,7 @@
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
     CREATE TABLE IF NOT EXISTS `tt_period_type` (
-      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
       `code` VARCHAR(30) NOT NULL,  -- 
       `name` VARCHAR(100) NOT NULL,
       `description` VARCHAR(255) DEFAULT NULL,
@@ -434,7 +434,7 @@
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
     CREATE TABLE IF NOT EXISTS `tt_teacher_assignment_role` (
-      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
       `code` VARCHAR(30) NOT NULL,
       `name` VARCHAR(100) NOT NULL,
       `description` VARCHAR(255) DEFAULT NULL,
@@ -453,7 +453,7 @@
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
     CREATE TABLE IF NOT EXISTS `tt_school_days` (
-      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
       `code` VARCHAR(10) NOT NULL,  -- "Monday", "Tuesday", etc.
       `name` VARCHAR(20) NOT NULL,
       `short_name` VARCHAR(5) NOT NULL,
@@ -471,9 +471,9 @@
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
     CREATE TABLE IF NOT EXISTS `tt_working_day` (
-      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
       `date` DATE NOT NULL,
-      `day_type_id` BIGINT UNSIGNED NOT NULL,
+      `day_type_id` INT UNSIGNED NOT NULL,
       `is_school_day` TINYINT(1) NOT NULL DEFAULT 1,
       `remarks` VARCHAR(255) DEFAULT NULL,
       `is_active` TINYINT(1) NOT NULL DEFAULT 1,
@@ -487,11 +487,11 @@
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
     CREATE TABLE IF NOT EXISTS `tt_class_subgroup` (
-      `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
       `code` VARCHAR(50) NOT NULL,
       `name` VARCHAR(150) NOT NULL,
       `description` VARCHAR(255) DEFAULT NULL,
-      `class_group_id` BIGINT UNSIGNED DEFAULT NULL,
+      `class_group_id` INT UNSIGNED DEFAULT NULL,
       `subgroup_type` ENUM('OPTIONAL_SUBJECT','HOBBY','SKILL','LANGUAGE','STREAM','ACTIVITY','SPORTS','OTHER') NOT NULL DEFAULT 'OTHER',
       `student_count` INT UNSIGNED DEFAULT NULL,
       `min_students` INT UNSIGNED DEFAULT NULL,
@@ -518,7 +518,7 @@
 	-- User can Not change slb_topics.analytics_code, But he can change slb_topics.code as per their choice.
 	-- This Table will be set by PG_Team and will not be available for change to School.
 	CREATE TABLE IF NOT EXISTS `slb_topic_level_types` (
-	`id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+	`id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
 	`level` TINYINT UNSIGNED NOT NULL,              -- e.g., 0=Topic, 1=Sub-topic, 2=Mini Topic, 3=Sub-Mini Topic, 4=Micro Topic, 5=Sub-Micro Topic, 6=Nano Topic, 7=Sub-Nano Topic, 8=Ultra Topic, 9=Sub-Ultra Topic
 	`code` VARCHAR(3) NOT NULL,                    -- e.g., (TOP, SBT, MIN, SMN, MIC, SMC, NAN, SNN, ULT, SUT)
 	`name` VARCHAR(150) NOT NULL,                   -- e.g., (TOPIC, SUB-TOPIC, MINI TOPIC, SUB-MINI TOPIC, MICRO TOPIC, SUB-MICRO TOPIC, NANO TOPIC, SUB-NANO TOPIC, ULTRA TOPIC, SUB-ULTRA TOPIC)
@@ -548,15 +548,15 @@
 			) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 	CREATE TABLE IF NOT EXISTS `slb_competencies` (
-			`id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			`id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
 			`uuid` BINARY(16) NOT NULL,
-			`parent_id` BIGINT UNSIGNED DEFAULT NULL,     -- FK to self (NULL for root competencies)
+			`parent_id` INT UNSIGNED DEFAULT NULL,     -- FK to self (NULL for root competencies)
 			`code` VARCHAR(60) NOT NULL,                 -- e.g. 'KNOWLEDGE','SKILL','ATTITUDE'
 			`name` VARCHAR(150) NOT NULL,                -- e.g. 'Knowledge of Linear Equations'
 			`short_name` VARCHAR(50) DEFAULT NULL,       -- e.g. 'Linear Equations'
 			`description` VARCHAR(255) DEFAULT NULL,     -- e.g. 'Description of Knowledge of Linear Equations'
 			`class_id` INT UNSIGNED DEFAULT NULL,         -- FK to sch_classes.id
-			`subject_id` BIGINT UNSIGNED DEFAULT NULL,    -- FK to sch_subjects.id
+			`subject_id` INT UNSIGNED DEFAULT NULL,    -- FK to sch_subjects.id
 			`competency_type_id` INT UNSIGNED NOT NULL,   -- FK to slb_competency_types.id
 			`domain` ENUM('COGNITIVE', 'AFFECTIVE', 'PSYCHOMOTOR') NOT NULL DEFAULT 'COGNITIVE', -- e.g. 'COGNITIVE'
 			`nep_framework_ref` VARCHAR(100) DEFAULT NULL,    -- e.g. 'NEP Framework Reference'
@@ -581,9 +581,9 @@
 
 	-- Link topics to competencies
 	CREATE TABLE IF NOT EXISTS `slb_topic_competency_jnt` (
-			`id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-			`topic_id` BIGINT UNSIGNED NOT NULL,
-			`competency_id` BIGINT UNSIGNED NOT NULL, -- FK to slb_competencies.id
+			`id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+			`topic_id` INT UNSIGNED NOT NULL,
+			`competency_id` INT UNSIGNED NOT NULL, -- FK to slb_competencies.id
 			`weightage` DECIMAL(5,2) DEFAULT NULL,    -- How much topic contributes to competency
 			`is_primary` TINYINT(1) DEFAULT 0, -- True if this is the primary competency for this topic
 			`is_active` TINYINT(1) DEFAULT 1,
@@ -669,7 +669,7 @@
 			) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 	CREATE TABLE IF NOT EXISTS `slb_performance_categories` (
-			`id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+			`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
 			-- Identity
 			`code` VARCHAR(20) NOT NULL,    -- TOPPER, EXCELLENT, GOOD, AVERAGE, BELOW_AVERAGE, NEED_IMPROVEMENT, POOR etc.
 			`name` VARCHAR(100) NOT NULL,
@@ -687,7 +687,7 @@
 			`icon_code` VARCHAR(50),              -- e.g. trophy, warning, alert
 			-- Scope & governance
 			`scope` ENUM('SCHOOL','CLASS') DEFAULT 'SCHOOL',
-			`class_id` BIGINT UNSIGNED DEFAULT NULL,
+			`class_id` INT UNSIGNED DEFAULT NULL,
 			-- Control
 			`is_system_defined` TINYINT(1) DEFAULT 1, -- system vs school editable
 			`auto_retest_required` TINYINT(1) DEFAULT 0, -- Auto Retest Required or Not (if 'True' then System will auto create a Test for the Topic and assign to Student)
@@ -721,7 +721,7 @@
 			-- 2. School may want to use different categorisation for different subjects, Which most of the ERP doesn't cover.
 
 			CREATE TABLE IF NOT EXISTS `slb_grade_division_master` (
-			`id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+			`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
 			-- Identity
 			`code` VARCHAR(20) NOT NULL,        -- (Grade System - '2024-25_CBSE_SCHOOL_A') (DIVISION - '2024-25_CBSE_SCHOOL_1st')
 			`name` VARCHAR(100) NOT NULL,       -- For Grade System (AY 2024-25, CBSE Board, Grade-A for All Classes) For Division (AY 2024-25, CBSE Board, Division-1st for Class 8th)
@@ -733,13 +733,13 @@
 			`max_percentage` DECIMAL(5,2) NOT NULL,
 			-- Board & compliance
 			`board_code` VARCHAR(50),           -- CBSE, ICSE, STATE
-			`academic_session_id` BIGINT UNSIGNED NULL,
+			`academic_session_id` INT UNSIGNED NULL,
 			-- UX
 			`display_order` SMALLINT UNSIGNED DEFAULT 1,
 			`color_code` VARCHAR(10),
 			-- Scope
 			`scope` ENUM('SCHOOL','BOARD','CLASS') DEFAULT 'SCHOOL',
-			`class_id` BIGINT UNSIGNED DEFAULT NULL,
+			`class_id` INT UNSIGNED DEFAULT NULL,
 			-- Control
 			`is_locked` TINYINT(1) DEFAULT 0,   -- locked after result publishing
 			`is_active` TINYINT(1) DEFAULT 1,
@@ -779,7 +779,7 @@
 
 	-- Question Usage Type (Quiz / Quest / Exam)
 	CREATE TABLE `qns_question_usage_type` (
-			`id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+			`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
 			`code` VARCHAR(50) NOT NULL,  -- e.g. 'QUIZ','QUEST','ONLINE_EXAM','OFFLINE_EXAM','UT_TEST'
 			`name` VARCHAR(100) NOT NULL, -- e.g. 'Quiz','Quest','Online Exam','Offline Exam','Unit Test'
 			`description` TEXT DEFAULT NULL,
@@ -797,7 +797,7 @@
 -- ============================================================================================================
 	-- table for "trigger_event" ENUM values
 	CREATE TABLE IF NOT EXISTS `rec_trigger_events` (
-	`id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+	`id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
 	`event_name` VARCHAR(50) NOT NULL,  -- ON_ASSESSMENT_RESULT, ON_TOPIC_COMPLETION, ON_ATTENDANCE_LOW, MANUAL_RUN, SCHEDULED_WEEKLY
 	`description` VARCHAR(255) DEFAULT NULL,
 	`is_active` TINYINT(1) DEFAULT 1,
@@ -810,7 +810,7 @@
 
 	-- table for "recommendation_mode" ENUM values
 	CREATE TABLE IF NOT EXISTS `rec_recommendation_modes` (
-	`id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+	`id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
 	`mode_name` VARCHAR(50) NOT NULL,  -- SPECIFIC_MATERIAL, SPECIFIC_BUNDLE, DYNAMIC_BY_TOPIC, DYNAMIC_BY_COMPETENCY
 	`description` VARCHAR(255) DEFAULT NULL,
 	`is_active` TINYINT(1) DEFAULT 1,
@@ -823,7 +823,7 @@
 
 	-- table for "dynamic_material_type" ENUM values
 	CREATE TABLE IF NOT EXISTS `rec_dynamic_material_types` (
-	`id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+	`id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
 	`type_name` VARCHAR(50) NOT NULL,  -- ANY_BEST_FIT, VIDEO, QUIZ, PDF
 	`description` VARCHAR(255) DEFAULT NULL,
 	`is_active` TINYINT(1) DEFAULT 1,
@@ -836,7 +836,7 @@
 
 	-- table for "dynamic_purpose" ENUM values
 	CREATE TABLE IF NOT EXISTS `rec_dynamic_purposes` (
-	`id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+	`id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
 	`purpose_name` VARCHAR(50) NOT NULL,  -- REMEDIAL, ENRICHMENT, PRACTICE
 	`description` VARCHAR(255) DEFAULT NULL,
 	`is_active` TINYINT(1) DEFAULT 1,
@@ -849,7 +849,7 @@
 
 	-- table for "assessment_type" ENUM values
 	CREATE TABLE IF NOT EXISTS `rec_assessment_types` (
-	`id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+	`id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
 	`type_name` VARCHAR(50) NOT NULL,  -- ALL, QUIZ, QUEST, WEEKLY_TEST, UNIT_TEST-1, TERM_EXAM, HALF_YEARLY_EXAM, FINAL_EXAM
 	`description` VARCHAR(255) DEFAULT NULL,
 	`is_active` TINYINT(1) DEFAULT 1,
@@ -861,15 +861,15 @@
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci; 
 
 	CREATE TABLE IF NOT EXISTS `rec_recommendation_materials` (
-	`id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+	`id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
 	`title` VARCHAR(255) NOT NULL,
 	`description` TEXT DEFAULT NULL,
 	-- Content Classification
-	`material_type` BIGINT UNSIGNED DEFAULT NULL,    -- fk to sys_dropdown_table (e.g. 'TEXT','VIDEO','PDF','AUDIO','QUIZ','ASSIGNMENT','LINK','INTERACTIVE')
-	`purpose` BIGINT UNSIGNED DEFAULT NULL,          -- fk to sys_dropdown_table (e.g. 'REVISION','PRACTICE','REMEDIAL','ADVANCED','ENRICHMENT','CONCEPT_BUILDING') NOT NULL DEFAULT 'PRACTICE',
-	`complexity_level` BIGINT UNSIGNED DEFAULT NULL,  -- fk to slb_complexity_level
+	`material_type` INT UNSIGNED DEFAULT NULL,    -- fk to sys_dropdown_table (e.g. 'TEXT','VIDEO','PDF','AUDIO','QUIZ','ASSIGNMENT','LINK','INTERACTIVE')
+	`purpose` INT UNSIGNED DEFAULT NULL,          -- fk to sys_dropdown_table (e.g. 'REVISION','PRACTICE','REMEDIAL','ADVANCED','ENRICHMENT','CONCEPT_BUILDING') NOT NULL DEFAULT 'PRACTICE',
+	`complexity_level` INT UNSIGNED DEFAULT NULL,  -- fk to slb_complexity_level
 	-- Content Source
-	`content_source` BIGINT UNSIGNED DEFAULT NULL,    -- fk to sys_dropdown_table (e.g. 'INTERNAL_EDITOR','UPLOADED_FILE','EXTERNAL_LINK','LMS_MODULE','QUESTION_BANK')
+	`content_source` INT UNSIGNED DEFAULT NULL,    -- fk to sys_dropdown_table (e.g. 'INTERNAL_EDITOR','UPLOADED_FILE','EXTERNAL_LINK','LMS_MODULE','QUESTION_BANK')
 
 
 -- ============================================================================================================
@@ -877,7 +877,7 @@
 -- ============================================================================================================
 	
 	CREATE TABLE `lms_exam_types` (
-		`id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+		`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
 		`code` VARCHAR(20) NOT NULL,  -- e.g. 'UT-1','UT-2','UT-3','UT-4','HY-EXAM','ANNUAL-EXAM'
 		`name` VARCHAR(100) NOT NULL, -- e.g. 'Unit Test 1','Unit Test 2','Unit Test 3','Unit Test 4','Half Yearly Exam','Annual Exam'
 		`description` TEXT DEFAULT NULL,

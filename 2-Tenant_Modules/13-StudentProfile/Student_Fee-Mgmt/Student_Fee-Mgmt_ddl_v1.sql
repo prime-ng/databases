@@ -11,7 +11,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- This table will store the fee heads for the school.
 -- --------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `std_fee_heads` (
-    `id`               BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    `id`               INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
     `code`             VARCHAR(50) NOT NULL,  -- e.g. TUITION_FEE, ADMISSION_FEE, TRANSPORT_FEE, HOSTEL_FEE, LIBRARY_FEE, LAB_FEE, EXAM_FEE, COMPUTER_FEE, ACTIVITY_FEE, OTHER_FEE
     `name`             VARCHAR(100) NOT NULL,
     `is_recurring`     TINYINT(1) NOT NULL DEFAULT 0,
@@ -45,11 +45,11 @@ CREATE TABLE IF NOT EXISTS `std_fee_heads` (
 -- This table will store the fee structures for the school.
 -- --------------------------------------------------------------
 CREATE TABLE `std_fee_structures` (
-    `id`   BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    `id`   INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
     `academic_year`      VARCHAR(9) NOT NULL,
-    `class_id`           BIGINT UNSIGNED NOT NULL,
-    `category_id`        BIGINT UNSIGNED NULL,  --  FK to std_categories.id Optional: For fee concessions based on category
-    `fee_head_id`        BIGINT UNSIGNED NOT NULL,
+    `class_id`           INT UNSIGNED NOT NULL,
+    `category_id`        INT UNSIGNED NULL,  --  FK to std_categories.id Optional: For fee concessions based on category
+    `fee_head_id`        INT UNSIGNED NOT NULL,
     `total_amount`       DECIMAL(10,2) NOT NULL,
     `payment_cycle`      ENUM('MONTHLY','QUARTERLY','HALF_YEARLY','YEARLY','ONE_TIME') NOT NULL,
     `is_locked`          TINYINT(1) NOT NULL DEFAULT 0,
@@ -79,8 +79,8 @@ CREATE TABLE `std_fee_structures` (
 -- This table will store the fee installments for the school.
 -- --------------------------------------------------------------
 CREATE TABLE `std_fee_installments` (
-    `id`     BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
-    `fee_structure_id`   BIGINT UNSIGNED NOT NULL,
+    `id`     INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    `fee_structure_id`   INT UNSIGNED NOT NULL,
     `installment_name`   VARCHAR(50) NOT NULL,
     `due_date`           DATE NOT NULL,
     `amount`             DECIMAL(10,2) NOT NULL,
@@ -112,7 +112,7 @@ CREATE TABLE `std_fee_installments` (
 -- This table will store the fine policies for the school.
 -- --------------------------------------------------------------
 CREATE TABLE `std_fine_policies` (
-    `id`     BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    `id`     INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
     `policy_name`        VARCHAR(100) NOT NULL,
     `description`        TEXT NULL,
     `removal_after_days` INT NOT NULL DEFAULT 61,
@@ -131,8 +131,8 @@ CREATE TABLE `std_fine_policies` (
 -- This table will store the fine slab rules for the school.
 -- --------------------------------------------------------------
 CREATE TABLE `std_fine_slabs` (
-    `id`       BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
-    `fine_policy_id`     BIGINT UNSIGNED NOT NULL,
+    `id`       INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    `fine_policy_id`     INT UNSIGNED NOT NULL,
     `from_day`           INT NOT NULL,
     `to_day`             INT NOT NULL,
     `fine_mode`          ENUM('PERCENT','FIXED_PER_DAY','MAX_OF_BOTH') NOT NULL,
@@ -156,9 +156,9 @@ CREATE TABLE `std_fine_slabs` (
 -- This table will store the fee mappings for the students.
 -- --------------------------------------------------------------
 CREATE TABLE `std_student_fee_map` (
-    `id` BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
-    `student_id`         BIGINT UNSIGNED NOT NULL,
-    `fee_structure_id`   BIGINT UNSIGNED NOT NULL,
+    `id` INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    `student_id`         INT UNSIGNED NOT NULL,
+    `fee_structure_id`   INT UNSIGNED NOT NULL,
     `concession_type`    ENUM('NONE','PERCENT','FIXED') NOT NULL DEFAULT 'NONE',
     `concession_value`   DECIMAL(10,2) NULL,
     `effective_from`     DATE NOT NULL,
@@ -179,12 +179,12 @@ CREATE TABLE `std_student_fee_map` (
 -- This table will store the fee ledger for the students.
 -- --------------------------------------------------------------
 CREATE TABLE `std_student_fee_ledger` (
-    `id`          BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
-    `student_id`         BIGINT UNSIGNED NOT NULL,
+    `id`          INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    `student_id`         INT UNSIGNED NOT NULL,
     `reference_type`     ENUM('DEMAND','PAYMENT','FINE','ADJUSTMENT','REVERSAL') NOT NULL,
-    `reference_id`       BIGINT UNSIGNED NULL,
-    `fee_head_id`        BIGINT UNSIGNED NULL,
-    `installment_id`     BIGINT UNSIGNED NULL,
+    `reference_id`       INT UNSIGNED NULL,
+    `fee_head_id`        INT UNSIGNED NULL,
+    `installment_id`     INT UNSIGNED NULL,
     `transaction_date`   DATE NOT NULL,
     `debit_amount`       DECIMAL(10,2) NOT NULL DEFAULT 0.00,
     `credit_amount`      DECIMAL(10,2) NOT NULL DEFAULT 0.00,
@@ -206,13 +206,13 @@ CREATE TABLE `std_student_fee_ledger` (
 -- This table will store the fee payments for the students.
 -- --------------------------------------------------------------
 CREATE TABLE `std_fee_payments` (
-    `id`         BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
-    `student_id`         BIGINT UNSIGNED NOT NULL,
+    `id`         INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    `student_id`         INT UNSIGNED NOT NULL,
     `payment_date`       DATE NOT NULL,
     `payment_mode`       ENUM('CASH','CHEQUE','UPI','CARD','NETBANKING','WALLET') NOT NULL,
     `reference_no`       VARCHAR(100) NULL,
     `amount_paid`        DECIMAL(10,2) NOT NULL,
-    `created_by`         BIGINT UNSIGNED NOT NULL,
+    `created_by`         INT UNSIGNED NOT NULL,
     `created_at`         TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX `idx_payment_student` (`student_id`, `payment_date`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -225,8 +225,8 @@ CREATE TABLE `std_fee_payments` (
 -- This table will store the fee receipts for the students.
 -- --------------------------------------------------------------
 CREATE TABLE `std_fee_receipts` (
-    `id`         BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
-    `payment_id`         BIGINT UNSIGNED NOT NULL,
+    `id`         INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    `payment_id`         INT UNSIGNED NOT NULL,
     `receipt_no`         VARCHAR(50) NOT NULL,
     `receipt_date`       DATE NOT NULL,
     `total_amount`       DECIMAL(10,2) NOT NULL,
@@ -245,12 +245,12 @@ CREATE TABLE `std_fee_receipts` (
 -- This table will store the fee status history for the students.
 -- --------------------------------------------------------------
 CREATE TABLE `std_student_fee_status_history` (
-    `id`          BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
-    `student_id`         BIGINT UNSIGNED NOT NULL,
+    `id`          INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    `student_id`         INT UNSIGNED NOT NULL,
     `old_status`         ENUM('ACTIVE','OVERDUE','REMOVED','READMISSION_PENDING') NOT NULL,
     `new_status`         ENUM('ACTIVE','OVERDUE','REMOVED','READMISSION_PENDING') NOT NULL,
     `reason`             VARCHAR(255) NULL,
-    `changed_by`         BIGINT UNSIGNED NULL,
+    `changed_by`         INT UNSIGNED NULL,
     `created_at`         TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX `idx_status_student` (`student_id`, `created_at`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -263,9 +263,9 @@ CREATE TABLE `std_student_fee_status_history` (
 -- This table will store the fee snapshot for the students.
 -- --------------------------------------------------------------
 CREATE TABLE `std_student_fee_snapshot` (
-    `id`                 BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
-    `student_id`         BIGINT UNSIGNED NOT NULL,  -- FK to std_students.id
-    `fee_structure_id`   BIGINT UNSIGNED NOT NULL,  -- FK to std_fee_structures.id
+    `id`                 INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    `student_id`         INT UNSIGNED NOT NULL,  -- FK to std_students.id
+    `fee_structure_id`   INT UNSIGNED NOT NULL,  -- FK to std_fee_structures.id
     `total_fee`          DECIMAL(12,2) NOT NULL,
     `total_paid`         DECIMAL(12,2) NOT NULL,
     `total_fine`         DECIMAL(12,2) NOT NULL,

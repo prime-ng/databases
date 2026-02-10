@@ -16,11 +16,11 @@
 -- -------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `slb_lessons` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `uuid` CHAR(36) NOT NULL,                       -- Unique identifier for analytics tracking
-  `academic_session_id` BIGINT UNSIGNED NOT NULL, -- FK to sch_org_academic_sessions_jnt
+  `academic_session_id` INT UNSIGNED NOT NULL, -- FK to sch_org_academic_sessions_jnt
   `class_id` INT UNSIGNED NOT NULL,               -- FK to sch_classes
-  `subject_id` BIGINT UNSIGNED NOT NULL,          -- FK to sch_subjects
+  `subject_id` INT UNSIGNED NOT NULL,          -- FK to sch_subjects
   `code` VARCHAR(20) NOT NULL,                    -- e.g., '9TH_SCI_L01' (Auto-generated) It will be combination of class code, subject code and lesson code 
   `name` VARCHAR(150) NOT NULL,                   -- e.g., 'Chapter 1: Matter in Our Surroundings'
   `short_name` VARCHAR(50) DEFAULT NULL,          -- e.g., 'Matter Around Us'
@@ -62,12 +62,12 @@ CREATE TABLE IF NOT EXISTS `slb_lessons` (
 --        4=Micro Topic, 5=Sub-Micro Topic, 6+=Nano Topic, 7+=Ultra Topic
 -- -------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `slb_topics` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `uuid` CHAR(36) NOT NULL,                       -- Unique analytics identifier
-  `parent_id` BIGINT UNSIGNED DEFAULT NULL,       -- FK to self (NULL for root topics)
-  `lesson_id` BIGINT UNSIGNED NOT NULL,           -- FK to syl_lessons
+  `parent_id` INT UNSIGNED DEFAULT NULL,       -- FK to self (NULL for root topics)
+  `lesson_id` INT UNSIGNED NOT NULL,           -- FK to syl_lessons
   `class_id` INT UNSIGNED NOT NULL,               -- Denormalized for fast queries
-  `subject_id` BIGINT UNSIGNED NOT NULL,          -- Denormalized for fast queries
+  `subject_id` INT UNSIGNED NOT NULL,          -- Denormalized for fast queries
   -- Materialized Path columns
   `path` VARCHAR(500) NOT NULL,                   -- e.g., '/1/5/23/' (ancestor path)
   `path_names` VARCHAR(2000) DEFAULT NULL,        -- e.g., 'Algebra > Linear Equations > Solving Methods'
@@ -121,15 +121,15 @@ CREATE TABLE IF NOT EXISTS `slb_competency_types` (
 
 
 CREATE TABLE IF NOT EXISTS `slb_competencies` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `uuid` CHAR(36) NOT NULL,
-  `parent_id` BIGINT UNSIGNED DEFAULT NULL,
+  `parent_id` INT UNSIGNED DEFAULT NULL,
   `code` VARCHAR(60) NOT NULL,    -- Auto generated e.g. '9TH_SCI_L01_TOP01_SUB02_MIN01_SMT02_MIC01_SMT02_NAN01_ULT02'
   `name` VARCHAR(150) NOT NULL,   -- e.g. 'Knowledge of Linear Equations'
   `short_name` VARCHAR(50) DEFAULT NULL,   -- e.g. 'Linear Equations' 
   `description` VARCHAR(255) DEFAULT NULL,    -- e.g. 'Description of Knowledge of Linear Equations'
   `class_id` INT UNSIGNED DEFAULT NULL,         -- FK to sch_classes.id
-  `subject_id` BIGINT UNSIGNED DEFAULT NULL,    -- FK to sch_subjects.id
+  `subject_id` INT UNSIGNED DEFAULT NULL,    -- FK to sch_subjects.id
   `competency_type_id` INT UNSIGNED NOT NULL,   -- FK to slb_competency_types.id
   `domain` ENUM('COGNITIVE', 'AFFECTIVE', 'PSYCHOMOTOR') NOT NULL DEFAULT 'COGNITIVE', -- e.g. 'COGNITIVE'
   `nep_framework_ref` VARCHAR(100) DEFAULT NULL,    -- e.g. 'NEP Framework Reference'
@@ -153,8 +153,8 @@ CREATE TABLE IF NOT EXISTS `slb_competencies` (
 
 -- Link topics to competencies
 CREATE TABLE IF NOT EXISTS `slb_topic_competency_jnt` (
-  `topic_id` BIGINT UNSIGNED NOT NULL,
-  `competency_id` BIGINT UNSIGNED NOT NULL, -- FK to slb_competencies.id
+  `topic_id` INT UNSIGNED NOT NULL,
+  `competency_id` INT UNSIGNED NOT NULL, -- FK to slb_competencies.id
   `weightage` DECIMAL(5,2) DEFAULT NULL,    -- How much topic contributes to competency
   `is_primary` TINYINT(1) DEFAULT 0, -- True if this is the primary competency for this topic
   PRIMARY KEY (`topic_id`,`competency_id`),

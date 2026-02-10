@@ -24,7 +24,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 
 -- table for "trigger_event" ENUM values
 CREATE TABLE IF NOT EXISTS `rec_trigger_events` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `event_name` VARCHAR(50) NOT NULL,  -- ON_ASSESSMENT_RESULT, ON_TOPIC_COMPLETION, ON_ATTENDANCE_LOW, MANUAL_RUN, SCHEDULED_WEEKLY
   `description` VARCHAR(255) DEFAULT NULL,
   `is_active` TINYINT(1) DEFAULT 1,
@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS `rec_trigger_events` (
 
 -- table for "recommendation_mode" ENUM values
 CREATE TABLE IF NOT EXISTS `rec_recommendation_modes` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `mode_name` VARCHAR(50) NOT NULL,  -- SPECIFIC_MATERIAL, SPECIFIC_BUNDLE, DYNAMIC_BY_TOPIC, DYNAMIC_BY_COMPETENCY
   `description` VARCHAR(255) DEFAULT NULL,
   `is_active` TINYINT(1) DEFAULT 1,
@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS `rec_recommendation_modes` (
 
 -- table for "dynamic_material_type" ENUM values
 CREATE TABLE IF NOT EXISTS `rec_dynamic_material_types` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `type_name` VARCHAR(50) NOT NULL,  -- ANY_BEST_FIT, VIDEO, QUIZ, PDF
   `description` VARCHAR(255) DEFAULT NULL,
   `is_active` TINYINT(1) DEFAULT 1,
@@ -63,7 +63,7 @@ CREATE TABLE IF NOT EXISTS `rec_dynamic_material_types` (
 
 -- table for "dynamic_purpose" ENUM values
 CREATE TABLE IF NOT EXISTS `rec_dynamic_purposes` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `purpose_name` VARCHAR(50) NOT NULL,  -- REMEDIAL, ENRICHMENT, PRACTICE
   `description` VARCHAR(255) DEFAULT NULL,
   `is_active` TINYINT(1) DEFAULT 1,
@@ -76,7 +76,7 @@ CREATE TABLE IF NOT EXISTS `rec_dynamic_purposes` (
 
 -- table for "assessment_type" ENUM values
 CREATE TABLE IF NOT EXISTS `rec_assessment_types` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `type_name` VARCHAR(50) NOT NULL,  -- ALL, QUIZ, WEEKLY_TEST, TERM_EXAM, FINAL_EXAM
   `description` VARCHAR(255) DEFAULT NULL,
   `is_active` TINYINT(1) DEFAULT 1,
@@ -93,31 +93,31 @@ CREATE TABLE IF NOT EXISTS `rec_assessment_types` (
 
 -- 1. Master table for Recommendation Materials (Content Bank)
 CREATE TABLE IF NOT EXISTS `rec_recommendation_materials` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `title` VARCHAR(255) NOT NULL,
   `description` TEXT DEFAULT NULL,
   -- Content Classification
-  `material_type` BIGINT UNSIGNED DEFAULT NULL,    -- fk to sys_dropdown_table (e.g. 'TEXT','VIDEO','PDF','AUDIO','QUIZ','ASSIGNMENT','LINK','INTERACTIVE')
-  `purpose` BIGINT UNSIGNED DEFAULT NULL,          -- fk to sys_dropdown_table (e.g. 'REVISION','PRACTICE','REMEDIAL','ADVANCED','ENRICHMENT','CONCEPT_BUILDING') NOT NULL DEFAULT 'PRACTICE',
-  `complexity_level` BIGINT UNSIGNED DEFAULT NULL,  -- fk to slb_complexity_level
+  `material_type` INT UNSIGNED DEFAULT NULL,    -- fk to sys_dropdown_table (e.g. 'TEXT','VIDEO','PDF','AUDIO','QUIZ','ASSIGNMENT','LINK','INTERACTIVE')
+  `purpose` INT UNSIGNED DEFAULT NULL,          -- fk to sys_dropdown_table (e.g. 'REVISION','PRACTICE','REMEDIAL','ADVANCED','ENRICHMENT','CONCEPT_BUILDING') NOT NULL DEFAULT 'PRACTICE',
+  `complexity_level` INT UNSIGNED DEFAULT NULL,  -- fk to slb_complexity_level
   -- Content Source
-  `content_source` BIGINT UNSIGNED DEFAULT NULL,    -- fk to sys_dropdown_table (e.g. 'INTERNAL_EDITOR','UPLOADED_FILE','EXTERNAL_LINK','LMS_MODULE','QUESTION_BANK')
+  `content_source` INT UNSIGNED DEFAULT NULL,    -- fk to sys_dropdown_table (e.g. 'INTERNAL_EDITOR','UPLOADED_FILE','EXTERNAL_LINK','LMS_MODULE','QUESTION_BANK')
   `content_text` LONGTEXT DEFAULT NULL,           -- HTML content for 'TEXT' type or Internal Notes
   `file_url` VARCHAR(500) DEFAULT NULL,           -- Direct URL for 'UPLOADED_FILE' or 'PDF' or 'VIDEO'
   `external_url` VARCHAR(500) DEFAULT NULL,       -- YouTube link, Khan Academy link etc.
-  `media_id` BIGINT UNSIGNED DEFAULT NULL,        -- fk to qns_media_store (for stored Media)
-----  `reference_id` BIGINT UNSIGNED DEFAULT NULL,    -- Link to external module ID (e.g. Quiz ID, Assignment ID)
+  `media_id` INT UNSIGNED DEFAULT NULL,        -- fk to qns_media_store (for stored Media)
+----  `reference_id` INT UNSIGNED DEFAULT NULL,    -- Link to external module ID (e.g. Quiz ID, Assignment ID)
   -- Academic Mapping
-  `subject_id` BIGINT UNSIGNED DEFAULT NULL,      -- FK to sch_subjects
+  `subject_id` INT UNSIGNED DEFAULT NULL,      -- FK to sch_subjects
   `class_id` INT UNSIGNED DEFAULT NULL,           -- FK to sch_classes (Target Class)
-  `topic_id` BIGINT UNSIGNED DEFAULT NULL,        -- FK to slb_topics
+  `topic_id` INT UNSIGNED DEFAULT NULL,        -- FK to slb_topics
   `competency_code` VARCHAR(50) DEFAULT NULL,     -- Optional link to Competency Framework
   -- Metadata
   `duration_seconds` INT UNSIGNED DEFAULT NULL,   -- Est. time to consume
   `language_code` VARCHAR(10) DEFAULT 'en',       -- e.g. 'en', 'hi'
   `tags` JSON DEFAULT NULL,                       -- Search tags
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-  `created_by` BIGINT UNSIGNED DEFAULT NULL,
+  `created_by` INT UNSIGNED DEFAULT NULL,
   `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `deleted_at` TIMESTAMP NULL DEFAULT NULL,
@@ -139,11 +139,11 @@ CREATE TABLE IF NOT EXISTS `rec_recommendation_materials` (
 -- 2. Recommendation Bundles/Collections (e.g. "Week 1 Revision Kit")
 --    Allows grouping multiple materials into one recommendation
 CREATE TABLE IF NOT EXISTS `rec_material_bundles` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `title` VARCHAR(255) NOT NULL,
   `description` TEXT DEFAULT NULL,
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-  `created_by` BIGINT UNSIGNED DEFAULT NULL,
+  `created_by` INT UNSIGNED DEFAULT NULL,
   `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `deleted_at` TIMESTAMP NULL DEFAULT NULL,
@@ -154,9 +154,9 @@ CREATE TABLE IF NOT EXISTS `rec_material_bundles` (
 
 -- Junction between Bundle and Materials
 CREATE TABLE IF NOT EXISTS `rec_bundle_materials_jnt` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `bundle_id` BIGINT UNSIGNED NOT NULL,
-  `material_id` BIGINT UNSIGNED NOT NULL,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `bundle_id` INT UNSIGNED NOT NULL,
+  `material_id` INT UNSIGNED NOT NULL,
   `sequence_order` INT UNSIGNED DEFAULT 1,
   `is_mandatory` TINYINT(1) DEFAULT 1,
   PRIMARY KEY (`id`),
@@ -169,29 +169,29 @@ CREATE TABLE IF NOT EXISTS `rec_bundle_materials_jnt` (
 -- 3. Recommendation Rules Engine
 --    Defines logics: WHEN (Trigger) + WHO (Performance) -> WHAT (Recommendation)
 CREATE TABLE IF NOT EXISTS `rec_recommendation_rules` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   -- Rule Definition
   `name` VARCHAR(150) NOT NULL,                   -- e.g. "Math Remedial for Poor Performers in Algebra"
   `is_automated` TINYINT(1) DEFAULT 1,            -- 1=Run by System Job, 0=Manual Helper Rule
   -- TRIGGERS (When to Apply)
-  `trigger_event` BIGINT UNSIGNED NOT NULL,  -- FK to rec_trigger_events
+  `trigger_event` INT UNSIGNED NOT NULL,  -- FK to rec_trigger_events
   -- CONDITIONS (The "Switch")
   -- Narrowing Scope
   `class_id` INT UNSIGNED DEFAULT NULL,  -- FK to sch_classes
-  `subject_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to sch_subjects
-  `topic_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to slb_topics
+  `subject_id` INT UNSIGNED DEFAULT NULL,  -- FK to sch_subjects
+  `topic_id` INT UNSIGNED DEFAULT NULL,  -- FK to slb_topics
   -- Performance Criteria
-  `performance_category_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to slb_performance_categories (The bucket, e.g. POOR)
+  `performance_category_id` INT UNSIGNED DEFAULT NULL, -- FK to slb_performance_categories (The bucket, e.g. POOR)
   `min_score_pct` DECIMAL(5,2) DEFAULT NULL,      -- Specific override e.g. < 40%
   `max_score_pct` DECIMAL(5,2) DEFAULT NULL,      -- Specific override e.g. > 90%
   -- Assessment Type Filter (Only apply if the result came from this type of exam)
-  `assessment_type` BIGINT UNSIGNED DEFAULT NULL,  -- FK to rec_assessment_types
+  `assessment_type` INT UNSIGNED DEFAULT NULL,  -- FK to rec_assessment_types
   -- ACTION (What to Recommend)
-  `recommendation_mode` BIGINT UNSIGNED NOT NULL,  -- FK to rec_recommendation_modes
-  `target_material_id` BIGINT UNSIGNED DEFAULT NULL,  -- If SPECIFIC_MATERIAL
-  `target_bundle_id` BIGINT UNSIGNED DEFAULT NULL,    -- If SPECIFIC_BUNDLE
-  `dynamic_material_type` BIGINT UNSIGNED DEFAULT NULL,  -- FK to rec_dynamic_material_types
-  `dynamic_purpose` BIGINT UNSIGNED DEFAULT NULL,  -- FK to rec_dynamic_purposes
+  `recommendation_mode` INT UNSIGNED NOT NULL,  -- FK to rec_recommendation_modes
+  `target_material_id` INT UNSIGNED DEFAULT NULL,  -- If SPECIFIC_MATERIAL
+  `target_bundle_id` INT UNSIGNED DEFAULT NULL,    -- If SPECIFIC_BUNDLE
+  `dynamic_material_type` INT UNSIGNED DEFAULT NULL,  -- FK to rec_dynamic_material_types
+  `dynamic_purpose` INT UNSIGNED DEFAULT NULL,  -- FK to rec_dynamic_purposes
   `priority` INT UNSIGNED DEFAULT 10,                 -- Higher priority rules override or appear first
   `is_active` TINYINT(1) DEFAULT 1,
   `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
@@ -216,16 +216,16 @@ CREATE TABLE IF NOT EXISTS `rec_recommendation_rules` (
 -- 4. Student Recommendations (The Resulting Assignments)
 --    Refined from v1.1 `rec_student_recommendations`
 CREATE TABLE IF NOT EXISTS `rec_student_recommendations` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `uuid` BINARY(16) NOT NULL,                       -- Unique ID for public access/tracking
-  `student_id` BIGINT UNSIGNED NOT NULL,          -- FK to std_students (or users depending on arch. std_students preferred)
+  `student_id` INT UNSIGNED NOT NULL,          -- FK to std_students (or users depending on arch. std_students preferred)
   -- Source of Recommendation
-  `rule_id` BIGINT UNSIGNED DEFAULT NULL,         -- Which rule generated this?
-  `triggered_by_result_id` BIGINT UNSIGNED DEFAULT NULL, -- Optional: Link to the Exam Result ID in Exam Module
-  `manual_assigned_by` BIGINT UNSIGNED DEFAULT NULL,     -- If manually assigned by Teacher
+  `rule_id` INT UNSIGNED DEFAULT NULL,         -- Which rule generated this?
+  `triggered_by_result_id` INT UNSIGNED DEFAULT NULL, -- Optional: Link to the Exam Result ID in Exam Module
+  `manual_assigned_by` INT UNSIGNED DEFAULT NULL,     -- If manually assigned by Teacher
   -- The Content
-  `material_id` BIGINT UNSIGNED DEFAULT NULL,
-  `bundle_id` BIGINT UNSIGNED DEFAULT NULL,
+  `material_id` INT UNSIGNED DEFAULT NULL,
+  `bundle_id` INT UNSIGNED DEFAULT NULL,
   -- Context
   `recommendation_reason` VARCHAR(255) DEFAULT NULL, -- e.g. "Scored Low in Algebra Quiz"
   `priority` ENUM('LOW','MEDIUM','HIGH','CRITICAL') DEFAULT 'MEDIUM',

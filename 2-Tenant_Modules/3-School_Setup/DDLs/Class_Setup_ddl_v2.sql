@@ -62,10 +62,10 @@
     `actual_total_student` tinyint unsigned DEFAULT NULL,  -- Actual Number of Student in the Class+Section (changed from total_student)
     `min_required_student` tinyint unsigned DEFAULT NULL,  -- Minimum Number of Student required to start a class+section (Added new)
     `max_allowed_student` tinyint unsigned DEFAULT NULL,  -- Maximum Number of Student allowed in a class+section (Added new)
-    `class_teacher_id` bigint unsigned NOT NULL,  -- FK to sch_users
-    `assistance_class_teacher_id` bigint unsigned NOT NULL,  -- FK to sch_users
+    `class_teacher_id` INT unsigned NOT NULL,  -- FK to sch_users
+    `assistance_class_teacher_id` INT unsigned NOT NULL,  -- FK to sch_users
     `rooms_type_id` int unsigned NOT NULL,  -- FK to 'sch_rooms_type' (Added new)
-    `class_house_roome_id` int unsigned NOT NULL,  -- FK to 'sch_rooms' (Added new)
+    `class_house_room_id` int unsigned NOT NULL,  -- FK to 'sch_rooms' (Added new)
     `total_periods_daily` tinyint unsigned DEFAULT NULL,  -- Total Number of Periods in a day for this class+section (Added new)
     `is_active` tinyint(1) NOT NULL DEFAULT 1,
     `created_at` timestamp NULL DEFAULT NULL,
@@ -116,7 +116,7 @@
   -- Data Seed for Study_Format - LECTURE, LAB, PRACTICAL, TUTORIAL, SEMINAR, WORKSHOP, GROUP_DISCUSSION, OTHER
 
   CREATE TABLE IF NOT EXISTS `sch_subjects` (
-    `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+    `id` INT unsigned NOT NULL AUTO_INCREMENT,
     `ordinal` tinyint DEFAULT NULL,     -- will have sequence order (Auto Update by Drag & Drop)
     `code` CHAR(5) NOT NULL,         -- e.g., 'SCI','MTH','SST','ENG' and so on (This will be used for Timetable)
     `short_name` varchar(20) NOT NULL,  -- e.g. 'SCIENCE','MATH','SST','ENGLISH' and so on
@@ -134,9 +134,9 @@
   -- I have removed 'sub_types' from 'sch_subject_study_format_jnt' because one Subject_StudyFormat may belongs to different Subject_type for different classes
   -- Removed 'short_name' as we can use `sub_stdformat_code`
   CREATE TABLE IF NOT EXISTS `sch_subject_study_format_jnt` (
-    `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+    `id` INT unsigned NOT NULL AUTO_INCREMENT,
     `ordinal` tinyint DEFAULT NULL,     -- will have sequence order (Auto Update by Drag & Drop)
-    `subject_id` bigint unsigned NOT NULL,        -- FK to 'sch_subjects'
+    `subject_id` INT unsigned NOT NULL,        -- FK to 'sch_subjects'
     `study_format_id` int unsigned NOT NULL,      -- FK to 'sch_study_formats'
     `subject_type_id` int unsigned NOT NULL,      -- FK to 'sch_subject_types'
     `code` CHAR(30) NOT NULL,                     -- e.g., 'SCI_LAC','SCI_LAB','SST_LAC','ENG_LAC' (Changed from 'subject_studyformat_code')
@@ -156,11 +156,11 @@
   -- Ths table will be used to define different Class Groups like 10th-A Science Lecture Major, 7th-B Commerce Optional etc.
   -- old name 'sch_subject_study_format_class_subj_types_jnt' changed to 'sch_class_groups_jnt'
   CREATE TABLE IF NOT EXISTS `sch_class_groups_jnt` (
-    `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+    `id` INT unsigned NOT NULL AUTO_INCREMENT,
     `ordinal` tinyint DEFAULT NULL,     -- will have sequence order (Auto Update by Drag & Drop)
     `class_id` int unsigned NOT NULL,             -- FK to 'sch_classes'
     `section_id` int unsigned NOT NULL,           -- FK to 'sch_sections' (Optional)
-    `subject_Study_format_id` bigint unsigned NOT NULL,  -- FK to 'sch_subject_study_format_jnt'
+    `subject_Study_format_id` INT unsigned NOT NULL,  -- FK to 'sch_subject_study_format_jnt'
     `subject_type_id` int unsigned NOT NULL,      -- FK to 'sch_subject_types'
     `code` CHAR(50) NOT NULL, -- Combination of (Class+Section+Subject+StudyFormat+SubjType) e.g., '10h_A_SCI_LAC_MAJ','8th_MAT_LAC_OPT' (This will be used for Timetable)
     `name` varchar(100) NOT NULL,                 -- 10th-A Science Lacture Major
@@ -199,7 +199,7 @@
 
   -- Table 'sch_subject_groups' will be used to assign all subjects to the students
   CREATE TABLE IF NOT EXISTS `sch_subject_groups` (
-    `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+    `id` INT unsigned NOT NULL AUTO_INCREMENT,
     `ordinal` tinyint DEFAULT NULL,     -- will have sequence order (Auto Update by Drag & Drop)
     `class_id` int UNSIGNED NOT NULL,   -- FK to 'sch_classes'
     `section_id` int UNSIGNED NULL,     -- FK (Section can be null if Group will be used for all sectons) (Optional)
@@ -225,11 +225,11 @@
  
 
   CREATE TABLE IF NOT EXISTS `sch_subject_group_subject_jnt` (
-    `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-    `subject_group_id` bigint unsigned NOT NULL,              -- FK to 'sch_subject_groups'
-    `class_group_id` bigint unsigned NOT NULL,                -- FK to 'sch_class_groups_jnt'
+    `id` INT unsigned NOT NULL AUTO_INCREMENT,
+    `subject_group_id` INT unsigned NOT NULL,              -- FK to 'sch_subject_groups'
+    `class_group_id` INT unsigned NOT NULL,                -- FK to 'sch_class_groups_jnt'
     `subject_id` int unsigned NOT NULL,                       -- FK to 'sch_subjects' (De-Normalization)
-    `subject_study_format_id` bigint unsigned NOT NULL,       -- FK to 'sch_subject_study_format_jnt'
+    `subject_study_format_id` INT unsigned NOT NULL,       -- FK to 'sch_subject_study_format_jnt'
     `is_active` tinyint(1) NOT NULL DEFAULT '1',
     `deleted_at` timestamp NULL DEFAULT NULL,
     `created_at` timestamp NULL DEFAULT NULL,

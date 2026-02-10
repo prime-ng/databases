@@ -19,7 +19,7 @@
 
 
 CREATE TABLE hpc_circular_goals (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   `code` VARCHAR(50) NOT NULL,
   `name` VARCHAR(150) NOT NULL,
   `class_id` INT UNSIGNED NOT NULL,  -- Fk to sch_classes
@@ -34,9 +34,9 @@ CREATE TABLE hpc_circular_goals (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE hpc_circular_goal_competency_jnt (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  `circular_goal_id` BIGINT UNSIGNED NOT NULL,
-  `competency_id` BIGINT UNSIGNED NOT NULL,
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `circular_goal_id` INT UNSIGNED NOT NULL,
+  `competency_id` INT UNSIGNED NOT NULL,
   `is_primary` TINYINT(1) DEFAULT 0,
   `is_active` TINYINT(1) DEFAULT 1,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -53,10 +53,10 @@ CREATE TABLE hpc_circular_goal_competency_jnt (
 -- =========================================================
 -- This Table will cover the learning outcomes for HPC
 CREATE TABLE hpc_learning_outcomes (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   `code` VARCHAR(50) NOT NULL,
   `description` VARCHAR(255) NOT NULL,
-  `domain` BIGINT UNSIGNED NOT NULL,   -- FK TO sys_dropdown_table e.g. ('COGNITIVE','AFFECTIVE','PSYCHOMOTOR') DEFAULT 'COGNITIVE'
+  `domain` INT UNSIGNED NOT NULL,   -- FK TO sys_dropdown_table e.g. ('COGNITIVE','AFFECTIVE','PSYCHOMOTOR') DEFAULT 'COGNITIVE'
   `bloom_id` INT UNSIGNED DEFAULT NULL,
   `level` TINYINT UNSIGNED DEFAULT 1,
   `is_active` TINYINT(1) DEFAULT 1,
@@ -70,11 +70,11 @@ CREATE TABLE hpc_learning_outcomes (
 
 -- This Table will cover the outcome entity mapping for HPC
 CREATE TABLE hpc_outcome_entity_jnt (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  `outcome_id` BIGINT UNSIGNED NOT NULL,
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `outcome_id` INT UNSIGNED NOT NULL,
   `class_id` INT UNSIGNED NOT NULL,  -- Fk to sch_classes
   `entity_type` ENUM('SUBJECT','LESSON','TOPIC') NOT NULL,
-  `entity_id` BIGINT UNSIGNED NOT NULL,  -- Dropdown from sch_subjects, slb_lessons, slb_topics (Depend upon selection of entity_type)
+  `entity_id` INT UNSIGNED NOT NULL,  -- Dropdown from sch_subjects, slb_lessons, slb_topics (Depend upon selection of entity_type)
   `is_active` TINYINT(1) DEFAULT 1,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -92,9 +92,9 @@ CREATE TABLE hpc_outcome_entity_jnt (
 -- =========================================================
 -- This Table will cover the outcome question mapping for HPC
 CREATE TABLE hpc_outcome_question_jnt (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  `outcome_id` BIGINT UNSIGNED NOT NULL,
-  `question_id` BIGINT UNSIGNED NOT NULL,  -- fk to qns_questions_bank.id
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `outcome_id` INT UNSIGNED NOT NULL,
+  `question_id` INT UNSIGNED NOT NULL,  -- fk to qns_questions_bank.id
   `weightage` DECIMAL(5,2) DEFAULT NULL,
   `is_active` TINYINT(1) DEFAULT 1,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -111,8 +111,8 @@ CREATE TABLE hpc_outcome_question_jnt (
 -- =========================================================
 -- This Table will cover the knowledge graph validation for HPC
 CREATE TABLE hpc_knowledge_graph_validation (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  `topic_id` BIGINT UNSIGNED NOT NULL,
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `topic_id` INT UNSIGNED NOT NULL,
   `issue_type` ENUM('NO_COMPETENCY','NO_OUTCOME','NO_WEIGHTAGE','ORPHAN_NODE') NOT NULL,
   `severity` ENUM('LOW','MEDIUM','HIGH','CRITICAL') DEFAULT 'LOW',
   `detected_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -131,9 +131,9 @@ CREATE TABLE hpc_knowledge_graph_validation (
 -- =========================================================
 -- This table will cover the topic equivalency between different syllabuses
 CREATE TABLE hpc_topic_equivalency (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  `source_topic_id` BIGINT UNSIGNED NOT NULL,
-  `target_topic_id` BIGINT UNSIGNED NOT NULL,
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `source_topic_id` INT UNSIGNED NOT NULL,
+  `target_topic_id` INT UNSIGNED NOT NULL,
   `equivalency_type` ENUM('FULL','PARTIAL','PREREQUISITE') DEFAULT 'FULL',
   `is_active` TINYINT(1) DEFAULT 1,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -150,10 +150,10 @@ CREATE TABLE hpc_topic_equivalency (
 -- =========================================================
 -- This table will cover the syllabus coverage snapshot (How much Syllabus has been covered) for HPC
 CREATE TABLE hpc_syllabus_coverage_snapshot (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  `academic_session_id` BIGINT UNSIGNED NOT NULL,
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `academic_session_id` INT UNSIGNED NOT NULL,
   `class_id` INT UNSIGNED NOT NULL,
-  `subject_id` BIGINT UNSIGNED NOT NULL,
+  `subject_id` INT UNSIGNED NOT NULL,
   `coverage_percentage` DECIMAL(5,2) NOT NULL,
   `snapshot_date` DATE NOT NULL,
   `is_active` TINYINT(1) DEFAULT 1,
@@ -211,17 +211,17 @@ CREATE TABLE hpc_performance_descriptors (
 -- Every parameter(Awareness, Sensitivity, Creativity) for every subject will be assessed on 3 levels (Beginner, Proficient, Advanced)
 -- Old table name - hpc_student_hpc_evaluation
 CREATE TABLE hpc_student_evaluation (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  `academic_session_id` BIGINT UNSIGNED NOT NULL,  -- FK TO slb_academic_sessions
-  `student_id` BIGINT UNSIGNED NOT NULL,           -- FK TO slb_students
-  `subject_id` BIGINT UNSIGNED NOT NULL,           -- FK TO slb_subjects
-  `competency_id` BIGINT UNSIGNED NOT NULL,        -- FK TO slb_competencies
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `academic_session_id` INT UNSIGNED NOT NULL,  -- FK TO slb_academic_sessions
+  `student_id` INT UNSIGNED NOT NULL,           -- FK TO slb_students
+  `subject_id` INT UNSIGNED NOT NULL,           -- FK TO slb_subjects
+  `competency_id` INT UNSIGNED NOT NULL,        -- FK TO slb_competencies
   `hpc_ability_parameter_id` INT UNSIGNED NOT NULL,        -- FK TO hpc_ability_parameters
   `hpc_performance_descriptor_id` INT UNSIGNED NOT NULL,            -- FK TO hpc_performance_descriptors
-  `evidence_type` BIGINT UNSIGNED NOT NULL,        -- FK TO sys_dropdown_table e.g. ('ACTIVITY','ASSESSMENT','OBSERVATION')
-  `evidence_id` BIGINT UNSIGNED,                   -- FK TO slb_activities
+  `evidence_type` INT UNSIGNED NOT NULL,        -- FK TO sys_dropdown_table e.g. ('ACTIVITY','ASSESSMENT','OBSERVATION')
+  `evidence_id` INT UNSIGNED,                   -- FK TO slb_activities
   `remarks` VARCHAR(500),
-  `assessed_by` BIGINT UNSIGNED,                   -- FK TO slb_users
+  `assessed_by` INT UNSIGNED,                   -- FK TO slb_users
   `assessed_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `is_active` TINYINT(1) DEFAULT 1,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -245,9 +245,9 @@ CREATE TABLE hpc_student_evaluation (
 -- =========================================================
 -- This table will cover the Learning Activities for every topic
 CREATE TABLE hpc_learning_activities (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  `topic_id` BIGINT UNSIGNED NOT NULL,           -- FK TO slb_topics
-  `activity_type_id` BIGINT UNSIGNED NOT NULL,   -- FK TO hpc_learning_activity_type
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `topic_id` INT UNSIGNED NOT NULL,           -- FK TO slb_topics
+  `activity_type_id` INT UNSIGNED NOT NULL,   -- FK TO hpc_learning_activity_type
   `description` TEXT NOT NULL,
   `expected_outcome` TEXT,
   `is_active` TINYINT(1) DEFAULT 1,
@@ -260,7 +260,7 @@ CREATE TABLE hpc_learning_activities (
 
 -- I need to create a a new table for hpc_lerning_activity_type to use as activity_type_id in hpc_learning_activities.activity_type_id
 CREATE TABLE hpc_learning_activity_type (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   `code` VARCHAR(30) NOT NULL,    -- PROJECT, OBSERVATION, FIELD_WORK, GROUP_WORK, ART, SPORT, DISCUSSION
   `name` VARCHAR(100) NOT NULL,   
   `description` VARCHAR(255) NOT NULL,
@@ -277,9 +277,9 @@ CREATE TABLE hpc_learning_activity_type (
 -- =========================================================
 -- This table will cover the Holistic Progress Card Snapshot for every student
 CREATE TABLE hpc_student_hpc_snapshot (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  `academic_session_id` BIGINT UNSIGNED NOT NULL,  -- FK TO slb_academic_sessions
-  `student_id` BIGINT UNSIGNED NOT NULL,           -- FK TO slb_students
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `academic_session_id` INT UNSIGNED NOT NULL,  -- FK TO slb_academic_sessions
+  `student_id` INT UNSIGNED NOT NULL,           -- FK TO slb_students
   `snapshot_json` JSON NOT NULL,
   `generated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `is_active` TINYINT(1) DEFAULT 1,

@@ -11,7 +11,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- =======================================================================
 
 CREATE TABLE tpt_vehicle (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     vehicle_no VARCHAR(20) NOT NULL,
     registration_no VARCHAR(30) NOT NULL,
     model VARCHAR(50),
@@ -33,8 +33,8 @@ CREATE TABLE tpt_vehicle (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE tpt_driver_helper (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    user_id BIGINT UNSIGNED NOT NULL,      -- FK to sch_users (driver user)
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id INT UNSIGNED NOT NULL,      -- FK to sch_users (driver user)
     name VARCHAR(50) NOT NULL,
     phone VARCHAR(20) NOT NULL,
     id_type VARCHAR(10) NOT NULL,
@@ -42,7 +42,7 @@ CREATE TABLE tpt_driver_helper (
     driver_helper ENUM('Driver','Helper','Both') NOT NULL DEFAULT 'Driver',
     license_no VARCHAR(50) NULL,
     license_valid_upto DATE NULL,
-    assigned_vehicle_id BIGINT UNSIGNED,
+    assigned_vehicle_id INT UNSIGNED,
     driving_exp_months TINYINT UNSIGNED NULL,
     address VARCHAR(255),
     is_active TINYINT(1) NOT NULL DEFAULT 1,
@@ -53,7 +53,7 @@ CREATE TABLE tpt_driver_helper (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE tpt_shift (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     code VARCHAR(10) NOT NULL,
     name VARCHAR(50) NOT NULL,
     effective_from DATE NOT NULL,
@@ -71,12 +71,12 @@ CREATE TABLE tpt_shift (
 -- =======================================================================
 
 CREATE TABLE tpt_route (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     code VARCHAR(20) NOT NULL,
     name VARCHAR(100) NOT NULL,
     description VARCHAR(200) NULL,
     pickup_drop ENUM('Pickup','Drop','Both') NOT NULL DEFAULT 'Both',
-    shift_id bigint unsigned NOT NULL,       -- FK
+    shift_id INT unsigned NOT NULL,       -- FK
     is_active TINYINT(1) NOT NULL DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -88,7 +88,7 @@ CREATE TABLE tpt_route (
 
 
 CREATE TABLE tpt_pickup_points (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     code VARCHAR(20) NOT NULL,
     name VARCHAR(100) NOT NULL,
     latitude DECIMAL(10,6),
@@ -96,7 +96,7 @@ CREATE TABLE tpt_pickup_points (
     total_distance DECIMAL(6,2) NOT NULL,
     estimated_time INT NOT NULL,            -- Time in Minutes
     stop_type ENUM('Pickup','Drop','Both') NOT NULL DEFAULT 'Both',
-    shift_id bigint unsigned NOT NULL,       -- FK
+    shift_id INT unsigned NOT NULL,       -- FK
     is_active TINYINT(1) NOT NULL DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -108,10 +108,10 @@ CREATE TABLE tpt_pickup_points (
 
 
 CREATE TABLE tpt_pickup_points_route_jnt (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    shift_id bigint unsigned NOT NULL,              -- FK
-    route_id bigint unsigned NOT NULL,              -- FK
-    pickup_point_id bigint unsigned NOT NULL,       -- FK
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    shift_id INT unsigned NOT NULL,              -- FK
+    route_id INT unsigned NOT NULL,              -- FK
+    pickup_point_id INT unsigned NOT NULL,       -- FK
     ordinal tinyint(1) unsigned NOT NULL DEFAULT 1,
     total_distance DECIMAL(6,2) NOT NULL,
     estimated_time INT NOT NULL,            -- Time in Minutes
@@ -132,12 +132,12 @@ CREATE TABLE tpt_pickup_points_route_jnt (
 -- =======================================================================
 
 CREATE TABLE tpt_driver_route_vehicle_jnt (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    shift_id bigint unsigned NOT NULL,          -- FK
-    route_id bigint unsigned NOT NULL,          -- FK
-    vehicle_id BIGINT UNSIGNED NOT NULL,        -- FK
-    driver_id BIGINT UNSIGNED NOT NULL,         -- fk
-    helper_id BIGINT UNSIGNED,                  -- fk
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    shift_id INT unsigned NOT NULL,          -- FK
+    route_id INT unsigned NOT NULL,          -- FK
+    vehicle_id INT UNSIGNED NOT NULL,        -- FK
+    driver_id INT UNSIGNED NOT NULL,         -- fk
+    helper_id INT UNSIGNED,                  -- fk
     effective_from DATE NOT NULL,
     effective_to DATE NULL,
     is_active tinyint(1) NOT NULL DEFAULT 1,
@@ -155,12 +155,12 @@ CREATE TABLE tpt_driver_route_vehicle_jnt (
 
 -- This table will captur record for every Route for entire Academic Session
 CREATE TABLE tpt_route_scheduler_jnt (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     scheduled_date DATE NOT NULL,
-    shift_id bigint unsigned NOT NULL,          -- FK
-    route_id bigint unsigned NOT NULL,          -- FK
-    driver_id BIGINT UNSIGNED NOT NULL,         -- fk
-    helper_id BIGINT UNSIGNED,                  -- fk
+    shift_id INT unsigned NOT NULL,          -- FK
+    route_id INT unsigned NOT NULL,          -- FK
+    driver_id INT UNSIGNED NOT NULL,         -- fk
+    helper_id INT UNSIGNED,                  -- fk
     is_active tinyint(1) NOT NULL DEFAULT 1,
     created_at timestamp NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -177,13 +177,13 @@ CREATE TABLE tpt_route_scheduler_jnt (
 -- =======================================================================
 
 CREATE TABLE tpt_trip_jnt (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     trip_date DATE NOT NULL,
-    pickup_route_id BIGINT UNSIGNED NOT NULL,   -- fk
-    route_id BIGINT UNSIGNED NOT NULL,
-    vehicle_id BIGINT UNSIGNED NOT NULL,
-    driver_id BIGINT UNSIGNED NOT NULL,
-    helper_id BIGINT UNSIGNED NULL,                -- Can be Null
+    pickup_route_id INT UNSIGNED NOT NULL,   -- fk
+    route_id INT UNSIGNED NOT NULL,
+    vehicle_id INT UNSIGNED NOT NULL,
+    driver_id INT UNSIGNED NOT NULL,
+    helper_id INT UNSIGNED NULL,                -- Can be Null
     trip_type ENUM('Morning','Afternoon','Evening','Custom'),
     start_time DATETIME,
     end_time DATETIME,
@@ -203,9 +203,9 @@ CREATE TABLE tpt_trip_jnt (
 -- =======================================================================
 
 CREATE TABLE tpt_live_trip (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    trip_id BIGINT UNSIGNED NOT NULL,
-    current_stop_id BIGINT UNSIGNED,
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    trip_id INT UNSIGNED NOT NULL,
+    current_stop_id INT UNSIGNED,
     eta DATETIME,                         -- eta (Estimated Time of Arrival)
     reached_flag TINYINT(1) NOT NULL DEFAULT 0,
     emergency_flag TINYINT(1) DEFAULT 0,
@@ -219,8 +219,8 @@ CREATE TABLE tpt_live_trip (
 -- =======================================================================
 
 CREATE TABLE tpt_driver_attendance (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    driver_id BIGINT UNSIGNED NOT NULL,
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    driver_id INT UNSIGNED NOT NULL,
     check_in_time DATETIME NOT NULL,
     check_out_time DATETIME,
     geo_lat DECIMAL(10,6),
@@ -236,11 +236,11 @@ CREATE TABLE tpt_driver_attendance (
 -- =======================================================================
 
 CREATE TABLE tpt_student_allocation_jnt (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    student_session_id BIGINT UNSIGNED NOT NULL,
-    route_id BIGINT UNSIGNED NOT NULL,
-    pickup_stop_id BIGINT UNSIGNED NOT NULL,
-    drop_stop_id BIGINT UNSIGNED NOT NULL,
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    student_session_id INT UNSIGNED NOT NULL,
+    route_id INT UNSIGNED NOT NULL,
+    pickup_stop_id INT UNSIGNED NOT NULL,
+    drop_stop_id INT UNSIGNED NOT NULL,
     fare DECIMAL(10,2) NOT NULL,
     effective_from DATE NOT NULL,
     active_status TINYINT(1) NOT NULL DEFAULT 1,
@@ -256,8 +256,8 @@ CREATE TABLE tpt_student_allocation_jnt (
 -- =======================================================================
 
 CREATE TABLE tpt_fee_master (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    session_id BIGINT UNSIGNED NOT NULL,
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    session_id INT UNSIGNED NOT NULL,
     month TINYINT NOT NULL,
     amount DECIMAL(10,2) NOT NULL,
     due_date DATE NOT NULL,
@@ -266,9 +266,9 @@ CREATE TABLE tpt_fee_master (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE tpt_fee_collection (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    student_allocation_id BIGINT UNSIGNED NOT NULL,
-    fee_master_id BIGINT UNSIGNED NOT NULL,
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    student_allocation_id INT UNSIGNED NOT NULL,
+    fee_master_id INT UNSIGNED NOT NULL,
     paid_amount DECIMAL(10,2) NOT NULL,
     payment_date DATE NOT NULL,
     payment_mode ENUM('Cash','UPI','Card','Bank','Cheque') NOT NULL,
@@ -289,7 +289,7 @@ CREATE TABLE tpt_fee_collection (
 -- =======================================================================
 
 CREATE TABLE tpt_route_simulation (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     simulation_date DATETIME NOT NULL,
     input_students_json JSON NOT NULL,
     input_stops_json JSON NOT NULL,
@@ -301,8 +301,8 @@ CREATE TABLE tpt_route_simulation (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE tpt_route_ai_recommendation (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    simulation_id BIGINT UNSIGNED NOT NULL,
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    simulation_id INT UNSIGNED NOT NULL,
     suggested_stops_json JSON NOT NULL,
     merged_stops_json JSON,
     student_shift_json JSON,
@@ -317,8 +317,8 @@ CREATE TABLE tpt_route_ai_recommendation (
 -- =======================================================================
 
 CREATE TABLE tpt_gps_trip_log (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    trip_id BIGINT UNSIGNED NOT NULL,
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    trip_id INT UNSIGNED NOT NULL,
     log_time DATETIME NOT NULL,
     latitude DECIMAL(10,6) NOT NULL,
     longitude DECIMAL(10,6) NOT NULL,
@@ -330,8 +330,8 @@ CREATE TABLE tpt_gps_trip_log (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE tpt_gps_alerts (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    vehicle_id BIGINT UNSIGNED NOT NULL,
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    vehicle_id INT UNSIGNED NOT NULL,
     alert_type ENUM('Overspeed','Idle','RouteDeviation') NOT NULL,
     log_time DATETIME NOT NULL,
     message VARCHAR(255) NOT NULL,
@@ -344,8 +344,8 @@ CREATE TABLE tpt_gps_alerts (
 -- =======================================================================
 
 CREATE TABLE vehicle_fuel_log (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    vehicle_id BIGINT UNSIGNED NOT NULL,
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    vehicle_id INT UNSIGNED NOT NULL,
     date DATE NOT NULL,
     quantity DECIMAL(6,2) NOT NULL,
     cost DECIMAL(10,2) NOT NULL,
@@ -355,8 +355,8 @@ CREATE TABLE vehicle_fuel_log (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE vehicle_maintenance (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    vehicle_id BIGINT UNSIGNED NOT NULL,
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    vehicle_id INT UNSIGNED NOT NULL,
     maintenance_type VARCHAR(80) NOT NULL,
     cost DECIMAL(10,2) NOT NULL,
     workshop_details VARCHAR(255),
@@ -370,10 +370,10 @@ CREATE TABLE vehicle_maintenance (
 -- =======================================================================
 
 CREATE TABLE transport_notification_log (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    student_session_id BIGINT UNSIGNED NOT NULL,
-    trip_id BIGINT UNSIGNED NOT NULL,
-    stop_id BIGINT UNSIGNED,
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    student_session_id INT UNSIGNED NOT NULL,
+    trip_id INT UNSIGNED NOT NULL,
+    stop_id INT UNSIGNED,
     notification_type ENUM('TripStart','ApproachingStop','ReachedStop','Delayed','Cancelled'),
     sent_time DATETIME NOT NULL,
     status ENUM('Sent','Failed') NOT NULL DEFAULT 'Sent',
