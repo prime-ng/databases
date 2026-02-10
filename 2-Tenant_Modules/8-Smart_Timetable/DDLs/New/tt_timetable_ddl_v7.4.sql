@@ -31,7 +31,7 @@ SET FOREIGN_KEY_CHECKS = 0;
   -- This table is created in the School_Setup module but will will be shown & can be Modified in Timetable as well.
   -- This will be used in Lesson Planning for creating Schedule for all the Subjects for Entire Session
   CREATE TABLE IF NOT EXISTS `sch_academic_term` (
-    `id` INT unsigned NOT NULL AUTO_INCREMENT,
+    `id` SMALLINT unsigned NOT NULL AUTO_INCREMENT,
     `academic_session_id` INT UNSIGNED NOT NULL,
     `academic_year_start_date` DATE NOT NULL,
     `academic_year_end_date` DATE NOT NULL,
@@ -72,7 +72,7 @@ SET FOREIGN_KEY_CHECKS = 0;
   -- Only Edit Functionality is require. No one can Add or Delete any record.
   -- In Edit also "key" can not be edit. In Edit "key" will not be display.
   CREATE TABLE IF NOT EXISTS `tt_config` (
-    `id` INT unsigned NOT NULL AUTO_INCREMENT,
+    `id` SMALLINT unsigned NOT NULL AUTO_INCREMENT,
     `ordinal` int unsigned NOT NULL DEFAULT '1',
     `key` varchar(150) NOT NULL,                           -- Can not changed by user (He can edit other fields only but not KEY)
     `key_name` varchar(150) NOT NULL,                      -- Can be Changed by user
@@ -108,7 +108,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 
 -- Timetable Generation Queue & Strategy Tables (For handling asynchronous timetable generation)
 CREATE TABLE IF NOT EXISTS `tt_generation_strategy` (
-    `id` INT unsigned NOT NULL AUTO_INCREMENT,
+    `id` SMALLINT unsigned NOT NULL AUTO_INCREMENT,
     `code` VARCHAR(20) NOT NULL,
     `name` VARCHAR(100) NOT NULL,
     `description` VARCHAR(255) NULL,
@@ -138,7 +138,7 @@ COMMENT='Timetable generation algorithms and parameters';
 
   -- Here we are setting what all Shifts will be used for the Timetable Module 'MORNING', 'TODLER', 'AFTERNOON', 'EVENING'
   CREATE TABLE IF NOT EXISTS `tt_shift` (
-    `id` SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `id` TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `code` VARCHAR(20) NOT NULL,               -- e.g., 'MORNING', 'AFTERNOON', 'EVENING'
     `name` VARCHAR(100) NOT NULL,              -- e.g., 'Morning', 'Afternoon', 'Evening'
     `description` VARCHAR(255) DEFAULT NULL,
@@ -157,7 +157,7 @@ COMMENT='Timetable generation algorithms and parameters';
 
   -- Here we are setting what all Types of Days will be used for the School 'WORKING','HOLIDAY','EXAM','SPECIAL'
   CREATE TABLE IF NOT EXISTS `tt_day_type` (
-    `id` SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `id` TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `code` VARCHAR(20) NOT NULL,                      -- e.g., 'STUDY','HOLIDAY','EXAM','SPECIAL','PTM_DAY','SPORTS_DAY','ANNUAL_DAY'
     `name` VARCHAR(100) NOT NULL,                     -- e.g., 'Study Day','Holiday','Exam','Special Day','Parent Teacher Meeting','Sports Day','Annual Day'
     `description` VARCHAR(255) DEFAULT NULL,
@@ -176,7 +176,7 @@ COMMENT='Timetable generation algorithms and parameters';
 
   -- Here we are setting what all Types of Periods will be used for the School 'THEORY','TEACHING','PRACTICAL','BREAK','LUNCH','ASSEMBLY','EXAM','RECESS','FREE'
   CREATE TABLE IF NOT EXISTS `tt_period_type` (
-    `id` SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `id` TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `code` VARCHAR(30) NOT NULL,                         -- e.g., 'THEORY','TEACHING','PRACTICAL','BREAK','LUNCH','ASSEMBLY','EXAM','RECESS','FREE'
     `name` VARCHAR(100) NOT NULL,                        -- e.g., 'Theory','Teaching','Practical','Break','Lunch','Assembly','Exam','Recess','Free Period'
     `description` VARCHAR(255) DEFAULT NULL,
@@ -200,7 +200,7 @@ COMMENT='Timetable generation algorithms and parameters';
 
   -- Here we are setting what all Types of Teacher Assignment Roles will be used for the School 'PRIMARY','ASSISTANT','CO_TEACHER','SUBSTITUTE','TRAINEE'
   CREATE TABLE IF NOT EXISTS `tt_teacher_assignment_role` (
-    `id` SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `id` TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `code` VARCHAR(30) NOT NULL,                            -- e.g., 'PRIMARY','ASSISTANT','CO_TEACHER','SUBSTITUTE','TRAINEE'
     `name` VARCHAR(100) NOT NULL,                           -- e.g., 'Primary Teacher','Assistant Teacher','Co-Teacher','Substitute Teacher','Trainee Teacher'
     `description` VARCHAR(255) DEFAULT NULL,
@@ -220,7 +220,7 @@ COMMENT='Timetable generation algorithms and parameters';
 
   -- Here we are setting which all Days will be Open for School and Which day School will remain Closed
   CREATE TABLE IF NOT EXISTS `tt_school_days` (
-    `id` SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `id` TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `code` VARCHAR(10) NOT NULL,                    -- e.g., 'MON','TUE','WED','THU','FRI','SAT','SUN'
     `name` VARCHAR(20) NOT NULL,                    -- e.g., 'Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'
     `short_name` VARCHAR(5) NOT NULL,               -- e.g., 'Mon','Tue','Wed','Thu','Fri','Sat','Sun'
@@ -419,6 +419,7 @@ COMMENT='Timetable generation algorithms and parameters';
     `compulsory_specific_room_type` TINYINT(1) NOT NULL DEFAULT 0,    -- Whether specific room type is required (TRUE - if Specific Room Type is Must)
     `required_room_type_id` INT UNSIGNED NOT NULL,                    -- FK to sch_room_types.id (Required)
     `required_room_id` INT UNSIGNED DEFAULT NULL,                     -- FK to sch_rooms.id (Optional)
+    `class_house_room_id` INT UNSIGNED NOT NULL,                      -- FK to 'sch_rooms' (Added new)
     `student_count` INT UNSIGNED DEFAULT NULL,                        -- Number of students in this subgroup (Need to be taken from sch_class_section_jnt)
     `eligible_teacher_count` INT UNSIGNED DEFAULT NULL,               -- Number of teachers available for this group (Will capture from Teachers profile)
     `min_teacher_availability_score` DECIMAL(7,2) UNSIGNED DEFAULT 1  -- Percentage of available teachers for this Class Group (Will capture from Teachers profile)
@@ -440,7 +441,8 @@ COMMENT='Timetable generation algorithms and parameters';
     CONSTRAINT `sch_class_groups_jnt_sub_stdy_frmt_id_foreign` FOREIGN KEY (`sub_stdy_frmt_id`) REFERENCES `sch_subject_study_format_jnt` (`id`) ON DELETE RESTRICT,
     CONSTRAINT `sch_class_groups_jnt_subject_type_id_foreign` FOREIGN KEY (`subject_type_id`) REFERENCES `sch_subject_types` (`id`) ON DELETE RESTRICT
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
+  -- Condition:
+  -- 1. student_count = sch_class_section_jnt.actual_total_student
 
   -- changed below Table name to - `tt_requirement_subgroups` from `tt_class_subgroup`
   CREATE TABLE IF NOT EXISTS `tt_class_subject_subgroups` (
@@ -456,6 +458,7 @@ COMMENT='Timetable generation algorithms and parameters';
     `compulsory_specific_room_type` TINYINT(1) NOT NULL DEFAULT 0,       -- Whether specific room type is required (TRUE - if Specific Room Type is Must)
     `required_room_type_id` INT UNSIGNED NOT NULL,                       -- FK to sch_room_types.id (Required)
     `required_room_id` INT UNSIGNED DEFAULT NULL,                        -- FK to sch_rooms.id (Optional)
+    `class_house_room_id` INT UNSIGNED NOT NULL,                         -- FK to 'sch_rooms' (Added new). (Fetch from sch_class_section_jnt)
     `student_count` INT UNSIGNED DEFAULT NULL,                           -- Number of students in this subgroup
     `eligible_teacher_count` INT UNSIGNED DEFAULT NULL,                  -- Number of teachers available for this group (Will capture from Teachers profile)
     `min_teacher_availability_score` DECIMAL(7,2) UNSIGNED DEFAULT 1,    -- Percentage of available teachers for this Class Group (Will capture from Teachers profile)
@@ -471,6 +474,16 @@ COMMENT='Timetable generation algorithms and parameters';
     KEY `idx_subgroup_type` (`subgroup_type`),
     CONSTRAINT `fk_subgroup_class_group` FOREIGN KEY (`class_subject_group_id`) REFERENCES `tt_class_subject_groups` (`id`) ON DELETE SET NULL
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  -- Condition:
+  -- 1. Count (Student) from std_student_academic_sessions where 
+  --             std_student_academic_sessions.subject_group_id = sch_subject_groups.id
+  --             sch_subject_group_subject_jnt.subject_group_id = sch_subject_groups.id
+  --   Condition
+  --             sch_subject_groups.class_id = tt_class_subject_subgroups.class_id
+  --             sch_subject_groups.section_id = tt_class_subject_subgroups.section_id
+  --             sch_subject_group_subject_jnt.subject_study_format_id = tt_class_subject_subgroups.subject_study_format_id
+
+
 
 -- -------------------------------------------------
 --  SECTION 2: CONSTRAINT ENGINE
@@ -496,15 +509,16 @@ COMMENT='Timetable generation algorithms and parameters';
 
   CREATE TABLE IF NOT EXISTS `tt_constraint_type` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `code` VARCHAR(60) NOT NULL,      -- Can not be changed by User (e.g., 'TEACHER_NOT_AVAILABLE','MIN_DAYS_BETWEEN','SAME_STARTING_TIME')
-    `name` VARCHAR(150) NOT NULL,     -- User can change Name (e.g., 'Teacher Not Available','Minimum Days Between','Same Starting Time')
+    `code` VARCHAR(60) NOT NULL,                        -- Can not be changed by User (e.g., 'TEACHER_NOT_AVAILABLE','MIN_DAYS_BETWEEN','SAME_STARTING_TIME')
+    `name` VARCHAR(150) NOT NULL,                       -- User can change Name (e.g., 'Teacher Not Available','Minimum Days Between','Same Starting Time')
     `description` VARCHAR(255) DEFAULT NULL,
-    `category_id` INT UNSIGNED NOT NULL,  -- FK to tt_constraint_category_scope.id (e.g., 'Teacher','Student','Room','Period','Class','Subject','Study Format', 'Subject Type')
-    `scope_id` INT UNSIGNED NOT NULL,     -- FK to tt_constraint_category_scope.id (e.g., GLOBAL, TEACHER, STUDENT, ROOM, ACTIVITY, CLASS, CLASS_SUBJECT, STUDY_FORMAT, SUBJECT etc.)
-    `default_weight` TINYINT UNSIGNED DEFAULT 100,  -- Default weight for this constraint type
-    `is_hard_constraint` TINYINT(1) DEFAULT 1,  -- Whether this constraint type can be set as hard
-    `param_schema` JSON DEFAULT NULL,  -- JSON schema for parameters required by this constraint type
-    `is_system` TINYINT(1) DEFAULT 1,  -- Whether this constraint type is a system constraint type
+    `category_id` INT UNSIGNED NOT NULL,                -- FK to tt_constraint_category_scope.id (e.g., PERIOD, ROOM, TEACHER, STUDENT, CLASS, SUBJECT etc.)
+    `scope_id` INT UNSIGNED NOT NULL,                   -- FK to tt_constraint_category_scope.id (e.g., GLOBAL, TEACHER, ROOM, ACTIVITY, CLASS, CLASS+SECTION etc.)
+    `target_id_required` TINYINT(1) NOT NULL DEFAULT 0, -- Whether target_id is required
+    `default_weight` TINYINT UNSIGNED DEFAULT 100,      -- Default weight for this constraint type
+    `is_hard_constraint` TINYINT(1) DEFAULT 1,          -- Whether this constraint type can be set as hard
+    `param_schema` JSON DEFAULT NULL,                   -- JSON schema for parameters required by this constraint type
+    `is_system` TINYINT(1) DEFAULT 1,                   -- Whether this constraint type is a system constraint type
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -517,14 +531,15 @@ COMMENT='Timetable generation algorithms and parameters';
     CONSTRAINT `fk_ctype_scope` FOREIGN KEY (`scope_id`) REFERENCES `tt_constraint_category_scope` (`id`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+
   CREATE TABLE IF NOT EXISTS `tt_constraint` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `constraint_type_id` INT UNSIGNED NOT NULL,       -- FK to tt_constraint_type.id
+    `constraint_type_id` INT UNSIGNED NOT NULL,          -- FK to tt_constraint_type.id
     `name` VARCHAR(200) DEFAULT NULL,
     `description` VARCHAR(500) DEFAULT NULL,
-    `academic_term_id` INT UNSIGNED DEFAULT NULL,     -- FK to tt_academic_term.id
+    `academic_term_id` INT UNSIGNED DEFAULT NULL,        -- FK to tt_academic_term.id
     `target_type` INT UNSIGNED NOT NULL,                 -- FK to tt_constraint_category_scope (whome this constraint will be applicable to?)
-    `target_id` INT UNSIGNED DEFAULT NULL,            -- FK to target_type.id (Individuals id, if constraint applicable to an individual e.g. a Teacher, a Class or a Room)
+    `target_id` INT UNSIGNED DEFAULT NULL,               -- FK to target_type.id (Individuals id, if constraint applicable to an individual e.g. a Teacher, a Class or a Room)
     `is_hard` TINYINT(1) NOT NULL DEFAULT 0,             -- Whether this constraint is hard
     `weight` TINYINT UNSIGNED NOT NULL DEFAULT 100,      -- Weight of this constraint
     `params_json` JSON NOT NULL,                         -- JSON object containing parameters for this constraint
@@ -534,7 +549,7 @@ COMMENT='Timetable generation algorithms and parameters';
     `applicable_days` JSON DEFAULT NULL,                 -- JSON array of days this constraint applies to
     `impact_score` TINYINT UNSIGNED DEFAULT 50,          -- Estimated impact on timetable generation difficulty (1-100)
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,           -- Whether this constraint is active
-    `created_by` INT UNSIGNED DEFAULT NULL,           -- FK to sys_users.id
+    `created_by` INT UNSIGNED DEFAULT NULL,              -- FK to sys_users.id
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at` TIMESTAMP NULL DEFAULT NULL,

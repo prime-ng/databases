@@ -175,6 +175,7 @@
     `allow_consecutive_periods` TINYINT(1) NOT NULL DEFAULT 0,     -- Whether consecutive periods are allowed for this Class Group
     `max_consecutive_periods` TINYINT UNSIGNED DEFAULT 1,          -- Maximum consecutive periods
     `priority_score` SMALLINT UNSIGNED DEFAULT 10,                 -- Priority of this requirement on 1-100 scale
+    --
     `compulsory_specific_room_type` TINYINT(1) NOT NULL DEFAULT 0, -- Whether specific room type is required (TRUE - if Specific Room Type is Must)
     `required_room_type_id` INT UNSIGNED NOT NULL,      -- FK to sch_room_types.id (Required)
     `required_room_id` INT UNSIGNED DEFAULT NULL,      -- FK to sch_rooms.id (Optional)
