@@ -292,7 +292,6 @@ SET FOREIGN_KEY_CHECKS = 0;
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
-
   -- Here we are setting Period Set (Different No of Periods for different classes e.g. 3rd-12th Normal 8P, 4th-12th Exam 3P, 5th-12th Half Day 4P, BV1-2nd Toddler 6P)
   CREATE TABLE IF NOT EXISTS `tt_period_set` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -412,7 +411,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 
    -- Create Slot Availability / Class+section (This will fetch data from tt_class_timetable_type_jnt & tt_timetable_type)
    -- There will be no Audit Fields as this table will be used for calculation purpose only
-   CREATE TABLE IF NOT EXISTS `tt_slot_availability` (
+   CREATE TABLE IF NOT EXISTS `tt_slot_requirement` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `academic_term_id` INT unsigned NOT NULL,  -- FK to tt_academic_term.id
     `timetable_type_id` INT unsigned NOT NULL,  -- FK to tt_timetable_type.id
@@ -514,13 +513,13 @@ SET FOREIGN_KEY_CHECKS = 0;
     CONSTRAINT `fk_subgroup_class_group` FOREIGN KEY (`class_subject_group_id`) REFERENCES `tt_class_subject_groups` (`id`) ON DELETE SET NULL
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
   -- Condition:
-  -- 1. Count (Student) from std_student_academic_sessions where 
-  --             std_student_academic_sessions.subject_group_id = sch_subject_groups.id
-  --             sch_subject_group_subject_jnt.subject_group_id = sch_subject_groups.id
-  --   Condition
-  --             sch_subject_groups.class_id = tt_class_subject_subgroups.class_id
-  --             sch_subject_groups.section_id = tt_class_subject_subgroups.section_id
-  --             sch_subject_group_subject_jnt.subject_study_format_id = tt_class_subject_subgroups.subject_study_format_id
+    -- 1. Count (Student) from std_student_academic_sessions where 
+    --             std_student_academic_sessions.subject_group_id = sch_subject_groups.id
+    --             sch_subject_group_subject_jnt.subject_group_id = sch_subject_groups.id
+    --   Condition
+    --             sch_subject_groups.class_id = tt_class_subject_subgroups.class_id
+    --             sch_subject_groups.section_id = tt_class_subject_subgroups.section_id
+    --             sch_subject_group_subject_jnt.subject_study_format_id = tt_class_subject_subgroups.subject_study_format_id
 
 
 -- -------------------------------------------------

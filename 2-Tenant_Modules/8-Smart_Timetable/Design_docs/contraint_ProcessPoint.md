@@ -14,9 +14,62 @@ Get: $term_code [sch_academic_term.term_code]
 Get: $Academic_term_start_date [sch_academic_term.start_date]
 Get: $Academic_term_end_date [sch_academic_term.end_date]
 
-## 1. Generate (tt_class_subject_groups & tt_class_subject_subgroups)
+## 1. Generate Timetable Slot Availability
 
-### 1.1 Fill Data into [tt_class_subject_groups & tt_class_subject_subgroups]
+### 1.1 Generate Timetable Slot Availability
+-------------------------------------------
+Step 1: Create Records where [tt_class_timetable_type_jnt.applies_to_all_sections] = 0
+   Select all the Records from [tt_class_timetable_type_jnt] where 
+      [tt_class_timetable_type_jnt.academic_term_id] = [$academic_term_id] AND
+      [tt_class_timetable_type_jnt.timetable_type_id] = [$timetable_type_id] AND
+      [tt_class_timetable_type_jnt.applies_to_all_sections] = 0 AND
+      [tt_class_timetable_type_jnt.is_active] = 1
+   Insert all those records into [tt_slot_availability]
+Step 2: Create Records where [tt_class_timetable_type_jnt.applies_to_all_sections] = 1
+   Select all the Records from [tt_class_timetable_type_jnt] where 
+      [tt_class_timetable_type_jnt.academic_term_id] = [$academic_term_id] AND
+      [tt_class_timetable_type_jnt.timetable_type_id] = [$timetable_type_id] AND
+      [tt_class_timetable_type_jnt.applies_to_all_sections] = 1 AND
+      [tt_class_timetable_type_jnt.is_active] = 1
+   Loop through all the records from [tt_class_timetable_type_jnt]
+      Select * from [sch_class_section_jnt] where 
+         [sch_class_section_jnt.class_id] = [tt_class_timetable_type_jnt.class_id] AND
+         [sch_class_section_jnt.is_active] = 1
+      Loop through all the records from [sch_class_section_jnt]
+         Insert all records from [tt_class_timetable_type_jnt] into [tt_slot_availability] for each 
+            section_id in [sch_class_section_jnt]
+      EndLoop
+   EndLoop
+
+
+
+
+
+
+Step 3: Create Records where [tt_class_timetable_type_jnt.applies_to_all_sections] = 0
+   Loop through all the records from [tt_class_timetable_type_jnt]
+   Check [tt_class_timetable_type_jnt.applies_to_all_sections]
+   If True
+      Insert into [tt_slot_availability] Select * from [tt_class_timetable_type_jnt] where 
+	   [tt_class_timetable_type_jnt.class_id] = [tt_class_timetable_type_jnt.class_id] AND
+	   [tt_class_timetable_type_jnt.section_id] = [tt_class_timetable_type_jnt.section_id] AND
+	   [tt_class_timetable_type_jnt.is_active] = 1
+	Update [tt_slot_availability.class_id] = [tt_class_timetable_type_jnt.class_id] AND
+	Update [tt_slot_availability.timetable_type_id] = [tt_class_timetable_type_jnt.timetable_type_id]
+
+	Else
+		Select all the records from [sch_class_section_jnt] where 
+		   [sch_class_section_jnt.class_id] = [tt_class_timetable_type_jnt.class_id] AND
+		   [sch_class_section_jnt.is_active] = 1
+		Update [tt_slot_availability.class_id] = [sch_class_section_jnt.class_id] AND
+		[tt_slot_availability.section_id] = [sch_class_section_jnt.section_id] AND
+		[tt_slot_availability.timetable_type_id] = [tt_class_timetable_type_jnt.timetable_type_id]
+		Insert all those records into [tt_slot_availability]
+   EndIf
+
+## 2. Generate (tt_class_subject_groups & tt_class_subject_subgroups)
+
+### 2.1 Fill Data into [tt_class_subject_groups & tt_class_subject_subgroups]
 -----------------------------------------------------------------------------
 Check [sch_class_groups_jnt.is_compulsory]
 If [True]
@@ -31,21 +84,21 @@ Else
    [sch_class_section_jnt.is_active] = 1
 EndIf
 
-### 1.2 Class_House_Room in [tt_class_subject_groups.class_house_room_id]
+### 2.2 Class_House_Room in [tt_class_subject_groups.class_house_room_id]
 -------------------------------------------------------------------------	
 Get: from [sch_class_section_jnt.class_house_room_id] where 
    [sch_class_section_jnt.class_id] = [tt_class_subject_groups.class_id]
    [sch_class_section_jnt.section_id] = [tt_class_subject_groups.section_id]
    [sch_class_section_jnt.is_active] = 1
 
-### 1.3 Class_House_Room in [tt_class_subject_subgroups.class_house_room_id]
+### 2.3 Class_House_Room in [tt_class_subject_subgroups.class_house_room_id]
 ----------------------------------------------------------------------------
 Get: from [sch_class_section_jnt.class_house_room_id] where 
    [sch_class_section_jnt.class_id] = [tt_class_subject_subgroups.class_id]
    [sch_class_section_jnt.section_id] = [tt_class_subject_subgroups.section_id]
    [sch_class_section_jnt.is_active] = 1
 
-### 1.4 Update [sch_class_section_jnt.actual_total_student]
+### 2.4 Update [sch_class_section_jnt.actual_total_student]
 -----------------------------------------------------------------
 update [sch_class_section_jnt]
 set [actual_total_student] = 
@@ -55,14 +108,14 @@ Get: count of [std_student_academic_sessions.id] where
    [std_student_academic_sessions.section_id] = [tt_class_subject_groups.section_id]
    [std_student_academic_sessions.is_active] = 1
 
-### 1.4 Total_Student in [tt_class_subject_groups.student_count]
+### 2.5 Total_Student in [tt_class_subject_groups.student_count]
 -----------------------------------------------------------------
 Get: count of [sch_class_section_jnt.actual_total_student] where 
    [sch_class_section_jnt.class_id] = [tt_class_subject_groups.class_id]
    [sch_class_section_jnt.section_id] = [tt_class_subject_groups.section_id]
    [sch_class_section_jnt.is_active] = 1
 
-### 1.5 Total_Student in [tt_class_subject_subgroups.student_count]
+### 2.6 Total_Student in [tt_class_subject_subgroups.student_count]
 -----------------------------------------------------------------
 Get: count of [sch_class_section_jnt.actual_total_student] where 
    [sch_class_section_jnt.class_id] = [tt_class_subject_subgroups.class_id]
@@ -75,7 +128,7 @@ Condition
    [sch_subject_group_subject_jnt.subject_study_format_id] = [tt_class_subject_subgroups.subject_study_format_id]
 EndIf
 
-### 1.4 Total_Student in [tt_class_subject_subgroups.student_count]
+### 2.7 Total_Student in [tt_class_subject_subgroups.student_count]
 -----------------------------------------------------------------
 Check [is_compulsory]
 If True
@@ -96,7 +149,7 @@ EndIf
 
 
 
-### 1.5 Calculate Allocated Teachers Count [eligible_teacher_count]
+### 2.8 Calculate Allocated Teachers Count [eligible_teacher_count]
 ------------------------------------------------------------------
 Get: count of [sch_teacher_capabilities.id] where 
    [sch_teacher_capabilities.class_group_id] = [sch_class_groups_jnt.id]
@@ -104,9 +157,9 @@ Insert into both tables (tt_clss_subject_group & tt_clss_subject_subgroup)
 
 
 
-## 2. Requirement Consolidation [tt_requirement_consolidation]
+## 3. Requirement Consolidation [tt_requirement_consolidation]
 
-### 2.1 Fill [tt_requirement_consolidation]
+### 3.1 Fill [tt_requirement_consolidation]
 -------------------------------------------
 Fill [tt_class_subject_groups.class_group_id] = [sch_class_groups_jnt.id]
 a. Check [is_compulsory]
@@ -120,9 +173,9 @@ EndIf
 
 
 
-## 3. Teacher Assignment (tt_teacher_assignment)
+## 4. Teacher Assignment (tt_teacher_assignment)
 
-### 3.1 Fill tt_teacher_assignment
+### 4.1 Fill tt_teacher_assignment
 ------------------------------------
    a. Check [is_compulsory]
       If True
