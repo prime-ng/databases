@@ -22,13 +22,19 @@ When Start Timetable Generation process user will get dropdown to select -
 
 ## 0. Pre-requisite
 When user select Academic Term we will fetch below parameter from [sch_academic_term]
-Get: $academic_term_id from [sch_academic_term.id]
-Get: $academic_session_id from [sch_academic_term.academic_session_id]
-Get: $academic_year_start_date [sch_academic_term.start_date]
-Get: $academic_year_end_date [sch_academic_term.end_date]
-Get: $term_code [sch_academic_term.term_code]
-Get: $Academic_term_start_date [sch_academic_term.start_date]
-Get: $Academic_term_end_date [sch_academic_term.end_date]
+      Get: $academic_term_id from [sch_academic_term.id]
+      Get: $academic_session_id from [sch_academic_term.academic_session_id]
+      Get: $academic_year_start_date [sch_academic_term.start_date]
+      Get: $academic_year_end_date [sch_academic_term.end_date]
+      Get: $term_code [sch_academic_term.term_code]
+      Get: $Academic_term_start_date [sch_academic_term.start_date]
+      Get: $Academic_term_end_date [sch_academic_term.end_date]
+We will fetch below parameters from [tt_timetable_type]
+      Get: $timetable_type_id from [tt_timetable_type.id]
+      Get: $timetable_type_code [tt_timetable_type.code]
+      Get: $timetable_type_name [tt_timetable_type.name]
+      Get: $timetable_from_date [tt_timetable_type.`effective_from_date`]
+      Get: $timetable_to_date [tt_timetable_type.effective_to_date]
 
 ## 1. Generate Timetable Slot Requirement
 
@@ -137,9 +143,13 @@ Get: $Academic_term_end_date [sch_academic_term.end_date]
 
 ## 3. Requirement Consolidation [tt_requirement_consolidation]
 
-### 3.1 Fill [tt_requirement_consolidation]
+### 3.1 Truncate [tt_requirement_consolidation]
 -------------------------------------------
-       
+   Remove all the records from [tt_requirement_consolidation]
+
+### 3.2 Fill [tt_requirement_consolidation]
+-------------------------------------------
+
 try {
    DB::transaction(function () use ($academicTermId, $timetableTypeId) {
 
@@ -213,7 +223,7 @@ try {
    return "Error: " . $e->getMessage();
 }
    
-### 3.2 Fill Additional Parameters [tt_requirement_consolidation_details]
+### 3.3 Fill Additional Parameters [tt_requirement_consolidation_details]
 -------------------------------------------------------------------------
 Make All Editable Fiedls available to the user for Modification AND
 Mannual Entry for - [`preferred_periods_json`], [`avoid_periods_json`], [`spread_evenly`]
@@ -226,9 +236,97 @@ Mannual Entry for - [`preferred_periods_json`], [`avoid_periods_json`], [`spread
 
 ## 4. Timetable Resource Availability
 
-### 4.1 Fill tt_teacher_availability (tt_teacher_availability)
+### 4.1 Truncate [tt_teacher_availability]
+-------------------------------------------
+   Remove all the records from [tt_teacher_availability]
+
+### 4.2 Fill tt_teacher_availability (tt_teacher_availability)
 --------------------------------------------------------------
-   a. Check [is_compulsory]
+
+ Step 1: Create Records in [tt_teacher_availability]
+   Select all the Records from [tt_requirement_consolidation]
+   Loop through all the records from [tt_requirement_consolidation]
+      Update Key Fields in [tt_teacher_availability] from [tt_requirement_consolidation]
+      set [requirement_consolidation_id], [class_id], [section_id], [subject_study_format_id] from 
+         [tt_requirement_consolidation]
+      set [preferred_shift], [capable_handling_multiple_classes], [can_be_used_for_substitution],
+          [max_periods_daily], [min_periods_daily], [max_periods_weekly], [min_periods_weekly],
+          [can_be_split_across_sections] 
+          from [sch_teacher_profile]
+      set [proficiency_percentage], [teaching_experience_months], [is_primary_subject], 
+          [competancy_level], [priority_order], [priority_weight], [scarcity_index],
+         [is_hard_constraint], [allocation_strictness], [override_priority], 
+         [historical_success_ratio], [last_allocation_score], [effective_from], [effective_to] from [sch_teacher_capabilities]
+   EndLoop
+
+Step 2: Update [sch_teacher_profile.teacher_availability_ratio] 
+   Update in [sch_teacher_profile] as tp from [sch_teacher_capabilities] as tc
+   set [teacher_availability_ratio] = (SELECT COUNT(DISTINCT teacher_profile_id) AS no_of_teachers_assigned FROM 
+       [sch_teacher_capabilities] WHERE tc.class_id = tp.class_id AND tc.subject_study_format_id = tp.subject_study_format_id AND (tc.effective_from IS NULL OR tc.effective_from <= $timetable_from_date) AND 
+       (tc.effective_to IS NULL OR tc.effective_to >= $timetable_to_date) AND tc.is_active = 1 GROUP BY tc.class_id, tc.subject_study_format_id ORDER BY tc.class_id, tc.subject_study_format_id);
+   
+   Select all the Records from [tt_teacher_availability] with count of allocated periods
+   Loop through all the records from [tt_teacher_availability]
+      Update [teacher_availability_ratio] in [sch_teacher_capabilities] from [tt_teacher_availability]
+   EndLoop
+
+
+
+
+
+
+
+
+   Update in [tt_teacher_availability] 
+      set [day1_available_period_count], [day2_available_period_count], [day3_available_period_count], [day4_available_period_count],
+          [day5_available_period_count], [day6_available_period_count], [day7_available_period_count]
+   Select all the Records from [tt_teacher_availability]
+   Loop through all the records from [tt_teacher_availability]
+      Calculate [min_teacher_availability_score] and [max_teacher_availability_score] from [sch_teacher_capabilities]
+   EndLoop
+
+Step 3: Update in [tt_teacher_availability] from [tt_teacher_unavailable]
+   set [day1_available_period_count], [day2_available_period_count], [day3_available_period_count], [day4_available_period_count],
+       [day5_available_period_count], [day6_available_period_count], [day7_available_period_count]
+   Select all the Records from [tt_teacher_availability]
+   Loop through all the records from [tt_teacher_availability]
+      Calculate [min_teacher_availability_score] and [max_teacher_availability_score] from [sch_teacher_capabilities]
+   EndLoop
+
+Step 4: Calculate [min_teacher_availability_score] and [max_teacher_availability_score]
+   Select all the Records from [tt_teacher_availability]
+   Loop through all the records from [tt_teacher_availability]
+      Calculate [min_teacher_availability_score] and [max_teacher_availability_score] from [sch_teacher_capabilities]
+   EndLoop
+
+Step 5: Mannual modification in [tt_teacher_availability] for [is_primary_teacher], [is_preferred_teacher], [preference_score]
+
+
+
+
+
+
+
+
+
+
+
+
+-------------------------------------------------------------
+New Enhancement on Teachers Profile for Shailesh
+
+Create a New View to Order Teachers Priority on the basis of Class+Subject+Study_Format
+   - User will Select Class from Dropdown and then Will Select Subject+Study_Format from Dropdown
+   - All the Teacher Allocated to the selected Class & Subject+Study_Format will be displayed
+   - User Can Change the Order of the Teacher by Drag and Drop to set the Priority for the Teacher for that Class+Subject+Study_Format
+   -  
+
+
+
+
+
+
+   a. Check [is_active]
       If True
          Insert data into tt_teacher_assignment
       Else
