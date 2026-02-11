@@ -16,9 +16,9 @@ CREATE TABLE lms_content_format_master (
     description VARCHAR(255),
     is_active TINYINT(1) NOT NULL DEFAULT 1,
     is_deleted TINYINT(1) NOT NULL DEFAULT 0,
-    created_by BIGINT UNSIGNED,
+    created_by INT UNSIGNED,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_by BIGINT UNSIGNED,
+    updated_by INT UNSIGNED,
     updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP
 );
 
@@ -47,10 +47,10 @@ INSERT INTO lms_assessment_type_master (assessment_code, assessment_name) VALUES
 -- ================= PHASE A2: HOMEWORK =================
 
 CREATE TABLE lms_homework_master (
-    homework_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    class_id BIGINT UNSIGNED NOT NULL,
-    section_id BIGINT UNSIGNED NOT NULL,
-    subject_id BIGINT UNSIGNED NOT NULL,
+    homework_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    class_id INT UNSIGNED NOT NULL,
+    section_id INT UNSIGNED NOT NULL,
+    subject_id INT UNSIGNED NOT NULL,
     homework_title VARCHAR(255) NOT NULL,
     homework_description LONGTEXT,
     content_format_id SMALLINT UNSIGNED NOT NULL,
@@ -61,16 +61,16 @@ CREATE TABLE lms_homework_master (
     due_date DATETIME NULL,
     is_active TINYINT(1) DEFAULT 1,
     is_deleted TINYINT(1) DEFAULT 0,
-    created_by BIGINT UNSIGNED NOT NULL,
+    created_by INT UNSIGNED NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_by BIGINT UNSIGNED,
+    updated_by INT UNSIGNED,
     updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP
 );
 
 CREATE TABLE lms_homework_topic_map (
-    homework_topic_map_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    homework_id BIGINT UNSIGNED NOT NULL,
-    topic_id BIGINT UNSIGNED NOT NULL,
+    homework_topic_map_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    homework_id INT UNSIGNED NOT NULL,
+    topic_id INT UNSIGNED NOT NULL,
     is_active TINYINT(1) DEFAULT 1,
     is_deleted TINYINT(1) DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -78,9 +78,9 @@ CREATE TABLE lms_homework_topic_map (
 );
 
 CREATE TABLE lms_homework_submission (
-    homework_submission_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    homework_id BIGINT UNSIGNED NOT NULL,
-    student_id BIGINT UNSIGNED NOT NULL,
+    homework_submission_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    homework_id INT UNSIGNED NOT NULL,
+    student_id INT UNSIGNED NOT NULL,
     submission_text LONGTEXT,
     attachment_path VARCHAR(500),
     submitted_at DATETIME,
@@ -88,7 +88,7 @@ CREATE TABLE lms_homework_submission (
     marks_awarded DECIMAL(6,2),
     review_status_id SMALLINT UNSIGNED NOT NULL,
     teacher_remark TEXT,
-    reviewed_by BIGINT UNSIGNED,
+    reviewed_by INT UNSIGNED,
     reviewed_at DATETIME,
     is_active TINYINT(1) DEFAULT 1,
     is_deleted TINYINT(1) DEFAULT 0,
@@ -99,9 +99,9 @@ CREATE TABLE lms_homework_submission (
 -- ================= PHASE A3: QUESTION BANK EXTENSIONS =================
 
 CREATE TABLE qns_question_review_log (
-    review_log_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    question_id BIGINT UNSIGNED NOT NULL,
-    reviewer_id BIGINT UNSIGNED NOT NULL,
+    review_log_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    question_id INT UNSIGNED NOT NULL,
+    reviewer_id INT UNSIGNED NOT NULL,
     review_status_id SMALLINT UNSIGNED NOT NULL,
     review_comment TEXT,
     reviewed_at DATETIME NOT NULL,
@@ -110,7 +110,7 @@ CREATE TABLE qns_question_review_log (
 );
 
 CREATE TABLE qns_question_statistics (
-    question_id BIGINT UNSIGNED PRIMARY KEY,
+    question_id INT UNSIGNED PRIMARY KEY,
     difficulty_index DECIMAL(5,2),
     discrimination_index DECIMAL(5,2),
     guessing_factor DECIMAL(5,2),
@@ -124,10 +124,10 @@ CREATE TABLE qns_question_statistics (
 -- ================= PHASE A4: QUIZ =================
 
 CREATE TABLE lms_quiz_master (
-    quiz_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    class_id BIGINT UNSIGNED NOT NULL,
-    section_id BIGINT UNSIGNED NOT NULL,
-    subject_id BIGINT UNSIGNED NOT NULL,
+    quiz_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    class_id INT UNSIGNED NOT NULL,
+    section_id INT UNSIGNED NOT NULL,
+    subject_id INT UNSIGNED NOT NULL,
     quiz_title VARCHAR(255) NOT NULL,
     instructions LONGTEXT,
     time_limit_minutes INT,
@@ -142,14 +142,14 @@ CREATE TABLE lms_quiz_master (
     publish_result_at DATETIME,
     is_active TINYINT(1) DEFAULT 1,
     is_deleted TINYINT(1) DEFAULT 0,
-    created_by BIGINT UNSIGNED,
+    created_by INT UNSIGNED,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE lms_quiz_question_map (
-    quiz_question_map_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    quiz_id BIGINT UNSIGNED NOT NULL,
-    question_id BIGINT UNSIGNED NOT NULL,
+    quiz_question_map_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    quiz_id INT UNSIGNED NOT NULL,
+    question_id INT UNSIGNED NOT NULL,
     display_order INT,
     UNIQUE KEY uq_quiz_question (quiz_id, question_id)
 );
@@ -157,57 +157,57 @@ CREATE TABLE lms_quiz_question_map (
 -- ================= PHASE A5: QUEST =================
 
 CREATE TABLE lms_quest_master (
-    quest_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    quest_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     quest_title VARCHAR(255) NOT NULL,
-    class_id BIGINT UNSIGNED NOT NULL,
-    subject_id BIGINT UNSIGNED NOT NULL,
+    class_id INT UNSIGNED NOT NULL,
+    subject_id INT UNSIGNED NOT NULL,
     time_limit_minutes INT,
     publish_result_at DATETIME,
     quest_status_id SMALLINT UNSIGNED NOT NULL,
     is_active TINYINT(1) DEFAULT 1,
     is_deleted TINYINT(1) DEFAULT 0,
-    created_by BIGINT UNSIGNED,
+    created_by INT UNSIGNED,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE lms_quest_question_map (
-    quest_question_map_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    quest_id BIGINT UNSIGNED NOT NULL,
-    question_id BIGINT UNSIGNED NOT NULL,
+    quest_question_map_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    quest_id INT UNSIGNED NOT NULL,
+    question_id INT UNSIGNED NOT NULL,
     UNIQUE KEY uq_quest_question (quest_id, question_id)
 );
 
 -- ================= PHASE A6: EXAM =================
 
 CREATE TABLE lms_exam_master (
-    exam_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    exam_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     exam_name VARCHAR(255) NOT NULL,
-    class_id BIGINT UNSIGNED NOT NULL,
-    subject_id BIGINT UNSIGNED NOT NULL,
+    class_id INT UNSIGNED NOT NULL,
+    subject_id INT UNSIGNED NOT NULL,
     time_limit_minutes INT,
     scheduled_at DATETIME,
     publish_result_at DATETIME,
     exam_status_id SMALLINT UNSIGNED NOT NULL,
     is_active TINYINT(1) DEFAULT 1,
     is_deleted TINYINT(1) DEFAULT 0,
-    created_by BIGINT UNSIGNED,
+    created_by INT UNSIGNED,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE lms_exam_question_map (
-    exam_question_map_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    exam_id BIGINT UNSIGNED NOT NULL,
-    question_id BIGINT UNSIGNED NOT NULL,
+    exam_question_map_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    exam_id INT UNSIGNED NOT NULL,
+    question_id INT UNSIGNED NOT NULL,
     UNIQUE KEY uq_exam_question (exam_id, question_id)
 );
 
 -- ================= PHASE A7: ATTEMPTS =================
 
 CREATE TABLE lms_student_attempt_master (
-    attempt_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    student_id BIGINT UNSIGNED NOT NULL,
+    attempt_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    student_id INT UNSIGNED NOT NULL,
     assessment_type_id SMALLINT UNSIGNED NOT NULL,
-    assessment_id BIGINT UNSIGNED NOT NULL,
+    assessment_id INT UNSIGNED NOT NULL,
     started_at DATETIME,
     completed_at DATETIME,
     score DECIMAL(6,2),
@@ -217,9 +217,9 @@ CREATE TABLE lms_student_attempt_master (
 );
 
 CREATE TABLE lms_attempt_question_behavior (
-    behavior_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    attempt_id BIGINT UNSIGNED NOT NULL,
-    question_id BIGINT UNSIGNED NOT NULL,
+    behavior_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    attempt_id INT UNSIGNED NOT NULL,
+    question_id INT UNSIGNED NOT NULL,
     time_spent_seconds INT,
     answer_change_count INT,
     revisited TINYINT(1)
@@ -239,7 +239,7 @@ CREATE TABLE slb_performance_category_master (
 );
 
 CREATE TABLE lms_rule_engine (
-    rule_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    rule_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     trigger_event_code VARCHAR(50),
     condition_expression TEXT,
     action_code VARCHAR(50),

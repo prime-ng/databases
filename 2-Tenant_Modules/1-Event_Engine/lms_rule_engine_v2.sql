@@ -8,7 +8,7 @@
 -- ------------------------------------------------------------------
 -- Need to Verify
 CREATE TABLE IF NOT EXISTS sys_event_type (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     code VARCHAR(50) NOT NULL UNIQUE,  
     name VARCHAR(100) NOT NULL,
     description TEXT NULL,
@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS sys_event_type (
 -- TRIGGER EVENTS
 -- ------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS sys_trigger_event (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     code VARCHAR(50) NOT NULL UNIQUE,
     name VARCHAR(100) NOT NULL,
     description TEXT NULL,
@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS sys_trigger_event (
 -- ACTION TYPES (WHAT SYSTEM CAN DO)
 -- ------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS sys_action_type (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     code VARCHAR(50) NOT NULL UNIQUE,
     name VARCHAR(100) NOT NULL,
     description TEXT NULL,
@@ -56,12 +56,12 @@ CREATE TABLE IF NOT EXISTS sys_action_type (
 -- RULE ENGINE CONFIG (CORE RULE DEFINITION)
 -- ------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS sys_rule_engine_config (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     rule_code VARCHAR(50) NOT NULL UNIQUE,
     rule_name VARCHAR(100) NOT NULL,
     description TEXT NULL,
-    trigger_event_id BIGINT UNSIGNED NOT NULL,
-    applicable_class_group_id BIGINT UNSIGNED NULL,
+    trigger_event_id INT UNSIGNED NOT NULL,
+    applicable_class_group_id INT UNSIGNED NULL,
     logic_config JSON NOT NULL,
     priority INT NOT NULL DEFAULT 100,
     stop_further_execution TINYINT(1) NOT NULL DEFAULT 0,
@@ -79,9 +79,9 @@ CREATE TABLE IF NOT EXISTS sys_rule_engine_config (
 -- RULE → ACTION MAPPING (MULTIPLE ACTIONS PER RULE)
 -- ------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS sys_rule_action_map (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    rule_id BIGINT UNSIGNED NOT NULL,
-    action_type_id BIGINT UNSIGNED NOT NULL,
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    rule_id INT UNSIGNED NOT NULL,
+    action_type_id INT UNSIGNED NOT NULL,
     execution_order INT NOT NULL DEFAULT 1,
     is_active TINYINT(1) NOT NULL DEFAULT 1,
     created_at TIMESTAMP NULL DEFAULT NULL,
@@ -94,12 +94,12 @@ CREATE TABLE IF NOT EXISTS sys_rule_action_map (
 -- RULE EXECUTION LOG (AUDIT + DEBUG + AI DATA)
 -- ------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS sys_rule_execution_log (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    rule_id BIGINT UNSIGNED NOT NULL,
-    trigger_event_id BIGINT UNSIGNED NOT NULL,
-    action_type_id BIGINT UNSIGNED NOT NULL,
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    rule_id INT UNSIGNED NOT NULL,
+    trigger_event_id INT UNSIGNED NOT NULL,
+    action_type_id INT UNSIGNED NOT NULL,
     entity_type VARCHAR(50) NOT NULL,
-    entity_id BIGINT UNSIGNED NOT NULL,
+    entity_id INT UNSIGNED NOT NULL,
     execution_context JSON NOT NULL,
     execution_result ENUM('SUCCESS','FAILED','SKIPPED') NOT NULL,
     error_message TEXT NULL,

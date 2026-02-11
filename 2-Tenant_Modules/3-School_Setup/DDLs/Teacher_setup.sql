@@ -4,8 +4,8 @@
 
   -- Teacher table will store additional information about teachers
   CREATE TABLE IF NOT EXISTS `sch_employees` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `user_id` BIGINT UNSIGNED NOT NULL,  -- fk to sys_users.id
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `user_id` INT UNSIGNED NOT NULL,  -- fk to sys_users.id
     -- Employee id details
     `emp_code` VARCHAR(20) NOT NULL,     -- Employee Code (Unique code for each user) (This will be used for QR Code)
     `emp_id_card_type` ENUM('QR','RFID','NFC','Barcode') NOT NULL DEFAULT 'QR',
@@ -33,11 +33,11 @@
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `sch_employees_profile` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `employee_id` BIGINT UNSIGNED NOT NULL,              -- FK to sch_employees.id
-    `user_id` BIGINT UNSIGNED NOT NULL,                  -- FK to sys_users.id
-    `role_id` BIGINT UNSIGNED NOT NULL,                  -- FK to employee_roles table (Principal, Accountant, Admin, etc.)
-    `department_id` BIGINT UNSIGNED DEFAULT NULL,        -- FK to sch_departments (Administration, Accounts, IT, etc.)
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `employee_id` INT UNSIGNED NOT NULL,              -- FK to sch_employees.id
+    `user_id` INT UNSIGNED NOT NULL,                  -- FK to sys_users.id
+    `role_id` INT UNSIGNED NOT NULL,                  -- FK to employee_roles table (Principal, Accountant, Admin, etc.)
+    `department_id` INT UNSIGNED DEFAULT NULL,        -- FK to sch_departments (Administration, Accounts, IT, etc.)
     -- Core Competencies & Qualifications
     `specialization_area` VARCHAR(100) DEFAULT NULL,     -- e.g., Finance Management, HR Administration, IT Infrastructure
     `qualification_level` VARCHAR(50) DEFAULT NULL,      -- e.g., Bachelor's, Master's, Certified Accountant
@@ -60,7 +60,7 @@
     `last_performance_review` DATE DEFAULT NULL,
     -- Administrative Controls
     `security_clearance_done` TINYINT(1) DEFAULT 0,
-    `reporting_to` BIGINT UNSIGNED DEFAULT NULL,         -- FK to sch_employees.id (who they report to)
+    `reporting_to` INT UNSIGNED DEFAULT NULL,         -- FK to sch_employees.id (who they report to)
     `can_approve_budget` TINYINT(1) DEFAULT 0,
     `can_manage_staff` TINYINT(1) DEFAULT 0,
     `can_access_sensitive_data` TINYINT(1) DEFAULT 0,
@@ -84,16 +84,16 @@
 
   -- Teacher Profile table will store detailed proficiency to teach specific subjects, study formats, and classes
   CREATE TABLE IF NOT EXISTS `sch_teacher_profile` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `employee_id` BIGINT UNSIGNED NOT NULL,             -- FK sch_employees.id
-    `user_id` BIGINT UNSIGNED NOT NULL,                 -- FK sys_users.id
-    `role_id` BIGINT UNSIGNED NOT NULL,                 -- FK to   Teacher / Principal / etc.
-    `department_id` BIGINT UNSIGNED NOT NULL,           -- sch_department.id 
-    `designation_id` BIGINT UNSIGNED NOT NULL,          -- sch_designation.id
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `employee_id` INT UNSIGNED NOT NULL,             -- FK sch_employees.id
+    `user_id` INT UNSIGNED NOT NULL,                 -- FK sys_users.id
+    `role_id` INT UNSIGNED NOT NULL,                 -- FK to   Teacher / Principal / etc.
+    `department_id` INT UNSIGNED NOT NULL,           -- sch_department.id 
+    `designation_id` INT UNSIGNED NOT NULL,          -- sch_designation.id
     `teacher_house_room_id` INT UNSIGNED DEFAULT NULL,  -- FK to sch_rooms.id
     -- Employment nature & capability
     `is_full_time` TINYINT(1) DEFAULT 1,
-    `preferred_shift` BIGINT UNSIGNED DEFAULT NULL,    -- FK to sch_shift.id
+    `preferred_shift` INT UNSIGNED DEFAULT NULL,    -- FK to sch_shift.id
     `capable_handling_multiple_classes` TINYINT(1) DEFAULT 0,
     `can_be_used_for_substitution` TINYINT(1) DEFAULT 1,
     -- Skills & Responsibilities (JSON for flexibility)
@@ -107,7 +107,7 @@
     `performance_rating` TINYINT UNSIGNED DEFAULT NULL,  -- rating out of (1 to 10)
     `last_performance_review` DATE DEFAULT NULL,
     `security_clearance_done` TINYINT(1) DEFAULT 0,
-    `reporting_to` BIGINT UNSIGNED DEFAULT NULL,
+    `reporting_to` INT UNSIGNED DEFAULT NULL,
     `can_access_sensitive_data` TINYINT(1) DEFAULT 0,
     `notes` TEXT NULL,
     `effective_from` DATE DEFAULT NULL,
@@ -122,12 +122,12 @@
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `sch_teacher_capabilities` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     -- CORE RELATIONSHIP
-    `teacher_profile_id` BIGINT UNSIGNED NOT NULL,   -- FK sch_teacher_profile.id
+    `teacher_profile_id` INT UNSIGNED NOT NULL,   -- FK sch_teacher_profile.id
     `class_id` INT UNSIGNED NOT NULL,                 -- FK sch_classes.id
     `section_id` INT UNSIGNED DEFAULT NULL,           -- FK sch_sections.id (NULL = all sections)
-    `subject_study_format_id` BIGINT UNSIGNED NOT NULL,   -- FK sch_subject_study_format_jnt.id
+    `subject_study_format_id` INT UNSIGNED NOT NULL,   -- FK sch_subject_study_format_jnt.id
     -- TEACHING STRENGTH
     `proficiency_percentage` TINYINT UNSIGNED DEFAULT NULL, -- 1–100
     `teaching_experience_months` SMALLINT UNSIGNED DEFAULT NULL,
@@ -140,7 +140,7 @@
     `min_periods_weekly` TINYINT UNSIGNED DEFAULT 15,
     `can_be_split_across_sections` TINYINT(1) DEFAULT 0,
     -- PRIORITY MATRIX INTELLIGENCE
-    `priority_weight` TINYINT UNSIGNED DEFAULT NULL,   -- manual / computed weight (1–10)
+    `priority_weight` TINYINT UNSIGNED DEFAULT NULL,   -- manual / computed weight (1–10) (Even if teachers are available, how important is THIS activity to the school?)
     `scarcity_index` TINYINT UNSIGNED DEFAULT NULL,    -- 1=abundant, 10=very rare
     `is_hard_constraint` TINYINT(1) DEFAULT 0,         -- if true cannot be voilated e.g. Physics Lab teacher for Class 12
     `allocation_strictness` ENUM('hard','medium','soft') DEFAULT 'medium', e.g. Senior Maths teacher - Hard, Preferred English teacher - Medium, Art / Sports / Activity - Soft

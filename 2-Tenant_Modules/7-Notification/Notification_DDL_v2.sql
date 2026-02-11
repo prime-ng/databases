@@ -8,7 +8,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- NOTIFICATION MASTER
 -- =========================================================
 CREATE TABLE IF NOT EXISTS ntf_channel_master (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `code` VARCHAR(20) NOT NULL,
     `name` VARCHAR(50) NOT NULL,
     `description` VARCHAR(255) NULL,
@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS ntf_channel_master (
     CONSTRAINT `uq_ntf_channel_name` UNIQUE (`name`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 CREATE TABLE IF NOT EXISTS ntf_notifications (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `source_module` VARCHAR(50) NOT NULL,
     -- Triggering module: Exam, Fee, Transport, Complaint etc
     `notification_event` VARCHAR(50) NOT NULL,
@@ -32,17 +32,17 @@ CREATE TABLE IF NOT EXISTS ntf_notifications (
     -- Notification title
     `description` VARCHAR(512) NULL,
     -- Notification description
-    `template_id` BIGINT UNSIGNED NULL,
+    `template_id` INT UNSIGNED NULL,
     -- Template ID
-    `priority_id` BIGINT UNSIGNED NOT NULL,
+    `priority_id` INT UNSIGNED NOT NULL,
     -- fk to sys_dropdown_table e.g. 'LOW, NORMAL, HIGH, URGENT'
-    `confidentiality_level_id` BIGINT UNSIGNED NOT NULL,
+    `confidentiality_level_id` INT UNSIGNED NOT NULL,
     -- fk to sys_dropdown_table e.g. 'PUBLIC, RESTRICTED, CONFIDENTIAL'
     `scheduled_at` DATETIME NULL,
     -- Scheduled time for notifications
     `recurring` TINYINT(1) DEFAULT 0,
     -- 0: One Time, 1: Recurring
-    `recurring_interval_id` BIGINT UNSIGNED NULL,
+    `recurring_interval_id` INT UNSIGNED NULL,
     -- fk to sys_dropdown_table e.g. 'HOURLY, DAILY, WEEKLY, MONTHLY, QUARTERLY, YEARLY'
     `recurring_end_at` DATETIME NULL,
     -- End date or time for recurring notifications
@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS ntf_notifications (
     -- End count for recurring notifications
     `expires_at` DATETIME NULL,
     -- Expiry date or time for notifications
-    `created_by` BIGINT UNSIGNED NOT NULL,
+    `created_by` INT UNSIGNED NOT NULL,
     `is_active` TINYINT(1) DEFAULT 1,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -66,13 +66,13 @@ CREATE TABLE IF NOT EXISTS ntf_notifications (
 -- NOTIFICATION CHANNELS 
 -- =========================================================
 CREATE TABLE IF NOT EXISTS ntf_notification_channels (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `notification_id` BIGINT UNSIGNED NOT NULL,
-    `channel_id` BIGINT UNSIGNED NOT NULL,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `notification_id` INT UNSIGNED NOT NULL,
+    `channel_id` INT UNSIGNED NOT NULL,
     -- fk to ntf_channel_master
-    `provider_id` BIGINT UNSIGNED NULL,
+    `provider_id` INT UNSIGNED NULL,
     -- fk to sys_dropdown_table e.g. 'MSG91, Twilio, AWS SES, Meta API'
-    `status_id` BIGINT UNSIGNED NOT NULL,
+    `status_id` INT UNSIGNED NOT NULL,
     -- fk to sys_dropdown_table e.g. 'PENDING, SENT, FAILED, RETRIED'
     `scheduled_at` DATETIME NULL,
     -- Scheduled time for notifications
@@ -101,13 +101,13 @@ CREATE TABLE IF NOT EXISTS ntf_notification_channels (
 -- NOTIFICATION TARGETING
 -- =========================================================
 CREATE TABLE IF NOT EXISTS ntf_notification_targets (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `notification_id` BIGINT UNSIGNED NOT NULL,
-    `target_type_id` BIGINT UNSIGNED NOT NULL,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `notification_id` INT UNSIGNED NOT NULL,
+    `target_type_id` INT UNSIGNED NOT NULL,
     -- FK to sys_dropdown_table e.g. USER, ROLE, DEPARTMENT, DESIGNATION, CLASS, SECTION, SUBJECT, ENTITY_GROUP, ENTIRE_SCHOOL
     `target_table_name` VARCHAR(60) DEFAULT NULL,
     -- e.g. sys_user, sys_role, sch_department, sch_designation, sch_classes, sch_sections, sch_subjects, sch_entity_groups, sch_staff_groups
-    `target_selected_id` BIGINT UNSIGNED NULL,
+    `target_selected_id` INT UNSIGNED NULL,
     -- Reference ID based on target type e.g. user_id, role_id, designation_id, etc.
     `is_active` TINYINT(1) DEFAULT 1,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -124,9 +124,9 @@ CREATE TABLE IF NOT EXISTS ntf_notification_targets (
 -- USER NOTIFICATION PREFERENCES
 -- =========================================================
 CREATE TABLE IF NOT EXISTS ntf_user_preferences (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `user_id` BIGINT UNSIGNED NOT NULL,
-    `channel_id` BIGINT UNSIGNED NOT NULL,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `user_id` INT UNSIGNED NOT NULL,
+    `channel_id` INT UNSIGNED NOT NULL,
     -- fk to ntf_channel_master
     `is_enabled` TINYINT(1) DEFAULT 1,
     `quiet_hours_start` TIME NULL,
@@ -142,16 +142,16 @@ CREATE TABLE IF NOT EXISTS ntf_user_preferences (
 -- NOTIFICATION TEMPLATES
 -- =========================================================
 CREATE TABLE IF NOT EXISTS ntf_templates (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `template_code` VARCHAR(50) NOT NULL,
-    `channel_id` BIGINT UNSIGNED NOT NULL,
+    `channel_id` INT UNSIGNED NOT NULL,
     -- fk to ntf_channel_master
     `subject` VARCHAR(255) NULL,
     -- 'Used for Email'
     `body` TEXT NOT NULL,
     -- 'Supports {{placeholders}}'
     `language_code` VARCHAR(10) DEFAULT 'en',
-    `media_id` BIGINT UNSIGNED NULL,
+    `media_id` INT UNSIGNED NULL,
     `is_system_template` TINYINT(1) DEFAULT 0,
     `is_active` TINYINT(1) DEFAULT 1,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -165,17 +165,17 @@ CREATE TABLE IF NOT EXISTS ntf_templates (
 -- NOTIFICATION RESOLVED RECIPIENTS (Final Resolved Recipients to send Notification)
 -- =========================================================
 CREATE TABLE IF NOT EXISTS ntf_resolved_recipients (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `notification_id` BIGINT UNSIGNED NOT NULL,
-    `channel_id` BIGINT UNSIGNED NOT NULL,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `notification_id` INT UNSIGNED NOT NULL,
+    `channel_id` INT UNSIGNED NOT NULL,
     -- fk to ntf_channel_master
-    `template_id` BIGINT UNSIGNED NOT NULL,
+    `template_id` INT UNSIGNED NOT NULL,
     -- fk to ntf_templates
-    `notification_target_id` BIGINT UNSIGNED NOT NULL,
+    `notification_target_id` INT UNSIGNED NOT NULL,
     -- fk to ntf_notification_targets
-    `user_preference_id` BIGINT UNSIGNED NOT NULL,
+    `user_preference_id` INT UNSIGNED NOT NULL,
     -- fk to ntf_user_preferences
-    `resolved_user_id` BIGINT UNSIGNED NOT NULL,
+    `resolved_user_id` INT UNSIGNED NOT NULL,
     -- fk to sys_user
     `mobile_number` VARCHAR(15) NULL,
     `email` VARCHAR(255) NULL,
@@ -200,14 +200,14 @@ CREATE TABLE IF NOT EXISTS ntf_resolved_recipients (
 -- NOTIFICATION DELIVERY LOGS
 -- =========================================================
 CREATE TABLE IF NOT EXISTS ntf_delivery_logs (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `notification_id` BIGINT UNSIGNED NOT NULL,
-    `channel_id` BIGINT UNSIGNED NOT NULL,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `notification_id` INT UNSIGNED NOT NULL,
+    `channel_id` INT UNSIGNED NOT NULL,
     -- fk to ntf_channel_master
-    `notification_target_id` BIGINT UNSIGNED NOT NULL,
+    `notification_target_id` INT UNSIGNED NOT NULL,
     -- New
-    `resolved_user_id` BIGINT UNSIGNED NOT NULL,
-    `delivery_status_id` BIGINT UNSIGNED NOT NULL,
+    `resolved_user_id` INT UNSIGNED NOT NULL,
+    `delivery_status_id` INT UNSIGNED NOT NULL,
     -- 'SENT, FAILED, READ, CLICKED'
     `delivered_at` DATETIME NULL,
     `read_at` DATETIME NULL,

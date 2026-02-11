@@ -11,7 +11,7 @@
 --  SECTION 0: EXTRA TABLES
 -- -------------------------------------------------
 CREATE TABLE `tt_days` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
   `label` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL,
   `ordinal` int unsigned NOT NULL,
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
@@ -22,7 +22,7 @@ CREATE TABLE `tt_days` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `tt_timetable_modes` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
   `code` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
   `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
   `description` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
@@ -37,7 +37,7 @@ CREATE TABLE `tt_timetable_modes` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `tt_timing_profile` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
   `profile_code` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
   `name` varchar(200) COLLATE utf8mb4_unicode_ci NOT NULL,
   `total_periods` int unsigned NOT NULL,
@@ -52,8 +52,8 @@ CREATE TABLE `tt_timing_profile` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `tt_timing_profile_period` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `timing_profile_id` bigint unsigned NOT NULL,
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
+  `timing_profile_id` INT unsigned NOT NULL,
   `segment_ordinal` int unsigned NOT NULL,
   `label` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
   `segment_type` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'PERIOD',
@@ -72,7 +72,7 @@ CREATE TABLE `tt_timing_profile_period` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `tt_periods` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
   `label` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL,
   `ordinal` int unsigned NOT NULL,
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
@@ -88,7 +88,7 @@ CREATE TABLE `tt_periods` (
 --  SECTION 1: MASTER TABLES
 -- -------------------------------------------------
 CREATE TABLE `tt_shifts` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
   `code` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
   `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
   `description` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
@@ -105,7 +105,7 @@ CREATE TABLE `tt_shifts` (
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `tt_day_types` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
   `code` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
   `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
   `description` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
@@ -122,7 +122,7 @@ CREATE TABLE `tt_day_types` (
 ) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `tt_period_types` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
   `code` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL,
   `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
   `description` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
@@ -143,7 +143,7 @@ CREATE TABLE `tt_period_types` (
 ) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `tt_teacher_assignment_roles` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
   `code` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL,
   `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
   `description` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
@@ -162,7 +162,7 @@ CREATE TABLE `tt_teacher_assignment_roles` (
 ) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `tt_school_days` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
   `code` varchar(10) COLLATE utf8mb4_unicode_ci NOT NULL,
   `name` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
   `short_name` varchar(5) COLLATE utf8mb4_unicode_ci NOT NULL,
@@ -180,9 +180,9 @@ CREATE TABLE `tt_school_days` (
 ) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `tt_working_day` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
   `date` date NOT NULL,
-  `day_type_id` bigint unsigned NOT NULL,
+  `day_type_id` INT unsigned NOT NULL,
   `is_school_day` tinyint(1) NOT NULL DEFAULT '1',
   `remarks` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
@@ -195,7 +195,7 @@ CREATE TABLE `tt_working_day` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `tt_period_sets` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
   `code` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL,
   `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
   `description` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
@@ -214,9 +214,9 @@ CREATE TABLE `tt_period_sets` (
 ) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `tt_period_set_period_jnt` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `period_set_id` bigint unsigned NOT NULL,
-  `period_type_id` bigint unsigned NOT NULL,
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
+  `period_set_id` INT unsigned NOT NULL,
+  `period_type_id` INT unsigned NOT NULL,
   `code` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
   `short_name` varchar(10) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `period_ord` tinyint unsigned NOT NULL,
@@ -237,13 +237,13 @@ CREATE TABLE `tt_period_set_period_jnt` (
 ) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `tt_timetable_types` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
   `code` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL,
   `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
   `description` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `shift_id` bigint unsigned DEFAULT NULL,
-  `default_period_set_id` bigint unsigned DEFAULT NULL,
-  `day_type_id` bigint unsigned DEFAULT NULL,
+  `shift_id` INT unsigned DEFAULT NULL,
+  `default_period_set_id` INT unsigned DEFAULT NULL,
+  `day_type_id` INT unsigned DEFAULT NULL,
   `effective_from_date` date DEFAULT NULL,
   `effective_to_date` date DEFAULT NULL,
   `school_start_time` time DEFAULT NULL,
@@ -272,10 +272,10 @@ CREATE TABLE `tt_timetable_types` (
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `tt_class_mode_rules` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `class_id` bigint unsigned NOT NULL,
-  `timetable_mode_id` bigint unsigned NOT NULL,
-  `period_set_id` bigint unsigned NOT NULL,
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
+  `class_id` INT unsigned NOT NULL,
+  `timetable_mode_id` INT unsigned NOT NULL,
+  `period_set_id` INT unsigned NOT NULL,
   `allow_teaching_periods` tinyint(1) NOT NULL DEFAULT '1',
   `allow_exam_periods` tinyint(1) NOT NULL DEFAULT '0',
   `exam_period_count` tinyint unsigned DEFAULT NULL,
@@ -294,11 +294,11 @@ CREATE TABLE `tt_class_mode_rules` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `tt_class_subgroups` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
   `code` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
   `name` varchar(150) COLLATE utf8mb4_unicode_ci NOT NULL,
   `description` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `class_group_id` bigint unsigned DEFAULT NULL,
+  `class_group_id` INT unsigned DEFAULT NULL,
   `subgroup_type` enum('OPTIONAL_SUBJECT','HOBBY','SKILL','LANGUAGE','STREAM','ACTIVITY','SPORTS','OTHER') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'OTHER',
   `student_count` int unsigned DEFAULT NULL,
   `min_students` int unsigned DEFAULT NULL,
@@ -317,10 +317,10 @@ CREATE TABLE `tt_class_subgroups` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `tt_class_subgroup_members` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `class_subgroup_id` bigint unsigned NOT NULL,
-  `class_id` bigint unsigned NOT NULL,
-  `section_id` bigint unsigned DEFAULT NULL,
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
+  `class_subgroup_id` INT unsigned NOT NULL,
+  `class_id` INT unsigned NOT NULL,
+  `section_id` INT unsigned DEFAULT NULL,
   `is_primary` tinyint(1) NOT NULL DEFAULT '0',
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
   `created_at` timestamp NULL DEFAULT NULL,
@@ -336,12 +336,12 @@ CREATE TABLE `tt_class_subgroup_members` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `tt_class_groups_jnt` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `class_id` bigint unsigned NOT NULL,
-  `section_id` bigint unsigned NOT NULL,
-  `subject_study_format_id` bigint unsigned NOT NULL,
-  `subject_type_id` bigint unsigned NOT NULL,
-  `rooms_type_id` bigint unsigned NOT NULL,
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
+  `class_id` INT unsigned NOT NULL,
+  `section_id` INT unsigned NOT NULL,
+  `subject_study_format_id` INT unsigned NOT NULL,
+  `subject_type_id` INT unsigned NOT NULL,
+  `rooms_type_id` INT unsigned NOT NULL,
   `name` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
   `code` char(40) COLLATE utf8mb4_unicode_ci NOT NULL,
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
@@ -366,7 +366,7 @@ CREATE TABLE `tt_class_groups_jnt` (
 --  SECTION 2: CONSTRAINT ENGINE
 -- -------------------------------------------------
 CREATE TABLE `tt_constraint_types` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
   `code` varchar(60) COLLATE utf8mb4_unicode_ci NOT NULL,
   `name` varchar(150) COLLATE utf8mb4_unicode_ci NOT NULL,
   `description` text COLLATE utf8mb4_unicode_ci,
@@ -387,14 +387,14 @@ CREATE TABLE `tt_constraint_types` (
 ) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `tt_constraints` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
   `uuid` varbinary(16) NOT NULL,
-  `constraint_type_id` bigint unsigned NOT NULL,
+  `constraint_type_id` INT unsigned NOT NULL,
   `name` varchar(200) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `description` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `academic_session_id` bigint unsigned NOT NULL,
+  `academic_session_id` INT unsigned NOT NULL,
   `target_type` enum('GLOBAL','TEACHER','STUDENT_SET','ROOM','ACTIVITY','CLASS','SUBJECT','STUDY_FORMAT','CLASS_GROUP','CLASS_SUBGROUP') COLLATE utf8mb4_unicode_ci NOT NULL,
-  `target_id` bigint unsigned DEFAULT NULL,
+  `target_id` INT unsigned DEFAULT NULL,
   `is_hard` tinyint(1) NOT NULL DEFAULT '0',
   `weight` tinyint unsigned NOT NULL DEFAULT '100',
   `params_json` json NOT NULL,
@@ -403,7 +403,7 @@ CREATE TABLE `tt_constraints` (
   `applies_to_days_json` json DEFAULT NULL,
   `status` enum('DRAFT','ACTIVE','DISABLED') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'ACTIVE',
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
-  `created_by` bigint unsigned DEFAULT NULL,
+  `created_by` INT unsigned DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
@@ -420,9 +420,9 @@ CREATE TABLE `tt_constraints` (
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `tt_teacher_unavailables` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `teacher_id` bigint unsigned NOT NULL,
-  `constraint_id` bigint unsigned DEFAULT NULL,
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
+  `teacher_id` INT unsigned NOT NULL,
+  `constraint_id` INT unsigned DEFAULT NULL,
   `day_of_week` tinyint unsigned NOT NULL,
   `period_ord` tinyint unsigned DEFAULT NULL,
   `start_date` date DEFAULT NULL,
@@ -442,9 +442,9 @@ CREATE TABLE `tt_teacher_unavailables` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `tt_room_unavailables` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `room_id` bigint unsigned NOT NULL,
-  `constraint_id` bigint unsigned DEFAULT NULL,
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
+  `room_id` INT unsigned NOT NULL,
+  `constraint_id` INT unsigned DEFAULT NULL,
   `day_of_week` tinyint unsigned NOT NULL,
   `period_ord` tinyint unsigned DEFAULT NULL,
   `start_date` date DEFAULT NULL,
@@ -468,10 +468,10 @@ CREATE TABLE `tt_room_unavailables` (
 --  SECTION 3: TIMETABLE OPERATION TABLES
 -- -------------------------------------------------
 CREATE TABLE `tt_class_group_requirements` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `class_group_id` bigint unsigned DEFAULT NULL,
-  `class_subgroup_id` bigint unsigned DEFAULT NULL,
-  `academic_session_id` bigint unsigned NOT NULL,
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
+  `class_group_id` INT unsigned DEFAULT NULL,
+  `class_subgroup_id` INT unsigned DEFAULT NULL,
+  `academic_session_id` INT unsigned NOT NULL,
   `weekly_periods` tinyint unsigned NOT NULL,
   `min_periods_per_week` tinyint unsigned DEFAULT NULL,
   `max_periods_per_week` tinyint unsigned DEFAULT NULL,
@@ -499,14 +499,14 @@ CREATE TABLE `tt_class_group_requirements` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `tt_activities` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
   `uuid` varbinary(16) NOT NULL,
   `code` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
   `name` varchar(200) COLLATE utf8mb4_unicode_ci NOT NULL,
   `description` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `academic_session_id` bigint unsigned NOT NULL,
-  `class_group_jnt_id` bigint unsigned DEFAULT NULL,
-  `class_subgroup_id` bigint unsigned DEFAULT NULL,
+  `academic_session_id` INT unsigned NOT NULL,
+  `class_group_jnt_id` INT unsigned DEFAULT NULL,
+  `class_subgroup_id` INT unsigned DEFAULT NULL,
   `duration_periods` tinyint unsigned NOT NULL DEFAULT '1',
   `weekly_periods` tinyint unsigned NOT NULL DEFAULT '1',
   `total_periods` smallint unsigned GENERATED ALWAYS AS ((`duration_periods` * `weekly_periods`)) STORED,
@@ -515,11 +515,11 @@ CREATE TABLE `tt_activities` (
   `priority` tinyint unsigned NOT NULL DEFAULT '50',
   `difficulty_score` tinyint unsigned NOT NULL DEFAULT '50',
   `requires_room` tinyint(1) NOT NULL DEFAULT '1',
-  `preferred_room_type_id` bigint unsigned DEFAULT NULL,
+  `preferred_room_type_id` INT unsigned DEFAULT NULL,
   `preferred_room_ids` json DEFAULT NULL,
   `status` enum('DRAFT','ACTIVE','LOCKED','ARCHIVED') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'ACTIVE',
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
-  `created_by` bigint unsigned DEFAULT NULL,
+  `created_by` INT unsigned DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
@@ -541,10 +541,10 @@ CREATE TABLE `tt_activities` (
 ) ENGINE=InnoDB AUTO_INCREMENT=73 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `tt_activity_teachers` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `activity_id` bigint unsigned NOT NULL,
-  `teacher_id` bigint unsigned NOT NULL,
-  `assignment_role_id` bigint unsigned NOT NULL,
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
+  `activity_id` INT unsigned NOT NULL,
+  `teacher_id` INT unsigned NOT NULL,
+  `assignment_role_id` INT unsigned NOT NULL,
   `is_required` tinyint(1) NOT NULL DEFAULT '1',
   `ordinal` tinyint unsigned NOT NULL DEFAULT '1',
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
@@ -561,8 +561,8 @@ CREATE TABLE `tt_activity_teachers` (
 ) ENGINE=InnoDB AUTO_INCREMENT=73 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `tt_sub_activities` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `parent_activity_id` bigint unsigned NOT NULL,
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
+  `parent_activity_id` INT unsigned NOT NULL,
   `sub_activity_ord` tinyint unsigned NOT NULL,
   `code` varchar(60) COLLATE utf8mb4_unicode_ci NOT NULL,
   `duration_periods` tinyint unsigned NOT NULL DEFAULT '1',
@@ -584,27 +584,27 @@ CREATE TABLE `tt_sub_activities` (
 --  SECTION 4: TIMETABLE GENERATION TABLES
 -- -------------------------------------------------
 CREATE TABLE `tt_timetables` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
   `uuid` varbinary(16) NOT NULL,
   `code` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
   `name` varchar(200) COLLATE utf8mb4_unicode_ci NOT NULL,
   `description` text COLLATE utf8mb4_unicode_ci,
-  `academic_session_id` bigint unsigned NOT NULL,
-  `timetable_type_id` bigint unsigned NOT NULL,
-  `period_set_id` bigint unsigned NOT NULL,
+  `academic_session_id` INT unsigned NOT NULL,
+  `timetable_type_id` INT unsigned NOT NULL,
+  `period_set_id` INT unsigned NOT NULL,
   `effective_from` date NOT NULL,
   `effective_to` date DEFAULT NULL,
   `generation_method` enum('MANUAL','SEMI_AUTO','FULL_AUTO') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'MANUAL',
   `version` smallint unsigned NOT NULL DEFAULT '1',
-  `parent_timetable_id` bigint unsigned DEFAULT NULL,
+  `parent_timetable_id` INT unsigned DEFAULT NULL,
   `status` enum('DRAFT','GENERATING','GENERATED','PUBLISHED','ARCHIVED') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'DRAFT',
   `published_at` timestamp NULL DEFAULT NULL,
-  `published_by` bigint unsigned DEFAULT NULL,
+  `published_by` INT unsigned DEFAULT NULL,
   `constraint_violations` int unsigned NOT NULL DEFAULT '0',
   `soft_score` decimal(8,2) DEFAULT NULL,
   `stats_json` json DEFAULT NULL,
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
-  `created_by` bigint unsigned DEFAULT NULL,
+  `created_by` INT unsigned DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
@@ -630,9 +630,9 @@ CREATE TABLE `tt_timetables` (
 - Missing Table - tt_constraint_violation
 
 CREATE TABLE `tt_generation_runs` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
   `uuid` varbinary(16) NOT NULL,
-  `timetable_id` bigint unsigned NOT NULL,
+  `timetable_id` INT unsigned NOT NULL,
   `run_number` int unsigned NOT NULL DEFAULT '1',
   `started_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `finished_at` timestamp NULL DEFAULT NULL,
@@ -649,7 +649,7 @@ CREATE TABLE `tt_generation_runs` (
   `soft_score` decimal(10,4) DEFAULT NULL,
   `stats_json` json DEFAULT NULL,
   `error_message` text COLLATE utf8mb4_unicode_ci,
-  `triggered_by` bigint unsigned DEFAULT NULL,
+  `triggered_by` INT unsigned DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
@@ -663,20 +663,20 @@ CREATE TABLE `tt_generation_runs` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `tt_timetable_cells` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `timetable_id` bigint unsigned NOT NULL,
-  `generation_run_id` bigint unsigned DEFAULT NULL,
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
+  `timetable_id` INT unsigned NOT NULL,
+  `generation_run_id` INT unsigned DEFAULT NULL,
   `day_of_week` tinyint unsigned NOT NULL,
   `period_ord` tinyint unsigned NOT NULL,
   `cell_date` date DEFAULT NULL,
-  `class_group_id` bigint unsigned DEFAULT NULL,
-  `class_subgroup_id` bigint unsigned DEFAULT NULL,
-  `activity_id` bigint unsigned DEFAULT NULL,
-  `sub_activity_id` bigint unsigned DEFAULT NULL,
-  `room_id` bigint unsigned DEFAULT NULL,
+  `class_group_id` INT unsigned DEFAULT NULL,
+  `class_subgroup_id` INT unsigned DEFAULT NULL,
+  `activity_id` INT unsigned DEFAULT NULL,
+  `sub_activity_id` INT unsigned DEFAULT NULL,
+  `room_id` INT unsigned DEFAULT NULL,
   `source` enum('AUTO','MANUAL','SWAP','LOCK') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'AUTO',
   `is_locked` tinyint(1) NOT NULL DEFAULT '0',
-  `locked_by` bigint unsigned DEFAULT NULL,
+  `locked_by` INT unsigned DEFAULT NULL,
   `locked_at` timestamp NULL DEFAULT NULL,
   `has_conflict` tinyint(1) NOT NULL DEFAULT '0',
   `conflict_details_json` json DEFAULT NULL,
@@ -707,10 +707,10 @@ CREATE TABLE `tt_timetable_cells` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `tt_timetable_cell_teachers` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `cell_id` bigint unsigned NOT NULL,
-  `teacher_id` bigint unsigned NOT NULL,
-  `assignment_role_id` bigint unsigned NOT NULL,
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
+  `cell_id` INT unsigned NOT NULL,
+  `teacher_id` INT unsigned NOT NULL,
+  `assignment_role_id` INT unsigned NOT NULL,
   `is_substitute` tinyint(1) NOT NULL DEFAULT '0',
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
   `created_at` timestamp NULL DEFAULT NULL,

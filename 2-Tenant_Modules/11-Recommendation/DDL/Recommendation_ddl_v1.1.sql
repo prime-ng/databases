@@ -3,16 +3,16 @@
 -- =========================================================================
 
 CREATE TABLE IF NOT EXISTS `rec_recommendation_materials` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   `title` VARCHAR(255) NOT NULL,
   `description` TEXT DEFAULT NULL,
   `material_type` ENUM('TEXT','VIDEO','PDF','AUDIO','QUIZ','ASSIGNMENT','LINK') NOT NULL,
   `content` LONGTEXT DEFAULT NULL,      -- HTML / text (for TEXT)
-  `media_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to qns_media_store
+  `media_id` INT UNSIGNED DEFAULT NULL, -- FK to qns_media_store
   `external_url` VARCHAR(500) DEFAULT NULL, -- External URL (for LINK)
-  `subject_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to qns_subjects
+  `subject_id` INT UNSIGNED DEFAULT NULL, -- FK to qns_subjects
   `class_id` INT UNSIGNED DEFAULT NULL, -- FK to qns_classes
-  `topic_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to qns_topics
+  `topic_id` INT UNSIGNED DEFAULT NULL, -- FK to qns_topics
   `difficulty_level` ENUM('EASY','MEDIUM','HARD') DEFAULT 'MEDIUM',
   `is_active` TINYINT(1) DEFAULT 1,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -29,13 +29,13 @@ CREATE TABLE IF NOT EXISTS `rec_recommendation_materials` (
 
 
 CREATE TABLE IF NOT EXISTS `rec_recommendation_rules` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  `school_id` BIGINT UNSIGNED DEFAULT NULL, 
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `school_id` INT UNSIGNED DEFAULT NULL, 
   -- NULL = System default rule
-  `performance_category_id` BIGINT UNSIGNED NOT NULL, -- FK to slb_performance_categories
-  `subject_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to qns_subjects
+  `performance_category_id` INT UNSIGNED NOT NULL, -- FK to slb_performance_categories
+  `subject_id` INT UNSIGNED DEFAULT NULL, -- FK to qns_subjects
   `class_id` INT UNSIGNED DEFAULT NULL, -- FK to qns_classes
-  `topic_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to qns_topics
+  `topic_id` INT UNSIGNED DEFAULT NULL, -- FK to qns_topics
   `recommendation_goal` ENUM('REVISION','PRACTICE','REMEDIAL','ADVANCED','ENRICHMENT') NOT NULL,
   `material_type` ENUM('TEXT','VIDEO','PDF','QUIZ','ASSIGNMENT') NOT NULL,
   `max_items` SMALLINT UNSIGNED DEFAULT 5,
@@ -52,12 +52,12 @@ CREATE TABLE IF NOT EXISTS `rec_recommendation_rules` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `rec_student_recommendations` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  `student_id` BIGINT UNSIGNED NOT NULL, -- FK to users
-  `school_id` BIGINT UNSIGNED NOT NULL, -- FK to schools
-  `performance_category_id` BIGINT UNSIGNED NOT NULL, -- FK to slb_performance_categories
-  `recommendation_rule_id` BIGINT UNSIGNED NOT NULL, -- FK to rec_recommendation_rules
-  `material_id` BIGINT UNSIGNED NOT NULL, -- FK to rec_recommendation_materials
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `student_id` INT UNSIGNED NOT NULL, -- FK to users
+  `school_id` INT UNSIGNED NOT NULL, -- FK to schools
+  `performance_category_id` INT UNSIGNED NOT NULL, -- FK to slb_performance_categories
+  `recommendation_rule_id` INT UNSIGNED NOT NULL, -- FK to rec_recommendation_rules
+  `material_id` INT UNSIGNED NOT NULL, -- FK to rec_recommendation_materials
   `recommended_for` ENUM('DAILY','WEEKLY','MONTHLY','EXAM_PREP') DEFAULT 'WEEKLY',
   `status` ENUM('PENDING','VIEWED','IN_PROGRESS','COMPLETED','SKIPPED') DEFAULT 'PENDING',
   `relevance_score` DECIMAL(5,2) DEFAULT NULL, -- for future AI ranking
@@ -74,12 +74,12 @@ CREATE TABLE IF NOT EXISTS `rec_student_recommendations` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `rec_student_performance_snapshot` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  `student_id` BIGINT UNSIGNED NOT NULL,
-  `school_id` BIGINT UNSIGNED NOT NULL,
-  `performance_category_id` BIGINT UNSIGNED NOT NULL,
-  `recommendation_rule_id` BIGINT UNSIGNED NOT NULL,
-  `material_id` BIGINT UNSIGNED NOT NULL,
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `student_id` INT UNSIGNED NOT NULL,
+  `school_id` INT UNSIGNED NOT NULL,
+  `performance_category_id` INT UNSIGNED NOT NULL,
+  `recommendation_rule_id` INT UNSIGNED NOT NULL,
+  `material_id` INT UNSIGNED NOT NULL,
   `recommended_for` ENUM('DAILY','WEEKLY','MONTHLY','EXAM_PREP') DEFAULT 'WEEKLY',
   `status` ENUM('PENDING','VIEWED','IN_PROGRESS','COMPLETED','SKIPPED') DEFAULT 'PENDING',
   `relevance_score` DECIMAL(5,2) DEFAULT NULL, -- for future AI ranking
@@ -96,13 +96,13 @@ CREATE TABLE IF NOT EXISTS `rec_student_performance_snapshot` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `rec_student_performance_snapshot` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  `student_id` BIGINT UNSIGNED NOT NULL,
-  `school_id` BIGINT UNSIGNED NOT NULL,
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `student_id` INT UNSIGNED NOT NULL,
+  `school_id` INT UNSIGNED NOT NULL,
   `class_id` INT UNSIGNED NOT NULL,
-  `subject_id` BIGINT UNSIGNED DEFAULT NULL,
+  `subject_id` INT UNSIGNED DEFAULT NULL,
   `percentage` DECIMAL(5,2) NOT NULL,
-  `performance_category_id` BIGINT UNSIGNED NOT NULL,
+  `performance_category_id` INT UNSIGNED NOT NULL,
   `assessment_type` ENUM('QUIZ','TEST','EXAM','TERM','OVERALL') NOT NULL,
   `captured_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `consumed_at` TIMESTAMP NULL,

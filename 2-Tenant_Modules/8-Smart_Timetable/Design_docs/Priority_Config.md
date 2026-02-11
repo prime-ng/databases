@@ -165,7 +165,288 @@ Because:
 
 This turns your scheduler into a constraint-aware greedy + backtracking hybrid (enterprise grade).
 
+--------------------------------------------------------------------------------------------------------------------------------------------
 
+
+#### sch_teacher_capabilities.priority_weight
+    “Even if teachers are available, how important is THIS activity to the school?” This is business / academic importance.
+
+**Typical meanings**
+
+| Weight	| Meaning
+|-----------|---------------------------
+| 10	    | Board class, core subject
+| 8	        | Senior class, exam-heavy
+| 6	        | Normal academic subject
+| 4	        | Co-curricular
+| 2	        | Activity / club
+| 1	        | Optional
+
+#### sch_teacher_capabilities.scarcity_index
+    - “If I don’t allocate this activity early, how badly can I get stuck later?” This is supply-side pressure.
+    - “How many teachers can teach this activity?” This is resource availability.
+
+How it is derived (system-calculated)
+    For a given Activity
+    (class + section + subject + study_format)
+
+    teacher_count = number of active teachers capable
+    scarcity_index =
+        CASE
+            WHEN teacher_count = 1 THEN 10
+            WHEN teacher_count = 2 THEN 8
+            WHEN teacher_count = 3 THEN 6
+            WHEN teacher_count = 4 THEN 4
+            ELSE 1
+        END
+
+**Typical meanings** 
+Real examples
+
+| Activity	                    | Capable Teachers	| scarcity_index
+|-------------------------------|-------------------|----------------
+| Class 12 Physics Lab	        | 1	                | 10
+| Class 10 Maths	            | 2	                | 8
+| Class 6 English	            | 5	                | 1
+| Sports	                    | 7	                | 1
+
+
+#### sch_teacher_capabilities.is_hard_constraint
+    (is_hard_constraint TINYINT(1) DEFAULT 0)
+
+    - Set is_hard_constraint = 1 when violating this rule is unacceptable, even if timetable fails.
+
+**Real examples**
+
+| Scenario                               | Why HARD
+|----------------------------------------|---------------------------
+| Physics Lab teacher for Class 12       | Legal / academic requirement
+| Board exam subject                     | Cannot be compromised
+| Only one certified lab teacher         | No alternative exists
+| Language teacher for a specific medium | Compliance
+
+
+#### sch_teacher_capabilities.allocation_strictness
+    (allocation_strictness ENUM('hard','medium','soft') DEFAULT 'medium')
+
+    - “How much flexibility does the system have if needed?”
+
+Meaning of values
+-----------------
+| Value	    | Behaviour
+|-----------|---------------------------
+| hard	    | Same as is_hard_constraint = 1
+| medium	| Prefer strongly, relax if unavoidable
+| soft	    | Best-effort only
+
+
+Why both fields exist
+---------------------
+  - is_hard_constraint → absolute
+  - allocation_strictness → relative priority
+
+
+
+#### sch_teacher_capabilities.historical_success_rate
+    (historical_success_rate TINYINT UNSIGNED DEFAULT NULL)
+
+    - “How often does this activity get scheduled without issues in past timetables?”
+    - This is a system-calculated metric (not user-set).
+
+
+How it is derived (For a given Activity):
+---------------------------------------
+historical_success_rate = ( sessions_completed_without_change /  total_sessions_allocated ) * 100
+
+Typical values
+--------------
+| Rate	| Meaning
+|-------|---------------------------
+| 1.0	| Always succeeds
+| 0.8	| 80% success rate
+| 0.5	| 50% success rate (problematic)
+| 0.2	| Very difficult
+
+
+#### sch_teacher_capabilities.last_allocation_score
+    - “How hard was it to schedule this activity last time?”
+    - This is a system-calculated metric (not user-set).
+    - (last_allocation_score TINYINT UNSIGNED DEFAULT NULL)
+
+
+How it is derived (For a given Activity):
+-----------------------------------------
+last_allocation_score = (priority_score_at_allocation) / (max_possible_priority_score)
+
+
+
+
+ 
+#### sch_teacher_capabilities.is_soft_constraint
+    - Set is_soft_constraint = 1 when violating this rule is acceptable, but causes dissatisfaction.
+
+Real examples
+-------------
+| Scenario                               | Why SOFT
+|----------------------------------------|---------------------------
+| Maths not last period                  | Reduces student fatigue
+| Labs not after lunch                   | Improves concentration
+| PT not first period                    | Better engagement
+| Teacher preference for certain slots   | Improves morale
+
+
+#### sch_teacher_capabilities.is_mandatory
+    - Set is_mandatory = 1 when this activity must be scheduled.
+
+Real examples
+-------------
+| Scenario                               | Why MANDATORY
+|----------------------------------------|---------------------------
+| Class 12 Physics                       | Board exam subject
+| Class 10 Maths                         | Core academic
+| Class 6 English                        | Mandatory subject
+| Sports                                 | Required by school policy
+
+
+Real examples
+-------------
+| Scenario                               | Why HARD
+|----------------------------------------|---------------------------
+| Physics Lab teacher for Class 12       | Legal / academic requirement
+| Board exam subject                     | Cannot be compromised
+| Only one certified lab teacher         | No alternative exists
+| Language teacher for a specific medium | Compliance
+
+
+#### sch_teacher_capabilities.is_soft_constraint
+    - Set is_soft_constraint = 1 when violating this rule is acceptable, but causes dissatisfaction.
+
+Real examples
+-------------
+| Scenario                               | Why SOFT
+|----------------------------------------|---------------------------
+| Maths not last period                  | Reduces student fatigue
+| Labs not after lunch                   | Improves concentration
+| PT not first period                    | Better engagement
+| Teacher preference for certain slots   | Improves morale
+
+
+#### sch_teacher_capabilities.is_mandatory
+    - Set is_mandatory = 1 when this activity must be scheduled.
+
+Real examples
+-------------
+| Scenario                               | Why MANDATORY
+|----------------------------------------|---------------------------
+| Class 12 Physics                       | Board exam subject
+| Class 10 Maths                         | Core academic
+| Class 6 English                        | Mandatory subject
+| Sports                                 | Required by school policy
+
+
+#### sch_teacher_capabilities.is_optional
+    - Set is_optional = 1 when this activity can be skipped.
+
+Real examples
+-------------
+| Scenario                               | Why OPTIONAL
+|----------------------------------------|---------------------------
+| Class 12 Art                           | Non-exam subject
+| Class 10 Music                         | Hobby class
+| Class 6 Computer Science               | Elective
+| Sports                                 | Can be skipped if student is absent
+
+
+
+#### sch_teacher_capabilities.teacher_count
+    - “How many teachers can teach this activity?”
+    - Example:
+        - Class 12 Physics: 5 sections × 3 periods = 15 activities (high coupling)
+        - Class 6 English: 1 section × 5 periods = 5 activities (low coupling)
+
+
+#### sch_teacher_capabilities.min_tar
+    - “How many days must this activity run?”
+    - Example:
+        - Maths: 5 days/week
+        - English: 5 days/week
+        - Physics: 3 days/week
+
+#### sch_teacher_capabilities.time_window_rigidity
+    - “How flexible is the scheduling window for this activity?”
+    - Example:
+        - Class 12 Physics Lab: Must be Mon/Wed/Fri afternoon (very rigid)
+        - Class 6 English: Any time (very flexible)
+
+
+#### sch_teacher_capabilities.resource_scarcity
+    - “How many resources does this activity need?”
+    - Example:
+        - Class 12 Physics Lab: Needs Lab + Lab Assistant (scarce)
+        - Class 6 English: Needs only Classroom (abundant)
+
+
+#### sch_teacher_capabilities.activity_type_base
+    - “Is this a core academic subject or an optional activity?”
+    - Example:
+        - Class 12 Physics: Core academic (high priority)
+        - Class 6 Art: Optional activity (low priority)
+
+
+#### sch_teacher_capabilities.contiguity_penalty
+    - “How many consecutive periods does this activity need?”
+    - Example:
+        - Class 12 Physics: 2 consecutive periods (high penalty)
+        - Class 6 English: 1 period at a time (low penalty)
+
+
+#### sch_teacher_capabilities.section_pressure
+    - “How many sections does this activity need?”
+    - Example:
+        - Class 12 Physics: 5 sections (high pressure)
+        - Class 6 English: 1 section (low pressure)
+
+
+#### sch_teacher_capabilities.teacher_coupling
+    - “How many activities share the same teacher?”
+    - Example:
+        - Class 12 Physics: 5 sections × 3 periods = 15 activities (high coupling)
+        - Class 6 English: 1 section × 5 periods = 5 activities (low coupling)
+
+
+#### sch_teacher_capabilities.group_size_factor
+    - “How many groups does this activity have?”
+    - Example:
+        - Class 12 Physics: 5 sections × 3 periods = 15 activities (high coupling)
+        - Class 6 English: 1 section × 5 periods = 5 activities (low coupling)
+
+
+#### sch_teacher_capabilities.soft_constraint_count
+    - “How many soft constraints does this activity have?”
+    - Example:
+        - Class 12 Physics: 5 sections × 3 periods = 15 activities (high coupling)
+        - Class 6 English: 1 section × 5 periods = 5 activities (low coupling)
+
+
+#### sch_teacher_capabilities.hard_constraint_count
+    - “How many hard constraints does this activity have?”
+    - Example:
+        - Class 12 Physics: 5 sections × 3 periods = 15 activities (high coupling)
+        - Class 6 English: 1 section × 5 periods = 5 activities (low coupling)
+
+
+#### sch_teacher_capabilities.total_periods_required
+    - “How many periods does this activity need?”
+    - Example:
+        - Class 12 Physics: 5 sections × 3 periods = 15 activities (high coupling)
+        - Class 6 English: 1 section × 5 periods = 5 activities (low coupling)
+
+
+#### sch_teacher_capabilities.total_teacher_hours
+    - “How many teacher hours does this activity need?”
+    - Example:
+        - Class 12 Physics: 5 sections × 3 periods = 15 activities (high coupling)
+        - Class 6 English: 1 section × 5 periods = 5 activities (low coupling)
 
 
 

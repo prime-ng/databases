@@ -9,13 +9,13 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- 1. MASTER COMPLAINT TABLE
 -- =========================================================
 CREATE TABLE erp_complaints (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     -- Who raised the complaint
     complainant_type VARCHAR(20) NOT NULL, -- FK to sys_dropdown_table e.g. (Parent, Student, Staff, Vendor, Other)
-    complainant_user_id BIGINT UNSIGNED NULL,
+    complainant_user_id INT UNSIGNED NULL,
     -- Against whom / which entity
     target_type VARCHAR(20) NOT NULL, -- FK to sys_dropdown_table e.g. (Department, Staff, Driver, Helper, Vehicle, System, Other)
-    target_id BIGINT UNSIGNED NULL,
+    target_id INT UNSIGNED NULL,
     -- Complaint classification
     complaint_category VARCHAR(20) NOT NULL, -- FK to sys_dropdown_table e.g. (Behaviour, Safety, Medical, Harassment, Service, Delay, Misconduct, Other)
     complaint_subcategory VARCHAR(100) NULL, -- FK to sys_dropdown_table e.g. (Late, Cancelled, Other)
@@ -47,10 +47,10 @@ CREATE TABLE erp_complaints (
 -- =========================================================
 
 CREATE TABLE erp_complaint_actions (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    complaint_id BIGINT UNSIGNED NOT NULL,
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    complaint_id INT UNSIGNED NOT NULL,
     action_type VARCHAR(20) NOT NULL, -- FK to sys_dropdown_table e.g. (Created, Assigned, Comment, Investigation, MedicalCheck, WarningIssued, Suspension, Escalated, Resolved, Closed, Reopened)
-    performed_by_user_id BIGINT UNSIGNED NOT NULL,
+    performed_by_user_id INT UNSIGNED NOT NULL,
     performed_by_role VARCHAR(50) NOT NULL, 
     action_notes TEXT NULL,
     action_result VARCHAR(20) NULL, -- Pending, Passed, Failed, NotApplicable
@@ -63,8 +63,8 @@ CREATE TABLE erp_complaint_actions (
 -- 3. MEDICAL & SAFETY CHECKS (TRANSPORT COMPLIANCE)
 -- =========================================================
 CREATE TABLE erp_complaint_medical_checks (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    complaint_id BIGINT UNSIGNED NOT NULL,
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    complaint_id INT UNSIGNED NOT NULL,
     check_type VARCHAR(20) NOT NULL, -- FK to sys_dropdown_table e.g. (AlcoholTest, MedicalFitness, DrugTest)
     conducted_by VARCHAR(100) NULL,
     test_time DATETIME NOT NULL,
@@ -78,11 +78,11 @@ CREATE TABLE erp_complaint_medical_checks (
 -- 4. COMPLAINT ATTACHMENTS
 -- =========================================================
 CREATE TABLE erp_complaint_attachments (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    complaint_id BIGINT UNSIGNED NOT NULL,
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    complaint_id INT UNSIGNED NOT NULL,
     file_type VARCHAR(20) NOT NULL, -- FK to sys_dropdown_table e.g. (Image, Video, Audio, Document)
     file_path VARCHAR(255) NOT NULL,
-    uploaded_by_user_id BIGINT UNSIGNED NOT NULL,
+    uploaded_by_user_id INT UNSIGNED NOT NULL,
     uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY fk_complaint_attachments_complaints (complaint_id) REFERENCES erp_complaints(id) ON DELETE CASCADE,
                     INDEX idx_file_type (file_type)

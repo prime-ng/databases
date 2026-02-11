@@ -52,7 +52,7 @@ CREATE VIEW glb_translations AS SELECT * FROM global_master.glb_translations;
 -- ===============================================================================================================
 
 CREATE TABLE IF NOT EXISTS `sys_permissions` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
   `short_name` VARCHAR(20) NOT NULL,  -- This will be used for dropdown
   `name` varchar(100) NOT NULL,
   `guard_name` varchar(255) NOT NULL,  -- used by Laravel routing
@@ -65,7 +65,7 @@ CREATE TABLE IF NOT EXISTS `sys_permissions` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `sys_roles` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
   `name` varchar(50) NOT NULL,
   `short_name` VARCHAR(20) NOT NULL,
   `description` VARCHAR(255) NULL,
@@ -80,8 +80,8 @@ CREATE TABLE IF NOT EXISTS `sys_roles` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `sys_role_has_permissions_jnt` (
-  `permission_id` bigint unsigned NOT NULL,
-  `role_id` bigint unsigned NOT NULL,
+  `permission_id` INT unsigned NOT NULL,
+  `role_id` INT unsigned NOT NULL,
   PRIMARY KEY (`permission_id`,`role_id`),
   KEY `idx_roleHasPermissions_roleId` (`role_id`),
   CONSTRAINT `fk_roleHasPermissions_permissionId` FOREIGN KEY (`permission_id`) REFERENCES `sys_permissions` (`id`) ON DELETE CASCADE,
@@ -89,25 +89,25 @@ CREATE TABLE IF NOT EXISTS `sys_role_has_permissions_jnt` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `sys_model_has_permissions_jnt` (
-  `permission_id` bigint unsigned NOT NULL,
+  `permission_id` INT unsigned NOT NULL,
   `model_type` varchar(190) NOT NULL,
-  `model_id` bigint unsigned NOT NULL,
+  `model_id` INT unsigned NOT NULL,
   PRIMARY KEY (`permission_id`,`model_id`,`model_type`),
   KEY `idx_modelHasPermissions_modelId_modelType` (`model_id`,`model_type`),
   CONSTRAINT `fk_odelHasPermissions_permissionId` FOREIGN KEY (`permission_id`) REFERENCES `sys_permissions` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `sys_model_has_roles_jnt` (
-  `role_id` bigint unsigned NOT NULL,
+  `role_id` INT unsigned NOT NULL,
   `model_type` varchar(190) NOT NULL,
-  `model_id` bigint unsigned NOT NULL,
+  `model_id` INT unsigned NOT NULL,
   PRIMARY KEY (`role_id`,`model_id`,`model_type`),
   KEY `idx_modelHasRoles_modelId_modelType` (`model_id`,`model_type`),
   CONSTRAINT `fk_modelHasRoles_roleId` FOREIGN KEY (`role_id`) REFERENCES `sys_roles` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `sys_users` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
   `emp_code` VARCHAR(20) NOT NULL,
   `short_name` varchar(30) NOT NULL,   -- This Field will be used for showing Dropdown of Users i.e. Teachers, Students, Parents
   `name` varchar(100) NOT NULL,        -- Full Name (First Name, Middle Name, Last Name)
@@ -154,7 +154,7 @@ CREATE TRIGGER trg_users_prevent_update_super BEFORE UPDATE ON users
 DELIMITER ;
 
 CREATE TABLE IF NOT EXISTS `sys_settings` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
   `description` varchar(255) NULL,    -- Here we will describe the use of the variable
   `key` varchar(100) NOT NULL,        -- This will be the Key to connect Value with it
   `value` varchar(255) DEFAULT NULL,          -- Actual stored setting value. Could be string, JSON, or serialized data depending on type
@@ -169,7 +169,7 @@ CREATE TABLE IF NOT EXISTS `sys_settings` (
   -- Ths Table will capture the detail of which Field of Which Table fo Which Databse Type, I can create a Dropdown in sys_dropdown_table of?
   -- This will help us to make sure we can only create create a Dropdown in sys_dropdown_table whcih has been configured by Developer.
   CREATE TABLE IF NOT EXISTS `sys_dropdown_needs` (
-    `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+    `id` INT unsigned NOT NULL AUTO_INCREMENT,
     `db_type` ENUM('Prime','Tenant','Global') NOT NULL,  -- Which Database this Dropdown is for? (prime_db,tenant_db,global_db)
     `table_name` varchar(150) NOT NULL,  -- Table Name
     `column_name` varchar(150) NOT NULL,  -- Column Name
@@ -208,7 +208,7 @@ CREATE TABLE IF NOT EXISTS `sys_settings` (
   -- Dropdown Table to store various dropdown values used across the system
   -- Enhanced sys_dropdown_table to accomodate Menu Detail (Category,Main Menu, Sub-Menu ID) for Easy identification.
 CREATE TABLE IF NOT EXISTS `sys_dropdown_table` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
   `ordinal` tinyint unsigned NOT NULL,
   `key` varchar(160) NOT NULL,      -- Key will be Combination of Table Name + Column Name (e.g. 'cmp_complaint_actions.action_type)
   `value` varchar(100) NOT NULL,
@@ -251,9 +251,9 @@ CREATE TABLE IF NOT EXISTS `sys_dropdown_table` (
 
 -- This table will be Junction table for sys_dropdown_needs & sys_dropdown_table
 CREATE TABLE IF NOT EXISTS `sys_dropdown_need_table_jnt` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `dropdown_needs_id` bigint unsigned NOT NULL,  -- FK to sys_dropdown_needs.id
-  `dropdown_table_id` bigint unsigned NOT NULL,  -- FK to sys_dropdown_table.id
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
+  `dropdown_needs_id` INT unsigned NOT NULL,  -- FK to sys_dropdown_needs.id
+  `dropdown_table_id` INT unsigned NOT NULL,  -- FK to sys_dropdown_table.id
   `is_active` TINYINT(1) DEFAULT 1,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
@@ -267,9 +267,9 @@ CREATE TABLE IF NOT EXISTS `sys_dropdown_need_table_jnt` (
 
 
 CREATE TABLE IF NOT EXISTS `sys_media` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
   `model_type` varchar(255) NOT NULL,
-  `model_id` bigint unsigned NOT NULL,
+  `model_id` INT unsigned NOT NULL,
   `uuid` char(36) DEFAULT NULL,
   `collection_name` varchar(255) NOT NULL,
   `name` varchar(255) NOT NULL,
@@ -277,7 +277,7 @@ CREATE TABLE IF NOT EXISTS `sys_media` (
   `mime_type` varchar(255) DEFAULT NULL,
   `disk` varchar(255) NOT NULL,
   `conversions_disk` varchar(255) DEFAULT NULL,
-  `size` bigint unsigned NOT NULL,
+  `size` INT unsigned NOT NULL,
   `manipulations` json NOT NULL,
   `custom_properties` json NOT NULL,
   `generated_conversions` json NOT NULL,
@@ -292,10 +292,10 @@ CREATE TABLE IF NOT EXISTS `sys_media` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `sys_activity_logs` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
   `subject_type` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `subject_id` bigint unsigned NOT NULL,
-  `user_id` bigint unsigned NOT NULL,
+  `subject_id` INT unsigned NOT NULL,
+  `user_id` INT unsigned NOT NULL,
   `event` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `properties` json DEFAULT NULL,
   `ip_address` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
@@ -317,13 +317,13 @@ CREATE TABLE IF NOT EXISTS `sys_activity_logs` (
 -- Tenant Creation
 -- ------------------------------------
 CREATE TABLE IF NOT EXISTS `prm_tenant_groups` (
-  id bigint unsigned NOT NULL AUTO_INCREMENT,
+  id INT unsigned NOT NULL AUTO_INCREMENT,
   code VARCHAR(20) NOT NULL,
   short_name varchar(50) NOT NULL,
   name varchar(150) NOT NULL,
   address_1 varchar(200) DEFAULT NULL,
   address_2 varchar(200) DEFAULT NULL,
-  city_id bigint unsigned NOT NULL,
+  city_id INT unsigned NOT NULL,
   pincode varchar(10) DEFAULT NULL,
   website_url varchar(150) DEFAULT NULL,
   email varchar(100) DEFAULT NULL,
@@ -337,8 +337,8 @@ CREATE TABLE IF NOT EXISTS `prm_tenant_groups` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `prm_tenant` (
-  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  tenant_group_id bigint unsigned NOT NULL,
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  tenant_group_id INT unsigned NOT NULL,
   code VARCHAR(20) NOT NULL,
   short_name varchar(50) NOT NULL,
   name varchar(150) NOT NULL,
@@ -349,7 +349,7 @@ CREATE TABLE IF NOT EXISTS `prm_tenant` (
   address_1 varchar(200) DEFAULT NULL,
   address_2 varchar(200) DEFAULT NULL,
   area varchar(100) DEFAULT NULL,
-  city_id bigint unsigned NOT NULL,
+  city_id INT unsigned NOT NULL,
   pincode varchar(10) DEFAULT NULL,
   phone_1 varchar(20) DEFAULT NULL,
   phone_2 varchar(20) DEFAULT NULL,
@@ -368,8 +368,8 @@ CREATE TABLE IF NOT EXISTS `prm_tenant` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `prm_tenant_domains` (
-  id BIGINT AUTO_INCREMENT PRIMARY KEY,
-  tenant_id BIGINT NOT NULL,
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  tenant_id INT NOT NULL,
   domain VARCHAR(255) NOT NULL,
   db_name VARCHAR(100) NOT NULL,
   db_host VARCHAR(200) NOT NULL,
@@ -398,7 +398,7 @@ CREATE TABLE IF NOT EXISTS `prm_billing_cycles` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `prm_plans` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
   `plan_code` varchar(20) NOT NULL,
   `version` int unsigned NOT NULL DEFAULT '0',
   `name` varchar(100) NOT NULL,
@@ -419,9 +419,9 @@ CREATE TABLE IF NOT EXISTS `prm_plans` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `prm_module_plan_jnt` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `plan_id` bigint unsigned NOT NULL,
-  `module_id` bigint unsigned NOT NULL,
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
+  `plan_id` INT unsigned NOT NULL,
+  `module_id` INT unsigned NOT NULL,
   `is_active` tinyint(1) unsigned NOT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
@@ -434,9 +434,9 @@ CREATE TABLE IF NOT EXISTS `prm_module_plan_jnt` (
 -- ------------------------------------
 -- old name 'prm_organization_plan_jnt'
 CREATE TABLE IF NOT EXISTS `prm_tenant_plan_jnt` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `tenant_id` bigint unsigned NOT NULL,             -- old name 'org_id'
-  `plan_id` bigint unsigned NOT NULL,
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
+  `tenant_id` INT unsigned NOT NULL,             -- old name 'org_id'
+  `plan_id` INT unsigned NOT NULL,
   `is_subscribed` tinyint(1) NOT NULL DEFAULT '1',
   `is_trial` tinyint(1) NOT NULL DEFAULT '0',
   `auto_renew` tinyint(1) NOT NULL DEFAULT '1',
@@ -453,8 +453,8 @@ CREATE TABLE IF NOT EXISTS `prm_tenant_plan_jnt` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `prm_tenant_plan_rates` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `tenant_plan_id` bigint unsigned NOT NULL,         -- Old name 'organization_plan_id'
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
+  `tenant_plan_id` INT unsigned NOT NULL,         -- Old name 'organization_plan_id'
   `start_date` date DEFAULT NULL,                    -- Plan Start Date
   `end_date` date DEFAULT NULL,                      -- Plan End Date
   `billing_cycle_id` SMALLINT UNSIGNED NOT NULL,
@@ -487,9 +487,9 @@ CREATE TABLE IF NOT EXISTS `prm_tenant_plan_rates` (
 
 -- old name 'sch_module_organization_plan_jnt'
 CREATE TABLE IF NOT EXISTS `prm_tenant_plan_module_jnt` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `module_id` bigint unsigned NOT NULL,
-  `tenant_plan_id` bigint unsigned NOT NULL,     -- old name 'organization_plan_id'
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
+  `module_id` INT unsigned NOT NULL,
+  `tenant_plan_id` INT unsigned NOT NULL,     -- old name 'organization_plan_id'
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
@@ -500,15 +500,15 @@ CREATE TABLE IF NOT EXISTS `prm_tenant_plan_module_jnt` (
 
 -- This Table will have entries for the plan validity date range within the current Academic Session (1st April to 31st March)
 CREATE TABLE IF NOT EXISTS `prm_tenant_plan_billing_schedule` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `tenant_plan_id` BIGINT UNSIGNED NOT NULL,
-    `tenant_id` BIGINT UNSIGNED NOT NULL,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `tenant_plan_id` INT UNSIGNED NOT NULL,
+    `tenant_id` INT UNSIGNED NOT NULL,
     `billing_cycle_id` SMALLINT UNSIGNED NOT NULL,
     `schedule_billing_date` DATE NOT NULL,
     `billing_start_date` DATE NOT NULL,
     `billing_end_date` DATE NOT NULL,
     `bill_generated` TINYINT(1) NOT NULL DEFAULT `0`,
-    `generated_invoice_id` BIGINT UNSIGNED DEFAULT NULL,  -- Fk to bil_tenant_invoices
+    `generated_invoice_id` INT UNSIGNED DEFAULT NULL,  -- Fk to bil_tenant_invoices
     `is_active` tinyint(1) NOT NULL DEFAULT '1',
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -526,9 +526,9 @@ CREATE TABLE IF NOT EXISTS `prm_tenant_plan_billing_schedule` (
 -- Tenant Invoicing
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `bil_tenant_invoices` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  `tenant_id` BIGINT UNSIGNED NOT NULL,               -- old name 'org_id'
-  `tenant_plan_id` BIGINT UNSIGNED NOT NULL,          -- old Name 'organization_plan_id'
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `tenant_id` INT UNSIGNED NOT NULL,               -- old name 'org_id'
+  `tenant_plan_id` INT UNSIGNED NOT NULL,          -- old Name 'organization_plan_id'
   `billing_cycle_id` SMALLINT UNSIGNED NOT NULL,      -- FK
   `invoice_no` VARCHAR(50) NOT NULL,                  -- Should be Auto-Generated
   `invoice_date` DATE NOT NULL,                       -- Invoice Date will always be Next Day to billing_end_date
@@ -575,17 +575,17 @@ CREATE TABLE IF NOT EXISTS `bil_tenant_invoices` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `bil_tenant_invoicing_modules_jnt` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  `tenant_invoice_id` BIGINT UNSIGNED NOT NULL,   -- fk to (bil_tenant_invoices)
-  `module_id` BIGINT UNSIGNED DEFAULT NULL,      -- FK
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `tenant_invoice_id` INT UNSIGNED NOT NULL,   -- fk to (bil_tenant_invoices)
+  `module_id` INT UNSIGNED DEFAULT NULL,      -- FK
   UNIQUE KEY `uq_tenantInvModule_orgInvId_moduleId` (`tenant_invoicing_id`, `module_id`),
   CONSTRAINT `fk_tenantInvModule_invoicingId` FOREIGN KEY (`tenant_invoice_id`) REFERENCES `bil_tenant_invoice` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_tenantInvModule_moduleId` FOREIGN KEY (`module_id`) REFERENCES `sys_modules` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `bil_tenant_invoicing_payments` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  `tenant_invoice_id` BIGINT UNSIGNED NOT NULL,    -- fk to (bil_tenant_invoices)
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `tenant_invoice_id` INT UNSIGNED NOT NULL,    -- fk to (bil_tenant_invoices)
   `payment_date` DATE NOT NULL,
   `transaction_id` VARCHAR(100) DEFAULT NULL,
   `mode` VARCHAR(20) NOT NULL DEFAULT 'ONLINE',      -- use dropdown table ('ONLINE','BANK_TRANSFER','CASH','CHEQUE')
@@ -604,11 +604,11 @@ CREATE TABLE IF NOT EXISTS `bil_tenant_invoicing_payments` (
 
 -- Note - Below table will have multiple records for every billing. 1 Record for every action.
 CREATE TABLE IF NOT EXISTS `bil_tenant_invoicing_audit_logs` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  `tenant_invoicing_id` BIGINT UNSIGNED NOT NULL,        -- fk to (bil_tenant_invoices)
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `tenant_invoicing_id` INT UNSIGNED NOT NULL,        -- fk to (bil_tenant_invoices)
   `action_date` TIMESTAMP not NULL,
   `action_type` VARCHAR(20) NOT NULL DEFAULT 'PENDING',  -- use dropdown table ('Not Billed','Bill Generated','Overdue','Notice Sent','Fully Paid')
-  `performed_by` BIGINT UNSIGNED DEFAULT NULL,           -- which user perform the ation
+  `performed_by` INT UNSIGNED DEFAULT NULL,           -- which user perform the ation
   `event_info` JSON DEFAULT NULL,
   `notes` VARCHAR(500) DEFAULT NULL,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -617,8 +617,8 @@ CREATE TABLE IF NOT EXISTS `bil_tenant_invoicing_audit_logs` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `bil_tenant_email_schedules` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `invoice_id` bigint unsigned NOT NULL,
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
+  `invoice_id` INT unsigned NOT NULL,
   `schedule_time` timestamp NOT NULL,
   `status` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
   `created_at` timestamp NULL DEFAULT NULL,

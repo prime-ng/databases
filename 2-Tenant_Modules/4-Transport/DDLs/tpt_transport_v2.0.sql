@@ -11,7 +11,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- =======================================================================
 
 CREATE TABLE IF NOT EXISTS `tpt_vendor` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `vendor_short_name` VARCHAR(50) NOT NULL,
     `vendor_name` VARCHAR(100) NOT NULL,
     `agreement_start_date` DATE NOT NULL,  -- Agreement start date
@@ -35,21 +35,21 @@ CREATE TABLE IF NOT EXISTS `tpt_vendor` (
     -- 6. is_active indicates if vendor is currently active.
     
 CREATE TABLE IF NOT EXISTS `tpt_vehicle` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `vehicle_no` VARCHAR(20) NOT NULL,              -- Vehicle number(Vehicle Identification Number (VIN)/Chassis Number: A unique 17-character code stamped on the vehicle's chassis)
     `registration_no` VARCHAR(30) NOT NULL,         -- Unique govt registration number
     `model` VARCHAR(50),                            -- Vehicle model
     `manufacturer` VARCHAR(50),                     -- Vehicle manufacturer 
-    `vehicle_type_id` BIGINT UNSIGNED NOT NULL,     -- fk to sys_dropdown_table ('BUS','VAN','CAR')
-    `fuel_type_id` BIGINT UNSIGNED NOT NULL,        -- fk to sys_dropdown_table ('Diesel','Petrol','CNG','Electric')
+    `vehicle_type_id` INT UNSIGNED NOT NULL,     -- fk to sys_dropdown_table ('BUS','VAN','CAR')
+    `fuel_type_id` INT UNSIGNED NOT NULL,        -- fk to sys_dropdown_table ('Diesel','Petrol','CNG','Electric')
     `capacity` INT UNSIGNED NOT NULL DEFAULT 40,    -- Seating capacity
     `max_capacity` INT UNSIGNED NOT NULL DEFAULT 40, -- Maximum allowed capacity including standing
-    `ownership_type_id` BIGINT UNSIGNED NOT NULL,   -- fk to sys_dropdown_table ('Owned','Leased','Rented')
-    `vendor_id` BIGINT UNSIGNED NOT NULL,           -- fk to tpt_vendor
+    `ownership_type_id` INT UNSIGNED NOT NULL,   -- fk to sys_dropdown_table ('Owned','Leased','Rented')
+    `vendor_id` INT UNSIGNED NOT NULL,           -- fk to tpt_vendor
     `fitness_valid_upto` DATE NOT NULL,             -- Fitness certificate expiry date
     `insurance_valid_upto` DATE NOT NULL,           -- Insurance expiry date
     `pollution_valid_upto` DATE NOT NULL,           -- Pollution certificate expiry date
-    `vehicle_emission_class_id` BIGINT UNSIGNED NOT NULL,  -- fk to sys_dropdown_table ('BS IV', 'BS V', 'BS VI')
+    `vehicle_emission_class_id` INT UNSIGNED NOT NULL,  -- fk to sys_dropdown_table ('BS IV', 'BS V', 'BS VI')
     `fire_extinguisher_valid_upto` DATE NOT NULL,    -- Fire extinguisher expiry date
     `gps_device_id` VARCHAR(50),                    -- Installed GPS device identifier
     `vehicle_photo_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (vehicle photo will be uploaded in sys.media)
@@ -77,9 +77,9 @@ CREATE TABLE IF NOT EXISTS `tpt_vehicle` (
 -- VENDOR VEHICLE AGREEMENT (New in v2.0)
 -- =======================================================================
 CREATE TABLE IF NOT EXISTS `tpt_vendor_vehicle_agreement` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `vendor_id` BIGINT UNSIGNED NOT NULL,  -- fk to tpt_vendor
-    `vehicle_id` BIGINT UNSIGNED NOT NULL, -- fk to tpt_vehicle
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `vendor_id` INT UNSIGNED NOT NULL,  -- fk to tpt_vendor
+    `vehicle_id` INT UNSIGNED NOT NULL, -- fk to tpt_vehicle
     `agreement_ref_no` VARCHAR(50) DEFAULT NULL,    -- Reference number of the physical agreement
     `agreement_start_date` DATE NOT NULL,
     `agreement_end_date` DATE NOT NULL,
@@ -110,10 +110,10 @@ CREATE TABLE IF NOT EXISTS `tpt_vendor_vehicle_agreement` (
 -- VENDOR BILLING (New in v2.0)
 -- =======================================================================
 CREATE TABLE IF NOT EXISTS `tpt_vendor_monthly_bill` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `vendor_id` BIGINT UNSIGNED NOT NULL,  -- fk to tpt_vendor
-    `vehicle_id` BIGINT UNSIGNED NOT NULL, -- fk to tpt_vehicle
-    `agreement_id` BIGINT UNSIGNED NOT NULL,      -- FK to tpt_vendor_vehicle_agreement
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `vendor_id` INT UNSIGNED NOT NULL,  -- fk to tpt_vendor
+    `vehicle_id` INT UNSIGNED NOT NULL, -- fk to tpt_vehicle
+    `agreement_id` INT UNSIGNED NOT NULL,      -- FK to tpt_vendor_vehicle_agreement
     `billing_month_year` DATE NOT NULL,           -- The first day of the month being billed (e.g., '2025-12-01')
     `opening_odometer` DECIMAL(10, 2) DEFAULT 0.00, -- Opening odometer reading at the start of the billing month
     `closing_odometer` DECIMAL(10, 2) DEFAULT 0.00, -- Closing odometer reading at the end of the billing month
@@ -136,7 +136,7 @@ CREATE TABLE IF NOT EXISTS `tpt_vendor_monthly_bill` (
     `vendor_invoice_no` VARCHAR(50) DEFAULT NULL,
     `due_date` DATE DEFAULT NULL,       -- This is Payment Due date (will be calcultaed by adding credit_days in monthly_billing_date)
     `remarks` VARCHAR(512) DEFAULT NULL,
-    `status` BIGINT UNSIGNED NOT NULL DEFAULT 1,  -- FK to sys_dropdown_table e.g. Generated, Approved, Paid, Partial, Cancelled    
+    `status` INT UNSIGNED NOT NULL DEFAULT 1,  -- FK to sys_dropdown_table e.g. Generated, Approved, Paid, Partial, Cancelled    
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at` TIMESTAMP NULL DEFAULT NULL,
@@ -153,16 +153,16 @@ CREATE TABLE IF NOT EXISTS `tpt_vendor_monthly_bill` (
 -- VENDOR PAYMENTS (New in v2.0)
 -- =======================================================================
 CREATE TABLE IF NOT EXISTS `tpt_vendor_bill_payment` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `vendor_bill_id` BIGINT UNSIGNED NOT NULL,           -- FK to tpt_vendor_monthly_bill_log
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `vendor_bill_id` INT UNSIGNED NOT NULL,           -- FK to tpt_vendor_monthly_bill_log
     `payment_date` DATE NOT NULL,
     `amount_paid` DECIMAL(12, 2) NOT NULL,
     `currency` CHAR(3) NOT NULL DEFAULT 'INR',
-    `payment_mode` BIGINT UNSIGNED NOT NULL,      -- FK to sys_dropdown_table (Cheque, Bank Transfer, etc.)
+    `payment_mode` INT UNSIGNED NOT NULL,      -- FK to sys_dropdown_table (Cheque, Bank Transfer, etc.)
     `transaction_reference` VARCHAR(100) DEFAULT NULL, -- Cheque No, Transaction ID
     `payment_status` VARCHAR(20) NOT NULL DEFAULT 'SUCCESS',  -- use dropdown table ('INITIATED','SUCCESS','FAILED')
     `payment_reconciled` tinyint(1) NOT NULL DEFAULT '0',
-    `paid_by` BIGINT UNSIGNED DEFAULT NULL,       -- FK to sys_users
+    `paid_by` INT UNSIGNED DEFAULT NULL,       -- FK to sys_users
     `remarks` VARCHAR(512) DEFAULT NULL,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -173,11 +173,11 @@ CREATE TABLE IF NOT EXISTS `tpt_vendor_bill_payment` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `tpt_vendor_billing_audit_logs` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  `vendor_bill_id` BIGINT UNSIGNED NOT NULL,        -- fk to (bil_tenant_invoices)
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `vendor_bill_id` INT UNSIGNED NOT NULL,        -- fk to (bil_tenant_invoices)
   `action_date` TIMESTAMP not NULL,
   `action_type` VARCHAR(20) NOT NULL DEFAULT 'PENDING',  -- use dropdown table ('Not Billed','Bill Generated','Overdue','Notice Sent','Fully Paid')
-  `performed_by` BIGINT UNSIGNED DEFAULT NULL,           -- which user perform the ation
+  `performed_by` INT UNSIGNED DEFAULT NULL,           -- which user perform the ation
   `event_info` JSON DEFAULT NULL,
   `notes` VARCHAR(500) DEFAULT NULL,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -191,8 +191,8 @@ CREATE TABLE IF NOT EXISTS `tpt_vendor_billing_audit_logs` (
 -- =======================================================================
 
 CREATE TABLE IF NOT EXISTS `tpt_personnel` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `user_id` BIGINT UNSIGNED DEFAULT NULL,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `user_id` INT UNSIGNED DEFAULT NULL,
     `user_qr_code` VARCHAR(30) NOT NULL,
     `id_card_type` ENUM('QR','RFID','NFC','Barcode') NOT NULL DEFAULT 'QR',
     `name` VARCHAR(100) NOT NULL,
@@ -202,7 +202,7 @@ CREATE TABLE IF NOT EXISTS `tpt_personnel` (
     `role` VARCHAR(20) NOT NULL,
     `license_no` VARCHAR(50) DEFAULT NULL,
     `license_valid_upto` DATE DEFAULT NULL,
-    `assigned_vehicle_id` BIGINT UNSIGNED DEFAULT NULL,
+    `assigned_vehicle_id` INT UNSIGNED DEFAULT NULL,
     `driving_exp_months` SMALLINT UNSIGNED DEFAULT NULL,
     `police_verification_done` TINYINT(1) NOT NULL DEFAULT 0,
     `address` VARCHAR(512) DEFAULT NULL,
@@ -215,7 +215,7 @@ CREATE TABLE IF NOT EXISTS `tpt_personnel` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `tpt_shift` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `code` VARCHAR(20) NOT NULL,
     `name` VARCHAR(100) NOT NULL,
     `effective_from` DATE NOT NULL,
@@ -233,12 +233,12 @@ CREATE TABLE IF NOT EXISTS `tpt_shift` (
 -- =======================================================================
 
 CREATE TABLE IF NOT EXISTS `tpt_route` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `code` VARCHAR(50) NOT NULL,
     `name` VARCHAR(200) NOT NULL,
     `description` VARCHAR(500) DEFAULT NULL,
     `pickup_drop` ENUM('Pickup','Drop','Both') NOT NULL DEFAULT 'Both',
-    `shift_id` BIGINT UNSIGNED NOT NULL,
+    `shift_id` INT UNSIGNED NOT NULL,
     `route_geometry` LINESTRING SRID 4326 DEFAULT NULL,
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -251,8 +251,8 @@ CREATE TABLE IF NOT EXISTS `tpt_route` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `tpt_pickup_points` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `shift_id` BIGINT UNSIGNED NOT NULL,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `shift_id` INT UNSIGNED NOT NULL,
     `code` VARCHAR(50) NOT NULL,
     `name` VARCHAR(200) NOT NULL,
     `latitude` DECIMAL(10,7) DEFAULT NULL,
@@ -272,11 +272,11 @@ CREATE TABLE IF NOT EXISTS `tpt_pickup_points` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `tpt_pickup_points_route_jnt` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `shift_id` BIGINT UNSIGNED NOT NULL,
-    `route_id` BIGINT UNSIGNED NOT NULL,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `shift_id` INT UNSIGNED NOT NULL,
+    `route_id` INT UNSIGNED NOT NULL,
     `pickup_drop` ENUM('Pickup','Drop') NOT NULL DEFAULT 'Pickup',
-    `pickup_point_id` BIGINT UNSIGNED NOT NULL,
+    `pickup_point_id` INT UNSIGNED NOT NULL,
     `ordinal` SMALLINT UNSIGNED NOT NULL DEFAULT 1,
     `total_distance` DECIMAL(7,2) DEFAULT NULL,
     `arrival_time` INT DEFAULT NULL,
@@ -301,12 +301,12 @@ CREATE TABLE IF NOT EXISTS `tpt_pickup_points_route_jnt` (
 -- =======================================================================
 
 CREATE TABLE IF NOT EXISTS `tpt_driver_route_vehicle_jnt` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `shift_id` BIGINT UNSIGNED NOT NULL,
-    `route_id` BIGINT UNSIGNED NOT NULL,
-    `vehicle_id` BIGINT UNSIGNED NOT NULL,
-    `driver_id` BIGINT UNSIGNED NOT NULL,
-    `helper_id` BIGINT UNSIGNED DEFAULT NULL,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `shift_id` INT UNSIGNED NOT NULL,
+    `route_id` INT UNSIGNED NOT NULL,
+    `vehicle_id` INT UNSIGNED NOT NULL,
+    `driver_id` INT UNSIGNED NOT NULL,
+    `helper_id` INT UNSIGNED DEFAULT NULL,
     `pickup_drop` ENUM('Pickup','Drop','Both') NOT NULL DEFAULT 'Both',
     `effective_from` DATE NOT NULL,
     `effective_to` DATE DEFAULT NULL,
@@ -348,13 +348,13 @@ END$$
 DELIMITER ;
 
 CREATE TABLE IF NOT EXISTS `tpt_route_scheduler_jnt` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `scheduled_date` DATE NOT NULL,
-    `shift_id` BIGINT UNSIGNED NOT NULL,
-    `route_id` BIGINT UNSIGNED NOT NULL,
-    `vehicle_id` BIGINT UNSIGNED NOT NULL,
-    `driver_id` BIGINT UNSIGNED NOT NULL,
-    `helper_id` BIGINT UNSIGNED DEFAULT NULL,
+    `shift_id` INT UNSIGNED NOT NULL,
+    `route_id` INT UNSIGNED NOT NULL,
+    `vehicle_id` INT UNSIGNED NOT NULL,
+    `driver_id` INT UNSIGNED NOT NULL,
+    `helper_id` INT UNSIGNED DEFAULT NULL,
     `pickup_drop` ENUM('Pickup','Drop') NOT NULL DEFAULT 'Pickup',
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
@@ -376,12 +376,12 @@ CREATE TABLE IF NOT EXISTS `tpt_route_scheduler_jnt` (
 -- =======================================================================
 
 CREATE TABLE IF NOT EXISTS `tpt_trip` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `trip_date` DATE NOT NULL,
-    `route_scheduler_id` BIGINT UNSIGNED NOT NULL,
-    `vehicle_id` BIGINT UNSIGNED NOT NULL,
-    `driver_id` BIGINT UNSIGNED NOT NULL,
-    `helper_id` BIGINT UNSIGNED DEFAULT NULL,
+    `route_scheduler_id` INT UNSIGNED NOT NULL,
+    `vehicle_id` INT UNSIGNED NOT NULL,
+    `driver_id` INT UNSIGNED NOT NULL,
+    `helper_id` INT UNSIGNED DEFAULT NULL,
     `start_time` DATETIME DEFAULT NULL,
     `end_time` DATETIME DEFAULT NULL,
     `status` VARCHAR(20) NOT NULL DEFAULT 'Scheduled',
@@ -398,9 +398,9 @@ CREATE TABLE IF NOT EXISTS `tpt_trip` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `tpt_trip_stop_detail` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `trip_id` BIGINT UNSIGNED NOT NULL,
-    `stop_id` BIGINT UNSIGNED DEFAULT NULL,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `trip_id` INT UNSIGNED NOT NULL,
+    `stop_id` INT UNSIGNED DEFAULT NULL,
     `pickup_drop` ENUM('Pickup','Drop') NOT NULL DEFAULT 'Pickup',
     `sch_arrival_time` DATETIME DEFAULT NULL,
     `sch_departure_time` DATETIME DEFAULT NULL,
@@ -412,7 +412,7 @@ CREATE TABLE IF NOT EXISTS `tpt_trip_stop_detail` (
     `emergency_remarks` VARCHAR(512) DEFAULT NULL,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    `updated_by` BIGINT UNSIGNED DEFAULT NULL,
+    `updated_by` INT UNSIGNED DEFAULT NULL,
     `deleted_at` TIMESTAMP NULL DEFAULT NULL,
     CONSTRAINT `fk_trip_stop_detail_trip` FOREIGN KEY (`trip_id`) REFERENCES `tpt_trip`(`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_trip_stop_detail_stop` FOREIGN KEY (`stop_id`) REFERENCES `tpt_pickup_points`(`id`) ON DELETE SET NULL,
@@ -424,7 +424,7 @@ CREATE TABLE IF NOT EXISTS `tpt_trip_stop_detail` (
 -- =======================================================================
 
 CREATE TABLE IF NOT EXISTS `tpt_attendance_device` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `device_code` VARCHAR(50) NOT NULL UNIQUE,
     `device_name` VARCHAR(100) NOT NULL,
     `device_type` ENUM('Mobile','Scanner','Tablet','Gate') NOT NULL,
@@ -434,8 +434,8 @@ CREATE TABLE IF NOT EXISTS `tpt_attendance_device` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `tpt_driver_attendance` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `driver_id` BIGINT UNSIGNED NOT NULL,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `driver_id` INT UNSIGNED NOT NULL,
     `attendance_date` DATE NOT NULL,
     `first_in_time` DATETIME NULL,
     `last_out_time` DATETIME NULL,
@@ -448,12 +448,12 @@ CREATE TABLE IF NOT EXISTS `tpt_driver_attendance` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `tpt_driver_attendance_log` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `attendance_id` BIGINT UNSIGNED NOT NULL,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `attendance_id` INT UNSIGNED NOT NULL,
     `scan_time` DATETIME NOT NULL,
     `attendance_type` ENUM('IN','OUT') NOT NULL,
     `scan_method` ENUM('QR','RFID','NFC','Manual') NOT NULL,
-    `device_id` BIGINT UNSIGNED NOT NULL,
+    `device_id` INT UNSIGNED NOT NULL,
     `latitude` DECIMAL(10,6) NULL,
     `longitude` DECIMAL(10,6) NULL,
     `scan_status` ENUM('Valid','Duplicate','Rejected') NOT NULL DEFAULT 'Valid',
@@ -468,11 +468,11 @@ CREATE TABLE IF NOT EXISTS `tpt_driver_attendance_log` (
 -- =======================================================================
 
 CREATE TABLE IF NOT EXISTS `tpt_student_route_allocation_jnt` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `student_session_id` BIGINT UNSIGNED NOT NULL,
-    `route_id` BIGINT UNSIGNED NOT NULL,
-    `pickup_stop_id` BIGINT UNSIGNED NOT NULL,
-    `drop_stop_id` BIGINT UNSIGNED NOT NULL,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `student_session_id` INT UNSIGNED NOT NULL,
+    `route_id` INT UNSIGNED NOT NULL,
+    `pickup_stop_id` INT UNSIGNED NOT NULL,
+    `drop_stop_id` INT UNSIGNED NOT NULL,
     `fare` DECIMAL(10,2) NOT NULL,
     `effective_from` DATE NOT NULL,
     `active_status` TINYINT(1) NOT NULL DEFAULT 1,
@@ -490,8 +490,8 @@ CREATE TABLE IF NOT EXISTS `tpt_student_route_allocation_jnt` (
 -- =======================================================================
 
 CREATE TABLE IF NOT EXISTS `tpt_fine_master` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `std_academic_sessions_id` BIGINT UNSIGNED NOT NULL,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `std_academic_sessions_id` INT UNSIGNED NOT NULL,
     `fine_from_days` TINYINT DEFAULT 0,
     `fine_to_days` TINYINT DEFAULT 0,
     `fine_type` ENUM('Fixed','Percentage') DEFAULT 'Fixed',
@@ -502,8 +502,8 @@ CREATE TABLE IF NOT EXISTS `tpt_fine_master` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `tpt_student_fee_detail` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `std_academic_sessions_id` BIGINT UNSIGNED NOT NULL,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `std_academic_sessions_id` INT UNSIGNED NOT NULL,
     `month` DATE NOT NULL,
     `amount` DECIMAL(10,2) NOT NULL,
     `fine_amount` DECIMAL(10,2) DEFAULT 0.00,
@@ -516,9 +516,9 @@ CREATE TABLE IF NOT EXISTS `tpt_student_fee_detail` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `tpt_student_fine_detail` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `student_fee_detail_id` BIGINT UNSIGNED NOT NULL,
-    `fine_master_id` BIGINT UNSIGNED NOT NULL,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `student_fee_detail_id` INT UNSIGNED NOT NULL,
+    `fine_master_id` INT UNSIGNED NOT NULL,
     `fine_days` TINYINT DEFAULT 0,
     `fine_type` ENUM('Fixed','Percentage') DEFAULT 'Fixed',
     `fine_rate` DECIMAL(5,2) DEFAULT 0.00,
@@ -533,8 +533,8 @@ CREATE TABLE IF NOT EXISTS `tpt_student_fine_detail` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `tpt_student_fee_collection` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `student_fee_detail_id` BIGINT UNSIGNED NOT NULL,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `student_fee_detail_id` INT UNSIGNED NOT NULL,
     `payment_date` DATE NOT NULL,
     `total_delay_days` INT DEFAULT 0,
     `paid_amount` DECIMAL(10,2) NOT NULL,
@@ -550,17 +550,17 @@ CREATE TABLE IF NOT EXISTS `tpt_student_fee_collection` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `std_student_pay_log` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  `student_id` BIGINT UNSIGNED NOT NULL,
-  `academic_session_id` BIGINT UNSIGNED NOT NULL,
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `student_id` INT UNSIGNED NOT NULL,
+  `academic_session_id` INT UNSIGNED NOT NULL,
   `module_name` VARCHAR(50) NOT NULL,
   `activity_type` VARCHAR(50) NOT NULL,
   `amount` DECIMAL(10,2) DEFAULT NULL,
   `log_date` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `reference_id` BIGINT UNSIGNED DEFAULT NULL,
+  `reference_id` INT UNSIGNED DEFAULT NULL,
   `reference_table` VARCHAR(100) DEFAULT NULL,
   `description` VARCHAR(512) DEFAULT NULL,
-  `triggered_by` BIGINT UNSIGNED DEFAULT NULL,
+  `triggered_by` INT UNSIGNED DEFAULT NULL,
   `is_system_generated` TINYINT(1) DEFAULT 0,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `deleted_at` TIMESTAMP NULL DEFAULT NULL,
@@ -579,14 +579,14 @@ CREATE TABLE IF NOT EXISTS `std_student_pay_log` (
 -- =======================================================================
 
 CREATE TABLE IF NOT EXISTS `tpt_vehicle_fuel_log` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `vehicle_id` BIGINT UNSIGNED NOT NULL,
-    `driver_id` BIGINT UNSIGNED DEFAULT NULL,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `vehicle_id` INT UNSIGNED NOT NULL,
+    `driver_id` INT UNSIGNED DEFAULT NULL,
     `date` DATE NOT NULL,
     `quantity` DECIMAL(10,3) NOT NULL,
     `cost` DECIMAL(12,2) NOT NULL,
-    `fuel_type` BIGINT UNSIGNED NOT NULL,
-    `odometer_reading` BIGINT UNSIGNED DEFAULT NULL,
+    `fuel_type` INT UNSIGNED NOT NULL,
+    `odometer_reading` INT UNSIGNED DEFAULT NULL,
     `remarks` VARCHAR(512) DEFAULT NULL,
     `status` ENUM('Approved','Pending','Rejected') NOT NULL DEFAULT 'Pending',
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
@@ -597,11 +597,11 @@ CREATE TABLE IF NOT EXISTS `tpt_vehicle_fuel_log` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 Create Table if not EXISTS `tpt_daily_vehicle_inspection_log` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `vehicle_id` BIGINT UNSIGNED NOT NULL,
-    `driver_id` BIGINT UNSIGNED DEFAULT NULL,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `vehicle_id` INT UNSIGNED NOT NULL,
+    `driver_id` INT UNSIGNED DEFAULT NULL,
     `inspection_date` DATE NOT NULL,
-    `odometer_reading` BIGINT UNSIGNED DEFAULT NULL,
+    `odometer_reading` INT UNSIGNED DEFAULT NULL,
     `fuel_level_percentage` DECIMAL(6,2) DEFAULT NULL,
     `tire_condition_ok` TINYINT(1) NOT NULL DEFAULT 0,
     `lights_condition_ok` TINYINT(1) NOT NULL DEFAULT 0,
@@ -622,7 +622,7 @@ Create Table if not EXISTS `tpt_daily_vehicle_inspection_log` (
     `issues_description` VARCHAR(512) DEFAULT NULL,
     `remarks` VARCHAR(512) DEFAULT NULL,
     `inspection_status` ENUM('Passed','Failed','Pending') NOT NULL DEFAULT 'Pending',
-    `inspected_by` BIGINT UNSIGNED DEFAULT NULL, 
+    `inspected_by` INT UNSIGNED DEFAULT NULL, 
     `inspected_at` TIMESTAMP NULL DEFAULT NULL,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -633,15 +633,15 @@ Create Table if not EXISTS `tpt_daily_vehicle_inspection_log` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 Create Table if not EXISTS `tpt_vehicle_service_log` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `vehicle_id` BIGINT UNSIGNED NOT NULL, 
-    `driver_id` BIGINT UNSIGNED DEFAULT NULL,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `vehicle_id` INT UNSIGNED NOT NULL, 
+    `driver_id` INT UNSIGNED DEFAULT NULL,
     `date_from` TIMESTAMP NOT NULL,
     `date_to` TIMESTAMP NOT NULL,
     `reason` VARCHAR(512) NOT NULL,
-    `Vehicle_status` BIGINT UNSIGNED DEFAULT NULL,
+    `Vehicle_status` INT UNSIGNED DEFAULT NULL,
     `status` ENUM('Approved','Pending','Rejected') NOT NULL DEFAULT 'Pending',
-    `approved_by` BIGINT UNSIGNED DEFAULT NULL,
+    `approved_by` INT UNSIGNED DEFAULT NULL,
     `approved_at` TIMESTAMP NULL DEFAULT NULL,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -652,9 +652,9 @@ Create Table if not EXISTS `tpt_vehicle_service_log` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `tpt_vehicle_maintenance` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `vehicle_service_log_id` BIGINT UNSIGNED NOT NULL,
-    `driver_id` BIGINT UNSIGNED DEFAULT NULL,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `vehicle_service_log_id` INT UNSIGNED NOT NULL,
+    `driver_id` INT UNSIGNED DEFAULT NULL,
     `date` DATE NOT NULL,
     `maintenance_type` VARCHAR(120) NOT NULL,
     `cost` DECIMAL(12,2) NOT NULL,
@@ -665,7 +665,7 @@ CREATE TABLE IF NOT EXISTS `tpt_vehicle_maintenance` (
     `next_due_date` DATE DEFAULT NULL,
     `remarks` VARCHAR(512) DEFAULT NULL,
     `status` ENUM('Approved','Pending','Rejected') NOT NULL DEFAULT 'Pending',
-    `approved_by` BIGINT UNSIGNED DEFAULT NULL,
+    `approved_by` INT UNSIGNED DEFAULT NULL,
     `approved_at` TIMESTAMP NULL DEFAULT NULL,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -680,20 +680,20 @@ CREATE TABLE IF NOT EXISTS `tpt_vehicle_maintenance` (
 -- =======================================================================
 
 CREATE TABLE IF NOT EXISTS `tpt_trip_incidents` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `trip_id` BIGINT UNSIGNED NOT NULL,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `trip_id` INT UNSIGNED NOT NULL,
     `incident_time` TIMESTAMP NOT NULL,
-    `incident_type` BIGINT UNSIGNED NOT NULL,
+    `incident_type` INT UNSIGNED NOT NULL,
     `severity` ENUM('LOW','MEDIUM','HIGH') DEFAULT 'MEDIUM',
     `latitude` DECIMAL(10,7) DEFAULT NULL,
     `longitude` DECIMAL(10,7) DEFAULT NULL,
     `description` VARCHAR(512) DEFAULT NULL,
-    `status` BIGINT UNSIGNED DEFAULT NULL,
-    `raised_by` BIGINT UNSIGNED DEFAULT NULL,
-    `raised_to` BIGINT UNSIGNED DEFAULT NULL,
+    `status` INT UNSIGNED DEFAULT NULL,
+    `raised_by` INT UNSIGNED DEFAULT NULL,
+    `raised_to` INT UNSIGNED DEFAULT NULL,
     `raised_at` TIMESTAMP NULL DEFAULT NULL,
     `resolved_at` TIMESTAMP NULL DEFAULT NULL,
-    `resolved_by` BIGINT UNSIGNED DEFAULT NULL,
+    `resolved_by` INT UNSIGNED DEFAULT NULL,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at` TIMESTAMP NULL DEFAULT NULL,

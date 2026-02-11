@@ -13,7 +13,7 @@ DROP TABLE IF EXISTS fd_visitor_visits;
 DROP TABLE IF EXISTS fd_visitors;
 
 CREATE TABLE fd_visitors (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    id INT PRIMARY KEY AUTO_INCREMENT,
     visitor_name VARCHAR(150) NOT NULL,
     mobile VARCHAR(20) NOT NULL,
     email VARCHAR(150),
@@ -30,8 +30,8 @@ CREATE TABLE fd_visitors (
 ) ENGINE=InnoDB;
 
 CREATE TABLE fd_visitor_visits (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    visitor_id BIGINT NOT NULL,
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    visitor_id INT NOT NULL,
     purpose TEXT NOT NULL,
     host_type ENUM('Student','Staff','Department') NOT NULL,
     host_id BIGINT,
@@ -55,10 +55,10 @@ DROP TABLE IF EXISTS fd_gate_logs;
 DROP TABLE IF EXISTS fd_gate_passes;
 
 CREATE TABLE fd_gate_passes (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    id INT PRIMARY KEY AUTO_INCREMENT,
     pass_number VARCHAR(50) UNIQUE,
     pass_for ENUM('Student','Staff') NOT NULL,
-    person_id BIGINT NOT NULL,
+    person_id INT NOT NULL,
     reason TEXT NOT NULL,
     pass_type ENUM('Outgoing','Incoming','Temporary') NOT NULL,
     expected_return_time DATETIME,
@@ -71,8 +71,8 @@ CREATE TABLE fd_gate_passes (
 ) ENGINE=InnoDB;
 
 CREATE TABLE fd_gate_logs (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    gate_pass_id BIGINT NOT NULL,
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    gate_pass_id INT NOT NULL,
     scan_type ENUM('IN','OUT') NOT NULL,
     scan_time DATETIME NOT NULL,
     scanned_by BIGINT,
@@ -89,10 +89,10 @@ CREATE TABLE fd_gate_logs (
 DROP TABLE IF EXISTS fd_approvals;
 
 CREATE TABLE fd_approvals (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    id INT PRIMARY KEY AUTO_INCREMENT,
     module ENUM('Visitor','GatePass','Certificate','Request','Complaint') NOT NULL,
-    reference_id BIGINT NOT NULL,
-    approver_id BIGINT NOT NULL,
+    reference_id INT NOT NULL,
+    approver_id INT NOT NULL,
     level INT NOT NULL,
     status ENUM('Pending','Approved','Rejected') DEFAULT 'Pending',
     comments TEXT,
@@ -111,7 +111,7 @@ DROP TABLE IF EXISTS fd_message_logs;
 DROP TABLE IF EXISTS fd_message_templates;
 
 CREATE TABLE fd_message_templates (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    id INT PRIMARY KEY AUTO_INCREMENT,
     template_name VARCHAR(100),
     channel ENUM('SMS','Email','WhatsApp') NOT NULL,
     subject VARCHAR(150),
@@ -123,7 +123,7 @@ CREATE TABLE fd_message_templates (
 ) ENGINE=InnoDB;
 
 CREATE TABLE fd_message_logs (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    id INT PRIMARY KEY AUTO_INCREMENT,
     channel ENUM('SMS','Email','WhatsApp') NOT NULL,
     recipient_type ENUM('Student','Parent','Staff','Visitor'),
     recipient_contact VARCHAR(150),
@@ -145,10 +145,10 @@ DROP TABLE IF EXISTS fd_complaint_logs;
 DROP TABLE IF EXISTS fd_complaints;
 
 CREATE TABLE fd_complaints (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    id INT PRIMARY KEY AUTO_INCREMENT,
     complaint_no VARCHAR(50) UNIQUE,
     raised_by ENUM('Student','Parent','Staff') NOT NULL,
-    raised_by_id BIGINT NOT NULL,
+    raised_by_id INT NOT NULL,
     category ENUM('Academic','Transport','Infrastructure','Safety','Other'),
     priority ENUM('Low','Medium','High','Critical') DEFAULT 'Medium',
     description TEXT NOT NULL,
@@ -160,8 +160,8 @@ CREATE TABLE fd_complaints (
 ) ENGINE=InnoDB;
 
 CREATE TABLE fd_complaint_logs (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    complaint_id BIGINT NOT NULL,
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    complaint_id INT NOT NULL,
     action VARCHAR(150),
     remarks TEXT,
     action_by BIGINT,
@@ -180,7 +180,7 @@ DROP TABLE IF EXISTS fd_feedback_responses;
 DROP TABLE IF EXISTS fd_feedback_forms;
 
 CREATE TABLE fd_feedback_forms (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    id INT PRIMARY KEY AUTO_INCREMENT,
     title VARCHAR(150),
     audience ENUM('Student','Parent','Staff'),
     is_anonymous BOOLEAN DEFAULT FALSE,
@@ -190,8 +190,8 @@ CREATE TABLE fd_feedback_forms (
 ) ENGINE=InnoDB;
 
 CREATE TABLE fd_feedback_responses (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    form_id BIGINT NOT NULL,
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    form_id INT NOT NULL,
     respondent_id BIGINT,
     rating INT,
     comments TEXT,
@@ -208,9 +208,9 @@ CREATE TABLE fd_feedback_responses (
 DROP TABLE IF EXISTS fd_requests;
 
 CREATE TABLE fd_requests (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    id INT PRIMARY KEY AUTO_INCREMENT,
     request_no VARCHAR(50) UNIQUE,
-    student_id BIGINT NOT NULL,
+    student_id INT NOT NULL,
     request_type ENUM('Certificate','Leave','IDCard','Other') NOT NULL,
     description TEXT,
     status ENUM('Pending','Approved','Rejected','Completed') DEFAULT 'Pending',
@@ -226,10 +226,10 @@ CREATE TABLE fd_requests (
 DROP TABLE IF EXISTS fd_certificates;
 
 CREATE TABLE fd_certificates (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    id INT PRIMARY KEY AUTO_INCREMENT,
     certificate_no VARCHAR(50) UNIQUE,
     certificate_type ENUM('Bonafide','Character','TC','Attendance'),
-    student_id BIGINT NOT NULL,
+    student_id INT NOT NULL,
     issued_on DATE,
     pdf_path VARCHAR(255),
     issued_by BIGINT,
@@ -245,7 +245,7 @@ CREATE TABLE fd_certificates (
 DROP TABLE IF EXISTS fd_audit_logs;
 
 CREATE TABLE fd_audit_logs (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    id INT PRIMARY KEY AUTO_INCREMENT,
     module VARCHAR(50),
     reference_id BIGINT,
     action VARCHAR(100),

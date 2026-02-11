@@ -3,11 +3,11 @@
 -- ========================================================================================================
 
 CREATE TABLE IF NOT EXISTS `std_students` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT,
-  `user_id` bigint unsigned NOT NULL,          -- FK to sch_user
+  `id` INT UNSIGNED AUTO_INCREMENT,
+  `user_id` INT unsigned NOT NULL,          -- FK to sch_user
   `student_qr_code` VARCHAR(30) NOT NULL,
   `student_id_card_type` ENUM('QR','RFID','NFC','Barcode') NOT NULL DEFAULT 'QR',
-  --`parent_id` bigint unsigned NOT NULL,        -- FK to sch_user
+  --`parent_id` INT unsigned NOT NULL,        -- FK to sch_user
   `aadhar_id` VARCHAR(20) NOT NULL,            -- always permanent identity
   `apaar_id` VARCHAR(100) NOT NULL,            -- 12 digits numeric i.e. 9876 5432 1098
   `birth_cert_no` VARCHAR(50) NULL,
@@ -35,13 +35,13 @@ CREATE TABLE IF NOT EXISTS `std_students` (
 
 -- Changed table name from 'std_student_detail' to 'std_student_personal_details'
 CREATE TABLE IF NOT EXISTS `std_student_personal_details` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `student_id` BIGINT UNSIGNED DEFAULT NULL,         -- FK to 'std_students'
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
+  `student_id` INT UNSIGNED DEFAULT NULL,         -- FK to 'std_students'
 -  `mobile` varchar(20) DEFAULT NULL,     -- Student Mobile
 -  `email` varchar(100) DEFAULT NULL,     -- Student Mail ID
   `current_address` text,
   `permanent_address` text,
-  `city_id` BIGINT UNSIGNED DEFAULT NULL,   -- FK to 'glb_city'
+  `city_id` INT UNSIGNED DEFAULT NULL,   -- FK to 'glb_city'
   `pin` varchar(10) DEFAULT NULL,
 -  `religion` varchar(50) DEFAULT NULL,   -- FK to `gl_dropdown_table`
 -  `cast` varchar(50) DEFAULT NULL,       -- FK to `gl_dropdown_table`
@@ -84,10 +84,10 @@ CREATE TABLE IF NOT EXISTS `std_student_personal_details` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `std_student_sessions_jnt` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT,
-  `student_id` BIGINT UNSIGNED NOT NULL,            -- FK
-  `user_id` bigint unsigned NOT NULL,               -- FK to sch_user
-  `academic_sessions_id` bigint unsigned NOT NULL,  -- FK - sch_org_academic_sessions_jnt
+  `id` INT UNSIGNED AUTO_INCREMENT,
+  `student_id` INT UNSIGNED NOT NULL,            -- FK
+  `user_id` INT unsigned NOT NULL,               -- FK to sch_user
+  `academic_sessions_id` INT unsigned NOT NULL,  -- FK - sch_org_academic_sessions_jnt
   `admission_no` VARCHAR(50) NOT NULL,
   `roll_no` INT DEFAULT NULL,
   `admission_date` DATE DEFAULT NULL,
@@ -95,10 +95,10 @@ CREATE TABLE IF NOT EXISTS `std_student_sessions_jnt` (
   `default_mobile` ENUM('Father','Mother','Guardian','All') NOT NULL DEFAULT 'Mother',
   `default_email` ENUM('Father','Mother','Guardian','All') NOT NULL DEFAULT 'Mother',
   `class_section_id` INT UNSIGNED NOT NULL,         -- FK (Instead of selecting Class & Section, we will be using Class+Section)
-  `subject_group_id` BIGINT UNSIGNED NOT NULL,      -- FK - sch_subject_groups
-  `session_status_id` BIGINT UNSIGNED DEFAULT NULL, -- FK - gl_dropdown_table (Status of the Student in the Session)
+  `subject_group_id` INT UNSIGNED NOT NULL,      -- FK - sch_subject_groups
+  `session_status_id` INT UNSIGNED DEFAULT NULL, -- FK - gl_dropdown_table (Status of the Student in the Session)
   `is_current` TINYINT(1) DEFAULT 1,  -- Only one session can be current at a time for one student
-  `current_flag` bigint GENERATED ALWAYS AS ((case when (`is_current` = 1) then `student_id` else NULL end)) STORED,
+  `current_flag` INT GENERATED ALWAYS AS ((case when (`is_current` = 1) then `student_id` else NULL end)) STORED,
   `leaving_date` DATE DEFAULT NULL,
   `reason_quit` int NULL,                       -- FK to `gl_dropdown_table` (Reason for leaving the Session)
   `dis_note` text NOT NULL,

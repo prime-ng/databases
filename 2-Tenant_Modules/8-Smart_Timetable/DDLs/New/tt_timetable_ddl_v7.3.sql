@@ -6,9 +6,6 @@
 -- Architecture: Multi-tenant, Constraint-based Auto-Scheduling
 -- TABLE PREFIX: tt_ - Timetable Module
 -- =====================================================================
--- ENHANCEMENTS IN V6.0:
--- Added Reference Tables from Other Modules
--- =====================================================================
 
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
@@ -27,8 +24,6 @@ SET FOREIGN_KEY_CHECKS = 0;
   -- `section_of_a_class_has_home_room`
   -- `teacher_has_home_room`
 
-
-
 -- -------------------------------------------------
 --  SECTION 0: CONFIGURATION TABLES
 -- -------------------------------------------------
@@ -36,8 +31,8 @@ SET FOREIGN_KEY_CHECKS = 0;
   -- This table is created in the School_Setup module but will will be shown & can be Modified in Timetable as well.
   -- This will be used in Lesson Planning for creating Schedule for all the Subjects for Entire Session
   CREATE TABLE IF NOT EXISTS `sch_academic_term` (
-    `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-    `academic_session_id` BIGINT UNSIGNED NOT NULL,
+    `id` INT unsigned NOT NULL AUTO_INCREMENT,
+    `academic_session_id` INT UNSIGNED NOT NULL,
     `academic_year_start_date` DATE NOT NULL,
     `academic_year_end_date` DATE NOT NULL,
     `total_terms_in_academic_session` TINYINT UNSIGNED NOT NULL,     -- Total Terms in an Academic Session -- e.g., 1, 2, 3, 4
@@ -68,13 +63,16 @@ SET FOREIGN_KEY_CHECKS = 0;
     FOREIGN KEY (`academic_session_id`) REFERENCES `sch_org_academic_sessions_jnt`(`id`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   COMMENT='Academic term/quarter/semester structure';
+  -- Cindition:
+  -- 1. May of the fields in above table will be used in Lesson & Syllabus Planning as well.
+  -- 2. 
 
 
   -- Here we are setting what all Settings will be used for the Timetable Module
   -- Only Edit Functionality is require. No one can Add or Delete any record.
   -- In Edit also "key" can not be edit. In Edit "key" will not be display.
   CREATE TABLE IF NOT EXISTS `tt_config` (
-    `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+    `id` INT unsigned NOT NULL AUTO_INCREMENT,
     `ordinal` int unsigned NOT NULL DEFAULT '1',
     `key` varchar(150) NOT NULL,                           -- Can not changed by user (He can edit other fields only but not KEY)
     `key_name` varchar(150) NOT NULL,                      -- Can be Changed by user
@@ -110,7 +108,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 
 -- Timetable Generation Queue & Strategy Tables (For handling asynchronous timetable generation)
 CREATE TABLE IF NOT EXISTS `tt_generation_strategy` (
-    `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+    `id` INT unsigned NOT NULL AUTO_INCREMENT,
     `code` VARCHAR(20) NOT NULL,
     `name` VARCHAR(100) NOT NULL,
     `description` VARCHAR(255) NULL,
@@ -140,7 +138,7 @@ COMMENT='Timetable generation algorithms and parameters';
 
   -- Here we are setting what all Shifts will be used for the Timetable Module 'MORNING', 'TODLER', 'AFTERNOON', 'EVENING'
   CREATE TABLE IF NOT EXISTS `tt_shift` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `code` VARCHAR(20) NOT NULL,               -- e.g., 'MORNING', 'AFTERNOON', 'EVENING'
     `name` VARCHAR(100) NOT NULL,              -- e.g., 'Morning', 'Afternoon', 'Evening'
     `description` VARCHAR(255) DEFAULT NULL,
@@ -159,7 +157,7 @@ COMMENT='Timetable generation algorithms and parameters';
 
   -- Here we are setting what all Types of Days will be used for the School 'WORKING','HOLIDAY','EXAM','SPECIAL'
   CREATE TABLE IF NOT EXISTS `tt_day_type` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `code` VARCHAR(20) NOT NULL,                      -- e.g., 'STUDY','HOLIDAY','EXAM','SPECIAL','PTM_DAY','SPORTS_DAY','ANNUAL_DAY'
     `name` VARCHAR(100) NOT NULL,                     -- e.g., 'Study Day','Holiday','Exam','Special Day','Parent Teacher Meeting','Sports Day','Annual Day'
     `description` VARCHAR(255) DEFAULT NULL,
@@ -178,7 +176,7 @@ COMMENT='Timetable generation algorithms and parameters';
 
   -- Here we are setting what all Types of Periods will be used for the School 'THEORY','TEACHING','PRACTICAL','BREAK','LUNCH','ASSEMBLY','EXAM','RECESS','FREE'
   CREATE TABLE IF NOT EXISTS `tt_period_type` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `code` VARCHAR(30) NOT NULL,                         -- e.g., 'THEORY','TEACHING','PRACTICAL','BREAK','LUNCH','ASSEMBLY','EXAM','RECESS','FREE'
     `name` VARCHAR(100) NOT NULL,                        -- e.g., 'Theory','Teaching','Practical','Break','Lunch','Assembly','Exam','Recess','Free Period'
     `description` VARCHAR(255) DEFAULT NULL,
@@ -202,7 +200,7 @@ COMMENT='Timetable generation algorithms and parameters';
 
   -- Here we are setting what all Types of Teacher Assignment Roles will be used for the School 'PRIMARY','ASSISTANT','CO_TEACHER','SUBSTITUTE','TRAINEE'
   CREATE TABLE IF NOT EXISTS `tt_teacher_assignment_role` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `code` VARCHAR(30) NOT NULL,                            -- e.g., 'PRIMARY','ASSISTANT','CO_TEACHER','SUBSTITUTE','TRAINEE'
     `name` VARCHAR(100) NOT NULL,                           -- e.g., 'Primary Teacher','Assistant Teacher','Co-Teacher','Substitute Teacher','Trainee Teacher'
     `description` VARCHAR(255) DEFAULT NULL,
@@ -222,7 +220,7 @@ COMMENT='Timetable generation algorithms and parameters';
 
   -- Here we are setting which all Days will be Open for School and Which day School will remain Closed
   CREATE TABLE IF NOT EXISTS `tt_school_days` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `code` VARCHAR(10) NOT NULL,                    -- e.g., 'MON','TUE','WED','THU','FRI','SAT','SUN'
     `name` VARCHAR(20) NOT NULL,                    -- e.g., 'Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'
     `short_name` VARCHAR(5) NOT NULL,               -- e.g., 'Mon','Tue','Wed','Thu','Fri','Sat','Sun'
@@ -241,13 +239,13 @@ COMMENT='Timetable generation algorithms and parameters';
 
   -- Here we are setting Status of the Schol on Calander (e.g. On a particuler day School is Open or Closed, if Open then which type of day it is Normal, Exam, Sports Day etc.)
   CREATE TABLE IF NOT EXISTS `tt_working_day` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `academic_session_id` BIGINT UNSIGNED NOT NULL,  -- FK to tt_academic_session.id
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `academic_session_id` INT UNSIGNED NOT NULL,  -- FK to tt_academic_session.id
     `date` DATE NOT NULL,                            -- e.g., '2023-01-01'
-    `day_type1_id` BIGINT UNSIGNED NOT NULL,         -- FK to tt_day_type.id (There can multipal Activity on same day e.g. Exam with Study, PTM with Study etc.)
-    `day_type2_id` BIGINT UNSIGNED NULL,             -- FK to tt_day_type.id (There can multipal Activity on same day e.g. Exam with Study, PTM with Study etc.)
-    `day_type3_id` BIGINT UNSIGNED NULL,             -- FK to tt_day_type.id (There can multipal Activity on same day e.g. Exam with Study, PTM with Study etc.)
-    `day_type4_id` BIGINT UNSIGNED NULL,             -- FK to tt_day_type.id (There can multipal Activity on same day e.g. Exam with Study, PTM with Study etc.)
+    `day_type1_id` INT UNSIGNED NOT NULL,         -- FK to tt_day_type.id (There can multipal Activity on same day e.g. Exam with Study, PTM with Study etc.)
+    `day_type2_id` INT UNSIGNED NULL,             -- FK to tt_day_type.id (There can multipal Activity on same day e.g. Exam with Study, PTM with Study etc.)
+    `day_type3_id` INT UNSIGNED NULL,             -- FK to tt_day_type.id (There can multipal Activity on same day e.g. Exam with Study, PTM with Study etc.)
+    `day_type4_id` INT UNSIGNED NULL,             -- FK to tt_day_type.id (There can multipal Activity on same day e.g. Exam with Study, PTM with Study etc.)
     `is_school_day` TINYINT(1) NOT NULL DEFAULT 1,   -- 1 if school is Open, 0 if school is Closed
     `remarks` VARCHAR(255) DEFAULT NULL,             -- Remarks for the day
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
@@ -272,12 +270,12 @@ COMMENT='Timetable generation algorithms and parameters';
 
   -- There is possibility that one class is having EXAM on a day but another class is not having exam but it a Normal Study Class.
   CREATE TABLE IF NOT EXISTS `tt_class_working_day_jnt` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `academic_session_id` BIGINT UNSIGNED NOT NULL,  -- FK to tt_academic_session.id
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `academic_session_id` INT UNSIGNED NOT NULL,  -- FK to tt_academic_session.id
     `date` DATE NOT NULL,
-    `class_id` BIGINT UNSIGNED NOT NULL,             -- FK to tt_class_section.id
-    `section_id` BIGINT UNSIGNED DEFAULT NULL,       -- FK to sch_sections.id
-    `working_day_id` BIGINT UNSIGNED NOT NULL,       -- FK to tt_working_day.id
+    `class_id` INT UNSIGNED NOT NULL,             -- FK to tt_class_section.id
+    `section_id` INT UNSIGNED DEFAULT NULL,       -- FK to sch_sections.id
+    `working_day_id` INT UNSIGNED NOT NULL,       -- FK to tt_working_day.id
     `is_exam_day` TINYINT(1) NOT NULL DEFAULT 0,
     `is_ptm_day` TINYINT(1) NOT NULL DEFAULT 0,
     `is_half_day` TINYINT(1) NOT NULL DEFAULT 0,
@@ -296,11 +294,11 @@ COMMENT='Timetable generation algorithms and parameters';
 
   -- This is the table for which we will be creating Timetable (e.g., 'STANDARD_3rd-12th', 'STANDARD_BV1-2nd','EXTENDED_9th-12th')
   CREATE TABLE IF NOT EXISTS `tt_timetable_type` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `code` VARCHAR(30) NOT NULL,                      -- e.g., 'STANDARD','UNIT_TEST-1', 'HALF_DAY','HALF_YEARLY','FINAL_EXAM'
     `name` VARCHAR(100) NOT NULL,                     -- e.g., 'Standard Timetable','Half Day Timetable','Unit Test-1 Timetable','Half Yearly Timetable','Final Exam Timetable'
     `description` VARCHAR(255) DEFAULT NULL,
-    `shift_id` BIGINT UNSIGNED DEFAULT NULL,          -- FK to tt_shift.id (e.g., 'MORNING','AFTERNOON','EVENING')
+    `shift_id` INT UNSIGNED DEFAULT NULL,          -- FK to tt_shift.id (e.g., 'MORNING','AFTERNOON','EVENING')
     `effective_from_date` DATE DEFAULT NULL,
     `effective_to_date` DATE DEFAULT NULL,
     `school_start_time` TIME DEFAULT NULL,
@@ -325,7 +323,7 @@ COMMENT='Timetable generation algorithms and parameters';
 
   -- Here we are setting Period Set (Different No of Periods for different classes e.g. 3rd-12th Normal 8P, 4th-12th Exam 3P, 5th-12th Half Day 4P, BV1-2nd Toddler 6P)
   CREATE TABLE IF NOT EXISTS `tt_period_set` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `code` VARCHAR(30) NOT NULL,                   -- e.g., 'STANDARD_8P','UT1_WITH_6P','UT1_WITH_0P','HALF_DAY_4P','TODDLER_6P'
     `name` VARCHAR(100) NOT NULL,
     `description` VARCHAR(255) DEFAULT NULL,
@@ -350,12 +348,12 @@ COMMENT='Timetable generation algorithms and parameters';
 
   -- Here we are setting Period Set Period (Different No of Periods for different classes e.g. 3rd-12th Normal 8P, 4th-12th Exam 3P, 5th-12th Half Day 4P, BV1-2nd Toddler 6P)
   CREATE TABLE IF NOT EXISTS `tt_period_set_period_jnt` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `period_set_id` BIGINT UNSIGNED NOT NULL,   -- FK to tt_period_set.id
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `period_set_id` INT UNSIGNED NOT NULL,   -- FK to tt_period_set.id
     `period_ord` TINYINT UNSIGNED NOT NULL,     -- e.g., 1,2,3,4,5,6,7,8
     `code` VARCHAR(20) NOT NULL,                -- e.g., 'REC','P-1','P-2','BRK','P-3','P-4','LUN','P-5','P-6','BRK','P-7','P-8'
     `short_name` VARCHAR(50) NOT NULL,          -- e.g., 'Recess','Period-1','Period-2','Break','Period-3','Period-4','Lunch','Period-5','Period-6','Break','Period-7','Period-8'
-    `period_type_id` BIGINT UNSIGNED NOT NULL,  -- FK to tt_period_type.id (e.g. 'TEACHING','BREAK','LUNCH','ASSEMBLY','ACTIVITY','EXAM','HALF DAY')
+    `period_type_id` INT UNSIGNED NOT NULL,  -- FK to tt_period_type.id (e.g. 'TEACHING','BREAK','LUNCH','ASSEMBLY','ACTIVITY','EXAM','HALF DAY')
     `start_time` TIME NOT NULL,                 -- e.g., '08:00:00', '08:45:00', '09:30:00', '10:15:00', '11:00:00', '11:45:00', '12:30:00', '13:15:00'
     `end_time` TIME NOT NULL,                   -- e.g., '08:45:00', '09:30:00', '10:15:00', '11:00:00', '11:45:00', '12:30:00', '13:15:00', '14:00:00'
     `duration_minutes` SMALLINT UNSIGNED GENERATED ALWAYS AS (TIMESTAMPDIFF(MINUTE, start_time, end_time)) STORED,
@@ -375,12 +373,12 @@ COMMENT='Timetable generation algorithms and parameters';
   -- This table is used to define the rules for a particular class
   -- Change Table Name to 'tt_class_timetable_type_jnt' from 'tt_class_mode_rule'
   CREATE TABLE IF NOT EXISTS `tt_class_timetable_type_jnt` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `academic_term_id` BIGINT UNSIGNED DEFAULT NULL,   -- FK to sch_academic_term.id 
-    `timetable_type_id` BIGINT UNSIGNED NOT NULL,          -- FK to tt_timetable_type.id 
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `academic_term_id` INT UNSIGNED DEFAULT NULL,   -- FK to sch_academic_term.id 
+    `timetable_type_id` INT UNSIGNED NOT NULL,          -- FK to tt_timetable_type.id 
     `class_id` INT UNSIGNED NOT NULL,                      -- FK to sch_classes.id
     `section_id` INT UNSIGNED NOT NULL,                    -- FK to sch_sections.id
-    `period_set_id` BIGINT UNSIGNED NOT NULL,              -- FK to tt_period_set.id
+    `period_set_id` INT UNSIGNED NOT NULL,              -- FK to tt_period_set.id
     `applies_to_all_sections` TINYINT(1) NOT NULL DEFAULT 1, -- If 1 then all section of same class will have same timetable type
     `has_teaching` TINYINT(1) NOT NULL DEFAULT 1,          -- Whether this class is allowed to have teaching
     `has_exam` TINYINT(1) NOT NULL DEFAULT 0,              -- Whether this class is allowed to have exam
@@ -409,14 +407,14 @@ COMMENT='Timetable generation algorithms and parameters';
 
   -- changed below Table name to - `tt_class_subject_groups` from `tt_class_groups_jnt`
   CREATE TABLE IF NOT EXISTS `tt_class_subject_groups` (
-    `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+    `id` INT unsigned NOT NULL AUTO_INCREMENT,
     `code` char(50) NOT NULL,                                         -- Copy from sch_class_groups_jnt.code
     `name` varchar(100) NOT NULL,                                     -- Copy from sch_class_groups_jnt.name
-    `class_group_id` bigint unsigned NOT NULL,                        -- FK to sch_class_groups.id
-    `class_id` bigint unsigned NOT NULL,                              -- FK to sch_classes.id
-    `section_id` bigint unsigned DEFAULT NULL,                        -- FK to sch_sections.id
-    `subject_study_format_id` bigint unsigned NOT NULL,               -- FK to sch_study_formats.id. e.g SCI_LEC, SCI_LAB, COM_LEC, COM_OPT, etc.
-    `subject_type_id` bigint unsigned NOT NULL,                       -- FK to sch_subject_types.id. e.g MAJOR, MINOR, OPTIONAL, etc.
+    `class_group_id` INT unsigned NOT NULL,                        -- FK to sch_class_groups.id
+    `class_id` INT unsigned NOT NULL,                              -- FK to sch_classes.id
+    `section_id` INT unsigned DEFAULT NULL,                        -- FK to sch_sections.id
+    `subject_study_format_id` INT unsigned NOT NULL,               -- FK to sch_study_formats.id. e.g SCI_LEC, SCI_LAB, COM_LEC, COM_OPT, etc.
+    `subject_type_id` INT unsigned NOT NULL,                       -- FK to sch_subject_types.id. e.g MAJOR, MINOR, OPTIONAL, etc.
     `required_weekly_periods` TINYINT UNSIGNED NOT NULL DEFAULT 1,    -- Total periods required per week for this Class Group (Class+{Section}+Subject+StudyFormat)
     `compulsory_specific_room_type` TINYINT(1) NOT NULL DEFAULT 0,    -- Whether specific room type is required (TRUE - if Specific Room Type is Must)
     `required_room_type_id` INT UNSIGNED NOT NULL,                    -- FK to sch_room_types.id (Required)
@@ -446,14 +444,14 @@ COMMENT='Timetable generation algorithms and parameters';
 
   -- changed below Table name to - `tt_requirement_subgroups` from `tt_class_subgroup`
   CREATE TABLE IF NOT EXISTS `tt_class_subject_subgroups` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `code` VARCHAR(50) NOT NULL,                                         -- Copy from sch_class_groups_jnt.code
     `name` VARCHAR(100) NOT NULL,                                        -- Copy from sch_class_groups_jnt.name
-    `class_subject_group_id` bigint unsigned NOT NULL,                   -- FK to tt_class_subject_groups.id
-    `class_id` bigint unsigned NOT NULL,                                 -- FK to sch_classes.id
-    `section_id` bigint unsigned DEFAULT NULL,                           -- FK to sch_sections.id
-    `subject_study_format_id` bigint unsigned NOT NULL,                  -- FK to sch_study_formats.id. e.g SCI_LEC, SCI_LAB, COM_LEC, COM_OPT, etc.
-    `subject_type_id` bigint unsigned NOT NULL,                          -- FK to sch_subject_types.id. e.g `LECTURE`,`LAB,`SPORTS`,`ACTIVITY` etc.
+    `class_subject_group_id` INT unsigned NOT NULL,                   -- FK to tt_class_subject_groups.id
+    `class_id` INT unsigned NOT NULL,                                 -- FK to sch_classes.id
+    `section_id` INT unsigned DEFAULT NULL,                           -- FK to sch_sections.id
+    `subject_study_format_id` INT unsigned NOT NULL,                  -- FK to sch_study_formats.id. e.g SCI_LEC, SCI_LAB, COM_LEC, COM_OPT, etc.
+    `subject_type_id` INT unsigned NOT NULL,                          -- FK to sch_subject_types.id. e.g `LECTURE`,`LAB,`SPORTS`,`ACTIVITY` etc.
     `required_weekly_periods` TINYINT UNSIGNED NOT NULL DEFAULT 1,       -- Total periods required per week for this Class Group (Class+{Section}+Subject+StudyFormat)
     `compulsory_specific_room_type` TINYINT(1) NOT NULL DEFAULT 0,       -- Whether specific room type is required (TRUE - if Specific Room Type is Must)
     `required_room_type_id` INT UNSIGNED NOT NULL,                       -- FK to sch_room_types.id (Required)
@@ -520,13 +518,13 @@ COMMENT='Timetable generation algorithms and parameters';
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `tt_constraint` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `constraint_type_id` BIGINT UNSIGNED NOT NULL,  -- FK to tt_constraint_type.id
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `constraint_type_id` INT UNSIGNED NOT NULL,  -- FK to tt_constraint_type.id
     `name` VARCHAR(200) DEFAULT NULL,
     `description` VARCHAR(500) DEFAULT NULL,
-    `academic_session_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to sch_academic_sessions.id
+    `academic_session_id` INT UNSIGNED DEFAULT NULL,  -- FK to sch_academic_sessions.id
     `target_type` INT UNSIGNED NOT NULL,  -- FK to tt_constraint_category_scope
-    `target_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to target_type.id
+    `target_id` INT UNSIGNED DEFAULT NULL,  -- FK to target_type.id
     `is_hard` TINYINT(1) NOT NULL DEFAULT 0,  -- Whether this constraint is hard
     `weight` TINYINT UNSIGNED NOT NULL DEFAULT 100,  -- Weight of this constraint
     `params_json` JSON NOT NULL,  -- JSON object containing parameters for this constraint
@@ -538,7 +536,7 @@ COMMENT='Timetable generation algorithms and parameters';
     `impact_score` TINYINT UNSIGNED DEFAULT 50 COMMENT 'Estimated impact on timetable generation difficulty (1-100)',
     `applies_to_terms_json` JSON DEFAULT NULL COMMENT 'Which academic terms this constraint applies to',
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,  -- Whether this constraint is active
-    `created_by` BIGINT UNSIGNED DEFAULT NULL,  -- FK to sys_users.id
+    `created_by` INT UNSIGNED DEFAULT NULL,  -- FK to sys_users.id
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at` TIMESTAMP NULL DEFAULT NULL,
@@ -556,9 +554,9 @@ COMMENT='Timetable generation algorithms and parameters';
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `tt_teacher_unavailable` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `teacher_id` BIGINT UNSIGNED NOT NULL,  -- FK to sch_teachers.id
-    `constraint_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to tt_constraint.id
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `teacher_id` INT UNSIGNED NOT NULL,  -- FK to sch_teachers.id
+    `constraint_id` INT UNSIGNED DEFAULT NULL,  -- FK to tt_constraint.id
     `day_of_week` TINYINT UNSIGNED NOT NULL,  -- 1=Monday, 2=Tuesday, etc. (ISO 8601)
     `period_ord` TINYINT UNSIGNED DEFAULT NULL,  -- 1=First period, 2=Second period, etc.
     `start_date` DATE DEFAULT NULL,
@@ -577,9 +575,9 @@ COMMENT='Timetable generation algorithms and parameters';
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `tt_room_unavailable` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `room_id` INT UNSIGNED NOT NULL,  -- FK to sch_rooms.id
-    `constraint_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to tt_constraint.id
+    `constraint_id` INT UNSIGNED DEFAULT NULL,  -- FK to tt_constraint.id
     `day_of_week` TINYINT UNSIGNED NOT NULL,  -- 1=Monday, 2=Tuesday, etc. (ISO 8601)
     `period_ord` TINYINT UNSIGNED DEFAULT NULL,  -- 1=First period, 2=Second period, etc.
     `start_date` DATE DEFAULT NULL,
@@ -603,11 +601,11 @@ COMMENT='Timetable generation algorithms and parameters';
 -- -------------------------------------------------
   -- changed below Table name to - tt_requirement_consolidation from tt_class_group_requirement
   CREATE TABLE IF NOT EXISTS `tt_requirement_consolidation` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `class_group_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to sch_class_groups_jnt.id
-    `class_subgroup_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to tt_requirement_subgroups.id
-    -- `academic_session_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to tt_academic_session.id
-    `academic_term_id` BIGINT UNSIGNED NOT NULL,  -- FK to tt_academic_term.id  -- This is the Term for which this timetable is being generated (New)
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `class_group_id` INT UNSIGNED DEFAULT NULL,  -- FK to sch_class_groups_jnt.id
+    `class_subgroup_id` INT UNSIGNED DEFAULT NULL,  -- FK to tt_requirement_subgroups.id
+    -- `academic_session_id` INT UNSIGNED DEFAULT NULL,  -- FK to tt_academic_session.id
+    `academic_term_id` INT UNSIGNED NOT NULL,  -- FK to tt_academic_term.id  -- This is the Term for which this timetable is being generated (New)
  
     -- Editable Parameters before Timetable Generation
     `required_weekly_periods` TINYINT UNSIGNED NOT NULL,  -- Total periods required per week
@@ -624,23 +622,6 @@ COMMENT='Timetable generation algorithms and parameters';
     `is_shared_across_sections` TINYINT(1) NOT NULL DEFAULT 0,  -- Whether this subgroup is shared across sections (Editable)
     `is_shared_across_classes` TINYINT(1) NOT NULL DEFAULT 0,  -- Whether this subgroup is shared across classes (Editable)
     -- Till here Paremeter will be Editable by User
-
-    -- 9th Feb 2025 -- (Below fields are non-editable and will be used to calculate 'Activity_Priority')
-    `tot_students` INT UNSIGNED DEFAULT NULL,  -- Total students in this requirement group (tt_class_subject_groups.student_count)
-    `teacher_scarcity_index` DECIMAL(7,2) UNSIGNED DEFAULT 1 -- (Here we will count the number of qualified teachers for a subject+Study Format for Every Class+Section)
-    `weekly_load_ratio` DECIMAL(7,2) UNSIGNED DEFAULT 1 -- (Required Periods per Week, (Required Periods per Week / Total Periods in a Week))
-    `teacher_availability_ratio` DECIMAL(7,2) UNSIGNED DEFAULT 1 -- (TAR = (Total Allocated Periods / Weekly Available Working Periods) * 100)
-    `rigidity_score` DECIMAL(7,2) UNSIGNED DEFAULT 1 -- (If an activity can happen only in limited slots, it must go first.) Rigidity_Score = Allowed_Slots / Total_Slots
-    `resource_scarcity` DECIMAL(7,2) UNSIGNED DEFAULT 1 -- (If only 1 lab serves 8 sections, must be placed early) Resource_Scarcity = Required_Resource_Count / Available_Resources
-    `subject_difficulty_index` DECIMAL(7,2) UNSIGNED DEFAULT 1 -- (Harder subjects like Physics/Chemistry/Maths should be placed early)
-
-    -- 9th Feb 2025 -- (Removed priority, we will be calculating priority in 'activities' table)
-    -- `priority` DECIMAL(8,3) DEFAULT 50.000,  -- Priority of this requirement (0.000 to 100.000) Auto-Calculated
-
-    -- Teacher availability from tt_requirement_groups & tt_requirement_subgroups
-    `eligible_teacher_count` INT UNSIGNED DEFAULT NULL,  -- How many Teacher are available to teach this Requirement
-    `min_teacher_availability_score` DECIMAL(7,2) UNSIGNED DEFAULT 1 -- Percentage of available teachers for this Class Group (Will capture from Teachers profile)
-    `max_teacher_availability_score` DECIMAL(7,2) UNSIGNED DEFAULT 1 -- Percentage of available teachers for this Class Group (Will capture from Teachers profile)
 
     -- Room Requirement
     `compulsory_specific_room_type` TINYINT(1) NOT NULL DEFAULT 0, -- Whether specific room type is required (TRUE - if Specific Room Type is Must)
@@ -659,14 +640,50 @@ COMMENT='Timetable generation algorithms and parameters';
     CONSTRAINT `chk_cgr_target` CHECK ((`class_group_id` IS NOT NULL AND `class_subgroup_id` IS NULL) OR (`class_group_id` IS NULL AND `class_subgroup_id` IS NOT NULL))
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+
+-- ---------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+
+  -- 9th Feb 2025 -- (New Table)
+  -- This table will store the Priority Configuration for the Timetable Generation Process
+  CREATE TABLE IF NOT EXISTS `tt_priority_config` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `requirement_consolidation_id` INT UNSIGNED NOT NULL,  -- FK to tt_requirement_consolidation.id
+    `priority_type` VARCHAR(50) NOT NULL,  -- 'Teacher_Preference', 'Student_Preference', 'Academic_Requirement', 'Resource_Constraint', 'Time_Constraint', 'Activity_Priority'
+    `priority_name` VARCHAR(100) NOT NULL,  -- 'Maths_Preference', 'Physics_Preference', 'Class_12_Preference', 'Lab_Preference', 'Morning_Preference', 'Hard_Subject'
+    `priority_value` DECIMAL(8,3) NOT NULL,  -- Priority of this requirement (0.000 to 100.000) Auto-Calculated
+
+    `tot_students` INT UNSIGNED DEFAULT NULL,  -- Total students in this requirement group (tt_class_subject_groups.student_count)
+    `teacher_scarcity_index` DECIMAL(7,2) UNSIGNED DEFAULT 1 -- (Here we will count the number of qualified teachers for a subject+Study Format for Every Class+Section)
+    `weekly_load_ratio` DECIMAL(7,2) UNSIGNED DEFAULT 1 -- (Required Periods per Week, (Required Periods per Week / Total Periods in a Week))
+    `teacher_availability_ratio` DECIMAL(7,2) UNSIGNED DEFAULT 1 -- (TAR = (Total Allocated Periods / Weekly Available Working Periods) * 100)
+    `rigidity_score` DECIMAL(7,2) UNSIGNED DEFAULT 1 -- (If an activity can happen only in limited slots, it must go first.) Rigidity_Score = Allowed_Slots / Total_Slots
+    `resource_scarcity` DECIMAL(7,2) UNSIGNED DEFAULT 1 -- (If only 1 lab serves 8 sections, must be placed early) Resource_Scarcity = Required_Resource_Count / Available_Resources
+    `subject_difficulty_index` DECIMAL(7,2) UNSIGNED DEFAULT 1 -- (Harder subjects like Physics/Chemistry/Maths should be placed early)
+
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1,  -- Whether this priority is active
+    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_priority_type_name` (`priority_type`, `priority_name`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+
+
+
    -- Create Slot Availability / Class+section (This will fetch data from tt_class_timetable_type_jnt & tt_timetable_type)
    -- There will be no Audit Fields as this table will be used for calculation purpose only
    CREATE TABLE IF NOT EXISTS `tt_slot_availability` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `timetable_type_id` bigint unsigned NOT NULL,  -- FK to tt_timetable_type.id
-    `class_timetable_type_id` bigint unsigned NOT NULL,  -- FK to tt_class_timetable_type_jnt.id    
-    `class_id` bigint unsigned NOT NULL,  -- FK to sch_classes.id
-    `section_id` bigint unsigned NOT NULL,  -- FK to sch_sections.id
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `timetable_type_id` INT unsigned NOT NULL,  -- FK to tt_timetable_type.id
+    `class_timetable_type_id` INT unsigned NOT NULL,  -- FK to tt_class_timetable_type_jnt.id    
+    `class_id` INT unsigned NOT NULL,  -- FK to sch_classes.id
+    `section_id` INT unsigned NOT NULL,  -- FK to sch_sections.id
     `weekly_total_slots` TINYINT UNSIGNED NOT NULL,  -- 1-8 How many slots that Class+section have everyday
     `weekly_teaching_slots` TINYINT UNSIGNED NOT NULL,  -- 1-8 How many teaching slots that Class+section have everyday
     `weekly_exam_slots` TINYINT UNSIGNED NOT NULL,  -- 1-8 How many exam slots that Class+section have everyday
@@ -681,13 +698,13 @@ COMMENT='Timetable generation algorithms and parameters';
 
 -- Create Teachers Availability Class wise for entire Academic Session
 CREATE TABLE IF NOT EXISTS `tt_teacher_availability` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `timetable_type_id` bigint unsigned NOT NULL,  -- FK to tt_timetable_type.id
-    `class_timetable_type_id` bigint unsigned NOT NULL,  -- FK to tt_class_timetable_type_jnt.id    
-    `class_id` bigint unsigned NOT NULL,  -- FK to sch_classes.id
-    `section_id` bigint unsigned NOT NULL,  -- FK to sch_sections.id
-    `subject_study_format_id` bigint unsigned NOT NULL,  -- FK to sch_study_formats.id. e.g SCI_LEC, SCI_LAB, COM_LEC, COM_OPT, etc.
-    `teacher_id` bigint unsigned NOT NULL,  -- FK to sch_teachers.id
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `timetable_type_id` INT unsigned NOT NULL,  -- FK to tt_timetable_type.id
+    `class_timetable_type_id` INT unsigned NOT NULL,  -- FK to tt_class_timetable_type_jnt.id    
+    `class_id` INT unsigned NOT NULL,  -- FK to sch_classes.id
+    `section_id` INT unsigned NOT NULL,  -- FK to sch_sections.id
+    `subject_study_format_id` INT unsigned NOT NULL,  -- FK to sch_study_formats.id. e.g SCI_LEC, SCI_LAB, COM_LEC, COM_OPT, etc.
+    `teacher_id` INT unsigned NOT NULL,  -- FK to sch_teachers.id
     `start_time` time NOT NULL,
     `end_time` time NOT NULL,
     `day1_available_period_count` TINYINT UNSIGNED NOT NULL,  -- 1-8 How many slots that Class+section have on Day 1
@@ -722,18 +739,18 @@ CREATE TABLE IF NOT EXISTS `tt_teacher_availability` (
 
 -- Create Room Availability Class wise for entire Academic Session
 CREATE TABLE IF NOT EXISTS `tt_room_availability` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `code` VARCHAR(50) NOT NULL,  -- Will be fetched from tt_class_subject_groups.code/tt_class_subject_subgroups.code
     `name` VARCHAR(200) NOT NULL,  -- Will be fetched from tt_class_subject_groups.name/tt_class_subject_subgroups.name
     -- Add Or Change on 7th Feb 2025 -- (Removed Description & academic_session_id Field, as not requird anymore)
     `description` VARCHAR(255) DEFAULT NULL,
-    `academic_session_id` BIGINT UNSIGNED NOT NULL,  -- FK to sch_academic_sessions.id
-    `class_id` BIGINT UNSIGNED NOT NULL,  -- FK to sch_classes.id
-    `section_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to sch_sections.id
-    `room_id` BIGINT UNSIGNED NOT NULL,  -- FK to sch_rooms.id
-    `day_type_id` BIGINT UNSIGNED NOT NULL,  -- FK to tt_day_type.id
-    `shift_id` BIGINT UNSIGNED NOT NULL,  -- FK to tt_shift.id
-    `period_type_id` BIGINT UNSIGNED NOT NULL,  -- FK to tt_period_type.id
+    `academic_session_id` INT UNSIGNED NOT NULL,  -- FK to sch_academic_sessions.id
+    `class_id` INT UNSIGNED NOT NULL,  -- FK to sch_classes.id
+    `section_id` INT UNSIGNED DEFAULT NULL,  -- FK to sch_sections.id
+    `room_id` INT UNSIGNED NOT NULL,  -- FK to sch_rooms.id
+    `day_type_id` INT UNSIGNED NOT NULL,  -- FK to tt_day_type.id
+    `shift_id` INT UNSIGNED NOT NULL,  -- FK to tt_shift.id
+    `period_type_id` INT UNSIGNED NOT NULL,  -- FK to tt_period_type.id
     `start_time` TIME NOT NULL,
     `end_time` TIME NOT NULL,
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
@@ -752,23 +769,23 @@ CREATE TABLE IF NOT EXISTS `tt_room_availability` (
 
 
   CREATE TABLE IF NOT EXISTS `tt_activity` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `uuid` BINARY(16) NOT NULL,  -- UUID
     `code` VARCHAR(50) NOT NULL,  -- Will be fetched from tt_class_subject_groups.code/tt_class_subject_subgroups.code
     `name` VARCHAR(200) NOT NULL,  -- Will be fetched from tt_class_subject_groups.name/tt_class_subject_subgroups.name
     -- Add Or Change on 7th Feb 2025 -- (Removed Description & academic_session_id Field, as not requird anymore)
     -- `description` VARCHAR(500) DEFAULT NULL,  -- Description of the activity
-    -- `academic_session_id` BIGINT UNSIGNED NOT NULL,  -- We will be using academic_terms_id inplace of academic_session_id
-    `academic_term_id` BIGINT UNSIGNED NOT NULL,  -- FK to tt_academic_term.id  -- This is the Term for which this timetable is being generated (New)
+    -- `academic_session_id` INT UNSIGNED NOT NULL,  -- We will be using academic_terms_id inplace of academic_session_id
+    `academic_term_id` INT UNSIGNED NOT NULL,  -- FK to tt_academic_term.id  -- This is the Term for which this timetable is being generated (New)
     -- Target (one of class_group_id or class_subgroup_id must be set)
-    `class_group_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to 'sch_class_groups_jnt'
-    `class_subgroup_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to 'tt_requirement_subgroups'
+    `class_group_id` INT UNSIGNED DEFAULT NULL,  -- FK to 'sch_class_groups_jnt'
+    `class_subgroup_id` INT UNSIGNED DEFAULT NULL,  -- FK to 'tt_requirement_subgroups'
 
     -- Add Or Change on 7th Feb 2025 -- (Updated with Clss, Section, Subject_Study_Format & Subject_Type)
-    `class_id` bigint unsigned NOT NULL,
-    `section_id` bigint unsigned DEFAULT NULL,
-    `subject_study_format_id` bigint unsigned NOT NULL,  -- FK to sch_study_formats.id. e.g SCI_LEC, SCI_LAB, COM_LEC, COM_OPT, etc.
-    `subject_type_id` bigint unsigned NOT NULL,  -- FK to sch_subject_types.id. e.g `LECTURE`,`LAB,`SPORTS`,`ACTIVITY` etc.
+    `class_id` INT unsigned NOT NULL,
+    `section_id` INT unsigned DEFAULT NULL,
+    `subject_study_format_id` INT unsigned NOT NULL,  -- FK to sch_study_formats.id. e.g SCI_LEC, SCI_LAB, COM_LEC, COM_OPT, etc.
+    `subject_type_id` INT unsigned NOT NULL,  -- FK to sch_subject_types.id. e.g `LECTURE`,`LAB,`SPORTS`,`ACTIVITY` etc.
     --
     `required_weekly_periods` TINYINT UNSIGNED NOT NULL DEFAULT 1,   -- Total periods required per week for this Class Group (Class+{Section}+Subject+StudyFormat)
     `min_periods_per_week` TINYINT UNSIGNED DEFAULT NULL,  -- Minimum periods required per week
@@ -808,7 +825,7 @@ CREATE TABLE IF NOT EXISTS `tt_room_availability` (
     -- Status
     `status` ENUM('DRAFT','ACTIVE','LOCKED','ARCHIVED') NOT NULL DEFAULT 'ACTIVE',
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-    `created_by` BIGINT UNSIGNED DEFAULT NULL,
+    `created_by` INT UNSIGNED DEFAULT NULL,
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at` TIMESTAMP NULL DEFAULT NULL,
@@ -834,29 +851,9 @@ CREATE TABLE IF NOT EXISTS `tt_room_availability` (
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
-
-  CREATE TABLE IF NOT EXISTS `tt_activity_teacher` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `activity_id` BIGINT UNSIGNED NOT NULL,  -- FK to tt_activity.id
-    `teacher_id` BIGINT UNSIGNED NOT NULL,  -- FK to sch_teachers.id
-    `assignment_role_id` BIGINT UNSIGNED NOT NULL,  -- FK to tt_assignment_roles.id
-    `is_required` TINYINT(1) DEFAULT 1,  -- Whether this teacher is required for the activity
-    `ordinal` TINYINT UNSIGNED DEFAULT 1,  -- Order of this teacher in the activity
-    `is_active` TINYINT(1) NOT NULL DEFAULT 1,  -- Whether this teacher is active
-    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_at_activity_teacher` (`activity_id`, `teacher_id`),
-    KEY `idx_at_teacher` (`teacher_id`),
-    CONSTRAINT `fk_at_activity` FOREIGN KEY (`activity_id`) REFERENCES `tt_activity` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_at_teacher` FOREIGN KEY (`teacher_id`) REFERENCES `sch_teachers` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_at_role` FOREIGN KEY (`assignment_role_id`) REFERENCES `tt_teacher_assignment_role` (`id`) ON DELETE RESTRICT
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
   CREATE TABLE IF NOT EXISTS `tt_sub_activity` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `parent_activity_id` BIGINT UNSIGNED NOT NULL,  -- FK to tt_activity.id
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `parent_activity_id` INT UNSIGNED NOT NULL,  -- FK to tt_activity.id
     `ordinal` TINYINT UNSIGNED NOT NULL,  -- Order of this sub-activity within the parent activity
     `class_id` BIGINT
     `section_id`
@@ -876,40 +873,79 @@ CREATE TABLE IF NOT EXISTS `tt_room_availability` (
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
+
+
+  -- 10th Feb 2025 -- (New Table)
+  -- This table will store the Activity Priority Scores for the Timetable Generation Process
+  CREATE TABLE IF NOT EXISTS `tt_activity_priority` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `activity_id` INT UNSIGNED NOT NULL,  -- FK to tt_activities.id
+    `priority_score` DECIMAL(5,2) NOT NULL,  -- 0.00 to 100.00
+    `priority_reason` TEXT DEFAULT NULL,  -- Reason for the priority score
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1,  -- Whether this activity priority is active
+    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_activity_priority` (`activity_id`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+  CREATE TABLE IF NOT EXISTS `tt_activity_teacher` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `activity_id` INT UNSIGNED NOT NULL,  -- FK to tt_activity.id
+    `teacher_id` INT UNSIGNED NOT NULL,  -- FK to sch_teachers.id
+    `assignment_role_id` INT UNSIGNED NOT NULL,  -- FK to tt_assignment_roles.id
+    `is_required` TINYINT(1) DEFAULT 1,  -- Whether this teacher is required for the activity
+    `ordinal` TINYINT UNSIGNED DEFAULT 1,  -- Order of this teacher in the activity
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1,  -- Whether this teacher is active
+    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_at_activity_teacher` (`activity_id`, `teacher_id`),
+    KEY `idx_at_teacher` (`teacher_id`),
+    CONSTRAINT `fk_at_activity` FOREIGN KEY (`activity_id`) REFERENCES `tt_activity` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_at_teacher` FOREIGN KEY (`teacher_id`) REFERENCES `sch_teachers` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_at_role` FOREIGN KEY (`assignment_role_id`) REFERENCES `tt_teacher_assignment_role` (`id`) ON DELETE RESTRICT
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+
 -- -------------------------------------------------
 --  SECTION 4: TIMETABLE GENERATION & STORAGE
 -- -------------------------------------------------
   -- Main Timetable Generation Table
   CREATE TABLE IF NOT EXISTS `tt_timetable` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `uuid` BINARY(16) NOT NULL,
     `code` VARCHAR(50) NOT NULL,  -- e.g., 'TT_2025_26_V1','TT_EXAM_OCT_2025'
     `name` VARCHAR(200) NOT NULL,
     `description` TEXT DEFAULT NULL,
-    `academic_session_id` BIGINT UNSIGNED NOT NULL,  -- FK to sch_academic_sessions.id
-    `academic_term_id` BIGINT UNSIGNED NOT NULL,  -- FK to tt_academic_term.id  -- This is the Term for which this timetable is generated (New)
-    `timetable_type_id` BIGINT UNSIGNED NOT NULL,  -- FK to tt_timetable_type.id
-    `period_set_id` BIGINT UNSIGNED NOT NULL,  -- FK to tt_period_set.id
+    `academic_session_id` INT UNSIGNED NOT NULL,  -- FK to sch_academic_sessions.id
+    `academic_term_id` INT UNSIGNED NOT NULL,  -- FK to tt_academic_term.id  -- This is the Term for which this timetable is generated (New)
+    `timetable_type_id` INT UNSIGNED NOT NULL,  -- FK to tt_timetable_type.id
+    `period_set_id` INT UNSIGNED NOT NULL,  -- FK to tt_period_set.id
     `effective_from` DATE NOT NULL,  -- Start date of this timetable
     `effective_to` DATE DEFAULT NULL,  -- End date of this timetable
     `generation_method` ENUM('MANUAL','SEMI_AUTO','FULL_AUTO') NOT NULL DEFAULT 'MANUAL',  -- How this timetable was generated
     `version` SMALLINT UNSIGNED NOT NULL DEFAULT 1,  -- Version number of this timetable
-    `parent_timetable_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to tt_timetable.id
+    `parent_timetable_id` INT UNSIGNED DEFAULT NULL,  -- FK to tt_timetable.id
     `status` ENUM('DRAFT','GENERATING','GENERATED','PUBLISHED','ARCHIVED') NOT NULL DEFAULT 'DRAFT',  -- Current status of this timetable
     `published_at` TIMESTAMP NULL,  -- When this timetable was published
-    `published_by` BIGINT UNSIGNED DEFAULT NULL,  -- FK to sys_users.id
+    `published_by` INT UNSIGNED DEFAULT NULL,  -- FK to sys_users.id
     `constraint_violations` INT UNSIGNED DEFAULT 0,  -- Number of constraint violations in this timetable
     `soft_score` DECIMAL(8,2) DEFAULT NULL,  -- Soft score of this timetable
     `stats_json` JSON DEFAULT NULL,  -- Statistics about this timetable
     -- Newly Added
-    `generation_strategy_id` BIGINT UNSIGNED AFTER `generation_method`,
+    `generation_strategy_id` INT UNSIGNED AFTER `generation_method`,
     `optimization_cycles` INT UNSIGNED DEFAULT 0 AFTER `soft_score`,
     `last_optimized_at` TIMESTAMP NULL AFTER `published_at`,
     `quality_score` DECIMAL(5,2) DEFAULT NULL COMMENT 'Overall quality score (0-100) based on constraint satisfaction',
     `teacher_satisfaction_score` DECIMAL(5,2) DEFAULT NULL COMMENT 'Score based on teacher preferences satisfaction',
     `room_utilization_score` DECIMAL(5,2) DEFAULT NULL COMMENT 'Score based on room utilization efficiency',
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,  -- Whether this timetable is active
-    `created_by` BIGINT UNSIGNED DEFAULT NULL,  -- FK to sys_users.id
+    `created_by` INT UNSIGNED DEFAULT NULL,  -- FK to sys_users.id
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at` TIMESTAMP NULL DEFAULT NULL,
@@ -933,8 +969,8 @@ CREATE TABLE IF NOT EXISTS `tt_room_availability` (
   -- Real-time Conflict Detection Table (This will capture all the conflicts during generation to resolve)
   -- IMPORTANT: For tracking and resolving scheduling conflicts
   CREATE TABLE IF NOT EXISTS `tt_conflict_detection` (
-      `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-      `timetable_id` BIGINT UNSIGNED NOT NULL,
+      `id` INT unsigned NOT NULL AUTO_INCREMENT,
+      `timetable_id` INT UNSIGNED NOT NULL,
       `detection_type` ENUM('REAL_TIME','BATCH','VALIDATION','GENERATION') NOT NULL,
       `detected_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       `conflict_count` INT UNSIGNED DEFAULT 0,
@@ -961,18 +997,18 @@ CREATE TABLE IF NOT EXISTS `tt_room_availability` (
 -- Resource Booking & availability Tracking
 -- Use: We will be capturing resource booking to know resource availability and ocupency
 CREATE TABLE IF NOT EXISTS `tt_resource_booking` (
-    `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+    `id` INT unsigned NOT NULL AUTO_INCREMENT,
     `resource_type` ENUM('ROOM','LAB','TEACHER','EQUIPMENT','SPORTS','SPECIAL') NOT NULL,
-    `resource_id` BIGINT UNSIGNED NOT NULL,
+    `resource_id` INT UNSIGNED NOT NULL,
     `booking_date` DATE NOT NULL,
     `day_of_week` TINYINT UNSIGNED,
     `period_ord` TINYINT UNSIGNED,
     `start_time` TIME,
     `end_time` TIME,
     `booked_for_type` ENUM('ACTIVITY','EXAM','EVENT','MAINTENANCE') NOT NULL,
-    `booked_for_id` BIGINT UNSIGNED NOT NULL,
+    `booked_for_id` INT UNSIGNED NOT NULL,
     `purpose` VARCHAR(500),
-    `supervisor_id` BIGINT UNSIGNED,
+    `supervisor_id` INT UNSIGNED,
     `status` ENUM('BOOKED','IN_USE','COMPLETED','CANCELLED') DEFAULT 'BOOKED',
     `is_active` TINYINT UNSIGNED DEFAULT 1,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -986,14 +1022,14 @@ COMMENT='Resource booking and allocation tracking';
 
 
   CREATE TABLE IF NOT EXISTS `tt_generation_run` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `uuid` BINARY(16) NOT NULL,
-    `timetable_id` BIGINT UNSIGNED NOT NULL,  -- FK to tt_timetable.id
+    `timetable_id` INT UNSIGNED NOT NULL,  -- FK to tt_timetable.id
     `run_number` INT UNSIGNED NOT NULL DEFAULT 1,  -- Run number of this generation
     `started_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,  -- When this generation run started
     `finished_at` TIMESTAMP NULL,  -- When this generation run finished
     `status` ENUM('QUEUED','RUNNING','COMPLETED','FAILED','CANCELLED') NOT NULL DEFAULT 'QUEUED',  -- Status of this generation run
-    `strategy_id` BIGINT UNSIGNED,  -- FK to tt_generation_strategy.id
+    `strategy_id` INT UNSIGNED,  -- FK to tt_generation_strategy.id
     `algorithm_version` VARCHAR(20) DEFAULT NULL,  -- Version of the algorithm used
     `max_recursion_depth` INT UNSIGNED DEFAULT 14,  -- Maximum recursion depth
     `max_placement_attempts` INT UNSIGNED DEFAULT NULL,  -- Maximum placement attempts
@@ -1007,7 +1043,7 @@ COMMENT='Resource booking and allocation tracking';
     `soft_score` DECIMAL(10,4) DEFAULT NULL,  -- Soft score of this generation run
     `stats_json` JSON DEFAULT NULL,  -- Statistics about this generation run
     `error_message` TEXT DEFAULT NULL,  -- Error message if generation failed
-    `triggered_by` BIGINT UNSIGNED DEFAULT NULL,  -- FK to sys_users.id
+    `triggered_by` INT UNSIGNED DEFAULT NULL,  -- FK to sys_users.id
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at` TIMESTAMP NULL DEFAULT NULL,
@@ -1021,9 +1057,9 @@ COMMENT='Resource booking and allocation tracking';
 
   -- This table will capture what all constraint we have violated during Timetable generation
   CREATE TABLE IF NOT EXISTS `tt_constraint_violation` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `timetable_id` BIGINT UNSIGNED NOT NULL,  -- FK to tt_timetable.id
-    `constraint_id` BIGINT UNSIGNED NOT NULL,  -- FK to tt_constraint.id
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `timetable_id` INT UNSIGNED NOT NULL,  -- FK to tt_timetable.id
+    `constraint_id` INT UNSIGNED NOT NULL,  -- FK to tt_constraint.id
     `violation_type` ENUM('HARD','SOFT') NOT NULL,  -- Type of violation
     `violation_count` INT UNSIGNED NOT NULL,  -- Number of violations
     `violation_details` JSON DEFAULT NULL,  -- Details of the violation
@@ -1037,20 +1073,20 @@ COMMENT='Resource booking and allocation tracking';
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `tt_timetable_cell` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `timetable_id` BIGINT UNSIGNED NOT NULL,  -- FK to tt_timetable.id
-    `generation_run_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to tt_generation_run.id
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `timetable_id` INT UNSIGNED NOT NULL,  -- FK to tt_timetable.id
+    `generation_run_id` INT UNSIGNED DEFAULT NULL,  -- FK to tt_generation_run.id
     `day_of_week` TINYINT UNSIGNED NOT NULL,  -- Day of the week
     `period_ord` TINYINT UNSIGNED NOT NULL,  -- Period order
     `cell_date` DATE DEFAULT NULL,  -- Cell date
-    `class_group_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to sch_class_groups.id
-    `class_subgroup_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to sch_class_subgroups.id
-    `activity_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to tt_activity.id
-    `sub_activity_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to tt_sub_activity.id
+    `class_group_id` INT UNSIGNED DEFAULT NULL,  -- FK to sch_class_groups.id
+    `class_subgroup_id` INT UNSIGNED DEFAULT NULL,  -- FK to sch_class_subgroups.id
+    `activity_id` INT UNSIGNED DEFAULT NULL,  -- FK to tt_activity.id
+    `sub_activity_id` INT UNSIGNED DEFAULT NULL,  -- FK to tt_sub_activity.id
     `room_id` INT UNSIGNED DEFAULT NULL,  -- FK to sch_rooms.id
     `source` ENUM('AUTO','MANUAL','SWAP','LOCK') NOT NULL DEFAULT 'AUTO',  -- Source of this cell
     `is_locked` TINYINT(1) NOT NULL DEFAULT 0,  -- Whether this cell is locked
-    `locked_by` BIGINT UNSIGNED DEFAULT NULL,  -- FK to sys_users.id
+    `locked_by` INT UNSIGNED DEFAULT NULL,  -- FK to sys_users.id
     `locked_at` TIMESTAMP NULL,
     `has_conflict` TINYINT(1) DEFAULT 0,  -- Whether this cell has a conflict
     `conflict_details_json` JSON DEFAULT NULL,  -- Details of the conflict
@@ -1077,10 +1113,10 @@ COMMENT='Resource booking and allocation tracking';
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `tt_timetable_cell_teacher` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `cell_id` BIGINT UNSIGNED NOT NULL,  -- FK to tt_timetable_cell.id
-    `teacher_id` BIGINT UNSIGNED NOT NULL,  -- FK to sch_teachers.id
-    `assignment_role_id` BIGINT UNSIGNED NOT NULL,  -- FK to sch_assignment_roles.id
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `cell_id` INT UNSIGNED NOT NULL,  -- FK to tt_timetable_cell.id
+    `teacher_id` INT UNSIGNED NOT NULL,  -- FK to sch_teachers.id
+    `assignment_role_id` INT UNSIGNED NOT NULL,  -- FK to sch_assignment_roles.id
     `is_substitute` TINYINT(1) DEFAULT 0,  -- Whether this teacher is a substitute
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,  -- Whether this teacher is active
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
@@ -1105,20 +1141,20 @@ COMMENT='Resource booking and allocation tracking';
 -- -------------------------------------------------
 
   CREATE TABLE IF NOT EXISTS `tt_teacher_absence` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `teacher_id` BIGINT UNSIGNED NOT NULL,  -- FK to sch_teachers.id
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `teacher_id` INT UNSIGNED NOT NULL,  -- FK to sch_teachers.id
     `absence_date` DATE NOT NULL,  -- Date of absence
     `absence_type` ENUM('LEAVE','SICK','TRAINING','OFFICIAL_DUTY','OTHER') NOT NULL,  -- Type of absence
     `start_period` TINYINT UNSIGNED DEFAULT NULL,  -- Start period of absence
     `end_period` TINYINT UNSIGNED DEFAULT NULL,  -- End period of absence
     `reason` VARCHAR(500) DEFAULT NULL,  -- Reason for absence
     `status` ENUM('PENDING','APPROVED','REJECTED','CANCELLED') NOT NULL DEFAULT 'PENDING',
-    `approved_by` BIGINT UNSIGNED DEFAULT NULL,  -- FK to sys_users.id
+    `approved_by` INT UNSIGNED DEFAULT NULL,  -- FK to sys_users.id
     `approved_at` TIMESTAMP NULL,  -- Date and time when absence was approved
     `substitution_required` TINYINT(1) DEFAULT 1,  -- Whether substitution is required
     `substitution_completed` TINYINT(1) DEFAULT 0,  -- Whether substitution has been completed
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,  -- Whether this absence is active
-    `created_by` BIGINT UNSIGNED DEFAULT NULL,  -- FK to sys_users.id
+    `created_by` INT UNSIGNED DEFAULT NULL,  -- FK to sys_users.id
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at` TIMESTAMP NULL DEFAULT NULL,
@@ -1132,12 +1168,12 @@ COMMENT='Resource booking and allocation tracking';
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `tt_substitution_log` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `teacher_absence_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to tt_teacher_absence.id
-    `cell_id` BIGINT UNSIGNED NOT NULL,  -- FK to tt_timetable_cell.id
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `teacher_absence_id` INT UNSIGNED DEFAULT NULL,  -- FK to tt_teacher_absence.id
+    `cell_id` INT UNSIGNED NOT NULL,  -- FK to tt_timetable_cell.id
     `substitution_date` DATE NOT NULL,  -- Date of substitution
-    `absent_teacher_id` BIGINT UNSIGNED NOT NULL,  -- FK to sch_teachers.id
-    `substitute_teacher_id` BIGINT UNSIGNED NOT NULL,  -- FK to sch_teachers.id
+    `absent_teacher_id` INT UNSIGNED NOT NULL,  -- FK to sch_teachers.id
+    `substitute_teacher_id` INT UNSIGNED NOT NULL,  -- FK to sch_teachers.id
     `assignment_method` ENUM('AUTO','MANUAL','SWAP') NOT NULL DEFAULT 'MANUAL',  -- Method of assignment
     `reason` VARCHAR(500) DEFAULT NULL,  -- Reason for substitution
     `status` ENUM('ASSIGNED','COMPLETED','CANCELLED') NOT NULL DEFAULT 'ASSIGNED',  -- Status of substitution
@@ -1145,7 +1181,7 @@ COMMENT='Resource booking and allocation tracking';
     `accepted_at` TIMESTAMP NULL,  -- Date and time when substitution was accepted
     `completed_at` TIMESTAMP NULL,  -- Date and time when substitution was completed
     `feedback` TEXT DEFAULT NULL,  -- Feedback for the substitution
-    `assigned_by` BIGINT UNSIGNED DEFAULT NULL,  -- FK to sys_users.id
+    `assigned_by` INT UNSIGNED DEFAULT NULL,  -- FK to sys_users.id
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,  -- Whether this substitution is active
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -1167,10 +1203,10 @@ COMMENT='Resource booking and allocation tracking';
 -- -------------------------------------------------
 
   CREATE TABLE IF NOT EXISTS `tt_teacher_workload` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `teacher_id` BIGINT UNSIGNED NOT NULL,  -- FK to sch_teachers.id
-    `academic_session_id` BIGINT UNSIGNED NOT NULL,  -- FK to sch_academic_sessions.id
-    `timetable_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to tt_timetable.id
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `teacher_id` INT UNSIGNED NOT NULL,  -- FK to sch_teachers.id
+    `academic_session_id` INT UNSIGNED NOT NULL,  -- FK to sch_academic_sessions.id
+    `timetable_id` INT UNSIGNED DEFAULT NULL,  -- FK to tt_timetable.id
     `weekly_periods_assigned` SMALLINT UNSIGNED DEFAULT 0,  -- Number of periods assigned
     `weekly_periods_max` SMALLINT UNSIGNED DEFAULT NULL,  -- Maximum number of periods allowed
     `weekly_periods_min` SMALLINT UNSIGNED DEFAULT NULL,  -- Minimum number of periods allowed
@@ -1198,15 +1234,15 @@ COMMENT='Resource booking and allocation tracking';
 -- -------------------------------------------------
 
   CREATE TABLE IF NOT EXISTS `tt_change_log` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `timetable_id` BIGINT UNSIGNED NOT NULL,  -- FK to tt_timetable.id
-    `cell_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to tt_timetable_cell.id
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `timetable_id` INT UNSIGNED NOT NULL,  -- FK to tt_timetable.id
+    `cell_id` INT UNSIGNED DEFAULT NULL,  -- FK to tt_timetable_cell.id
     `change_type` ENUM('CREATE','UPDATE','DELETE','LOCK','UNLOCK','SWAP','SUBSTITUTE') NOT NULL,
     `change_date` DATE NOT NULL,  -- Date of change
     `old_values_json` JSON DEFAULT NULL,  -- Old values of the cell
     `new_values_json` JSON DEFAULT NULL,  -- New values of the cell
     `reason` VARCHAR(500) DEFAULT NULL,  -- Reason for the change
-    `changed_by` BIGINT UNSIGNED DEFAULT NULL,  -- FK to sys_users.id
+    `changed_by` INT UNSIGNED DEFAULT NULL,  -- FK to sys_users.id
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at` TIMESTAMP NULL DEFAULT NULL,
@@ -1228,7 +1264,7 @@ COMMENT='Resource booking and allocation tracking';
 
   -- This table is a replica of 'prm_tenant' table in 'prmprime_db' database
   CREATE TABLE IF NOT EXISTS `sch_organizations` (
-    `id` bigint unsigned NOT NULL,              -- it will have same id as it is in 'prm_tenant'
+    `id` INT unsigned NOT NULL,              -- it will have same id as it is in 'prm_tenant'
     `group_code` varchar(20) NOT NULL,          -- Code for Grouping of Organizations/Schools
     `group_short_name` varchar(50) NOT NULL,
     `group_name` varchar(150) NOT NULL,
@@ -1242,7 +1278,7 @@ COMMENT='Resource booking and allocation tracking';
     `address_1` varchar(200) DEFAULT NULL,
     `address_2` varchar(200) DEFAULT NULL,
     `area` varchar(100) DEFAULT NULL,
-    `city_id` bigint unsigned NOT NULL,
+    `city_id` INT unsigned NOT NULL,
     `pincode` varchar(10) DEFAULT NULL,
     `phone_1` varchar(20) DEFAULT NULL,
     `phone_2` varchar(20) DEFAULT NULL,
@@ -1263,8 +1299,8 @@ COMMENT='Resource booking and allocation tracking';
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `sch_org_academic_sessions_jnt` (
-    `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-    `academic_session_id` bigint unsigned NOT NULL,
+    `id` INT unsigned NOT NULL AUTO_INCREMENT,
+    `academic_session_id` INT unsigned NOT NULL,
     `short_name` varchar(10) COLLATE utf8mb4_unicode_ci NOT NULL,
     `name` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
     `start_date` date NOT NULL,
@@ -1282,7 +1318,7 @@ COMMENT='Resource booking and allocation tracking';
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `sch_classes` (
-    `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+    `id` INT unsigned NOT NULL AUTO_INCREMENT,
     `name` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
     `short_name` varchar(10) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
     `ordinal` tinyint DEFAULT NULL,
@@ -1316,8 +1352,8 @@ COMMENT='Resource booking and allocation tracking';
     `class_secton_code` char(5) NOT NULL,           -- Combination of class Code + section Code i.e. '8th_A', '10h_B'  
     `capacity` tinyint unsigned DEFAULT NULL,       -- Targeted / Planned Quantity of stundets in Each Sections of every class.
     `total_student` tinyint unsigned DEFAULT NULL,  -- Actual Number of Student in the Class+Section
-    `class_teacher_id` bigint unsigned NOT NULL,    -- FK to sch_users
-    `assistance_class_teacher_id` bigint unsigned NOT NULL,  -- FK to sch_users
+    `class_teacher_id` INT unsigned NOT NULL,    -- FK to sch_users
+    `assistance_class_teacher_id` INT unsigned NOT NULL,  -- FK to sch_users
     `is_active` tinyint(1) NOT NULL DEFAULT 1,
     `created_at` timestamp NULL DEFAULT NULL,
     `updated_at` timestamp NULL DEFAULT NULL,
@@ -1363,7 +1399,7 @@ COMMENT='Resource booking and allocation tracking';
   -- Data Seed for Study_Format - LECTURE, LAB, PRACTICAL, TUTORIAL, SEMINAR, WORKSHOP, GROUP_DISCUSSION, OTHER
 
   CREATE TABLE IF NOT EXISTS `sch_subjects` (
-    `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+    `id` INT unsigned NOT NULL AUTO_INCREMENT,
     `short_name` varchar(20) NOT NULL,  -- e.g. 'SCIENCE','MATH','SST','ENGLISH' and so on
     `name` varchar(50) NOT NULL,
     `code` CHAR(3) NOT NULL,         -- e.g., 'SCI','MTH','SST','ENG' and so on (This will be used for Timetable)
@@ -1380,8 +1416,8 @@ COMMENT='Resource booking and allocation tracking';
   -- I have removed 'sub_types' from 'sch_subject_study_format_jnt' because one Subject_StudyFormat may belongs to different Subject_type for different classes
   -- Removed 'short_name' as we can use `sub_stdformat_code`
   CREATE TABLE IF NOT EXISTS `sch_subject_study_format_jnt` (
-    `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-    `subject_id` bigint unsigned NOT NULL,            -- FK to 'sch_subjects'
+    `id` INT unsigned NOT NULL AUTO_INCREMENT,
+    `subject_id` INT unsigned NOT NULL,            -- FK to 'sch_subjects'
     `study_format_id` int unsigned NOT NULL,          -- FK to 'sch_study_formats'
     `name` varchar(50) NOT NULL,                      -- e.g., 'Science Lecture','Science Lab','Math Lecture','Math Lab' and so on
     `subj_stdformat_code` CHAR(7) NOT NULL,         -- Will be combination of (Subject.codee+'-'+StudyFormat.code) e.g., 'SCI_LAC','SCI_LAB','SST_LAC','ENG_LAC' (This will be used for Timetable)
@@ -1399,11 +1435,11 @@ COMMENT='Resource booking and allocation tracking';
   -- Ths table will be used to define different Class Groups like 10th-A Science Lecture Major, 7th-B Commerce Optional etc.
   -- old name 'sch_subject_study_format_class_subj_types_jnt' changed to 'sch_class_groups_jnt'
   CREATE TABLE IF NOT EXISTS `sch_class_groups_jnt` (
-    `id` bigint unsigned NOT NULL AUTO_INCREMENT,           -- FK
+    `id` INT unsigned NOT NULL AUTO_INCREMENT,           -- FK
     `class_id` int unsigned NOT NULL,                       -- FK to 'sch_classes'
     `section_id` int unsigned NULL,                         -- FK to 'sch_sections'
-    `sub_stdy_frmt_id` bigint unsigned NOT NULL,            -- FK to 'sch_subject_study_format_jnt'
-    -- `subject_Study_format_id` bigint unsigned NOT NULL, -- FK to 'sch_subject_study_format_jnt'
+    `sub_stdy_frmt_id` INT unsigned NOT NULL,            -- FK to 'sch_subject_study_format_jnt'
+    -- `subject_Study_format_id` INT unsigned NOT NULL, -- FK to 'sch_subject_study_format_jnt'
     `subject_type_id` int unsigned NOT NULL,                -- FK to 'sch_subject_types'
     `rooms_type_id` int unsigned NOT NULL,                  -- FK to 'sch_rooms_type'
     `class_house_roome_id` int unsigned NOT NULL,           -- FK to 'sch_rooms
@@ -1430,7 +1466,7 @@ COMMENT='Resource booking and allocation tracking';
   -- if above variable is True then section_id will be Nul in below table and
   -- Every Group will eb avalaible accross sections for a particuler class
   CREATE TABLE IF NOT EXISTS `sch_subject_groups` (
-    `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+    `id` INT unsigned NOT NULL AUTO_INCREMENT,
     `class_id` int UNSIGNED NOT NULL,                        -- FK to 'sch_classes'
     `section_id` int UNSIGNED NULL,                          -- FK (Section can be null if Group will be used for all sectons)
     `short_name` varchar(30) NOT NULL,              -- 7th Science, 7th Commerce, 7th-A Science etc.
@@ -1447,12 +1483,12 @@ COMMENT='Resource booking and allocation tracking';
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `sch_subject_group_subject_jnt` (
-    `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-    `subject_group_id` bigint unsigned NOT NULL,              -- FK to 'sch_subject_groups'
-    `class_group_id` bigint unsigned NOT NULL,                -- FK to 'sch_class_groups_jnt'
+    `id` INT unsigned NOT NULL AUTO_INCREMENT,
+    `subject_group_id` INT unsigned NOT NULL,              -- FK to 'sch_subject_groups'
+    `class_group_id` INT unsigned NOT NULL,                -- FK to 'sch_class_groups_jnt'
     `subject_id` int unsigned NOT NULL,                       -- FK to 'sch_subjects'
     `subject_type_id` int unsigned NOT NULL,                  -- FK to 'sch_subject_types'
-    `subject_study_format_id` bigint unsigned NOT NULL,       -- FK to 'sch_subject_study_format_jnt'
+    `subject_study_format_id` INT unsigned NOT NULL,       -- FK to 'sch_subject_study_format_jnt'
     `is_compulsory` tinyint(1) NOT NULL DEFAULT '0',          -- Is this Subject compulsory for Student or Optional
     `weekly_periods` TINYINT UNSIGNED NOT NULL,  -- Total periods required per week
     `min_periods_per_week` TINYINT UNSIGNED DEFAULT NULL,  -- Minimum periods required per week
@@ -1537,8 +1573,8 @@ COMMENT='Resource booking and allocation tracking';
 
     -- Teacher table will store additional information about teachers
   CREATE TABLE IF NOT EXISTS `sch_employees` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `user_id` BIGINT UNSIGNED NOT NULL,  -- fk to sys_users.id
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `user_id` INT UNSIGNED NOT NULL,  -- fk to sys_users.id
     -- Employee id details
     `emp_code` VARCHAR(20) NOT NULL,     -- Employee Code (Unique code for each user) (This will be used for QR Code)
     `emp_id_card_type` ENUM('QR','RFID','NFC','Barcode') NOT NULL DEFAULT 'QR',
@@ -1566,11 +1602,11 @@ COMMENT='Resource booking and allocation tracking';
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `sch_employees_profile` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `employee_id` BIGINT UNSIGNED NOT NULL,              -- FK to sch_employees.id
-    `user_id` BIGINT UNSIGNED NOT NULL,                  -- FK to sys_users.id
-    `role_id` BIGINT UNSIGNED NOT NULL,                  -- FK to employee_roles table (Principal, Accountant, Admin, etc.)
-    `department_id` BIGINT UNSIGNED DEFAULT NULL,        -- FK to sch_departments (Administration, Accounts, IT, etc.)
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `employee_id` INT UNSIGNED NOT NULL,              -- FK to sch_employees.id
+    `user_id` INT UNSIGNED NOT NULL,                  -- FK to sys_users.id
+    `role_id` INT UNSIGNED NOT NULL,                  -- FK to employee_roles table (Principal, Accountant, Admin, etc.)
+    `department_id` INT UNSIGNED DEFAULT NULL,        -- FK to sch_departments (Administration, Accounts, IT, etc.)
     -- Core Competencies & Qualifications
     `specialization_area` VARCHAR(100) DEFAULT NULL,     -- e.g., Finance Management, HR Administration, IT Infrastructure
     `qualification_level` VARCHAR(50) DEFAULT NULL,      -- e.g., Bachelor's, Master's, Certified Accountant
@@ -1593,7 +1629,7 @@ COMMENT='Resource booking and allocation tracking';
     `last_performance_review` DATE DEFAULT NULL,
     -- Administrative Controls
     `security_clearance_done` TINYINT(1) DEFAULT 0,
-    `reporting_to` BIGINT UNSIGNED DEFAULT NULL,         -- FK to sch_employees.id (who they report to)
+    `reporting_to` INT UNSIGNED DEFAULT NULL,         -- FK to sch_employees.id (who they report to)
     `can_approve_budget` TINYINT(1) DEFAULT 0,
     `can_manage_staff` TINYINT(1) DEFAULT 0,
     `can_access_sensitive_data` TINYINT(1) DEFAULT 0,
@@ -1617,14 +1653,14 @@ COMMENT='Resource booking and allocation tracking';
 
   -- Teacher Profile table will store detailed proficiency to teach specific subjects, study formats, and classes
   CREATE TABLE IF NOT EXISTS `sch_teachers_profile` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `employee_id` BIGINT UNSIGNED NOT NULL,         -- FK to sch_employee.id
-    `user_id` BIGINT UNSIGNED NOT NULL,             -- FK to sys_users.id
-    `role_id` BIGINT UNSIGNED NOT NULL,                  -- FK to employee_roles table (Principal, Accountant, Admin, etc.)
-    `department_id` BIGINT UNSIGNED DEFAULT NULL,        -- FK to sch_departments (Administration, Accounts, IT, etc.)
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `employee_id` INT UNSIGNED NOT NULL,         -- FK to sch_employee.id
+    `user_id` INT UNSIGNED NOT NULL,             -- FK to sys_users.id
+    `role_id` INT UNSIGNED NOT NULL,                  -- FK to employee_roles table (Principal, Accountant, Admin, etc.)
+    `department_id` INT UNSIGNED DEFAULT NULL,        -- FK to sch_departments (Administration, Accounts, IT, etc.)
     `teacher_house_room_id` int unsigned NULL,          -- FK to 'sch_rooms.id'
     -- Teaching Capacity & Availability
-    `subject_id` BIGINT UNSIGNED NOT NULL,            -- FK to 'subjects' table
+    `subject_id` INT UNSIGNED NOT NULL,            -- FK to 'subjects' table
     `study_format_id` INT UNSIGNED NOT NULL,       -- FK to 'sch_study_formats' table 
     `class_id` INT UNSIGNED NOT NULL,                 -- FK to 'sch_classes' table
     `proficiency_percentage` TINYINT UNSIGNED DEFAULT NULL,  -- 1–100 %
@@ -1647,7 +1683,7 @@ COMMENT='Resource booking and allocation tracking';
     `last_performance_review` DATE DEFAULT NULL,
     -- Administrative Controls
     `security_clearance_done` TINYINT(1) DEFAULT 0, --
-    `reporting_to` BIGINT UNSIGNED DEFAULT NULL,         -- FK to sch_employees.id (who they report to)
+    `reporting_to` INT UNSIGNED DEFAULT NULL,         -- FK to sch_employees.id (who they report to)
     `can_manage_staff` TINYINT(1) DEFAULT 0,
     `can_access_sensitive_data` TINYINT(1) DEFAULT 0,
     `notes` TEXT NULL,
@@ -1667,9 +1703,9 @@ COMMENT='Resource booking and allocation tracking';
 
   -- Main Student Entity, linked to System User for Login/Auth
   CREATE TABLE IF NOT EXISTS `std_students` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     -- Student Info
-    `user_id` BIGINT UNSIGNED NOT NULL,              -- Link to sys_users for login credentials
+    `user_id` INT UNSIGNED NOT NULL,              -- Link to sys_users for login credentials
     `admission_no` VARCHAR(50) NOT NULL,             -- Unique School Admission Number
     `admission_date` DATE NOT NULL,                  -- Date of admission
     -- ID Cards
@@ -1688,9 +1724,9 @@ COMMENT='Resource booking and allocation tracking';
     `gender` ENUM('Male','Female','Transgender','Prefer Not to Say') NOT NULL DEFAULT 'Male',
     `dob` DATE NOT NULL,
     `photo_file_name` VARCHAR(100) DEFAULT NULL,     -- Fk to sys_media (file name to show in UI)
-    `media_id` BIGINT UNSIGNED DEFAULT NULL,         -- Optional if using sys_media table
+    `media_id` INT UNSIGNED DEFAULT NULL,         -- Optional if using sys_media table
     -- Status
-    `current_status_id` BIGINT UNSIGNED NOT NULL,    -- FK to sys_dropdown_table (Active, Left, Suspended, Alumni, Withdrawn)
+    `current_status_id` INT UNSIGNED NOT NULL,    -- FK to sys_dropdown_table (Active, Left, Suspended, Alumni, Withdrawn)
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
     -- Meta
     `note` VARCHAR(255) DEFAULT NULL,
@@ -1708,18 +1744,18 @@ COMMENT='Resource booking and allocation tracking';
 
   -- Tracks chronological academic history (Class/Section allocation per session)
   CREATE TABLE IF NOT EXISTS `std_student_academic_sessions` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT,
-    `student_id` BIGINT UNSIGNED NOT NULL,
+    `id` INT UNSIGNED AUTO_INCREMENT,
+    `student_id` INT UNSIGNED NOT NULL,
     -- Academic Session
-    `academic_session_id` BIGINT UNSIGNED NOT NULL,   -- FK to glb_academic_sessions (or sch_org_academic_sessions_jnt)
+    `academic_session_id` INT UNSIGNED NOT NULL,   -- FK to glb_academic_sessions (or sch_org_academic_sessions_jnt)
     `class_section_id` INT UNSIGNED NOT NULL,         -- FK to sch_class_section_jnt
     `roll_no` INT UNSIGNED DEFAULT NULL,
-    `subject_group_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to sch_subject_groups (if streams apply)
+    `subject_group_id` INT UNSIGNED DEFAULT NULL,  -- FK to sch_subject_groups (if streams apply)
     -- Other Detail
-    `house` BIGINT UNSIGNED DEFAULT NULL,             -- FK to sys_dropdown_table
+    `house` INT UNSIGNED DEFAULT NULL,             -- FK to sys_dropdown_table
     `is_current` TINYINT(1) DEFAULT 0,                -- Only one active record per student
-    `current_flag` bigint GENERATED ALWAYS AS ((case when (`is_current` = 1) then `student_id` else NULL end)) STORED,
-    `session_status_id` BIGINT UNSIGNED NOT NULL DEFAULT 'ACTIVE',    -- FK to sys_dropdown_table (PROMOTED, ACTIVE, LEFT, SUSPENDED, ALUMNI, WITHDRAWN)
+    `current_flag` INT GENERATED ALWAYS AS ((case when (`is_current` = 1) then `student_id` else NULL end)) STORED,
+    `session_status_id` INT UNSIGNED NOT NULL DEFAULT 'ACTIVE',    -- FK to sys_dropdown_table (PROMOTED, ACTIVE, LEFT, SUSPENDED, ALUMNI, WITHDRAWN)
     `leaving_date` DATE DEFAULT NULL,
     `count_as_attrition` TINYINT(1) NOT NULL,         -- Can we count this record as Attrition
     `reason_quit` int NULL,                           -- FK to `sys_dropdown_table` (Reason for leaving the Session)

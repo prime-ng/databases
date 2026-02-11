@@ -5,7 +5,7 @@
 
 -- we need to create a table for trigger events
 CREATE TABLE IF NOT EXISTS `lms_trigger_event` (
-	`id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+	`id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
 	`code` VARCHAR(50) NOT NULL UNIQUE,   -- e.g., 'ON_HOMEWORK_SUBMISSION', 'ON_HOMEWORK_OVERDUE', 'ON_QUIZ_COMPLETION'
 	`name` VARCHAR(100) NOT NULL,         -- e.g., 'On Homework Submission', 'On Homework Overdue', 'On Quiz Completion'
 	`description` TEXT DEFAULT NULL,
@@ -24,7 +24,7 @@ INSERT INTO lms_trigger_event (code, name, description, event_logic, is_active, 
 
 -- This table will be used to define the actions that can be triggered by the rule engine
 CREATE TABLE IF NOT EXISTS `lms_action_type` (
-	`id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+	`id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
 	`code` VARCHAR(50) NOT NULL UNIQUE,   -- e.g., 'AUTO_ASSIGN_QUIZ', 'AUTO_ASSIGN_REMEDIAL', 'NOTIFY_PARENT'
 	`name` VARCHAR(100) NOT NULL,         -- e.g., 'Auto Assign Remedial', 'Notify Parent'
 	`description` TEXT DEFAULT NULL,
@@ -43,14 +43,14 @@ INSERT INTO lms_action_type (code, name, description, action_logic, is_active, c
 
 -- This table will be used to define the rules that can be triggered by the rule engine
 CREATE TABLE IF NOT EXISTS `lms_rule_engine_config` (
-	`id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+	`id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
 	`rule_code` VARCHAR(50) NOT NULL UNIQUE,       -- e.g., 'RETEST_POLICY_A', 'GRADING_STD_10'
 	`rule_name` VARCHAR(100) NOT NULL,
 	`description` TEXT DEFAULT NULL,
-	`trigger_event_id` BIGINT UNSIGNED NOT NULL,   -- FK to lms_trigger_event.id (ON_HOMEWORK_SUBMISSION, ON_HOMEWORK_OVERDUE, ON_QUIZ_COMPLETION)
-	`applicable_class_group_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to sch_class_groups_jnt.id (Target Audience)
+	`trigger_event_id` INT UNSIGNED NOT NULL,   -- FK to lms_trigger_event.id (ON_HOMEWORK_SUBMISSION, ON_HOMEWORK_OVERDUE, ON_QUIZ_COMPLETION)
+	`applicable_class_group_id` INT UNSIGNED DEFAULT NULL, -- FK to sch_class_groups_jnt.id (Target Audience)
 	`logic_config` JSON NOT NULL,                  -- The logic payload { "min_score": 33, "attempts": 2 }
-	`action_type_id` BIGINT UNSIGNED NOT NULL,     -- FK to lms_action_type.id (AUTO_ASSIGN_REMEDIAL, NOTIFY_PARENT)
+	`action_type_id` INT UNSIGNED NOT NULL,     -- FK to lms_action_type.id (AUTO_ASSIGN_REMEDIAL, NOTIFY_PARENT)
 	`is_active` TINYINT(1) NOT NULL DEFAULT 1,     -- 1 = Active, 0 = Inactive
 	`created_at` TIMESTAMP NULL DEFAULT NULL,
 	`updated_at` TIMESTAMP NULL DEFAULT NULL,

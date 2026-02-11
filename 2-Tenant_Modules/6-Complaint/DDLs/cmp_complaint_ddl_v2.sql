@@ -14,24 +14,24 @@ SET FOREIGN_KEY_CHECKS = 0;
 
 
 CREATE TABLE IF NOT EXISTS `cmp_complaint_categories` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `parent_id` BIGINT UNSIGNED DEFAULT NULL, -- NULL = Main Category, Value = Sub-category
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `parent_id` INT UNSIGNED DEFAULT NULL, -- NULL = Main Category, Value = Sub-category
   `name` VARCHAR(100) NOT NULL, -- e.g. "Transport", "Academic", "Rash Driving"
   `code` VARCHAR(30) DEFAULT NULL, -- Optional short code e.g. "TPT", "ACAD", "RASH_DRIVE"
   `description` VARCHAR(512) DEFAULT NULL,
-  `severity_level_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to sys_dropdown_table (1-10) e.g. "1-Low", "2-Medium", "3-High", "10-Critical"
-  `priority_score_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to sys_dropdown_table (1-5) e.g. 1=Critical, 2=Urgent, 3=High, 4=Medium, 5=Low
+  `severity_level_id` INT UNSIGNED DEFAULT NULL, -- FK to sys_dropdown_table (1-10) e.g. "1-Low", "2-Medium", "3-High", "10-Critical"
+  `priority_score_id` INT UNSIGNED DEFAULT NULL, -- FK to sys_dropdown_table (1-5) e.g. 1=Critical, 2=Urgent, 3=High, 4=Medium, 5=Low
   `default_expected_resolution_hours` INT UNSIGNED NOT NULL,  -- This must be less than escalation_l1_hours
   `default_escalation_hours_l1` INT UNSIGNED NOT NULL, -- Time before escalating to L1 (This must be less than escalation_l2_hours)
   `default_escalation_hours_l2` INT UNSIGNED NOT NULL, -- Time before escalating to L2 (This must be less than escalation_l3_hours)
   `default_escalation_hours_l3` INT UNSIGNED NOT NULL, -- Time before escalating to L3 (This must be less than escalation_l4_hours)
   `default_escalation_hours_l4` INT UNSIGNED NOT NULL, -- Time before escalating to L4 (This must be less than escalation_l5_hours)
   `default_escalation_hours_l5` INT UNSIGNED NOT NULL, -- Time before escalating to L5
-  `default_escalation_l1_entity_group_id` BIGINT UNSIGNED DEFAULT NULL,    -- FK to sys_groups
-  `default_escalation_l2_entity_group_id` BIGINT UNSIGNED DEFAULT NULL,    -- FK to sys_groups
-  `default_escalation_l3_entity_group_id` BIGINT UNSIGNED DEFAULT NULL,    -- FK to sys_groups
-  `default_escalation_l4_entity_group_id` BIGINT UNSIGNED DEFAULT NULL,    -- FK to sys_groups
-  `default_escalation_l5_entity_group_id` BIGINT UNSIGNED DEFAULT NULL,    -- FK to sys_groups
+  `default_escalation_l1_entity_group_id` INT UNSIGNED DEFAULT NULL,    -- FK to sys_groups
+  `default_escalation_l2_entity_group_id` INT UNSIGNED DEFAULT NULL,    -- FK to sys_groups
+  `default_escalation_l3_entity_group_id` INT UNSIGNED DEFAULT NULL,    -- FK to sys_groups
+  `default_escalation_l4_entity_group_id` INT UNSIGNED DEFAULT NULL,    -- FK to sys_groups
+  `default_escalation_l5_entity_group_id` INT UNSIGNED DEFAULT NULL,    -- FK to sys_groups
   `is_medical_check_required` TINYINT(1) DEFAULT 0, -- If true, then medical check is required
   `is_active` TINYINT(1) DEFAULT 1,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -55,20 +55,20 @@ CREATE TABLE IF NOT EXISTS `cmp_complaint_categories` (
 -- -------------------------------------------------------------------------
 -- This table will capture the detail of complaint categories and sub-categories (like whom to escalate, expected resolution time, escalation time etc.)
 CREATE TABLE IF NOT EXISTS `cmp_department_sla` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `complaint_category_id` BIGINT UNSIGNED NOT NULL,       -- FK to cmp_complaint_categories
-  `complaint_subcategory_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to cmp_complaint_categories (if sub-category is Null then it will be applied to all sub-categories exept those defined in the sub-category)
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `complaint_category_id` INT UNSIGNED NOT NULL,       -- FK to cmp_complaint_categories
+  `complaint_subcategory_id` INT UNSIGNED DEFAULT NULL, -- FK to cmp_complaint_categories (if sub-category is Null then it will be applied to all sub-categories exept those defined in the sub-category)
 -- Group wise SLA
-  `target_department_id` BIGINT UNSIGNED DEFAULT NULL,    -- FK to sys_departments
-  `target_designation_id` BIGINT UNSIGNED DEFAULT NULL,   -- FK to sys_designations
-  `target_role_id` BIGINT UNSIGNED DEFAULT NULL,          -- FK to sys_roles
-  `target_entity_group_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to sys_groups
+  `target_department_id` INT UNSIGNED DEFAULT NULL,    -- FK to sys_departments
+  `target_designation_id` INT UNSIGNED DEFAULT NULL,   -- FK to sys_designations
+  `target_role_id` INT UNSIGNED DEFAULT NULL,          -- FK to sys_roles
+  `target_entity_group_id` INT UNSIGNED DEFAULT NULL,  -- FK to sys_groups
 -- User wise SLA
-  `target_user_id` BIGINT UNSIGNED DEFAULT NULL,          -- FK to sys_users
+  `target_user_id` INT UNSIGNED DEFAULT NULL,          -- FK to sys_users
 -- Vehicle wise SLA
-  `target_vehicle_id` BIGINT UNSIGNED DEFAULT NULL,       -- FK to sys_vehicles
+  `target_vehicle_id` INT UNSIGNED DEFAULT NULL,       -- FK to sys_vehicles
 -- Vendor wise SLA
-  `target_vendor_id` BIGINT UNSIGNED DEFAULT NULL,        -- FK to tpt_vendor
+  `target_vendor_id` INT UNSIGNED DEFAULT NULL,        -- FK to tpt_vendor
 -- SLA (Expected Resolution Time & Escalation Time)
   `dept_expected_resolution_hours` INT UNSIGNED NOT NULL, -- This must be less than escalation_l1_hours
   `dept_escalation_hours_l1` INT UNSIGNED NOT NULL,       -- Time before escalating to L1 (This must be less than escalation_l2_hours)
@@ -76,11 +76,11 @@ CREATE TABLE IF NOT EXISTS `cmp_department_sla` (
   `dept_escalation_hours_l3` INT UNSIGNED NOT NULL,       -- Time before escalating to L3 (This must be less than escalation_l4_hours)
   `dept_escalation_hours_l4` INT UNSIGNED NOT NULL,       -- Time before escalating to L4 (This must be less than escalation_l5_hours)
   `dept_escalation_hours_l5` INT UNSIGNED NOT NULL,       -- Time before escalating to L5
-  `escalation_l1_entity_group_id` BIGINT UNSIGNED DEFAULT NULL,    -- FK to sys_groups
-  `escalation_l2_entity_group_id` BIGINT UNSIGNED DEFAULT NULL,    -- FK to sys_groups
-  `escalation_l3_entity_group_id` BIGINT UNSIGNED DEFAULT NULL,    -- FK to sys_groups
-  `escalation_l4_entity_group_id` BIGINT UNSIGNED DEFAULT NULL,    -- FK to sys_groups
-  `escalation_l5_entity_group_id` BIGINT UNSIGNED DEFAULT NULL,    -- FK to sys_groups
+  `escalation_l1_entity_group_id` INT UNSIGNED DEFAULT NULL,    -- FK to sys_groups
+  `escalation_l2_entity_group_id` INT UNSIGNED DEFAULT NULL,    -- FK to sys_groups
+  `escalation_l3_entity_group_id` INT UNSIGNED DEFAULT NULL,    -- FK to sys_groups
+  `escalation_l4_entity_group_id` INT UNSIGNED DEFAULT NULL,    -- FK to sys_groups
+  `escalation_l5_entity_group_id` INT UNSIGNED DEFAULT NULL,    -- FK to sys_groups
   `is_active` TINYINT(1) DEFAULT 1,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -111,25 +111,25 @@ CREATE TABLE IF NOT EXISTS `cmp_department_sla` (
 -- -------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `cmp_complaints` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `ticket_no` VARCHAR(30) NOT NULL, -- Auto-generated unique ticket ID (e.g., CMP-2025-0001)
   `ticket_date` DATE NOT NULL DEFAULT CURRENT_DATE(), -- Date when the complaint was raised
   -- Complainant Info (Who raised it)
-  `complainant_type_id` BIGINT UNSIGNED NOT NULL, -- FK to sys_dropdown_table (Parent, Student, Staff, Vendor, Anonymous, Public)
-  `complainant_user_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to sys_users (NULL if Public/Anonymous)
+  `complainant_type_id` INT UNSIGNED NOT NULL, -- FK to sys_dropdown_table (Parent, Student, Staff, Vendor, Anonymous, Public)
+  `complainant_user_id` INT UNSIGNED DEFAULT NULL, -- FK to sys_users (NULL if Public/Anonymous)
   `complainant_name` VARCHAR(100) DEFAULT NULL, -- Captured if not a system user (Public/Anonymous)
   `complainant_contact` VARCHAR(50) DEFAULT NULL, -- Captured if not a system user (Public/Anonymous)
   -- Target Entity (Against whom/what)
-  `target_user_type_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to sys_dropdown_table (1=Student, 2=Staff, 3=Group, 4=Department, 5=Role, 6=Designation, 7=Facility, 8=Vehicle, 9=Event, 10=Location, 11-Vendor, 12-Other)
+  `target_user_type_id` INT UNSIGNED DEFAULT NULL, -- FK to sys_dropdown_table (1=Student, 2=Staff, 3=Group, 4=Department, 5=Role, 6=Designation, 7=Facility, 8=Vehicle, 9=Event, 10=Location, 11-Vendor, 12-Other)
   `target_table_name` VARCHAR(60) DEFAULT NULL, -- e.g. "sch_class", "sch_section", "sch_subject", "sch_designation", "sch_department", "sch_role", "sch_students", "sch_staff", "sch_vehicle", "sch_facility", "sch_event", "sch_location", "sch_other"
-  `target_selected_id` BIGINT UNSIGNED DEFAULT NULL, -- Foriegn Key will be managed at Application Level as it will be different for different entities e.g. sch_class, sch_section, sch_subject, sch_students, sch_staff, sch_vehicle etc.
+  `target_selected_id` INT UNSIGNED DEFAULT NULL, -- Foriegn Key will be managed at Application Level as it will be different for different entities e.g. sch_class, sch_section, sch_subject, sch_students, sch_staff, sch_vehicle etc.
   `target_code` VARCHAR(50) DEFAULT NULL, -- Optional short code e.g. "Transport", "Academic", "Account Manager"
   `target_name` VARCHAR(100) DEFAULT NULL, -- Optional name e.g. "Transport", "Academic", "Account Manager"
   -- Complaint Classification
-  `category_id` BIGINT UNSIGNED NOT NULL, -- FK to cmp_complaint_categories
-  `subcategory_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to cmp_complaint_categories
-  `severity_level_id` BIGINT UNSIGNED NOT NULL, -- It will not be asked to Complaint Form but will be auto fetched from 'cmp_complaint_categories' table
-  `priority_score_id` BIGINT UNSIGNED NOT NULL, -- It will not be asked to Complaint Form but will be auto fetched from 'cmp_complaint_categories' table
+  `category_id` INT UNSIGNED NOT NULL, -- FK to cmp_complaint_categories
+  `subcategory_id` INT UNSIGNED DEFAULT NULL, -- FK to cmp_complaint_categories
+  `severity_level_id` INT UNSIGNED NOT NULL, -- It will not be asked to Complaint Form but will be auto fetched from 'cmp_complaint_categories' table
+  `priority_score_id` INT UNSIGNED NOT NULL, -- It will not be asked to Complaint Form but will be auto fetched from 'cmp_complaint_categories' table
   -- Complaint Content
   `title` VARCHAR(200) NOT NULL,
   `description` TEXT DEFAULT NULL,
@@ -137,19 +137,19 @@ CREATE TABLE IF NOT EXISTS `cmp_complaints` (
   `incident_date` DATETIME DEFAULT NULL,
   `incident_time` TIME DEFAULT NULL,
   -- Status & Resolution
-  `status_id` BIGINT UNSIGNED NOT NULL, -- FK to sys_dropdown_table (Open, In-Progress, Escalated, Resolved, Closed, Rejected)
-  `assigned_to_role_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to sys_roles (Current Role handling it)
-  `assigned_to_user_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to sys_users (Specific Officer)
+  `status_id` INT UNSIGNED NOT NULL, -- FK to sys_dropdown_table (Open, In-Progress, Escalated, Resolved, Closed, Rejected)
+  `assigned_to_role_id` INT UNSIGNED DEFAULT NULL, -- FK to sys_roles (Current Role handling it)
+  `assigned_to_user_id` INT UNSIGNED DEFAULT NULL, -- FK to sys_users (Specific Officer)
   `resolution_due_at` DATETIME DEFAULT NULL, -- Calculated from 'cmp_department_sla'. If not available then use 'default_expected_resolution_hours' from 'cmp_complaint_categories'.
   `actual_resolved_at` DATETIME DEFAULT NULL, -- When it was actually resolved
-  `resolved_by_role_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to sys_roles (Role who resolved it)
-  `resolved_by_user_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to sys_users (Officer who resolved it)
+  `resolved_by_role_id` INT UNSIGNED DEFAULT NULL, -- FK to sys_roles (Role who resolved it)
+  `resolved_by_user_id` INT UNSIGNED DEFAULT NULL, -- FK to sys_users (Officer who resolved it)
   `resolution_summary` TEXT DEFAULT NULL,
   -- Escalation
   `is_escalated` TINYINT(1) DEFAULT 0,
   `current_escalation_level` TINYINT UNSIGNED DEFAULT 0, -- 0=None, 1=L1, 2=L2...
   -- Meta
-  `source_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to sys_dropdown_table (App, Web, Email, Walk-in, Call)
+  `source_id` INT UNSIGNED DEFAULT NULL, -- FK to sys_dropdown_table (App, Web, Email, Walk-in, Call)
   `is_anonymous` TINYINT(1) DEFAULT 0,
   `dept_specific_info` JSON DEFAULT NULL, -- Department-specific additional info (e.g., Student ID, Parent ID, route_id, vehicle_id)
   `is_medical_check_required` TINYINT(1) DEFAULT 0, -- Fetch from 'cmp_complaint_categories' table. If true, then system will capture medical check details in 'cmp_medical_checks' table.
@@ -187,13 +187,13 @@ CREATE TABLE IF NOT EXISTS `cmp_complaints` (
 -- -------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `cmp_complaint_actions` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `complaint_id` BIGINT UNSIGNED NOT NULL,
-  `action_type_id` BIGINT UNSIGNED NOT NULL, -- FK to sys_dropdown_table (Created, Assigned, Comment, StatusChange, Investigation, Escalated, Resolved)
-  `performed_by_user_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to sys_users (NULL for System)
-  `performed_by_role_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to sys_roles (NULL for System)
-  `assigned_to_user_id` BIGINT UNSIGNED DEFAULT NULL, -- If reassigned
-  `assigned_to_role_id` BIGINT UNSIGNED DEFAULT NULL, -- If reassigned
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `complaint_id` INT UNSIGNED NOT NULL,
+  `action_type_id` INT UNSIGNED NOT NULL, -- FK to sys_dropdown_table (Created, Assigned, Comment, StatusChange, Investigation, Escalated, Resolved)
+  `performed_by_user_id` INT UNSIGNED DEFAULT NULL, -- FK to sys_users (NULL for System)
+  `performed_by_role_id` INT UNSIGNED DEFAULT NULL, -- FK to sys_roles (NULL for System)
+  `assigned_to_user_id` INT UNSIGNED DEFAULT NULL, -- If reassigned
+  `assigned_to_role_id` INT UNSIGNED DEFAULT NULL, -- If reassigned
   `notes` TEXT DEFAULT NULL,
   `is_private_note` TINYINT(1) DEFAULT 0, -- If true, not visible to complainant
   `action_timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -212,9 +212,9 @@ CREATE TABLE IF NOT EXISTS `cmp_complaint_actions` (
 -- -------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `cmp_medical_checks` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `complaint_id` BIGINT UNSIGNED NOT NULL,
-  `check_type_id` BIGINT UNSIGNED NOT NULL, -- FK to sys_dropdown_table (AlcoholTest, DrugTest, FitnessCheck)
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `complaint_id` INT UNSIGNED NOT NULL,
+  `check_type_id` INT UNSIGNED NOT NULL, -- FK to sys_dropdown_table (AlcoholTest, DrugTest, FitnessCheck)
   `conducted_by` VARCHAR(100) DEFAULT NULL, -- Doctor/Officer Name
   `conducted_at` DATETIME NOT NULL,
   `result` VARCHAR(20) NOT NULL, -- FK to sys_dropdown_table (Positive, Negative, Inconclusive)
@@ -235,12 +235,12 @@ CREATE TABLE IF NOT EXISTS `cmp_medical_checks` (
 -- Stores processed insights for complaints (Prediction, Sentiment, Risk)
 
 CREATE TABLE IF NOT EXISTS `cmp_ai_insights` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `complaint_id` BIGINT UNSIGNED NOT NULL,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `complaint_id` INT UNSIGNED NOT NULL,
   `sentiment_score` DECIMAL(4,3) DEFAULT NULL, -- -1.0 (Negative) to +1.0 (Positive) calculated by AI e.g. -0.8
-  `sentiment_label_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to sys_dropdown_table (Angry, Urgent, Calm, Neutral) calculated by AI e.g. Angry
+  `sentiment_label_id` INT UNSIGNED DEFAULT NULL, -- FK to sys_dropdown_table (Angry, Urgent, Calm, Neutral) calculated by AI e.g. Angry
   `escalation_risk_score` DECIMAL(5,2) DEFAULT NULL, -- 0-100% Probability calculated by AI e.g. 80% 
-  `predicted_category_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to cmp_complaint_categories calculated by AI e.g. Rash Driving
+  `predicted_category_id` INT UNSIGNED DEFAULT NULL, -- FK to cmp_complaint_categories calculated by AI e.g. Rash Driving
   `safety_risk_score` DECIMAL(5,2) DEFAULT NULL, -- 0-100% Probability calculated by AI e.g. 80%
   `model_version` VARCHAR(20) DEFAULT NULL, -- model version used for prediction e.g. v1.0
   `processed_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

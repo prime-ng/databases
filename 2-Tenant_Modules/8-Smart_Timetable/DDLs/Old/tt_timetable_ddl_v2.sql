@@ -11,7 +11,7 @@
 -- TIMETABLE MODE MASTER
 -- -----------------------------------------------------
 CREATE TABLE `tt_timetable_mode` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `code` VARCHAR(20) NOT NULL,                  -- e.g., 'REGULAR','EXAM','SPECIAL_EVENT'
   `name` VARCHAR(100) NOT NULL,                 -- e.g., 'Regular Timetable','Examination Timetable'
   `description` VARCHAR(255) DEFAULT NULL,
@@ -29,7 +29,7 @@ CREATE TABLE `tt_timetable_mode` (
 -- PERIOD TYPE MASTER
 -- -----------------------------------------------------
 CREATE TABLE `tt_period_type` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `code` VARCHAR(20) NOT NULL,                          -- e.g., 'TEACHING','EXAMINATION','BREAK','ASSEMBLY'
   `name` VARCHAR(50) NOT NULL,                          -- e.g., 'Teaching Period','Examination Period' 
   `description` VARCHAR(255) DEFAULT NULL,
@@ -47,7 +47,7 @@ CREATE TABLE `tt_period_type` (
 -- TEACHER ASSIGNMENT ROLE MASTER
 -- -----------------------------------------------------
 CREATE TABLE `tt_teacher_assignment_role` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `code` VARCHAR(20) NOT NULL,                  -- e.g., 'PRIMARY_INSTRUCTOR','ASSISTANT_INSTRUCTOR','SUBSTITUTE'   
   `name` VARCHAR(100) NOT NULL,                 -- e.g., 'Primary Instructor','Assistant Instructor','Substitute Teacher'
   `description` VARCHAR(255) DEFAULT NULL,
@@ -66,7 +66,7 @@ CREATE TABLE `tt_teacher_assignment_role` (
 -- PERIOD SET
 -- -----------------------------------------------------
 CREATE TABLE `tt_period_set` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `code` VARCHAR(20) NOT NULL,                  -- e.g., "NORMAL_8P", "TODDLER_6P", "EXAM_3P". "EXAM_2P", "HALF_DAY_4P", "EVENT_DAY_0P"  
   `name` VARCHAR(100) NOT NULL,                 -- e.g., "Normal Day 8 Periods", "Toddler Day 6 Periods", "Examination Day 3 Periods"
   `description` VARCHAR(255) DEFAULT NULL,      -- e.g., "Normal Day with 8 Periods", "Toddler Day with 6 Periods", "Examination Day with 3 Periods"
@@ -82,14 +82,14 @@ CREATE TABLE `tt_period_set` (
 -- PERIOD SET PERIOD
 -- -----------------------------------------------------
 CREATE TABLE `tt_period_set_period` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `period_set_id` BIGINT UNSIGNED NOT NULL,     -- FK to tt_period_set
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `period_set_id` INT UNSIGNED NOT NULL,     -- FK to tt_period_set
   `period_ord` TINYINT UNSIGNED NOT NULL,       -- Ordinal number of the period within the set (1, 2, 3, ...)
   `code` VARCHAR(10) NOT NULL,                  -- e.g., "P1", "P2", "P3", "BREAK", "LUNCH"
   `name` VARCHAR(50) NOT NULL,
   `start_time` TIME NOT NULL,                   -- e.g., "09:00:00", "10:00:00"
   `end_time` TIME NOT NULL,                     -- e.g., "09:45:00", "10:45:00"
-  `period_type_id` BIGINT UNSIGNED NOT NULL,    -- FK to tt_period_type
+  `period_type_id` INT UNSIGNED NOT NULL,    -- FK to tt_period_type
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
   `created_at` TIMESTAMP NULL DEFAULT NULL,
   `updated_at` TIMESTAMP NULL DEFAULT NULL,
@@ -104,10 +104,10 @@ CREATE TABLE `tt_period_set_period` (
 -- CLASS MODE RULE
 -- -----------------------------------------------------
 CREATE TABLE `tt_class_mode_rule` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `class_id` BIGINT UNSIGNED NOT NULL,                      -- FK to sch_class
-  `tt_mode_id` BIGINT UNSIGNED NOT NULL,                       -- FK to tt_timetable_mode
-  `period_set_id` BIGINT UNSIGNED NOT NULL,                 -- FK to tt_period_set
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `class_id` INT UNSIGNED NOT NULL,                      -- FK to sch_class
+  `tt_mode_id` INT UNSIGNED NOT NULL,                       -- FK to tt_timetable_mode
+  `period_set_id` INT UNSIGNED NOT NULL,                 -- FK to tt_period_set
   `allow_teaching_periods` TINYINT(1) NOT NULL DEFAULT 1,   -- Whether teaching periods are allowed in this mode for the class
   `allow_exam_periods` TINYINT(1) NOT NULL DEFAULT 0,       -- Whether exam periods are allowed in this mode for the class
   `exam_period_count` TINYINT UNSIGNED DEFAULT NULL,        -- Number of exam periods if exam periods are allowed
@@ -126,8 +126,8 @@ CREATE TABLE `tt_class_mode_rule` (
 -- CLASS GROUP REQUIREMENT
 -- -----------------------------------------------------
 CREATE TABLE `tt_class_group_requirement` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `class_group_id` BIGINT UNSIGNED NOT NULL,            -- FK to sch_class_groups_jnt
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `class_group_id` INT UNSIGNED NOT NULL,            -- FK to sch_class_groups_jnt
   `weekly_periods` TINYINT UNSIGNED NOT NULL,           -- Total number of periods required per week for this class group
   `max_per_day` TINYINT UNSIGNED DEFAULT NULL,          -- Maximum number of periods allowed per day for this class group
   `min_gap_periods` TINYINT UNSIGNED DEFAULT NULL,      -- Minimum gap (in periods) between two sessions of this class group on the same day
@@ -145,8 +145,8 @@ CREATE TABLE `tt_class_group_requirement` (
 -- CLASS SUBGROUP
 -- -----------------------------------------------------
 CREATE TABLE `tt_class_subgroup` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `class_group_id` BIGINT UNSIGNED NOT NULL,                -- FK to sch_class_groups_jnt
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `class_group_id` INT UNSIGNED NOT NULL,                -- FK to sch_class_groups_jnt
   `code` VARCHAR(20) NOT NULL,                              -- e.g., '8th_FRENCH_LAC_OPT', 'SENIOR_GAME_ACT_OPT', 'ALL_GAME_ACT_OPT'
   `name` VARCHAR(100) NOT NULL,                             -- e.g., 'Class 5th TO 12th Game', 'French-Lecture for Class 8th(All Sections)', 'All Students Games Activity'
   `description` VARCHAR(255) DEFAULT NULL,
@@ -165,10 +165,10 @@ CREATE TABLE `tt_class_subgroup` (
 -- CLASS SUBGROUP MEMBER
 -- -----------------------------------------------------
 CREATE TABLE `tt_class_subgroup_member` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `class_subgroup_id` BIGINT UNSIGNED NOT NULL,
-  `class_id` BIGINT UNSIGNED NOT NULL,              -- FK to sch_classes
-  `section_id` BIGINT UNSIGNED NOT NULL,            -- FK to sch_sections
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `class_subgroup_id` INT UNSIGNED NOT NULL,
+  `class_id` INT UNSIGNED NOT NULL,              -- FK to sch_classes
+  `section_id` INT UNSIGNED NOT NULL,            -- FK to sch_sections
   `is_primary` TINYINT(1) NULL DEFAULT 0,           -- Optional: marks the main class (useful for reports, attendance)
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
   `created_at` TIMESTAMP NULL DEFAULT NULL,
@@ -184,10 +184,10 @@ CREATE TABLE `tt_class_subgroup_member` (
 -- TIMETABLE GENERATION RUN
 -- -----------------------------------------------------
 CREATE TABLE `tt_generation_run` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `mode_id` BIGINT UNSIGNED NOT NULL,                   -- FK to tt_timetable_mode
-  `period_set_id` BIGINT UNSIGNED NOT NULL,             -- FK to tt_period_set
-  `academic_session_id` BIGINT UNSIGNED DEFAULT NULL,   -- FK to sch_academic_sessions
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `mode_id` INT UNSIGNED NOT NULL,                   -- FK to tt_timetable_mode
+  `period_set_id` INT UNSIGNED NOT NULL,             -- FK to tt_period_set
+  `academic_session_id` INT UNSIGNED DEFAULT NULL,   -- FK to sch_academic_sessions
   `started_at` DATETIME NOT NULL,                       -- Timestamp when the generation started
   `finished_at` DATETIME DEFAULT NULL,                  -- Timestamp when the generation finished
   `status` ENUM('RUNNING','SUCCESS','FAILED','CANCELLED') NOT NULL DEFAULT 'RUNNING',
@@ -204,13 +204,13 @@ CREATE TABLE `tt_generation_run` (
 -- TIMETABLE CELL
 -- -----------------------------------------------------
 CREATE TABLE `tt_timetable_cell` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `generation_run_id` BIGINT UNSIGNED NOT NULL,     -- FK to tt_generation_run
-  `class_group_id` BIGINT UNSIGNED DEFAULT NULL,    -- FK to sch_class_groups_jnt (Only 1 of class_group_id / class_subgroup_id must be set (not both))
-  `class_subgroup_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to tt_class_subgroup (Only 1 of class_group_id / class_subgroup_id must be set (not both))
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `generation_run_id` INT UNSIGNED NOT NULL,     -- FK to tt_generation_run
+  `class_group_id` INT UNSIGNED DEFAULT NULL,    -- FK to sch_class_groups_jnt (Only 1 of class_group_id / class_subgroup_id must be set (not both))
+  `class_subgroup_id` INT UNSIGNED DEFAULT NULL, -- FK to tt_class_subgroup (Only 1 of class_group_id / class_subgroup_id must be set (not both))
   `date` DATE NOT NULL,                             -- Date of the timetable cell
   `period_ord` TINYINT UNSIGNED NOT NULL,           -- Ordinal number of the period in the day
-  `room_id` BIGINT UNSIGNED DEFAULT NULL,           -- FK to sch_rooms (if applicable)
+  `room_id` INT UNSIGNED DEFAULT NULL,           -- FK to sch_rooms (if applicable)
   `locked` TINYINT(1) NOT NULL DEFAULT 0,           -- Whether this cell is locked from automatic changes
   `source` ENUM('AUTO','MANUAL','ADJUST') NOT NULL DEFAULT 'AUTO',
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
@@ -235,9 +235,9 @@ CREATE TABLE `tt_timetable_cell` (
 -- TIMETABLE CELL - TEACHER
 -- -----------------------------------------------------
 CREATE TABLE `tt_timetable_cell_teacher` (
-  `cell_id` BIGINT UNSIGNED NOT NULL,               -- FK to tt_timetable_cell
-  `teacher_id` BIGINT UNSIGNED NOT NULL,            -- FK to sch_users
-  `assignment_role_id` BIGINT UNSIGNED NOT NULL,    -- FK to tt_teacher_assignment_role
+  `cell_id` INT UNSIGNED NOT NULL,               -- FK to tt_timetable_cell
+  `teacher_id` INT UNSIGNED NOT NULL,            -- FK to sch_users
+  `assignment_role_id` INT UNSIGNED NOT NULL,    -- FK to tt_teacher_assignment_role
   PRIMARY KEY (`cell_id`,`teacher_id`),
   CONSTRAINT `fk_tct_cell` FOREIGN KEY (`cell_id`) REFERENCES `tt_timetable_cell`(`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_tct_assignment_role` FOREIGN KEY (`assignment_role_id`) REFERENCES `tt_teacher_assignment_role`(`id`)
@@ -248,10 +248,10 @@ CREATE TABLE `tt_timetable_cell_teacher` (
 -- SUBSTITUTION LOG
 -- -----------------------------------------------------
 CREATE TABLE `tt_substitution_log` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `cell_id` BIGINT UNSIGNED NOT NULL,                               -- FK to tt_timetable_cell
-  `absent_teacher_id` BIGINT UNSIGNED NOT NULL,                     -- FK to sch_users
-  `substitute_teacher_id` BIGINT UNSIGNED NOT NULL,                 -- FK to sch_users
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `cell_id` INT UNSIGNED NOT NULL,                               -- FK to tt_timetable_cell
+  `absent_teacher_id` INT UNSIGNED NOT NULL,                     -- FK to sch_users
+  `substitute_teacher_id` INT UNSIGNED NOT NULL,                 -- FK to sch_users
   `substituted_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,    -- Timestamp when the substitution occurred
   `reason` VARCHAR(255) DEFAULT NULL,                               -- Reason for substitution
   `created_at` TIMESTAMP NULL DEFAULT NULL,
@@ -264,9 +264,9 @@ CREATE TABLE `tt_substitution_log` (
 -- GENERIC CONSTRAINT ENGINE
 -- -----------------------------------------------------
 CREATE TABLE `tt_constraint` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `target_type` ENUM('TEACHER','CLASS_GROUP','ROOM','GLOBAL') NOT NULL, -- Type of target the constraint applies to
-  `target_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to sch_users (if TEACHER), sch_class_groups_jnt (if CLASS_GROUP), sch_rooms (if ROOM), NULL if GLOBAL
+  `target_id` INT UNSIGNED DEFAULT NULL,  -- FK to sch_users (if TEACHER), sch_class_groups_jnt (if CLASS_GROUP), sch_rooms (if ROOM), NULL if GLOBAL
   `is_hard` TINYINT(1) NOT NULL DEFAULT 0,              -- Whether this is a hard constraint (must be enforced) or soft constraint (preferable)
   `weight` TINYINT UNSIGNED NOT NULL DEFAULT 100,       -- Weight of the constraint (higher means more important)
   `rule_json` JSON NOT NULL,                            -- JSON field defining the constraint rule (e.g., no classes before 10 AM on Fridays)

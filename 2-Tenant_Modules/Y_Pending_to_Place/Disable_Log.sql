@@ -4,15 +4,15 @@
    7. DISABLED LOG
    ============================================================ */
 CREATE TABLE IF NOT EXISTS `sch_students_disable_log` (
-    `id`     BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
-    `user_id`             BIGINT UNSIGNED NOT NULL,
+    `id`     INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    `user_id`             INT UNSIGNED NOT NULL,
     `academic_year`       VARCHAR(9) NOT NULL,
-    `disable_reason_id`   BIGINT UNSIGNED NOT NULL,  -- FK to `sch_disable_reasons.id`
+    `disable_reason_id`   INT UNSIGNED NOT NULL,  -- FK to `sch_disable_reasons.id`
     `disabled_date`       DATE NOT NULL,
     `remarks`             VARCHAR(255) NULL,
-    `disabled_by`         BIGINT UNSIGNED NOT NULL,  -- FK to `sys_users.id`
+    `disabled_by`         INT UNSIGNED NOT NULL,  -- FK to `sys_users.id`
     `reactivated_date`    DATE NULL,
-    `reactivated_by`      BIGINT UNSIGNED NULL,  -- FK to `sys_users.id`
+    `reactivated_by`      INT UNSIGNED NULL,  -- FK to `sys_users.id`
     `reactivated_reason`  VARCHAR(255) NULL,
     `is_active`           TINYINT(1) NOT NULL DEFAULT 1,
     `created_at`          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

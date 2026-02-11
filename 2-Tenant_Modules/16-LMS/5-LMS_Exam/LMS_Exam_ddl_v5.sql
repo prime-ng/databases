@@ -55,10 +55,10 @@ CREATE TABLE IF NOT EXISTS `lms_exam_status_events` (
 -- Allows creating ad-hoc groups (e.g., "Class 9 Adv Math") derived from classes/sections
 -- --------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `lms_exam_student_groups` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `exam_id` BIGINT UNSIGNED NOT NULL,             -- FK to lms_exams.id
-  `class_id` BIGINT UNSIGNED NOT NULL,            -- FK to sch_classes.id
-  `section_id` BIGINT UNSIGNED NOT NULL,          -- FK to sch_sections.id
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `exam_id` INT UNSIGNED NOT NULL,             -- FK to lms_exams.id
+  `class_id` INT UNSIGNED NOT NULL,            -- FK to sch_classes.id
+  `section_id` INT UNSIGNED NOT NULL,          -- FK to sch_sections.id
   `code` VARCHAR(20) NOT NULL,                   -- e.g. "9th-A_SET-A"
   `name` VARCHAR(100) NOT NULL,                   -- e.g. "Class 9th-A, Group SET-A"
   `description` VARCHAR(255) DEFAULT NULL,
@@ -78,9 +78,9 @@ CREATE TABLE IF NOT EXISTS `lms_exam_student_groups` (
 -- Members of the Ad-hoc Groups (e.g., "Class 9th-A, Group SET-A")
 -- --------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `lms_exam_student_group_members` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `group_id` BIGINT UNSIGNED NOT NULL,            -- FK to lms_exam_student_groups.id
-  `student_id` BIGINT UNSIGNED NOT NULL,          -- FK to sch_students / sys_users
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `group_id` INT UNSIGNED NOT NULL,            -- FK to lms_exam_student_groups.id
+  `student_id` INT UNSIGNED NOT NULL,          -- FK to sch_students / sys_users
   `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `deleted_at` TIMESTAMP NULL DEFAULT NULL,
@@ -100,19 +100,19 @@ CREATE TABLE IF NOT EXISTS `lms_exam_student_group_members` (
 -- This table is used to define the exam event and its basic details. 
 -- --------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `lms_exams` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `uuid` BINARY(16) NOT NULL,
-  `academic_session_id` BIGINT UNSIGNED NOT NULL, -- FK to glb_academic_sessions.id
-  `class_id` BIGINT UNSIGNED NOT NULL,            -- FK to sch_classes.id
+  `academic_session_id` INT UNSIGNED NOT NULL, -- FK to glb_academic_sessions.id
+  `class_id` INT UNSIGNED NOT NULL,            -- FK to sch_classes.id
   `exam_type_id` INT UNSIGNED NOT NULL,        -- FK to lms_exam_types.id (e.g. 'UT-1','UT-2','UT-3','UT-4','HY-EXAM','ANNUAL-EXAM')
   `code` VARCHAR(50) NOT NULL,                    -- e.g. 'EXAM_2025_ANNUAL'
   `title` VARCHAR(150) NOT NULL,                  -- e.g. 'Annual Examination 2025-26'
   `description` TEXT DEFAULT NULL,
   `start_date` DATE NOT NULL,
   `end_date` DATE NOT NULL,
-  `grading_schema_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to slb_grade_division_master (Default schema for the exam Grading / Division)
+  `grading_schema_id` INT UNSIGNED DEFAULT NULL, -- FK to slb_grade_division_master (Default schema for the exam Grading / Division)
   `status_id` INT UNSIGNED NOT NULL DEFAULT 0,    -- FK to lms_exam_status_events.id (Status of the exam) 'DRAFT','PUBLISHED','CONCLUDED','ARCHIVED')
-  `created_by` BIGINT UNSIGNED DEFAULT NULL,         -- FK to sys_users.id
+  `created_by` INT UNSIGNED DEFAULT NULL,         -- FK to sys_users.id
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
   `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -135,10 +135,10 @@ CREATE TABLE IF NOT EXISTS `lms_exams` (
 -- Represents a specific paper for a specific mode, e.g., "Class 9 - Math - Online"
 -- --------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `lms_exam_papers` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `exam_id` BIGINT UNSIGNED NOT NULL,             -- FK to lms_exams.id
-  `class_id` BIGINT UNSIGNED NOT NULL,            -- FK to sch_classes.id
-  `subject_id` BIGINT UNSIGNED NOT NULL,          -- FK to sch_subjects.id
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `exam_id` INT UNSIGNED NOT NULL,             -- FK to lms_exams.id
+  `class_id` INT UNSIGNED NOT NULL,            -- FK to sch_classes.id
+  `subject_id` INT UNSIGNED NOT NULL,          -- FK to sch_subjects.id
   `paper_code` VARCHAR(50) NOT NULL,              -- e.g. 'UT-1_2025_ANNUAL_MTH_ON'
   `title` VARCHAR(150) NOT NULL,                  -- e.g. 'Unit Test 1 - 2025-26 - Mathematics - Online'
   `mode` ENUM('ONLINE', 'OFFLINE') NOT NULL,
@@ -151,7 +151,7 @@ CREATE TABLE IF NOT EXISTS `lms_exam_papers` (
   `instructions` TEXT DEFAULT NULL,
   `only_unused_questions` TINYINT(1) NOT NULL DEFAULT 0, -- Only Unused Questions (Question should not be in qns_question_usage_log)
   `only_authorised_questions` TINYINT(1) NOT NULL DEFAULT 0, -- If this will be 1 then use only questions where qns_questions_bank.for_quiz = 1
-  `difficulty_config_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to lms_difficulty_distribution_configs
+  `difficulty_config_id` INT UNSIGNED DEFAULT NULL,  -- FK to lms_difficulty_distribution_configs
   `ignore_difficulty_config` TINYINT(1) NOT NULL DEFAULT 0, -- Ignore Difficulty Config (If this will be 1 then difficulty_config_id will be ignored)
   `allow_calculator` TINYINT(1) NOT NULL DEFAULT 0,  -- Allow Calculator (If this will be 1 then calculator will be allowed). -- New
   `show_marks_per_question` TINYINT(1) NOT NULL DEFAULT 1,  -- Show Marks Per Question (If this will be 1 then marks per question will be shown). -- New
@@ -191,8 +191,8 @@ CREATE TABLE IF NOT EXISTS `lms_exam_papers` (
 -- only un sused qestion display -> checkbox
 
 CREATE TABLE IF NOT EXISTS `lms_exam_paper_sets` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `exam_paper_id` BIGINT UNSIGNED NOT NULL,       -- FK to lms_exam_papers.id
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `exam_paper_id` INT UNSIGNED NOT NULL,       -- FK to lms_exam_papers.id
   `set_code` VARCHAR(20) NOT NULL,                -- e.g. 'SET_A', 'SET_B' OR 'SET_1', 'SET_2'
   `set_name` VARCHAR(50) NOT NULL,                -- e.g. 'Paper Set A' OR 'Paper Set 1'
   `description` VARCHAR(255) DEFAULT NULL,
@@ -210,10 +210,10 @@ CREATE TABLE IF NOT EXISTS `lms_exam_paper_sets` (
 -- This table will be used to define variants of the papers (New Table)
 -- --------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `lms_exam_scopes` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `exam_paper_id` BIGINT UNSIGNED NOT NULL,       -- FK to lms_exam_papers.id
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `exam_paper_id` INT UNSIGNED NOT NULL,       -- FK to lms_exam_papers.id
   `lesson_id` INT UNSIGNED DEFAULT NULL,     -- FK to slb_lessons (Optional, if specific lesson)
-  `topic_id` BIGINT UNSIGNED DEFAULT NULL,      -- FK to slb_topics (Optional, if specific topic)
+  `topic_id` INT UNSIGNED DEFAULT NULL,      -- FK to slb_topics (Optional, if specific topic)
   `question_type_id` INT UNSIGNED DEFAULT NULL,     -- FK to slb_question_types.id (e.g. MCQs, True/False, Fill in the Blanks, etc.)
   `target_question_count` INT UNSIGNED DEFAULT 0,   -- Target Question Count (If this will be 0 then all the questions of the topic will be included)
   `weightage_percent` DECIMAL(5,2) DEFAULT NULL, -- Weightage of this scope(Lesson,Topic,Sub-Topic) in the exam
@@ -233,8 +233,8 @@ CREATE TABLE IF NOT EXISTS `lms_exam_scopes` (
 -- This table will be used to define the structure of the exam. Useful for generating question papers automatically.
 -- -------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `lms_exam_blueprints` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `exam_paper_id` BIGINT UNSIGNED NOT NULL,       -- FK to lms_exam_papers.id
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `exam_paper_id` INT UNSIGNED NOT NULL,       -- FK to lms_exam_papers.id
   `section_name` VARCHAR(50) DEFAULT 'Section A', -- e.g., 'Part 1', 'Section A - Objective'
   `question_type_id` INT UNSIGNED DEFAULT NULL,     -- FK to slb_question_types.id (e.g. MCQs, Descriptive, Fill in the Blanks, etc.)
   `instruction_text` TEXT DEFAULT NULL,
@@ -256,9 +256,9 @@ CREATE TABLE IF NOT EXISTS `lms_exam_blueprints` (
 -- This Table will be used to link questions from Question Bank to a specific Exam Paper Set
 -- --------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `lms_paper_set_questions` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `paper_set_id` BIGINT UNSIGNED NOT NULL,        -- FK to lms_exam_paper_sets.id
-  `question_id` BIGINT UNSIGNED NOT NULL,         -- FK to qns_questions_bank.id
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `paper_set_id` INT UNSIGNED NOT NULL,        -- FK to lms_exam_paper_sets.id
+  `question_id` INT UNSIGNED NOT NULL,         -- FK to qns_questions_bank.id
   `section_name` VARCHAR(50) DEFAULT 'Section A', -- Logical grouping within paper to showcase MCQ, Long Answer, Short Answer etc.
   `ordinal` INT UNSIGNED NOT NULL DEFAULT 0,      -- Sequence order
   `override_marks` DECIMAL(5,2) NOT NULL,         -- Override marks from Question Bank
@@ -280,15 +280,15 @@ CREATE TABLE IF NOT EXISTS `lms_paper_set_questions` (
 -- This table will be used to define allocations: Mapping Papers/Sets to Students/Groups
 -- --------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `lms_exam_allocations` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `exam_paper_id` BIGINT UNSIGNED NOT NULL,       -- Which paper
-  `paper_set_id` BIGINT UNSIGNED NOT NULL,        -- Which set (Specific variant)
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `exam_paper_id` INT UNSIGNED NOT NULL,       -- Which paper
+  `paper_set_id` INT UNSIGNED NOT NULL,        -- Which set (Specific variant)
   -- Target definition
   `allocation_type` ENUM('CLASS','SECTION','EXAM_GROUP','STUDENT') NOT NULL,
-  `class_id` BIGINT UNSIGNED NOT NULL,        -- FK to sch_classes.id (Class is must)
-  `section_id` BIGINT UNSIGNED NULL,          -- FK to sch_sections.id (Section is optional)
-  `exam_group_id` BIGINT UNSIGNED NULL,       -- FK to lms_exam_student_groups.id (Exam Group is optional)
-  `student_id` BIGINT UNSIGNED NULL,          -- FK to sch_students / sys_users (Student is optional)
+  `class_id` INT UNSIGNED NOT NULL,        -- FK to sch_classes.id (Class is must)
+  `section_id` INT UNSIGNED NULL,          -- FK to sch_sections.id (Section is optional)
+  `exam_group_id` INT UNSIGNED NULL,       -- FK to lms_exam_student_groups.id (Exam Group is optional)
+  `student_id` INT UNSIGNED NULL,          -- FK to sch_students / sys_users (Student is optional)
   -- Scheduling Overrides
   `scheduled_date` DATE DEFAULT NULL,         -- If different from paper default
   `scheduled_start_time` TIME NOT NULL,

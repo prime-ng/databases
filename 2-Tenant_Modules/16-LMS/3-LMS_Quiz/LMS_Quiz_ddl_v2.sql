@@ -10,11 +10,11 @@
 -- This will be used to Balance Difficulty Level of Quiz / Quest / Exam. 
 -- This will define how many questions from different Complexity levels are required for a particular difficulty level.
 CREATE TABLE IF NOT EXISTS `lms_difficulty_distribution_configs` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `code` VARCHAR(50) NOT NULL,              -- e.g. 'STD_QUIZ_EASY', STD_QUIZ_Medium, STD_QUIZ_Hard, 'EXAM_BALANCED'
   `name` VARCHAR(100) NOT NULL,             -- e.g. 'Standard Quiz Easy'
   `description` VARCHAR(255) DEFAULT NULL,
-  `usage_type_id` BIGINT UNSIGNED NOT NULL, -- FK to qns_question_usage_type (e.g. 'QUIZ','QUEST','ONLINE_EXAM','OFFLINE_EXAM')
+  `usage_type_id` INT UNSIGNED NOT NULL, -- FK to qns_question_usage_type (e.g. 'QUIZ','QUEST','ONLINE_EXAM','OFFLINE_EXAM')
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
   `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -26,10 +26,10 @@ CREATE TABLE IF NOT EXISTS `lms_difficulty_distribution_configs` (
 
 -- Difficulty Distribution Rules (Child Table of (lms_difficulty_distribution_configs)
 CREATE TABLE IF NOT EXISTS `lms_difficulty_distribution_details` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `difficulty_config_id` BIGINT UNSIGNED NOT NULL,     -- FK to lms_difficulty_distribution_configs.id
-  `question_type_id` BIGINT UNSIGNED NOT NULL,         -- FK to slb_question_types.id (e.g. 'MCQ_SINGLE','MCQ_MULTI','SHORT_ANSWER','LONG_ANSWER')
-  `complexity_level_id` BIGINT UNSIGNED NOT NULL,      -- FK to slb_complexity_level.id (e.g. 'EASY','MEDIUM','DIFFICULT')
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `difficulty_config_id` INT UNSIGNED NOT NULL,     -- FK to lms_difficulty_distribution_configs.id
+  `question_type_id` INT UNSIGNED NOT NULL,         -- FK to slb_question_types.id (e.g. 'MCQ_SINGLE','MCQ_MULTI','SHORT_ANSWER','LONG_ANSWER')
+  `complexity_level_id` INT UNSIGNED NOT NULL,      -- FK to slb_complexity_level.id (e.g. 'EASY','MEDIUM','DIFFICULT')
   `min_percentage` DECIMAL(5,2) NOT NULL DEFAULT 0.00, -- Min % of total questions (e.g. 20.00)
   `max_percentage` DECIMAL(5,2) NOT NULL DEFAULT 0.00, -- Max % of total questions (e.g. 40.00)
   `marks_per_question` DECIMAL(5,2) DEFAULT NULL,     -- Optional override for marks (e.g. 1.00)
@@ -48,10 +48,10 @@ CREATE TABLE IF NOT EXISTS `lms_difficulty_distribution_details` (
 -- -------------------------------------------------------------------------------------------------------
 -- Quiz Type (Assessment Type)
 CREATE TABLE IF NOT EXISTS `lms_assessment_types` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `code` VARCHAR(20) NOT NULL,              -- (e.g. 'Challenge', 'Enrichment', 'Practice', 'Revision', 'Re-Test', 'Diagnostic', 'Remedial')
   `name` VARCHAR(100) NOT NULL,             -- (e.g. 'Challenge', 'Enrichment', 'Practice', 'Revision', 'Re-Test', 'Diagnostic', 'Remedial')
-  `assessment_usage_type_id` BIGINT UNSIGNED NOT NULL, -- FK to qns_question_usage_type.id (e.g. 'QUIZ','QUEST','ONLINE_EXAM','OFFLINE_EXAM')
+  `assessment_usage_type_id` INT UNSIGNED NOT NULL, -- FK to qns_question_usage_type.id (e.g. 'QUIZ','QUEST','ONLINE_EXAM','OFFLINE_EXAM')
   `description` VARCHAR(255) DEFAULT NULL,  -- 
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
   `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
@@ -73,14 +73,14 @@ CREATE TABLE IF NOT EXISTS `lms_assessment_types` (
 -- -------------------------------------------------------------------------------------------------------
 -- Main Quiz Master Table
 CREATE TABLE IF NOT EXISTS `lms_quizzes` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `uuid` BINARY(16) NOT NULL,                       -- Unique Identifier
-  `academic_session_id` BIGINT UNSIGNED NOT NULL,   -- FK to glb_academic_sessions.id
-  `class_id` BIGINT UNSIGNED NOT NULL,              -- FK to sch_classes.id
-  `subject_id` BIGINT UNSIGNED NOT NULL,            -- FK to sch_subjects.id
-  `lesson_id` BIGINT UNSIGNED NOT NULL,             -- FK to sch_lessons.id
-  `scope_topic_id` BIGINT UNSIGNED DEFAULT NULL,    -- FK to slb_topics.id (Primary Scope) (if selected topic is Sub-Topic then all the Mini-Topic/Micro-Topic comes under it will be included)
-  `quiz_type_id` BIGINT UNSIGNED NOT NULL,          -- FK to lms_assessment_types.id (e.g. 'Challenge', 'Enrichment', 'Practice', 'Revision', 'Re-Test', 'Diagnostic', 'Remedial')
+  `academic_session_id` INT UNSIGNED NOT NULL,   -- FK to glb_academic_sessions.id
+  `class_id` INT UNSIGNED NOT NULL,              -- FK to sch_classes.id
+  `subject_id` INT UNSIGNED NOT NULL,            -- FK to sch_subjects.id
+  `lesson_id` INT UNSIGNED NOT NULL,             -- FK to sch_lessons.id
+  `scope_topic_id` INT UNSIGNED DEFAULT NULL,    -- FK to slb_topics.id (Primary Scope) (if selected topic is Sub-Topic then all the Mini-Topic/Micro-Topic comes under it will be included)
+  `quiz_type_id` INT UNSIGNED NOT NULL,          -- FK to lms_assessment_types.id (e.g. 'Challenge', 'Enrichment', 'Practice', 'Revision', 'Re-Test', 'Diagnostic', 'Remedial')
   `quiz_code` VARCHAR(50) NOT NULL,                 -- AUTO GENERATED code (e.g. 'QUIZ_9TH_SCI_L01_SUB08_EASY', 'QUIZ_9TH_SCI_L01_BALANCED', 'QUIZ_9TH_SCI_L01_DIFFICULT')
   `title` VARCHAR(100) NOT NULL,
   `description` VARCHAR(255) DEFAULT NULL,
@@ -102,13 +102,13 @@ CREATE TABLE IF NOT EXISTS `lms_quizzes` (
   `show_correct_answer` TINYINT(1) NOT NULL DEFAULT 0, -- Show Correct Answer (If this will be 1 then Correct Answer will be shown when attempt to the quiz)
   `show_explanation` TINYINT(1) NOT NULL DEFAULT 0, -- Show Explanation (If this will be 1 then Explanation will be shown when attempt to the quiz)
   -- Difficulty & Generation
-  `difficulty_config_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to lms_difficulty_distribution_configs
+  `difficulty_config_id` INT UNSIGNED DEFAULT NULL, -- FK to lms_difficulty_distribution_configs
   `ignore_difficulty_config` TINYINT(1) NOT NULL DEFAULT 0, -- Ignore Difficulty Config (If this will be 1 then difficulty_config_id will be ignored)
   `is_system_generated` TINYINT(1) NOT NULL DEFAULT 0, -- System Generated (If this will be 1 then quiz will be generated by system)
   `only_unused_questions` TINYINT(1) NOT NULL DEFAULT 0, -- Only Unused Questions (Question should not be in qns_question_usage_log)
   `only_authorised_questions` TINYINT(1) NOT NULL DEFAULT 0, -- If this will be 1 then use only questions where qns_questions_bank.for_quiz = 1
   -- Audit
-  `created_by` BIGINT UNSIGNED DEFAULT NULL,        -- FK to sys_users.id (Teacher/Admin), Null if created by System
+  `created_by` INT UNSIGNED DEFAULT NULL,        -- FK to sys_users.id (Teacher/Admin), Null if created by System
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
   `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -133,9 +133,9 @@ CREATE TABLE IF NOT EXISTS `lms_quizzes` (
 -- -------------------------------------------------------------------------------------------------------
 -- Quiz Questions (Junction)
 CREATE TABLE IF NOT EXISTS `lms_quiz_questions` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `quiz_id` BIGINT UNSIGNED NOT NULL,               -- FK to lms_quizzes.id
-  `question_id` BIGINT UNSIGNED NOT NULL,           -- FK to qns_questions_bank.id
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `quiz_id` INT UNSIGNED NOT NULL,               -- FK to lms_quizzes.id
+  `question_id` INT UNSIGNED NOT NULL,           -- FK to qns_questions_bank.id
   `ordinal` INT UNSIGNED NOT NULL DEFAULT 0,        -- Sequence Order
   `marks_override` DECIMAL(5,2) DEFAULT NULL,       -- If different from question default marks
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
@@ -153,12 +153,12 @@ CREATE TABLE IF NOT EXISTS `lms_quiz_questions` (
 -- -------------------------------------------------------------------------------------------------------
 -- Quiz Allocation (Assignment)
 CREATE TABLE IF NOT EXISTS `lms_quiz_allocations` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `quiz_id` BIGINT UNSIGNED NOT NULL,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `quiz_id` INT UNSIGNED NOT NULL,
   `allocation_type` ENUM('CLASS','SECTION','GROUP','STUDENT') NOT NULL,
   `target_table_name` VARCHAR(60) NOT NULL,        -- Name of the target table (e.g. 'sch_classes', 'sch_sections', 'sch_entity_groups', 'std_students')
-  `target_id` BIGINT UNSIGNED NOT NULL,             -- ID of Class, Section, Group, or Student (e.g. sch_classes.id, sch_sections.id, sch_entity_groups.id, std_students.id)
-  `assigned_by` BIGINT UNSIGNED DEFAULT NULL,       -- FK to sys_users.id (Who assigned the quest). Null if assigned by System
+  `target_id` INT UNSIGNED NOT NULL,             -- ID of Class, Section, Group, or Student (e.g. sch_classes.id, sch_sections.id, sch_entity_groups.id, std_students.id)
+  `assigned_by` INT UNSIGNED DEFAULT NULL,       -- FK to sys_users.id (Who assigned the quest). Null if assigned by System
   -- Timing
   `published_at` DATETIME DEFAULT NULL,             -- Visible from
   `due_date` DATETIME DEFAULT NULL,                 -- Due by
@@ -182,8 +182,8 @@ CREATE TABLE IF NOT EXISTS `lms_quiz_allocations` (
 -- CHANGES :
 -- 1. TABLE lms_assessment_types - CHANGED 'code' column from VARCHAR(50) to VARCHAR(20)
 -- 2. TABLE lms_quizzes - ADDED -
---        `academic_session_id` BIGINT UNSIGNED NOT NULL,   -- FK to academic_sessions.id
---        `class_id` BIGINT UNSIGNED NOT NULL,              -- FK to sch_classes.id
---        `subject_id` BIGINT UNSIGNED NOT NULL,            -- FK to sch_subjects.id
---        `lesson_id` BIGINT UNSIGNED NOT NULL,             -- FK to sch_lessons.id
+--        `academic_session_id` INT UNSIGNED NOT NULL,   -- FK to academic_sessions.id
+--        `class_id` INT UNSIGNED NOT NULL,              -- FK to sch_classes.id
+--        `subject_id` INT UNSIGNED NOT NULL,            -- FK to sch_subjects.id
+--        `lesson_id` INT UNSIGNED NOT NULL,             -- FK to sch_lessons.id
 --        `quiz_code` - AUTO GENERATED code e.g. 'QUIZ_9TH_SCI_L01_SUB08_EASY' (QUIZ+Class Code+Subject Code+Lesson Code+Topic Code+quiz_type(lms_assessment_types.code))

@@ -19,8 +19,8 @@ CREATE TABLE IF NOT EXISTS `slb_lessons` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `name` varchar(50) NOT NULL,                -- e.g. 'Lesson 1' or 'Chapter 10'
   `code` varchar(7) DEFAULT NULL,             -- e.g. '9th_SCI', '8TH_MAT' (Auto Generate on the basis of Class & Subject Code)
-  `class_id` BIGINT UNSIGNED NOT NULL,        -- FK to sch_classes 
-  `subject_id` bigint unsigned NOT NULL,      -- FK to sch_subjects  
+  `class_id` INT UNSIGNED NOT NULL,        -- FK to sch_classes 
+  `subject_id` INT unsigned NOT NULL,      -- FK to sch_subjects  
   `ordinal` tinyint DEFAULT NULL,             -- Sequence order for lessons in a subject for a class 
   `description` text DEFAULT NULL,
   `duration` int unsigned NULL,               -- No of Periods required to complete this lesson
@@ -41,11 +41,11 @@ CREATE TABLE IF NOT EXISTS `slb_lessons` (
 -- -------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `slb_topics` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `parent_id` BIGINT UNSIGNED DEFAULT NULL,   -- FK to self (NULL for root topics, set to parent topic_id for sub-topics)
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `parent_id` INT UNSIGNED DEFAULT NULL,   -- FK to self (NULL for root topics, set to parent topic_id for sub-topics)
   `lesson_id` INT UNSIGNED NOT NULL,          -- FK -> sch_lessons.id
   `class_id` INT UNSIGNED NOT NULL,           -- FK -> sch_classes.id (redundant for fast queries)
-  `subject_id` BIGINT UNSIGNED NOT NULL,      -- FK -> sch_subjects.id (redundant)
+  `subject_id` INT UNSIGNED NOT NULL,      -- FK -> sch_subjects.id (redundant)
   `name` VARCHAR(150) NOT NULL,
   `short_name` VARCHAR(50) DEFAULT NULL,
   `ordinal` SMALLINT UNSIGNED DEFAULT NULL,   -- order within parent topic or lesson
@@ -74,13 +74,13 @@ CREATE TABLE IF NOT EXISTS `slb_topics` (
 -- -------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `slb_competencies` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `code` VARCHAR(50) NOT NULL,      -- Auto generated e.g. 
   `name` VARCHAR(255) NOT NULL,
   `class_id` INT UNSIGNED NOT NULL,   -- FK to sch_classes.id
-  `subject_id` BIGINT UNSIGNED NOT NULL,
+  `subject_id` INT UNSIGNED NOT NULL,
   `description` TEXT DEFAULT NULL,
-  `parent_competency_id` BIGINT UNSIGNED DEFAULT NULL,  -- hierarchical competencies
+  `parent_competency_id` INT UNSIGNED DEFAULT NULL,  -- hierarchical competencies
   `competency_type` VARCHAR(20) NOT NULL,  --FK - Fom Dropdown table  e.g., 'KNOWLEDGE','SKILL','ATTITUDE'
   `nep_alignment` VARCHAR(100) DEFAULT NULL,  -- Reference to NEP 2020 framework
   `is_active` TINYINT(1) DEFAULT 1,
@@ -96,8 +96,8 @@ CREATE TABLE IF NOT EXISTS `slb_competencies` (
 
 -- Link topics to competencies
 CREATE TABLE IF NOT EXISTS `slb_topic_competency_jnt` (
-  `topic_id` BIGINT UNSIGNED NOT NULL,
-  `competency_id` BIGINT UNSIGNED NOT NULL,
+  `topic_id` INT UNSIGNED NOT NULL,
+  `competency_id` INT UNSIGNED NOT NULL,
   PRIMARY KEY (`topic_id`,`competency_id`),
   CONSTRAINT `fk_tc_topic` FOREIGN KEY (`topic_id`) REFERENCES `slb_topics` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_tc_competency` FOREIGN KEY (`competency_id`) REFERENCES `slb_competencies` (`id`) ON DELETE CASCADE
@@ -173,14 +173,14 @@ CREATE TABLE IF NOT EXISTS `slb_question_types` (
 -- -------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `sch_questions` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `external_ref` VARCHAR(100) DEFAULT NULL,   -- for mapping to external banks
-  `topic_id` BIGINT UNSIGNED DEFAULT NULL,    -- FK -> sch_topics.id (can be root topic or sub-topic depending on level)
-  `competency_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to sch_competencies.id
+  `topic_id` INT UNSIGNED DEFAULT NULL,    -- FK -> sch_topics.id (can be root topic or sub-topic depending on level)
+  `competency_id` INT UNSIGNED DEFAULT NULL, -- FK to sch_competencies.id
   `lesson_id` INT UNSIGNED DEFAULT NULL,      -- optional denormalized FK
   `class_id` INT UNSIGNED DEFAULT NULL,
-  `subject_id` BIGINT UNSIGNED DEFAULT NULL,
-  `created_by` BIGINT UNSIGNED DEFAULT NULL,  -- sch_users.id or teachers.id
+  `subject_id` INT UNSIGNED DEFAULT NULL,
+  `created_by` INT UNSIGNED DEFAULT NULL,  -- sch_users.id or teachers.id
   `question_type_id` INT UNSIGNED NOT NULL,   -- gl_question_types.id
   `stem` TEXT NOT NULL,                       -- full question text (may include placeholders)
   `answer_explanation` TEXT DEFAULT NULL,     -- teacher explanation
@@ -219,8 +219,8 @@ CREATE TABLE IF NOT EXISTS `sch_questions` (
 
 
 CREATE TABLE IF NOT EXISTS `sch_question_options` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `question_id` BIGINT UNSIGNED NOT NULL,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `question_id` INT UNSIGNED NOT NULL,
   `ordinal` SMALLINT UNSIGNED DEFAULT NULL,
   `option_text` TEXT NOT NULL,
   `is_correct` TINYINT(1) NOT NULL DEFAULT 0,
@@ -234,9 +234,9 @@ CREATE TABLE IF NOT EXISTS `sch_question_options` (
 
 
 CREATE TABLE IF NOT EXISTS `sch_question_media` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `question_id` BIGINT UNSIGNED NOT NULL,
-  `media_id` BIGINT UNSIGNED NOT NULL,        -- link to sys_media.id
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `question_id` INT UNSIGNED NOT NULL,
+  `media_id` INT UNSIGNED NOT NULL,        -- link to sys_media.id
   `purpose` VARCHAR(50) DEFAULT 'ATTACHMENT', -- e.g., 'IMAGE','AUDIO','VIDEO','ATTACHMENT'
   `ordinal` SMALLINT UNSIGNED DEFAULT 1,
   PRIMARY KEY (`id`),
@@ -247,7 +247,7 @@ CREATE TABLE IF NOT EXISTS `sch_question_media` (
 
 
 CREATE TABLE IF NOT EXISTS `sch_question_tags` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `short_name` VARCHAR(100) NOT NULL,
   `name` VARCHAR(255) NOT NULL,
   PRIMARY KEY (`id`),
@@ -255,8 +255,8 @@ CREATE TABLE IF NOT EXISTS `sch_question_tags` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `sch_question_tag_jnt` (
-  `question_id` BIGINT UNSIGNED NOT NULL,
-  `tag_id` BIGINT UNSIGNED NOT NULL,
+  `question_id` INT UNSIGNED NOT NULL,
+  `tag_id` INT UNSIGNED NOT NULL,
   PRIMARY KEY (`question_id`,`tag_id`),
   CONSTRAINT `fk_qtag_q` FOREIGN KEY (`question_id`) REFERENCES `sch_questions` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_qtag_tag` FOREIGN KEY (`tag_id`) REFERENCES `sch_question_tags` (`id`) ON DELETE CASCADE
@@ -268,12 +268,12 @@ CREATE TABLE IF NOT EXISTS `sch_question_tag_jnt` (
 -- -------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `sch_question_versions` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `question_id` BIGINT UNSIGNED NOT NULL,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `question_id` INT UNSIGNED NOT NULL,
   `version` INT UNSIGNED NOT NULL,
   `data` JSON NOT NULL,                       -- full snapshot of question (stem, options, metadata)
   `change_reason` VARCHAR(255) DEFAULT NULL,  -- why was this version created?
-  `created_by` BIGINT UNSIGNED DEFAULT NULL,
+  `created_by` INT UNSIGNED DEFAULT NULL,
   `created_at` TIMESTAMP NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_qver_q_v` (`question_id`,`version`),
@@ -286,10 +286,10 @@ CREATE TABLE IF NOT EXISTS `sch_question_versions` (
 -- -------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `sch_question_pools` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `name` VARCHAR(100) NOT NULL,
   `description` TEXT DEFAULT NULL,
-  `subject_id` BIGINT UNSIGNED NOT NULL,
+  `subject_id` INT UNSIGNED NOT NULL,
   `class_id` INT UNSIGNED NOT NULL,
   `complexity_filter` JSON DEFAULT NULL,      -- ["EASY","MEDIUM","DIFFICULT"]
   `bloom_filter` JSON DEFAULT NULL,           -- ["REMEMBER","UNDERSTAND","APPLY"]
@@ -305,8 +305,8 @@ CREATE TABLE IF NOT EXISTS `sch_question_pools` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `sch_question_pool_questions` (
-  `question_pool_id` BIGINT UNSIGNED NOT NULL,
-  `question_id` BIGINT UNSIGNED NOT NULL,
+  `question_pool_id` INT UNSIGNED NOT NULL,
+  `question_id` INT UNSIGNED NOT NULL,
   PRIMARY KEY (`question_pool_id`,`question_id`),
   CONSTRAINT `fk_qpq_pool` FOREIGN KEY (`question_pool_id`) REFERENCES `sch_question_pools` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_qpq_question` FOREIGN KEY (`question_id`) REFERENCES `sch_questions` (`id`) ON DELETE CASCADE
@@ -318,11 +318,11 @@ CREATE TABLE IF NOT EXISTS `sch_question_pool_questions` (
 -- -------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `sch_quizzes` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `short_name` VARCHAR(100) NOT NULL,
   `name` VARCHAR(255) NOT NULL,
   `description` TEXT DEFAULT NULL,
-  `subject_id` BIGINT UNSIGNED DEFAULT NULL,
+  `subject_id` INT UNSIGNED DEFAULT NULL,
   `class_id` INT UNSIGNED DEFAULT NULL,
   `lesson_id` INT UNSIGNED DEFAULT NULL,
   `quiz_type` ENUM('PRACTICE','DIAGNOSTIC','REINFORCEMENT') DEFAULT 'PRACTICE',
@@ -334,7 +334,7 @@ CREATE TABLE IF NOT EXISTS `sch_quizzes` (
   `show_answers_immediately` TINYINT(1) DEFAULT 1,
   `allow_review_before_submit` TINYINT(1) DEFAULT 1,
   `is_published` TINYINT(1) NOT NULL DEFAULT 0,
-  `created_by` BIGINT UNSIGNED DEFAULT NULL,
+  `created_by` INT UNSIGNED DEFAULT NULL,
   `created_at` TIMESTAMP NULL DEFAULT NULL,
   `updated_at` TIMESTAMP NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -346,14 +346,14 @@ CREATE TABLE IF NOT EXISTS `sch_quizzes` (
 
 
 CREATE TABLE IF NOT EXISTS `sch_assessments` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `short_name` VARCHAR(100) NOT NULL,
   `name` VARCHAR(255) NOT NULL,
   `type` ENUM('FORMATIVE','SUMMATIVE','TERM','DIAGNOSTIC') NOT NULL DEFAULT 'FORMATIVE',
   `description` TEXT DEFAULT NULL,
-  `subject_id` BIGINT UNSIGNED DEFAULT NULL,
+  `subject_id` INT UNSIGNED DEFAULT NULL,
   `class_id` INT UNSIGNED DEFAULT NULL,
-  `academic_session_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to sch_org_academic_sessions_jnt
+  `academic_session_id` INT UNSIGNED DEFAULT NULL,  -- FK to sch_org_academic_sessions_jnt
   `start_datetime` DATETIME DEFAULT NULL,
   `end_datetime` DATETIME DEFAULT NULL,
   `duration_minutes` INT UNSIGNED DEFAULT NULL,
@@ -366,7 +366,7 @@ CREATE TABLE IF NOT EXISTS `sch_assessments` (
   `shuffle_options` TINYINT(1) DEFAULT 0,
   `allow_review_before_submit` TINYINT(1) DEFAULT 1,
   `is_published` TINYINT(1) NOT NULL DEFAULT 0,
-  `created_by` BIGINT UNSIGNED DEFAULT NULL,
+  `created_by` INT UNSIGNED DEFAULT NULL,
   `created_at` TIMESTAMP NULL DEFAULT NULL,
   `updated_at` TIMESTAMP NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -379,14 +379,14 @@ CREATE TABLE IF NOT EXISTS `sch_assessments` (
 
 
 CREATE TABLE IF NOT EXISTS `sch_exams` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `short_name` VARCHAR(100) NOT NULL,
   `name` VARCHAR(255) NOT NULL,
   `description` TEXT DEFAULT NULL,
   `exam_type` ENUM('UNIT','MIDTERM','FINAL','BOARD','COMPETITIVE','MOCK') NOT NULL,
-  `subject_id` BIGINT UNSIGNED DEFAULT NULL,
+  `subject_id` INT UNSIGNED DEFAULT NULL,
   `class_id` INT UNSIGNED DEFAULT NULL,
-  `academic_session_id` BIGINT UNSIGNED DEFAULT NULL,
+  `academic_session_id` INT UNSIGNED DEFAULT NULL,
   `scheduled_date` DATE NOT NULL,
   `start_time` TIME NOT NULL,
   `end_time` TIME NOT NULL,
@@ -400,7 +400,7 @@ CREATE TABLE IF NOT EXISTS `sch_exams` (
   `shuffle_options` TINYINT(1) DEFAULT 0,
   `allow_review_before_submit` TINYINT(1) DEFAULT 0,
   `is_published` TINYINT(1) NOT NULL DEFAULT 0,
-  `created_by` BIGINT UNSIGNED DEFAULT NULL,
+  `created_by` INT UNSIGNED DEFAULT NULL,
   `created_at` TIMESTAMP NULL DEFAULT NULL,
   `updated_at` TIMESTAMP NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -417,8 +417,8 @@ CREATE TABLE IF NOT EXISTS `sch_exams` (
 -- -------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `sch_assessment_sections` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `assessment_id` BIGINT UNSIGNED NOT NULL,   -- FK to sch_assessments or sch_exams
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `assessment_id` INT UNSIGNED NOT NULL,   -- FK to sch_assessments or sch_exams
   `section_name` VARCHAR(100) NOT NULL,       -- e.g., "Part A: Reading", "Part B: Writing"
   `ordinal` TINYINT UNSIGNED NOT NULL,
   `description` TEXT DEFAULT NULL,
@@ -436,10 +436,10 @@ CREATE TABLE IF NOT EXISTS `sch_assessment_sections` (
 -- -------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `sch_assessment_items` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `assessment_id` BIGINT UNSIGNED NOT NULL,   -- FK to sch_assessments
-  `section_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to sch_assessment_sections (for multi-part exams)
-  `question_id` BIGINT UNSIGNED NOT NULL,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `assessment_id` INT UNSIGNED NOT NULL,   -- FK to sch_assessments
+  `section_id` INT UNSIGNED DEFAULT NULL,  -- FK to sch_assessment_sections (for multi-part exams)
+  `question_id` INT UNSIGNED NOT NULL,
   `marks` DECIMAL(6,2) DEFAULT 1.00,
   `negative_marks` DECIMAL(6,2) DEFAULT 0.00,
   `ordinal` SMALLINT UNSIGNED DEFAULT NULL,
@@ -455,10 +455,10 @@ CREATE TABLE IF NOT EXISTS `sch_assessment_items` (
 
 
 CREATE TABLE IF NOT EXISTS `sch_exam_items` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `exam_id` BIGINT UNSIGNED NOT NULL,         -- FK to sch_exams
-  `section_id` BIGINT UNSIGNED DEFAULT NULL,  -- Can be extended to support exam sections
-  `question_id` BIGINT UNSIGNED NOT NULL,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `exam_id` INT UNSIGNED NOT NULL,         -- FK to sch_exams
+  `section_id` INT UNSIGNED DEFAULT NULL,  -- Can be extended to support exam sections
+  `question_id` INT UNSIGNED NOT NULL,
   `marks` DECIMAL(6,2) DEFAULT 1.00,
   `negative_marks` DECIMAL(6,2) DEFAULT 0.00,
   `ordinal` SMALLINT UNSIGNED DEFAULT NULL,
@@ -472,8 +472,8 @@ CREATE TABLE IF NOT EXISTS `sch_exam_items` (
 
 
 CREATE TABLE IF NOT EXISTS `sch_quiz_assessment_map` (
-  `quiz_id` BIGINT UNSIGNED NOT NULL,
-  `assessment_id` BIGINT UNSIGNED NOT NULL,
+  `quiz_id` INT UNSIGNED NOT NULL,
+  `assessment_id` INT UNSIGNED NOT NULL,
   PRIMARY KEY (`quiz_id`,`assessment_id`),
   CONSTRAINT `fk_qam_quiz` FOREIGN KEY (`quiz_id`) REFERENCES `sch_quizzes` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_qam_assess` FOREIGN KEY (`assessment_id`) REFERENCES `sch_assessments` (`id`) ON DELETE CASCADE
@@ -485,15 +485,15 @@ CREATE TABLE IF NOT EXISTS `sch_quiz_assessment_map` (
 -- -------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `sch_assessment_assignments` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `assessment_id` BIGINT UNSIGNED NOT NULL,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `assessment_id` INT UNSIGNED NOT NULL,
   `assigned_to_type` ENUM('CLASS_SECTION','STUDENT','SUBJECT_GROUP','TEACHER') NOT NULL,
-  `assigned_to_id` BIGINT UNSIGNED NOT NULL,  -- id of class_section / student / subject_group / teacher
+  `assigned_to_id` INT UNSIGNED NOT NULL,  -- id of class_section / student / subject_group / teacher
   `available_from` DATETIME DEFAULT NULL,
   `available_to` DATETIME DEFAULT NULL,
   `max_attempts` INT UNSIGNED DEFAULT 1,
   `is_visible` TINYINT(1) DEFAULT 1,
-  `created_by` BIGINT UNSIGNED DEFAULT NULL,
+  `created_by` INT UNSIGNED DEFAULT NULL,
   `created_at` TIMESTAMP NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_asg_assessment` (`assessment_id`),
@@ -502,8 +502,8 @@ CREATE TABLE IF NOT EXISTS `sch_assessment_assignments` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4_COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `sch_assessment_assignment_rules` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `assessment_id` BIGINT UNSIGNED NOT NULL,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `assessment_id` INT UNSIGNED NOT NULL,
   `rule_type` ENUM('ATTENDANCE_MIN','SCORE_MIN','TIME_WINDOW','DEVICE_TYPE','IP_RESTRICTED','PREREQUISITE_COMPLETION') NOT NULL,
   `rule_value` JSON NOT NULL,                 -- e.g., {"min_attendance": 75}, {"allowed_ips": ["192.168.1.0/24"]}
   `is_active` TINYINT(1) DEFAULT 1,
@@ -518,9 +518,9 @@ CREATE TABLE IF NOT EXISTS `sch_assessment_assignment_rules` (
 -- -------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `sch_attempts` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `assessment_id` BIGINT UNSIGNED NOT NULL,
-  `student_id` BIGINT UNSIGNED NOT NULL,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `assessment_id` INT UNSIGNED NOT NULL,
+  `student_id` INT UNSIGNED NOT NULL,
   `ip_address` VARCHAR(45) DEFAULT NULL,      -- IPv4 or IPv6
   `user_agent` VARCHAR(255) DEFAULT NULL,     -- Browser info for audit
   `started_at` DATETIME DEFAULT NULL,
@@ -528,7 +528,7 @@ CREATE TABLE IF NOT EXISTS `sch_attempts` (
   `status` ENUM('IN_PROGRESS','SUBMITTED','GRADED','CANCELLED') NOT NULL DEFAULT 'IN_PROGRESS',
   `total_marks_obtained` DECIMAL(8,2) DEFAULT 0.00,
   `percentage_score` DECIMAL(5,2) DEFAULT 0.00,
-  `evaluated_by` BIGINT UNSIGNED DEFAULT NULL,
+  `evaluated_by` INT UNSIGNED DEFAULT NULL,
   `evaluated_at` DATETIME DEFAULT NULL,
   `attempt_number` INT UNSIGNED DEFAULT 1,
   `time_taken_seconds` INT UNSIGNED DEFAULT NULL,
@@ -545,10 +545,10 @@ CREATE TABLE IF NOT EXISTS `sch_attempts` (
 
 
 CREATE TABLE IF NOT EXISTS `sch_attempt_answers` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `attempt_id` BIGINT UNSIGNED NOT NULL,
-  `assessment_item_id` BIGINT UNSIGNED DEFAULT NULL, -- FK to sch_assessment_items.id
-  `question_id` BIGINT UNSIGNED NOT NULL,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `attempt_id` INT UNSIGNED NOT NULL,
+  `assessment_item_id` INT UNSIGNED DEFAULT NULL, -- FK to sch_assessment_items.id
+  `question_id` INT UNSIGNED NOT NULL,
   `selected_option_ids` JSON DEFAULT NULL,    -- for MCQ multi-select: array of option ids
   `answer_text` TEXT DEFAULT NULL,            -- for short/long answers, code, numeric answers etc.
   `marks_awarded` DECIMAL(7,2) DEFAULT 0.00,
@@ -571,12 +571,12 @@ CREATE TABLE IF NOT EXISTS `sch_attempt_answers` (
 -- -------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `sch_student_learning_outcomes` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `student_id` BIGINT UNSIGNED NOT NULL,
-  `competency_id` BIGINT UNSIGNED NOT NULL,
-  `topic_id` BIGINT UNSIGNED NOT NULL,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `student_id` INT UNSIGNED NOT NULL,
+  `competency_id` INT UNSIGNED NOT NULL,
+  `topic_id` INT UNSIGNED NOT NULL,
   `class_id` INT UNSIGNED NOT NULL,
-  `subject_id` BIGINT UNSIGNED NOT NULL,
+  `subject_id` INT UNSIGNED NOT NULL,
   `bloom_level` VARCHAR(50) DEFAULT NULL,     -- from questions attempted
   `avg_score_percent` DECIMAL(5,2) DEFAULT NULL,
   `total_attempts` INT UNSIGNED DEFAULT 0,
@@ -602,7 +602,7 @@ CREATE TABLE IF NOT EXISTS `sch_student_learning_outcomes` (
 -- -------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `sch_question_analytics` (
-  `question_id` BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+  `question_id` INT UNSIGNED NOT NULL PRIMARY KEY,
   `total_attempts` INT UNSIGNED DEFAULT 0,
   `correct_attempts` INT UNSIGNED DEFAULT 0,
   `avg_time_seconds` INT UNSIGNED DEFAULT NULL,
@@ -616,8 +616,8 @@ CREATE TABLE IF NOT EXISTS `sch_question_analytics` (
 
 
 CREATE TABLE IF NOT EXISTS `sch_exam_analytics` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `exam_id` BIGINT UNSIGNED NOT NULL,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `exam_id` INT UNSIGNED NOT NULL,
   `total_students_assigned` INT UNSIGNED DEFAULT 0,
   `total_students_attempted` INT UNSIGNED DEFAULT 0,
   `avg_score_percent` DECIMAL(5,2) DEFAULT NULL,
@@ -639,11 +639,11 @@ CREATE TABLE IF NOT EXISTS `sch_exam_analytics` (
 -- -------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `sch_audit_log` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `table_name` VARCHAR(50) NOT NULL,
-  `record_id` BIGINT UNSIGNED NOT NULL,
+  `record_id` INT UNSIGNED NOT NULL,
   `action` ENUM('CREATE','UPDATE','DELETE','PUBLISH','GRADE','SUBMIT') NOT NULL,
-  `changed_by` BIGINT UNSIGNED DEFAULT NULL,
+  `changed_by` INT UNSIGNED DEFAULT NULL,
   `old_values` JSON DEFAULT NULL,
   `new_values` JSON DEFAULT NULL,
   `ip_address` VARCHAR(45) DEFAULT NULL,
@@ -661,12 +661,12 @@ CREATE TABLE IF NOT EXISTS `sch_audit_log` (
 -- -------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `sch_question_index` (
-  `question_id` BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+  `question_id` INT UNSIGNED NOT NULL PRIMARY KEY,
   `class_id` INT UNSIGNED DEFAULT NULL,           -- sch_classes.id
-  `subject_id` BIGINT UNSIGNED DEFAULT NULL,      -- sch_subjects.id
+  `subject_id` INT UNSIGNED DEFAULT NULL,      -- sch_subjects.id
   `lesson_id` INT UNSIGNED DEFAULT NULL,          -- denormalized for faster filtering
-  `topic_id` BIGINT UNSIGNED DEFAULT NULL,        -- sch_topics.id
-  `competency_id` BIGINT UNSIGNED DEFAULT NULL,   -- sch_competencies.id
+  `topic_id` INT UNSIGNED DEFAULT NULL,        -- sch_topics.id
+  `competency_id` INT UNSIGNED DEFAULT NULL,   -- sch_competencies.id
   `complexity_level_id` INT UNSIGNED DEFAULT NULL,      -- slb_complexity_level.id
   `bloom_id` INT UNSIGNED DEFAULT NULL,           -- slb_bloom_taxonomy.id
   `cognitive_skill_id` INT UNSIGNED DEFAULT NULL, -- slb_cognitive_skill.id

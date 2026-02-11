@@ -12,7 +12,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- =======================================================================
 
 CREATE TABLE IF NOT EXISTS `vnd_vendor` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `vendor_short_name` VARCHAR(50) NOT NULL,
     `vendor_name` VARCHAR(100) NOT NULL,
     `transport_vendor` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,  -- FK to sys_dropdown_table ('Yes','No'). Using this app will decide whether to use 
@@ -40,10 +40,10 @@ CREATE TABLE IF NOT EXISTS `vnd_vendor` (
     -- 8. is_active indicates if vendor is currently active.
 
 CREATE TABLE IF NOT EXISTS `vnd_vendor_agreement` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `vendor_id` BIGINT UNSIGNED NOT NULL,  -- fk to vnd_vendor
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `vendor_id` INT UNSIGNED NOT NULL,  -- fk to vnd_vendor
 
-    `agreement_type_id` BIGINT UNSIGNED NOT NULL,   -- fk to sys_dropdown_table ('SERVICE','PRODUCT')
+    `agreement_type_id` INT UNSIGNED NOT NULL,   -- fk to sys_dropdown_table ('SERVICE','PRODUCT')
     `agreement_ref_no` VARCHAR(50) DEFAULT NULL,    -- Reference number of the physical agreement
     `agreement_start_date` DATE NOT NULL,
     `agreement_end_date` DATE NOT NULL,
@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS `vnd_vendor_agreement` (
     `agreement_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (agreement will be uploaded in sys.media table)
 -- -- (For Transport Agreement only) ----------------------------------------------------
     `agreement_for_transport` tinyint(1) unsigned not null default 0,  -- 0: Not for Transport, 1: For Transport (agreement will be uploaded in sys.media table)
-    `vehicle_id` BIGINT UNSIGNED NOT NULL, -- fk to tpt_vehicle
+    `vehicle_id` INT UNSIGNED NOT NULL, -- fk to tpt_vehicle
     `transport_charge_type` ENUM('Fixed','Km_Basis','Hybrid') DEFAULT 'Fixed', -- 'Fixed', 'Km_Basis', 'Hybrid'
     `monthly_fixed_charge` DECIMAL(10, 2) DEFAULT 0.00, -- Applicable if charge_type is Fixed or Hybrid
     `rate_per_km` DECIMAL(10, 2) DEFAULT 0.00,          -- Applicable if charge_type is Km_Basis or Hybrid
@@ -87,13 +87,13 @@ CREATE TABLE IF NOT EXISTS `vnd_vendor_agreement` (
 
 -- This table will have rate detail per product Or per service
 CREATE TABLE IF NOT EXISTS `vnd_vendor_price_detail` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `vendor_agreement_id` BIGINT UNSIGNED NOT NULL,  -- fk to vnd_vendor_agreement
-    `vehicle_id` BIGINT UNSIGNED NULL, -- fk to tpt_vehicle
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `vendor_agreement_id` INT UNSIGNED NOT NULL,  -- fk to vnd_vendor_agreement
+    `vehicle_id` INT UNSIGNED NULL, -- fk to tpt_vehicle
     `monthly_billing_date` DATE NOT NULL,  -- Billing date of every month
     `agreement_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (agreement will be uploaded in sys.media table)
 
-    `agreement_type_id` BIGINT UNSIGNED NOT NULL,   -- fk to sys_dropdown_table ('SERVICE','VEHICLE','PRODUCT','SUPPORT','OTHERS')
+    `agreement_type_id` INT UNSIGNED NOT NULL,   -- fk to sys_dropdown_table ('SERVICE','VEHICLE','PRODUCT','SUPPORT','OTHERS')
     `agreement_ref_no` VARCHAR(50) DEFAULT NULL,    -- Reference number of the physical agreement
     `agreement_start_date` DATE NOT NULL,
     `agreement_end_date` DATE NOT NULL,
@@ -106,10 +106,10 @@ CREATE TABLE IF NOT EXISTS `vnd_vendor_price_detail` (
 -- VENDOR BILLING (New in v2.0)
 -- =======================================================================
 CREATE TABLE IF NOT EXISTS `sch_vendor_monthly_bill` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `vendor_id` BIGINT UNSIGNED NOT NULL,  -- fk to tpt_vendor
-    `vehicle_id` BIGINT UNSIGNED NOT NULL, -- fk to tpt_vehicle
-    `agreement_id` BIGINT UNSIGNED NOT NULL,      -- FK to tpt_vendor_vehicle_agreement
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `vendor_id` INT UNSIGNED NOT NULL,  -- fk to tpt_vendor
+    `vehicle_id` INT UNSIGNED NOT NULL, -- fk to tpt_vehicle
+    `agreement_id` INT UNSIGNED NOT NULL,      -- FK to tpt_vendor_vehicle_agreement
     `billing_month_year` DATE NOT NULL,           -- The first day of the month being billed (e.g., '2025-12-01')
     `opening_odometer` DECIMAL(10, 2) DEFAULT 0.00, -- Opening odometer reading at the start of the billing month
     `closing_odometer` DECIMAL(10, 2) DEFAULT 0.00, -- Closing odometer reading at the end of the billing month
@@ -132,7 +132,7 @@ CREATE TABLE IF NOT EXISTS `sch_vendor_monthly_bill` (
     `vendor_invoice_no` VARCHAR(50) DEFAULT NULL,
     `due_date` DATE DEFAULT NULL,       -- This is Payment Due date (will be calcultaed by adding credit_days in monthly_billing_date)
     `remarks` VARCHAR(512) DEFAULT NULL,
-    `status` BIGINT UNSIGNED NOT NULL DEFAULT 1,  -- FK to sys_dropdown_table e.g. Generated, Approved, Paid, Partial, Cancelled    
+    `status` INT UNSIGNED NOT NULL DEFAULT 1,  -- FK to sys_dropdown_table e.g. Generated, Approved, Paid, Partial, Cancelled    
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at` TIMESTAMP NULL DEFAULT NULL,
@@ -146,16 +146,16 @@ CREATE TABLE IF NOT EXISTS `sch_vendor_monthly_bill` (
     -- 2. total_km_run can be derived from tpt_vehicle_fuel_log or tpt_daily_vehicle_inspection_log if odometer is tracked there.
 
 CREATE TABLE IF NOT EXISTS `vnd_vendor_bill_due_for_payment` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `vendor_bill_id` BIGINT UNSIGNED NOT NULL,           -- FK to tpt_vendor_monthly_bill_log
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `vendor_bill_id` INT UNSIGNED NOT NULL,           -- FK to tpt_vendor_monthly_bill_log
     `payment_date` DATE NOT NULL,
     `amount_paid` DECIMAL(12, 2) NOT NULL,
     `currency` CHAR(3) NOT NULL DEFAULT 'INR',
-    `payment_mode` BIGINT UNSIGNED NOT NULL,      -- FK to sys_dropdown_table (Cheque, Bank Transfer, etc.)
+    `payment_mode` INT UNSIGNED NOT NULL,      -- FK to sys_dropdown_table (Cheque, Bank Transfer, etc.)
     `transaction_reference` VARCHAR(100) DEFAULT NULL, -- Cheque No, Transaction ID
     `payment_status` VARCHAR(20) NOT NULL DEFAULT 'SUCCESS',  -- use dropdown table ('INITIATED','SUCCESS','FAILED')
     `payment_reconciled` tinyint(1) NOT NULL DEFAULT '0',
-    `paid_by` BIGINT UNSIGNED DEFAULT NULL,       -- FK to sys_users
+    `paid_by` INT UNSIGNED DEFAULT NULL,       -- FK to sys_users
     `remarks` VARCHAR(512) DEFAULT NULL,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -169,16 +169,16 @@ CREATE TABLE IF NOT EXISTS `vnd_vendor_bill_due_for_payment` (
 -- VENDOR PAYMENTS (New in v2.0)
 -- =======================================================================
 CREATE TABLE IF NOT EXISTS `tsch_vendor_bill_payment` (
-    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `vendor_bill_id` BIGINT UNSIGNED NOT NULL,           -- FK to tpt_vendor_monthly_bill_log
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `vendor_bill_id` INT UNSIGNED NOT NULL,           -- FK to tpt_vendor_monthly_bill_log
     `payment_date` DATE NOT NULL,
     `amount_paid` DECIMAL(12, 2) NOT NULL,
     `currency` CHAR(3) NOT NULL DEFAULT 'INR',
-    `payment_mode` BIGINT UNSIGNED NOT NULL,      -- FK to sys_dropdown_table (Cheque, Bank Transfer, etc.)
+    `payment_mode` INT UNSIGNED NOT NULL,      -- FK to sys_dropdown_table (Cheque, Bank Transfer, etc.)
     `transaction_reference` VARCHAR(100) DEFAULT NULL, -- Cheque No, Transaction ID
     `payment_status` VARCHAR(20) NOT NULL DEFAULT 'SUCCESS',  -- use dropdown table ('INITIATED','SUCCESS','FAILED')
     `payment_reconciled` tinyint(1) NOT NULL DEFAULT '0',
-    `paid_by` BIGINT UNSIGNED DEFAULT NULL,       -- FK to sys_users
+    `paid_by` INT UNSIGNED DEFAULT NULL,       -- FK to sys_users
     `remarks` VARCHAR(512) DEFAULT NULL,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -189,11 +189,11 @@ CREATE TABLE IF NOT EXISTS `tsch_vendor_bill_payment` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `sch_vendor_billing_audit_logs` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  `vendor_bill_id` BIGINT UNSIGNED NOT NULL,        -- fk to (bil_tenant_invoices)
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `vendor_bill_id` INT UNSIGNED NOT NULL,        -- fk to (bil_tenant_invoices)
   `action_date` TIMESTAMP not NULL,
   `action_type` VARCHAR(20) NOT NULL DEFAULT 'PENDING',  -- use dropdown table ('Not Billed','Bill Generated','Overdue','Notice Sent','Fully Paid')
-  `performed_by` BIGINT UNSIGNED DEFAULT NULL,           -- which user perform the ation
+  `performed_by` INT UNSIGNED DEFAULT NULL,           -- which user perform the ation
   `event_info` JSON DEFAULT NULL,
   `notes` VARCHAR(500) DEFAULT NULL,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

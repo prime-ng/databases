@@ -30,23 +30,23 @@ SET sql_mode = 'STRICT_ALL_TABLES';
 
 -- 2.1 The Core Question Table
 CREATE TABLE IF NOT EXISTS `lms_question_bank` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `start_academic_session_id` BIGINT UNSIGNED DEFAULT NULL, -- Optional: If question is tied to a specific year curriculum
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `start_academic_session_id` INT UNSIGNED DEFAULT NULL, -- Optional: If question is tied to a specific year curriculum
     `class_id` INT UNSIGNED NOT NULL,                     -- FK to sch_classes
-    `subject_id` BIGINT UNSIGNED NOT NULL,                -- FK to sch_subjects
+    `subject_id` INT UNSIGNED NOT NULL,                -- FK to sch_subjects
     -- Topic Hierarchy (Nullable as questions might be generic to a subject, but recommended)
-    `topic_id` BIGINT UNSIGNED DEFAULT NULL,              -- FK to syllabus_topics (from Syllabus Module)
-    `sub_topic_id` BIGINT UNSIGNED DEFAULT NULL,          
+    `topic_id` INT UNSIGNED DEFAULT NULL,              -- FK to syllabus_topics (from Syllabus Module)
+    `sub_topic_id` INT UNSIGNED DEFAULT NULL,          
     
     -- Metadata / Properties
-    `question_type_id` BIGINT UNSIGNED NOT NULL,          -- FK to sys_dropdown_table (MCQ, Text, etc.)
-    `difficulty_level_id` BIGINT UNSIGNED DEFAULT NULL,   -- FK to sys_dropdown_table
-    `blooms_taxonomy_id` BIGINT UNSIGNED DEFAULT NULL,    -- FK to sys_dropdown_table
-    `cognitive_skill_id` BIGINT UNSIGNED DEFAULT NULL,    -- FK to sys_dropdown_table
+    `question_type_id` INT UNSIGNED NOT NULL,          -- FK to sys_dropdown_table (MCQ, Text, etc.)
+    `difficulty_level_id` INT UNSIGNED DEFAULT NULL,   -- FK to sys_dropdown_table
+    `blooms_taxonomy_id` INT UNSIGNED DEFAULT NULL,    -- FK to sys_dropdown_table
+    `cognitive_skill_id` INT UNSIGNED DEFAULT NULL,    -- FK to sys_dropdown_table
     
     -- Content
     `question_stem` LONGTEXT NOT NULL,                    -- The actual question text (supports HTML/Markdown/LaTeX)
-    `question_media_id` BIGINT UNSIGNED DEFAULT NULL,     -- FK to sys_media (if image/diagram is part of question)
+    `question_media_id` INT UNSIGNED DEFAULT NULL,     -- FK to sys_media (if image/diagram is part of question)
     `model_answer` LONGTEXT DEFAULT NULL,                 -- For descriptive questions or reference
     `default_marks` DECIMAL(5,2) NOT NULL DEFAULT 1.00,
     `negative_marks` DECIMAL(5,2) DEFAULT 0.00,
@@ -55,7 +55,7 @@ CREATE TABLE IF NOT EXISTS `lms_question_bank` (
     -- Source & Usage
     `source_reference` VARCHAR(255) DEFAULT NULL,         -- e.g., "NCERT Math Book Pg 45"
     `is_global` TINYINT(1) NOT NULL DEFAULT 0,            -- 0=School Specific, 1=PrimeGurukul Global Library
-    `status_id` BIGINT UNSIGNED NOT NULL,                 -- FK to sys_dropdown_table (Draft, Approved)
+    `status_id` INT UNSIGNED NOT NULL,                 -- FK to sys_dropdown_table (Draft, Approved)
     
     -- Stats Attributes (Updated via Jobs)
     `stat_difficulty_index` DECIMAL(5,2) DEFAULT NULL,    -- 0.00 to 1.00
@@ -65,8 +65,8 @@ CREATE TABLE IF NOT EXISTS `lms_question_bank` (
 
     -- Common Fields
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-    `created_by` BIGINT UNSIGNED DEFAULT NULL,            -- FK to sys_users (Author)
-    `updated_by` BIGINT UNSIGNED DEFAULT NULL,
+    `created_by` INT UNSIGNED DEFAULT NULL,            -- FK to sys_users (Author)
+    `updated_by` INT UNSIGNED DEFAULT NULL,
     `created_at` TIMESTAMP NULL DEFAULT NULL,
     `updated_at` TIMESTAMP NULL DEFAULT NULL,
     `deleted_at` TIMESTAMP NULL DEFAULT NULL,
@@ -82,10 +82,10 @@ CREATE TABLE IF NOT EXISTS `lms_question_bank` (
 
 -- 2.2 Options for Objective Questions (MCQ, Checkbox, etc.)
 CREATE TABLE IF NOT EXISTS `lms_question_options` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `question_id` BIGINT UNSIGNED NOT NULL,
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `question_id` INT UNSIGNED NOT NULL,
     `option_text` LONGTEXT NOT NULL,                      -- HTML/Text/Markdown
-    `option_media_id` BIGINT UNSIGNED DEFAULT NULL,       -- FK to sys_media
+    `option_media_id` INT UNSIGNED DEFAULT NULL,       -- FK to sys_media
     `is_correct` TINYINT(1) NOT NULL DEFAULT 0,
     `explanation` TEXT DEFAULT NULL,                      -- Why this option is correct/incorrect
     `ordinal` TINYINT UNSIGNED NOT NULL DEFAULT 0,        -- Display order
@@ -102,10 +102,10 @@ CREATE TABLE IF NOT EXISTS `lms_question_options` (
 
 -- 2.3 Review Log for Questions (Workflow)
 CREATE TABLE IF NOT EXISTS `lms_question_reviews` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `question_id` BIGINT UNSIGNED NOT NULL,
-    `reviewer_id` BIGINT UNSIGNED NOT NULL,               -- FK to sys_users
-    `status_id` BIGINT UNSIGNED NOT NULL,                 -- FK to sys_dropdown_table (Approved, Rejected)
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `question_id` INT UNSIGNED NOT NULL,
+    `reviewer_id` INT UNSIGNED NOT NULL,               -- FK to sys_users
+    `status_id` INT UNSIGNED NOT NULL,                 -- FK to sys_dropdown_table (Approved, Rejected)
     `comments` TEXT DEFAULT NULL,
     `reviewed_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     
@@ -125,31 +125,31 @@ CREATE TABLE IF NOT EXISTS `lms_question_reviews` (
 
 -- 3.1 Homework Master
 CREATE TABLE IF NOT EXISTS `lms_homework` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `academic_session_id` BIGINT UNSIGNED NOT NULL,       -- FK to glb_academic_sessions (Context)
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `academic_session_id` INT UNSIGNED NOT NULL,       -- FK to glb_academic_sessions (Context)
     `title` VARCHAR(255) NOT NULL,
     `description` LONGTEXT DEFAULT NULL,
     
     -- Targeting
     `class_id` INT UNSIGNED NOT NULL,                     -- FK
     `section_id` INT UNSIGNED DEFAULT NULL,               -- Nullable (if assigned to entire class)
-    `subject_id` BIGINT UNSIGNED NOT NULL,                -- FK
-    `topic_id` BIGINT UNSIGNED DEFAULT NULL,              -- FK (Trigger source)
+    `subject_id` INT UNSIGNED NOT NULL,                -- FK
+    `topic_id` INT UNSIGNED DEFAULT NULL,              -- FK (Trigger source)
     
     -- Configuration
-    `submission_format_id` BIGINT UNSIGNED NOT NULL,      -- FK to sys_dropdown_table (Text, File, Hybrid)
+    `submission_format_id` INT UNSIGNED NOT NULL,      -- FK to sys_dropdown_table (Text, File, Hybrid)
     `is_gradable` TINYINT(1) NOT NULL DEFAULT 1,
     `max_marks` DECIMAL(5,2) DEFAULT NULL,
     `due_date` DATETIME DEFAULT NULL,
     `auto_publish_on` DATETIME DEFAULT NULL,              -- Scheduler
-    `difficulty_tag_id` BIGINT UNSIGNED DEFAULT NULL,     -- FK to sys_dropdown_table
+    `difficulty_tag_id` INT UNSIGNED DEFAULT NULL,     -- FK to sys_dropdown_table
     
     -- Status
-    `status_id` BIGINT UNSIGNED NOT NULL,                 -- Published, Draft, Closed
+    `status_id` INT UNSIGNED NOT NULL,                 -- Published, Draft, Closed
     
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-    `created_by` BIGINT UNSIGNED NOT NULL,
-    `updated_by` BIGINT UNSIGNED DEFAULT NULL,
+    `created_by` INT UNSIGNED NOT NULL,
+    `updated_by` INT UNSIGNED DEFAULT NULL,
     `created_at` TIMESTAMP NULL DEFAULT NULL,
     `updated_at` TIMESTAMP NULL DEFAULT NULL,
     `deleted_at` TIMESTAMP NULL DEFAULT NULL,
@@ -163,18 +163,18 @@ CREATE TABLE IF NOT EXISTS `lms_homework` (
 
 -- 3.2 Quiz / Quest / Exam Master (The "Test" Engine)
 CREATE TABLE IF NOT EXISTS `lms_assessments` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `assessment_category_id` BIGINT UNSIGNED NOT NULL,    -- FK to sys_dropdown_table (QUIZ, QUEST, EXAM, OLYMPIAD)
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `assessment_category_id` INT UNSIGNED NOT NULL,    -- FK to sys_dropdown_table (QUIZ, QUEST, EXAM, OLYMPIAD)
     
     `title` VARCHAR(255) NOT NULL,
     `instructions` LONGTEXT DEFAULT NULL,
     
     -- Targeting
     `class_id` INT UNSIGNED NOT NULL,
-    `subject_id` BIGINT UNSIGNED NOT NULL,
+    `subject_id` INT UNSIGNED NOT NULL,
     
     -- Configuration
-    `mode_id` BIGINT UNSIGNED NOT NULL,                   -- FK to sys_dropdown_table (ONLINE, OFFLINE, HYBRID)
+    `mode_id` INT UNSIGNED NOT NULL,                   -- FK to sys_dropdown_table (ONLINE, OFFLINE, HYBRID)
     `duration_minutes` INT UNSIGNED DEFAULT NULL,         -- NULL = No limit
     `total_marks` DECIMAL(6,2) NOT NULL DEFAULT 0.00,
     `passing_percentage` DECIMAL(5,2) DEFAULT 33.00,
@@ -192,11 +192,11 @@ CREATE TABLE IF NOT EXISTS `lms_assessments` (
     `shuffle_options` TINYINT(1) DEFAULT 0,
     `camera_proctoring_required` TINYINT(1) DEFAULT 0,
     
-    `status_id` BIGINT UNSIGNED NOT NULL,                 -- Draft, Published
+    `status_id` INT UNSIGNED NOT NULL,                 -- Draft, Published
     
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-    `created_by` BIGINT UNSIGNED NOT NULL,
-    `updated_by` BIGINT UNSIGNED DEFAULT NULL,
+    `created_by` INT UNSIGNED NOT NULL,
+    `updated_by` INT UNSIGNED DEFAULT NULL,
     `created_at` TIMESTAMP NULL DEFAULT NULL,
     `updated_at` TIMESTAMP NULL DEFAULT NULL,
     `deleted_at` TIMESTAMP NULL DEFAULT NULL,
@@ -209,9 +209,9 @@ CREATE TABLE IF NOT EXISTS `lms_assessments` (
 
 -- 3.3 Assessment Question Mapping (Which questions are in which test)
 CREATE TABLE IF NOT EXISTS `lms_assessment_questions` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `assessment_id` BIGINT UNSIGNED NOT NULL,
-    `question_id` BIGINT UNSIGNED NOT NULL,
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `assessment_id` INT UNSIGNED NOT NULL,
+    `question_id` INT UNSIGNED NOT NULL,
     `section_name` VARCHAR(100) DEFAULT 'Section A',    -- Grouping within exam
     `custom_marks` DECIMAL(5,2) DEFAULT NULL,           -- Override default marks if needed
     `ordinal` INT UNSIGNED NOT NULL DEFAULT 0,
@@ -229,17 +229,17 @@ CREATE TABLE IF NOT EXISTS `lms_assessment_questions` (
 
 -- 4.1 Student Homework Submission
 CREATE TABLE IF NOT EXISTS `lms_homework_submissions` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `homework_id` BIGINT UNSIGNED NOT NULL,
-    `student_id` BIGINT UNSIGNED NOT NULL,                -- FK to sys_users (Role: Student)
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `homework_id` INT UNSIGNED NOT NULL,
+    `student_id` INT UNSIGNED NOT NULL,                -- FK to sys_users (Role: Student)
     
     `submitted_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
     `text_content` LONGTEXT DEFAULT NULL,
-    `attachment_media_id` BIGINT UNSIGNED DEFAULT NULL,   -- FK to sys_media
+    `attachment_media_id` INT UNSIGNED DEFAULT NULL,   -- FK to sys_media
     
     `teacher_feedback` TEXT DEFAULT NULL,
     `marks_obtained` DECIMAL(5,2) DEFAULT NULL,
-    `submission_status_id` BIGINT UNSIGNED NOT NULL,      -- Submitted, Graded, Resubmit Asked
+    `submission_status_id` INT UNSIGNED NOT NULL,      -- Submitted, Graded, Resubmit Asked
     
     `is_late_submission` TINYINT(1) DEFAULT 0,
     
@@ -256,9 +256,9 @@ CREATE TABLE IF NOT EXISTS `lms_homework_submissions` (
 
 -- 4.2 Assessment Attempt Header (The "Session")
 CREATE TABLE IF NOT EXISTS `lms_student_attempts` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `assessment_id` BIGINT UNSIGNED NOT NULL,
-    `student_id` BIGINT UNSIGNED NOT NULL,
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `assessment_id` INT UNSIGNED NOT NULL,
+    `student_id` INT UNSIGNED NOT NULL,
     
     `attempt_number` TINYINT UNSIGNED DEFAULT 1,
     `started_at` DATETIME NOT NULL,
@@ -268,7 +268,7 @@ CREATE TABLE IF NOT EXISTS `lms_student_attempts` (
     `total_score` DECIMAL(6,2) DEFAULT 0.00,
     `percentage` DECIMAL(5,2) DEFAULT 0.00,
     `is_passed` TINYINT(1) DEFAULT 0,
-    `attempt_status_id` BIGINT UNSIGNED NOT NULL,         -- In Progress, Completed, Abandoned, Time Up
+    `attempt_status_id` INT UNSIGNED NOT NULL,         -- In Progress, Completed, Abandoned, Time Up
     
     -- Analytics Summary
     `correct_count` INT UNSIGNED DEFAULT 0,
@@ -287,11 +287,11 @@ CREATE TABLE IF NOT EXISTS `lms_student_attempts` (
 
 -- 4.3 Question-Level Response Log (Granular Data)
 CREATE TABLE IF NOT EXISTS `lms_attempt_answers` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `attempt_id` BIGINT UNSIGNED NOT NULL,
-    `question_id` BIGINT UNSIGNED NOT NULL,
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `attempt_id` INT UNSIGNED NOT NULL,
+    `question_id` INT UNSIGNED NOT NULL,
     
-    `selected_option_id` BIGINT UNSIGNED DEFAULT NULL,    -- For MCQ
+    `selected_option_id` INT UNSIGNED DEFAULT NULL,    -- For MCQ
     `text_answer` LONGTEXT DEFAULT NULL,                  -- For Descriptive/Fill Blanks
     
     `is_marked_for_review` TINYINT(1) DEFAULT 0,          -- Flagged by student
@@ -300,7 +300,7 @@ CREATE TABLE IF NOT EXISTS `lms_attempt_answers` (
     
     `is_correct` TINYINT(1) DEFAULT NULL,                 -- 1=Correct, 0=Wrong, NULL=Not Evaluated yet
     `marks_awarded` DECIMAL(5,2) DEFAULT 0.00,
-    `manual_correction_by` BIGINT UNSIGNED DEFAULT NULL,  -- Teacher ID if manually corrected
+    `manual_correction_by` INT UNSIGNED DEFAULT NULL,  -- Teacher ID if manually corrected
     
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -319,7 +319,7 @@ CREATE TABLE IF NOT EXISTS `lms_attempt_answers` (
 
 -- 5.1 Performance Categories (Topper, Average, Remedial)
 CREATE TABLE IF NOT EXISTS `lms_performance_bands` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `band_name` VARCHAR(50) NOT NULL,                     -- e.g. "Distinction", "Needs Improvement"
     `min_percentage` DECIMAL(5,2) NOT NULL,
     `max_percentage` DECIMAL(5,2) NOT NULL,

@@ -2,9 +2,9 @@
 -- Tenant Invoicing
 -- ----------------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `bil_tenant_invoices` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  `tenant_id` BIGINT UNSIGNED NOT NULL,               -- old name 'org_id'
-  `tenant_plan_id` BIGINT UNSIGNED NOT NULL,          -- old Name 'organization_plan_id'
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `tenant_id` INT UNSIGNED NOT NULL,               -- old name 'org_id'
+  `tenant_plan_id` INT UNSIGNED NOT NULL,          -- old Name 'organization_plan_id'
   `billing_cycle_id` SMALLINT UNSIGNED NOT NULL,      -- FK
   `invoice_no` VARCHAR(50) NOT NULL,                  -- Should be Auto-Generated
   `invoice_date` DATE NOT NULL,                       -- Invoice Date will always be Next Day to billing_end_date
@@ -51,17 +51,17 @@ CREATE TABLE IF NOT EXISTS `bil_tenant_invoices` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `bil_tenant_invoicing_modules_jnt` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  `tenant_invoice_id` BIGINT UNSIGNED NOT NULL,   -- fk to (bil_tenant_invoices)
-  `module_id` BIGINT UNSIGNED DEFAULT NULL,      -- FK
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `tenant_invoice_id` INT UNSIGNED NOT NULL,   -- fk to (bil_tenant_invoices)
+  `module_id` INT UNSIGNED DEFAULT NULL,      -- FK
   UNIQUE KEY `uq_tenantInvModule_orgInvId_moduleId` (`tenant_invoicing_id`, `module_id`),
   CONSTRAINT `fk_tenantInvModule_invoicingId` FOREIGN KEY (`tenant_invoice_id`) REFERENCES `bil_tenant_invoice` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_tenantInvModule_moduleId` FOREIGN KEY (`module_id`) REFERENCES `sys_modules` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `bil_tenant_invoicing_payments` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  `tenant_invoice_id` BIGINT UNSIGNED NOT NULL,    -- fk to (bil_tenant_invoices)
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `tenant_invoice_id` INT UNSIGNED NOT NULL,    -- fk to (bil_tenant_invoices)
   `payment_date` DATE NOT NULL,
   `transaction_id` VARCHAR(100) DEFAULT NULL,
   `mode` VARCHAR(20) NOT NULL DEFAULT 'ONLINE',      -- use dropdown table ('ONLINE','BANK_TRANSFER','CASH','CHEQUE')
@@ -80,11 +80,11 @@ CREATE TABLE IF NOT EXISTS `bil_tenant_invoicing_payments` (
 
 -- Note - Below table will have multiple records for every billing. 1 Record for every action.
 CREATE TABLE IF NOT EXISTS `bil_tenant_invoicing_audit_logs` (
-  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  `tenant_invoicing_id` BIGINT UNSIGNED NOT NULL,        -- fk to (bil_tenant_invoices)
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `tenant_invoicing_id` INT UNSIGNED NOT NULL,        -- fk to (bil_tenant_invoices)
   `action_date` TIMESTAMP not NULL,
   `action_type` VARCHAR(20) NOT NULL DEFAULT 'PENDING',  -- use dropdown table ('Not Billed','Bill Generated','Overdue','Notice Sent','Fully Paid')
-  `performed_by` BIGINT UNSIGNED DEFAULT NULL,           -- which user perform the ation
+  `performed_by` INT UNSIGNED DEFAULT NULL,           -- which user perform the ation
   `event_info` JSON DEFAULT NULL,
   `notes` VARCHAR(500) DEFAULT NULL,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -114,8 +114,8 @@ CREATE TABLE IF NOT EXISTS `prm_billing_cycles` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `sys_modules` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `parent_id` bigint unsigned DEFAULT NULL,    -- fk to self
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
+  `parent_id` INT unsigned DEFAULT NULL,    -- fk to self
   `name` varchar(50) NOT NULL,
   `version` tinyint NOT NULL DEFAULT '1',
   `is_sub_module` tinyint(1) NOT NULL DEFAULT '0',    -- kept for CONSTRAINT `chk_isSubModule_parentId`
@@ -140,7 +140,7 @@ CREATE TABLE IF NOT EXISTS `sys_modules` (
 ) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `prm_plans` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
   `plan_code` varchar(20) NOT NULL,
   `version` int unsigned NOT NULL DEFAULT '0',
   `name` varchar(100) NOT NULL,
@@ -161,9 +161,9 @@ CREATE TABLE IF NOT EXISTS `prm_plans` (
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `prm_module_plan_jnt` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `plan_id` bigint unsigned NOT NULL,
-  `module_id` bigint unsigned NOT NULL,
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
+  `plan_id` INT unsigned NOT NULL,
+  `module_id` INT unsigned NOT NULL,
   `is_active` tinyint(1) unsigned NOT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
@@ -176,9 +176,9 @@ CREATE TABLE IF NOT EXISTS `prm_module_plan_jnt` (
 -- Tenant Subscription
 -- ----------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `prm_tenant_plan_jnt` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `tenant_id` bigint unsigned NOT NULL,             -- old name 'org_id'
-  `plan_id` bigint unsigned NOT NULL,
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
+  `tenant_id` INT unsigned NOT NULL,             -- old name 'org_id'
+  `plan_id` INT unsigned NOT NULL,
   `is_subscribed` tinyint(1) NOT NULL DEFAULT '1',
   `is_trial` tinyint(1) NOT NULL DEFAULT '0',
   `auto_renew` tinyint(1) NOT NULL DEFAULT '1',
@@ -195,8 +195,8 @@ CREATE TABLE IF NOT EXISTS `prm_tenant_plan_jnt` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `prm_tenant_plan_rates` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `tenant_plan_id` bigint unsigned NOT NULL,         -- Old name 'organization_plan_id'
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
+  `tenant_plan_id` INT unsigned NOT NULL,         -- Old name 'organization_plan_id'
   `start_date` date DEFAULT NULL,                    -- Plan Start Date
   `end_date` date DEFAULT NULL,                      -- Plan End Date
   `billing_cycle_id` SMALLINT UNSIGNED NOT NULL,
@@ -229,9 +229,9 @@ CREATE TABLE IF NOT EXISTS `prm_tenant_plan_rates` (
 
 -- old name 'sch_module_organization_plan_jnt'
 CREATE TABLE IF NOT EXISTS `prm_tenant_plan_module_jnt` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `module_id` bigint unsigned NOT NULL,
-  `tenant_plan_id` bigint unsigned NOT NULL,     -- old name 'organization_plan_id'
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
+  `module_id` INT unsigned NOT NULL,
+  `tenant_plan_id` INT unsigned NOT NULL,     -- old name 'organization_plan_id'
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
@@ -242,15 +242,15 @@ CREATE TABLE IF NOT EXISTS `prm_tenant_plan_module_jnt` (
 
 -- This Table will have entries for the plan validity date range within the current Academic Session (1st April to 31st March).
 CREATE TABLE prm_tenant_plan_billing_schedule (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    tenant_plan_id BIGINT UNSIGNED NOT NULL,
-    tenant_id BIGINT UNSIGNED NOT NULL,
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    tenant_plan_id INT UNSIGNED NOT NULL,
+    tenant_id INT UNSIGNED NOT NULL,
     billing_cycle_id SMALLINT UNSIGNED NOT NULL,
     schedule_billing_date DATE NOT NULL,
     billing_start_date DATE NOT NULL,
     billing_end_date DATE NOT NULL,
     bill_generated TINYINT(1) NOT NULL DEFAULT 0,
-    generated_invoice_id BIGINT UNSIGNED DEFAULT NULL,  -- Fk to bil_tenant_invoices
+    generated_invoice_id INT UNSIGNED DEFAULT NULL,  -- Fk to bil_tenant_invoices
     is_active tinyint(1) NOT NULL DEFAULT '1',
     created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

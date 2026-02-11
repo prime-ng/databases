@@ -4,33 +4,33 @@
 -- ==============================================================================================================
 
 CREATE TABLE IF NOT EXISTS `lms_homework` (
-	`id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-	`academic_session_id` BIGINT UNSIGNED NOT NULL,       -- FK to sch_academic_sessions.id
+	`id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+	`academic_session_id` INT UNSIGNED NOT NULL,       -- FK to sch_academic_sessions.id
 	`class_id` INT UNSIGNED NOT NULL,                     -- FK to sch_classes.id
 	`section_id` INT UNSIGNED DEFAULT NULL,               -- FK to sch_sections.id (Null = All Sections)
-	`subject_id` BIGINT UNSIGNED NOT NULL,                -- FK to sch_subjects.id
+	`subject_id` INT UNSIGNED NOT NULL,                -- FK to sch_subjects.id
 	-- Content Alignment
-	`lesson_id` BIGINT UNSIGNED DEFAULT NULL,             -- FK to sch_lessons.id (Null = All Lessons)
-	`topic_id` BIGINT UNSIGNED DEFAULT NULL,              -- FK to slb_topics.id (Null = All Topics) It can be anything like Topic/Sub-Topic/Mini-Topic/Micro-Topic etc.
+	`lesson_id` INT UNSIGNED DEFAULT NULL,             -- FK to sch_lessons.id (Null = All Lessons)
+	`topic_id` INT UNSIGNED DEFAULT NULL,              -- FK to slb_topics.id (Null = All Topics) It can be anything like Topic/Sub-Topic/Mini-Topic/Micro-Topic etc.
 	`title` VARCHAR(255) NOT NULL,
 	`description` LONGTEXT NOT NULL,                      -- Supports HTML/Markdown
-	`submission_type_id` BIGINT UNSIGNED NOT NULL,        -- FK to sys_dropdown_table.id (TEXT, FILE, HYBRID, OFFLINE_CHECK)
+	`submission_type_id` INT UNSIGNED NOT NULL,        -- FK to sys_dropdown_table.id (TEXT, FILE, HYBRID, OFFLINE_CHECK)
 	-- Settings
 	`is_gradable` TINYINT(1) NOT NULL DEFAULT 1,          -- 1 = Gradable, 0 = Not Gradable
 	`max_marks` DECIMAL(5,2) DEFAULT NULL,                -- Maximum Marks
 	`passing_marks` DECIMAL(5,2) DEFAULT NULL,            -- Passing Marks
-	`difficulty_level_id` BIGINT UNSIGNED DEFAULT NULL,   -- FK to slb_complexity_level.id (EASY, MEDIUM, HARD)
+	`difficulty_level_id` INT UNSIGNED DEFAULT NULL,   -- FK to slb_complexity_level.id (EASY, MEDIUM, HARD)
 	-- Scheduling
 	`assign_date` DATETIME NOT NULL,
 	`due_date` DATETIME NOT NULL,
 	`allow_late_submission` TINYINT(1) DEFAULT 0,         -- 1 = Allow Late Submission, 0 = Not Allow Late Submission
 	`auto_publish_score` TINYINT(1) DEFAULT 0,            -- 1 = Auto Publish Score, 0 = Not Auto Publish Score
 	-- Auto-Release Logic
-	`release_condition_id` BIGINT UNSIGNED DEFAULT NULL,  -- FK to sys_dropdown.id (IMMEDIATE, ON_TOPIC_COMPLETE)    
-	`status_id` BIGINT UNSIGNED NOT NULL,                 -- FK to sys_dropdown.id (DRAFT, PUBLISHED, ARCHIVED)
+	`release_condition_id` INT UNSIGNED DEFAULT NULL,  -- FK to sys_dropdown.id (IMMEDIATE, ON_TOPIC_COMPLETE)    
+	`status_id` INT UNSIGNED NOT NULL,                 -- FK to sys_dropdown.id (DRAFT, PUBLISHED, ARCHIVED)
 	`is_active` TINYINT(1) DEFAULT 1,
-	`created_by` BIGINT UNSIGNED NOT NULL,
-	`updated_by` BIGINT UNSIGNED DEFAULT NULL,
+	`created_by` INT UNSIGNED NOT NULL,
+	`updated_by` INT UNSIGNED DEFAULT NULL,
 	`created_at` TIMESTAMP NULL DEFAULT NULL,
 	`updated_at` TIMESTAMP NULL DEFAULT NULL,
 	`deleted_at` TIMESTAMP NULL DEFAULT NULL,    
@@ -62,17 +62,17 @@ INSERT INTO  lms_homework (academic_session_id, class_id, section_id, subject_id
 
 -- 2.1 Homework Submissions
 CREATE TABLE IF NOT EXISTS `lms_homework_submissions` (
-	`id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-	`homework_id` BIGINT UNSIGNED NOT NULL,
-	`student_id` BIGINT UNSIGNED NOT NULL,                -- FK to sys_users (Student)
+	`id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+	`homework_id` INT UNSIGNED NOT NULL,
+	`student_id` INT UNSIGNED NOT NULL,                -- FK to sys_users (Student)
 	`submitted_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
 	`submission_text` LONGTEXT DEFAULT NULL,              -- Student Submission Text
-	`attachment_media_id` BIGINT UNSIGNED DEFAULT NULL,   -- FK to sys_media (Handwritten scan)
+	`attachment_media_id` INT UNSIGNED DEFAULT NULL,   -- FK to sys_media (Handwritten scan)
 	-- Evaluation
-	`status_id` BIGINT UNSIGNED NOT NULL,                 -- FK to sys_dropdown_table (SUBMITTED, CHECKED, REJECTED)    
+	`status_id` INT UNSIGNED NOT NULL,                 -- FK to sys_dropdown_table (SUBMITTED, CHECKED, REJECTED)    
 	`marks_obtained` DECIMAL(5,2) DEFAULT NULL,          -- Obtained Marks
 	`teacher_feedback` TEXT DEFAULT NULL,                 -- Teacher Feedback
-	`graded_by` BIGINT UNSIGNED DEFAULT NULL,             -- Graded By
+	`graded_by` INT UNSIGNED DEFAULT NULL,             -- Graded By
 	`graded_at` DATETIME DEFAULT NULL,                    -- Graded At
 	`is_late` TINYINT(1) DEFAULT 0,                      -- Is Late
 	-- Metadata
