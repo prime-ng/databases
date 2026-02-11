@@ -135,33 +135,99 @@ Get: $Academic_term_end_date [sch_academic_term.end_date]
    [sch_teacher_capabilities.effective_to] >= [$Academic_term_end_date] AND
    [sch_teacher_capabilities.is_active] = 1
 
+## 3. Requirement Consolidation [tt_requirement_consolidation]
+
+### 3.1 Fill [tt_requirement_consolidation]
+-------------------------------------------
+       
+try {
+   DB::transaction(function () use ($academicTermId, $timetableTypeId) {
+
+      // Step 1: Insert from tt_class_requirement_groups (The "Main" Groups)
+      // -------------------------------------------------------------------
+      DB::table('tt_requirement_consolidation')->insertUsing([
+            'class_requirement_group_id', 'class_id', 'section_id', 'subject_id', 
+            'study_format_id', 'subject_type_id', 'subject_study_format_id', 
+            'class_house_room_id', 'student_count', 'eligible_teacher_count',
+            'is_compulsory', 'required_weekly_periods', 'min_periods_per_week', 
+            'max_periods_per_week', 'max_per_day', 'min_per_day', 
+            'min_gap_between_periods', 'allow_consecutive_periods', 
+            'max_consecutive_periods', 'class_priority_score', 
+            'compulsory_specific_room_type', 'required_room_type_id', 'required_room_id',
+            'academic_term_id', 'timetable_type_id', 'is_active'
+        ], function ($query) use ($academic_term_id, $timetable_type_id, $isActive) {
+            $query->select([
+                'g.id', 'g.class_id', 'g.section_id', 'g.subject_id',
+                'g.study_format_id', 'g.subject_type_id', 'g.subject_study_format_id',
+                'g.class_house_room_id', 'g.student_count', 'g.eligible_teacher_count',
+                'j.is_compulsory', 'j.required_weekly_periods', 'j.min_weekly_periods',
+                'j.max_weekly_periods', 'j.max_daily_periods', 'j.min_daily_periods',
+                'j.min_gap_between_periods', 'j.allow_consecutive_periods',
+                'j.max_consecutive_periods', 'j.priority_score',
+                'j.compulsory_specific_room_type', 'j.required_room_type_id', 'j.required_room_id',
+                DB::raw("$academic_term_id"), 
+                DB::raw("$timetable_type_id"),
+                DB::raw("$isActive")
+            ])
+         ->from('tt_class_requirement_groups as g')
+         ->join('sch_class_groups_jnt as j', 'g.class_group_id', '=', 'j.id')
+         ->whereNull('g.deleted_at');
+      });
+
+      // Step 2: Insert from tt_class_requirement_subgroups
+      // --------------------------------------------------
+      DB::table('tt_requirement_consolidation')->insertUsing([
+            'class_requirement_subgroup_id', 'class_id', 'section_id', 'subject_id', 
+            'study_format_id', 'subject_type_id', 'subject_study_format_id', 
+            'class_house_room_id', 'student_count', 'eligible_teacher_count',
+            'is_compulsory', 'required_weekly_periods', 'min_periods_per_week', 
+            'max_periods_per_week', 'max_per_day', 'min_per_day', 
+            'min_gap_between_periods', 'allow_consecutive_periods', 
+            'max_consecutive_periods', 'class_priority_score', 
+            'compulsory_specific_room_type', 'required_room_type_id', 'required_room_id',
+            'is_shared_across_sections', 'is_shared_across_classes',
+            'academic_term_id', 'timetable_type_id', 'is_active'
+         ], function ($query) use ($academic_term_id, $timetable_type_id, $isActive) {
+            $query->select([
+                's.id', 's.class_id', 's.section_id', 's.subject_id',
+                's.study_format_id', 's.subject_type_id', 's.subject_study_format_id',
+                's.class_house_room_id', 's.student_count', 's.eligible_teacher_count',
+                'j.is_compulsory', 'j.required_weekly_periods', 'j.min_weekly_periods',
+                'j.max_weekly_periods', 'j.max_daily_periods', 'j.min_daily_periods',
+                'j.min_gap_between_periods', 'j.allow_consecutive_periods',
+                'j.max_consecutive_periods', 'j.priority_score',
+                'j.compulsory_specific_room_type', 'j.required_room_type_id', 'j.required_room_id',
+                's.is_shared_across_sections', 's.is_shared_across_classes',
+                DB::raw("$academic_term_id"), 
+                DB::raw("$timetable_type_id"),
+                DB::raw("$isActive")
+            ])
+         ->from('tt_class_requirement_subgroups as s')
+         ->join('sch_class_groups_jnt as j', 's.class_group_id', '=', 'j.id')
+         ->whereNull('s.deleted_at');
+      });
+   });
+
+   return "Consolidation Successful";
+} catch (\Exception $e) {
+   return "Error: " . $e->getMessage();
+}
+   
+### 3.2 Fill Additional Parameters [tt_requirement_consolidation_details]
+-------------------------------------------------------------------------
+Make All Editable Fiedls available to the user for Modification AND
+Mannual Entry for - [`preferred_periods_json`], [`avoid_periods_json`], [`spread_evenly`]
+
+
 
 ----------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
 
+## 4. Timetable Resource Availability
 
-## 3. Requirement Consolidation [tt_requirement_consolidation]
-
-
-### 3.1 Fill [tt_requirement_consolidation]
--------------------------------------------
-Fill [tt_class_subject_groups.class_group_id] = [sch_class_groups_jnt.id]
-a. Check [is_compulsory]
-If True
-   Insert data into tt_requirement_consolidation
-Else
-   Insert data into tt_requirement_consolidation
-EndIf
-
-
-
-
-
-## 4. Teacher Assignment (tt_teacher_assignment)
-
-### 4.1 Fill tt_teacher_assignment
-------------------------------------
+### 4.1 Fill tt_teacher_availability (tt_teacher_availability)
+--------------------------------------------------------------
    a. Check [is_compulsory]
       If True
          Insert data into tt_teacher_assignment

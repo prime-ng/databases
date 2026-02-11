@@ -515,13 +515,11 @@ SET FOREIGN_KEY_CHECKS = 0;
     --             sch_subject_groups.section_id = tt_class_subject_subgroups.section_id
     --             sch_subject_group_subject_jnt.subject_study_format_id = tt_class_subject_subgroups.subject_study_format_id
 
-
-
   -- changed below Table name to - tt_requirement_consolidation from tt_class_group_requirement
   CREATE TABLE IF NOT EXISTS `tt_requirement_consolidation` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `class_group_id` INT UNSIGNED DEFAULT NULL,              -- FK to sch_class_groups_jnt.id
-    `class_subgroup_id` INT UNSIGNED DEFAULT NULL,           -- FK to tt_requirement_subgroups.id
+    `class_requirement_group_id` INT UNSIGNED DEFAULT NULL,              -- FK to sch_class_groups_jnt.id
+    `class_requirement_subgroup_id` INT UNSIGNED DEFAULT NULL,           -- FK to tt_requirement_subgroups.id
     `academic_term_id` INT UNSIGNED NOT NULL,                -- FK to tt_academic_term.id  -- This is the Term for which this timetable is being generated (New)
     `timetable_type_id` INT unsigned NOT NULL,               -- FK to tt_timetable_type.id
     -- Must Field to apply Constraints
@@ -531,6 +529,10 @@ SET FOREIGN_KEY_CHECKS = 0;
     `study_format_id` INT unsigned NOT NULL,                       -- FK to sch_study_formats.id. e.g SCI_LEC, SCI_LAB, COM_LEC, COM_OPT, etc.
     `subject_type_id` INT unsigned NOT NULL,                       -- FK to sch_subject_types.id. e.g MAJOR, MINOR, OPTIONAL, etc.
     `subject_study_format_id` INT unsigned NOT NULL,               -- FK to sch_study_formats.id. e.g SCI_LEC, SCI_LAB, COM_LEC, COM_OPT, etc.
+    -- Non-Editable (Fetched from 'tt_requirement_groups' & 'tt_class_requirement_subgroups')
+    `class_house_room_id` INT UNSIGNED NOT NULL,                 -- FK to 'sch_rooms' (Added new). (Fetch from sch_class_section_jnt)
+    `student_count` INT UNSIGNED DEFAULT NULL,                   -- Number of students in this subgroup
+    `eligible_teacher_count` INT UNSIGNED DEFAULT NULL,          -- Number of teachers available for this group (Will capture from Teachers profile)
     -- Editable Parameters before Timetable Generation (Fetching from sch_class_groups_jnt)
     `is_compulsory` TINYINT(1) NOT NULL DEFAULT 1,              -- Whether this subgroup is compulsory
     `required_weekly_periods` TINYINT UNSIGNED NOT NULL DEFAULT 1,       -- Total periods required per week for this Class Group (Class+{Section}+Subject+StudyFormat)
@@ -547,10 +549,6 @@ SET FOREIGN_KEY_CHECKS = 0;
     `spread_evenly` TINYINT(1) DEFAULT 1,                       -- Whether periods should be spread evenly (have 1 period everyday)
     `is_shared_across_sections` TINYINT(1) NOT NULL DEFAULT 0,  -- Whether this subgroup is shared across sections (Editable)
     `is_shared_across_classes` TINYINT(1) NOT NULL DEFAULT 0,   -- Whether this subgroup is shared across classes (Editable)
-    -- below 4 Fields Non-Editable (will be fetched from 'tt_requirement_groups' & 'tt_class_requirement_subgroups')
-    `class_house_room_id` INT UNSIGNED NOT NULL,                 -- FK to 'sch_rooms' (Added new). (Fetch from sch_class_section_jnt)
-    `student_count` INT UNSIGNED DEFAULT NULL,                   -- Number of students in this subgroup
-    `eligible_teacher_count` INT UNSIGNED DEFAULT NULL,          -- Number of teachers available for this group (Will capture from Teachers profile)
     -- Room Requirement
     `compulsory_specific_room_type` TINYINT(1) NOT NULL DEFAULT 0,       -- Whether specific room type is required (TRUE - if Specific Room Type is Must)
     `required_room_type_id` INT UNSIGNED NOT NULL,                       -- FK to sch_room_types.id (Required)

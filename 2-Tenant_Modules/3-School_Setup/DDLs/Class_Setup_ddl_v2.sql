@@ -197,7 +197,7 @@
   -- Conditions:
   -- There will be a Variable in 'sch_settings' table named (Subj_Group_will_be_used_for_all_sections_of_a_class)
   -- Remove above condition and make Scetion_id optional.
-
+  -- if 'required_room_type' is House Room, then 'required_room_id' will be ignored.
   -- Table 'sch_subject_groups' will be used to assign all subjects to the students
   CREATE TABLE IF NOT EXISTS `sch_subject_groups` (
     `id` INT unsigned NOT NULL AUTO_INCREMENT,
