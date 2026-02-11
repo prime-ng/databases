@@ -1,5 +1,21 @@
 # Smart Timetable Generation Process
 
+## Timetable Menu :
+1. Pre-Requisites
+2. Timetable Configuration
+3. Timetable Masters
+4. Timetable Requirement
+5. Timetable Resource Availability
+6. Timetable Constraint Engine
+7. Timetable Operations
+8. Timetable Generation
+9. Manual Refinement
+10. Report & Logs        --> (This include Audit & History)
+11. Timetable Review & Publish
+12. Substitute Management
+
+------------------------------------------------------------------------------------------------------------------
+
 When Start Timetable Generation process user will get dropdown to select - 
  - academic_term_id [sch_academic_term.term_code] where [sch_academic_term.is_active] = 1
  - Timetable Type [tt_timetable_type.code] where [tt_timetable_type.is_active] = 1
@@ -97,11 +113,6 @@ Get: $Academic_term_end_date [sch_academic_term.end_date]
    [sch_class_section_jnt.section_id] = [tt_class_subject_subgroups.section_id] AND
    [sch_class_section_jnt.is_active] = 1
 
-
-
-
-
-
  ### 2.7 Calculate EligibleTeachers Count [tt_class_requirement_groups.eligible_teacher_count]
  ---------------------------------------------------------------------------------------------
  update [tt_class_requirement_groups]
@@ -113,9 +124,25 @@ Get: $Academic_term_end_date [sch_academic_term.end_date]
    [sch_teacher_capabilities.effective_to] >= [$Academic_term_end_date] AND
    [sch_teacher_capabilities.is_active] = 1
 
+ ### 2.8 Calculate EligibleTeachers Count [tt_class_requirement_subgroups.eligible_teacher_count]
+ ---------------------------------------------------------------------------------------------
+ update [tt_class_requirement_subgroups]
+ set [eligible_teacher_count] = 
+ Get: count of [sch_teacher_capabilities.id] where 
+   [sch_teacher_capabilities.class_id] = [tt_class_requirement_subgroups.class_id] AND
+   [sch_teacher_capabilities.subject_study_format_id] = [tt_class_requirement_subgroups.subject_study_format_id] AND
+   [sch_teacher_capabilities.effective_from] <= [$Academic_term_start_date] AND
+   [sch_teacher_capabilities.effective_to] >= [$Academic_term_end_date] AND
+   [sch_teacher_capabilities.is_active] = 1
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
 
 
 ## 3. Requirement Consolidation [tt_requirement_consolidation]
+
 
 ### 3.1 Fill [tt_requirement_consolidation]
 -------------------------------------------

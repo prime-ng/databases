@@ -131,7 +131,6 @@ SET FOREIGN_KEY_CHECKS = 0;
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   COMMENT='Timetable generation algorithms and parameters';
 
-
 -- -------------------------------------------------
 --  SECTION 1: MASTER TABLES
 -- -------------------------------------------------
@@ -516,6 +515,8 @@ SET FOREIGN_KEY_CHECKS = 0;
     --             sch_subject_groups.section_id = tt_class_subject_subgroups.section_id
     --             sch_subject_group_subject_jnt.subject_study_format_id = tt_class_subject_subgroups.subject_study_format_id
 
+
+
   -- changed below Table name to - tt_requirement_consolidation from tt_class_group_requirement
   CREATE TABLE IF NOT EXISTS `tt_requirement_consolidation` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -530,7 +531,7 @@ SET FOREIGN_KEY_CHECKS = 0;
     `study_format_id` INT unsigned NOT NULL,                       -- FK to sch_study_formats.id. e.g SCI_LEC, SCI_LAB, COM_LEC, COM_OPT, etc.
     `subject_type_id` INT unsigned NOT NULL,                       -- FK to sch_subject_types.id. e.g MAJOR, MINOR, OPTIONAL, etc.
     `subject_study_format_id` INT unsigned NOT NULL,               -- FK to sch_study_formats.id. e.g SCI_LEC, SCI_LAB, COM_LEC, COM_OPT, etc.
-    -- Editable Parameters before Timetable Generation
+    -- Editable Parameters before Timetable Generation (Fetching from sch_class_groups_jnt)
     `is_compulsory` TINYINT(1) NOT NULL DEFAULT 1,              -- Whether this subgroup is compulsory
     `required_weekly_periods` TINYINT UNSIGNED NOT NULL DEFAULT 1,       -- Total periods required per week for this Class Group (Class+{Section}+Subject+StudyFormat)
     `min_periods_per_week` TINYINT UNSIGNED DEFAULT NULL,       -- Minimum periods required per week
@@ -541,17 +542,15 @@ SET FOREIGN_KEY_CHECKS = 0;
     `allow_consecutive_periods` TINYINT(1) NOT NULL DEFAULT 0,          -- Whether consecutive periods are allowed
     `max_consecutive_periods` TINYINT UNSIGNED DEFAULT 2,       -- Maximum consecutive periods
     `class_priority_score` TINYINT UNSIGNED DEFAULT NULL,       -- Priority Score from sch_class_group
-    -- Below 5 Info will be provided at Consolidation stage only
     `preferred_periods_json` JSON DEFAULT NULL,                 -- On Screen User will see Multiselection of Periods but it will be saved as JSON
     `avoid_periods_json` JSON DEFAULT NULL,                     -- On Screen User will see Multiselection of Periods but it will be saved as JSON
     `spread_evenly` TINYINT(1) DEFAULT 1,                       -- Whether periods should be spread evenly (have 1 period everyday)
     `is_shared_across_sections` TINYINT(1) NOT NULL DEFAULT 0,  -- Whether this subgroup is shared across sections (Editable)
     `is_shared_across_classes` TINYINT(1) NOT NULL DEFAULT 0,   -- Whether this subgroup is shared across classes (Editable)
-    -- below 4 Fields will be fetched from tt_requirement_groups table & tt_class_requirement_subgroups
-    `student_count` INT UNSIGNED DEFAULT NULL,                           -- Number of students in this subgroup
-    `eligible_teacher_count` INT UNSIGNED DEFAULT NULL,                  -- Number of teachers available for this group (Will capture from Teachers profile)
-    `is_shared_across_sections` TINYINT(1) NOT NULL DEFAULT 0,           -- Whether this subgroup is shared across sections
-    `is_shared_across_classes` TINYINT(1) NOT NULL DEFAULT 0,            -- Whether this subgroup is shared across classes
+    -- below 4 Fields Non-Editable (will be fetched from 'tt_requirement_groups' & 'tt_class_requirement_subgroups')
+    `class_house_room_id` INT UNSIGNED NOT NULL,                 -- FK to 'sch_rooms' (Added new). (Fetch from sch_class_section_jnt)
+    `student_count` INT UNSIGNED DEFAULT NULL,                   -- Number of students in this subgroup
+    `eligible_teacher_count` INT UNSIGNED DEFAULT NULL,          -- Number of teachers available for this group (Will capture from Teachers profile)
     -- Room Requirement
     `compulsory_specific_room_type` TINYINT(1) NOT NULL DEFAULT 0,       -- Whether specific room type is required (TRUE - if Specific Room Type is Must)
     `required_room_type_id` INT UNSIGNED NOT NULL,                       -- FK to sch_room_types.id (Required)
@@ -581,6 +580,33 @@ SET FOREIGN_KEY_CHECKS = 0;
     `class_id` INT unsigned NOT NULL,                 -- FK to sch_classes.id
     `section_id` INT unsigned NULL,                   -- FK to sch_sections.id
     `subject_study_format_id` INT unsigned NOT NULL,  -- FK to sch_study_formats.id. e.g SCI_LEC, SCI_LAB, COM_LEC, COM_OPT, etc.
+    -- From Teachers Capability (sch_teacher_capabilities)
+    `proficiency_percentage` TINYINT UNSIGNED DEFAULT NULL, -- 1–100
+    `teaching_experience_months` SMALLINT UNSIGNED DEFAULT NULL,
+    `is_primary_subject` TINYINT(1) NOT NULL DEFAULT 1,  -- 1=Yes, 0=No
+    `competancy_level` ENUM('Basic','Intermediate','Advanced','Expert') DEFAULT 'Basic',
+    `max_periods_daily` TINYINT UNSIGNED DEFAULT 6,
+    `min_periods_daily` TINYINT UNSIGNED DEFAULT 1,
+    `max_periods_weekly` TINYINT UNSIGNED DEFAULT 48,
+    `min_periods_weekly` TINYINT UNSIGNED DEFAULT 15,
+    `can_be_split_across_sections` TINYINT(1) DEFAULT 0,
+    `priority_weight` TINYINT UNSIGNED DEFAULT NULL,   -- manual / computed weight (1–10) (Even if teachers are available, how important is THIS activity to the school?)
+    `scarcity_index` TINYINT UNSIGNED DEFAULT NULL,    -- 1=abundant, 10=very rare
+    `is_hard_constraint` TINYINT(1) DEFAULT 0,         -- if true cannot be voilated e.g. Physics Lab teacher for Class 12
+    `allocation_strictness` ENUM('hard','medium','soft') DEFAULT 'medium', e.g. Senior Maths teacher - Hard, Preferred English teacher - Medium, Art / Sports / Activity - Soft
+    -- AI / HISTORICAL FEEDBACK
+    `historical_success_ratio` TINYINT UNSIGNED DEFAULT NULL, -- 1–100 (sessions_completed_without_change / total_sessions_allocated ) * 100)
+    `last_allocation_score` TINYINT UNSIGNED DEFAULT NULL,   -- last run score
+    -- GOVERNANCE & OVERRIDE
+    `override_priority` TINYINT UNSIGNED DEFAULT NULL, -- admin override
+    `override_reason` VARCHAR(255) DEFAULT NULL,
+    -- EFFECTIVITY & STATUS
+    `effective_from` DATE DEFAULT NULL,
+    `effective_to` DATE DEFAULT NULL,
+    -- Calculated Ratio
+    `eligible_teacher_count` INT UNSIGNED DEFAULT NULL,               -- Number of teachers available for this group (Will capture from Teachers profile)
+
+
     -- Availability Count
     `day1_available_period_count` TINYINT UNSIGNED NOT NULL,  -- 1-8 How many slots that Class+section have on Day 1
     `day2_available_period_count` TINYINT UNSIGNED NOT NULL,  -- 1-8 How many slots that Class+section have on Day 2
@@ -595,7 +621,6 @@ SET FOREIGN_KEY_CHECKS = 0;
     `teaching_experience_months` SMALLINT UNSIGNED DEFAULT NULL,
     `is_primary_subject` TINYINT(1) NOT NULL DEFAULT 1,  -- 1=Yes, 0=No
     `competancy_level` ENUM('Basic','Intermediate','Advanced','Expert') DEFAULT 'Basic',
-
 
 
     `min_teacher_availability_score` DECIMAL(7,2) UNSIGNED DEFAULT 1  -- Percentage of available teachers for this Class Group (Will capture from Teachers profile)
@@ -797,7 +822,7 @@ SET FOREIGN_KEY_CHECKS = 0;
     `name` VARCHAR(200) NOT NULL,                       -- Will be fetched from tt_class_subject_groups.name/tt_class_subject_subgroups.name
     `academic_term_id` INT UNSIGNED NOT NULL,           -- FK to tt_academic_term.id  -- This is the Term for which this timetable is being generated (New)
     `timetable_type_id` INT unsigned NOT NULL,          -- FK to tt_timetable_type.id
-    
+    -- Combining _groups & requirement_subgroups
     `activity_group_id` INT UNSIGNED DEFAULT NULL,      -- FK to 'sch_class_groups_jnt'
     `have_sub_activity` TINYINT(1) NOT NULL DEFAULT 0,  -- Whether this activity has sub activities
     -- Must Field to apply Constraints
@@ -875,6 +900,7 @@ SET FOREIGN_KEY_CHECKS = 0;
     CONSTRAINT `chk_activity_target` CHECK ((`class_group_id` IS NOT NULL AND `class_subgroup_id` IS NULL) OR (`class_group_id` IS NULL AND `class_subgroup_id` IS NOT NULL))
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
   -- Conditions:
+  -- 1. In 'activity_group_id' we will be 
   
 
 
@@ -1153,7 +1179,7 @@ SET FOREIGN_KEY_CHECKS = 0;
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- -------------------------------------------------
---  SECTION 7: TIMETABLE MANNUAL MODIFICATION
+--  SECTION 7: TIMETABLE MANUAL MODIFICATION
 -- -------------------------------------------------
 
    -- PENDING

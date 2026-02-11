@@ -252,7 +252,6 @@
     CONSTRAINT `fk_ddNTJ_dropdownTableId` FOREIGN KEY (`dropdown_table_id`) REFERENCES `sys_dropdown_table` (`id`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-
   -- --------------------------------------------------------------------------------------------------------
   -- Table to store media files associated with various models (e.g., users, posts)
   CREATE TABLE IF NOT EXISTS `sys_media` (
@@ -282,7 +281,11 @@
 
 
 -- ===========================================================================
--- 3 - SCHOOL SETUP MODULE (sch)
+-- 3 - TENANT SETUP MODULE (sch)
+-- ===========================================================================
+
+-- ===========================================================================
+-- 3.1 - SCHOOL SETUP SUB-MODULE (sch)
 -- ===========================================================================
 
   -- This table is a replica of 'prm_tenant' table in 'prmprime_db' database
@@ -412,436 +415,22 @@
     -- We will be storing table name to use for selecting entities in `additional_info` in `sys_dropdown_table` table alongwith entity_type menu items e.g. for entity_type=1, table_name="sch_class", for entity_type=9, table_name="sch_vehicle"
     -- entity_table_name will be fetched from `additional_info` in `sys_dropdown_table` table e.g. (sch_class, sch_section, sch_subject, sch_designation, sch_department, sch_role, sch_students, sch_staff, sch_vehicle, sch_facility, sch_event, sch_location, sch_other)
 
+
 -- ===========================================================================
 -- 3.1 - CLASS SETUP SUB-MODULE (sch)
 -- ===========================================================================
 
-  CREATE TABLE IF NOT EXISTS `sch_sections` (
-    `id` int unsigned NOT NULL AUTO_INCREMENT,
-    `name` varchar(20) NOT NULL,            -- e.g. 'A', 'B'
-    `ordinal` tinyint unsigned DEFAULT 1,   -- will have sequence order for Sections
-    `code` CHAR(1) NOT NULL,                -- e.g., 'A','B','C','D' and so on (This will be used for Timetable)
-    `is_active` tinyint(1) NOT NULL DEFAULT 1,
-    `created_at` timestamp NULL DEFAULT NULL,
-    `updated_at` timestamp NULL DEFAULT NULL,
-    `deleted_at` timestamp NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_sections_name` (`name`),
-    UNIQUE KEY `uq_sections_code` (`code`),
-    UNIQUE KEY `uq_sections_ordinal` (`ordinal`)
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-  -- Tables for Classes, Sections, Subjects, Subject Types, Study Formats, Class-Section Junctions, Subject-StudyFormat Junctions, Class Groups, Subject Groups
-  CREATE TABLE IF NOT EXISTS `sch_classes` (
-    `id` int unsigned NOT NULL AUTO_INCREMENT,
-    `name` varchar(50) NOT NULL,                -- e.g. 'Grade 1' or 'Class 10'
-    `short_name` varchar(10) DEFAULT NULL,      -- e.g. 'G1' or '10A'
-    `ordinal` tinyint DEFAULT NULL,             -- will have sequence order for Classes NURSARY = -3, LKG = -2, UKG = -1, 1st = 1, 2nd = 2, 3rd = 3, 4th = 4, 5th = 5, 6th = 6, 7th = 7, 8th = 8, 9th = 9, 10th = 10, 11th = 11, 12th = 12
-    `code` CHAR(3) NOT NULL,                    -- e.g., 'BV1','BV2','1st','1' and so on (This will be used for Timetable)
-    `is_active` tinyint(1) NOT NULL DEFAULT 1,
-    `created_at` timestamp NULL DEFAULT NULL,
-    `updated_at` timestamp NULL DEFAULT NULL,
-    `deleted_at` timestamp NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_classes_shortName` (`short_name`),
-    UNIQUE KEY `uq_classes_code` (`code`),
-    UNIQUE KEY `uq_classes_name` (`name`),
-    UNIQUE KEY `uq_classes_ordinal` (`ordinal`)
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-  CREATE TABLE IF NOT EXISTS `sch_class_section_jnt` (
-    `id` int unsigned NOT NULL AUTO_INCREMENT,
-    `class_id` int unsigned NOT NULL,               -- FK to sch_classes
-    `section_id` int unsigned NOT NULL,             -- FK to sch_sections
-    `class_secton_code` char(5) NOT NULL,           -- Combination of class Code + section Code i.e. '8th_A', '10h_B'  
-    `capacity` tinyint unsigned DEFAULT NULL,       -- Targeted / Planned Quantity of stundets in Each Sections of every class.
-    `total_student` tinyint unsigned DEFAULT NULL,  -- Actual Number of Student in the Class+Section
-    `class_teacher_id` INT unsigned NOT NULL,    -- FK to sch_users
-    `assistance_class_teacher_id` INT unsigned NOT NULL,  -- FK to sch_users
-    `is_active` tinyint(1) NOT NULL DEFAULT 1,
-    `created_at` timestamp NULL DEFAULT NULL,
-    `updated_at` timestamp NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_classSection_classId_sectionId` (`class_id`,`section_id`),
-    UNIQUE KEY `uq_classSection_code` (`class_secton_code`),
-    UNIQUE KEY `uq_classSection_classTeacherId` (`class_teacher_id`),
-    UNIQUE KEY `uq_classSection_assistanceClassTeacherId` (`assistance_class_teacher_id`),
-    CONSTRAINT `fk_classSection_classId` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_classSection_sectionId` FOREIGN KEY (`section_id`) REFERENCES `sch_sections` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_classSection_classTeacherId` FOREIGN KEY (`class_teacher_id`) REFERENCES `sys_users` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_classSection_assistanceClassTeacherId` FOREIGN KEY (`assistance_class_teacher_id`) REFERENCES `sys_users` (`id`) ON DELETE CASCADE
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-  -- subject_type will represent what type of subject it is - Major, Minor, Core, Main, Optional etc.
-  CREATE TABLE IF NOT EXISTS `sch_subject_types` (
-    `id` int unsigned NOT NULL AUTO_INCREMENT,
-    `short_name` varchar(20) NOT NULL,  -- 'MAJOR','MINOR','OPTIONAL'
-    `name` varchar(50) NOT NULL,
-    `code` char(3) NOT NULL,         -- 'MAJ','MIN','OPT','ACT','SPO'
-    `is_active` tinyint(1) NOT NULL DEFAULT '1',
-    `deleted_at` timestamp NULL DEFAULT NULL,
-    `created_at` timestamp NULL DEFAULT NULL,
-    `updated_at` timestamp NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_subjectTypes_shortName` (`short_name`),
-    UNIQUE KEY `uq_subjectTypes_code` (`code`)
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-  CREATE TABLE IF NOT EXISTS `sch_study_formats` (
-    `id` int unsigned NOT NULL AUTO_INCREMENT,
-    `short_name` varchar(20) NOT NULL,  -- 'LECTURE','LAB','PRACTICAL','TUTORIAL','SEMINAR','WORKSHOP','GROUP_DISCUSSION','OTHER'
-    `name` varchar(50) NOT NULL,
-    `code` CHAR(3) NOT NULL,            -- e.g., 'LAC','LAB','ACT','ART' and so on (This will be used for Timetable)
-    `is_active` tinyint(1) NOT NULL,
-    `deleted_at` timestamp NULL DEFAULT NULL,
-    `created_at` timestamp NULL DEFAULT NULL,
-    `updated_at` timestamp NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_studyFormats_shortName` (`short_name`),
-    UNIQUE KEY `uq_studyFormats_code` (`code`)
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-  -- Data Seed for Study_Format - LECTURE, LAB, PRACTICAL, TUTORIAL, SEMINAR, WORKSHOP, GROUP_DISCUSSION, OTHER
-
-  CREATE TABLE IF NOT EXISTS `sch_subjects` (
-    `id` INT unsigned NOT NULL AUTO_INCREMENT,
-    `short_name` varchar(20) NOT NULL,  -- e.g. 'SCIENCE','MATH','SST','ENGLISH' and so on
-    `name` varchar(50) NOT NULL,
-    `code` CHAR(3) NOT NULL,         -- e.g., 'SCI','MTH','SST','ENG' and so on (This will be used for Timetable)
-    `is_active` tinyint(1) NOT NULL DEFAULT '1',
-    `deleted_at` timestamp NULL DEFAULT NULL,
-    `created_at` timestamp NULL DEFAULT NULL,
-    `updated_at` timestamp NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_subjects_shortName` (`short_name`),
-    UNIQUE KEY `uq_subjects_code` (`code`)
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-  -- subject_study_format is grouping for different streams like Sci-10 Lacture, Arts-10 Activity, Core-10
-  -- I have removed 'sub_types' from 'sch_subject_study_format_jnt' because one Subject_StudyFormat may belongs to different Subject_type for different classes
-  -- Removed 'short_name' as we can use `sub_stdformat_code`
-  CREATE TABLE IF NOT EXISTS `sch_subject_study_format_jnt` (
-    `id` INT unsigned NOT NULL AUTO_INCREMENT,
-    `subject_id` INT unsigned NOT NULL,            -- FK to 'sch_subjects'
-    `study_format_id` int unsigned NOT NULL,          -- FK to 'sch_study_formats'
-    `name` varchar(50) NOT NULL,                      -- e.g., 'Science Lecture','Science Lab','Math Lecture','Math Lab' and so on
-    `subj_stdformat_code` CHAR(7) NOT NULL,         -- Will be combination of (Subject.codee+'-'+StudyFormat.code) e.g., 'SCI_LAC','SCI_LAB','SST_LAC','ENG_LAC' (This will be used for Timetable)
-    `is_active` tinyint(1) NOT NULL DEFAULT '1',
-    `deleted_at` timestamp NULL DEFAULT NULL,
-    `created_at` timestamp NULL DEFAULT NULL,
-    `updated_at` timestamp NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_subStudyFormat_subjectId_stFormat` (`subject_id`,`study_format_id`),
-    UNIQUE KEY `uq_subStudyFormat_subStdformatCode` (`subj_stdformat_code`),
-    CONSTRAINT `fk_subStudyFormat_subjectId` FOREIGN KEY (`subject_id`) REFERENCES `sch_subjects` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_subStudyFormat_studyFormatId` FOREIGN KEY (`study_format_id`) REFERENCES `sch_study_formats` (`id`) ON DELETE CASCADE
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-  -- Ths table will be used to define different Class Groups like 10th-A Science Lecture Major, 7th-B Commerce Optional etc.
-  -- old name 'sch_subject_study_format_class_subj_types_jnt' changed to 'sch_class_groups_jnt'
-  CREATE TABLE IF NOT EXISTS `sch_class_groups_jnt` (
-    `id` INT unsigned NOT NULL AUTO_INCREMENT,                  -- FK
-    `class_id` int unsigned NOT NULL,                              -- FK to 'sch_classes'
-    `section_id` int unsigned NULL,                            -- FK to 'sch_sections'
-    `subject_Study_format_id` INT unsigned NOT NULL,   -- FK to 'sch_subject_study_format_jnt'
-    `subject_type_id` int unsigned NOT NULL,              -- FK to 'sch_subject_types'
-    `rooms_type_id` int unsigned NOT NULL,             -- FK to 'sch_rooms_type'
-    `class_house_roome_id` int unsigned NOT NULL,             -- FK to 'sch_rooms
-    `name` varchar(50) NOT NULL,                          -- 10th-A Science Lacture Major
-    `code` CHAR(17) NOT NULL, -- Combination of (Class+Section+Subject+StudyFormat+SubjType) e.g., '10h_A_SCI_LAC_MAJ','8th_MAT_LAC_OPT' (This will be used for Timetable)
-    `is_active` tinyint(1) NOT NULL DEFAULT '1',
-    `deleted_at` timestamp NULL DEFAULT NULL,
-    `created_at` timestamp NULL DEFAULT NULL,
-    `updated_at` timestamp NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_classGroups_cls_Sec_subStdFmt_SubTyp` (`class_id`,`section_id`,`subject_Study_format_id`),
-    UNIQUE KEY `uq_classGroups_subStdformatCode` (`code`), 
-    CONSTRAINT `fk_classGroups_classId` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_classGroups_sectionId` FOREIGN KEY (`section_id`) REFERENCES `sch_sections` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_classGroups_subjStudyFormatId` FOREIGN KEY (`subject_Study_format_id`) REFERENCES `sch_subject_study_format_jnt` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_classGroups_subTypeId` FOREIGN KEY (`subject_type_id`) REFERENCES `sch_subject_types` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_classGroups_roomTypeId` FOREIGN KEY (`rooms_type_id`) REFERENCES `sch_rooms_type` (`id`) ON DELETE CASCADE
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-  -- Table 'sch_subject_groups' will be used to assign all subjects to the students
-  -- There will be a Variable in 'sch_settings' table named 'SubjGroup_For_All_Sections' (Subj_Group_will_be_used_for_all_sections_of_a_class)
-  -- if above variable is True then section_id will be Nul in below table and
-  -- Every Group will eb avalaible accross sections for a particuler class
-  CREATE TABLE IF NOT EXISTS `sch_subject_groups` (
-    `id` INT unsigned NOT NULL AUTO_INCREMENT,
-    `class_id` int UNSIGNED NOT NULL,                        -- FK to 'sch_classes'
-    `section_id` int UNSIGNED NULL,                          -- FK (Section can be null if Group will be used for all sectons)
-    `short_name` varchar(30) NOT NULL,              -- 7th Science, 7th Commerce, 7th-A Science etc.
-    `name` varchar(100) NOT NULL,                   -- '7th (Sci,Mth,Eng,Hindi,SST with Sanskrit,Dance)'
-    `is_active` tinyint(1) NOT NULL DEFAULT '1',
-    `deleted_at` timestamp NULL DEFAULT NULL,
-    `created_at` timestamp NULL DEFAULT NULL,
-    `updated_at` timestamp NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_subjectGroups_shortName` (`short_name`),
-    UNIQUE KEY `uq_subjectGroups_name` (`class_id`,`name`),
-    CONSTRAINT `fk_subGroups_classId` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_subGroups_sectionId` FOREIGN KEY (`section_id`) REFERENCES `sch_sections` (`id`) ON DELETE CASCADE
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-  CREATE TABLE IF NOT EXISTS `sch_subject_group_subject_jnt` (
-    `id` INT unsigned NOT NULL AUTO_INCREMENT,
-    `subject_group_id` INT unsigned NOT NULL,              -- FK to 'sch_subject_groups'
-    `class_group_id` INT unsigned NOT NULL,                -- FK to 'sch_class_groups_jnt'
-    `subject_id` int unsigned NOT NULL,                       -- FK to 'sch_subjects'
-    `subject_type_id` int unsigned NOT NULL,                  -- FK to 'sch_subject_types'
-    `subject_study_format_id` INT unsigned NOT NULL,       -- FK to 'sch_subject_study_format_jnt'
-    `is_compulsory` tinyint(1) NOT NULL DEFAULT '0',          -- Is this Subject compulsory for Student or Optional
-    `weekly_periods` TINYINT UNSIGNED NOT NULL,  -- Total periods required per week
-    `min_periods_per_week` TINYINT UNSIGNED DEFAULT NULL,  -- Minimum periods required per week
-    `max_periods_per_week` TINYINT UNSIGNED DEFAULT NULL,  -- Maximum periods required per week
-    `max_per_day` TINYINT UNSIGNED DEFAULT NULL,  -- Maximum periods per day
-    `min_per_day` TINYINT UNSIGNED DEFAULT NULL,  -- Minimum periods per day
-    `min_gap_periods` TINYINT UNSIGNED DEFAULT NULL,  -- Minimum gap periods
-    `allow_consecutive` TINYINT(1) NOT NULL DEFAULT 0,  -- Whether consecutive periods are allowed
-    `max_consecutive` TINYINT UNSIGNED DEFAULT 2,  -- Maximum consecutive periods
-    `priority` SMALLINT UNSIGNED DEFAULT 50,  -- Priority of this requirement
-    `compulsory_room_type` INT UNSIGNED DEFAULT NULL,  -- FK to sch_room_types.id
-    `is_active` tinyint(1) NOT NULL DEFAULT '1',
-    `deleted_at` timestamp NULL DEFAULT NULL,
-    `created_at` timestamp NULL DEFAULT NULL,
-    `updated_at` timestamp NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_subjGrpSubj_subjGrpId_classGroup` (`subject_group_id`,`class_group_id`),
-    CONSTRAINT `fk_subjGrpSubj_subjectGroup` FOREIGN KEY (`subject_group_id`) REFERENCES `sch_subject_groups` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_subjGrpSubj_classGroup` FOREIGN KEY (`class_group_id`) REFERENCES `sch_class_groups_jnt` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_subjGrpSubj_subject` FOREIGN KEY (`subject_id`) REFERENCES `sch_subjects` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_subjGrpSubj_subjectTypeId` FOREIGN KEY (`subject_type_id`) REFERENCES `sch_subject_types` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_subjGrpSubj_subjectStudyFormatId` FOREIGN KEY (`subject_study_format_id`) REFERENCES `sch_subject_study_format_jnt` (`id`) ON DELETE CASCADE
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-  -- Add new Field for Timetable -
-  -- is_compulsory, min_periods_per_week, max_periods_per_week, max_per_day, min_per_day, min_gap_periods, allow_consecutive, max_consecutive, priority, compulsory_room_type
 
 -- ===========================================================================
 -- 3.2 - INFRA SETUP SUB-MODULE (sch)
 -- ===========================================================================
 
-  -- Building Coding format is - 2 Digit for Buildings(10-99)
-  CREATE TABLE IF NOT EXISTS `sch_buildings` (
-    `id` int unsigned NOT NULL AUTO_INCREMENT,
-    `code` char(2) NOT NULL,                      -- 2 digits code (10,11,12) 
-    `short_name` varchar(30) NOT NULL,            -- e.g., 'Junior Wing','Primary Wing','Middle Wing','Senior Wing','Administration Wings'
-    `name` varchar(50) NOT NULL,                  -- Detailed Name of the Building
-    `is_active` tinyint(1) NOT NULL DEFAULT '1',
-    `deleted_at` timestamp NULL DEFAULT NULL,
-    `created_at` timestamp NULL DEFAULT NULL,
-    `updated_at` timestamp NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_buildings_code` (`code`),
-    UNIQUE KEY `uq_buildings_name` (`short_name`)
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-  -- Tables for Room types, this will be used to define different types of rooms like Science Lab, Computer Lab, Sports Room etc.
-  CREATE TABLE IF NOT EXISTS `sch_rooms_type` (
-    `id` int unsigned NOT NULL AUTO_INCREMENT,
-    `code` CHAR(7) NOT NULL,                        -- e.g., 'SCI_LAB','BIO_LAB','CRI_GRD','TT_ROOM','BDM_CRT'
-    `short_name` varchar(30) NOT NULL,              -- e.g., 'Science Lab','Biology Lab','Cricket Ground','Table Tanis Room','Badminton Court'
-    `name` varchar(100) NOT NULL,
-    `required_resources` text DEFAULT NULL,         -- e.g., 'Microscopes, Lab Coats, Safety Goggles' for Science Lab
-    `is_active` tinyint(1) NOT NULL DEFAULT '1',
-    `deleted_at` timestamp NULL DEFAULT NULL,
-    `created_at` timestamp NULL DEFAULT NULL,
-    `updated_at` timestamp NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_roomType_code` (`code`),
-    UNIQUE KEY `uq_roomType_shortName` (`short_name`)
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-  -- Room Coding format is - 2 Digit for Buildings(10-99), 1 Digit-Building Floor(G,F,S,T,F / A,B,C,D,E), & Last 3 Character defin Class+Section (09A,10A,12B)
-  CREATE TABLE IF NOT EXISTS `sch_rooms` (
-    `id` int unsigned NOT NULL AUTO_INCREMENT,
-    `building_id` int unsigned NOT NULL,      -- FK to 'sch_buildings' table
-    `room_type_id` int NOT NULL,              -- FK to 'sch_rooms_type' table
-    `code` CHAR(7) NOT NULL,                  -- e.g., '11G-10A','12F-11A','11S-12A' and so on (This will be used for Timetable)
-    `short_name` varchar(30) NOT NULL,        -- e.g., 'Junior Wing','Primary Wing','Middle Wing','Senior Wing','Administration Wings'
-    `name` varchar(50) NOT NULL,
-    `capacity` int unsigned DEFAULT NULL,     -- Seating Capacity of the Room
-    `max_limit` int unsigned DEFAULT NULL,    -- Maximum Limit of the Room, Maximum how many students can accomodate in the room
-    `resource_tags` text DEFAULT NULL,        -- e.g., 'Projector, Smart Board, AC, Lab Equipment' etc.
-    `is_active` tinyint(1) NOT NULL DEFAULT '1',
-    `deleted_at` timestamp NULL DEFAULT NULL,
-    `created_at` timestamp NULL DEFAULT NULL,
-    `updated_at` timestamp NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_rooms_code` (`code`),
-    UNIQUE KEY `uq_rooms_shortName` (`short_name`),
-    CONSTRAINT `fk_rooms_buildingId` FOREIGN KEY (`building_id`) REFERENCES `sch_buildings` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_rooms_roomTypeId` FOREIGN KEY (`room_type_id`) REFERENCES `sch_rooms_type` (`id`) ON DELETE CASCADE
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  
 
 -- ===========================================================================
 -- 3.3 - EMPLOYEE SETUP SUB-MODULE (sch)
 -- ===========================================================================
 
-  -- Teacher table will store additional information about teachers
-  CREATE TABLE IF NOT EXISTS `sch_employees` (
-    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `user_id` INT UNSIGNED NOT NULL,  -- fk to sys_users.id
-    -- Employee id details
-    `emp_code` VARCHAR(20) NOT NULL,     -- Employee Code (Unique code for each user) (This will be used for QR Code)
-    `emp_id_card_type` ENUM('QR','RFID','NFC','Barcode') NOT NULL DEFAULT 'QR',
-    `emp_smart_card_id` VARCHAR(100) DEFAULT NULL,       -- RFID/NFC Tag ID
-    -- 
-    `is_teacher` TINYINT(1) NOT NULL DEFAULT 0,
-    `joining_date` DATE NOT NULL,
-    `total_experience_years` DECIMAL(4,1) DEFAULT NULL,       -- Total teaching experience
-    `highest_qualification` VARCHAR(100) DEFAULT NULL,        -- e.g. M.Sc., Ph.D.
-    `specialization` VARCHAR(150) DEFAULT NULL,               -- e.g. Mathematics, Physics
-    `last_institution` VARCHAR(200) DEFAULT NULL,             -- e.g. DPS Delhi
-    `awards` TEXT DEFAULT NULL,                               -- brief summary
-    `skills` TEXT DEFAULT NULL,                               -- general skills list (comma/JSON)
-    `qualifications_json` JSON DEFAULT NULL,   -- Array of {degree, specialization, university, year, grade}
-    `certifications_json` JSON DEFAULT NULL,   -- Array of {name, issued_by, issue_date, expiry_date, verified}
-    `experiences_json` JSON DEFAULT NULL,      -- Array of {institution, role, from_date, to_date, subject, remarks}
-    `notes` TEXT COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
-    `created_at` TIMESTAMP NULL DEFAULT NULL,
-    `updated_at` TIMESTAMP NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `teachers_emp_code_unique` (`emp_code`),
-    KEY `teachers_user_id_foreign` (`user_id`),
-    CONSTRAINT `fk_teachers_userId` FOREIGN KEY (`user_id`) REFERENCES `sys_users` (`id`) ON DELETE CASCADE
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-  CREATE TABLE IF NOT EXISTS `sch_employees_profile` (
-    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `employee_id` INT UNSIGNED NOT NULL,              -- FK to sch_employees.id
-    `user_id` INT UNSIGNED NOT NULL,                  -- FK to sys_users.id
-    `role_id` INT UNSIGNED NOT NULL,                  -- FK to employee_roles table (Principal, Accountant, Admin, etc.)
-    `department_id` INT UNSIGNED DEFAULT NULL,        -- FK to sch_departments (Administration, Accounts, IT, etc.)
-    -- Core Competencies & Qualifications
-    `specialization_area` VARCHAR(100) DEFAULT NULL,     -- e.g., Finance Management, HR Administration, IT Infrastructure
-    `qualification_level` VARCHAR(50) DEFAULT NULL,      -- e.g., Bachelor's, Master's, Certified Accountant
-    `qualification_field` VARCHAR(100) DEFAULT NULL,     -- e.g., Business Administration, Computer Science
-    `certifications` JSON DEFAULT NULL,                  -- JSON array of certifications: ["CPA", "CISSP", "PMP"]
-    -- Work Capacity & Availability
-    `work_hours_daily` DECIMAL(4,2) DEFAULT 8.0,         -- Standard daily work hours
-    `max_hours_daily` DECIMAL(4,2) DEFAULT 10.0,         -- Maximum daily work hours
-    `work_hours_weekly` DECIMAL(5,2) DEFAULT 40.0,       -- Standard weekly work hours
-    `max_hours_weekly` DECIMAL(5,2) DEFAULT 50.0,        -- Maximum weekly work hours
-    `preferred_shift` ENUM('morning', 'evening', 'flexible') DEFAULT 'morning',
-    `is_full_time` TINYINT(1) DEFAULT 1,                 -- 1=Full-time, 0=Part-time
-    -- Skills & Responsibilities (JSON for flexibility)
-    `core_responsibilities` JSON DEFAULT NULL,           -- e.g., ["budget_management", "staff_supervision", "policy_implementation"]
-    `technical_skills` JSON DEFAULT NULL,                -- e.g., ["quickbooks", "ms_expert", "erp_systems"]
-    `soft_skills` JSON DEFAULT NULL,                     -- e.g., ["leadership", "communication", "problem_solving"]
-    -- Performance & Experience
-    `experience_months` SMALLINT UNSIGNED DEFAULT NULL,  -- Relevant experience in months
-    `performance_rating` TINYINT UNSIGNED DEFAULT NULL,  -- rating out of (1 to 10)
-    `last_performance_review` DATE DEFAULT NULL,
-    -- Administrative Controls
-    `security_clearance_done` TINYINT(1) DEFAULT 0,
-    `reporting_to` INT UNSIGNED DEFAULT NULL,         -- FK to sch_employees.id (who they report to)
-    `can_approve_budget` TINYINT(1) DEFAULT 0,
-    `can_manage_staff` TINYINT(1) DEFAULT 0,
-    `can_access_sensitive_data` TINYINT(1) DEFAULT 0,
-    -- Additional Details
-    `assignment_meta` JSON DEFAULT NULL,                 -- e.g., { "previous_role": "Assistant Principal", "achievements": ["System Upgrade 2023"] }
-    `notes` TEXT DEFAULT NULL,
-    `effective_from` DATE DEFAULT NULL,
-    `effective_to` DATE DEFAULT NULL,
-    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
-    `created_at` TIMESTAMP NULL DEFAULT NULL,
-    `updated_at` TIMESTAMP NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_employee_role_active` (`employee_id`, `role_id`, `effective_to`),
-    -- Foreign Key Constraints
-    CONSTRAINT `fk_employeeProfile_employeeId` FOREIGN KEY (`employee_id`) REFERENCES `sch_employees` (`id`),
-    CONSTRAINT `fk_employeeProfile_roleId` FOREIGN KEY (`role_id`) REFERENCES `sch_employee_roles` (`id`),
-    CONSTRAINT `fk_employeeProfile_departmentId` FOREIGN KEY (`department_id`) REFERENCES `sch_departments` (`id`),
-    CONSTRAINT `fk_employeeProfile_reportingTo` FOREIGN KEY (`reporting_to`) REFERENCES `sch_employees` (`id`)
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-  -- Teacher Profile table will store detailed proficiency to teach specific subjects, study formats, and classes
-  CREATE TABLE IF NOT EXISTS `sch_teacher_profile` (
-    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `employee_id` INT UNSIGNED NOT NULL,             -- FK sch_employees.id
-    `user_id` INT UNSIGNED NOT NULL,                 -- FK sys_users.id
-    `role_id` INT UNSIGNED NOT NULL,                 -- FK to   Teacher / Principal / etc.
-    `department_id` INT UNSIGNED NOT NULL,           -- sch_department.id 
-    `designation_id` INT UNSIGNED NOT NULL,          -- sch_designation.id
-    `teacher_house_room_id` INT UNSIGNED DEFAULT NULL,  -- FK to sch_rooms.id
-    -- Employment nature & capability
-    `is_full_time` TINYINT(1) DEFAULT 1,
-    `preferred_shift` INT UNSIGNED DEFAULT NULL,    -- FK to sch_shift.id
-    `capable_handling_multiple_classes` TINYINT(1) DEFAULT 0,
-    `can_be_used_for_substitution` TINYINT(1) DEFAULT 1,
-    -- Skills & Responsibilities (JSON for flexibility)
-    `certified_for_lab` TINYINT(1) DEFAULT 0,          -- allowed to conduct practicals
-    `is_proficient_with_computer` TINYINT(1) DEFAULT 0,
-    `can_manage_staff` TINYINT(1) DEFAULT 0,
-    `special_skill_area` VARCHAR(100) DEFAULT NULL,
-    `soft_skills` JSON DEFAULT NULL,                     -- e.g., ["leadership", "communication", "problem_solving"]
-    `assignment_meta` JSON DEFAULT NULL,                 -- e.g. { "qualification": "M.Sc Physics", "experience": "7 years" }
-    -- Performance & compliance
-    `performance_rating` TINYINT UNSIGNED DEFAULT NULL,  -- rating out of (1 to 10)
-    `last_performance_review` DATE DEFAULT NULL,
-    `security_clearance_done` TINYINT(1) DEFAULT 0,
-    `reporting_to` INT UNSIGNED DEFAULT NULL,
-    `can_access_sensitive_data` TINYINT(1) DEFAULT 0,
-    `notes` TEXT NULL,
-    `effective_from` DATE DEFAULT NULL,
-    `effective_to` DATE DEFAULT NULL,
-    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
-    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_teacher_employee` (`employee_id`),
-    CONSTRAINT `fk_teacher_employee` FOREIGN KEY (`employee_id`) REFERENCES `sch_employees` (`id`)
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-  CREATE TABLE IF NOT EXISTS `sch_teacher_capabilities` (
-    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    -- CORE RELATIONSHIP
-    `teacher_profile_id` INT UNSIGNED NOT NULL,   -- FK sch_teacher_profile.id
-    `class_id` INT UNSIGNED NOT NULL,                 -- FK sch_classes.id
-    `section_id` INT UNSIGNED DEFAULT NULL,           -- FK sch_sections.id (NULL = all sections)
-    `subject_study_format_id` INT UNSIGNED NOT NULL,   -- FK sch_subject_study_format_jnt.id
-    -- TEACHING STRENGTH
-    `proficiency_percentage` TINYINT UNSIGNED DEFAULT NULL, -- 1–100
-    `teaching_experience_months` SMALLINT UNSIGNED DEFAULT NULL,
-    `is_primary_subject` TINYINT(1) NOT NULL DEFAULT 1,  -- 1=Yes, 0=No
-    `competancy_level` ENUM('Basic','Intermediate','Advanced','Expert') DEFAULT 'Basic',
-    -- LOAD & SCHEDULING CONSTRAINTS
-    `max_periods_daily` TINYINT UNSIGNED DEFAULT 6,
-    `min_periods_daily` TINYINT UNSIGNED DEFAULT 1,
-    `max_periods_weekly` TINYINT UNSIGNED DEFAULT 48,
-    `min_periods_weekly` TINYINT UNSIGNED DEFAULT 15,
-    `can_be_split_across_sections` TINYINT(1) DEFAULT 0,
-    -- PRIORITY MATRIX INTELLIGENCE
-    `priority_weight` TINYINT UNSIGNED DEFAULT NULL,   -- manual / computed weight (1–10)
-    `scarcity_index` TINYINT UNSIGNED DEFAULT NULL,    -- 1=abundant, 10=very rare
-    `is_hard_constraint` TINYINT(1) DEFAULT 0,         -- if true cannot be voilated e.g. Physics Lab teacher for Class 12
-    `allocation_strictness` ENUM('hard','medium','soft') DEFAULT 'medium', e.g. Senior Maths teacher - Hard, Preferred English teacher - Medium, Art / Sports / Activity - Soft
-    -- AI / HISTORICAL FEEDBACK
-    `historical_success_ratio` TINYINT UNSIGNED DEFAULT NULL, -- 1–100 (sessions_completed_without_change / total_sessions_allocated ) * 100)
-    `last_allocation_score` TINYINT UNSIGNED DEFAULT NULL,   -- last run score
-    -- GOVERNANCE & OVERRIDE
-    `override_priority` TINYINT UNSIGNED DEFAULT NULL, -- admin override
-    `override_reason` VARCHAR(255) DEFAULT NULL,
-    -- EFFECTIVITY & STATUS
-    `effective_from` DATE DEFAULT NULL,
-    `effective_to` DATE DEFAULT NULL,
-    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (id),
-    UNIQUE KEY `uq_teacher_capability` (`teacher_profile_id`, `class_id`, `section_id`, `subject_id`, `study_format_id`),
-    CONSTRAINT `fk_tc_teacher_profile` FOREIGN KEY (`teacher_profile_id`) REFERENCES `sch_teacher_profile`(id) ON DELETE CASCADE,
-    CONSTRAINT `fk_tc_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes`(id),
-    CONSTRAINT `fk_tc_section` FOREIGN KEY (`section_id`) REFERENCES `sch_sections`(id),
-    CONSTRAINT `fk_tc_subject_study_format` FOREIGN KEY (`subject_study_format_id`) REFERENCES `sch_subject_study_format_jnt`(id)
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-  -- Condition:
-  -- Formula: historical_success_ratio = (sessions_completed_without_change / total_sessions_allocated ) * 100)
-  -- last_allocation_score = (proficiency_percentage * 0.4) + (load_balance * 0.3) + (strictness_match * 0.2) + (historical_success_ratio * 0.1)
-  -- Importance - “Teacher selected because last allocation score = 87 (highest)”
 
 
 -- ===========================================================================
@@ -1483,7 +1072,6 @@
       INDEX `idx_vnd_vendor_type` (`vendor_type_id`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-
   -- 2-Screen Name - Item Master
   CREATE TABLE IF NOT EXISTS `vnd_items` (
       `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -1508,7 +1096,6 @@
       UNIQUE KEY `uq_vnd_items_code` (`item_code`),
       INDEX `idx_vnd_items_type` (`item_type`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 
   -- 3-Screen Name - Agreement Master
   CREATE TABLE IF NOT EXISTS `vnd_agreements` (
@@ -1562,17 +1149,16 @@
       CONSTRAINT `fk_vnd_agr_items_entity_type` FOREIGN KEY (`related_entity_type`) REFERENCES `sys_dropdown_table`(`id`) ON DELETE RESTRICT,
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
   -- conditions: 
-  -- related_entity_type = (Vehicle, Asset, Service, etc.) will have table name as `additional_info` in `sys_dropdown_table` table.
-  -- e.g. related_entity_type = 'Vehicle' will have table_name as `tpt_vehicle` in 'additional_info' field of `sys_dropdown_table` table.
-  -- related_entity_id will be the id of the entity in the related_entity_type table.
-  --Example
-    Drop Down - Vehicle 
-    sys_dropdown_table
-    Key                                             Value                   Additional_Info(JSON)
-    vnd_agreement_items_jnt.related_entity_type     Vehicle                 {"table_name": "tpt_vehicle"}
-    vnd_agreement_items_jnt.related_entity_type     Asset                   {"table_name": "sch_asset"}
-    vnd_agreement_items_jnt.related_entity_type     Service                 {"table_name": "sch_service"}
-
+    -- related_entity_type = (Vehicle, Asset, Service, etc.) will have table name as `additional_info` in `sys_dropdown_table` table.
+    -- e.g. related_entity_type = 'Vehicle' will have table_name as `tpt_vehicle` in 'additional_info' field of `sys_dropdown_table` table.
+    -- related_entity_id will be the id of the entity in the related_entity_type table.
+    --Example
+      Drop Down - Vehicle 
+      sys_dropdown_table
+      Key                                             Value                   Additional_Info(JSON)
+      vnd_agreement_items_jnt.related_entity_type     Vehicle                 {"table_name": "tpt_vehicle"}
+      vnd_agreement_items_jnt.related_entity_type     Asset                   {"table_name": "sch_asset"}
+      vnd_agreement_items_jnt.related_entity_type     Service                 {"table_name": "sch_service"}
 
   -- This table is used to log the usage of services/products by vendors.
   -- 4-Screen Name - Usage Log

@@ -177,7 +177,7 @@
     `priority_score` SMALLINT UNSIGNED DEFAULT 10,                 -- Priority of this requirement on 1-100 scale
     --
     `compulsory_specific_room_type` TINYINT(1) NOT NULL DEFAULT 0, -- Whether specific room type is required (TRUE - if Specific Room Type is Must)
-    `required_room_type_id` INT UNSIGNED NOT NULL,      -- FK to sch_room_types.id (Required)
+    `required_room_type_id` INT UNSIGNED NOT NULL,      -- FK to sch_rooms_type.id (Required)
     `required_room_id` INT UNSIGNED DEFAULT NULL,      -- FK to sch_rooms.id (Optional)
     -- Audit Fields
     `is_active` tinyint(1) NOT NULL DEFAULT '1',
@@ -187,12 +187,12 @@
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_classGroups_subStdformatCode` (`code`), 
     UNIQUE KEY `uq_classGroups_cls_Sec_subStdFmt_SubTyp` (`class_id`,`section_id`,`subject_Study_format_id`),
-    CONSTRAINT `fk_classGroups_classId` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_classGroups_sectionId` FOREIGN KEY (`section_id`) REFERENCES `sch_sections` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_classGroups_subjStudyFormatId` FOREIGN KEY (`subject_Study_format_id`) REFERENCES `sch_subject_study_format_jnt` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_classGroups_subTypeId` FOREIGN KEY (`subject_type_id`) REFERENCES `sch_subject_types` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_classGroups_roomTypeId` FOREIGN KEY (`required_room_type_id`) REFERENCES `sch_rooms_type` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_classGroups_roomId` FOREIGN KEY (`required_room_id`) REFERENCES `sch_rooms` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_classGroups_classId` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`),
+    CONSTRAINT `fk_classGroups_sectionId` FOREIGN KEY (`section_id`) REFERENCES `sch_sections` (`id`),
+    CONSTRAINT `fk_classGroups_subjStudyFormatId` FOREIGN KEY (`subject_Study_format_id`) REFERENCES `sch_subject_study_format_jnt` (`id`),
+    CONSTRAINT `fk_classGroups_subTypeId` FOREIGN KEY (`subject_type_id`) REFERENCES `sch_subject_types` (`id`),
+    CONSTRAINT `fk_classGroups_roomTypeId` FOREIGN KEY (`required_room_type_id`) REFERENCES `sch_rooms_type` (`id`),
+    CONSTRAINT `fk_classGroups_roomId` FOREIGN KEY (`required_room_id`) REFERENCES `sch_rooms` (`id`),
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
   -- Conditions:
   -- There will be a Variable in 'sch_settings' table named (Subj_Group_will_be_used_for_all_sections_of_a_class)
