@@ -103,7 +103,14 @@
     `special_skill_area` VARCHAR(100) DEFAULT NULL,
     `soft_skills` JSON DEFAULT NULL,                     -- e.g., ["leadership", "communication", "problem_solving"]
     `assignment_meta` JSON DEFAULT NULL,                 -- e.g. { "qualification": "M.Sc Physics", "experience": "7 years" }
+    -- LOAD & SCHEDULING CONSTRAINTS
+    `max_periods_daily` TINYINT UNSIGNED DEFAULT 6,
+    `min_periods_daily` TINYINT UNSIGNED DEFAULT 1,
+    `max_periods_weekly` TINYINT UNSIGNED DEFAULT 48,
+    `min_periods_weekly` TINYINT UNSIGNED DEFAULT 15,
+    `can_be_split_across_sections` TINYINT(1) DEFAULT 0,
     -- Performance & compliance
+    `teacher_availability_ratio` DECIMAL(6,2) NOT NULL,  -- Formula is Given below the table (new)
     `performance_rating` TINYINT UNSIGNED DEFAULT NULL,  -- rating out of (1 to 10)
     `last_performance_review` DATE DEFAULT NULL,
     `security_clearance_done` TINYINT(1) DEFAULT 0,
@@ -133,13 +140,8 @@
     `teaching_experience_months` SMALLINT UNSIGNED DEFAULT NULL,
     `is_primary_subject` TINYINT(1) NOT NULL DEFAULT 1,  -- 1=Yes, 0=No
     `competancy_level` ENUM('Basic','Intermediate','Advanced','Expert') DEFAULT 'Basic',
-    -- LOAD & SCHEDULING CONSTRAINTS
-    `max_periods_daily` TINYINT UNSIGNED DEFAULT 6,
-    `min_periods_daily` TINYINT UNSIGNED DEFAULT 1,
-    `max_periods_weekly` TINYINT UNSIGNED DEFAULT 48,
-    `min_periods_weekly` TINYINT UNSIGNED DEFAULT 15,
-    `can_be_split_across_sections` TINYINT(1) DEFAULT 0,
     -- PRIORITY MATRIX INTELLIGENCE
+    `priority_order` INT UNSIGNED DEFAULT NULL,   -- Priority Order of the Teacher for the Class+Subject+Study_Format
     `priority_weight` TINYINT UNSIGNED DEFAULT NULL,   -- manual / computed weight (1–10) (Even if teachers are available, how important is THIS activity to the school?)
     `scarcity_index` TINYINT UNSIGNED DEFAULT NULL,    -- 1=abundant, 10=very rare
     `is_hard_constraint` TINYINT(1) DEFAULT 0,         -- if true cannot be voilated e.g. Physics Lab teacher for Class 12
@@ -167,5 +169,15 @@
   -- Formula: historical_success_ratio = (sessions_completed_without_change / total_sessions_allocated ) * 100)
   -- last_allocation_score = (proficiency_percentage * 0.4) + (load_balance * 0.3) + (strictness_match * 0.2) + (historical_success_ratio * 0.1)
   -- Importance - “Teacher selected because last allocation score = 87 (highest)”
+
+----------------------------------------------------------------------------------
+-- Made Changes :
+-- 1. Added `teacher_availability_ratio` to `sch_teacher_profile` table.
+-- 2. Added `priority_order` to `sch_teacher_capabilities` table.
+-- 3. Removed `subject_id` from `sch_teacher_capabilities` table.
+-- 4. Removed `study_format_id` from `sch_teacher_capabilities` table.
+-- 5. Removed `max_periods_daily`, `min_periods_daily`, `max_periods_weekly`, `min_periods_weekly`, `can_be_split_across_sections` from `sch_teacher_capabilities` table.
+-- 6. Added `max_periods_daily`, `min_periods_daily`, `max_periods_weekly`, `min_periods_weekly`, `can_be_split_across_sections` to `sch_teacher_profile` table.
+
 
 
