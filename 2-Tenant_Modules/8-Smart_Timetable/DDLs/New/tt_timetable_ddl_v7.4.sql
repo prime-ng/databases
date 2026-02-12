@@ -10,6 +10,74 @@
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
+--  Smart Timetable Module Menu Items :
+  -- 1.  Pre-Requisites
+  --      1.1. Buildings
+  --      1.2. Room Types
+  --      1.3. Rooms
+  --      1.4. Teacher Profile
+  --      1.5. Class & Section
+  --      1.6. Subject & Study Format
+  --      1.7. School Class Group
+  -- 2.  Timetable Configuration
+  --      2.1. Timetable Config
+  --      2.2. Academic Terms
+  --      2.3. Timetable Generation Strategy
+  -- 3.  Timetable Masters
+  --      3.1. Shift
+  --      3.2. Day Type
+  --      3.3. Period Type
+  --      3.4. Teacher Roles
+  --      3.5. School Days
+  --      3.6. Working Days
+  --      3.7. Class Working days
+  --      3.8. Period Set    (tt_period_set & tt_period_set_period_jnt)
+  --      3.9. Timetable Type
+  --      3.10. Class Timetable
+  -- 4.  Timetable Requirement
+  --      4.1. Slot Requirement
+  --      4.2. Class Requirement Group
+  --      4.3. Class Requirement Sub-Group
+  --      4.4. Class Requirement Consolidation
+  -- 5.  Timetable Constraint Engine
+  --      5.1. Constraint Category & Scope
+  --      5.2. Constraint Type
+  --      5.3. Constraint Creation
+  --      5.4. Teacher Unavailability
+  --      5.5. Room Unavailability
+  -- 6.  Timetable Resource Availability
+  --      6.1. Teachers Availability
+  --      6.2. Techers Availability Log
+  --      6.3. Rooms Availability
+  -- 7.  Timetable Preparation
+  --      7.1. Activity
+  --      7.2. Sub Activity
+  --      7.3. Priority Config
+  --      7.4. Activity Teacher Mapping
+  -- 8.  Timetable Generation
+  --      8.1. Timetable Generation (tt_generation_run)
+  --      8.2. Conflict Management (tt_constraint_violation & tt_conflict_detection)
+  --      8.3. Resource Allocation (tt_resource_booking)
+  --      8.4. TT Generation Log
+  --      8.5. TT Generation Summary
+  -- 9.  Timetable View & Refinement
+  --      9.1. Timetable View (Teacher wise/Class wise/Room wise/Subject wise/Day wise)
+  --      9.2. Manual Refinement (tt_timetable_cell)
+  --      9.3. Lock Timetable
+  --      9.4. Publish Timetable
+  -- 10. Report & Logs        --> (This include Audit & History)
+  --      10.1. Class wise Timetable Report
+  --      10.2. Teacher wise Timetable Report
+  --      10.3. Room wise Timetable Report
+  --      10.4. Teacher Workload Analysis
+  --      10.5. Rooms Utilization Analysis
+  --      10.6. Teacher Requirement Analysis
+  -- 11. Substitute Management
+  --      11.1. Substitute Requirement
+  --      11.2. Propose & Approve Substitute
+  --      11.3. Notification for Substitute
+
+
 -- -------------------------------------------------
 -- Required Global Parameters from sys_setting Table
 -- -------------------------------------------------
@@ -697,7 +765,7 @@ SET FOREIGN_KEY_CHECKS = 0;
     `class_id` INT unsigned NOT NULL,                 -- FK to sch_classes.id
     `section_id` INT unsigned DEFAULT NULL,           -- FK to sch_sections.id
     `subject_study_format_id` INT unsigned NOT NULL,  -- FK to sch_study_formats.id. e.g SCI_LEC, SCI_LAB, COM_LEC, COM_OPT, etc.
-    `teacher_id` INT unsigned NOT NULL,               -- FK to sch_teachers.id
+    `teacher_profile_id` INT unsigned NOT NULL,       -- FK to sch_teacher_profile.id
     -- Skill & Preference from "sch_teacher_profile"
     `preferred_shift` INT UNSIGNED DEFAULT NULL,    -- FK to sch_shift.id
     `capable_handling_multiple_classes` TINYINT(1) DEFAULT 0,
@@ -804,7 +872,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 
 
 -- -----------------------------------------------------------
---  SECTION 5: TIMETABLE OPERATION TABLES (DATA PREPERATION)
+--  SECTION 5: TIMETABLE PREPERATION TABLES (DATA PREPERATION)
 -- -----------------------------------------------------------
 
   -- This table will store the Priority Configuration for the Timetable Generation Process
@@ -1027,7 +1095,6 @@ SET FOREIGN_KEY_CHECKS = 0;
     CONSTRAINT `fk_tt_created_by` FOREIGN KEY (`created_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci; 
 
-
   -- Real-time Conflict Detection Table (This will capture all the conflicts during generation to resolve)
   -- IMPORTANT: For tracking and resolving scheduling conflicts
   CREATE TABLE IF NOT EXISTS `tt_conflict_detection` (
@@ -1050,11 +1117,10 @@ SET FOREIGN_KEY_CHECKS = 0;
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   COMMENT='Log of conflict detection events and resolutions';
   -- WHY NEEDED:
-  -- 1. Supports the requirement: "Real-time conflict detection capabilities"
-  -- 2. Tracks all conflicts during generation and manual adjustments
-  -- 3. Provides audit trail for conflict resolution
-  -- 4. Enables smart conflict resolution suggestions
-
+    -- 1. Supports the requirement: "Real-time conflict detection capabilities"
+    -- 2. Tracks all conflicts during generation and manual adjustments
+    -- 3. Provides audit trail for conflict resolution
+    -- 4. Enables smart conflict resolution suggestions
 
   -- Resource Booking & availability Tracking
   -- Use: We will be capturing resource booking to know resource availability and ocupency
@@ -1081,7 +1147,6 @@ SET FOREIGN_KEY_CHECKS = 0;
     CONSTRAINT `fk_idx_resource_booking_supervisor` FOREIGN KEY (`supervisor_id`) REFERENCES `sch_teachers`(`id`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   COMMENT='Resource booking and allocation tracking';
-
 
   CREATE TABLE IF NOT EXISTS `tt_generation_run` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,

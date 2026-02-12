@@ -140,7 +140,6 @@
     `teaching_experience_months` SMALLINT UNSIGNED DEFAULT NULL,
     `is_primary_subject` TINYINT(1) NOT NULL DEFAULT 1,  -- 1=Yes, 0=No
     `competancy_level` ENUM('Basic','Intermediate','Advanced','Expert') DEFAULT 'Basic',
-
     -- PRIORITY MATRIX INTELLIGENCE
     `priority_order` INT UNSIGNED DEFAULT NULL,   -- Priority Order of the Teacher for the Class+Subject+Study_Format
     `priority_weight` TINYINT UNSIGNED DEFAULT NULL,   -- manual / computed weight (1–10) (Even if teachers are available, how important is THIS activity to the school?)

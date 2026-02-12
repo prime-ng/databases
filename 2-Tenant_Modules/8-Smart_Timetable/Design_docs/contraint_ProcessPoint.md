@@ -14,6 +14,8 @@
 11. Timetable Review & Publish
 12. Substitute Management
 
+
+
 ------------------------------------------------------------------------------------------------------------------
 
 When Start Timetable Generation process user will get dropdown to select - 
@@ -22,19 +24,21 @@ When Start Timetable Generation process user will get dropdown to select -
 
 ## 0. Pre-requisite
 When user select Academic Term we will fetch below parameter from [sch_academic_term]
-      Get: $academic_term_id from [sch_academic_term.id]
-      Get: $academic_session_id from [sch_academic_term.academic_session_id]
-      Get: $academic_year_start_date [sch_academic_term.start_date]
-      Get: $academic_year_end_date [sch_academic_term.end_date]
-      Get: $term_code [sch_academic_term.term_code]
-      Get: $Academic_term_start_date [sch_academic_term.start_date]
-      Get: $Academic_term_end_date [sch_academic_term.end_date]
+      Set: $academic_term_id from [sch_academic_term.id]
+      Set: $academic_session_id from [sch_academic_term.academic_session_id]
+      Set: $academic_year_start_date [sch_academic_term.start_date]
+      Set: $academic_year_end_date [sch_academic_term.end_date]
+      Set: $term_code [sch_academic_term.term_code]
+      Set: $Academic_term_start_date [sch_academic_term.start_date]
+      Set: $Academic_term_end_date [sch_academic_term.end_date]
 We will fetch below parameters from [tt_timetable_type]
-      Get: $timetable_type_id from [tt_timetable_type.id]
-      Get: $timetable_type_code [tt_timetable_type.code]
-      Get: $timetable_type_name [tt_timetable_type.name]
-      Get: $timetable_from_date [tt_timetable_type.`effective_from_date`]
-      Get: $timetable_to_date [tt_timetable_type.effective_to_date]
+      Set: $timetable_type_id from [tt_timetable_type.id]
+      Set: $timetable_type_code [tt_timetable_type.code]
+      Set: $timetable_type_name [tt_timetable_type.name]
+      Set: $timetable_from_date [tt_timetable_type.`effective_from_date`]
+      Set: $timetable_to_date [tt_timetable_type.effective_to_date]
+
+
 
 ## 1. Generate Timetable Slot Requirement
 
@@ -242,22 +246,80 @@ Mannual Entry for - [`preferred_periods_json`], [`avoid_periods_json`], [`spread
 
 ### 4.2 Fill tt_teacher_availability (tt_teacher_availability)
 --------------------------------------------------------------
+As tt_requirement_consolidation doesn't have teacher_profile_id. To populate tt_teacher_availability, we need to:
+  - First Fill the data from [tt_requirement_consolidation], [sch_teacher_profile], [sch_teacher_capabilities] into [tt_teacher_availability] for the fields that are common
+  - Identify which teachers are eligible for each requirement (based on Class+Subject+Study_Format)
+  - Then update [tt_teacher_availability] for each record with eligible teacher count
 
- Step 1: Create Records in [tt_teacher_availability]
-   Select all the Records from [tt_requirement_consolidation]
-   Loop through all the records from [tt_requirement_consolidation]
-      Update Key Fields in [tt_teacher_availability] from [tt_requirement_consolidation]
-      set [requirement_consolidation_id], [class_id], [section_id], [subject_study_format_id] from 
-         [tt_requirement_consolidation]
-      set [preferred_shift], [capable_handling_multiple_classes], [can_be_used_for_substitution],
-          [max_periods_daily], [min_periods_daily], [max_periods_weekly], [min_periods_weekly],
-          [can_be_split_across_sections] 
-          from [sch_teacher_profile]
-      set [proficiency_percentage], [teaching_experience_months], [is_primary_subject], 
-          [competancy_level], [priority_order], [priority_weight], [scarcity_index],
-         [is_hard_constraint], [allocation_strictness], [override_priority], 
-         [historical_success_ratio], [last_allocation_score], [effective_from], [effective_to] from [sch_teacher_capabilities]
-   EndLoop
+ Step 1: Fill Records into [tt_teacher_availability] from 
+         [tt_requirement_consolidation], [sch_teacher_profile], [sch_teacher_capabilities]
+
+INSERT INTO tt_teacher_availability (
+    -- Key Fields
+    requirement_consolidation_id, teacher_profile_id, class_id, section_id, subject_study_format_id, academic_term_id, timetable_type_id,
+    -- From sch_teacher_profile
+    preferred_shift, capable_handling_multiple_classes, can_be_used_for_substitution, max_periods_daily, min_periods_daily, max_periods_weekly, min_periods_weekly, can_be_split_across_sections, teacher_availability_ratio,
+    -- From sch_teacher_capabilities
+    proficiency_percentage, teaching_experience_months, is_primary_subject, competency_level, priority_order, priority_weight, scarcity_index,
+    is_hard_constraint, allocation_strictness, override_priority, override_reason, historical_success_ratio, last_allocation_score,
+    effective_from, effective_to, is_active, allocation_status, created_at, updated_at
+)
+SELECT 
+    -- Key Fields from requirement
+    trc.id AS requirement_consolidation_id, stc.teacher_profile_id, trc.class_id, trc.section_id, trc.subject_study_format_id, trc.academic_term_id, trc.timetable_type_id,
+    -- From sch_teacher_profile
+    stp.preferred_shift, stp.capable_handling_multiple_classes, stp.can_be_used_for_substitution, stp.max_periods_daily, stp.min_periods_daily, stp.max_periods_weekly, stp.min_periods_weekly, stp.can_be_split_across_sections, stp.teacher_availability_ratio,
+    -- From sch_teacher_capabilities
+    stc.proficiency_percentage, stc.teaching_experience_months, stc.is_primary_subject, stc.competancy_level AS competency_level, stc.priority_order, stc.priority_weight, stc.scarcity_index, stc.is_hard_constraint, stc.allocation_strictness, stc.override_priority, stc.override_reason, stc.historical_success_ratio, stc.last_allocation_score,
+    -- Effectivity - take the most restrictive dates
+    GREATEST(COALESCE(stc.effective_from, '1900-01-01'), COALESCE(stp.effective_from, '1900-01-01'), COALESCE(trc.effective_from, '1900-01-01')) AS effective_from,
+    LEAST(COALESCE(stc.effective_to, '9999-12-31'), COALESCE(stp.effective_to, '9999-12-31'), COALESCE(trc.effective_to, '9999-12-31')) AS effective_to,
+    -- Status - active only if all are active
+    CASE WHEN stc.is_active = 1 AND stp.is_active = 1 AND trc.is_active = 1 THEN 1 ELSE 0 END AS is_active,
+    -- Allocation status based on constraint strictness
+    CASE 
+        WHEN stc.is_hard_constraint = 1 THEN 'available'
+        WHEN stc.allocation_strictness = 'hard' THEN 'available'
+        WHEN stc.scarcity_index >= 8 THEN 'available'
+        ELSE 'tentative'
+    END AS allocation_status,
+    
+    NOW() AS created_at,
+    NOW() AS updated_at
+    
+FROM 
+    tt_requirement_consolidation trc
+    INNER JOIN sch_teacher_capabilities stc ON 
+        trc.class_id = stc.class_id 
+        AND (trc.section_id = stc.section_id OR (trc.section_id IS NULL AND stc.section_id IS NULL))
+        AND trc.subject_study_format_id = stc.subject_study_format_id
+    INNER JOIN sch_teacher_profile stp ON stp.id = stc.teacher_profile_id
+    
+WHERE 
+    trc.is_active = 1
+    AND stc.is_active = 1
+    AND stp.is_active = 1
+    AND (stc.effective_from IS NULL OR stc.effective_from <= CURDATE())
+    AND (stc.effective_to IS NULL OR stc.effective_to >= CURDATE())
+    AND (stp.effective_from IS NULL OR stp.effective_from <= CURDATE())
+    AND (stp.effective_to IS NULL OR stp.effective_to >= CURDATE())
+    AND (trc.effective_from IS NULL OR trc.effective_from <= CURDATE())
+    AND (trc.effective_to IS NULL OR trc.effective_to >= CURDATE%)
+
+-- Optional: Add priority ordering (best teachers first)
+ORDER BY 
+    trc.id,
+    -- Higher proficiency first
+    stc.proficiency_percentage DESC,
+    -- Primary subject teachers first
+    stc.is_primary_subject DESC,
+    -- Higher experience first
+    stc.teaching_experience_months DESC,
+    -- Higher priority weight first
+    stc.priority_weight DESC,
+    -- Better competency level first
+    FIELD(stc.competancy_level, 'Expert', 'Advanced', 'Intermediate', 'Basic');
+
 
 Step 2: Update [sch_teacher_profile.teacher_availability_ratio] 
    Update in [sch_teacher_profile] as tp from [sch_teacher_capabilities] as tc
