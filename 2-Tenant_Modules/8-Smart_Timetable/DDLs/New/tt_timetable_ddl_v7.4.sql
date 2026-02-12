@@ -758,7 +758,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 --  SECTION 4: TIMETABLE RESOURCE AVAILABILITY
 -- -------------------------------------------------
 
-  -- Create Teachers Availability Class wise for entire Academic Session
+  -- Create Teachers Availability for every record of 'tt_requirement_consolidation'
   CREATE TABLE IF NOT EXISTS `tt_teacher_availability` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     -- Key Field to apply Constraints
@@ -767,6 +767,7 @@ SET FOREIGN_KEY_CHECKS = 0;
     `section_id` INT unsigned DEFAULT NULL,           -- FK to sch_sections.id
     `subject_study_format_id` INT unsigned NOT NULL,  -- FK to sch_study_formats.id. e.g SCI_LEC, SCI_LAB, COM_LEC, COM_OPT, etc.
     `teacher_profile_id` INT unsigned NOT NULL,       -- FK to sch_teacher_profile.id
+    `required_weekly_periods` TINYINT UNSIGNED NOT NULL DEFAULT 1,  -- Total periods required per week for this Class Group (Class+{Section}+Subject+StudyFormat)
     -- Skill & Preference from "sch_teacher_profile"
     `is_full_time` TINYINT(1) DEFAULT 1,              -- 1=Full-time, 0=Part-time
     `preferred_shift` INT UNSIGNED DEFAULT NULL,    -- FK to sch_shift.id

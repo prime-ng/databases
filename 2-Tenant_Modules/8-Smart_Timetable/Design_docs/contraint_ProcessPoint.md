@@ -252,17 +252,17 @@ As tt_requirement_consolidation doesn't have teacher_profile_id. To populate tt_
   - Identify which teachers are eligible for each requirement (based on Class+Subject+Study_Format)
   - Then update [tt_teacher_availability] for each record with eligible teacher count
 
-Step 1: Truncate [tt_teacher_availability]
--------------------------------------------
+#### Step 1: Truncate [tt_teacher_availability]
+------------------------------------------------
    Remove all the records from [tt_teacher_availability]
 
-
-STEP 2: Fill Records into [tt_teacher_availability] from [tt_requirement_consolidation], [sch_teacher_profile], [sch_teacher_capabilities]
-        (Populate tt_teacher_availability with ALL requirements. LEFT JOIN ensures requirements with no teachers are also included)
+#### Step 2: Fill Records into [tt_teacher_availability] from [tt_requirement_consolidation], [sch_teacher_profile],  [sch_teacher_capabilities]
+-------------------------------------------------------------------------------------------------------------------------------------------
+(Populate tt_teacher_availability with ALL requirements. LEFT JOIN ensures requirements with no teachers are also included)
 
 INSERT INTO tt_teacher_availability (
     -- Key Fields
-    requirement_consolidation_id, class_id, section_id, subject_study_format_id, teacher_profile_id, 
+    requirement_consolidation_id, class_id, section_id, subject_study_format_id, teacher_profile_id, required_weekly_periods
     -- From sch_teacher_profile
     is_full_time, preferred_shift, capable_handling_multiple_classes, can_be_used_for_substitution,   certified_for_lab,max_available_periods_weekly, min_available_periods_weekly, max_allocated_periods_weekly, min_allocated_periods_weekly, can_be_split_across_sections, min_teacher_availability_score, max_teacher_availability_score
     -- From sch_teacher_capabilities
@@ -273,7 +273,7 @@ INSERT INTO tt_teacher_availability (
 SELECT 
     -- Key Fields from requirement (ALWAYS populated)
     trc.id AS requirement_consolidation_id, stc.teacher_profile_id,  -- NULL if no teacher found
-    trc.class_id, trc.section_id, trc.subject_study_format_id, trc.academic_term_id, trc.timetable_type_id,
+    trc.class_id, trc.section_id, trc.subject_study_format_id, trc.academic_term_id, trc.timetable_type_id, trc.required_weekly_periods
     -- From sch_teacher_profile (NULL if no teacher found)
     stp.is_full_time, stp.preferred_shift, stp.capable_handling_multiple_classes, stp.can_be_used_for_substitution, stp.certified_for_lab,stp.max_available_periods_weekly, stp.min_available_periods_weekly, stp.max_allocated_periods_weekly, stp.min_allocated_periods_weekly, stp.can_be_split_across_sections, stp.min_teacher_availability_score, stp.max_teacher_availability_score,
     -- From sch_teacher_capabilities (NULL if no capability found)
@@ -301,7 +301,8 @@ WHERE
 --------------------------
 
 
-Step 3: Update in [max_allocated_periods_weekly] from [min_allocated_periods_weekly] in [sch_teacher_profile]
+#### Step 3: Update in [max_allocated_periods_weekly] from [min_allocated_periods_weekly] in [sch_teacher_profile]
+------------------------------------------------------------------------------------------------------------------
    Select all the Records from [sch_teacher_profile]
    Loop through all the records from [sch_teacher_profile]
       Get: [required_weekly_periods] from [tt_requirement_consolidation] where [tt_requirement_consolidation.class_id] = [sch_teacher_profile.class_id] AND [tt_requirement_consolidation.subject_id] = [sch_teacher_profile.subject_id] AND [tt_requirement_consolidation.study_format_id] = [sch_teacher_profile.study_format_id]
@@ -309,20 +310,16 @@ Step 3: Update in [max_allocated_periods_weekly] from [min_allocated_periods_wee
    EndLoop
 
 
-
-
-
-Step 4: Calculate [min_teacher_availability_score] and [max_teacher_availability_score] in [tt_teacher_availability]
+#### Step 4: Calculate [min_teacher_availability_score] and [max_teacher_availability_score] in [tt_teacher_availability]
+------------------------------------------------------------------------------------------------------------------
    Select all the Records from [tt_teacher_availability]
    Loop through all the records from [tt_teacher_availability]
       Calculate [min_teacher_availability_score] and [max_teacher_availability_score] from [sch_teacher_capabilities]
    EndLoop
 
 
-
-
-
-   Update in [tt_teacher_availability] 
+#### Step 5: Update in [tt_teacher_availability] 
+------------------------------------------------------------------------------------------------------------------
       set [day1_available_period_count], [day2_available_period_count], [day3_available_period_count], [day4_available_period_count],
           [day5_available_period_count], [day6_available_period_count], [day7_available_period_count]
    Select all the Records from [tt_teacher_availability]
@@ -330,7 +327,9 @@ Step 4: Calculate [min_teacher_availability_score] and [max_teacher_availability
       Calculate [min_teacher_availability_score] and [max_teacher_availability_score] from [sch_teacher_capabilities]
    EndLoop
 
-Step 3: Update in [tt_teacher_availability] from [tt_teacher_unavailable]
+
+#### Step 6: Update in [tt_teacher_availability] from [tt_teacher_unavailable]
+------------------------------------------------------------------------------------------------------------------
    set [day1_available_period_count], [day2_available_period_count], [day3_available_period_count], [day4_available_period_count],
        [day5_available_period_count], [day6_available_period_count], [day7_available_period_count]
    Select all the Records from [tt_teacher_availability]
@@ -338,25 +337,18 @@ Step 3: Update in [tt_teacher_availability] from [tt_teacher_unavailable]
       Calculate [min_teacher_availability_score] and [max_teacher_availability_score] from [sch_teacher_capabilities]
    EndLoop
 
-Step 5: Mannual modification in [tt_teacher_availability] for [is_primary_teacher], [is_preferred_teacher], [preference_score]
 
-
-
+#### Step 6: Mannual modification in [tt_teacher_availability] for [is_primary_teacher], [is_preferred_teacher], [preference_score]
+------------------------------------------------------------------------------------------------------------------
 Important - Auto Calculate belwo Fields:
   In [sch_teacher_profile]
       [max_allocated_periods_weekly], [min_allocated_periods_weekly], [teacher_availability_ratio], [min_teacher_availability_score], [max_teacher_availability_score]
 
-
   In [sch_teacher_capabilities]
     - [scarcity_index]
 
-
   In [tt_teacher_availability]
     [is_primary_teacher], [is_preferred_teacher], [preference_score], [min_teacher_availability_score], [max_teacher_availability_score]
-
- 
-
-
 
    - [teacher_availability_ratio] in [sch_teacher_profile]
    -  in [tt_teacher_availability]
@@ -364,7 +356,8 @@ Important - Auto Calculate belwo Fields:
 
 
 
-Step 9: This will be final step to calculated Final Teacher Preference Score
+#### Step 9: This will be final step to calculated Final Teacher Preference Score
+---------------------------------------------------------------------------------
 Update [is_primary_teacher], [is_preferred_teacher], [preference_score] in [tt_teacher_availability]
    Update in [tt_teacher_availability] as ta from [sch_teacher_capabilities] as tc
    set [teacher_availability_ratio] = (SELECT COUNT(DISTINCT teacher_profile_id) AS no_of_teachers_assigned FROM 
@@ -375,11 +368,6 @@ Update [is_primary_teacher], [is_preferred_teacher], [preference_score] in [tt_t
    Loop through all the records from [tt_teacher_availability]
       Update [teacher_availability_ratio] in [sch_teacher_capabilities] from [tt_teacher_availability]
    EndLoop
-
-
-
-
-
 
 
 
