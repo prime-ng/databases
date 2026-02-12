@@ -104,13 +104,14 @@
     `soft_skills` JSON DEFAULT NULL,                     -- e.g., ["leadership", "communication", "problem_solving"]
     `assignment_meta` JSON DEFAULT NULL,                 -- e.g. { "qualification": "M.Sc Physics", "experience": "7 years" }
     -- LOAD & SCHEDULING CONSTRAINTS
-    `max_periods_daily` TINYINT UNSIGNED DEFAULT 6,
-    `min_periods_daily` TINYINT UNSIGNED DEFAULT 1,
-    `max_periods_weekly` TINYINT UNSIGNED DEFAULT 48,
-    `min_periods_weekly` TINYINT UNSIGNED DEFAULT 15,
+    `max_available_periods_weekly` TINYINT UNSIGNED DEFAULT 48,
+    `min_available_periods_weekly` TINYINT UNSIGNED DEFAULT 36,
+    `max_allocated_periods_weekly` TINYINT UNSIGNED DEFAULT 1,
+    `min_allocated_periods_weekly` TINYINT UNSIGNED DEFAULT 1,
     `can_be_split_across_sections` TINYINT(1) DEFAULT 0,
     -- Performance & compliance
-    `teacher_availability_ratio` DECIMAL(6,2) NOT NULL,  -- Formula is Given below the table (new)
+    `min_teacher_availability_score` DECIMAL(7,2) UNSIGNED DEFAULT 1  -- Percentage of available teachers for this Class Group (Will capture from Teachers profile)
+    `max_teacher_availability_score` DECIMAL(7,2) UNSIGNED DEFAULT 1  -- Percentage of available teachers for this Class Group (Will capture from Teachers profile)
     `performance_rating` TINYINT UNSIGNED DEFAULT NULL,  -- rating out of (1 to 10)
     `last_performance_review` DATE DEFAULT NULL,
     `security_clearance_done` TINYINT(1) DEFAULT 0,
@@ -133,7 +134,7 @@
     -- CORE RELATIONSHIP
     `teacher_profile_id` INT UNSIGNED NOT NULL,   -- FK sch_teacher_profile.id
     `class_id` INT UNSIGNED NOT NULL,                 -- FK sch_classes.id
-    `section_id` INT UNSIGNED DEFAULT NULL,           -- FK sch_sections.id (NULL = all sections)
+    -- `section_id` INT UNSIGNED DEFAULT NULL,           -- FK sch_sections.id (NULL = all sections)
     `subject_study_format_id` INT UNSIGNED NOT NULL,   -- FK sch_subject_study_format_jnt.id
     -- TEACHING STRENGTH
     `proficiency_percentage` TINYINT UNSIGNED DEFAULT NULL, -- 1–100
