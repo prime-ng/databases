@@ -30,6 +30,9 @@ CREATE TABLE IF NOT EXISTS `lms_difficulty_distribution_details` (
   `difficulty_config_id` INT UNSIGNED NOT NULL,     -- FK to lms_difficulty_distribution_configs.id
   `question_type_id` INT UNSIGNED NOT NULL,         -- FK to slb_question_types.id (e.g. 'MCQ_SINGLE','MCQ_MULTI','SHORT_ANSWER','LONG_ANSWER')
   `complexity_level_id` INT UNSIGNED NOT NULL,      -- FK to slb_complexity_level.id (e.g. 'EASY','MEDIUM','DIFFICULT')
+  `bloom_id` INT UNSIGNED NULL,       -- fk -> slb_bloom_taxonomy.id (Taxonomy)
+  `cognitive_skill_id` INT UNSIGNED NULL, -- fk -> slb_cognitive_skill.id (Taxonomy)
+  `ques_type_specificity_id` INT UNSIGNED NULL, -- fk -> slb_ques_type_specificity.id (Taxonomy)
   `min_percentage` DECIMAL(5,2) NOT NULL DEFAULT 0.00, -- Min % of total questions (e.g. 20.00)
   `max_percentage` DECIMAL(5,2) NOT NULL DEFAULT 0.00, -- Max % of total questions (e.g. 40.00)
   `marks_per_question` DECIMAL(5,2) DEFAULT NULL,     -- Optional override for marks (e.g. 1.00)
