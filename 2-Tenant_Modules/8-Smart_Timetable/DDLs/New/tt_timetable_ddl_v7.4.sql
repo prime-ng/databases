@@ -530,17 +530,17 @@ SET FOREIGN_KEY_CHECKS = 0;
     `created_at` timestamp NULL DEFAULT NULL,
     `updated_at` timestamp NULL DEFAULT NULL,
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_classGroup_code` (`code`),
-    UNIQUE KEY `uq_classGroup_subStdFmt_class_section_subjectType` (`class_id`,`section_id`,`sub_stdy_frmt_id`),
-    KEY `sch_class_groups_jnt_class_id_foreign` (`class_id`,`section_id`),
-    KEY `sch_class_groups_jnt_subject_type_id_foreign` (`subject_type_id`),
-    KEY `sch_class_groups_jnt_rooms_type_id_foreign` (`required_room_type_id`),
-    CONSTRAINT `sch_class_groups_jnt_class_id_foreign` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE RESTRICT,
-    CONSTRAINT `sch_class_groups_jnt_rooms_type_id_foreign` FOREIGN KEY (`required_room_type_id`) REFERENCES `sch_room_types` (`id`) ON DELETE RESTRICT,
-    CONSTRAINT `sch_class_groups_jnt_required_room_id_foreign` FOREIGN KEY (`required_room_id`) REFERENCES `sch_rooms` (`id`) ON DELETE RESTRICT,
-    CONSTRAINT `sch_class_groups_jnt_section_id_foreign` FOREIGN KEY (`section_id`) REFERENCES `sch_sections` (`id`) ON DELETE RESTRICT,
-    CONSTRAINT `sch_class_groups_jnt_sub_stdy_frmt_id_foreign` FOREIGN KEY (`sub_stdy_frmt_id`) REFERENCES `sch_subject_study_format_jnt` (`id`) ON DELETE RESTRICT,
-    CONSTRAINT `sch_class_groups_jnt_subject_type_id_foreign` FOREIGN KEY (`subject_type_id`) REFERENCES `sch_subject_types` (`id`) ON DELETE RESTRICT
+    UNIQUE KEY `uq_clsReqGroups_code` (`code`),
+    UNIQUE KEY `uq_clsReqGroups_class_section_subjectType` (`class_id`,`section_id`,`sub_stdy_frmt_id`),
+    KEY `idx_clsReqGroups_class_id_foreign` (`class_id`,`section_id`),
+    KEY `idx_clsReqGroups_subject_type_id_foreign` (`subject_type_id`),
+    KEY `idx_clsReqGroups_rooms_type_id_foreign` (`required_room_type_id`),
+    CONSTRAINT `fk_clsReqGroups_class_id_foreign` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE RESTRICT,
+    CONSTRAINT `fk_clsReqGroups_rooms_type_id_foreign` FOREIGN KEY (`required_room_type_id`) REFERENCES `sch_room_types` (`id`) ON DELETE RESTRICT,
+    CONSTRAINT `fk_clsReqGroups_required_room_id_foreign` FOREIGN KEY (`required_room_id`) REFERENCES `sch_rooms` (`id`) ON DELETE RESTRICT,
+    CONSTRAINT `fk_clsReqGroups_section_id_foreign` FOREIGN KEY (`section_id`) REFERENCES `sch_sections` (`id`) ON DELETE RESTRICT,
+    CONSTRAINT `fk_clsReqGroups_sub_stdy_frmt_id_foreign` FOREIGN KEY (`sub_stdy_frmt_id`) REFERENCES `sch_subject_study_format_jnt` (`id`) ON DELETE RESTRICT,
+    CONSTRAINT `fk_clsReqGroups_subject_type_id_foreign` FOREIGN KEY (`subject_type_id`) REFERENCES `sch_subject_types` (`id`) ON DELETE RESTRICT
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
   -- Condition:
   -- 1. student_count = sch_class_section_jnt.actual_total_student
@@ -571,6 +571,7 @@ SET FOREIGN_KEY_CHECKS = 0;
     `deleted_at` TIMESTAMP NULL DEFAULT NULL,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_subgroup_code` (`code`),
+    UNIQUE KEY `uq_classGroup_subStdFmt_class_section_subjectType` (`class_id`,`section_id`,`sub_stdy_frmt_id`),
     KEY `idx_subgroup_type` (`subgroup_type`),
     CONSTRAINT `fk_subgroup_class_group` FOREIGN KEY (`class_subject_group_id`) REFERENCES `tt_class_subject_groups` (`id`) ON DELETE SET NULL
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -586,50 +587,50 @@ SET FOREIGN_KEY_CHECKS = 0;
   -- changed below Table name to - tt_requirement_consolidation from tt_class_group_requirement
   CREATE TABLE IF NOT EXISTS `tt_requirement_consolidation` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `class_requirement_group_id` INT UNSIGNED DEFAULT NULL,              -- FK to sch_class_groups_jnt.id
-    `class_requirement_subgroup_id` INT UNSIGNED DEFAULT NULL,           -- FK to tt_requirement_subgroups.id
-    `academic_term_id` INT UNSIGNED NOT NULL,                -- FK to tt_academic_term.id  -- This is the Term for which this timetable is being generated (New)
-    `timetable_type_id` INT unsigned NOT NULL,               -- FK to tt_timetable_type.id
+    `academic_term_id` INT UNSIGNED NOT NULL,                       -- FK to tt_academic_term.id (This is the Term for which this timetable is being generated)
+    `timetable_type_id` INT unsigned NOT NULL,                      -- FK to tt_timetable_type.id
+    `class_requirement_group_id` INT UNSIGNED DEFAULT NULL,         -- FK to sch_class_groups_jnt.id
+    `class_requirement_subgroup_id` INT UNSIGNED DEFAULT NULL,      -- FK to tt_requirement_subgroups.id
     -- Key Field to apply Constraints
-    `class_id` INT unsigned NOT NULL,                            -- FK to sch_classes.id
-    `section_id` INT unsigned DEFAULT NULL,                      -- FK to sch_sections.id
-    `subject_id` INT unsigned NOT NULL,                            -- FK to sch_subjects.id
-    `study_format_id` INT unsigned NOT NULL,                       -- FK to sch_study_formats.id. e.g SCI_LEC, SCI_LAB, COM_LEC, COM_OPT, etc.
-    `subject_type_id` INT unsigned NOT NULL,                       -- FK to sch_subject_types.id. e.g MAJOR, MINOR, OPTIONAL, etc.
-    `subject_study_format_id` INT unsigned NOT NULL,               -- FK to sch_study_formats.id. e.g SCI_LEC, SCI_LAB, COM_LEC, COM_OPT, etc.
+    `class_id` INT unsigned NOT NULL,                               -- FK to sch_classes.id
+    `section_id` INT unsigned DEFAULT NULL,                         -- FK to sch_sections.id
+    `subject_id` INT unsigned NOT NULL,                             -- FK to sch_subjects.id
+    `study_format_id` INT unsigned NOT NULL,                        -- FK to sch_study_formats.id. e.g SCI_LEC, SCI_LAB, COM_LEC, COM_OPT, etc.
+    `subject_type_id` INT unsigned NOT NULL,                        -- FK to sch_subject_types.id. e.g MAJOR, MINOR, OPTIONAL, etc.
+    `subject_study_format_id` INT unsigned NOT NULL,                -- FK to sch_study_formats.id. e.g SCI_LEC, SCI_LAB, COM_LEC, COM_OPT, etc.
     -- Non-Editable (Fetched from 'tt_requirement_groups' & 'tt_class_requirement_subgroups')
-    `class_house_room_id` INT UNSIGNED NOT NULL,                 -- FK to 'sch_rooms' (Added new). (Fetch from sch_class_section_jnt)
-    `student_count` INT UNSIGNED DEFAULT NULL,                   -- Number of students in this subgroup
-    `eligible_teacher_count` INT UNSIGNED DEFAULT NULL,          -- Number of teachers available for this group (Will capture from Teachers profile)
+    `class_house_room_id` INT UNSIGNED NOT NULL,                    -- FK to 'sch_rooms' (Added new). (Fetch from sch_class_section_jnt)
+    `student_count` INT UNSIGNED DEFAULT NULL,                      -- Number of students in this subgroup
+    `eligible_teacher_count` INT UNSIGNED DEFAULT NULL,             -- Number of teachers available for this group (Will capture from Teachers profile)
     -- Editable Parameters before Timetable Generation (Fetching from sch_class_groups_jnt)
-    `is_compulsory` TINYINT(1) NOT NULL DEFAULT 1,              -- Whether this subgroup is compulsory
-    `required_weekly_periods` TINYINT UNSIGNED NOT NULL DEFAULT 1,       -- Total periods required per week for this Class Group (Class+{Section}+Subject+StudyFormat)
-    `min_periods_per_week` TINYINT UNSIGNED DEFAULT NULL,       -- Minimum periods required per week
-    `max_periods_per_week` TINYINT UNSIGNED DEFAULT NULL,       -- Maximum periods required per week
-    `max_per_day` TINYINT UNSIGNED DEFAULT NULL,                -- Maximum periods per day
-    `min_per_day` TINYINT UNSIGNED DEFAULT NULL,                -- Minimum periods per day
-    `min_gap_between_periods` TINYINT UNSIGNED DEFAULT NULL,    -- Minimum gap between periods
-    `allow_consecutive_periods` TINYINT(1) NOT NULL DEFAULT 0,          -- Whether consecutive periods are allowed
-    `max_consecutive_periods` TINYINT UNSIGNED DEFAULT 2,       -- Maximum consecutive periods
-    `class_priority_score` TINYINT UNSIGNED DEFAULT NULL,       -- Priority Score from sch_class_group
-    `preferred_periods_json` JSON DEFAULT NULL,                 -- On Screen User will see Multiselection of Periods but it will be saved as JSON
-    `avoid_periods_json` JSON DEFAULT NULL,                     -- On Screen User will see Multiselection of Periods but it will be saved as JSON
-    `spread_evenly` TINYINT(1) DEFAULT 1,                       -- Whether periods should be spread evenly (have 1 period everyday)
-    `is_shared_across_sections` TINYINT(1) NOT NULL DEFAULT 0,  -- Whether this subgroup is shared across sections (Editable)
-    `is_shared_across_classes` TINYINT(1) NOT NULL DEFAULT 0,   -- Whether this subgroup is shared across classes (Editable)
+    `is_compulsory` TINYINT(1) NOT NULL DEFAULT 1,                  -- Whether this subgroup is compulsory
+    `required_weekly_periods` TINYINT UNSIGNED NOT NULL DEFAULT 1,  -- Total periods required per week for this Class Group (Class+{Section}+Subject+StudyFormat)
+    `min_periods_required_per_week` TINYINT UNSIGNED DEFAULT NULL,  -- Minimum periods required per week
+    `max_periods_required_per_week` TINYINT UNSIGNED DEFAULT NULL,  -- Maximum periods allowed per week
+    `min_periods_required_per_day` TINYINT UNSIGNED DEFAULT NULL,   -- Minimum periods allowed per day
+    `max_periods_required_per_day` TINYINT UNSIGNED DEFAULT NULL,   -- Maximum periods allowed per day
+    `min_gap_between_periods` TINYINT UNSIGNED DEFAULT NULL,        -- Minimum gap between periods
+    `allow_consecutive_periods` TINYINT(1) NOT NULL DEFAULT 0,      -- Whether consecutive periods are allowed
+    `max_consecutive_periods` TINYINT UNSIGNED DEFAULT 2,           -- Maximum consecutive periods
+    `class_priority_score` TINYINT UNSIGNED DEFAULT NULL,           -- Priority Score from sch_class_group
+    `preferred_periods_json` JSON DEFAULT NULL,                     -- On Screen User will see Multiselection of Periods but it will be saved as JSON
+    `avoid_periods_json` JSON DEFAULT NULL,                         -- On Screen User will see Multiselection of Periods but it will be saved as JSON
+    `spread_evenly` TINYINT(1) DEFAULT 1,                           -- Whether periods should be spread evenly (have 1 period everyday)
+    `is_shared_across_sections` TINYINT(1) NOT NULL DEFAULT 0,      -- Whether this subgroup is shared across sections (Editable)
+    `is_shared_across_classes` TINYINT(1) NOT NULL DEFAULT 0,       -- Whether this subgroup is shared across classes (Editable)
     -- Room Requirement
-    `compulsory_specific_room_type` TINYINT(1) NOT NULL DEFAULT 0,       -- Whether specific room type is required (TRUE - if Specific Room Type is Must)
-    `required_room_type_id` INT UNSIGNED NOT NULL,                       -- FK to sch_room_types.id (Required)
-    `required_room_id` INT UNSIGNED DEFAULT NULL,                        -- FK to sch_rooms.id (Optional)
+    `compulsory_specific_room_type` TINYINT(1) NOT NULL DEFAULT 0,  -- Whether specific room type is required (TRUE - if Specific Room Type is Must)
+    `required_room_type_id` INT UNSIGNED NOT NULL,                  -- FK to sch_room_types.id (Required)
+    `required_room_id` INT UNSIGNED DEFAULT NULL,                   -- FK to sch_rooms.id (Optional)
     -- Audit Fields
-    `is_active` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,         -- Whether this requirement is active
+    `is_active` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,             -- Whether this requirement is active
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_cgr_group_session` (`class_group_id`, `class_subgroup_id`, `academic_term_id`, 'timetable_type_id'),
-    CONSTRAINT `fk_cgr_class_group` FOREIGN KEY (`class_group_id`) REFERENCES `sch_class_groups_jnt` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_cgr_subgroup` FOREIGN KEY (`class_subgroup_id`) REFERENCES `tt_requirement_subgroups` (`id`) ON DELETE CASCADE,
+    UNIQUE KEY `uq_cgr_group_session` (`academic_term_id`, `timetable_type_id`, `class_requirement_group_id`, `class_requirement_subgroup_id`),
+    CONSTRAINT `fk_cgr_class_group` FOREIGN KEY (`class_requirement_group_id`) REFERENCES `sch_class_groups_jnt` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_cgr_subgroup` FOREIGN KEY (`class_requirement_subgroup_id`) REFERENCES `tt_requirement_subgroups` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_cgr_session` FOREIGN KEY (`academic_term_id`) REFERENCES `tt_academic_term` (`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_cgr_timetable_type` FOREIGN KEY (`timetable_type_id`) REFERENCES `tt_timetable_type` (`id`) ON DELETE SET NULL,
-    CONSTRAINT `chk_cgr_target` CHECK ((`class_group_id` IS NOT NULL AND `class_subgroup_id` IS NULL) OR (`class_group_id` IS NULL AND `class_subgroup_id` IS NOT NULL))
+    CONSTRAINT `chk_cgr_target` CHECK ((`class_requirement_group_id` IS NOT NULL AND `class_requirement_subgroup_id` IS NULL) OR (`class_requirement_group_id` IS NULL AND `class_requirement_subgroup_id` IS NOT NULL))
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- -------------------------------------------------
@@ -757,7 +758,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 --  SECTION 4: TIMETABLE RESOURCE AVAILABILITY
 -- -------------------------------------------------
 
-  -- Create Teachers Availability Class wise for entire Academic Session
+  -- Create Teachers Availability for every record of 'tt_requirement_consolidation'
   CREATE TABLE IF NOT EXISTS `tt_teacher_availability` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     -- Key Field to apply Constraints
@@ -766,14 +767,17 @@ SET FOREIGN_KEY_CHECKS = 0;
     `section_id` INT unsigned DEFAULT NULL,           -- FK to sch_sections.id
     `subject_study_format_id` INT unsigned NOT NULL,  -- FK to sch_study_formats.id. e.g SCI_LEC, SCI_LAB, COM_LEC, COM_OPT, etc.
     `teacher_profile_id` INT unsigned NOT NULL,       -- FK to sch_teacher_profile.id
+    `required_weekly_periods` TINYINT UNSIGNED NOT NULL DEFAULT 1,  -- Total periods required per week for this Class Group (Class+{Section}+Subject+StudyFormat)
     -- Skill & Preference from "sch_teacher_profile"
+    `is_full_time` TINYINT(1) DEFAULT 1,              -- 1=Full-time, 0=Part-time
     `preferred_shift` INT UNSIGNED DEFAULT NULL,    -- FK to sch_shift.id
     `capable_handling_multiple_classes` TINYINT(1) DEFAULT 0,
     `can_be_used_for_substitution` TINYINT(1) DEFAULT 1,
-    `max_periods_daily` TINYINT UNSIGNED DEFAULT 6,
-    `min_periods_daily` TINYINT UNSIGNED DEFAULT 1,
-    `max_periods_weekly` TINYINT UNSIGNED DEFAULT 48,
-    `min_periods_weekly` TINYINT UNSIGNED DEFAULT 15,
+    `certified_for_lab` TINYINT(1) DEFAULT 0,
+    `max_available_periods_weekly` TINYINT UNSIGNED DEFAULT 48,
+    `min_available_periods_weekly` TINYINT UNSIGNED DEFAULT 36,
+    `max_allocated_periods_weekly` TINYINT UNSIGNED DEFAULT 1,
+    `min_allocated_periods_weekly` TINYINT UNSIGNED DEFAULT 1,
     `can_be_split_across_sections` TINYINT(1) DEFAULT 0,
     -- From Teachers Capability (sch_teacher_capabilities)
     `proficiency_percentage` TINYINT UNSIGNED DEFAULT NULL, -- 1–100
@@ -791,9 +795,9 @@ SET FOREIGN_KEY_CHECKS = 0;
     `historical_success_ratio` TINYINT UNSIGNED DEFAULT NULL, -- 1–100 (sessions_completed_without_change / total_sessions_allocated ) * 100)
     `last_allocation_score` TINYINT UNSIGNED DEFAULT NULL,   -- last run score (1–100)
     -- Editable - School Preference for a Teacher for a Particuler Class+Subject+StudyFormat
-    `is_primary_teacher` TINYINT(1) NOT NULL DEFAULT 1,  -- 1=Yes, 0=No
+    `is_primary_teacher` TINYINT(1) NOT NULL DEFAULT 1,  -- 1=Yes, 0=No 9can be calculated on the basis of 
     `is_preferred_teacher` TINYINT(1) NOT NULL DEFAULT 0,  -- 1=Yes, 0=No
-    `preference_score` TINYINT UNSIGNED DEFAULT NULL,   -- 1–100 (Will capture from Teachers profile)
+    `preference_score` TINYINT UNSIGNED DEFAULT NULL,   -- 1–100 
     -- Status Duration
     `effective_from` DATE DEFAULT NULL,
     `effective_to` DATE DEFAULT NULL,

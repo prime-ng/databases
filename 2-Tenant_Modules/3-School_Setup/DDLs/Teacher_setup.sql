@@ -104,22 +104,22 @@
     `soft_skills` JSON DEFAULT NULL,                     -- e.g., ["leadership", "communication", "problem_solving"]
     `assignment_meta` JSON DEFAULT NULL,                 -- e.g. { "qualification": "M.Sc Physics", "experience": "7 years" }
     -- LOAD & SCHEDULING CONSTRAINTS
-    `max_available_periods_weekly` TINYINT UNSIGNED DEFAULT 48,
-    `min_available_periods_weekly` TINYINT UNSIGNED DEFAULT 36,
-    `max_allocated_periods_weekly` TINYINT UNSIGNED DEFAULT 1,
-    `min_allocated_periods_weekly` TINYINT UNSIGNED DEFAULT 1,
-    `can_be_split_across_sections` TINYINT(1) DEFAULT 0,
+    `max_available_periods_weekly` TINYINT UNSIGNED DEFAULT 48,  -- Manual Entry
+    `min_available_periods_weekly` TINYINT UNSIGNED DEFAULT 36,  -- Manual Entry
+    `max_allocated_periods_weekly` TINYINT UNSIGNED DEFAULT 1,   -- Auto Calculated (Count of Classes+Subject_Study_format allocated)
+    `min_allocated_periods_weekly` TINYINT UNSIGNED DEFAULT 1,   -- Auto Calculated (Count of Classes+Subject_Study_format allocated)
+    `can_be_split_across_sections` TINYINT(1) DEFAULT 0,         -- Manual Entry
     -- Performance & compliance
-    `min_teacher_availability_score` DECIMAL(7,2) UNSIGNED DEFAULT 1  -- Percentage of available teachers for this Class Group (Will capture from Teachers profile)
-    `max_teacher_availability_score` DECIMAL(7,2) UNSIGNED DEFAULT 1  -- Percentage of available teachers for this Class Group (Will capture from Teachers profile)
-    `performance_rating` TINYINT UNSIGNED DEFAULT NULL,  -- rating out of (1 to 10)
-    `last_performance_review` DATE DEFAULT NULL,
-    `security_clearance_done` TINYINT(1) DEFAULT 0,
-    `reporting_to` INT UNSIGNED DEFAULT NULL,
-    `can_access_sensitive_data` TINYINT(1) DEFAULT 0,
-    `notes` TEXT NULL,
-    `effective_from` DATE DEFAULT NULL,
-    `effective_to` DATE DEFAULT NULL,
+    `min_teacher_availability_score` DECIMAL(7,2) UNSIGNED DEFAULT 1,  -- Percentage of available teachers for this Class Group (Will capture from Teachers profile)
+    `max_teacher_availability_score` DECIMAL(7,2) UNSIGNED DEFAULT 1,  -- Percentage of available teachers for this Class Group (Will capture from Teachers profile)
+    `performance_rating` TINYINT UNSIGNED DEFAULT NULL,                -- Manual Entry rating out of (1 to 10)
+    `last_performance_review` DATE DEFAULT NULL,                       -- Manual Entry
+    `security_clearance_done` TINYINT(1) DEFAULT 0,                    -- Manual Entry
+    `reporting_to` INT UNSIGNED DEFAULT NULL,                          -- Manual Entry
+    `can_access_sensitive_data` TINYINT(1) DEFAULT 0,                  -- Manual Entry
+    `notes` TEXT NULL,                                                 -- Manual Entry
+    `effective_from` DATE DEFAULT NULL,                                -- Manual Entry
+    `effective_to` DATE DEFAULT NULL,                                  -- Manual Entry
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
     `deleted_at` TIMESTAMP NULL DEFAULT NULL,
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
@@ -147,12 +147,12 @@
     `scarcity_index` TINYINT UNSIGNED DEFAULT NULL,    -- 1=abundant, 10=very rare
     `is_hard_constraint` TINYINT(1) DEFAULT 0,         -- if true cannot be voilated e.g. Physics Lab teacher for Class 12
     `allocation_strictness` ENUM('hard','medium','soft') DEFAULT 'medium', e.g. Senior Maths teacher - Hard, Preferred English teacher - Medium, Art / Sports / Activity - Soft
-    -- AI / HISTORICAL FEEDBACK
-    `historical_success_ratio` TINYINT UNSIGNED DEFAULT NULL, -- 1–100 (sessions_completed_without_change / total_sessions_allocated ) * 100)
-    `last_allocation_score` TINYINT UNSIGNED DEFAULT NULL,   -- last run score
     -- GOVERNANCE & OVERRIDE
     `override_priority` TINYINT UNSIGNED DEFAULT NULL, -- admin override
     `override_reason` VARCHAR(255) DEFAULT NULL,
+    -- AI / HISTORICAL FEEDBACK
+    `historical_success_ratio` TINYINT UNSIGNED DEFAULT NULL, -- 1–100 (sessions_completed_without_change / total_sessions_allocated ) * 100)
+    `last_allocation_score` TINYINT UNSIGNED DEFAULT NULL,   -- last run score
     -- EFFECTIVITY & STATUS
     `effective_from` DATE DEFAULT NULL,
     `effective_to` DATE DEFAULT NULL,

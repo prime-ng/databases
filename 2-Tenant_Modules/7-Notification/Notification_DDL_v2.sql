@@ -7,7 +7,9 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- =========================================================
 -- NOTIFICATION MASTER
 -- =========================================================
-CREATE TABLE IF NOT EXISTS ntf_channel_master (
+
+
+CREATE TABLE IF NOT EXISTS `ntf_channel_master` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `code` VARCHAR(20) NOT NULL,
     `name` VARCHAR(50) NOT NULL,
@@ -22,7 +24,9 @@ CREATE TABLE IF NOT EXISTS ntf_channel_master (
     CONSTRAINT `uq_ntf_channel_code` UNIQUE (`code`),
     CONSTRAINT `uq_ntf_channel_name` UNIQUE (`name`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
-CREATE TABLE IF NOT EXISTS ntf_notifications (
+
+
+CREATE TABLE IF NOT EXISTS `ntf_notifications` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `source_module` VARCHAR(50) NOT NULL,
     -- Triggering module: Exam, Fee, Transport, Complaint etc
@@ -61,11 +65,13 @@ CREATE TABLE IF NOT EXISTS ntf_notifications (
     CONSTRAINT `fk_ntf_confidentiality` FOREIGN KEY (`confidentiality_level_id`) REFERENCES `sys_dropdown_table`(`id`),
     CONSTRAINT `fk_ntf_recurring_interval` FOREIGN KEY (`recurring_interval_id`) REFERENCES `sys_dropdown_table`(`id`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
+
+
 -- This table is used to store the notification channels for each notification
 -- =========================================================
 -- NOTIFICATION CHANNELS 
 -- =========================================================
-CREATE TABLE IF NOT EXISTS ntf_notification_channels (
+CREATE TABLE IF NOT EXISTS `ntf_notification_channels` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `notification_id` INT UNSIGNED NOT NULL,
     `channel_id` INT UNSIGNED NOT NULL,
@@ -97,10 +103,12 @@ CREATE TABLE IF NOT EXISTS ntf_notification_channels (
 -- Condition;
 -- 1. may have multipal Records against one notification_id (if multiple channels are enabled for the notification)
 -- 2. may have multipal Records against one notification_id and channel_id (if multiple templates are enabled for the notification)
+
+
 -- =========================================================
 -- NOTIFICATION TARGETING
 -- =========================================================
-CREATE TABLE IF NOT EXISTS ntf_notification_targets (
+CREATE TABLE IF NOT EXISTS `ntf_notification_targets` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `notification_id` INT UNSIGNED NOT NULL,
     `target_type_id` INT UNSIGNED NOT NULL,
@@ -120,10 +128,12 @@ CREATE TABLE IF NOT EXISTS ntf_notification_targets (
 -- Condition;
 -- 1. may have multipal Records against one notification_id (if multiple targets are selected for the notification)
 -- 2. may have multipal Records against one target_type_id (if multiple targets are selected for the notification)
+
+
 -- =========================================================
 -- USER NOTIFICATION PREFERENCES
 -- =========================================================
-CREATE TABLE IF NOT EXISTS ntf_user_preferences (
+CREATE TABLE IF NOT EXISTS `ntf_user_preferences` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `user_id` INT UNSIGNED NOT NULL,
     `channel_id` INT UNSIGNED NOT NULL,
@@ -138,10 +148,12 @@ CREATE TABLE IF NOT EXISTS ntf_user_preferences (
     UNIQUE KEY `uq_user_channel` (`user_id`, `channel_id`),
     CONSTRAINT `fk_ntf_pref_channel` FOREIGN KEY (`channel_id`) REFERENCES `ntf_channel_master`(`id`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+
+
 -- =========================================================
 -- NOTIFICATION TEMPLATES
 -- =========================================================
-CREATE TABLE IF NOT EXISTS ntf_templates (
+CREATE TABLE IF NOT EXISTS `ntf_templates` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `template_code` VARCHAR(50) NOT NULL,
     `channel_id` INT UNSIGNED NOT NULL,
@@ -161,10 +173,12 @@ CREATE TABLE IF NOT EXISTS ntf_templates (
     CONSTRAINT `fk_ntf_template_channel` FOREIGN KEY (`channel_id`) REFERENCES `ntf_channel_master`(`id`),
     CONSTRAINT `fk_ntf_template_media` FOREIGN KEY (`media_id`) REFERENCES `sys_media`(`id`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+
+
 -- =========================================================
 -- NOTIFICATION RESOLVED RECIPIENTS (Final Resolved Recipients to send Notification)
 -- =========================================================
-CREATE TABLE IF NOT EXISTS ntf_resolved_recipients (
+CREATE TABLE IF NOT EXISTS `ntf_resolved_recipients` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `notification_id` INT UNSIGNED NOT NULL,
     `channel_id` INT UNSIGNED NOT NULL,
@@ -196,10 +210,12 @@ CREATE TABLE IF NOT EXISTS ntf_resolved_recipients (
 -- Condition:
 -- 1. may have multipal Records against one notification_id
 -- 2. may have multipal Records against one user_id (if multiple channels are enabled for the user)
+
+
 -- =========================================================
 -- NOTIFICATION DELIVERY LOGS
 -- =========================================================
-CREATE TABLE IF NOT EXISTS ntf_delivery_logs (
+CREATE TABLE IF NOT EXISTS `ntf_delivery_logs` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `notification_id` INT UNSIGNED NOT NULL,
     `channel_id` INT UNSIGNED NOT NULL,
@@ -222,3 +238,5 @@ CREATE TABLE IF NOT EXISTS ntf_delivery_logs (
     CONSTRAINT `fk_ntf_log_channel` FOREIGN KEY (`channel_id`) REFERENCES `ntf_channel_master`(`id`),
     CONSTRAINT `fk_ntf_log_status` FOREIGN KEY (`delivery_status_id`) REFERENCES `sys_dropdown_table`(`id`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+
+
