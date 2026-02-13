@@ -89,6 +89,7 @@
     `emp_code` VARCHAR(20) NOT NULL,        -- Employee Code (Unique code for each user)
     `short_name` varchar(30) NOT NULL,      -- This Field will be used for showing Dropdown of Users i.e. Teachers, Students, Parents
     `name` varchar(100) NOT NULL,           -- Full Name (First Name, Middle Name, Last Name)
+    `user_type` ENUM('PRIME','EMPLOYEE' ,'TEACHER', 'STUDENT', 'PARENT', 'OTHER') NOT NULL,  -- Type of user
     `email` varchar(150) NOT NULL,
     `mobile_no` varchar(32) DEFAULT NULL,
     `phone_no` varchar(32) DEFAULT NULL,
