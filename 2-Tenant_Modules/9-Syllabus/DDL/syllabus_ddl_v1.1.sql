@@ -19,6 +19,10 @@ CREATE TABLE IF NOT EXISTS `slb_topic_level_types` (
   `code` VARCHAR(3) NOT NULL,                    -- e.g., (TOP, SBT, MIN, SMN, MIC, SMC, NAN, SNN, ULT, SUT)
   `name` VARCHAR(150) NOT NULL,                   -- e.g., (TOPIC, SUB-TOPIC, MINI TOPIC, SUB-MINI TOPIC, MICRO TOPIC, SUB-MICRO TOPIC, NANO TOPIC, SUB-NANO TOPIC, ULTRA TOPIC, SUB-ULTRA TOPIC)
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+  `can_be_used_for_homework_release` TINYINT(1) NOT NULL DEFAULT 1,
+  `can_be_used_for_quiz_release` TINYINT(1) NOT NULL DEFAULT 1,
+  `can_be_used_for_quest_release` TINYINT(1) NOT NULL DEFAULT 1,
+  `can_be_used_for_exam_release` TINYINT(1) NOT NULL DEFAULT 1,
   `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `deleted_at` TIMESTAMP NULL DEFAULT NULL,
