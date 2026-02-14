@@ -118,8 +118,8 @@
     `reporting_to` INT UNSIGNED DEFAULT NULL,                          -- Manual Entry
     `can_access_sensitive_data` TINYINT(1) DEFAULT 0,                  -- Manual Entry
     `notes` TEXT NULL,                                                 -- Manual Entry
-    `effective_from` DATE DEFAULT NULL,                                -- Manual Entry
-    `effective_to` DATE DEFAULT NULL,                                  -- Manual Entry
+    -- `effective_from` DATE DEFAULT NULL,                             -- Manual Entry
+    -- `effective_to` DATE DEFAULT NULL,                               -- Manual Entry
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
     `deleted_at` TIMESTAMP NULL DEFAULT NULL,
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
