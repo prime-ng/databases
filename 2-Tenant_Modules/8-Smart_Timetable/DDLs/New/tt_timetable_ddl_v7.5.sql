@@ -1,11 +1,8 @@
 -- =====================================================================
--- TIMETABLE MODULE - VERSION 7.0 (PRODUCTION-GRADE)
--- Enhanced from tt_timetable_ddl_v6.0.sql
+-- TIMETABLE MODULE - VERSION 7.5 (PRODUCTION-GRADE)
+-- Enhanced from tt_timetable_ddl_v7.4.sql
 -- =====================================================================
--- Target: MySQL 8.x | Stack: PHP + Laravel
--- Architecture: Multi-tenant, Constraint-based Auto-Scheduling
--- TABLE PREFIX: tt_ - Timetable Module
--- =====================================================================
+
 
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
@@ -809,11 +806,11 @@ SET FOREIGN_KEY_CHECKS = 0;
     `activity_id` INT unsigned NULL,               -- FK to tt_activity.id
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_ta_class_wise` (`teacher_id`,`class_id`, `section_id`, `subject_study_format_id`, `start_time`, `end_time`),
+    UNIQUE KEY `uq_ta_requirement_teacher` (`requirement_consolidation_id`, `teacher_profile_id`),
     CONSTRAINT `fk_ta_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`), 
     CONSTRAINT `fk_ta_section` FOREIGN KEY (`section_id`) REFERENCES `sch_sections` (`id`),
     CONSTRAINT `fk_ta_subject_study_format` FOREIGN KEY (`subject_study_format_id`) REFERENCES `sch_study_formats` (`id`),
-    CONSTRAINT `fk_ta_teacher` FOREIGN KEY (`teacher_id`) REFERENCES `sch_teachers` (`id`),
+    CONSTRAINT `fk_ta_teacher_profile` FOREIGN KEY (`teacher_profile_id`) REFERENCES `sch_teacher_profile` (`id`),
     CONSTRAINT `fk_ta_activity` FOREIGN KEY (`activity_id`) REFERENCES `tt_activity` (`id`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
   -- Condition:

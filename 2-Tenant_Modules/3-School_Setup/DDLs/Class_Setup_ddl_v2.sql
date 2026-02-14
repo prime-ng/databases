@@ -19,10 +19,10 @@
 
   CREATE TABLE IF NOT EXISTS `sch_sections` (
     `id` int unsigned NOT NULL AUTO_INCREMENT,
-    `ordinal` tinyint unsigned DEFAULT 1,   -- will have sequence order for Sections (Auto Update by Drag & Drop)
-    `code` CHAR(5) NOT NULL,                -- e.g., 'A','B','C','D' and so on (This will be used for Timetable)
+    `ordinal` tinyint unsigned DEFAULT 1,       -- will have sequence order for Sections (Auto Update by Drag & Drop)
+    `code` CHAR(5) NOT NULL,                    -- e.g., 'A','B','C','D' and so on (This will be used for Timetable)
     `short_name` varchar(20) DEFAULT NULL,      -- e.g. 'SEC-A' or 'SEC-B' (NEW)
-    `name` varchar(50) NOT NULL,            -- e.g. 'Section - A', 'Section - B'
+    `name` varchar(50) NOT NULL,                -- e.g. 'Section - A', 'Section - B'
     `is_active` tinyint(1) NOT NULL DEFAULT 1,
     `created_at` timestamp NULL DEFAULT NULL,
     `updated_at` timestamp NULL DEFAULT NULL,
@@ -53,21 +53,21 @@
 
   CREATE TABLE IF NOT EXISTS `sch_class_section_jnt` (
     `id` int unsigned NOT NULL AUTO_INCREMENT,
-    `ordinal` tinyint DEFAULT NULL,     -- will have sequence order  (Added new) (Auto Update by Drag & Drop)
-    `class_id` int unsigned NOT NULL,  -- FK to sch_classes
-    `section_id` int unsigned NOT NULL,  -- FK to sch_sections
-    `code` char(10) NOT NULL,  -- Combination of class Code + section Code i.e. '8th_A', '10h_B' (Changed from class_secton_code)
-    `name` varchar(50) NOT NULL,  -- e.g. 'Grade 1' or 'Class - 10th', 'Class - 11th Section - A', 'Class - 12th Section - B' (Added new)
-    `capacity` tinyint unsigned DEFAULT NULL,  -- Targeted / Planned Quantity of stundets in Each Sections of every class.
+    `ordinal` tinyint DEFAULT NULL,                        -- will have sequence order  (Added new) (Auto Update by Drag & Drop)
+    `class_id` int unsigned NOT NULL,                      -- FK to sch_classes
+    `section_id` int unsigned NOT NULL,                    -- FK to sch_sections
+    `code` char(10) NOT NULL,                              -- Combination of class Code + section Code i.e. '8th_A', '10h_B' (Changed from class_secton_code)
+    `name` varchar(50) NOT NULL,                           -- e.g. 'Grade 1' or 'Class - 10th', 'Class - 11th Section - A', 'Class - 12th Section - B' (Added new)
+    `capacity` tinyint unsigned DEFAULT NULL,              -- Targeted / Planned Quantity of stundets in Each Sections of every class.
     `actual_total_student` tinyint unsigned DEFAULT NULL,  -- Actual Number of Student in the Class+Section (changed from total_student)
     `min_required_student` tinyint unsigned DEFAULT NULL,  -- Minimum Number of Student required to start a class+section (Added new)
-    `max_allowed_student` tinyint unsigned DEFAULT NULL,  -- Maximum Number of Student allowed in a class+section (Added new)
-    `class_teacher_id` INT unsigned NOT NULL,  -- FK to sch_users
-    `assistance_class_teacher_id` INT unsigned NOT NULL,  -- FK to sch_users
-    `rooms_type_id` int unsigned NOT NULL,  -- FK to 'sch_rooms_type' (Added new)
-    `class_house_room_id` int unsigned NOT NULL,  -- FK to 'sch_rooms' (Added new)
-    `total_periods_daily` tinyint unsigned DEFAULT NULL,  -- Total Number of Periods in a day for this class+section (Added new)
-    `is_active` tinyint(1) NOT NULL DEFAULT 1,
+    `max_allowed_student` tinyint unsigned DEFAULT NULL,   -- Maximum Number of Student allowed in a class+section (Added new)
+    `class_teacher_id` INT unsigned NOT NULL,              -- FK to sch_users
+    `assistance_class_teacher_id` INT unsigned NOT NULL,   -- FK to sch_users
+    `rooms_type_id` int unsigned NOT NULL,                 -- FK to 'sch_rooms_type' (Added new)
+    `class_house_room_id` int unsigned NOT NULL,           -- FK to 'sch_rooms' (Added new)
+    `total_periods_daily` tinyint unsigned DEFAULT NULL,   -- Total Number of Periods in a day for this class+section (Added new)
+    `is_active` tinyint(1) NOT NULL DEFAULT 1    ,
     `created_at` timestamp NULL DEFAULT NULL,
     `updated_at` timestamp NULL DEFAULT NULL,
     PRIMARY KEY (`id`),
@@ -118,7 +118,7 @@
   CREATE TABLE IF NOT EXISTS `sch_subjects` (
     `id` INT unsigned NOT NULL AUTO_INCREMENT,
     `ordinal` tinyint DEFAULT NULL,     -- will have sequence order (Auto Update by Drag & Drop)
-    `code` CHAR(5) NOT NULL,         -- e.g., 'SCI','MTH','SST','ENG' and so on (This will be used for Timetable)
+    `code` CHAR(5) NOT NULL,            -- e.g., 'SCI','MTH','SST','ENG' and so on (This will be used for Timetable)
     `short_name` varchar(20) NOT NULL,  -- e.g. 'SCIENCE','MATH','SST','ENGLISH' and so on
     `name` varchar(50) NOT NULL,        -- 'SCIENCE','MATH','SST','ENGLISH' and so on
     `is_active` tinyint(1) NOT NULL DEFAULT '1',
@@ -135,8 +135,8 @@
   -- Removed 'short_name' as we can use `sub_stdformat_code`
   CREATE TABLE IF NOT EXISTS `sch_subject_study_format_jnt` (
     `id` INT unsigned NOT NULL AUTO_INCREMENT,
-    `ordinal` tinyint DEFAULT NULL,     -- will have sequence order (Auto Update by Drag & Drop)
-    `subject_id` INT unsigned NOT NULL,        -- FK to 'sch_subjects'
+    `ordinal` tinyint DEFAULT NULL,               -- will have sequence order (Auto Update by Drag & Drop)
+    `subject_id` INT unsigned NOT NULL,           -- FK to 'sch_subjects'
     `study_format_id` int unsigned NOT NULL,      -- FK to 'sch_study_formats'
     `subject_type_id` int unsigned NOT NULL,      -- FK to 'sch_subject_types'
     `code` CHAR(30) NOT NULL,                     -- e.g., 'SCI_LAC','SCI_LAB','SST_LAC','ENG_LAC' (Changed from 'subject_studyformat_code')
@@ -229,7 +229,7 @@
     `id` INT unsigned NOT NULL AUTO_INCREMENT,
     `subject_group_id` INT unsigned NOT NULL,              -- FK to 'sch_subject_groups'
     `class_group_id` INT unsigned NOT NULL,                -- FK to 'sch_class_groups_jnt'
-    `subject_id` int unsigned NOT NULL,                       -- FK to 'sch_subjects' (De-Normalization)
+    `subject_id` int unsigned NOT NULL,                    -- FK to 'sch_subjects' (De-Normalization)
     `subject_study_format_id` INT unsigned NOT NULL,       -- FK to 'sch_subject_study_format_jnt'
     `is_active` tinyint(1) NOT NULL DEFAULT '1',
     `deleted_at` timestamp NULL DEFAULT NULL,

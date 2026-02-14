@@ -101,8 +101,8 @@
     `is_proficient_with_computer` TINYINT(1) DEFAULT 0,
     `can_manage_staff` TINYINT(1) DEFAULT 0,
     `special_skill_area` VARCHAR(100) DEFAULT NULL,
-    `soft_skills` JSON DEFAULT NULL,                     -- e.g., ["leadership", "communication", "problem_solving"]
-    `assignment_meta` JSON DEFAULT NULL,                 -- e.g. { "qualification": "M.Sc Physics", "experience": "7 years" }
+    `soft_skills` JSON DEFAULT NULL,                             -- e.g., ["leadership", "communication", "problem_solving"]
+    `assignment_meta` JSON DEFAULT NULL,                         -- e.g. { "qualification": "M.Sc Physics", "experience": "7 years" }
     -- LOAD & SCHEDULING CONSTRAINTS
     `max_available_periods_weekly` TINYINT UNSIGNED DEFAULT 48,  -- Manual Entry
     `min_available_periods_weekly` TINYINT UNSIGNED DEFAULT 36,  -- Manual Entry
@@ -160,7 +160,7 @@
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
-    UNIQUE KEY `uq_teacher_capability` (`teacher_profile_id`, `class_id`, `section_id`, `subject_id`, `study_format_id`),
+    UNIQUE KEY `uq_teacher_capability` (`teacher_profile_id`, `class_id`, `study_format_id`),
     CONSTRAINT `fk_tc_teacher_profile` FOREIGN KEY (`teacher_profile_id`) REFERENCES `sch_teacher_profile`(id) ON DELETE CASCADE,
     CONSTRAINT `fk_tc_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes`(id),
     CONSTRAINT `fk_tc_section` FOREIGN KEY (`section_id`) REFERENCES `sch_sections`(id),
@@ -179,6 +179,5 @@
 -- 4. Removed `study_format_id` from `sch_teacher_capabilities` table.
 -- 5. Removed `max_periods_daily`, `min_periods_daily`, `max_periods_weekly`, `min_periods_weekly`, `can_be_split_across_sections` from `sch_teacher_capabilities` table.
 -- 6. Added `max_periods_daily`, `min_periods_daily`, `max_periods_weekly`, `min_periods_weekly`, `can_be_split_across_sections` to `sch_teacher_profile` table.
-
 
 

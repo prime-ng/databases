@@ -20,11 +20,12 @@
   -- Tables for Room types, this will be used to define different types of rooms like Science Lab, Computer Lab, Sports Room etc.
   CREATE TABLE IF NOT EXISTS `sch_rooms_type` (
     `id` int unsigned NOT NULL AUTO_INCREMENT,
-    `code` CHAR(10) NOT NULL,                        -- e.g., 'SCI_LAB','BIO_LAB','CRI_GRD','TT_ROOM','BDM_CRT', "HOUSE_ROOM"
-    `short_name` varchar(30) NOT NULL,              -- e.g., 'Science Lab','Biology Lab','Cricket Ground','Table Tanis Room','Badminton Court'
+    `code` CHAR(10) NOT NULL,                         -- e.g., 'SCI_LAB','BIO_LAB','CRI_GRD','TT_ROOM','BDM_CRT', "HOUSE_ROOM"
+    `short_name` varchar(30) NOT NULL,                -- e.g., 'Science Lab','Biology Lab','Cricket Ground','Table Tanis Room','Badminton Court'
     `name` varchar(100) NOT NULL,
-    `required_resources` text DEFAULT NULL,         -- e.g., 'Microscopes, Lab Coats, Safety Goggles' for Science Lab
+    `required_resources` text DEFAULT NULL,           -- e.g., 'Microscopes, Lab Coats, Safety Goggles' for Science Lab
     `class_house_room` tinyint(1) NOT NULL DEFAULT 0, -- 1=Class House Room, 0=Other Room
+    `room_count_in_category` smallint unsigned DEFAULT 0, -- Total Number of Rooms in this category
     `is_active` tinyint(1) NOT NULL DEFAULT '1',
     `deleted_at` timestamp NULL DEFAULT NULL,
     `created_at` timestamp NULL DEFAULT NULL,
@@ -55,3 +56,9 @@
     CONSTRAINT `fk_rooms_buildingId` FOREIGN KEY (`building_id`) REFERENCES `sch_buildings` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_rooms_roomTypeId` FOREIGN KEY (`room_type_id`) REFERENCES `sch_rooms_type` (`id`) ON DELETE CASCADE
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+  -- ----------------------------------------------------------------------------------------------------------------------
+  -- Change Log :
+  -- ----------------------------------------------------------------------------------------------------------------------
+  -- 1. Add room_count_in_category column to sch_rooms_type table
+  
