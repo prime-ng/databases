@@ -37,7 +37,8 @@ We will fetch below parameters from [tt_timetable_type]
       Set: $timetable_type_name [tt_timetable_type.name]
       Set: $timetable_from_date [tt_timetable_type.`effective_from_date`]
       Set: $timetable_to_date [tt_timetable_type.effective_to_date]
-
+      Set: $max_weekly_periods_allowed_to_allocate [tt_timetable_type.max_weekly_periods_can_be_allocated_to_teacher]
+      Set: $min_weekly_periods_can_be_allocated_to_teacher [tt_timetable_type.min_weekly_periods_can_be_allocated_to_teacher]
 
 
 ## 1. Generate Timetable Slot Requirement
@@ -258,67 +259,158 @@ As tt_requirement_consolidation doesn't have teacher_profile_id. To populate tt_
 
 #### Step 2: Fill Records into [tt_teacher_availability] from [tt_requirement_consolidation], [sch_teacher_profile],  [sch_teacher_capabilities]
 -------------------------------------------------------------------------------------------------------------------------------------------
-(Populate tt_teacher_availability with ALL requirements. LEFT JOIN ensures requirements with no teachers are also included)
 
-INSERT INTO tt_teacher_availability (
-    -- Key Fields
-    requirement_consolidation_id, class_id, section_id, subject_study_format_id, teacher_profile_id, required_weekly_periods
-    -- From sch_teacher_profile
-    is_full_time, preferred_shift, capable_handling_multiple_classes, can_be_used_for_substitution,   certified_for_lab,max_available_periods_weekly, min_available_periods_weekly, max_allocated_periods_weekly, min_allocated_periods_weekly, can_be_split_across_sections, min_teacher_availability_score, max_teacher_availability_score
-    -- From sch_teacher_capabilities
-    proficiency_percentage, teaching_experience_months, is_primary_subject, competency_level, priority_order, priority_weight, scarcity_index, is_hard_constraint, allocation_strictness, override_priority, override_reason, historical_success_ratio, last_allocation_score,
+INSERT INTO `tt_teacher_availability` (
+  -- From `tt_requirement_consolidation`
+    `requirement_consolidation_id`, `class_id`, `section_id`, `subject_study_format_id`, `teacher_profile_id`, `required_weekly_periods`
+    -- From `sch_teacher_profile`
+    `is_full_time`, `preferred_shift`, `capable_handling_multiple_classes`, `can_be_used_for_substitution`,   `certified_for_lab`,`max_available_periods_weekly`, `min_available_periods_weekly`, `max_allocated_periods_weekly`, `min_allocated_periods_weekly`, `can_be_split_across_sections`, `min_teacher_availability_score`, `max_teacher_availability_score`
+    -- From `sch_teacher_capabilities`
+    `proficiency_percentage`, `teaching_experience_months`, `is_primary_subject`, `competency_level`, `priority_order`, `priority_weight`, `scarcity_index`, `is_hard_constraint`, `allocation_strictness`, `override_priority`, `override_reason`, `historical_success_ratio`, `last_allocation_score`,
     -- Effectivity (only from capabilities)
-    effective_from, effective_to
-)
+    `effective_from`, `effective_to`
 SELECT 
-    -- Key Fields from requirement (ALWAYS populated)
-    trc.id AS requirement_consolidation_id, stc.teacher_profile_id,  -- NULL if no teacher found
-    trc.class_id, trc.section_id, trc.subject_study_format_id, trc.academic_term_id, trc.timetable_type_id, trc.required_weekly_periods
-    -- From sch_teacher_profile (NULL if no teacher found)
-    stp.is_full_time, stp.preferred_shift, stp.capable_handling_multiple_classes, stp.can_be_used_for_substitution, stp.certified_for_lab,stp.max_available_periods_weekly, stp.min_available_periods_weekly, stp.max_allocated_periods_weekly, stp.min_allocated_periods_weekly, stp.can_be_split_across_sections, stp.min_teacher_availability_score, stp.max_teacher_availability_score,
-    -- From sch_teacher_capabilities (NULL if no capability found)
-    stc.proficiency_percentage, stc.teaching_experience_months, stc.is_primary_subject, stc.competency_level, stc.priority_order, stc.priority_weight, stc.scarcity_index, stc.is_hard_constraint, stc.allocation_strictness, stc.override_priority, stc.override_reason, stc.historical_success_ratio, stc.last_allocation_score,
-    -- Effectivity - ONLY from sch_teacher_capabilities (NULL if no capability)
-    stc.effective_from, stc.effective_to
-    
+    -- From `tt_requirement_consolidation`
+    `trc.id` AS `requirement_consolidation_id`, `trc.class_id`, `trc.section_id`, `trc.subject_study_format_id`, `stc.teacher_profile_id`, `trc.required_weekly_periods`,
+    -- From `sch_teacher_profile` (NULL if no teacher found)
+    `stp.is_full_time`, `stp.preferred_shift`, `stp.capable_handling_multiple_classes`, `stp.can_be_used_for_substitution`, `stp.certified_for_lab`,`stp.max_available_periods_weekly`, `stp.min_available_periods_weekly`, `stp.max_allocated_periods_weekly`, `stp.min_allocated_periods_weekly`, `stp.can_be_split_across_sections`, `stp.min_teacher_availability_score`, `stp.max_teacher_availability_score`,
+    -- From `sch_teacher_capabilities` (NULL if no capability found)
+    `stc.proficiency_percentage`, `stc.teaching_experience_months`, `stc.is_primary_subject`, `stc.competency_level`, `stc.priority_order`, `stc.priority_weight`, `stc.scarcity_index`, `stc.is_hard_constraint`, `stc.allocation_strictness`, `stc.override_priority`, `stc.override_reason`, `stc.historical_success_ratio`, `stc.last_allocation_score`,
+    -- Effectivity - ONLY from `sch_teacher_capabilities` (NULL if no capability)
+    `stc.effective_from`, `stc.effective_to`
 FROM 
-    tt_requirement_consolidation trc
-    LEFT JOIN sch_teacher_capabilities stc ON 
-        trc.class_id = stc.class_id 
-        AND (trc.section_id = stc.section_id OR (trc.section_id IS NULL AND stc.section_id IS NULL))
-        AND trc.subject_study_format_id = stc.subject_study_format_id
-        AND stc.is_active = 1
-        AND (stc.effective_from IS NULL OR stc.effective_from <= @timetable_to_date)
-        AND (stc.effective_to IS NULL OR stc.effective_to >= @timetable_from_date)
-    LEFT JOIN sch_teacher_profile stp ON stp.id = stc.teacher_profile_id 
-        AND stp.is_active = 1
-    
+    `tt_requirement_consolidation` trc
+    LEFT JOIN `sch_teacher_capabilities` stc ON 
+        `trc.class_id` = `stc.class_id` 
+        AND (`trc.section_id` = `stc.section_id` OR (`trc.section_id` IS NULL AND `stc.section_id` IS NULL))
+        AND `trc.subject_study_format_id` = `stc.subject_study_format_id`
+        AND `stc.is_active` = 1
+        AND (`stc.effective_from` IS NULL OR `stc.effective_from` <= @timetable_to_date)
+        AND (`stc.effective_to` IS NULL OR `stc.effective_to` >= @timetable_from_date)
+    LEFT JOIN `sch_teacher_profile` stp ON `stp.id` = `stc.teacher_profile_id` 
+        AND `stp.is_active` = 1
 WHERE 
-    -- Only filter active requirements
-    trc.is_active = 1;
+    `trc.is_active` = 1
+ORDER BY 
+    `trc.id`,
+    `stc.teacher_profile_id` IS NOT NULL DESC,  -- Records with teachers first
+    `stc.priority_order` ASC,
+    `stc.proficiency_percentage` DESC;
+
+#### Step 3: Update in [max_allocated_periods_weekly] from [min_allocated_periods_weekly] in [tt_teacher_availability]
+----------------------------------------------------------------------------------------------------------------------
+
+UPDATE sch_teacher_profile tp
+INNER JOIN (
+    -- Calculate max and min periods per teacher
+    SELECT tc.teacher_profile_id, SUM(class_subject_total.max_periods) AS total_max_periods, SUM(class_subject_total.min_periods) AS total_min_periods 
+    FROM sch_teacher_capabilities tc
+    INNER JOIN (SELECT class_id, subject_study_format_id, SUM(required_weekly_periods) AS max_periods, MAX(required_weekly_periods) AS min_periods FROM tt_requirement_consolidation WHERE is_active = 1 GROUP BY class_id, subject_study_format_id) class_subject_total ON class_subject_total.class_id = tc.class_id AND class_subject_total.subject_study_format_id = tc.subject_study_format_id
+    WHERE tc.is_active = 1 GROUP BY tc.teacher_profile_id ) period_totals ON period_totals.teacher_profile_id = tp.id
+SET 
+    tp.max_allocated_periods_weekly = period_totals.total_max_periods,
+    tp.min_allocated_periods_weekly = period_totals.total_min_periods
+WHERE tp.is_active = 1;
+
+This will Update `max_allocated_periods_weekly` = Sum of required_weekly_periods across ALL sections for each Class+Subject_Study_Format
+`min_allocated_periods_weekly` = Take the MAX (largest single section requirement) for each Class+Subject_Study_Format
+
+`min_teacher_availability_score` = (min_available_periods_weekly / min_allocated_periods_weekly) * 100
+`max_teacher_availability_score` = (max_available_periods_weekly / max_allocated_periods_weekly) * 100
+
+B - Calculate total of All Allocated Classes+Subject_Study_Format in the same way as (A)
+C - Get Total Weekly Periods (Minimum) he is avaialable (6 * Available Days) = 6*6 = 36
+D - Get Total Weekly Periods (Maximum) he is avaialable (8 * Available Days) = 8*6 = 48
+E - min_teacher_availability_score = (C/A)*100 = (36/A)*100
+F - max_teacher_availability_score = (D/A)*100 = (48/A)*100
 
 
---------------------------
+#### Step 4: Calculate [min_teacher_availability_score] and [min_teacher_availability_score] in [tt_teacher_availability]
+-------------------------------------------------------------------------------------------------------------------------
+UPDATE sch_teacher_profile tp
+INNER JOIN (
+    SELECT tc.teacher_profile_id, SUM(class_subject_total.max_periods) AS total_max_periods, SUM(class_subject_total.min_periods) AS total_min_periods FROM sch_teacher_capabilities tc INNER JOIN (SELECT class_id, subject_study_format_id, SUM(required_weekly_periods) AS max_periods, MAX(required_weekly_periods) AS min_periods FROM tt_requirement_consolidation WHERE is_active = 1 GROUP BY class_id, subject_study_format_id) class_subject_total ON class_subject_total.class_id = tc.class_id AND class_subject_total.subject_study_format_id = tc.subject_study_format_id WHERE tc.is_active = 1 GROUP BY tc.teacher_profile_id) period_totals ON period_totals.teacher_profile_id = tp.id
+SET 
+    tp.max_allocated_periods_weekly = period_totals.total_max_periods, tp.min_allocated_periods_weekly = period_totals.total_min_periods, tp.min_teacher_availability_score = 
+        CASE 
+            WHEN period_totals.total_min_periods > 0 
+            THEN (tp.min_available_periods_weekly / period_totals.total_min_periods) * 100
+            ELSE NULL 
+        END,
+    tp.max_teacher_availability_score = 
+        CASE 
+            WHEN period_totals.total_max_periods > 0 
+            THEN (tp.max_available_periods_weekly / period_totals.total_max_periods) * 100
+            ELSE NULL 
+        END
+WHERE tp.is_active = 1;
 
 
-#### Step 3: Update in [max_allocated_periods_weekly] from [min_allocated_periods_weekly] in [sch_teacher_profile]
-------------------------------------------------------------------------------------------------------------------
-   Select all the Records from [sch_teacher_profile]
-   Loop through all the records from [sch_teacher_profile]
-      Get: [required_weekly_periods] from [tt_requirement_consolidation] where [tt_requirement_consolidation.class_id] = [sch_teacher_profile.class_id] AND [tt_requirement_consolidation.subject_id] = [sch_teacher_profile.subject_id] AND [tt_requirement_consolidation.study_format_id] = [sch_teacher_profile.study_format_id]
-      Calculate [max_allocated_periods_weekly] from [min_allocated_periods_weekly]
-   EndLoop
 
 
-#### Step 4: Calculate [min_teacher_availability_score] and [max_teacher_availability_score] in [tt_teacher_availability]
-------------------------------------------------------------------------------------------------------------------
+
+
+#### Step 5: Update in [tt_teacher_availability] 
+-------------------------------------------------
+
+
+
+
+
+
    Select all the Records from [tt_teacher_availability]
    Loop through all the records from [tt_teacher_availability]
       Calculate [min_teacher_availability_score] and [max_teacher_availability_score] from [sch_teacher_capabilities]
    EndLoop
 
 
-#### Step 5: Update in [tt_teacher_availability] 
+    -- Preference Fields (NULL if no teacher)
+    CASE 
+        WHEN `stc.teacher_profile_id` IS NULL THEN 0
+        WHEN `stc.is_primary_subject` = 1 OR `stc.proficiency_percentage` >= 80 OR `stc.competancy_level` IN ('Advanced', 'Expert')
+        THEN 1 ELSE 0 
+    END,
+    
+    CASE 
+        WHEN `stc.teacher_profile_id` IS NULL THEN 0
+        WHEN `stc.priority_weight` >= 8 OR `stc.scarcity_index` <= 3 OR `stc.allocation_strictness` = 'hard'
+        THEN 1 ELSE 0 
+    END,
+    
+    CASE 
+        WHEN `stc.teacher_profile_id` IS NULL THEN NULL
+        ELSE ROUND(
+            COALESCE(`stc.proficiency_percentage`, 50) * 0.4 + 
+            COALESCE(`stc.priority_weight`, 5) * 10 * 0.3 + 
+            CASE `stc.competancy_level`
+                WHEN 'Expert' THEN 100 
+                WHEN 'Advanced' THEN 80 
+                WHEN 'Intermediate' THEN 60 
+                ELSE 40 
+            END * 0.2 + 
+            COALESCE(`stc.historical_success_ratio`, 50) * 0.1
+        )
+    END,
+    
+    `stc.effective_from`,
+    `stc.effective_to`,
+    
+    -- Availability scores (calculate based on teacher count per requirement)
+    CASE 
+        WHEN `stc.teacher_profile_id` IS NULL THEN 0.00
+        ELSE 1.00 
+    END,
+    CASE 
+        WHEN `stc.teacher_profile_id` IS NULL THEN 0.00
+        ELSE 1.00 
+    END,
+    
+    -- is_active - always 1 for requirement records, even with no teacher
+    1
+    
+
+
+#### Step 6: Update in [tt_teacher_availability] 
 ------------------------------------------------------------------------------------------------------------------
       set [day1_available_period_count], [day2_available_period_count], [day3_available_period_count], [day4_available_period_count],
           [day5_available_period_count], [day6_available_period_count], [day7_available_period_count]
@@ -328,7 +420,7 @@ WHERE
    EndLoop
 
 
-#### Step 6: Update in [tt_teacher_availability] from [tt_teacher_unavailable]
+#### Step 7: Update in [tt_teacher_availability] from [tt_teacher_unavailable]
 ------------------------------------------------------------------------------------------------------------------
    set [day1_available_period_count], [day2_available_period_count], [day3_available_period_count], [day4_available_period_count],
        [day5_available_period_count], [day6_available_period_count], [day7_available_period_count]
@@ -338,7 +430,7 @@ WHERE
    EndLoop
 
 
-#### Step 6: Mannual modification in [tt_teacher_availability] for [is_primary_teacher], [is_preferred_teacher], [preference_score]
+#### Step 8: Mannual modification in [tt_teacher_availability] for [is_primary_teacher], [is_preferred_teacher], [preference_score]
 ------------------------------------------------------------------------------------------------------------------
 Important - Auto Calculate belwo Fields:
   In [sch_teacher_profile]
@@ -392,3 +484,70 @@ Create a New View to Order Teachers Priority on the basis of Class+Subject+Study
          Insert data into tt_teacher_assignment
       Endif
 
+
+----------------------------------------------------------------------------------
+Old
+----------------------------------------------------------------------------------
+#### Step 2: Fill Records into [tt_teacher_availability] from [tt_requirement_consolidation], [sch_teacher_profile],  [sch_teacher_capabilities]
+-------------------------------------------------------------------------------------------------------------------------------------------
+(Populate tt_teacher_availability with ALL requirements. LEFT JOIN ensures requirements with no teachers are also included)
+
+INSERT INTO tt_teacher_availability (
+    -- Key Fields
+    requirement_consolidation_id, class_id, section_id, subject_study_format_id, teacher_profile_id, required_weekly_periods
+    -- From sch_teacher_profile
+    is_full_time, preferred_shift, capable_handling_multiple_classes, can_be_used_for_substitution,   certified_for_lab,max_available_periods_weekly, min_available_periods_weekly, max_allocated_periods_weekly, min_allocated_periods_weekly, can_be_split_across_sections, min_teacher_availability_score, max_teacher_availability_score
+    -- From sch_teacher_capabilities
+    proficiency_percentage, teaching_experience_months, is_primary_subject, competency_level, priority_order, priority_weight, scarcity_index, is_hard_constraint, allocation_strictness, override_priority, override_reason, historical_success_ratio, last_allocation_score,
+    -- Effectivity (only from capabilities)
+    effective_from, effective_to
+)
+SELECT 
+    -- Key Fields from requirement (ALWAYS populated)
+    trc.id AS requirement_consolidation_id, stc.teacher_profile_id,  -- NULL if no teacher found
+    trc.class_id, trc.section_id, trc.subject_study_format_id, trc.academic_term_id, trc.timetable_type_id, trc.required_weekly_periods
+    -- From sch_teacher_profile (NULL if no teacher found)
+    stp.is_full_time, stp.preferred_shift, stp.capable_handling_multiple_classes, stp.can_be_used_for_substitution, stp.certified_for_lab,stp.max_available_periods_weekly, stp.min_available_periods_weekly, stp.max_allocated_periods_weekly, stp.min_allocated_periods_weekly, stp.can_be_split_across_sections, stp.min_teacher_availability_score, stp.max_teacher_availability_score,
+    -- From sch_teacher_capabilities (NULL if no capability found)
+    stc.proficiency_percentage, stc.teaching_experience_months, stc.is_primary_subject, stc.competency_level, stc.priority_order, stc.priority_weight, stc.scarcity_index, stc.is_hard_constraint, stc.allocation_strictness, stc.override_priority, stc.override_reason, stc.historical_success_ratio, stc.last_allocation_score,
+    -- Effectivity - ONLY from sch_teacher_capabilities (NULL if no capability)
+    stc.effective_from, stc.effective_to
+    
+FROM 
+    tt_requirement_consolidation trc
+    LEFT JOIN sch_teacher_capabilities stc ON 
+        trc.class_id = stc.class_id 
+        AND (trc.section_id = stc.section_id OR (trc.section_id IS NULL AND stc.section_id IS NULL))
+        AND trc.subject_study_format_id = stc.subject_study_format_id
+        AND stc.is_active = 1
+        AND (stc.effective_from IS NULL OR stc.effective_from <= @timetable_to_date)
+        AND (stc.effective_to IS NULL OR stc.effective_to >= @timetable_from_date)
+    LEFT JOIN sch_teacher_profile stp ON stp.id = stc.teacher_profile_id 
+        AND stp.is_active = 1
+    
+WHERE 
+    -- Only filter active requirements
+    trc.is_active = 1;
+
+--------------------------------------------------------------------------------------
+   Select * from `tt_requirement_consolidation` as `trc` where `trc.is_active` = 1
+   Loop through all the records from `tt_requirement_consolidation`
+      Select `stc.*`, `stp.*`
+      from `sch_teacher_capabilities` as `stc` LEFT JOIN `sch_teacher_profile` as `stp` on `stc.teacher_profile_id` = `stp.id` where 
+         `trc.class_id` = `stc.class_id` AND `trc.study_format_id` = `stc.subject_study_format_id` AND
+         `stc.is_active` = 1 AND (`stc.effective_from` IS NULL OR `stc.effective_from` <= `$timetable_to_date`) AND (`stc.effective_to` IS NULL OR `stc.effective_to` >= `$timetable_from_date`) AND `stc.is_active` = 1 AND `stp.is_active` = 1
+      Loop through all the records from `sch_teacher_capabilities`
+         Insert all records from `trc`, `stc`, `stp` into `tt_teacher_availability` for each trc.records
+            -- from `tt_requirement_consolidation`
+            `trc.id` AS `requirement_consolidation_id`, `stc.teacher_profile_id`,  -- NULL if no teacher found
+            `trc.class_id`, `trc.section_id`, `trc.subject_study_format_id`, `trc.academic_term_id`, `trc.timetable_type_id`, `trc.required_weekly_periods`
+            -- From `sch_teacher_profile` (NULL if no teacher found)
+            `stp.is_full_time`, `stp.preferred_shift`, `stp.capable_handling_multiple_classes`, `stp.can_be_used_for_substitution`, `stp.certified_for_lab`,`stp.max_available_periods_weekly`, `stp.min_available_periods_weekly`, `stp.max_allocated_periods_weekly`, `stp.min_allocated_periods_weekly`, `stp.can_be_split_across_sections`, `stp.min_teacher_availability_score`, `stp.max_teacher_availability_score`,
+            -- From `sch_teacher_capabilities` (NULL if no capability found)
+            `stc.proficiency_percentage`, `stc.teaching_experience_months`, `stc.is_primary_subject`, `stc.competency_level`, `stc.priority_order`, `stc.priority_weight`, `stc.scarcity_index`, `stc.is_hard_constraint`, `stc.allocation_strictness`, `stc.override_priority`, `stc.override_reason`, `stc.historical_success_ratio`, `stc.last_allocation_score`,
+            -- Effectivity - ONLY from `sch_teacher_capabilities` (NULL if no capability)
+            `stc.effective_from`, `stc.effective_to`
+      EndLoop
+   EndLoop
+--------------------------
+Doing same by Sql Query -
