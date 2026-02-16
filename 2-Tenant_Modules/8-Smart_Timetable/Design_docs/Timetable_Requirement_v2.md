@@ -1,7 +1,18 @@
 # Requirements Doc - Automatic Timetable Generation and Teacher Alternate finder
+You are "ERP Architect GPT" — an expert software architect, data modeler, API designer and UX/UI systemizer for school/education ERP systems. Your outputs must be precise, reproducible and developer-ready.
 
-This document outlines the requirements for a web-based version of the ‘Automatic Timetable Generation’ and ‘Teacher Alternate finder’. I have also used information from a opensource timetable generator called FET timetabling application. I want to develop this application using PHP with Laravel and MySQL database. The requirements are based on an evaluation of the official FET manual, a basic guide for screen design, the features listed on the application's website, and the new requirement to manage substitute teachers. I have also added requirements received directly from schools.
-To develop a full-featured timetable generation and management module that supports automatic and manual timetable scheduling for schools, incorporating the advanced constraint-based engine similar to FET. 
+I need you to act as a Principal Systems Architect to refine and expand **Timetable Generation** Module of my School ERP System. I am using PHP (Laravel) + MySQL. 
+
+
+**INPUT FILES**: 
+
+**YOUR MISSION**:
+
+**REQUIREMENT OF THE MODULE**:
+
+This document outlines the requirements for a web-based version of the ‘Automatic Timetable Generation’ and ‘Teacher Alternate finder’. 
+
+I want to develop this application using PHP with Laravel and MySQL database. To develop a full-featured timetable generation and management module that supports automatic and manual timetable scheduling for schools, incorporating the advanced constraint-based engine similar to FET. 
 
 Below are the functionalities which should be covered in the application -
 1. Landing page which should have a dashboard with Menu and Submenu to run all below functionalities of the Application. Below are Menu and Submenu options –
@@ -417,4 +428,108 @@ Additional Condition I found during implementation :
 
 Once Timetable Generation is completed the Same logic will be used to find Teacher's Substitute in ocation of the Techers unavailability.
 
+
+=====================================================================================================================
+# List of Constraints:
+# --------------------
+Hard constraint Must to followed even on the cost of Non-Generation of the Timetable
+Hard Constraint -
+    1. One teachers assigned to more than one activity simultaneously
+    2. One Class+Section assigned to more than one activity simultaneously
+    3. One Room assigned to more than one activity simultaneously
+    4. Activity with more students than the capacity of the room
+
+Soft Constraint can be ingnored if required. If ignore then the Constraint with lowest weightage will be ignored first and then the one with Higher weightage.
+Soft Constraint -
+
+    a. For a particular Teacher
+        + A Teacher’s not available Times
+        + A teacher does not work 2 consecutive days
+        + Max single gaps in selected time slots for a teacher
+        + Max & Min days per week for a teacher
+        + Max gaps per day & per week for a teacher
+        + Max & Minimum hours daily for a teacher
+        + Max hours daily in an hourly interval for a teacher
+        + A teacher has a pair of mutually exclusive time slots
+        + Max span per day for a teacher
+        + Min & Max hours daily with a Study Format (Lecture, Lab etc.) for a teacher
+        + Max Study Format from a set per day for a teacher
+        + Min hours daily for a teacher
+        + Max hours continuously for a teacher
+        + Max hours continuously with a Study Format for a teacher
+        + Min Gap between an ordered pair of Study Format for a teacher
+        + A Teacher works in an hourly interval max days per week
+        + Min resting hours for a teacher
+    b. For All Teachers
+        >	Teacher’s not available Times
+        >	Max & Min days per week for all teachers
+        >	Max gaps per day & per week for all teacher
+        >	All teacher do not work 2 consecutive days
+        >	Max single gaps in selected time slots for all teachers
+        >	Max & Min hours daily for all teacher
+        >	Max hours daily in an hourly interval for all teachers
+        >	All teachers have a pair of mutually exclusive time slots
+        >	Max span per day for all teachers
+        >	Max & Min hours daily with a Study Format for all teacher
+        >	Max Study Format from a set per day for all teacher
+        >	Max hours continuously for all teachers
+        >	Max hours continuously with a Study Format for all teachers
+        >	Min gaps between a Study Format for all teachers
+        >	Min Gap between an ordered pair of Study Format for all teachers
+        >	All Teachers works in an hourly interval max days per week
+        >	Min resting hours for all teachers
+
+    c.	Soft Space Constrains
+        Rooms
+            >	A room’s not available Times
+            >	A teacher + a room’s not available times
+            >	Max Study Format from a set per day & per week for a room
+        Teachers
+            For a particular Teacher
+                >	A teacher has a home room
+                >	A teacher has a set of home rooms
+                >	Max room changes per day & per week for a teacher.
+                >	Max room changes per day in an hourly interval for a teacher
+                >	Min gaps between room changes for a teacher
+                >	Max building changes per day & per week for a teacher
+                >	Max building changes per day in an hourly interval for a teacher
+                >	Min gaps between building changes for a teacher
+            For all Teachers
+                >	Max room changes per day & per week for all teachers
+                >	Max room changes per day in an hourly interval for all teachers
+                >	Min gaps between room changes for all teachers
+                >	Max building changes per day & per week for all teachers
+                >	Max building changes per day in an hourly interval for all teachers
+                >	Min gaps between building changes for all teachers
+        Students
+            For a particular Student
+                >	A set of students has a home room
+                >	A set of students has a set of home rooms
+                >	Max room changes per day & per week for a students set
+                >	Max room changes per day in an hourly interval for a students set
+                >	Min gaps between room changes for a students set
+                >	Max building changes per day & per week for a students set
+                >	Max building changes per day in an hourly interval for a students set
+                >	Min gaps between building changes for a students set
+            For all Students
+                >	Max room changes per day & per week for all students
+                >	Max room changes per day in an hourly interval for all students
+                >	Min gaps between room changes for all students
+                >	Max building changes per day & per week for all students
+                >	Max building changes per day in an hourly interval for all students
+                >	Min gaps between building changes for all students
+        Subjects
+            >	A Subject has a preferred room
+            >	A Subject has a set of preferred rooms
+        Study Format
+            >	A Study Format has a preferred room
+            >	A Study Format has a set of preferred rooms
+        Subjects and Study Format
+            >	A Subject + an Study Format have a preferred room
+            >	A Subject + an Study Format has a set of preferred rooms
+        Activities
+            >	A Activity has a preferred room
+            >	A Activity has a set of preferred rooms
+            >	A set of activities are in the same room if they are consecutive
+            >	A set of activities occupies max different rooms
 

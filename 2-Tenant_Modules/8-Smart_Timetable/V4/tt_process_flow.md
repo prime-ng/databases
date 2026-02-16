@@ -100,14 +100,12 @@ PHASE 3: RESOURCE AVAILABILITY PREPARATION
 
 PHASE 4: Validation (Requirement vs. Availability)
 ═══════════════════════════════════════════════════════════════════════════════
-4.1 Validate Cross-Date Conflict
-    ├── Re-Calculate Available No of Rooms for each Room Type
-    ├── Calculate Available Rooms for each Room Type
-    ├── Mark tt_working_day for entire term
-    └── Set tt_class_working_day_jnt for special cases
-
-4.2 Validate Teachers Availability
+4.1 Validate Teachers Availability
     ├── Create tt_teacher_availability
+    ├── In `sch_teacher_capabilities` table check `effective_from` date should less then Timetable `start_date` & `end_date`
+    ├── If `effective_from` date is greater then Timetable `end_date` then Consider Teacher is `Not Available` for this Timetable
+    ├── If `effective_to` date is less then Timetable `end_date` but greater then `start_date` then Teacher is `Partial Available` for this Timetable
+    ├── If `effective_to` date is less then Timetable `start_date` then Consider Teacher is `Fully Available` for this Timetable
     ├── Calculate max_available_periods_weekly & min_available_periods_weekly
     ├── Calculate min_teacher_availability_score & max_teacher_availability_score
     ├── Calculate weekly Class wise per Subject Period Requirement
@@ -116,7 +114,7 @@ PHASE 4: Validation (Requirement vs. Availability)
     ├── Calculate weekly Class+Subject 'Period Availability Score' (Availability / Requirement)
     └── If Period Availability Score < 1, then Vaidation Status will be Failed
 
-4.3 Validate Rooms Availability
+4.2 Validate Rooms Availability
     ├── Re-Calculate Available No of Rooms for each Room Type
     ├── Calculate Available Rooms for each Room Type
     ├── Mark tt_working_day for entire term

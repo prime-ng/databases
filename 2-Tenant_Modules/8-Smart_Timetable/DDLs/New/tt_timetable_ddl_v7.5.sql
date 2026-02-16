@@ -8,7 +8,8 @@ SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
 --  Smart Timetable Module Menu Items :
-  -- 1.  Pre-Requisites
+  -- Category : Smart Timetable (below are Main Menu & Sub-Menu Items)
+  -- 1.  Pre-Requisites Setup
   --      1.1. Buildings
   --      1.2. Room Types
   --      1.3. Rooms
@@ -171,6 +172,8 @@ SET FOREIGN_KEY_CHECKS = 0;
     -- (10,'maximum_student_required_for_class_subgroup', 'Maximum Number of Student Required for Class Subgroup', '25', 'NUMBER', 'Maximum Number of Student Required for Class Subgroup', NULL, 0, 1, 1, 1, NULL, NULL, NULL),
     -- (11,'max_weekly_periods_can_be_allocated_to_teacher', 'Maximum No of Periods that can be allocated to Teacher per week', '8', 'NUMBER', 'Maximum No of Periods that can be allocated to Teacher per week', NULL, 0, 1, 1, 1, NULL, NULL, NULL),
     -- (12,'min_weekly_periods_can_be_allocated_to_teacher', 'Minimum No of Periods that can be allocated to Teacher per week', '8', 'NUMBER', 'Minimum No of Periods that can be allocated to Teacher per week', NULL, 0, 1, 1, 1, NULL, NULL, NULL);
+    -- (13,`week-start_day`, '1st Day of the Week', 'MONDAY', 'STRING', 'Which day will be consider as 1st Day of the Week', NULL, 0, 1, 1, 1, NULL, NULL, NULL);
+    -- (14,)
 
   -- Timetable Generation Queue & Strategy Tables (For handling asynchronous timetable generation)
   CREATE TABLE IF NOT EXISTS `tt_generation_strategy` (
@@ -478,6 +481,7 @@ SET FOREIGN_KEY_CHECKS = 0;
     `class_timetable_type_id` INT unsigned NOT NULL,  -- FK to tt_class_timetable_type_jnt.id    
     `class_id` INT unsigned NOT NULL,  -- FK to sch_classes.id
     `section_id` INT unsigned NOT NULL,  -- FK to sch_sections.id
+    `class_house_room_id` int unsigned NOT NULL,   -- FK to 'sch_rooms'
     `weekly_total_slots` TINYINT UNSIGNED NOT NULL,  -- 1-8 How many slots that Class+section have everyday
     `weekly_teaching_slots` TINYINT UNSIGNED NOT NULL,  -- 1-8 How many teaching slots that Class+section have everyday
     `weekly_exam_slots` TINYINT UNSIGNED NOT NULL,  -- 1-8 How many exam slots that Class+section have everyday
@@ -642,6 +646,7 @@ SET FOREIGN_KEY_CHECKS = 0;
     `code` VARCHAR(30) NOT NULL,  -- Can not be changed by User
     `name` VARCHAR(100) NOT NULL,  -- User can change Name
     `description` VARCHAR(255) DEFAULT NULL,
+
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -767,10 +772,10 @@ SET FOREIGN_KEY_CHECKS = 0;
     `teacher_profile_id` INT unsigned NOT NULL,       -- FK to sch_teacher_profile.id
     `required_weekly_periods` TINYINT UNSIGNED NOT NULL DEFAULT 1,  -- Total periods required per week for this Class Group (Class+{Section}+Subject+StudyFormat)
     -- Skill & Preference from "sch_teacher_profile"
-    `is_full_time` TINYINT(1) DEFAULT 1,              -- 1=Full-time, 0=Part-time
-    `preferred_shift` INT UNSIGNED DEFAULT NULL,    -- FK to sch_shift.id
-    `capable_handling_multiple_classes` TINYINT(1) DEFAULT 0,
-    `can_be_used_for_substitution` TINYINT(1) DEFAULT 1,
+    `is_full_time` TINYINT(1) DEFAULT 1,                         -- 1=Full-time, 0=Part-time
+    `preferred_shift` INT UNSIGNED DEFAULT NULL,                 -- FK to sch_shift.id
+    `capable_handling_multiple_classes` TINYINT(1) DEFAULT 0,    -- Is he capable of handling un-assigned classes
+    `can_be_used_for_substitution` TINYINT(1) DEFAULT 1,         -- Can we use this teacher for substitution
     `certified_for_lab` TINYINT(1) DEFAULT 0,
     `max_available_periods_weekly` TINYINT UNSIGNED DEFAULT 48,
     `min_available_periods_weekly` TINYINT UNSIGNED DEFAULT 36,
@@ -778,32 +783,39 @@ SET FOREIGN_KEY_CHECKS = 0;
     `min_allocated_periods_weekly` TINYINT UNSIGNED DEFAULT 1,
     `can_be_split_across_sections` TINYINT(1) DEFAULT 0,
     -- From Teachers Capability (sch_teacher_capabilities)
-    `proficiency_percentage` TINYINT UNSIGNED DEFAULT NULL, -- 1–100
+    `proficiency_percentage` TINYINT UNSIGNED DEFAULT NULL,      -- 1–100
     `teaching_experience_months` SMALLINT UNSIGNED DEFAULT NULL,
-    `is_primary_subject` TINYINT(1) NOT NULL DEFAULT 1,  -- 1=Yes, 0=No
-    `competancy_level` ENUM('Basic','Intermediate','Advanced','Expert') DEFAULT 'Basic',
-    `priority_order` INT UNSIGNED DEFAULT NULL,   -- Priority Order of the Teacher for the Class+Subject+Study_Format
-    `priority_weight` TINYINT UNSIGNED DEFAULT NULL,   -- manual / computed weight (1–10) (Even if teachers are available, how important is THIS activity to the school?)
-    `scarcity_index` TINYINT UNSIGNED DEFAULT NULL,    -- 1=abundant, 10=very rare
-    `is_hard_constraint` TINYINT(1) DEFAULT 0,         -- if true cannot be voilated e.g. Physics Lab teacher for Class 12
-    `allocation_strictness` ENUM('hard','medium','soft') DEFAULT 'medium', e.g. Senior Maths teacher - Hard, Preferred English teacher - Medium, Art / Sports / Activity - Soft
+    `is_primary_subject` TINYINT(1) NOT NULL DEFAULT 1,          -- 1=Yes, 0=No
+    `competancy_level` ENUM('Facilitator','Basic','Intermediate','Advanced','Expert') DEFAULT 'Basic',  -- Facilitator - If No Teaching Experience but can manage.
+    `priority_order` INT UNSIGNED DEFAULT NULL,                  -- Priority Order of the Teacher for the Class+Subject+Study_Format
+    `priority_weight` TINYINT UNSIGNED DEFAULT NULL,             -- manual / computed weight (1–10) (Even if teachers are available, how important is THIS activity to the school?)
+    `scarcity_index` TINYINT UNSIGNED DEFAULT NULL,              -- 1=abundant, 10=very rare
+    `is_hard_constraint` TINYINT(1) DEFAULT 0,                   -- if true cannot be voilated e.g. Physics Lab teacher for Class 12
+    `allocation_strictness` ENUM('Hard','Medium','Soft') DEFAULT 'Medium', e.g. Senior Maths teacher - Hard, Preferred English teacher - Medium, Art / Sports / Activity - Soft
     -- Priority Override & Historical Feedback
-    `override_priority` TINYINT UNSIGNED DEFAULT NULL, -- admin override
+    `override_priority` TINYINT UNSIGNED DEFAULT NULL,           -- admin override
     `override_reason` VARCHAR(255) DEFAULT NULL,
-    `historical_success_ratio` TINYINT UNSIGNED DEFAULT NULL, -- 1–100 (sessions_completed_without_change / total_sessions_allocated ) * 100)
-    `last_allocation_score` TINYINT UNSIGNED DEFAULT NULL,   -- last run score (1–100)
+    `historical_success_ratio` TINYINT UNSIGNED DEFAULT NULL,    -- 1–100 (sessions_completed_without_change / total_sessions_allocated ) * 100)
+    `last_allocation_score` TINYINT UNSIGNED DEFAULT NULL,       -- last run score (1–100)
     -- Editable - School Preference for a Teacher for a Particuler Class+Subject+StudyFormat
-    `is_primary_teacher` TINYINT(1) NOT NULL DEFAULT 1,  -- 1=Yes, 0=No 9can be calculated on the basis of 
-    `is_preferred_teacher` TINYINT(1) NOT NULL DEFAULT 0,  -- 1=Yes, 0=No
-    `preference_score` TINYINT UNSIGNED DEFAULT NULL,   -- 1–100 
+    `is_primary_teacher` TINYINT(1) NOT NULL DEFAULT 1,          -- 1=Yes, 0=No 9can be calculated on the basis of 
+    `is_preferred_teacher` TINYINT(1) NOT NULL DEFAULT 0,        -- 1=Yes, 0=No
+    `preference_score` TINYINT UNSIGNED DEFAULT NULL,            -- 1–100 
     -- Status Duration
-    `effective_from` DATE DEFAULT NULL,
-    `effective_to` DATE DEFAULT NULL,
+    `teacher_profile_from_date` DATE DEFAULT NULL,               -- sch_teacher_profile.effective_from
+    `teacher_profile_to_date` DATE DEFAULT NULL,                 -- sch_teacher_profile.effective_to
+    `teacher_available_from_date` DATE DEFAULT NULL,             -- sch_teacher_capabilities.effective_from
+    `timetable_start_date` DATE DEFAULT NULL,                    -- tt_timetable.start_date
+    `timetable_end_date` DATE DEFAULT NULL,                      -- tt_timetable.end_date
+    -- 1. Auto-calculates 1 (Yes) or 0 (No). (Logic: Is the teacher ready on or before the start date?)
+    `available_for_full_timetable_duration` TINYINT(1) AS (IF(`teacher_available_from_date` <= `timetable_start_date`, 1, 0)) STORED,
+    -- 2. Auto-calculates the gap in days. (Logic: If available date is after start, find the difference; otherwise 0.) 
+    `no_of_days_not_available` INT AS (GREATEST(0, DATEDIFF(`teacher_available_from_date`, `timetable_start_date`))) STORED,
     -- Calculated Scores
     `min_teacher_availability_score` DECIMAL(7,2) UNSIGNED DEFAULT 1  -- Percentage of available teachers for this Class Group (Will capture from Teachers profile)
     `max_teacher_availability_score` DECIMAL(7,2) UNSIGNED DEFAULT 1  -- Percentage of available teachers for this Class Group (Will capture from Teachers profile)
     -- Activity
-    `activity_id` INT unsigned NULL,               -- FK to tt_activity.id
+    `activity_id` INT unsigned NULL,                       -- FK to tt_activity.id
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_ta_requirement_teacher` (`requirement_consolidation_id`, `teacher_profile_id`),
@@ -819,30 +831,29 @@ SET FOREIGN_KEY_CHECKS = 0;
     -- then his teacher_availability_ratio is (8 / 36) * 100 = 22.22%  
     -- TAR = (Total weekly assigned Periods / Total weekly available Periods) * 100
 
-  CREATE TABLE IF NOT EXISTS `tt_teacher_availability_log` (
+
+  CREATE TABLE IF NOT EXISTS `tt_teacher_availability_detail` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `teacher_availability_id` INT unsigned NOT NULL,  -- FK to tt_teacher_availability.id
-    `class_id` INT unsigned NOT NULL,                 -- FK to sch_classes.id
-    `section_id` INT unsigned DEFAULT NULL,           -- FK to sch_sections.id
-    `subject_study_format_id` INT unsigned NOT NULL,  -- FK to sch_study_formats.id. e.g SCI_LEC, SCI_LAB, COM_LEC, COM_OPT, etc.
-    `teacher_id` INT unsigned NOT NULL,               -- FK to sch_teachers.id
-    `day1_available_period_count` TINYINT UNSIGNED NOT NULL,  -- 1-8 How many slots that Class+section have on Day 1
-    `day2_available_period_count` TINYINT UNSIGNED NOT NULL,  -- 1-8 How many slots that Class+section have on Day 2
-    `day3_available_period_count` TINYINT UNSIGNED NOT NULL,  -- 1-8 How many slots that Class+section have on Day 3
-    `day4_available_period_count` TINYINT UNSIGNED NOT NULL,  -- 1-8 How many slots that Class+section have on Day 4
-    `day5_available_period_count` TINYINT UNSIGNED NOT NULL,  -- 1-8 How many slots that Class+section have on Day 5
-    `day6_available_period_count` TINYINT UNSIGNED NOT NULL,  -- 1-8 How many slots that Class+section have on Day 6
-    `day7_available_period_count` TINYINT UNSIGNED NOT NULL,  -- 1-8 How many slots that Class+section have on Day 7
-    `effective_from` DATE DEFAULT NULL,
-    `effective_to` DATE DEFAULT NULL,
-    `activity_id` INT unsigned NULL,               -- FK to tt_activity.id
+    `teacher_availability_id` INT unsigned NOT NULL,  -- FK to tt_teacher_availability.id 
+    `teacher_profile_id` INT unsigned NOT NULL,       -- FK to sch_teacher_profile.id
+    `day_number` TINYINT UNSIGNED NOT NULL,           -- 1-7 Day Number
+    `day_name` VARCHAR(10) NOT NULL,                  -- Day Name
+    `period_number` TINYINT UNSIGNED NOT NULL,        -- 1-8 Period Number
+    `can_be_assigned` TINYINT(1) NOT NULL DEFAULT 1,  -- 1=Yes, 0=No
+    `availability_for_period` ENUM('Available','Unavailable','Assigned','Free Period') NOT NULL DEFAULT 'Available',
+    `assigned_class_id` INT unsigned DEFAULT NULL,                 -- FK to sch_classes.id
+    `assigned_section_id` INT unsigned DEFAULT NULL,               -- FK to sch_sections.id
+    `assigned_subject_study_format_id` INT unsigned DEFAULT NULL,  -- FK to sch_study_formats.id. e.g SCI_LEC, SCI_LAB, COM_LEC, COM_OPT, etc.
+    `teacher_available_from_date` DATE DEFAULT NULL,               -- sch_teacher_capabilities.effective_from
+    `activity_id` INT unsigned NULL,                               -- FK to tt_activity.id
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_ta_class_wise` (`teacher_id`,`class_id`, `section_id`, `subject_study_format_id`, `start_time`, `end_time`),
-    CONSTRAINT `fk_ta_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`), 
-    CONSTRAINT `fk_ta_section` FOREIGN KEY (`section_id`) REFERENCES `sch_sections` (`id`),
-    CONSTRAINT `fk_ta_subject_study_format` FOREIGN KEY (`subject_study_format_id`) REFERENCES `sch_study_formats` (`id`),
-    CONSTRAINT `fk_ta_teacher` FOREIGN KEY (`teacher_id`) REFERENCES `sch_teachers` (`id`),
+    UNIQUE KEY `uq_ta_class_wise` (`teacher_profile_id`, `day_number`, `period_number`),
+    UNIQUE KEY `uq_ta_class_wise` (`teacher_profile_id`,`day_number`, `period_number`,`assigned_class_id`, `assigned_section_id`, `assigned_subject_study_format_id`),
+    CONSTRAINT `fk_ta_class` FOREIGN KEY (`assigned_class_id`) REFERENCES `sch_classes` (`id`), 
+    CONSTRAINT `fk_ta_section` FOREIGN KEY (`assigned_section_id`) REFERENCES `sch_sections` (`id`),
+    CONSTRAINT `fk_ta_subject_study_format` FOREIGN KEY (`assigned_subject_study_format_id`) REFERENCES `sch_study_formats` (`id`),
+    CONSTRAINT `fk_ta_teacher_profile` FOREIGN KEY (`teacher_profile_id`) REFERENCES `sch_teacher_profile` (`id`),
     CONSTRAINT `fk_ta_activity` FOREIGN KEY (`activity_id`) REFERENCES `tt_activity` (`id`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -850,17 +861,26 @@ SET FOREIGN_KEY_CHECKS = 0;
   -- Create Room Availability Class wise for entire Academic Session
   CREATE TABLE IF NOT EXISTS `tt_room_availability` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `room_id` INT unsigned NOT NULL,               -- FK to sch_rooms.id
-    `room_type_id` INT unsigned NOT NULL,          -- FK to tt_room_type.id
-    `class_house_room_id` int unsigned NOT NULL,      -- FK to 'sch_rooms'
-    `class_id` INT unsigned NULL,                  -- FK to sch_classes.id
-    `section_id` INT unsigned NULL,                -- FK to sch_sections.id
-    `subject_study_format_id` INT unsigned NULL,   -- FK to sch_study_formats.id. e.g SCI_LEC, SCI_LAB, COM_LEC, COM_OPT, etc.
-    `activity_id` INT unsigned NULL,               -- FK to tt_activity.id
-    `capacity` int unsigned DEFAULT NULL,
-    `max_limit` int unsigned DEFAULT NULL,
-    `start_time` time NOT NULL,                       -- This will be fetched from (tt_timetable_type.effective_from_date)
-    `end_time` time NOT NULL,                         -- This will be fetched from (tt_timetable_type.effective_to_date)
+    `room_id` INT unsigned NOT NULL,                                -- FK to sch_rooms.id
+    `rooms_type_id` INT unsigned NOT NULL,                          -- FK to sch_room_type.id
+    `total_rooms_in_category` SMALLINT unsigned NOT NULL,           -- sch_rooms_type.room_count_in_category (Total number of rooms in this category)
+    `can_be_assigned` TINYINT(1) NOT NULL DEFAULT 1,                -- 1=Yes, 0=No
+    `overall_availability_status` ENUM('Available','Unavailable','Partially Available','Assigned') NOT NULL DEFAULT 'Available',
+    `available_for_full_timetable_duration` TINYINT(1) NOT NULL DEFAULT 1, -- 1=Yes, 0=No
+    `is_class_house_room` TINYINT(1) NOT NULL DEFAULT 0,            -- 1=Yes, 0=No
+    `house_room_class_id` INT unsigned NULL,                        -- FK to sch_classes.id
+    `house_room_section_id` INT unsigned NULL,                      -- FK to sch_sections.id
+    `activity_id` INT unsigned NULL,                                -- FK to tt_activity.id
+    `capacity` int unsigned DEFAULT NULL,                           -- Seating Capacity of the Room
+    `max_limit` int unsigned DEFAULT NULL,                          -- Maximum how many students can accomodate in the room
+    -- Can be assigned for Lecture, Practical, Exam, Activity, Sports
+    `can_be_assigned_for_lecture` TINYINT(1) NOT NULL DEFAULT 1,    -- Can this Room be assigned as Lecture Room if required?
+    `can_be_assigned_for_practical` TINYINT(1) NOT NULL DEFAULT 1,  -- Can this Room be assigned as Practical Room if required?
+    `can_be_assigned_for_exam` TINYINT(1) NOT NULL DEFAULT 1,       -- Can this Room be assigned as Exam Room if required?
+    `can_be_assigned_for_activity` TINYINT(1) NOT NULL DEFAULT 1,   -- Can this Room be assigned as Activity Room if required?
+    `can_be_assigned_for_sports` TINYINT(1) NOT NULL DEFAULT 1,     -- Can this Room be assigned as Sports Room if required?
+    `timetable_start_time` time NOT NULL,                           -- This will be fetched from (tt_timetable_type.effective_from_date)
+    `timetable_end_time` time NOT NULL,                             -- This will be fetched from (tt_timetable_type.effective_to_date)
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_ra_class_wise` (`room_id`,`room_type_id`, `class_id`, `section_id`, `subject_study_format_id`, `start_time`, `end_time`),
@@ -869,7 +889,32 @@ SET FOREIGN_KEY_CHECKS = 0;
     CONSTRAINT `fk_room_availability_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`), 
     CONSTRAINT `fk_room_availability_section` FOREIGN KEY (`section_id`) REFERENCES `sch_sections` (`id`),
     CONSTRAINT `fk_room_availability_subject_study_format` FOREIGN KEY (`subject_study_format_id`) REFERENCES `sch_study_formats` (`id`),
-    CONSTRAINT `fk_room_availability_activity` FOREIGN KEY (`activity_id`) REFERENCES `tt_activity` (`id`)
+    CONSTRAINT `fk_room_availability_activity` FOREIGN KEY (`activity_id`) REFERENCES `tt_activity` (`id`),
+    CONSTRAINT `chk_class_house_logic` CHECK ((is_class_house_room = 1 AND class_id IS NOT NULL AND section_id IS NOT NULL) OR (is_class_house_room = 0))
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+  CREATE TABLE IF NOT EXISTS `tt_room_availability_detail` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `room_availability_id` INT unsigned NOT NULL,              -- FK to tt_room_availability.id
+    `room_id` INT unsigned NOT NULL,                           -- FK to sch_rooms.id
+    `room_type_id` INT unsigned NOT NULL,                      -- FK to sch_room_type.id
+    `day_number` TINYINT UNSIGNED NOT NULL,                    -- 1-7 Day Number
+    `day_name` VARCHAR(10) NOT NULL,                           -- Day Name
+    `period_number` TINYINT UNSIGNED NOT NULL,                 -- 1-8 Period Number
+    `availability_for_period` ENUM('Available','Unavailable','Assigned') NOT NULL DEFAULT 'Available',
+    `assigned_class_id` INT unsigned NOT NULL,                 -- FK to sch_classes.id
+    `assigned_section_id` INT unsigned DEFAULT NULL,           -- FK to sch_sections.id
+    `assigned_subject_study_format_id` INT unsigned NOT NULL,  -- FK to sch_study_formats.id. e.g SCI_LEC, SCI_LAB, COM_LEC, COM_OPT, etc.
+    `room_available_from_date` DATE DEFAULT NULL,              -- sch_rooms.room_available_from_date
+    `activity_id` INT unsigned NULL,                           -- FK to tt_activity.id
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1,  
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_ra_class_wise` (`room_availability_id`,`assigned_class_id`, `assigned_section_id`, `assigned_subject_study_format_id`, `start_time`, `end_time`),
+    CONSTRAINT `fk_room_availability_detail_room_availability` FOREIGN KEY (`room_availability_id`) REFERENCES `tt_room_availability` (`id`), 
+    CONSTRAINT `fk_room_availability_detail_class` FOREIGN KEY (`assigned_class_id`) REFERENCES `sch_classes` (`id`), 
+    CONSTRAINT `fk_room_availability_detail_section` FOREIGN KEY (`assigned_section_id`) REFERENCES `sch_sections` (`id`),
+    CONSTRAINT `fk_room_availability_detail_subject_study_format` FOREIGN KEY (`assigned_subject_study_format_id`) REFERENCES `sch_study_formats` (`id`),
+    CONSTRAINT `fk_room_availability_detail_activity` FOREIGN KEY (`activity_id`) REFERENCES `tt_activity` (`id`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
@@ -1652,9 +1697,6 @@ SET FOREIGN_KEY_CHECKS = 0;
   -- Add new Field for Timetable -
   -- is_compulsory, min_periods_per_week, max_periods_per_week, max_per_day, min_per_day, min_gap_periods, allow_consecutive, max_consecutive, priority, compulsory_room_type
 
-
-
-
   -- Building Coding format is - 2 Digit for Buildings(10-99)
   CREATE TABLE IF NOT EXISTS `sch_buildings` (
     `id` int unsigned NOT NULL AUTO_INCREMENT,
@@ -1912,3 +1954,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 
 
 -- =====================================================================================================================================================
+-- New Changes:
+-- 1. Added `class_house_room_id` to `tt_slot_requirement` table
+-- 2. Removed `effective_to` From Table - `tt_teacher_availability`, `tt_teacher_availability_detail`
+-- 3. Update `competancy_level` in Table - `tt_teacher_availability` Add 'Facilitator' option in Enum
