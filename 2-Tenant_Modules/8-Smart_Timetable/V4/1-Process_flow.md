@@ -27,19 +27,19 @@ PHASE 1: ACADEMIC TERM & TIMETABLE TYPE SETUP
 ═══════════════════════════════════════════════════════════════════════════════
 1.1 Academic Term Setup
     ├── Create/Select Academic Term (sch_academic_term)
-    ├── Set term dates, total teaching days, periods per day
+    ├── Set term dates, total teaching days, periods per day / week
     └── Mark current term (is_current = 1)
 
 1.2 Timetable Type Definition
     ├── Create tt_timetable_type (Standard/Exam/Half-Day)
-    ├── Create tt_period_set for each type
-    ├── Define tt_period_set_period_jnt (period order, timing)
+    ├── Create tt_period_set to accomodate different set of Period Groups required for different classes (e.g. 'STANDARD_8P','HALF_DAY_4P','TODDLER_6P')
+    ├── Define tt_period_set_period_jnt (period order, timing, period type e.g. Study, Exam, Break, Lunch, Assembly )
     └── Map classes to timetable types (tt_class_timetable_type_jnt)
 
 1.3 Calendar Setup
     ├── Define tt_school_days (weekly schedule)
     ├── Mark tt_working_day for entire term
-    └── Set tt_class_working_day_jnt for special cases
+    └── Set tt_class_working_day_jnt for special cases (e.g. some classes may have Exam alng with Study, whereas other are having only Exam No Study OR for some there is not Exam etc.)
 
 
 PHASE 2: REQUIREMENT GENERATION
@@ -52,11 +52,16 @@ PHASE 2: REQUIREMENT GENERATION
     └── Update activity_id later when activities are created
 
 2.2 Class Requirement Groups/Subgroups
-    ├── INSERT into tt_class_requirement_groups (from sch_class_groups_jnt)
-    ├── INSERT into tt_class_requirement_subgroups (from sch_class_groups_jnt)
-    ├── UPDATE class_house_room_id from sch_class_section_jnt
-    ├── UPDATE student_count from std_student_academic_sessions
-    └── UPDATE eligible_teacher_count from sch_teacher_capabilities
+    ├── INSERT into tt_class_requirement_groups (from sch_class_groups_jnt where sch_class_groups_jnt.is_compulsory = 1)
+    ├── INSERT into tt_class_requirement_subgroups (from sch_class_groups_jnt where sch_class_groups_jnt.is_compulsory = 0)
+    ├── UPDATE tt_class_requirement_groups.class_house_room_id from sch_class_section_jnt
+    ├── UPDATE tt_class_requirement_subgroups.class_house_room_id from sch_class_section_jnt
+
+    ├── UPDATE sch_class_section_jnt.actual_total_student from std_student_academic_sessions (count of std_student_academic_sessions.id on Class + Section)
+    ├── UPDATE tt_class_requirement_groups.student_count from sch_class_section_jnt.actual_total_student (As requirement_groups having only compulsory subjects)
+    ├── UPDATE tt_class_requirement_subgroups.student_count from std_student_academic_sessions (count of std_student_academic_sessions.id on Class + Section + SubjectStudyFormat)
+    ├── UPDATE tt_class_requirement_groups.eligible_teacher_count from sch_teacher_capabilities (by joining on class_id AND subject_study_format_id)
+    └── UPDATE tt_class_requirement_subgroups.eligible_teacher_count from sch_teacher_capabilities (by joining on class_id AND subject_study_format_id)
 
 2.3 Requirement Consolidation
     ├── TRUNCATE tt_requirement_consolidation

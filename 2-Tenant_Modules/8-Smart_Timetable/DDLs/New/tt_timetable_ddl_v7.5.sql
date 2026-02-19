@@ -130,8 +130,8 @@ SET FOREIGN_KEY_CHECKS = 0;
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   COMMENT='Academic term/quarter/semester structure';
   -- Cindition:
-  -- 1. May of the fields in above table will be used in Lesson & Syllabus Planning as well.
-  -- 2. 
+    -- 1. May of the fields in above table will be used in Lesson & Syllabus Planning as well.
+    -- 2. 
 
 
   -- Here we are setting what all Settings will be used for the Timetable Module
@@ -942,6 +942,7 @@ SET FOREIGN_KEY_CHECKS = 0;
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_priority_type_name` (`priority_type`, `priority_name`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 
   -- This is the main Table which will be used to assign Teachers & Rooms on
   CREATE TABLE IF NOT EXISTS `tt_activity` (
