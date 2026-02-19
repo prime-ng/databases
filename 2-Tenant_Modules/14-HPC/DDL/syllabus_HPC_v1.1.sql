@@ -18,7 +18,7 @@
 
 
 
-CREATE TABLE hpc_circular_goals (
+CREATE TABLE IF NOT EXISTS `hpc_circular_goals` (
   `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   `code` VARCHAR(50) NOT NULL,
   `name` VARCHAR(150) NOT NULL,
@@ -33,7 +33,7 @@ CREATE TABLE hpc_circular_goals (
   CONSTRAINT `fk_cg_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes`(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE hpc_circular_goal_competency_jnt (
+CREATE TABLE IF NOT EXISTS `hpc_circular_goal_competency_jnt` (
   `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   `circular_goal_id` INT UNSIGNED NOT NULL,
   `competency_id` INT UNSIGNED NOT NULL,
@@ -52,7 +52,7 @@ CREATE TABLE hpc_circular_goal_competency_jnt (
 -- LEARNING OUTCOMES (NORMALIZED)
 -- =========================================================
 -- This Table will cover the learning outcomes for HPC
-CREATE TABLE hpc_learning_outcomes (
+CREATE TABLE IF NOT EXISTS `hpc_learning_outcomes` (
   `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   `code` VARCHAR(50) NOT NULL,
   `description` VARCHAR(255) NOT NULL,
@@ -69,7 +69,7 @@ CREATE TABLE hpc_learning_outcomes (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- This Table will cover the outcome entity mapping for HPC
-CREATE TABLE hpc_outcome_entity_jnt (
+CREATE TABLE IF NOT EXISTS `hpc_outcome_entity_jnt` (
   `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   `outcome_id` INT UNSIGNED NOT NULL,
   `class_id` INT UNSIGNED NOT NULL,  -- Fk to sch_classes
@@ -91,7 +91,7 @@ CREATE TABLE hpc_outcome_entity_jnt (
 -- OUTCOME ↔ QUESTION MAPPING (will be used for HPC)
 -- =========================================================
 -- This Table will cover the outcome question mapping for HPC
-CREATE TABLE hpc_outcome_question_jnt (
+CREATE TABLE IF NOT EXISTS `hpc_outcome_question_jnt` (
   `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   `outcome_id` INT UNSIGNED NOT NULL,
   `question_id` INT UNSIGNED NOT NULL,  -- fk to qns_questions_bank.id
@@ -110,7 +110,7 @@ CREATE TABLE hpc_outcome_question_jnt (
 -- KNOWLEDGE GRAPH VALIDATION
 -- =========================================================
 -- This Table will cover the knowledge graph validation for HPC
-CREATE TABLE hpc_knowledge_graph_validation (
+CREATE TABLE IF NOT EXISTS `hpc_knowledge_graph_validation` (
   `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   `topic_id` INT UNSIGNED NOT NULL,
   `issue_type` ENUM('NO_COMPETENCY','NO_OUTCOME','NO_WEIGHTAGE','ORPHAN_NODE') NOT NULL,
@@ -130,7 +130,7 @@ CREATE TABLE hpc_knowledge_graph_validation (
 -- MULTI-SYLLABUS TOPIC EQUIVALENCY
 -- =========================================================
 -- This table will cover the topic equivalency between different syllabuses
-CREATE TABLE hpc_topic_equivalency (
+CREATE TABLE IF NOT EXISTS `hpc_topic_equivalency` (
   `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   `source_topic_id` INT UNSIGNED NOT NULL,
   `target_topic_id` INT UNSIGNED NOT NULL,
@@ -149,7 +149,7 @@ CREATE TABLE hpc_topic_equivalency (
 -- SYLLABUS COVERAGE SNAPSHOT (ANALYTICS)
 -- =========================================================
 -- This table will cover the syllabus coverage snapshot (How much Syllabus has been covered) for HPC
-CREATE TABLE hpc_syllabus_coverage_snapshot (
+CREATE TABLE IF NOT EXISTS `hpc_syllabus_coverage_snapshot` (
   `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   `academic_session_id` INT UNSIGNED NOT NULL,
   `class_id` INT UNSIGNED NOT NULL,
@@ -172,7 +172,7 @@ CREATE TABLE hpc_syllabus_coverage_snapshot (
 -- This table will cover the HPC parameters for HPC. In NEP Framework it has been mentioned as 3 "Ability"
 -- As per the HPC framework, Every Subject will be assessed based on these 3 parameters (Awareness, Sensitivity, Creativity)
 -- Old Table Name - hpc_hpc_parameters
-CREATE TABLE hpc_ability_parameters (
+CREATE TABLE IF NOT EXISTS `hpc_ability_parameters` (
   `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   `code` VARCHAR(20) NOT NULL,      -- AWARENESS, SENSITIVITY, CREATIVITY
   `name` VARCHAR(100) NOT NULL,
@@ -191,8 +191,8 @@ CREATE TABLE hpc_ability_parameters (
 -- This table will cover the HPC performance levels for HPC. In NEP Framework it has been mentioned as 3 "Performance Descriptors" 
 -- As per the HPC framework, Every parameter for every subject will be assessed based on these 3 levels (Beginner, Proficient, Advanced)
 -- Old Table Name - hpc_hpc_levels
-CREATE TABLE hpc_performance_descriptors (
-  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS `hpc_performance_descriptors` (
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, 
   `code` VARCHAR(20) NOT NULL,      -- BEGINNER, PROFICIENT, ADVANCED
   `ordinal` TINYINT UNSIGNED NOT NULL,
   `description` VARCHAR(500) DEFAULT NULL,
@@ -210,7 +210,7 @@ CREATE TABLE hpc_performance_descriptors (
 -- This table will cover the HPC evaluation for Every Student on every subject based on 3 Parameters (Awareness, Sensitivity, Creativity)
 -- Every parameter(Awareness, Sensitivity, Creativity) for every subject will be assessed on 3 levels (Beginner, Proficient, Advanced)
 -- Old table name - hpc_student_hpc_evaluation
-CREATE TABLE hpc_student_evaluation (
+CREATE TABLE IF NOT EXISTS `hpc_student_evaluation` (
   `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   `academic_session_id` INT UNSIGNED NOT NULL,  -- FK TO slb_academic_sessions
   `student_id` INT UNSIGNED NOT NULL,           -- FK TO slb_students
@@ -244,7 +244,7 @@ CREATE TABLE hpc_student_evaluation (
 -- LEARNING ACTIVITIES (HPC EVIDENCE)
 -- =========================================================
 -- This table will cover the Learning Activities for every topic
-CREATE TABLE hpc_learning_activities (
+CREATE TABLE IF NOT EXISTS `hpc_learning_activities` (
   `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   `topic_id` INT UNSIGNED NOT NULL,           -- FK TO slb_topics
   `activity_type_id` INT UNSIGNED NOT NULL,   -- FK TO hpc_learning_activity_type
@@ -259,7 +259,7 @@ CREATE TABLE hpc_learning_activities (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- I need to create a a new table for hpc_lerning_activity_type to use as activity_type_id in hpc_learning_activities.activity_type_id
-CREATE TABLE hpc_learning_activity_type (
+CREATE TABLE IF NOT EXISTS `hpc_learning_activity_type` (
   `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   `code` VARCHAR(30) NOT NULL,    -- PROJECT, OBSERVATION, FIELD_WORK, GROUP_WORK, ART, SPORT, DISCUSSION
   `name` VARCHAR(100) NOT NULL,   
@@ -276,7 +276,7 @@ CREATE TABLE hpc_learning_activity_type (
 -- HOLISTIC PROGRESS CARD SNAPSHOT
 -- =========================================================
 -- This table will cover the Holistic Progress Card Snapshot for every student
-CREATE TABLE hpc_student_hpc_snapshot (
+CREATE TABLE IF NOT EXISTS `hpc_student_hpc_snapshot` (
   `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   `academic_session_id` INT UNSIGNED NOT NULL,  -- FK TO slb_academic_sessions
   `student_id` INT UNSIGNED NOT NULL,           -- FK TO slb_students
