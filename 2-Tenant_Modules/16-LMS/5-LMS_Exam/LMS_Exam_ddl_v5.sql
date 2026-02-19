@@ -59,7 +59,7 @@ CREATE TABLE IF NOT EXISTS `lms_exam_student_groups` (
   `exam_id` INT UNSIGNED NOT NULL,             -- FK to lms_exams.id
   `class_id` INT UNSIGNED NOT NULL,            -- FK to sch_classes.id
   `section_id` INT UNSIGNED NOT NULL,          -- FK to sch_sections.id
-  `code` VARCHAR(20) NOT NULL,                   -- e.g. "9th-A_SET-A"
+  `code` VARCHAR(50) NOT NULL,                   -- e.g. "9th-A_SET-A"
   `name` VARCHAR(100) NOT NULL,                   -- e.g. "Class 9th-A, Group SET-A"
   `description` VARCHAR(255) DEFAULT NULL,
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
