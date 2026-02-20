@@ -143,34 +143,34 @@
     `id` INT PRIMARY KEY AUTO_INCREMENT,
     `title` VARCHAR(500) NOT NULL,
     `subtitle` VARCHAR(500),
-    `edition` VARCHAR(50),  -- Edition of the book (e.g., 1st, 2nd, 3rd)
-    `isbn` VARCHAR(20) UNIQUE,  -- International Standard Book Number - A unique identifier for books
-    `issn` VARCHAR(20),  -- International Standard Serial Number - A unique identifier for serials
-    `doi` VARCHAR(100),  -- Digital Object Identifier - A unique identifier for digital objects
-    `publication_year` INT,  -- Year the book was published
-    `publisher_id` INT,  -- FK to lib_publishers
-    `language` VARCHAR(50) DEFAULT 'English',  -- FK to sys_dropdown_table (Map with Exisiting Dropdown table-name - bok_books coloumn_name - language)
-    `page_count` INT CHECK (page_count > 0),  -- Number of pages in the book
-    `summary` TEXT,  -- Summary of the book
-    `table_of_contents` TEXT,  -- Table of contents of the book
-    `cover_image_url` VARCHAR(500),  -- URL of the cover image
-    `resource_type_id` INT NOT NULL,  -- FK to lib_resource_types
-    `is_reference_only` TINYINT(1) NOT NULL DEFAULT 0,  -- Whether book cannot be borrowed (in-library use only)
+    `edition` VARCHAR(50),                                              -- Edition of the book (e.g., 1st, 2nd, 3rd)
+    `isbn` VARCHAR(20) UNIQUE,                                          -- International Standard Book Number - A unique identifier for books
+    `issn` VARCHAR(20),                                                 -- International Standard Serial Number - A unique identifier for serials
+    `doi` VARCHAR(100),                                                 -- Digital Object Identifier - A unique identifier for digital objects
+    `publication_year` INT,                                             -- Year the book was published
+    `publisher_id` INT,                                                 -- FK to lib_publishers
+    `language` VARCHAR(50) DEFAULT 'English',                           -- FK to sys_dropdown_table (Map with Exisiting Dropdown table-name - bok_books coloumn_name - language)
+    `page_count` INT CHECK (page_count > 0),                            -- Number of pages in the book
+    `summary` TEXT,                                                     -- Summary of the book
+    `table_of_contents` TEXT,                                           -- Table of contents of the book
+    `cover_image_url` VARCHAR(500),                                     -- URL of the cover image
+    `resource_type_id` INT NOT NULL,                                    -- FK to lib_resource_types
+    `is_reference_only` TINYINT(1) NOT NULL DEFAULT 0,                  -- Whether book cannot be borrowed (in-library use only)
     -- Analytics
-    `lexile_level` VARCHAR(20) COMMENT 'Reading difficulty level'
-    `reading_age_range` VARCHAR(20) COMMENT 'e.g., 8-12 years'
-    `awards` TEXT COMMENT 'List of awards won'
-    `series_name` VARCHAR(200)
-    `series_position` INT
-    `popularity_rank` INT
-    `academic_rating` DECIMAL(3,2) COMMENT 'Rating by faculty'
-    `student_rating` DECIMAL(3,2) COMMENT 'Average student rating'
-    `rating_count` INT DEFAULT 0
-    `curricular_relevance_score` DECIMAL(5,2) DEFAULT 0.00
-    `tags` JSON COMMENT 'Auto-generated tags from AI analysis'
-    `ai_summary` TEXT COMMENT 'AI-generated summary'
-    `key_concepts` JSON COMMENT 'Key concepts extracted from book'
-
+    `lexile_level` VARCHAR(20) NULL,                                    -- Reading difficulty level
+    `reading_age_range` VARCHAR(20) NULL,                               -- e.g., 8-12 years
+    `awards` TEXT NULL,                                                 -- List of awards won by book
+    `series_name` VARCHAR(200) NULL,                                    -- Series name of the book
+    `series_position` INT NULL,                                         -- Position of the book in the series
+    `popularity_rank` INT NULL,                                         -- Popularity rank of the book
+    `academic_rating` DECIMAL(3,2) NULL,                                -- Rating by faculty
+    `student_rating` DECIMAL(3,2) NULL,                                 -- Average student rating
+    `rating_count` INT DEFAULT 0,                                       -- Number of ratings
+    `curricular_relevance_score` DECIMAL(5,2) NOT NULL DEFAULT 0.00,    -- Curricular relevance score
+    `tags` JSON NULL,                                                   -- Auto-generated tags from AI analysis
+    `ai_summary` TEXT NULL,                                             -- AI-generated summary
+    `key_concepts` JSON NULL,                                           -- Key concepts extracted from book
+    -- Audit
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -305,7 +305,7 @@ CREATE TABLE IF NOT EXISTS `lib_authors` (
 -- ----------------------------------------------------------------------------
 
 -- Item-level tracking of each physical copy of a book, including location, condition, and circulation status.
-CREATE TABLE IF NOT EXISTS `lib_book_copies` (
+  CREATE TABLE IF NOT EXISTS `lib_book_copies` (
     `id` INT PRIMARY KEY AUTO_INCREMENT,
     `book_id` INT NOT NULL,                 -- FK to lib_books_master.book_id
     `accession_number` VARCHAR(50) NOT NULL,
@@ -338,9 +338,9 @@ CREATE TABLE IF NOT EXISTS `lib_book_copies` (
     FOREIGN KEY (`book_id`) REFERENCES `lib_books_master`(`book_id`),
     FOREIGN KEY (`shelf_location_id`) REFERENCES `lib_shelf_locations`(`shelf_location_id`),
     FOREIGN KEY (`current_condition_id`) REFERENCES `lib_book_conditions`(`condition_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `lib_digital_resources` (
+  CREATE TABLE IF NOT EXISTS `lib_digital_resources` (
     `id` INT PRIMARY KEY AUTO_INCREMENT,
     `book_id` INT NOT NULL,                 -- FK to lib_books_master.book_id
     `file_name` VARCHAR(255) NOT NULL,
@@ -366,9 +366,9 @@ CREATE TABLE IF NOT EXISTS `lib_digital_resources` (
     INDEX `idx_digital_license` (`license_start_date`, `license_end_date`),
     INDEX `idx_digital_active` (`is_active`),
     FULLTEXT INDEX `ft_digital_search` (`file_name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `lib_digital_resource_tags` (
+  CREATE TABLE IF NOT EXISTS `lib_digital_resource_tags` (
     `id` INT PRIMARY KEY AUTO_INCREMENT,
     `digital_resource_id` INT NOT NULL,
     `tag_name` VARCHAR(100) NOT NULL,
@@ -376,9 +376,9 @@ CREATE TABLE IF NOT EXISTS `lib_digital_resource_tags` (
     FOREIGN KEY (`digital_resource_id`) REFERENCES `lib_digital_resources`(`digital_resource_id`) ON DELETE CASCADE,
     UNIQUE KEY `uk_resource_tag` (`digital_resource_id`, `tag_name`),
     INDEX `idx_tag_name` (`tag_name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `lib_members` (
+  CREATE TABLE IF NOT EXISTS `lib_members` (
     `id` INT PRIMARY KEY AUTO_INCREMENT,
     `user_id` INT NOT NULL,
     `membership_type_id` INT NOT NULL,
@@ -418,13 +418,13 @@ CREATE TABLE IF NOT EXISTS `lib_members` (
     INDEX `idx_member_membership` (`membership_type_id`),
     INDEX `idx_member_status` (`status`, `expiry_date`),
     INDEX `idx_member_active` (`is_active`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----------------------------------------------------------------------------
 -- OPERATION MANAGEMENT
 -- ----------------------------------------------------------------------------
 
-CREATE TABLE IF NOT EXISTS `lib_transactions` (
+  CREATE TABLE IF NOT EXISTS `lib_transactions` (
     `id` BIGINT PRIMARY KEY AUTO_INCREMENT,
     `copy_id` INT NOT NULL,  -- fk to lib_book_copies.id
     `member_id` INT NOT NULL,  -- fk to lib_members.id
@@ -453,9 +453,9 @@ CREATE TABLE IF NOT EXISTS `lib_transactions` (
     INDEX `idx_trans_dates` (`issue_date`, `due_date`, `return_date`),
     INDEX `idx_trans_status` (`status`, `due_date`),
     INDEX `idx_trans_issued_by` (`issued_by`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `lib_reservations` (
+  CREATE TABLE IF NOT EXISTS `lib_reservations` (
     `id` BIGINT PRIMARY KEY AUTO_INCREMENT,
     `book_id` INT NOT NULL,    -- fk to lib_books_master.id
     `member_id` INT NOT NULL,  -- fk to lib_members.id
@@ -476,10 +476,10 @@ CREATE TABLE IF NOT EXISTS `lib_reservations` (
     INDEX `idx_reserve_book` (`book_id`, `status`, `queue_position`),
     INDEX `idx_reserve_member` (`member_id`, `status`),
     INDEX `idx_reserve_status` (`status`, `pickup_by_date`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
-CREATE TABLE IF NOT EXISTS `lib_fines` (
+  CREATE TABLE IF NOT EXISTS `lib_fines` (
     `id` INT PRIMARY KEY AUTO_INCREMENT,
     `transaction_id` BIGINT NOT NULL,  -- fk to lib_transactions.id
     `member_id` INT NOT NULL,  -- fk to lib_members.id
@@ -502,9 +502,9 @@ CREATE TABLE IF NOT EXISTS `lib_fines` (
     INDEX `idx_fine_transaction` (`transaction_id`),
     INDEX `idx_fine_member` (`member_id`, `status`),
     INDEX `idx_fine_status` (`status`, `created_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `lib_fine_payments` (
+  CREATE TABLE IF NOT EXISTS `lib_fine_payments` (
     `id` INT PRIMARY KEY AUTO_INCREMENT,
     `fine_id` INT NOT NULL,  -- fk to lib_fines.id
     `amount_paid` DECIMAL(10,2) NOT NULL CHECK (amount_paid > 0),
@@ -523,13 +523,13 @@ CREATE TABLE IF NOT EXISTS `lib_fine_payments` (
     INDEX `idx_payment_fine` (`fine_id`),
     INDEX `idx_payment_receipt` (`receipt_number`),
     INDEX `idx_payment_date` (`payment_date`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----------------------------------------------------------------------------
 -- AUDIT AND HISTORY
 -- ----------------------------------------------------------------------------
 
-CREATE TABLE IF NOT EXISTS `lib_transaction_history` (
+  CREATE TABLE IF NOT EXISTS `lib_transaction_history` (
     `id` INT PRIMARY KEY AUTO_INCREMENT,
     `transaction_id` INT NOT NULL,  -- fk to lib_transactions.id
     `action_type` ENUM('issued', 'returned', 'renewed', 'marked_lost', 'condition_updated') NOT NULL,
@@ -545,9 +545,9 @@ CREATE TABLE IF NOT EXISTS `lib_transaction_history` (
     FOREIGN KEY (`performed_by`) REFERENCES `users`(id),
     INDEX `idx_history_transaction` (`transaction_id`),
     INDEX `idx_history_performed` (`performed_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `lib_inventory_audit` (
+  CREATE TABLE IF NOT EXISTS `lib_inventory_audit` (
     `id` INT PRIMARY KEY AUTO_INCREMENT,
     `uuid` CHAR(36) NOT NULL UNIQUE,
     `audit_date` DATE NOT NULL,
@@ -566,9 +566,9 @@ CREATE TABLE IF NOT EXISTS `lib_inventory_audit` (
     FOREIGN KEY (`performed_by`) REFERENCES `users`(id),
     INDEX `idx_audit_date` (`audit_date`),
     INDEX `idx_audit_status` (`status`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `lib_inventory_audit_details` (
+  CREATE TABLE IF NOT EXISTS `lib_inventory_audit_details` (
     `id` BIGINT PRIMARY KEY AUTO_INCREMENT,
     `audit_id` BIGINT NOT NULL,
     `copy_id` INT NOT NULL,
@@ -586,7 +586,7 @@ CREATE TABLE IF NOT EXISTS `lib_inventory_audit_details` (
     INDEX `idx_audit_details_audit` (`audit_id`),
     INDEX `idx_audit_details_copy` (`copy_id`),
     UNIQUE KEY `uk_audit_copy` (`audit_id`, `copy_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 
@@ -594,183 +594,183 @@ CREATE TABLE IF NOT EXISTS `lib_inventory_audit_details` (
 -- ----------------------------------------------------------------------------
 -- ADVANCED ANALYTICS & INSIGHTS
 -- ----------------------------------------------------------------------------
--- Tracks individual member reading patterns, preferences, and behavior metrics for personalized recommendations and engagement analysis.
-CREATE TABLE IF NOT EXISTS `lib_reading_behavior_analytics` (
-    `id` BIGINT PRIMARY KEY AUTO_INCREMENT,
-    `member_id` INT NOT NULL,
-    `academic_year` VARCHAR(20) NOT NULL,
-    `total_books_read` INT DEFAULT 0,
-    `total_pages_read` BIGINT DEFAULT 0,
-    `avg_reading_days_per_book` DECIMAL(5,2),
-    `preferred_genre_id` INT,
-    `preferred_category_id` INT,
-    `preferred_language` VARCHAR(50),
-    `avg_loan_completion_rate` DECIMAL(5,2) COMMENT 'Percentage of books returned on time',
-    `peak_borrowing_month` INT,
-    `peak_borrowing_day` VARCHAR(20),
-    `reading_consistency_score` DECIMAL(5,2) COMMENT '0-100 score based on borrowing regularity',
-    `genre_diversity_index` DECIMAL(5,2) COMMENT 'Shannon diversity index for genres',
-    `author_diversity_index` DECIMAL(5,2),
-    `preferred_borrowing_time` ENUM('Morning', 'Afternoon', 'Evening', 'Weekend'),
-    `digital_vs_physical_ratio` DECIMAL(5,2),
-    `renewal_frequency` DECIMAL(5,2) COMMENT 'Average renewals per book',
-    `reservation_frequency` INT DEFAULT 0,
-    `reading_speed_estimate` DECIMAL(5,2) COMMENT 'Estimated pages per day',
-    `completion_rate_trend` DECIMAL(5,2) COMMENT 'Month-over-month trend',
-    `last_calculated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (`member_id`) REFERENCES `lib_members`(`member_id`),
-    FOREIGN KEY (`preferred_genre_id`) REFERENCES `lib_genres`(`genre_id`),
-    FOREIGN KEY (`preferred_category_id`) REFERENCES `lib_categories`(`category_id`),
-    INDEX `idx_reading_behavior_member` (`member_id`, `academic_year`),
-    INDEX `idx_reading_behavior_genre` (`preferred_genre_id`),
-    INDEX `idx_reading_behavior_score` (`reading_consistency_score`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	-- Tracks individual member reading patterns, preferences, and behavior metrics for personalized recommendations and engagement analysis.
+	CREATE TABLE IF NOT EXISTS `lib_reading_behavior_analytics` (
+			`id` BIGINT PRIMARY KEY AUTO_INCREMENT,
+			`member_id` INT NOT NULL,
+			`academic_year` VARCHAR(20) NOT NULL,
+			`total_books_read` INT DEFAULT 0,
+			`total_pages_read` BIGINT DEFAULT 0,
+			`avg_reading_days_per_book` DECIMAL(5,2),
+			`preferred_genre_id` INT,
+			`preferred_category_id` INT,
+			`preferred_language` VARCHAR(50),
+			`avg_loan_completion_rate` DECIMAL(5,2) COMMENT 'Percentage of books returned on time',
+			`peak_borrowing_month` INT,
+			`peak_borrowing_day` VARCHAR(20),
+			`reading_consistency_score` DECIMAL(5,2) COMMENT '0-100 score based on borrowing regularity',
+			`genre_diversity_index` DECIMAL(5,2) COMMENT 'Shannon diversity index for genres',
+			`author_diversity_index` DECIMAL(5,2),
+			`preferred_borrowing_time` ENUM('Morning', 'Afternoon', 'Evening', 'Weekend'),
+			`digital_vs_physical_ratio` DECIMAL(5,2),
+			`renewal_frequency` DECIMAL(5,2) COMMENT 'Average renewals per book',
+			`reservation_frequency` INT DEFAULT 0,
+			`reading_speed_estimate` DECIMAL(5,2) COMMENT 'Estimated pages per day',
+			`completion_rate_trend` DECIMAL(5,2) COMMENT 'Month-over-month trend',
+			`last_calculated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			`created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (`member_id`) REFERENCES `lib_members`(`member_id`),
+			FOREIGN KEY (`preferred_genre_id`) REFERENCES `lib_genres`(`genre_id`),
+			FOREIGN KEY (`preferred_category_id`) REFERENCES `lib_categories`(`category_id`),
+			INDEX `idx_reading_behavior_member` (`member_id`, `academic_year`),
+			INDEX `idx_reading_behavior_genre` (`preferred_genre_id`),
+			INDEX `idx_reading_behavior_score` (`reading_consistency_score`)
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
---Tracks real-time and historical popularity metrics for books to optimize acquisition and shelving decisions.
-CREATE TABLE IF NOT EXISTS `lib_book_popularity_trends` (
-    `id` BIGINT PRIMARY KEY AUTO_INCREMENT,
-    `book_id` INT NOT NULL,
-    `tracking_date` DATE NOT NULL,
-    `daily_requests` INT DEFAULT 0,
-    `daily_issues` INT DEFAULT 0,
-    `daily_reservations` INT DEFAULT 0,
-    `daily_digital_views` INT DEFAULT 0,
-    `daily_digital_downloads` INT DEFAULT 0,
-    `popularity_score` DECIMAL(5,2) COMMENT 'Weighted composite score',
-    `trend_direction` ENUM('Rising', 'Falling', 'Stable') DEFAULT 'Stable',
-    `velocity_score` DECIMAL(5,2) COMMENT 'Rate of popularity change',
-    `seasonality_factor` DECIMAL(5,2) COMMENT 'Seasonal adjustment factor',
-    `peer_comparison_rank` INT COMMENT 'Rank among similar books',
-    `shelf_turnover_rate` DECIMAL(5,2) COMMENT 'How often book moves from shelf',
-    `waitlist_length` INT DEFAULT 0,
-    `avg_wait_days` DECIMAL(5,2),
-    `recommendation_weight` DECIMAL(5,2) COMMENT 'Weight for recommendation engine',
-    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (`book_id`) REFERENCES `lib_books_master`(`book_id`),
-    UNIQUE KEY `uk_book_daily_trend` (`book_id`, `tracking_date`),
-    INDEX `idx_popularity_date` (`tracking_date`),
-    INDEX `idx_popularity_score` (`popularity_score`),
-    INDEX `idx_popularity_trend` (`trend_direction`, `velocity_score`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	--Tracks real-time and historical popularity metrics for books to optimize acquisition and shelving decisions.
+	CREATE TABLE IF NOT EXISTS `lib_book_popularity_trends` (
+			`id` BIGINT PRIMARY KEY AUTO_INCREMENT,
+			`book_id` INT NOT NULL,
+			`tracking_date` DATE NOT NULL,
+			`daily_requests` INT DEFAULT 0,
+			`daily_issues` INT DEFAULT 0,
+			`daily_reservations` INT DEFAULT 0,
+			`daily_digital_views` INT DEFAULT 0,
+			`daily_digital_downloads` INT DEFAULT 0,
+			`popularity_score` DECIMAL(5,2) COMMENT 'Weighted composite score',
+			`trend_direction` ENUM('Rising', 'Falling', 'Stable') DEFAULT 'Stable',
+			`velocity_score` DECIMAL(5,2) COMMENT 'Rate of popularity change',
+			`seasonality_factor` DECIMAL(5,2) COMMENT 'Seasonal adjustment factor',
+			`peer_comparison_rank` INT COMMENT 'Rank among similar books',
+			`shelf_turnover_rate` DECIMAL(5,2) COMMENT 'How often book moves from shelf',
+			`waitlist_length` INT DEFAULT 0,
+			`avg_wait_days` DECIMAL(5,2),
+			`recommendation_weight` DECIMAL(5,2) COMMENT 'Weight for recommendation engine',
+			`created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			`updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			FOREIGN KEY (`book_id`) REFERENCES `lib_books_master`(`book_id`),
+			UNIQUE KEY `uk_book_daily_trend` (`book_id`, `tracking_date`),
+			INDEX `idx_popularity_date` (`tracking_date`),
+			INDEX `idx_popularity_score` (`popularity_score`),
+			INDEX `idx_popularity_trend` (`trend_direction`, `velocity_score`)
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Provides comprehensive metrics on the health, diversity, and utilization of the library collection.
-CREATE TABLE IF NOT EXISTS `lib_collection_health_metrics` (
-    `id` BIGINT PRIMARY KEY AUTO_INCREMENT,
-    `metric_date` DATE NOT NULL,
-    `category_id` INT,
-    `genre_id` INT,
-    `total_titles` INT DEFAULT 0,
-    `total_copies` INT DEFAULT 0,
-    `active_titles` INT DEFAULT 0,
-    `inactive_titles` INT DEFAULT 0,
-    `damaged_copies` INT DEFAULT 0,
-    `lost_copies` INT DEFAULT 0,
-    `withdrawn_copies` INT DEFAULT 0,
-    `utilization_rate` DECIMAL(5,2) COMMENT 'Percentage of collection in circulation',
-    `turnover_rate` DECIMAL(5,2) COMMENT 'Average issues per copy',
-    `age_of_collection` DECIMAL(5,2) COMMENT 'Average age in years',
-    `collection_diversity_score` DECIMAL(5,2) COMMENT 'Based on genre/category distribution',
-    `relevance_score` DECIMAL(5,2) COMMENT 'How well collection matches demand',
-    `acquisition_effectiveness` DECIMAL(5,2) COMMENT 'ROI on new acquisitions',
-    `weeding_priority_score` DECIMAL(5,2) COMMENT 'Priority for removal/replacement',
-    `budget_allocation_efficiency` DECIMAL(5,2),
-    `digital_penetration_rate` DECIMAL(5,2),
-    `physical_vs_digital_ratio` DECIMAL(5,2),
-    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX `idx_health_date` (`metric_date`),
-    INDEX `idx_health_category` (`category_id`),
-    INDEX `idx_health_genre` (`genre_id`),
-    INDEX `idx_health_utilization` (`utilization_rate`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	-- Provides comprehensive metrics on the health, diversity, and utilization of the library collection.
+	CREATE TABLE IF NOT EXISTS `lib_collection_health_metrics` (
+			`id` BIGINT PRIMARY KEY AUTO_INCREMENT,
+			`metric_date` DATE NOT NULL,
+			`category_id` INT,
+			`genre_id` INT,
+			`total_titles` INT DEFAULT 0,
+			`total_copies` INT DEFAULT 0,
+			`active_titles` INT DEFAULT 0,
+			`inactive_titles` INT DEFAULT 0,
+			`damaged_copies` INT DEFAULT 0,
+			`lost_copies` INT DEFAULT 0,
+			`withdrawn_copies` INT DEFAULT 0,
+			`utilization_rate` DECIMAL(5,2) COMMENT 'Percentage of collection in circulation',
+			`turnover_rate` DECIMAL(5,2) COMMENT 'Average issues per copy',
+			`age_of_collection` DECIMAL(5,2) COMMENT 'Average age in years',
+			`collection_diversity_score` DECIMAL(5,2) COMMENT 'Based on genre/category distribution',
+			`relevance_score` DECIMAL(5,2) COMMENT 'How well collection matches demand',
+			`acquisition_effectiveness` DECIMAL(5,2) COMMENT 'ROI on new acquisitions',
+			`weeding_priority_score` DECIMAL(5,2) COMMENT 'Priority for removal/replacement',
+			`budget_allocation_efficiency` DECIMAL(5,2),
+			`digital_penetration_rate` DECIMAL(5,2),
+			`physical_vs_digital_ratio` DECIMAL(5,2),
+			`created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			`updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			INDEX `idx_health_date` (`metric_date`),
+			INDEX `idx_health_category` (`category_id`),
+			INDEX `idx_health_genre` (`genre_id`),
+			INDEX `idx_health_utilization` (`utilization_rate`)
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Stores predictive model outputs for demand forecasting, member churn prediction, and resource optimization.
-CREATE TABLE IF NOT EXISTS `lib_predictive_analytics` (
-    `id` BIGINT PRIMARY KEY AUTO_INCREMENT,
-    `prediction_date` DATE NOT NULL,
-    `prediction_type` ENUM(
-        'Demand_Forecast', 
-        'Member_Churn', 
-        'Resource_Optimization', 
-        'Acquisition_Recommendation',
-        'Seasonal_Pattern',
-        'Budget_Projection'
-    ) NOT NULL,
-    `target_entity_type` ENUM('Book', 'Category', 'Genre', 'Member', 'Department', 'All') NOT NULL,
-    `target_entity_id` INT,
-    `prediction_period_start` DATE NOT NULL,
-    `prediction_period_end` DATE NOT NULL,
-    `predicted_value` DECIMAL(10,2) NOT NULL,
-    `confidence_score` DECIMAL(5,2) COMMENT '0-100 confidence level',
-    `actual_value` DECIMAL(10,2),
-    `accuracy_score` DECIMAL(5,2),
-    `model_version` VARCHAR(50),
-    `features_used` JSON COMMENT 'Features used in prediction',
-    `insights` TEXT,
-    `recommendations` TEXT,
-    `is_active` TINYINT(1) DEFAULT 1,
-    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX `idx_predictive_type` (`prediction_type`, `prediction_date`),
-    INDEX `idx_predictive_entity` (`target_entity_type`, `target_entity_id`),
-    INDEX `idx_predictive_period` (`prediction_period_start`, `prediction_period_end`),
-    INDEX `idx_predictive_confidence` (`confidence_score`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	-- Stores predictive model outputs for demand forecasting, member churn prediction, and resource optimization.
+	CREATE TABLE IF NOT EXISTS `lib_predictive_analytics` (
+			`id` BIGINT PRIMARY KEY AUTO_INCREMENT,
+			`prediction_date` DATE NOT NULL,
+			`prediction_type` ENUM(
+					'Demand_Forecast', 
+					'Member_Churn', 
+					'Resource_Optimization', 
+					'Acquisition_Recommendation',
+					'Seasonal_Pattern',
+					'Budget_Projection'
+			) NOT NULL,
+			`target_entity_type` ENUM('Book', 'Category', 'Genre', 'Member', 'Department', 'All') NOT NULL,
+			`target_entity_id` INT,
+			`prediction_period_start` DATE NOT NULL,
+			`prediction_period_end` DATE NOT NULL,
+			`predicted_value` DECIMAL(10,2) NOT NULL,
+			`confidence_score` DECIMAL(5,2) COMMENT '0-100 confidence level',
+			`actual_value` DECIMAL(10,2),
+			`accuracy_score` DECIMAL(5,2),
+			`model_version` VARCHAR(50),
+			`features_used` JSON COMMENT 'Features used in prediction',
+			`insights` TEXT,
+			`recommendations` TEXT,
+			`is_active` TINYINT(1) DEFAULT 1,
+			`created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			`updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			INDEX `idx_predictive_type` (`prediction_type`, `prediction_date`),
+			INDEX `idx_predictive_entity` (`target_entity_type`, `target_entity_id`),
+			INDEX `idx_predictive_period` (`prediction_period_start`, `prediction_period_end`),
+			INDEX `idx_predictive_confidence` (`confidence_score`)
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Tracks how well library resources align with curriculum requirements and academic schedules.
-CREATE TABLE IF NOT EXISTS `lib_curricular_alignment` (
-    `id` BIGINT PRIMARY KEY AUTO_INCREMENT,
-    `academic_year` VARCHAR(20) NOT NULL,
-    `class_id` INT NOT NULL,
-    `subject_id` INT NOT NULL,
-    `book_id` INT NOT NULL,
-    `alignment_score` DECIMAL(5,2) COMMENT 'How well book aligns with curriculum',
-    `recommended_by_faculty` TINYINT(1) DEFAULT 0,
-    `faculty_rating` DECIMAL(3,2) COMMENT '1-5 rating from faculty',
-    `student_usage_count` INT DEFAULT 0,
-    `exam_reference_count` INT DEFAULT 0 COMMENT 'Times referenced in exams',
-    `assignment_citations` INT DEFAULT 0,
-    `curriculum_unit` VARCHAR(200),
-    `term_recommended` ENUM('Term1', 'Term2', 'Term3', 'All'),
-    `priority_level` ENUM('Essential', 'Recommended', 'Supplementary', 'Optional') DEFAULT 'Supplementary',
-    `notes` TEXT,
-    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (`class_id`) REFERENCES `sch_classes`(`class_id`),
-    FOREIGN KEY (`subject_id`) REFERENCES `sch_subjects`(`subject_id`),
-    FOREIGN KEY (`book_id`) REFERENCES `lib_books_master`(`book_id`),
-    UNIQUE KEY `uk_curricular_book` (`academic_year`, `class_id`, `subject_id`, `book_id`),
-    INDEX `idx_curricular_alignment` (`alignment_score`),
-    INDEX `idx_curricular_priority` (`priority_level`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	-- Tracks how well library resources align with curriculum requirements and academic schedules.
+	CREATE TABLE IF NOT EXISTS `lib_curricular_alignment` (
+			`id` BIGINT PRIMARY KEY AUTO_INCREMENT,
+			`academic_year` VARCHAR(20) NOT NULL,
+			`class_id` INT NOT NULL,
+			`subject_id` INT NOT NULL,
+			`book_id` INT NOT NULL,
+			`alignment_score` DECIMAL(5,2) COMMENT 'How well book aligns with curriculum',
+			`recommended_by_faculty` TINYINT(1) DEFAULT 0,
+			`faculty_rating` DECIMAL(3,2) COMMENT '1-5 rating from faculty',
+			`student_usage_count` INT DEFAULT 0,
+			`exam_reference_count` INT DEFAULT 0 COMMENT 'Times referenced in exams',
+			`assignment_citations` INT DEFAULT 0,
+			`curriculum_unit` VARCHAR(200),
+			`term_recommended` ENUM('Term1', 'Term2', 'Term3', 'All'),
+			`priority_level` ENUM('Essential', 'Recommended', 'Supplementary', 'Optional') DEFAULT 'Supplementary',
+			`notes` TEXT,
+			`created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			`updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			FOREIGN KEY (`class_id`) REFERENCES `sch_classes`(`class_id`),
+			FOREIGN KEY (`subject_id`) REFERENCES `sch_subjects`(`subject_id`),
+			FOREIGN KEY (`book_id`) REFERENCES `lib_books_master`(`book_id`),
+			UNIQUE KEY `uk_curricular_book` (`academic_year`, `class_id`, `subject_id`, `book_id`),
+			INDEX `idx_curricular_alignment` (`alignment_score`),
+			INDEX `idx_curricular_priority` (`priority_level`)
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Tracks granular user interactions with the library system for detailed behavior analysis.
-CREATE TABLE IF NOT EXISTS `lib_engagement_events` (
-    `id` BIGINT PRIMARY KEY AUTO_INCREMENT,
-    `member_id` INT NOT NULL,
-    `event_type` ENUM('Search','Browse','View_Details','Add_Reservation','Cancel_Reservation','Renew_Online','Digital_View','Digital_Download','Read_Online','Share_Resource','Add_Review','Rate_Book','Save_To_Wishlist','Request_Purchase','Ask_Librarian','Attend_Event') NOT NULL,
-    `book_id` INT,
-    `digital_resource_id` INT,
-    `search_query` VARCHAR(500),
-    `filters_used` JSON,
-    `session_id` VARCHAR(100),
-    `device_type` ENUM('Desktop', 'Mobile', 'Tablet', 'Kiosk'),
-    `browser` VARCHAR(50),
-    `ip_address` VARCHAR(45),
-    `location_id` INT COMMENT 'Physical location if in library',
-    `time_spent_seconds` INT,
-    `interaction_outcome` VARCHAR(255),
-    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (`member_id`) REFERENCES `lib_members`(`member_id`),
-    FOREIGN KEY (`book_id`) REFERENCES `lib_books_master`(`book_id`),
-    FOREIGN KEY (`digital_resource_id`) REFERENCES `lib_digital_resources`(`digital_resource_id`),
-    INDEX `idx_engagement_member` (`member_id`, `created_at`),
-    INDEX `idx_engagement_type` (`event_type`, `created_at`),
-    INDEX `idx_engagement_book` (`book_id`),
-    INDEX `idx_engagement_session` (`session_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	-- Tracks granular user interactions with the library system for detailed behavior analysis.
+	CREATE TABLE IF NOT EXISTS `lib_engagement_events` (
+			`id` BIGINT PRIMARY KEY AUTO_INCREMENT,
+			`member_id` INT NOT NULL,
+			`event_type` ENUM('Search','Browse','View_Details','Add_Reservation','Cancel_Reservation','Renew_Online','Digital_View','Digital_Download','Read_Online','Share_Resource','Add_Review','Rate_Book','Save_To_Wishlist','Request_Purchase','Ask_Librarian','Attend_Event') NOT NULL,
+			`book_id` INT,
+			`digital_resource_id` INT,
+			`search_query` VARCHAR(500),
+			`filters_used` JSON,
+			`session_id` VARCHAR(100),
+			`device_type` ENUM('Desktop', 'Mobile', 'Tablet', 'Kiosk'),
+			`browser` VARCHAR(50),
+			`ip_address` VARCHAR(45),
+			`location_id` INT COMMENT 'Physical location if in library',
+			`time_spent_seconds` INT,
+			`interaction_outcome` VARCHAR(255),
+			`created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (`member_id`) REFERENCES `lib_members`(`member_id`),
+			FOREIGN KEY (`book_id`) REFERENCES `lib_books_master`(`book_id`),
+			FOREIGN KEY (`digital_resource_id`) REFERENCES `lib_digital_resources`(`digital_resource_id`),
+			INDEX `idx_engagement_member` (`member_id`, `created_at`),
+			INDEX `idx_engagement_type` (`event_type`, `created_at`),
+			INDEX `idx_engagement_book` (`book_id`),
+			INDEX `idx_engagement_session` (`session_id`)
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 
@@ -781,92 +781,92 @@ CREATE TABLE IF NOT EXISTS `lib_engagement_events` (
 -- 11. INDEX PERFORMANCE OPTIMIZATION
 -- ----------------------------------------------------------------------------
 
--- Additional indexes for complex queries
-CREATE INDEX idx_transactions_overdue ON lib_transactions(status, due_date) WHERE status = 'issued';
-CREATE INDEX idx_members_outstanding ON lib_members(outstanding_fines) WHERE outstanding_fines > 0;
-CREATE INDEX idx_fines_pending ON lib_fines(status, created_at) WHERE status = 'pending';
-CREATE INDEX idx_reservations_available ON lib_reservations(status, expected_available_date, notification_sent) WHERE status = 'pending';
-CREATE INDEX idx_digital_license_expiry ON lib_digital_resources(license_end_date) WHERE license_end_date IS NOT NULL;
+	-- Additional indexes for complex queries
+	CREATE INDEX idx_transactions_overdue ON lib_transactions(status, due_date) WHERE status = 'issued';
+	CREATE INDEX idx_members_outstanding ON lib_members(outstanding_fines) WHERE outstanding_fines > 0;
+	CREATE INDEX idx_fines_pending ON lib_fines(status, created_at) WHERE status = 'pending';
+	CREATE INDEX idx_reservations_available ON lib_reservations(status, expected_available_date, notification_sent) WHERE status = 'pending';
+	CREATE INDEX idx_digital_license_expiry ON lib_digital_resources(license_end_date) WHERE license_end_date IS NOT NULL;
 
--- Composite indexes for reporting
-CREATE INDEX idx_books_publisher_year ON lib_books_master(publisher_id, publication_year);
-CREATE INDEX idx_copies_location_status ON lib_book_copies(shelf_location_id, status);
-CREATE INDEX idx_transactions_member_dates ON lib_transactions(member_id, issue_date, return_date);
+	-- Composite indexes for reporting
+	CREATE INDEX idx_books_publisher_year ON lib_books_master(publisher_id, publication_year);
+	CREATE INDEX idx_copies_location_status ON lib_book_copies(shelf_location_id, status);
+	CREATE INDEX idx_transactions_member_dates ON lib_transactions(member_id, issue_date, return_date);
 
 -- ----------------------------------------------------------------------------
 -- 12. TRIGGERS FOR DATA INTEGRITY
 -- ----------------------------------------------------------------------------
 
-DELIMITER $$
+	DELIMITER $$
 
--- Trigger to update member's total borrowed count
-CREATE TRIGGER update_member_borrowed_count 
-AFTER INSERT ON lib_transactions
-FOR EACH ROW
-BEGIN
-    IF NEW.status = 'issued' THEN
-        UPDATE lib_members 
-        SET total_books_borrowed = total_books_borrowed + 1,
-            last_activity_date = CURDATE()
-        WHERE member_id = NEW.member_id;
-    END IF;
-END$$
+	-- Trigger to update member's total borrowed count
+	CREATE TRIGGER update_member_borrowed_count 
+	AFTER INSERT ON lib_transactions
+	FOR EACH ROW
+	BEGIN
+			IF NEW.status = 'issued' THEN
+					UPDATE lib_members 
+					SET total_books_borrowed = total_books_borrowed + 1,
+							last_activity_date = CURDATE()
+					WHERE member_id = NEW.member_id;
+			END IF;
+	END$$
 
--- Trigger to update book copy status on transaction
-CREATE TRIGGER update_copy_status_on_issue
-AFTER INSERT ON lib_transactions
-FOR EACH ROW
-BEGIN
-    IF NEW.status = 'issued' THEN
-        UPDATE lib_book_copies 
-        SET status = 'issued'
-        WHERE copy_id = NEW.copy_id;
-    END IF;
-END$$
+	-- Trigger to update book copy status on transaction
+	CREATE TRIGGER update_copy_status_on_issue
+	AFTER INSERT ON lib_transactions
+	FOR EACH ROW
+	BEGIN
+			IF NEW.status = 'issued' THEN
+					UPDATE lib_book_copies 
+					SET status = 'issued'
+					WHERE copy_id = NEW.copy_id;
+			END IF;
+	END$$
 
-CREATE TRIGGER update_copy_status_on_return
-AFTER UPDATE ON lib_transactions
-FOR EACH ROW
-BEGIN
-    IF NEW.status = 'returned' AND OLD.status != 'returned' THEN
-        UPDATE lib_book_copies 
-        SET status = 'available',
-            current_condition_id = NEW.return_condition_id
-        WHERE copy_id = NEW.copy_id;
-    END IF;
-END$$
+	CREATE TRIGGER update_copy_status_on_return
+	AFTER UPDATE ON lib_transactions
+	FOR EACH ROW
+	BEGIN
+			IF NEW.status = 'returned' AND OLD.status != 'returned' THEN
+					UPDATE lib_book_copies 
+					SET status = 'available',
+							current_condition_id = NEW.return_condition_id
+					WHERE copy_id = NEW.copy_id;
+			END IF;
+	END$$
 
--- Trigger to automatically calculate fines on overdue items
-CREATE EVENT auto_calculate_fines
-ON SCHEDULE EVERY 1 DAY
-STARTS CURRENT_DATE
-DO
-BEGIN
-    INSERT INTO lib_fines (transaction_id, member_id, fine_type, amount, days_overdue, calculated_from, calculated_to, status)
-    SELECT 
-        t.transaction_id,
-        t.member_id,
-        'late_return',
-        DATEDIFF(CURDATE(), t.due_date) * mt.fine_rate_per_day,
-        DATEDIFF(CURDATE(), t.due_date),
-        t.due_date,
-        CURDATE(),
-        'pending'
-    FROM lib_transactions t
-    INNER JOIN lib_members m ON t.member_id = m.member_id
-    INNER JOIN lib_membership_types mt ON m.membership_type_id = mt.membership_type_id
-    WHERE t.status = 'issued' 
-        AND t.due_date < CURDATE()
-        AND DATEDIFF(CURDATE(), t.due_date) > mt.grace_period_days
-        AND NOT EXISTS (
-            SELECT 1 FROM lib_fines f 
-            WHERE f.transaction_id = t.transaction_id 
-            AND f.fine_type = 'late_return'
-            AND f.status = 'pending'
-        );
-END$$
+	-- Trigger to automatically calculate fines on overdue items
+	CREATE EVENT auto_calculate_fines
+	ON SCHEDULE EVERY 1 DAY
+	STARTS CURRENT_DATE
+	DO
+	BEGIN
+			INSERT INTO lib_fines (transaction_id, member_id, fine_type, amount, days_overdue, calculated_from, calculated_to, status)
+			SELECT 
+					t.transaction_id,
+					t.member_id,
+					'late_return',
+					DATEDIFF(CURDATE(), t.due_date) * mt.fine_rate_per_day,
+					DATEDIFF(CURDATE(), t.due_date),
+					t.due_date,
+					CURDATE(),
+					'pending'
+			FROM lib_transactions t
+			INNER JOIN lib_members m ON t.member_id = m.member_id
+			INNER JOIN lib_membership_types mt ON m.membership_type_id = mt.membership_type_id
+			WHERE t.status = 'issued' 
+					AND t.due_date < CURDATE()
+					AND DATEDIFF(CURDATE(), t.due_date) > mt.grace_period_days
+					AND NOT EXISTS (
+							SELECT 1 FROM lib_fines f 
+							WHERE f.transaction_id = t.transaction_id 
+							AND f.fine_type = 'late_return'
+							AND f.status = 'pending'
+					);
+	END$$
 
-DELIMITER ;
+	DELIMITER ;
 
 
 
@@ -874,102 +874,102 @@ DELIMITER ;
 -- 13. VIEWS FOR COMMON REPORTING
 -- ----------------------------------------------------------------------------
 
--- Comprehensive 360-degree view of member engagement and behavior.
-CREATE OR REPLACE VIEW `lib_view_member_360` AS
-SELECT 
-    m.member_id,
-    m.membership_number,
-    u.first_name,
-    u.last_name,
-    u.email,
-    u.phone,
-    mt.name as membership_type,
-    m.registration_date,
-    m.expiry_date,
-    m.status,
-    m.total_books_borrowed,
-    m.outstanding_fines,
-    m.engagement_score,
-    m.churn_risk_score,
-    m.lifetime_value,
-    m.reading_level,
-    rba.total_pages_read,
-    rba.avg_reading_days_per_book,
-    rba.reading_consistency_score,
-    rba.genre_diversity_index,
-    g.name as preferred_genre,
-    rba.preferred_borrowing_time,
-    rba.digital_vs_physical_ratio,
-    (
-        SELECT COUNT(*) 
-        FROM lib_reservations r 
-        WHERE r.member_id = m.member_id 
-        AND r.status = 'Pending'
-    ) as active_reservations,
-    (
-        SELECT COUNT(*) 
-        FROM lib_transactions t 
-        WHERE t.member_id = m.member_id 
-        AND t.status = 'Issued'
-    ) as currently_borrowed,
-    DATEDIFF(CURDATE(), m.last_activity_date) as days_since_last_activity,
-    CASE 
-        WHEN m.last_activity_date IS NULL THEN 'New'
-        WHEN DATEDIFF(CURDATE(), m.last_activity_date) <= 30 THEN 'Active'
-        WHEN DATEDIFF(CURDATE(), m.last_activity_date) <= 90 THEN 'At Risk'
-        ELSE 'Inactive'
-    END as activity_status
-FROM lib_members m
-INNER JOIN users u ON m.user_id = u.id
-INNER JOIN lib_membership_types mt ON m.membership_type_id = mt.id
-LEFT JOIN lib_reading_behavior_analytics rba ON m.member_id = rba.member_id AND rba.academic_year = YEAR(CURDATE())
-LEFT JOIN lib_genres g ON rba.preferred_genre_id = g.id;
+	-- Comprehensive 360-degree view of member engagement and behavior.
+	CREATE OR REPLACE VIEW `lib_view_member_360` AS
+	SELECT 
+			m.member_id,
+			m.membership_number,
+			u.first_name,
+			u.last_name,
+			u.email,
+			u.phone,
+			mt.name as membership_type,
+			m.registration_date,
+			m.expiry_date,
+			m.status,
+			m.total_books_borrowed,
+			m.outstanding_fines,
+			m.engagement_score,
+			m.churn_risk_score,
+			m.lifetime_value,
+			m.reading_level,
+			rba.total_pages_read,
+			rba.avg_reading_days_per_book,
+			rba.reading_consistency_score,
+			rba.genre_diversity_index,
+			g.name as preferred_genre,
+			rba.preferred_borrowing_time,
+			rba.digital_vs_physical_ratio,
+			(
+					SELECT COUNT(*) 
+					FROM lib_reservations r 
+					WHERE r.member_id = m.member_id 
+					AND r.status = 'Pending'
+			) as active_reservations,
+			(
+					SELECT COUNT(*) 
+					FROM lib_transactions t 
+					WHERE t.member_id = m.member_id 
+					AND t.status = 'Issued'
+			) as currently_borrowed,
+			DATEDIFF(CURDATE(), m.last_activity_date) as days_since_last_activity,
+			CASE 
+					WHEN m.last_activity_date IS NULL THEN 'New'
+					WHEN DATEDIFF(CURDATE(), m.last_activity_date) <= 30 THEN 'Active'
+					WHEN DATEDIFF(CURDATE(), m.last_activity_date) <= 90 THEN 'At Risk'
+					ELSE 'Inactive'
+			END as activity_status
+	FROM lib_members m
+	INNER JOIN users u ON m.user_id = u.id
+	INNER JOIN lib_membership_types mt ON m.membership_type_id = mt.id
+	LEFT JOIN lib_reading_behavior_analytics rba ON m.member_id = rba.member_id AND rba.academic_year = YEAR(CURDATE())
+	LEFT JOIN lib_genres g ON rba.preferred_genre_id = g.id;
 
 
--- Real-time performance metrics for collection management.
-CREATE OR REPLACE VIEW `lib_view_collection_performance` AS
-SELECT 
-    b.book_id,
-    b.title,
-    b.isbn,
-    p.name as publisher,
-    rt.name as resource_type,
-    COUNT(DISTINCT c.copy_id) as total_copies,
-    SUM(CASE WHEN c.status = 'available' THEN 1 ELSE 0 END) as available_copies,
-    SUM(CASE WHEN c.status = 'issued' THEN 1 ELSE 0 END) as issued_copies,
-    SUM(CASE WHEN c.status = 'reserved' THEN 1 ELSE 0 END) as reserved_copies,
-    SUM(CASE WHEN c.is_lost = 1 THEN 1 ELSE 0 END) as lost_copies,
-    SUM(CASE WHEN c.is_damaged = 1 THEN 1 ELSE 0 END) as damaged_copies,
-    COUNT(DISTINCT t.transaction_id) as total_issues,
-    COUNT(DISTINCT CASE WHEN t.return_date IS NULL AND t.due_date < CURDATE() THEN t.transaction_id END) as overdue_count,
-    AVG(CASE WHEN t.return_date IS NOT NULL THEN DATEDIFF(t.return_date, t.issue_date) END) as avg_loan_days,
-    COUNT(DISTINCT r.reservation_id) as active_reservations,
-    AVG(r.queue_position) as avg_queue_position,
-    b.popularity_rank,
-    b.curricular_relevance_score,
-    b.student_rating,
-    pt.popularity_score,
-    pt.trend_direction,
-    chm.utilization_rate as collection_utilization_rate,
-    CASE 
-        WHEN COUNT(DISTINCT t.transaction_id) > 100 THEN 'High Demand'
-        WHEN COUNT(DISTINCT t.transaction_id) > 50 THEN 'Medium Demand'
-        WHEN COUNT(DISTINCT t.transaction_id) > 10 THEN 'Low Demand'
-        ELSE 'Very Low Demand'
-    END as demand_category
-FROM lib_books_master b
-LEFT JOIN lib_publishers p ON b.publisher_id = p.id
-LEFT JOIN lib_resource_types rt ON b.resource_type_id = rt.id
-LEFT JOIN lib_book_copies c ON b.book_id = c.book_id
-LEFT JOIN lib_transactions t ON c.copy_id = t.copy_id
-LEFT JOIN lib_reservations r ON b.book_id = r.book_id AND r.status = 'Pending'
-LEFT JOIN lib_book_popularity_trends pt ON b.book_id = pt.book_id AND pt.tracking_date = CURDATE()
-LEFT JOIN lib_collection_health_metrics chm ON chm.metric_date = CURDATE()
-GROUP BY b.book_id, b.title, b.isbn, p.name, rt.name, b.popularity_rank, 
-         b.curricular_relevance_score, b.student_rating, pt.popularity_score, pt.trend_direction;
+	-- Real-time performance metrics for collection management.
+	CREATE OR REPLACE VIEW `lib_view_collection_performance` AS
+	SELECT 
+			b.book_id,
+			b.title,
+			b.isbn,
+			p.name as publisher,
+			rt.name as resource_type,
+			COUNT(DISTINCT c.copy_id) as total_copies,
+			SUM(CASE WHEN c.status = 'available' THEN 1 ELSE 0 END) as available_copies,
+			SUM(CASE WHEN c.status = 'issued' THEN 1 ELSE 0 END) as issued_copies,
+			SUM(CASE WHEN c.status = 'reserved' THEN 1 ELSE 0 END) as reserved_copies,
+			SUM(CASE WHEN c.is_lost = 1 THEN 1 ELSE 0 END) as lost_copies,
+			SUM(CASE WHEN c.is_damaged = 1 THEN 1 ELSE 0 END) as damaged_copies,
+			COUNT(DISTINCT t.transaction_id) as total_issues,
+			COUNT(DISTINCT CASE WHEN t.return_date IS NULL AND t.due_date < CURDATE() THEN t.transaction_id END) as overdue_count,
+			AVG(CASE WHEN t.return_date IS NOT NULL THEN DATEDIFF(t.return_date, t.issue_date) END) as avg_loan_days,
+			COUNT(DISTINCT r.reservation_id) as active_reservations,
+			AVG(r.queue_position) as avg_queue_position,
+			b.popularity_rank,
+			b.curricular_relevance_score,
+			b.student_rating,
+			pt.popularity_score,
+			pt.trend_direction,
+			chm.utilization_rate as collection_utilization_rate,
+			CASE 
+					WHEN COUNT(DISTINCT t.transaction_id) > 100 THEN 'High Demand'
+					WHEN COUNT(DISTINCT t.transaction_id) > 50 THEN 'Medium Demand'
+					WHEN COUNT(DISTINCT t.transaction_id) > 10 THEN 'Low Demand'
+					ELSE 'Very Low Demand'
+			END as demand_category
+	FROM lib_books_master b
+	LEFT JOIN lib_publishers p ON b.publisher_id = p.id
+	LEFT JOIN lib_resource_types rt ON b.resource_type_id = rt.id
+	LEFT JOIN lib_book_copies c ON b.book_id = c.book_id
+	LEFT JOIN lib_transactions t ON c.copy_id = t.copy_id
+	LEFT JOIN lib_reservations r ON b.book_id = r.book_id AND r.status = 'Pending'
+	LEFT JOIN lib_book_popularity_trends pt ON b.book_id = pt.book_id AND pt.tracking_date = CURDATE()
+	LEFT JOIN lib_collection_health_metrics chm ON chm.metric_date = CURDATE()
+	GROUP BY b.book_id, b.title, b.isbn, p.name, rt.name, b.popularity_rank, 
+					b.curricular_relevance_score, b.student_rating, pt.popularity_score, pt.trend_direction;
 
 
--- Predictive demand forecasting for inventory planning.
+	-- Predictive demand forecasting for inventory planning.
     CREATE OR REPLACE VIEW `lib_view_predictive_demand` AS
     SELECT b.book_id, b.title, c.name as category_name, g.name as genre_name, b.publication_year,
         (
