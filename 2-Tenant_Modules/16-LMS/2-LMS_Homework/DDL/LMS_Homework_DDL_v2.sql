@@ -87,3 +87,6 @@ CREATE TABLE IF NOT EXISTS `lms_homework_submissions` (
 -- ---------------------------------------------------------------------------------------------------------------
 -- Changes :
 -- 1. Added `lesson_id` column to `lms_homework` table to align with the lesson plan.
+----------------------------------------------------------------------------------------------
+--- Sameer Comment
+-- NOTE: As of 20 February 2026, all DDL and corresponding Laravel migrations have been reviewed and are correctly aligned. No missing fields or structural mismatches found.
