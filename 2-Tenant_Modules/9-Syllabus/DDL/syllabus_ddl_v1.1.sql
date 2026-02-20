@@ -419,6 +419,9 @@ CREATE TABLE IF NOT EXISTS `slb_syllabus_schedule` (
 
 
 
+-- ===========================================================================================
+-- SAMEER COMMENT
+-- Note: As of 20 February 2026, all DDL and corresponding Laravel migrations have been reviewed and are correctly aligned. No missing fields or structural mismatches found.
 
 
 
