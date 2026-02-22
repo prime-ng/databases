@@ -525,6 +525,85 @@ CREATE TABLE IF NOT EXISTS `lib_authors` (
     INDEX `idx_payment_date` (`payment_date`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+
+CREATE TABLE IF NOT EXISTS `lib_fine_slab_config` (
+    `id` INT PRIMARY KEY AUTO_INCREMENT,
+    `name` VARCHAR(100) NOT NULL COMMENT 'e.g., Standard Student Fine Slab, Staff Fine Slab',
+    `membership_type_id` INT NULL COMMENT 'If NULL, applies to all membership types',
+    `resource_type_id` INT NULL COMMENT 'If NULL, applies to all resource types',
+    `fine_type` ENUM('Late Return', 'Lost Book', 'Damaged Book', 'Processing Fee') DEFAULT 'Late Return',
+    `max_fine_amount` DECIMAL(10,2) NULL COMMENT 'Maximum fine cap (could be book cost or school-defined limit)',
+    `max_fine_type` ENUM('Fixed', 'BookCost', 'Unlimited') DEFAULT 'Unlimited',
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+    `effective_from` DATE NOT NULL,
+    `effective_to` DATE NULL,
+    `priority` INT DEFAULT 0 COMMENT 'Higher priority slabs are evaluated first',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL,
+    FOREIGN KEY (`membership_type_id`) REFERENCES `lib_membership_types`(`id`),
+    FOREIGN KEY (`resource_type_id`) REFERENCES `lib_resource_types`(`id`),
+    INDEX `idx_fine_slab_membership` (`membership_type_id`),
+    INDEX `idx_fine_slab_active` (`is_active`, `effective_from`, `effective_to`),
+    INDEX `idx_fine_slab_priority` (`priority`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------------------------
+-- 2. FINE SLAB DETAILS TABLE (for day ranges)
+-- ----------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `lib_fine_slab_details` (
+    `id` INT PRIMARY KEY AUTO_INCREMENT,
+    `fine_slab_config_id` INT NOT NULL,
+    `from_day` INT NOT NULL CHECK (from_day >= 0),
+    `to_day` INT NOT NULL CHECK (to_day >= from_day),
+    `rate_per_day` DECIMAL(10,2) NOT NULL,
+    `rate_type` ENUM('Fixed', 'Percentage') DEFAULT 'Fixed' COMMENT 'Fixed amount or percentage of book cost',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL,
+    FOREIGN KEY (`fine_slab_config_id`) REFERENCES `lib_fine_slab_config`(`id`) ON DELETE CASCADE,
+    UNIQUE KEY `uk_slab_days` (`fine_slab_config_id`, `from_day`, `to_day`),
+    INDEX `idx_slab_day_range` (`from_day`, `to_day`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------------------------
+-- 3. ENHANCED LIB_FINES TABLE (modified)
+-- ----------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `lib_fines` (
+    `id` INT PRIMARY KEY AUTO_INCREMENT,
+    `transaction_id` BIGINT NOT NULL,
+    `member_id` INT NOT NULL,
+    `fine_type` ENUM('Late Return', 'Lost Book', 'Damaged Book', 'Processing Fee') NOT NULL,
+    `amount` DECIMAL(10,2) NOT NULL CHECK (amount >= 0),
+    `days_overdue` INT NOT NULL DEFAULT 0,
+    `calculated_from` DATE NOT NULL,
+    `calculated_to` DATE NOT NULL,
+    `fine_slab_config_id` INT NULL COMMENT 'Reference to slab used for calculation',
+    `calculation_breakdown` JSON COMMENT 'Stores day-wise breakdown of fine calculation',
+    `waived_amount` DECIMAL(10,2) DEFAULT 0.00 CHECK (waived_amount >= 0),
+    `waived_by_id` INT NULL,
+    `waived_reason` TEXT NULL,
+    `waived_at` DATETIME NULL,
+    `status` ENUM('Pending', 'Paid', 'Waived', 'Overdue') DEFAULT 'Pending',
+    `notes` TEXT,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (`transaction_id`) REFERENCES `lib_transactions`(`id`),
+    FOREIGN KEY (`member_id`) REFERENCES `lib_members`(`id`),
+    FOREIGN KEY (`waived_by_id`) REFERENCES `users`(id),
+    FOREIGN KEY (`fine_slab_config_id`) REFERENCES `lib_fine_slab_config`(`id`),
+    INDEX `idx_fine_transaction` (`transaction_id`),
+    INDEX `idx_fine_member` (`member_id`, `status`),
+    INDEX `idx_fine_status` (`status`, `created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+
+
+
+
 -- ----------------------------------------------------------------------------
 -- AUDIT AND HISTORY
 -- ----------------------------------------------------------------------------
