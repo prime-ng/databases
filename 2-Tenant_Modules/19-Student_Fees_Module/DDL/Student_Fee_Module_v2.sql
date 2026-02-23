@@ -25,24 +25,26 @@
 -- Table: fee_head_master
 -- Purpose: Core fee components (Tuition, Transport, Hostel, etc.)
 -- --------------------------------------------------------------------------------------------------------
+
+
 CREATE TABLE IF NOT EXISTS `fee_head_master` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `head_code` VARCHAR(50) NOT NULL,  -- 'Unique code (TUIT, TRAN, HOST)'
-    `head_name` VARCHAR(100) NOT NULL, -- 'Display name',
-    `head_type` ENUM('Tuition', 'Transport', 'Hostel', 'Library', 'Sports', 'Exam', 'Activity', 'Lab', 'Development', 'Other') NOT NULL DEFAULT 'Other',
+    `code` VARCHAR(30) NOT NULL,  -- Unique code (TUIT, TRAN, HOST, LIB, SPRT, EXAM, ACTV, LAB, DEV, OTH)
+    `name` VARCHAR(100) NOT NULL, -- Display name (Tuition, Transport, Hostel, Library, Sports, Exam, Activity, Lab, Development, Other)
+    `description` VARCHAR(255) NULL,
+    `head_type_id` INT UNSIGNED NOT NULL, -- FK to sys_dropdown_table
     `frequency` ENUM('One-time', 'Monthly', 'Quarterly', 'Half-Yearly', 'Yearly') NOT NULL DEFAULT 'Monthly',
     `is_refundable` TINYINT(1) NOT NULL DEFAULT 0,
     `tax_applicable` TINYINT(1) NOT NULL DEFAULT 0,
     `tax_percentage` DECIMAL(5,2) DEFAULT 0.00,
     `account_head_code` VARCHAR(50) NULL, -- 'ERP Accounting Integration',
     `display_order` INT NOT NULL DEFAULT 1,
-    `description` TEXT NULL,
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at` TIMESTAMP NULL,
-    UNIQUE INDEX `uq_fee_head_code` (`head_code`),
-    INDEX `idx_fee_head_type` (`head_type`),
+    UNIQUE INDEX `uq_fee_head_code` (`code`),
+    INDEX `idx_fee_head_type` (`head_type_id`),
     INDEX `idx_fee_head_active` (`is_active`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -52,8 +54,8 @@ CREATE TABLE IF NOT EXISTS `fee_head_master` (
 -- --------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `fee_group_master` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `group_code` VARCHAR(50) NOT NULL UNIQUE,
-    `group_name` VARCHAR(100) NOT NULL,
+    `code` VARCHAR(50) NOT NULL UNIQUE,
+    `name` VARCHAR(100) NOT NULL,
     `description` TEXT NULL,
     `is_mandatory` TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Student must take this group',
     `display_order` INT NOT NULL DEFAULT 1,
@@ -88,14 +90,15 @@ CREATE TABLE IF NOT EXISTS `fee_group_heads_jnt` (
 -- --------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `fee_structure_master` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `academic_session_id` INT UNSIGNED NOT NULL COMMENT 'FK to sch_org_academic_sessions_jnt',
-    `class_id` INT UNSIGNED NOT NULL COMMENT 'FK to sch_classes',
-    `student_category_id` INT UNSIGNED NULL COMMENT 'FK to sys_dropdown_table (General/OBC/SC/ST)',
-    `board_type` VARCHAR(50) NULL COMMENT 'CBSE/ICSE/State',
-    `structure_name` VARCHAR(100) NOT NULL,
+    `academic_session_id` INT UNSIGNED NOT NULL,   -- 'FK to sch_org_academic_sessions_jnt',
+    `class_id` INT UNSIGNED NOT NULL,              -- 'FK to sch_classes',
+    `student_category_id` INT UNSIGNED NULL,       -- 'FK to sys_dropdown_table (General/OBC/SC/ST)',
+    `board_type` VARCHAR(50) NULL,                 -- 'CBSE/ICSE/State',
+    `code` VARCHAR(50) NOT NULL UNIQUE,            -- 'Unique code for the fee structure',
+    `name` VARCHAR(100) NOT NULL,                  -- 'Name of the fee structure',
     `effective_from` DATE NOT NULL,
     `effective_to` DATE NULL,
-    `total_fee_amount` DECIMAL(12,2) NULL COMMENT 'Pre-calculated sum',
+    `total_fee_amount` DECIMAL(12,2) NULL,         -- 'Pre-calculated sum',
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -167,8 +170,6 @@ CREATE TABLE IF NOT EXISTS `fee_fine_rules` (
     `applicable_to_day` INT NULL,
     `action_on_expiry` ENUM('None', 'Mark Defaulter', 'Remove Name', 'Suspend') NULL,
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-    `created_by` INT UNSIGNED NULL,
-    `updated_by` INT UNSIGNED NULL,
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at` TIMESTAMP NULL,
@@ -184,18 +185,18 @@ CREATE TABLE IF NOT EXISTS `fee_concession_types` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `concession_code` VARCHAR(50) NOT NULL UNIQUE,
     `concession_name` VARCHAR(100) NOT NULL,
-    `concession_category` ENUM('Sibling', 'Merit', 'Staff', 'Financial Aid', 'Sports', 'Alumni', 'Other') NOT NULL,
+    `concession_category_id` INT UNSIGNED NOT NULL,  -- 'FK to sys_dropdown_table (Sibling, Merit, Staff, Financial Aid, Sports, Alumni, Other)',
     `discount_type` ENUM('Percentage', 'Fixed Amount') NOT NULL,
     `discount_value` DECIMAL(10,2) NOT NULL,
     `applicable_on` ENUM('Total Fee', 'Specific Heads', 'Specific Groups') NOT NULL,
     `max_cap_amount` DECIMAL(10,2) NULL,
     `requires_approval` TINYINT(1) NOT NULL DEFAULT 1,
-    `approval_level` INT NULL, -- '1=ClassTeacher,2=Principal,3=Management',
+    `approval_level_role_id` INT NULL, -- FK to sys_roles  (e.g. ClassTeacher, Principal, Management)
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at` TIMESTAMP NULL,
-    INDEX `idx_concession_category` (`concession_category`)
+    INDEX `idx_concession_category` (`concession_category_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------------------------------------------------------
@@ -205,11 +206,14 @@ CREATE TABLE IF NOT EXISTS `fee_concession_types` (
 CREATE TABLE IF NOT EXISTS `fee_concession_applicable_heads` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `concession_type_id` INT UNSIGNED NOT NULL,
-    `head_id` INT UNSIGNED NOT NULL,
+    `head_id` INT UNSIGNED NOT NULL,  -- FK to fee_head_master, (Applicable if applicable_on = 'Specific Heads')
+    `group_id` INT UNSIGNED NOT NULL,  -- FK to fee_group_master, (Applicable if applicable_on = 'Specific Groups')  (New)
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE INDEX `uq_concession_head` (`concession_type_id`, `head_id`),
     CONSTRAINT `fk_cah_concession` FOREIGN KEY (`concession_type_id`) REFERENCES `fee_concession_types` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_cah_head` FOREIGN KEY (`head_id`) REFERENCES `fee_head_master` (`id`) ON DELETE CASCADE
+    CONSTRAINT `fk_cah_head` FOREIGN KEY (`head_id`) REFERENCES `fee_head_master` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_cah_group` FOREIGN KEY (`group_id`) REFERENCES `fee_group_master` (`id`) ON DELETE CASCADE,  -- (New)
+    CONSTRAINT `chk_cah_head_group` CHECK ((`head_id` IS NOT NULL AND `group_id` IS NULL) OR (`head_id` IS NULL AND `group_id` IS NOT NULL)) -- New
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------------------------------------------------------
