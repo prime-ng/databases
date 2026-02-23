@@ -246,10 +246,13 @@ CREATE TABLE IF NOT EXISTS `fee_concession_applicable_heads` (
 -- Purpose: Fee structure assigned to individual students for an academic session
 -- [BUG-FIX] academic_session_id changed from INT to SMALLINT UNSIGNED
 -- [ENHANCE] Added proration columns (join_in_mid-year, fee_start_date, proration_percentage)
+-- [ENHANCE] Added class_id & section_id for quick access (denormalization) to avoid joins during fee calculation and invoice generation
 -- --------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `fee_student_assignments` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `student_id` INT UNSIGNED NOT NULL,
+    `class_id` INT UNSIGNED NOT NULL,   -- FK to sch_classes for quick access (denormalization)
+    `section_id` INT UNSIGNED NULL,     -- FK to sch_sections for quick access (denormalization)
     `academic_session_id` SMALLINT UNSIGNED NOT NULL,
     `fee_structure_id` INT UNSIGNED NOT NULL,
     `total_fee_amount` DECIMAL(12,2) NOT NULL,
@@ -266,6 +269,8 @@ CREATE TABLE IF NOT EXISTS `fee_student_assignments` (
     UNIQUE INDEX `uq_fee_student_session` (`student_id`, `academic_session_id`),
     INDEX `idx_fee_assignment_active` (`is_active`),
     CONSTRAINT `fk_fsa_student` FOREIGN KEY (`student_id`) REFERENCES `std_students` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_fsa_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE RESTRICT,
+    CONSTRAINT `fk_fsa_section` FOREIGN KEY (`section_id`) REFERENCES `sch_sections` (`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_fsa_session` FOREIGN KEY (`academic_session_id`) REFERENCES `sch_org_academic_sessions_jnt` (`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_fsa_structure` FOREIGN KEY (`fee_structure_id`) REFERENCES `fee_structure_master` (`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
