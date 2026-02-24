@@ -1,8 +1,7 @@
+# Git Safety Policy
+-------------------
 
-
-
-
-#### 2. Migration Naming Convention
+## 2. Migration Naming Convention
 
 Use descriptive names:
 	✅ add_phone_to_users_table
