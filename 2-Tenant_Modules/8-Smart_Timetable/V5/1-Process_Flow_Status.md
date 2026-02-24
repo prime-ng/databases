@@ -1,36 +1,44 @@
 # TIMETABLE GENERATION PROCESS FLOW - ENHANCED v2.0
+
+#### STATUS : Migration, Model, Routes & View were created a few week ago , but are not updated with the recent changes in the module.
+
+#### Current status for indivisual functionality are mentioned in fornt of the PHASE title.
+
 ════════════════════════════════════════════════════
 
-
 ## PHASE 0: PRE-REQUISITES SETUP (One-time)
+
 ══════════════════════════════════════════════════
-### 0.1 System Configuration
-    ├── Set tt_config parameters with validation rules
+
+### 0.1 System Configuration ==> (RECENT CHANGES PENDING)
+
+    ├── Set tt_config parameters with validation rules ==> (PENDING)
     │   ├── total_periods_per_day (8-12)
     │   ├── school_open_days_per_week (5-7)
     │   ├── min_periods_per_teacher (15-20)
     │   └── max_periods_per_teacher (40-48)
-    ├── Define tt_shift (Morning/Afternoon/Evening) with time slots
-    ├── Define tt_day_type with metadata (color_code, icon, working_flag)
+    ├── Define tt_shift (Morning/Afternoon/Evening) with time slots ==> (DONE)
+    ├── Define tt_day_type with metadata (color_code, icon, working_flag)  ==> (DONE)
     │   ├── STUDY_DAY (is_working=1, reduced_periods=0)
     │   ├── EXAM_DAY (is_working=1, reduced_periods=1)
     │   ├── HOLIDAY (is_working=0, reduced_periods=0)
     │   ├── PTM_DAY (is_working=1, reduced_periods=1)
     │   └── SPORTS_DAY (is_working=1, reduced_periods=1)
-    ├── Define tt_period_type with workload calculation
+    ├── Define tt_period_type with workload calculation ==> (DONE)
     │   ├── TEACHING (counts_as_workload=1, workload_factor=1.0)
     │   ├── LAB (counts_as_workload=1, workload_factor=1.5)
     │   ├── BREAK (counts_as_workload=0)
     │   ├── LUNCH (counts_as_workload=0)
     │   ├── ASSEMBLY (counts_as_workload=0.5)
     │   └── FREE_PERIOD (counts_as_workload=0)
-    └── Define tt_teacher_assignment_role with workload factors
+    └── Define tt_teacher_assignment_role with workload factors ==> (DONE)
         ├── PRIMARY (workload_factor=1.0, is_primary=1)
         ├── ASSISTANT (workload_factor=0.5, is_primary=0)
         ├── CO_TEACHER (workload_factor=0.3, allows_overlap=1)
         └── SUBSTITUTE (workload_factor=0.8, is_primary=0)
 
-### 0.2 Master Data Validation & Setup
+### 0.2 Master Data Validation & Setup ==> (DONE)
+
     ├── Validate and Import/Setup sch_buildings with unique codes
     ├── Validate and Import/Setup sch_rooms_type with resource requirements
     ├── Validate and Import/Setup sch_rooms with capacity and equipment tracking
@@ -63,16 +71,19 @@
         ├── Generate unique code (Class+Section+Subject+StudyFormat+Type)
         └── Link to required_room_type and class_house_room
 
-### 0.3 Pre-requisite Validation Report
+### 0.3 Pre-requisite Validation Report ==> (PENDING)
+
     ├── Generate validation report for all master data
     ├── Identify missing critical data
     ├── Flag data inconsistencies
     └── Block timetable generation if validation fails
 
-
 ## PHASE 1: ACADEMIC TERM & TIMETABLE TYPE SETUP
+
 ═════════════════════════════════════════════════════
-### 1.1 Academic Term Setup with Validation
+
+### 1.1 Academic Term Setup with Validation ==> (DONE)
+
     ├── Create/Select Academic Term (sch_academic_term)
     ├── Validate no overlapping terms in same academic session
     ├── Set term dates with business rules
@@ -83,7 +94,8 @@
     ├── Set week_start_day (1=Monday, 7=Sunday) ISO standard
     └── Mark current term with unique constraint (only one current per session)
 
-### 1.2 Timetable Type Definition with Versioning
+### 1.2 Timetable Type Definition with Versioning ==> (DONE)
+
     ├── Create tt_timetable_type with effective date range
     │   ├── STANDARD (regular teaching days)
     │   ├── EXAM (exam schedule with reduced periods)
@@ -96,7 +108,8 @@
     ├── Define min_weekly_periods_per_teacher (default: 15)
     └── Set is_default flag (only one default per academic session)
 
-### 1.3 Period Set Definition with Validation
+### 1.3 Period Set Definition with Validation ==> (DONE)
+
     ├── Create tt_period_set with different configurations
     │   ├── 'STANDARD_8P' (8 periods: 6 teaching + 2 breaks)
     │   ├── 'HALF_DAY_4P' (4 periods: 3 teaching + 1 break)
@@ -112,7 +125,8 @@
     ├── Calculate duration_minutes automatically
     └── Set is_default flag for standard period set
 
-### 1.4 Calendar Setup with Multi-day Type Support
+### 1.4 Calendar Setup with Multi-day Type Support ==> (DONE)
+
     ├── Define tt_school_days (weekly schedule template)
     │   ├── Map to ISO weekdays (1-7)
     │   └── Set is_school_day flag for each weekday
@@ -130,7 +144,8 @@
         ├── Half-day for specific classes only
         └── PTM day for parent-teacher meetings
 
-### 1.5 Class Timetable Type Mapping
+### 1.5 Class Timetable Type Mapping ==> (DONE)
+
     ├── Map classes to timetable types (tt_class_timetable_type_jnt)
     ├── Support applies_to_all_sections flag
     │   ├── If 1: one record for all sections
@@ -140,16 +155,19 @@
     ├── Set effective_from and effective_to dates
     └── Calculate weekly teaching/exam/free period counts from period_set
 
-### 1.6 Validation & Reporting
+### 1.6 Validation & Reporting ==> (PENDING)
+
     ├── Generate calendar validation report
     ├── Identify missing working days
     ├── Flag inconsistent period set assignments
     └── Confirm all classes have valid timetable type
 
-
 ## PHASE 2: REQUIREMENT GENERATION (Enhanced with Batch Processing)
+
 ═══════════════════════════════════════════════════════════════════
-### 2.1 Slot Requirement Generation (Bulk Insert)
+
+### 2.1 Slot Requirement Generation (Bulk Insert) ==> (DONE)
+
     ├── TRUNCATE tt_slot_requirement for target term+type
     ├── Step 1: INSERT where applies_to_all_sections=0
     │   ├── Select from tt_class_timetable_type_jnt
@@ -169,7 +187,8 @@
     │   └── weekly_free_slots = free_periods × working_days
     └── Generate slot requirement summary report
 
-### 2.2 Class Requirement Groups/Subgroups (Enhanced)
+### 2.2 Class Requirement Groups/Subgroups (Enhanced) ==> (DONE)
+
     ├── INSERT into tt_class_requirement_groups (is_compulsory=1)
     │   ├── Copy from sch_class_groups_jnt with is_compulsory=1
     │   └── Generate unique code if not present
@@ -197,7 +216,8 @@
         ├── Coverage percentage
         └── Missing teacher alerts
 
-### 2.3 Requirement Consolidation (Transaction-based)
+### 2.3 Requirement Consolidation (Transaction-based) ==> (DONE)
+
     ├── TRUNCATE tt_requirement_consolidation
     ├── BEGIN TRANSACTION
     │   ├── Step 1: INSERT from tt_class_requirement_groups
@@ -214,7 +234,8 @@
     │   └── COMMIT
     └── Handle exceptions with rollback and logging
 
-### 2.4 User Modification Interface
+### 2.4 User Modification Interface ==> (DONE)
+
     ├── Present editable fields to user
     │   ├── preferred_periods_json (multi-select periods)
     │   ├── avoid_periods_json (multi-select periods to avoid)
@@ -228,7 +249,8 @@
     │   └── Priority between 1-100
     └── Save to tt_requirement_consolidation_details
 
-### 2.5 Requirement Validation & Sign-off
+### 2.5 Requirement Validation & Sign-off ==> (DONE)
+
     ├── Generate requirement summary report
     │   ├── Total periods required vs available
     │   ├── Teacher requirement distribution
@@ -240,10 +262,12 @@
     │   └── Over-allocated periods
     └── Require user confirmation before proceeding
 
-
 ## PHASE 3: RESOURCE AVAILABILITY PREPARATION (Enhanced)
+
 ══════════════════════════════════════════════════════════
-### 3.1 Teacher Availability (Optimized Bulk Operations)
+
+### 3.1 Teacher Availability (Optimized Bulk Operations) ==> (DONE)
+
     ├── TRUNCATE tt_teacher_availability
     ├── Step 1: Bulk INSERT with LEFT JOIN
     │   ├── FROM tt_requirement_consolidation (base)
@@ -261,11 +285,11 @@
     │   │   └── MAX(required_weekly_periods) OVER (PARTITION BY teacher_id, class_id)
     │   └── Use window functions for efficiency
     ├── Step 3: Calculate availability scores
-    │   ├── min_teacher_availability_score = 
+    │   ├── min_teacher_availability_score =
     │   │   (min_available_periods_weekly / NULLIF(min_allocated_periods_weekly, 0)) * 100
-    │   ├── max_teacher_availability_score = 
+    │   ├── max_teacher_availability_score =
     │   │   (max_available_periods_weekly / NULLIF(max_allocated_periods_weekly, 0)) * 100
-    │   └── weighted_availability_score = 
+    │   └── weighted_availability_score =
     │       (min_score * 0.3) + (max_score * 0.7)
     ├── Step 4: Apply teacher unavailability constraints
     │   ├── UPDATE availability based on tt_teacher_unavailable
@@ -277,7 +301,8 @@
         ├── Free periods distribution
         └── Workload balance indicators
 
-### 3.2 Room Availability (Enhanced)
+### 3.2 Room Availability (Enhanced) ==> (1st PHASE DONE/ RECENT CHANGES PENDING)
+
     ├── TRUNCATE tt_room_availability
     ├── INSERT room availability with capacity tracking
     │   ├── FROM sch_rooms with room_type details
@@ -294,7 +319,8 @@
     │   └── Apply recurring patterns
     └── Generate room utilization forecast
 
-### 3.3 Constraint Application (Comprehensive)
+### 3.3 Constraint Application (Comprehensive) ==> (1st PHASE DONE / RECENT CHANGES PENDING)
+
     ├── Load tt_constraint_category_scope (system-defined)
     │   ├── Categories: TEACHER, CLASS, ACTIVITY, ROOM, STUDENT, GLOBAL
     │   └── Scopes: GLOBAL, INDIVIDUAL, GROUP, PAIR
@@ -318,7 +344,8 @@
         ├── Soft constraints count
         └── Estimated difficulty impact
 
-### 3.4 Resource Scoring & Prioritization
+### 3.4 Resource Scoring & Prioritization ==> (OUTDATED CODE)
+
     ├── Calculate teacher preference scores
     │   ├── is_primary_teacher → +30 points
     │   ├── is_preferred_teacher → +20 points
@@ -330,7 +357,8 @@
     │   └── location_score → building proximity
     └── Update tt_teacher_availability with final scores
 
-### 3.5 Availability Validation Report
+### 3.5 Availability Validation Report ==> (PENDING)
+
     ├── Teacher coverage analysis
     │   ├── Teachers with insufficient availability
     │   ├── Over-allocated teachers
@@ -344,10 +372,12 @@
         ├── Potential conflict hotspots
         └── Generation difficulty prediction
 
-
 ## PHASE 4: Validation (Requirement vs. Availability) - ENHANCED
+
 ══════════════════════════════════════════════════════════════════════════════
+
 ### 4.1 Comprehensive Validation Framework
+
     ├── Create validation session record
     │   ├── session_id, timestamp
     │   ├── validation scope (full/partial)
@@ -359,7 +389,8 @@
     │   └── Resource capacity check
     └── Track validation progress
 
-### 4.2 Validate Teachers Availability (Enhanced)
+### 4.2 Validate Teachers Availability (Enhanced) (OUTDATED CODE)
+
     ├── Calculate teacher effective availability
     │   ├── In `sch_teacher_capabilities` check effective_from vs timetable dates
     │   ├── CASE WHEN effective_from > timetable_end_date → 'NOT_AVAILABLE'
@@ -385,7 +416,8 @@
         ├── Availability timeline
         └── Gap analysis
 
-### 4.3 Validate Rooms Availability (Enhanced)
+### 4.3 Validate Rooms Availability (Enhanced) ==> (UTDATED CODE)
+
     ├── Calculate available rooms per room type
     │   ├── COUNT rooms by room_type_id
     │   ├── Subtract rooms under maintenance
@@ -403,7 +435,8 @@
         ├── Capacity violation alerts
         └── Utilization projections
 
-### 4.4 Constraint Compatibility Check
+### 4.4 Constraint Compatibility Check ==> (PENDING)
+
     ├── Validate constraint combinations
     │   ├── Check for conflicting constraints on same target
     │   ├── Identify mutually exclusive constraints
@@ -414,7 +447,8 @@
     │   └── Predict constraint violation probability
     └── Generate constraint compatibility matrix
 
-### 4.5 Validation Scoring & Decision
+### 4.5 Validation Scoring & Decision ==> (OUTDATED CODE)
+
     ├── Calculate Overall Validation Score
     │   ├── Teacher availability weight: 40%
     │   ├── Room availability weight: 30%
@@ -435,7 +469,8 @@
     │   └── Estimate required changes
     └── Update validation_status in tt_timetable
 
-### 4.6 Manual Intervention & Resolution
+### 4.6 Manual Intervention & Resolution ==> (PENDING)
+
     ├── If validation FAILED:
     │   ├── Present detailed validation report to user
     │   ├── Allow manual overrides with justification
@@ -449,10 +484,12 @@
         ├── Proceed to Activity Creation
         └── Store validation snapshot for audit
 
+## PHASE 5: ACTIVITY CREATION & PRIORITIZATION (Enhanced with Scoring) ==> (OUTDATED CODE)
 
-## PHASE 5: ACTIVITY CREATION & PRIORITIZATION (Enhanced with Scoring)
 ══════════════════════════════════════════════════════════════════════════════
-### 5.1 Activity Generation (Bulk Optimized)
+
+### 5.1 Activity Generation (Bulk Optimized) ==> (OUTDATED CODE)
+
     ├── TRUNCATE tt_activity for target term+type
     ├── BEGIN TRANSACTION
     │   ├── INSERT from tt_requirement_consolidation
@@ -472,7 +509,8 @@
         ├── Split by subject type
         └── Duration distribution
 
-### 5.2 Difficulty Score Calculation (Enhanced Formula)
+### 5.2 Difficulty Score Calculation (Enhanced Formula) ==> (OUTDATED CODE)
+
     ├── Calculate Teacher Scarcity Component (35%)
     │   ├── eligible_teacher_count < 3 → +30 points × 0.35
     │   ├── eligible_teacher_count = 3-4 → +20 points × 0.35
@@ -498,7 +536,8 @@
     │   └── constraint_count = 0 → 0 points
     └── FINAL_DIFFICULTY = SUM(all components) capped at 100
 
-### 5.3 Priority Score Calculation (Multi-factor)
+### 5.3 Priority Score Calculation (Multi-factor) ==> (NOT FULLY IMPLEMENTED)
+
     ├── resource_scarcity = (required_resources / NULLIF(available_resources, 0))
     │   ├── Calculate from room availability
     │   ├── Normalize to 0-100 scale
@@ -525,7 +564,8 @@
             (subject_difficulty_index * 15)
         ) / 100  (result 0-100)
 
-### 5.4 Activity Prioritization & Sorting
+### 5.4 Activity Prioritization & Sorting ==> (OUTDATED)
+
     ├── Calculate priority for all activities (batch update)
     │   ├── UPDATE tt_activity SET calculated_priority = [formula]
     │   └── Allow manual_priority override
@@ -536,7 +576,8 @@
     │   └── Tertiary sort: required_weekly_periods DESC
     └── Store sorting order for generation queue
 
-### 5.5 Sub-Activity Creation (if needed)
+### 5.5 Sub-Activity Creation (if needed) ==> (NOT IMPLEMENTED)
+
     ├── Identify activities requiring splitting
     │   ├── duration_periods > 1 (e.g., Lab = 2 periods)
     │   ├── split_allowed = 1
@@ -551,7 +592,8 @@
     │       └── min_gap_from_previous
     └── Update parent activity: have_sub_activity = 1
 
-### 5.6 Activity-Teacher Mapping
+### 5.6 Activity-Teacher Mapping ==> (DONE)
+
     ├── INSERT into tt_activity_teacher
     │   ├── FROM tt_teacher_availability
     │   ├── Map eligible teachers with roles
@@ -562,7 +604,8 @@
         ├── Backup teachers
         └── Substitution candidates
 
-### 5.7 Activity-Room Mapping
+### 5.7 Activity-Room Mapping ==> (DONE)
+
     ├── Identify room requirements per activity
     │   ├── compulsory_specific_room_type
     │   ├── required_room_id
@@ -571,7 +614,8 @@
     ├── Calculate room_availability_score
     └── Store in activity record
 
-### 5.8 Activity Validation & Readiness Check
+### 5.8 Activity Validation & Readiness Check ==> (DONE)
+
     ├── Verify each activity has:
     │   ├── At least one eligible teacher
     │   ├── Room availability if required
@@ -587,10 +631,14 @@
         ├── Needs attention
         └── Blocked activities
 
+## PHASE 6: TIMETABLE GENERATION (Enhanced with Multi-Algorithm) ==> (OUTDATED CODE)
 
-## PHASE 6: TIMETABLE GENERATION (Enhanced with Multi-Algorithm)
+#### [ Timetable generation algoright was updated few week ago , before the significant updates were made in the module overall.]
+
 ══════════════════════════════════════════════════════════════════════════════
+
 ### 6.1 Generation Queue Management
+
     ├── INSERT into tt_generation_queue
     │   ├── Generate unique UUID
     │   ├── Link to timetable_id
@@ -608,6 +656,7 @@
     └── Assign to queue worker (Laravel Job)
 
 ### 6.2 Generation Run Initialization
+
     ├── CREATE tt_timetable record (status = 'DRAFT')
     ├── CREATE tt_generation_run
     │   ├── status = 'QUEUED'
@@ -624,6 +673,7 @@
         └── swaps_performed = 0
 
 ### 6.3 Algorithm Execution - PHASE 1: Initial Placement (Recursive CSP)
+
     ├── Load activities sorted by difficulty_score DESC
     ├── Load time slots (days × periods) from period_set
     ├── Load all constraints into memory (cached)
@@ -674,6 +724,7 @@
     └── Update generation_run stats
 
 ### 6.4 Algorithm Execution - PHASE 2: Conflict Resolution (Tabu Search)
+
     ├── IF conflicts exist AND strategy.algorithm_type IN ('TABU_SEARCH', 'HYBRID')
     ├── Initialize Tabu Search
     │   ├── tabu_list = [] (size = strategy.tabu_size)
@@ -715,6 +766,7 @@
     └── Store best_solution as current assignments
 
 ### 6.5 Algorithm Execution - PHASE 3: Optimization (Simulated Annealing)
+
     ├── IF strategy.algorithm_type IN ('SIMULATED_ANNEALING', 'HYBRID')
     ├── Initialize Simulated Annealing
     │   ├── current_solution = assignments from Phase 2
@@ -753,7 +805,8 @@
     └── Set assignments = best_solution
 
 ### 6.6 Algorithm Execution - PHASE 4: Global Optimization (Genetic Algorithm)
-    ├── IF strategy.algorithm_type IN ('GENETIC', 'HYBRID') AND 
+
+    ├── IF strategy.algorithm_type IN ('GENETIC', 'HYBRID') AND
     │    (activity_count > 1000 OR improvement < 5%)
     ├── Initialize Genetic Algorithm
     │   ├── population_size = strategy.population_size (default: 50)
@@ -790,6 +843,7 @@
     └── Set assignments = best_individual
 
 ### 6.7 Solution Evaluation Function
+
     ├── Calculate Hard Constraint Score (Must be 0)
     │   ├── For each hard constraint
     │   ├── Count violations
@@ -808,6 +862,7 @@
     └── Return total_score (0-10000 scale)
 
 ### 6.8 Conflict Detection & Logging
+
     ├── Track all conflicts in tt_conflict_detection
     │   ├── conflict_type (HARD/SOFT)
     │   ├── conflicting_activities
@@ -825,6 +880,7 @@
     └── Update conflict statistics
 
 ### 6.9 Constraint Violation Tracking
+
     ├── For each constraint:
     │   ├── Check if violated in final solution
     │   ├── Count violations
@@ -837,6 +893,7 @@
     └── Calculate violation impact score
 
 ### 6.10 Resource Booking Recording
+
     ├── For each placed activity:
     │   ├── Create tt_resource_booking records
     │   │   ├── resource_type = 'TEACHER'
@@ -851,6 +908,7 @@
     └── Update resource availability
 
 ### 6.11 Generation Completion & Stats
+
     ├── Update tt_generation_run
     │   ├── status = 'COMPLETED' (or 'FAILED')
     │   ├── finished_at = NOW()
@@ -882,10 +940,12 @@
     │   └── stats_json with generation summary
     └── Update generation_queue status = 'COMPLETED'
 
+## PHASE 7: POST-GENERATION PROCESSING (Enhanced Analytics) ==> (PENDING)
 
-## PHASE 7: POST-GENERATION PROCESSING (Enhanced Analytics)
 ══════════════════════════════════════════════════════════════════════════════
+
 ### 7.1 Teacher Workload Analysis
+
     ├── Calculate teacher_workload in tt_teacher_workload
     │   ├── weekly_periods_assigned per teacher
     │   ├── daily_distribution_json
@@ -903,6 +963,7 @@
     └── Store last_calculated_at timestamp
 
 ### 7.2 Room Utilization Analysis
+
     ├── Calculate room_utilization in tt_room_utilization
     │   ├── total_periods_available = working_days × periods_per_day
     │   ├── total_periods_used = COUNT(bookings)
@@ -919,6 +980,7 @@
     └── Store last_calculated_at timestamp
 
 ### 7.3 Constraint Violation Analysis
+
     ├── Aggregate violations from tt_constraint_violation
     │   ├── Group by constraint_type
     │   ├── Count occurrences
@@ -931,6 +993,7 @@
     └── Store violation_summary in tt_timetable
 
 ### 7.4 Daily Snapshots
+
     ├── Create tt_analytics_daily_snapshot for each day
     │   ├── snapshot_date, academic_session_id
     │   ├── total_teachers_present
@@ -943,6 +1006,7 @@
     └── Store for trend analysis
 
 ### 7.5 Performance Metrics Dashboard
+
     ├── Overall timetable quality score
     │   ├── Teacher satisfaction (40%)
     │   ├── Room utilization (30%)
@@ -955,6 +1019,7 @@
     └── Export to various formats (PDF, Excel, JSON)
 
 ### 7.6 Report Generation
+
     ├── Class-wise Timetable Report
     │   ├── Daily schedule view
     │   ├── Weekly overview
@@ -969,10 +1034,12 @@
     │   └── Booking details
     └── Export options (HTML, PDF, CSV, XML)
 
+## PHASE 8: MANUAL REFINEMENT (Enhanced with Impact Analysis) ==> (PENDING)
 
-## PHASE 8: MANUAL REFINEMENT (Enhanced with Impact Analysis)
 ══════════════════════════════════════════════════════════════════════════════
+
 ### 8.1 Timetable Viewing Interface
+
     ├── Multiple view options
     │   ├── Teacher-wise view
     │   │   ├── Daily schedule cards
@@ -1008,6 +1075,7 @@
         └── Lock indicators
 
 ### 8.2 Cell Lock/Unlock Management
+
     ├── User can lock/unlock cells (tt_timetable_cell.is_locked)
     │   ├── Lock single cell
     │   ├── Lock entire day for class/teacher
@@ -1024,6 +1092,7 @@
         └── lock_reason (text)
 
 ### 8.3 Manual Adjustments with Impact Analysis
+
     ├── User initiates change (drag & drop)
     ├── System performs impact analysis before applying
     │   ├── Check teacher availability at new slot
@@ -1060,6 +1129,7 @@
         └── Trigger re-validation
 
 ### 8.4 Batch Operations
+
     ├── Swap activities
     │   ├── Simple swap between two cells
     │   ├── Complex swap with validation
@@ -1080,6 +1150,7 @@
         └── Optimize distribution
 
 ### 8.5 Change Tracking & Audit
+
     ├── Create tt_change_log entry for every change
     │   ├── change_type (UPDATE/SWAP/LOCK/SUBSTITUTE)
     │   ├── change_date, timestamp
@@ -1098,6 +1169,7 @@
         └── Restore previous version
 
 ### 8.6 Conflict Resolution Workflow
+
     ├── Identify conflicts after manual changes
     │   ├── Real-time conflict detection
     │   ├── Highlight conflicting cells
@@ -1118,6 +1190,7 @@
     └── Log resolution in tt_conflict_detection
 
 ### 8.7 Re-validation After Changes
+
     ├── Trigger automatic re-validation
     │   ├── After each significant change
     │   ├── Batch after multiple changes
@@ -1134,6 +1207,7 @@
     └── Generate validation report
 
 ### 8.8 Locking & Freezing
+
     ├── User can lock/unlock cells
     │   ├── Individual cell lock
     │   ├── Batch lock (select multiple)
@@ -1149,10 +1223,12 @@
         ├── Admin overrides
         └── System locks (generated)
 
+## PHASE 9: PUBLICATION & APPROVAL WORKFLOW ==> (DONE)
 
-## PHASE 9: PUBLICATION & APPROVAL WORKFLOW
 ══════════════════════════════════════════════════════════════════════════════
+
 ### 9.1 Pre-Publication Quality Check
+
     ├── Run final validation suite
     │   ├── Hard constraint check (must be 0)
     │   ├── Soft constraint score calculation
@@ -1173,6 +1249,7 @@
     └── Update tt_timetable.validation_status
 
 ### 9.2 Approval Workflow
+
     ├── Define approval hierarchy
     │   ├── Level 1: Timetable Coordinator
     │   ├── Level 2: Academic Head
@@ -1201,6 +1278,7 @@
         └── PARTIALLY_APPROVED
 
 ### 9.3 Publication
+
     ├── Update tt_timetable.status = 'PUBLISHED'
     ├── Set published_at = NOW()
     ├── Set published_by = current_user
@@ -1230,6 +1308,7 @@
     └── Store artifacts in media library
 
 ### 9.4 Notification & Distribution
+
     ├── Identify notification recipients
     │   ├── All teachers
     │   ├── Class teachers
@@ -1254,6 +1333,7 @@
         └── read_receipt (if available)
 
 ### 9.5 Post-Publication Support
+
     ├── Enable feedback mechanism
     │   ├── Report issues
     │   ├── Request changes
@@ -1270,10 +1350,12 @@
         ├── Issue reports
         └── Satisfaction surveys
 
+## PHASE 10: SUBSTITUTION MANAGEMENT (Enhanced with ML) ==> (PEDNING)
 
-## PHASE 10: SUBSTITUTION MANAGEMENT (Enhanced with ML)
 ══════════════════════════════════════════════════════════════════════════════
+
 ### 10.1 Absence Recording
+
     ├── Create tt_teacher_absence record
     │   ├── teacher_id, absence_date
     │   ├── absence_type (LEAVE/SICK/TRAINING/DUTY)
@@ -1293,6 +1375,7 @@
         └── Flag for immediate attention
 
 ### 10.2 Affected Cell Identification
+
     ├── Query tt_timetable_cell for affected periods
     │   ├── WHERE teacher_id = absent_teacher
     │   ├── AND date = absence_date
@@ -1311,6 +1394,7 @@
     └── Prioritize substitution needs
 
 ### 10.3 Eligible Teacher Search (Multi-factor)
+
     ├── Query eligible teachers from sch_teacher_capabilities
     │   ├── Same subject_study_format_id
     │   ├── class_id in capabilities or general
@@ -1333,6 +1417,7 @@
     └── Score each candidate (0-100)
 
 ### 10.4 Compatibility Scoring (Enhanced)
+
     ├── Proficiency Score (35%)
     │   ├── proficiency_percentage (direct)
     │   ├── competency_level mapping
@@ -1361,6 +1446,7 @@
         └── previous_substitution_success
 
 ### 10.5 ML-Based Pattern Learning
+
     ├── Load historical substitution patterns
     │   ├── tt_substitution_pattern table
     │   ├── Group by (subject, class, teacher combinations)
@@ -1382,6 +1468,7 @@
         └── Improve scoring algorithm
 
 ### 10.6 Recommendation Generation
+
     ├── Generate tt_substitution_recommendation for each affected cell
     │   ├── teacher_absence_id, cell_id
     │   ├── recommended_teacher_id
@@ -1406,6 +1493,7 @@
         └── Track override patterns
 
 ### 10.7 Substitution Assignment
+
     ├── User selects substitute teacher
     │   ├── From recommendations
     │   ├── Manual selection
@@ -1439,6 +1527,7 @@
         └── feedback (from substitute/class)
 
 ### 10.8 Post-Substitution Workflow
+
     ├── Track substitution effectiveness
     │   ├── Class feedback
     │   ├── Teacher feedback
@@ -1462,6 +1551,7 @@
         └── Effectiveness metrics
 
 ### 10.9 Emergency Substitution Handling
+
     ├── Same-day absence (urgent)
     │   ├── Immediate notification to all eligible
     │   ├── First-come-first-served basis
@@ -1479,6 +1569,7 @@
         └── Emergency protocol
 
 ### 10.10 Analytics & Reporting
+
     ├── Substitution metrics dashboard
     │   ├── Substitution rate (per day/week)
     │   ├── Success rate
@@ -1501,10 +1592,12 @@
         ├── Annual trends
         └── Compliance reporting
 
+## PHASE 11: ARCHIVAL & VERSION MANAGEMENT ==> (PENDING)
 
-## PHASE 11: ARCHIVAL & VERSION MANAGEMENT
 ══════════════════════════════════════════════════════════════════════════════
+
 ### 11.1 Timetable Versioning
+
     ├── Each generation creates new version
     │   ├── version number increments
     │   ├── parent_timetable_id links to previous
@@ -1521,6 +1614,7 @@
         └── Change impact analysis
 
 ### 11.2 Archival Process
+
     ├── Automatic archival rules
     │   ├── Archive after term end + 30 days
     │   ├── Keep last 3 versions active
@@ -1538,6 +1632,7 @@
         └── Export archive
 
 ### 11.3 Data Retention & Cleanup
+
     ├── Retention policies
     │   ├── Active timetables: current term
     │   ├── Recent versions: last 3 terms
@@ -1554,10 +1649,12 @@
         ├── Audit trail retention
         └── Backup verification
 
+## PHASE 12: CONTINUOUS IMPROVEMENT & OPTIMIZATION ==> (PENDING)
 
-## PHASE 12: CONTINUOUS IMPROVEMENT & OPTIMIZATION
 ══════════════════════════════════════════════════════════════════════════════
+
 ### 12.1 Performance Monitoring
+
     ├── Track generation metrics
     │   ├── Generation time by strategy
     │   ├── Success rate by complexity
@@ -1575,6 +1672,7 @@
         └── Error rate tracking
 
 ### 12.2 Algorithm Tuning
+
     ├── A/B testing framework
     │   ├── Test different strategies
     │   ├── Compare results
@@ -1592,6 +1690,7 @@
         └── Success probability prediction
 
 ### 12.3 Feedback Integration
+
     ├── Collect feedback from stakeholders
     │   ├── Teacher satisfaction surveys
     │   ├── Student feedback
@@ -1609,6 +1708,7 @@
         └── Enhance algorithms
 
 ### 12.4 System Evolution
+
     ├── Regular updates
     │   ├── New constraint types
     │   ├── Enhanced algorithms
@@ -1625,16 +1725,14 @@
         ├── Feature flags
         └── Gradual rollout
 
+---
 
+## FUTURE ENHANCEMENTS ==> (PENDING)
 
-
-
-
---------------------------------------------------------------------------------------------------------------------
-## FUTURE ENHANCEMENTS
---------------------------------------------------------------------------------------------------------------------
+---
 
 ### 13.1 Future Enhancements
+
     ├── AI-Driven Personalization
     │   ├── Adaptive scheduling
     │   ├── AI-powered recommendations
@@ -1652,6 +1750,7 @@
         └── AI/ML integration
 
 ### 13.2 Security Enhancements
+
     ├── Data encryption
     │   ├── End-to-end encryption
     │   ├── Database encryption
@@ -1669,6 +1768,7 @@
         └── Backup verification
 
 ### 13.3 Performance Enhancements
+
     ├── Caching strategies
     │   ├── In-memory caching
     │   ├── Database indexing
@@ -1686,6 +1786,7 @@
         └── Network optimization
 
 ### 13.4 Cost Optimization
+
     ├── Resource allocation
     │   ├── Dynamic scaling
     │   ├── Load-based scaling
@@ -1703,6 +1804,7 @@
         └── Resource pooling
 
 ### 13.5 Future Enhancements
+
     ├── AI/ML integration
     │   ├── AI-powered recommendations
     │   ├── AI-powered conflict resolution
