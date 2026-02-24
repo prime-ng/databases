@@ -17,7 +17,7 @@
 -- =========================================================
 
 
-
+-- This table will store the circular goals
 CREATE TABLE IF NOT EXISTS `hpc_circular_goals` (
   `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   `code` VARCHAR(50) NOT NULL,
@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS `hpc_circular_goals` (
   CONSTRAINT `fk_cg_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes`(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- This table will store the mapping between circular goals and competencies
 CREATE TABLE IF NOT EXISTS `hpc_circular_goal_competency_jnt` (
   `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   `circular_goal_id` INT UNSIGNED NOT NULL,
@@ -82,7 +83,7 @@ CREATE TABLE IF NOT EXISTS `hpc_outcome_entity_jnt` (
   UNIQUE KEY `uq_outcome_entity` (`outcome_id`, `entity_type`, `entity_id`),
   CONSTRAINT `fk_outcome_entity_outcome` FOREIGN KEY (`outcome_id`) REFERENCES `slb_learning_outcomes`(`id`),
   CONSTRAINT `fk_outcome_entity_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes`(`id`),
-  CONSTRAINT `fk_outcome_entity_subject` FOREIGN KEY (`subject_id`) REFERENCES `slb_subjects`(`id`),
+  CONSTRAINT `fk_outcome_entity_subject` FOREIGN KEY (`subject_id`) REFERENCES `sch_subjects`(`id`),
   CONSTRAINT `fk_outcome_entity_entity_type` FOREIGN KEY (`entity_type`) REFERENCES `sys_dropdown_table`(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
