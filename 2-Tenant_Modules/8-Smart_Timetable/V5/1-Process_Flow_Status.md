@@ -4,6 +4,10 @@
 
 #### Current status for indivisual functionality are mentioned in fornt of the PHASE title.
 
+#### All the files, migration & code resource are include in 'SmartTimetable' folder inside the 'Modules' folder.
+
+#### Routes are included inside the 'tenant.php' inside the 'smart-timetable' routes group file in web folder.
+
 ════════════════════════════════════════════════════
 
 ## PHASE 0: PRE-REQUISITES SETUP (One-time)
