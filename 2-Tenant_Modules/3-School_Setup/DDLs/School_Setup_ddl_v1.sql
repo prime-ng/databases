@@ -8,7 +8,7 @@
 SET FOREIGN_KEY_CHECKS = 0;
 
 /* ============================================================
-   1. ATTENDANCE TYPE
+   ATTENDANCE TYPE
    ============================================================ */
 CREATE TABLE IF NOT EXISTS `sch_attendance_types` (
     `id`  INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS `sch_attendance_types` (
 
 
 /* ============================================================
-   2. STAFF LEAVE TYPE
+   STAFF LEAVE TYPE
    ============================================================ */
 CREATE TABLE IF NOT EXISTS `sch_leave_types` (
     `id`       INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
@@ -47,7 +47,24 @@ CREATE TABLE IF NOT EXISTS `sch_leave_types` (
 
 
 /* ============================================================
-   3. STAFF LEAVE CONFIGURATION
+   STUDENT CATEGORIES
+   ============================================================ */
+CREATE TABLE IF NOT EXISTS `sch_categories` (
+    `id`     INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    `code`       VARCHAR(30) NOT NULL,
+    `name`       VARCHAR(100) NOT NULL,
+    `description`         VARCHAR(255) NULL,
+    `applicable_for`      ENUM('STUDENT','STAFF','BOTH') NOT NULL,
+    `is_active`           TINYINT(1) NOT NULL DEFAULT 1,
+    `created_at`          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`          TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at`          TIMESTAMP NULL,
+    UNIQUE KEY `uq_student_category_code` (`code`)
+) ENGINE=InnoDB;
+
+
+/* ============================================================
+   STAFF LEAVE CONFIGURATION
    ============================================================ */
 CREATE TABLE IF NOT EXISTS `sch_leave_config` (
     `id`     INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
@@ -68,24 +85,7 @@ CREATE TABLE IF NOT EXISTS `sch_leave_config` (
 
 
 /* ============================================================
-   4. STUDENT CATEGORIES
-   ============================================================ */
-CREATE TABLE IF NOT EXISTS `sch_categories` (
-    `id`     INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
-    `code`       VARCHAR(30) NOT NULL,
-    `name`       VARCHAR(100) NOT NULL,
-    `description`         VARCHAR(255) NULL,
-    `applicable_for`      ENUM('STUDENT','STAFF','BOTH') NOT NULL,
-    `is_active`           TINYINT(1) NOT NULL DEFAULT 1,
-    `created_at`          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    `updated_at`          TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    `deleted_at`          TIMESTAMP NULL,
-    UNIQUE KEY `uq_student_category_code` (`code`)
-) ENGINE=InnoDB;
-
-
-/* ============================================================
-   6. DISABLE REASONS
+   DISABLE REASONS
    ============================================================ */
 CREATE TABLE IF NOT EXISTS `sch_disable_reasons` (
     `id`     INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
@@ -101,7 +101,6 @@ CREATE TABLE IF NOT EXISTS `sch_disable_reasons` (
     `deleted_at`          TIMESTAMP NULL,
     UNIQUE KEY `uq_disable_reason_code` (`code`)
 ) ENGINE=InnoDB;
-
 
 
 SET FOREIGN_KEY_CHECKS = 1;

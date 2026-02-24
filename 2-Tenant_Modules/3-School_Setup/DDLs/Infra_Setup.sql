@@ -40,12 +40,18 @@
     `id` int unsigned NOT NULL AUTO_INCREMENT,
     `building_id` int unsigned NOT NULL,      -- FK to 'sch_buildings' table
     `room_type_id` int NOT NULL,              -- FK to 'sch_rooms_type' table
-    `code` CHAR(20) NOT NULL,                  -- e.g., '11G-10A','12F-11A','11S-12A' and so on (This will be used for Timetable)
+    `code` CHAR(20) NOT NULL,                 -- e.g., '11G-10A','12F-11A','11S-12A' and so on (This will be used for Timetable)
     `short_name` varchar(50) NOT NULL,        -- e.g., 'Junior Wing','Primary Wing','Middle Wing','Senior Wing','Administration Wings'
     `name` varchar(100) NOT NULL,
-    `capacity` int unsigned DEFAULT NULL,     -- Seating Capacity of the Room
-    `max_limit` int unsigned DEFAULT NULL,    -- Maximum Limit of the Room, Maximum how many students can accomodate in the room
-    `resource_tags` text DEFAULT NULL,        -- e.g., 'Projector, Smart Board, AC, Lab Equipment' etc.
+    `capacity` int unsigned DEFAULT NULL,               -- Seating Capacity of the Room
+    `max_limit` int unsigned DEFAULT NULL,              -- Maximum Limit of the Room, Maximum how many students can accomodate in the room
+    `resource_tags` text DEFAULT NULL,                  -- e.g., 'Projector, Smart Board, AC, Lab Equipment' etc.
+    `can_host_lecture` TINYINT(1) NOT NULL DEFAULT 0,   -- Seats + Writing Surface
+    `can_host_practical` TINYINT(1) NOT NULL DEFAULT 0, -- Seats + Writing Surface + Lab Equipment
+    `can_host_exam` TINYINT(1) NOT NULL DEFAULT 0,      -- Seats + Writing Surface + Exam Equipment
+    `can_host_activity` TINYINT(1) NOT NULL DEFAULT 0,  -- Open space for movement
+    `can_host_sports` TINYINT(1) NOT NULL DEFAULT 0,    -- Specific for PE/Games
+    `room_available_from_date` DATE DEFAULT NULL,
     `is_active` tinyint(1) NOT NULL DEFAULT '1',
     `deleted_at` timestamp NULL DEFAULT NULL,
     `created_at` timestamp NULL DEFAULT NULL,
@@ -60,5 +66,7 @@
   -- ----------------------------------------------------------------------------------------------------------------------
   -- Change Log :
   -- ----------------------------------------------------------------------------------------------------------------------
-  -- 1. Add room_count_in_category column to sch_rooms_type table
+  -- 1. Add `room_count_in_category` column to `sch_rooms_type` table
+  -- 2. Add `can_host_lecture`, `can_host_practical`, `can_host_exam`, `can_host_activity`, `can_host_sports` columns to `sch_rooms` table
+  -- 3. Add `room_available_from_date` column to `sch_rooms` table  
   

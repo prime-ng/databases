@@ -32,6 +32,12 @@ CREATE TABLE IF NOT EXISTS `slb_topic_level_types` (
   UNIQUE KEY `uq_topic_type_name` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- 0=Topic, 
+-- 1=Sub-topic, 
+-- 2=Mini Topic, 3=Sub-Mini Topic, 
+-- 3=Micro Topic, 5=Sub-Micro Topic, 
+-- 4=Nano Topic, 7=Sub-Nano Topic, 
+-- 5=Ultra Topic, 9=Sub-Ultra Topic
 
 CREATE TABLE IF NOT EXISTS `slb_lessons` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,

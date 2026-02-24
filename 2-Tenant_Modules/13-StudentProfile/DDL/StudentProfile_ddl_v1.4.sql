@@ -209,11 +209,12 @@
     `subject_group_id` INT UNSIGNED DEFAULT NULL,  -- FK to sch_subject_groups (if streams apply)
     -- Other Detail
     `house` INT UNSIGNED DEFAULT NULL,             -- FK to sys_dropdown_table
-    `is_current` TINYINT(1) DEFAULT 0,                -- Only one active record per student
+    `is_current` TINYINT(1) NOT NULL DEFAULT 0,                -- Only one active record per student
     `current_flag` INT GENERATED ALWAYS AS ((case when (`is_current` = 1) then `student_id` else NULL end)) STORED,
     `session_status_id` INT UNSIGNED NOT NULL DEFAULT 'ACTIVE',    -- FK to sys_dropdown_table (PROMOTED, ACTIVE, LEFT, SUSPENDED, ALUMNI, WITHDRAWN)
+    `count_for_timetable` TINYINT(1) NOT NULL DEFAULT 1,      -- Can we count this record for Timetable
     `leaving_date` DATE DEFAULT NULL,
-    `count_as_attrition` TINYINT(1) NOT NULL,         -- Can we count this record as Attrition
+    `count_as_attrition` TINYINT(1) NOT NULL DEFAULT 0,         -- Can we count this record as Attrition
     `reason_quit` int NULL,                           -- FK to `sys_dropdown_table` (Reason for leaving the Session)
     -- Note
     `dis_note` text NOT NULL,
@@ -397,3 +398,5 @@
 -- ========================================================================================================
 -- End of DDL
 -- ========================================================================================================
+-- New Changes
+-- 1. Added `count_for_timetable` column to `std_student_academic_sessions` table

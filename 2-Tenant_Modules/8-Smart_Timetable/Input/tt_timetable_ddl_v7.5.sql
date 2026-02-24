@@ -3,6 +3,7 @@
 -- Enhanced from tt_timetable_ddl_v7.4.sql
 -- =====================================================================
 
+
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
@@ -100,12 +101,12 @@ SET FOREIGN_KEY_CHECKS = 0;
     `academic_session_id` INT UNSIGNED NOT NULL,
     `academic_year_start_date` DATE NOT NULL,
     `academic_year_end_date` DATE NOT NULL,
-    `total_terms_in_academic_session` TINYINT UNSIGNED NOT NULL,  -- Total Terms in an Academic Session -- e.g., 1, 2, 3, 4
+    `total_terms_in_academic_session` TINYINT UNSIGNED NOT NULL,     -- Total Terms in an Academic Session -- e.g., 1, 2, 3, 4
     `term_ordinal` TINYINT UNSIGNED NOT NULL,                        -- Term Ordinal. -- e.g., 1, 2, 3, 4
     `term_code` VARCHAR(20) NOT NULL,                                -- Term Code. (e.g., 'SUMMER', 'WINTER', 'Q1', 'Q2', 'Q3', 'Q4')
     `term_name` VARCHAR(100) NOT NULL,                               -- Term Name. (e.g., 'Summer Term', 'Winter Term', 'QUATER - 1', 'QUATER - 2', 'QUATER - 3', 'QUATER - 4')
     `term_start_date` DATE NOT NULL,                                 -- Term Start Date  (e.g., '2024-01-01', '2024-02-01', '2024-03-01', '2024-04-01', '2024-05-01', '2024-06-01')
-    `term_end_date` DATE NOT NULL,                                   -- Term Start Date  (e.g., '2024-01-01', '2024-02-01', '2024-03-01', '2024-04-01', '2024-05-01', '2024-06-01')
+    `term_end_date` DATE NOT NULL,                                   -- Term End Date  (e.g., '2024-01-31', '2024-02-29', '2024-03-31', '2024-04-30', '2024-05-31', '2024-06-30')
     `term_total_teaching_days` TINYINT UNSIGNED DEFAULT 5,           -- Total Teaching Days in a Term (Excluding Exam Days) (e.g., 1, 2, 3, 4, 5, 6)
     `term_total_exam_days` TINYINT UNSIGNED DEFAULT 2,               -- Total Exam Days in a Term for All Exam in a Term (Excluding Teaching Days) (e.g., 1, 2, 3, 4, 5, 6)
     `term_week_start_day` TINYINT UNSIGNED NOT NULL,                 -- Start Day of the Week (e.g., 1, 2, 3, 4, 5, 6)
@@ -130,6 +131,7 @@ SET FOREIGN_KEY_CHECKS = 0;
   COMMENT='Academic term/quarter/semester structure';
   -- Cindition:
     -- 1. May of the fields in above table will be used in Lesson & Syllabus Planning as well.
+    -- 2. 
 
 
   -- Here we are setting what all Settings will be used for the Timetable Module

@@ -23,9 +23,9 @@
     `certifications_json` JSON DEFAULT NULL,   -- Array of {name, issued_by, issue_date, expiry_date, verified}
     `experiences_json` JSON DEFAULT NULL,      -- Array of {institution, role, from_date, to_date, subject, remarks}
     `notes` TEXT COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at` TIMESTAMP NULL DEFAULT NULL,
-    `created_at` TIMESTAMP NULL DEFAULT NULL,
-    `updated_at` TIMESTAMP NULL DEFAULT NULL,
     PRIMARY KEY (`id`),
     UNIQUE KEY `teachers_emp_code_unique` (`emp_code`),
     KEY `teachers_user_id_foreign` (`user_id`),
@@ -70,9 +70,9 @@
     `effective_from` DATE DEFAULT NULL,
     `effective_to` DATE DEFAULT NULL,
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at` TIMESTAMP NULL DEFAULT NULL,
-    `created_at` TIMESTAMP NULL DEFAULT NULL,
-    `updated_at` TIMESTAMP NULL DEFAULT NULL,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_employee_role_active` (`employee_id`, `role_id`, `effective_to`),
     -- Foreign Key Constraints
@@ -94,7 +94,7 @@
     -- Employment nature & capability
     `is_full_time` TINYINT(1) DEFAULT 1,
     `preferred_shift` INT UNSIGNED DEFAULT NULL,    -- FK to sch_shift.id
-    `capable_handling_multiple_classes` TINYINT(1) DEFAULT 0,
+    `capable_handling_multiple_classes` TINYINT(1) DEFAULT 0,  -- Is he capable of handling un-assigned classes
     `can_be_used_for_substitution` TINYINT(1) DEFAULT 1,
     -- Skills & Responsibilities (JSON for flexibility)
     `certified_for_lab` TINYINT(1) DEFAULT 0,          -- allowed to conduct practicals
@@ -118,59 +118,71 @@
     `reporting_to` INT UNSIGNED DEFAULT NULL,                          -- Manual Entry
     `can_access_sensitive_data` TINYINT(1) DEFAULT 0,                  -- Manual Entry
     `notes` TEXT NULL,                                                 -- Manual Entry
-    `effective_from` DATE DEFAULT NULL,                                -- Manual Entry
-    `effective_to` DATE DEFAULT NULL,                                  -- Manual Entry
+    `effective_from` DATE DEFAULT NULL,                                -- Manual Entry. (Joining date)
+    `effective_to` DATE DEFAULT NULL,                                  -- Manual Entry. (Leaving Date)
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_teacher_employee` (`employee_id`),
-    CONSTRAINT `fk_teacher_employee` FOREIGN KEY (`employee_id`) REFERENCES `sch_employees` (`id`)
+    CONSTRAINT `fk_teacher_employee` FOREIGN KEY (`employee_id`) REFERENCES `sch_employees` (`id`),
+    CONSTRAINT `fk_teacher_user` FOREIGN KEY (`user_id`) REFERENCES `sys_users` (`id`),
+    CONSTRAINT `fk_teacher_role` FOREIGN KEY (`role_id`) REFERENCES `sch_employee_roles` (`id`),
+    CONSTRAINT `fk_teacher_department` FOREIGN KEY (`department_id`) REFERENCES `sch_departments` (`id`),
+    CONSTRAINT `fk_teacher_designation` FOREIGN KEY (`designation_id`) REFERENCES `sch_designations` (`id`),
+    CONSTRAINT `fk_teacher_reporting_to` FOREIGN KEY (`reporting_to`) REFERENCES `sch_employees` (`id`),
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  -- Conditions:
+  -- 1. there will be only One record per Teacher 
 
   CREATE TABLE IF NOT EXISTS `sch_teacher_capabilities` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     -- CORE RELATIONSHIP
-    `teacher_profile_id` INT UNSIGNED NOT NULL,   -- FK sch_teacher_profile.id
-    `class_id` INT UNSIGNED NOT NULL,                 -- FK sch_classes.id
-    -- `section_id` INT UNSIGNED DEFAULT NULL,           -- FK sch_sections.id (NULL = all sections)
-    `subject_study_format_id` INT UNSIGNED NOT NULL,   -- FK sch_subject_study_format_jnt.id
+    `teacher_profile_id` INT UNSIGNED NOT NULL,             -- FK sch_teacher_profile.id
+    `class_id` INT UNSIGNED NOT NULL,                       -- FK sch_classes.id
+    -- `section_id` INT UNSIGNED DEFAULT NULL,              -- FK sch_sections.id (NULL = all sections)
+    `subject_study_format_id` INT UNSIGNED NOT NULL,        -- FK sch_subject_study_format_jnt.id
     -- TEACHING STRENGTH
     `proficiency_percentage` TINYINT UNSIGNED DEFAULT NULL, -- 1–100
     `teaching_experience_months` SMALLINT UNSIGNED DEFAULT NULL,
-    `is_primary_subject` TINYINT(1) NOT NULL DEFAULT 1,  -- 1=Yes, 0=No
-    `competancy_level` ENUM('Basic','Intermediate','Advanced','Expert') DEFAULT 'Basic',
+    `is_primary_subject` TINYINT(1) NOT NULL DEFAULT 1,     -- 1=Yes, 0=No
+    `competancy_level` ENUM('Facilitator','Basic','Intermediate','Advanced','Expert') DEFAULT 'Basic',  -- Facilitator - If No Teaching Experience but can manage.
     -- PRIORITY MATRIX INTELLIGENCE
-    `priority_order` INT UNSIGNED DEFAULT NULL,   -- Priority Order of the Teacher for the Class+Subject+Study_Format
-    `priority_weight` TINYINT UNSIGNED DEFAULT NULL,   -- manual / computed weight (1–10) (Even if teachers are available, how important is THIS activity to the school?)
-    `scarcity_index` TINYINT UNSIGNED DEFAULT NULL,    -- 1=abundant, 10=very rare
-    `is_hard_constraint` TINYINT(1) DEFAULT 0,         -- if true cannot be voilated e.g. Physics Lab teacher for Class 12
-    `allocation_strictness` ENUM('hard','medium','soft') DEFAULT 'medium', e.g. Senior Maths teacher - Hard, Preferred English teacher - Medium, Art / Sports / Activity - Soft
+    `priority_order` INT UNSIGNED DEFAULT NULL,              -- Priority Order of the Teacher for the Class+Subject+Study_Format
+    `priority_weight` TINYINT UNSIGNED DEFAULT NULL,         -- manual / computed weight (1–10) (Even if teachers are available, how important is THIS activity to the school?)
+    `scarcity_index` TINYINT UNSIGNED DEFAULT NULL,          -- 1=abundant, 10=very rare
+    `is_hard_constraint` TINYINT(1) DEFAULT 0,               -- if true cannot be voilated e.g. Physics Lab teacher for Class 12
+    `allocation_strictness` ENUM('hard','medium','soft') DEFAULT 'medium', -- e.g. Senior Maths teacher - Hard, Preferred English teacher - Medium, Art / Sports / Activity - Soft
     -- GOVERNANCE & OVERRIDE
-    `override_priority` TINYINT UNSIGNED DEFAULT NULL, -- admin override
+    `override_priority` TINYINT UNSIGNED DEFAULT NULL,       -- admin override
     `override_reason` VARCHAR(255) DEFAULT NULL,
     -- AI / HISTORICAL FEEDBACK
     `historical_success_ratio` TINYINT UNSIGNED DEFAULT NULL, -- 1–100 (sessions_completed_without_change / total_sessions_allocated ) * 100)
-    `last_allocation_score` TINYINT UNSIGNED DEFAULT NULL,   -- last run score
+    `last_allocation_score` TINYINT UNSIGNED DEFAULT NULL,    -- last run score
     -- EFFECTIVITY & STATUS
     `effective_from` DATE DEFAULT NULL,
-    `effective_to` DATE DEFAULT NULL,
+    -- `effective_to` DATE DEFAULT NULL,
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+    `active_flag` tinyint(1) GENERATED ALWAYS AS ((case when (`is_active` = 1) then '1' else NULL end)) STORED,
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
     PRIMARY KEY (id),
-    UNIQUE KEY `uq_teacher_capability` (`teacher_profile_id`, `class_id`, `study_format_id`),
+    UNIQUE KEY `uq_teacher_capability` (`teacher_profile_id`, `class_id`, `subject_study_format_id`, `active_flag`),
     CONSTRAINT `fk_tc_teacher_profile` FOREIGN KEY (`teacher_profile_id`) REFERENCES `sch_teacher_profile`(id) ON DELETE CASCADE,
     CONSTRAINT `fk_tc_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes`(id),
-    CONSTRAINT `fk_tc_section` FOREIGN KEY (`section_id`) REFERENCES `sch_sections`(id),
     CONSTRAINT `fk_tc_subject_study_format` FOREIGN KEY (`subject_study_format_id`) REFERENCES `sch_subject_study_format_jnt`(id)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
   -- Condition:
   -- Formula: historical_success_ratio = (sessions_completed_without_change / total_sessions_allocated ) * 100)
   -- last_allocation_score = (proficiency_percentage * 0.4) + (load_balance * 0.3) + (strictness_match * 0.2) + (historical_success_ratio * 0.1)
   -- Importance - “Teacher selected because last allocation score = 87 (highest)”
-
+  -- Facilitator  - I can manage the classroom, follow a lesson plan, and support student activity in an emergency.
+  -- Basic        - I have a foundational understanding of the subject and can teach introductory concepts.
+  -- Intermediate - I am comfortable teaching the core curriculum and answering most student questions.
+  -- Advanced     - I have deep subject knowledge and can prepare students for high-level exams or projects.
+  -- Expert       - I am a subject specialist capable of curriculum development and mentoring other teachers.
 ----------------------------------------------------------------------------------
 -- Made Changes :
 -- 1. Added `teacher_availability_ratio` to `sch_teacher_profile` table.
@@ -179,5 +191,8 @@
 -- 4. Removed `study_format_id` from `sch_teacher_capabilities` table.
 -- 5. Removed `max_periods_daily`, `min_periods_daily`, `max_periods_weekly`, `min_periods_weekly`, `can_be_split_across_sections` from `sch_teacher_capabilities` table.
 -- 6. Added `max_periods_daily`, `min_periods_daily`, `max_periods_weekly`, `min_periods_weekly`, `can_be_split_across_sections` to `sch_teacher_profile` table.
-
-
+-- -------------------------------------------------------------------------------
+-- New Changes:
+-- 1. Removed `effective_to` in `sch_teacher_capabilities` table.
+-- 2. Removed `effective_from` & `effective_to` in `sch_teacher_profile` table.
+--  
