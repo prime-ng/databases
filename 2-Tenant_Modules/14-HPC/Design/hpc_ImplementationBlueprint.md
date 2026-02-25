@@ -9,26 +9,26 @@ This document provides a comprehensive process flow for capturing student data a
 ### 2. DETAILED PROCESS SEQUENCE
 
 #### Phase 1: Academic Year Setup (Before Session Starts)
-|Step|Process                       |Data Source          |Target Tables                                                                  |Responsibility    |
-|----|------------------------------|---------------------|-------------------------------------------------------------------------------|------------------|
-|1.1 |Create HPC Templates          |Form PDFs            | hpc_templates, hpc_template_parts, hpc_template_sections, hpc_template_rubrics|Admin/Super Admin |
-|1.2 |Map Templates to Classes      |Class-Session mapping|Application layer mapping                                                      |Admin             |
-|1.3 |Configure Circular Goals      |NCF 2023 documents   |hpc_circular_goals                                                             |Curriculum Head   |
-|1.4 |Map Competencies to Goals     |Existing competencies|hpc_circular_goal_competency_jnt                                               |Curriculum Head   |
-|1.5 |Define Learning Outcomes      |Syllabus + NCF       |hpc_learning_outcomes                                                          |Subject Teachers  |
-|1.6 |Map Outcomes to Topics        |Lesson plans         |hpc_outcome_entity_jnt                                                         |Subject Teachers  |
-|1.7 |Setup Ability Parameters      |System defaults      |hpc_ability_parameters                                                         |System (One-time) |
-|1.8 |Setup Performance Descriptors |System defaults      |hpc_performance_descriptors                                                    |System (One-time) |
+|Step| Process                       | Data Source          | Target Tables                                                                 | Responsibility    |
+|----|-------------------------------|----------------------|-------------------------------------------------------------------------------|-------------------|
+|1.1 | Create HPC Templates          | Form PDFs            | hpc_templates, hpc_template_parts, hpc_template_sections, hpc_template_rubrics| Admin/Super Admin |
+|1.2 | Map Templates to Classes      | Class-Session mapping| Application layer mapping                                                     | Admin             |
+|1.3 | Configure Circular Goals      | NCF 2023 documents   | hpc_circular_goals                                                            | Curriculum Head   |
+|1.4 | Map Competencies to Goals     | Existing competencies| hpc_circular_goal_competency_jnt                                              | Curriculum Head   |
+|1.5 | Define Learning Outcomes      | Syllabus + NCF       | hpc_learning_outcomes                                                         | Subject Teachers  |
+|1.6 | Map Outcomes to Topics        | Lesson plans         | hpc_outcome_entity_jnt                                                        | Subject Teachers  |
+|1.7 | Setup Ability Parameters      | System defaults      | hpc_ability_parameters                                                        | System (One-time) |
+|1.8 | Setup Performance Descriptors | System defaults      | hpc_performance_descriptors                                                   | System (One-time) |
 
 #### Phase 2: Student Onboarding & Initial Data (First Month)
-|Step|Process	                    |Data Source	     |Target Tables	              |Responsibility         |
-|----|------------------------------|--------------------|----------------------------|-----------------------|
-|2.1 |Create Student Records        |Admission module    |slb_students                |Admission Office       |
-|2.2 |Assign APAAR IDs              |External API/Manual |slb_students.apaar_id       |Admin                  |
-|2.3 |Initialize HPC Reports        |System automation   |hpc_reports (draft status)  |System (Cron)          |
-|2.4 |Capture Part-A (1) Data       |Parent interaction  |hpc_report_items via screens|Class Teacher          |
-|2.5 |Parent Questionnaire          |Parent portal       |hpc_report_items            |Parents                |
-|2.6 |Student Self-Introduction     |Classroom activity  |hpc_report_items            |Students (with teacher)|
+|Step|Process	                       |Data Source	         |Target Tables	               |Responsibility           |
+|----|-------------------------------|---------------------|-----------------------------|-------------------------|
+|2.1 | Create Student Records        | Admission module    | slb_students                | Admission Office        |
+|2.2 | Assign APAAR IDs              | External API/Manual | slb_students.apaar_id       | Admin                   |
+|2.3 | Initialize HPC Reports        | System automation   | hpc_reports (draft status)  | System (Cron)           |
+|2.4 | Capture Part-A (1) Data       | Parent interaction  | hpc_report_items via screens| Class Teacher           |
+|2.5 | Parent Questionnaire          | Parent portal       | hpc_report_items            | Parents                 |
+|2.6 | Student Self-Introduction     | Classroom activity  | hpc_report_items            | Students (with teacher) |
 
 
 ### Phase 3: Continuous Data Capture (Throughout Year)
@@ -36,41 +36,41 @@ This document provides a comprehensive process flow for capturing student data a
 
 #### 3. DATA CAPTURE MATRIX
 #### 3.1 Data from Existing ERP Modules (Auto-fetched)
-|Module	                |Data Elements	                            |Source Table	                    |Target HPC Section
-|-----------------------|-------------------------------------------|-----------------------------------|------------------
-|Student Information	|Name, Roll No., DOB, Age, Address, Phone	|slb_students	                    |Part-A (1)
-|Parent Information	    |Mother/Father Name, Education, Occupation	|slb_parents	                    |Part-A (1)
-|Academic Structure	    |Section, Class, Registration No.	        |class_sections, slb_enrollments	|Part-A (1)
-|School Information	    |School Name, Address, UDISE Code, BRC, CRC	|sch_organizations	                |Part-A (1)
-|Attendance	            |Monthly attendance data	                |attendance_students                |Attendance Table
-|Assessment Scores	    |Subject-wise marks/grades	                |exam_results	                    |Domain assessments
-|Co-scholastic Areas	|Physical/Health records	                |co_scholastic_records	            |Physical Development
-|Previous HPC Data	    |Historical performance	                    |hpc_reports	                    |Progress tracking
+| Module	            | Data Elements	                             | Source Table	                    | Target HPC Section
+|---------------------|--------------------------------------------|----------------------------------|------------------
+| Student Information	| Name, Roll No., DOB, Age, Address, Phone	 | slb_students	                    | Part-A (1)
+| Parent Information	| Mother/Father Name, Education, Occupation	 | slb_parents	                    | Part-A (1)
+| Academic Structure	| Section, Class, Registration No.	         | class_sections, slb_enrollments  | Part-A (1)
+| School Information	| School Name, Address, UDISE Code, BRC, CRC | sch_organizations	              | Part-A (1)
+| Attendance	        | Monthly attendance data	                   | attendance_students              | Attendance Table
+| Assessment Scores	  | Subject-wise marks/grades	                 | exam_results	                    | Domain assessments
+|Co-scholastic Areas	| Physical/Health records	                   | co_scholastic_records	          | Physical Development
+|Previous HPC Data	  | Historical performance	                   | hpc_reports	                    | Progress tracking
 
 #### 3.2 Manual Data Entry Requirements
-|Data Element	            |Input Screen                |Frequency           |Responsible Person
-|---------------------------|----------------------------|--------------------|----------------------
-|Mother Tongue	            |Part-A Data Entry	         |Once	              |Class Teacher
-|Rural/Urban	            |Part-A Data Entry	         |Once	              |Class Teacher
-|Illness History	        |Health Record Screen	     |Monthly	          |Class Teacher/Parent
-|Siblings Details	        |Family Information Screen	 |Once                |Class Teacher
-|Student Interests	        |Interests Screen	         |Termly              |Student + Teacher
-|Domain-wise Observations	|Domain Assessment Screen	 |Ongoing             |Subject Teachers
-|Activity-specific Rubrics	|Activity Assessment Screen	 |Per activity        |Subject Teachers
-|Teacher's Feedback Notes	|Feedback Screen	         |Termly              |Class Teacher
-|Parent Observations	    |Parent Portal	             |Termly              |Parents
-|Self-Assessment Emojis	    |Student Dashboard	         |Per activity        |Students
-|Peer Assessment	        |Peer Review Screen	         |Per group activity  |Students
+|Data Element	             | Input Screen                | Frequency         | Responsible Person
+|--------------------------|----------------------------|--------------------|----------------------
+|Mother Tongue	           | Part-A Data Entry	        | Once	             | Class Teacher
+|Rural/Urban	             | Part-A Data Entry	        | Once	             | Class Teacher
+|Illness History	         | Health Record Screen	      | Monthly	           | Class Teacher/Parent
+|Siblings Details	         | Family Information Screen	| Once               | Class Teacher
+|Student Interests	       | Interests Screen	          | Termly             | Student + Teacher
+|Domain-wise Observations	 | Domain Assessment Screen	  | Ongoing            | Subject Teachers
+|Activity-specific Rubrics | Activity Assessment Screen	| Per activity       | Subject Teachers
+|Teacher's Feedback Notes	 | Feedback Screen	          | Termly             | Class Teacher
+|Parent Observations	     | Parent Portal	            | Termly             | Parents
+|Self-Assessment Emojis	   | Student Dashboard	        | Per activity       | Students
+|Peer Assessment	         | Peer Review Screen	        | Per group activity | Students
 
 #### 3.3 Generated/Calculated Data
-|Data Element	                |Calculation Logic	                    |Frequency
+|Data Element	                  | Calculation Logic	                    | Frequency
 |-------------------------------|---------------------------------------|-------------
-|Attendance Percentage	        |Days Present ÷ Working Days) × 100	    |Monthly
-|Age	                        |Current Date - DOB	                    |Once
-|Credit Points	                |Credits × NCrF Level                   |Year-end
-|Performance Level (Awareness)	|Aggregation of related rubric scores	|Per domain
-|Performance Level (Creativity)	|Aggregation of related rubric scores	|Per domain
-|Summary Descriptors	        |Algorithm combining multiple inputs    |Year-end
+|Attendance Percentage	        | Days Present ÷ Working Days) × 100	  | Monthly
+|Age	                          | Current Date - DOB	                  | Once
+|Credit Points	                | Credits × NCrF Level                  | Year-end
+|Performance Level (Awareness)	| Aggregation of related rubric scores	| Per domain
+|Performance Level (Creativity)	| Aggregation of related rubric scores	| Per domain
+|Summary Descriptors	          | Algorithm combining multiple inputs   | Year-end
 
 
 ### 4. SCREEN REQUIREMENTs
@@ -81,12 +81,12 @@ This document provides a comprehensive process flow for capturing student data a
 
 ### 6. KEY IMPLEMENTATION CONSIDERATIONS
 #### 6.1 Age-Specific Workflows
-|Stage	     |Grades	 |Key Features					                     |Assessment Approach
+|Stage	     |Grades  	 |Key Features					                             |Assessment Approach
 |------------|-----------|---------------------------------------------------|---------------------------------------
 |Foundation	 |BV1-3, 1-2 |Emoji-based, Picture selection, Simple statements	 |Teacher + Parent input primarily
-|Preparatory |3-5		 |Statement-based, Self + Peer assessment			 |Balanced teacher-student input
-|Middle	     |6-8		 |Detailed rubrics, Project work, Skill tracking	 |Multi-source assessment
-|Secondary   |9-12		 |Career planning, Credit accumulation, MOOCs		 |Comprehensive + External certifications
+|Preparatory |3-5		     |Statement-based, Self + Peer assessment			       |Balanced teacher-student input
+|Middle	     |6-8		     |Detailed rubrics, Project work, Skill tracking	   |Multi-source assessment
+|Secondary   |9-12	  	 |Career planning, Credit accumulation, MOOCs		     |Comprehensive + External certifications
 
 #### 6.2 Automation Rules
 ```sql
