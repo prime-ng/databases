@@ -45,6 +45,7 @@ CREATE TABLE IF NOT EXISTS `hpc_template_parts` (
 -- Conditions:
 -- 1. If has_items = 1 then only hpc_template_parts_items table will be used
 -- 2. If has_items = 0 then only hpc_template_parts table will be used
+-- 3. When has_items=0, part acts as container for sections only
 
 CREATE TABLE IF NOT EXISTS `hpc_template_parts_items` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
@@ -85,6 +86,7 @@ CREATE TABLE IF NOT EXISTS `hpc_template_sections` (
 -- Conditions:
 -- 1. If has_items = 1 then only hpc_template_sections_items table will be used
 -- 2. If has_items = 0 then only hpc_template_sections table will be used
+-- 3. sections can have both items AND rubrics simultaneously
 
 
 CREATE TABLE IF NOT EXISTS `hpc_template_section_items` (
@@ -157,6 +159,7 @@ CREATE TABLE IF NOT EXISTS `hpc_template_rubric_items` (
   `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   `rubric_id` INT UNSIGNED NOT NULL,
   `html_object_name` VARCHAR(50) NOT NULL,
+  `ordinal` TINYINT UNSIGNED DEFAULT 1,
   `input_required` TINYINT(1) DEFAULT 1,
   `input_type` ENUM('Descriptor','Numeric','Grade','Text','Boolean','Image','Json') DEFAULT 'Descriptor',
   `output_type` ENUM('Descriptor','Numeric','Grade','Text','Boolean','Image','Json') DEFAULT 'Descriptor',
@@ -174,16 +177,12 @@ CREATE TABLE IF NOT EXISTS `hpc_template_rubric_items` (
   `deleted_at` TIMESTAMP NULL DEFAULT NULL,
   UNIQUE KEY `ux_levels_rubric_value` (`rubric_id`, `input_level`), 
   KEY `idx_levels_rubric` (`rubric_id`),
-  CONSTRAINT `fk_rubricLevels_rubricId` FOREIGN KEY (`rubric_id`) REFERENCES `hpc_template_rubrics`(`id`),
-  -- JSON Validations (Only triggers if type is 'Json' AND content is valid JSON)
-  CONSTRAINT `chk_input_json` CHECK (`input_type` <> 'Json' OR (JSON_VALID(`input_level`) AND JSON_SCHEMA_VALID('{"type": "object","required": ["key", "value"]}', `input_level`))),
-  CONSTRAINT `chk_output_json` CHECK (`output_type` <> 'Json' OR (JSON_VALID(`output_level`) AND JSON_SCHEMA_VALID('{"type": "object","required": ["key", "value"]}', `output_level`)))
+  CONSTRAINT `fk_rubricLevels_rubricId` FOREIGN KEY (`rubric_id`) REFERENCES `hpc_template_rubrics`(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 
 -- -----------------------------------------------------------------------------------------------
 
-
--- ================================================================================================
 
 
 CREATE TABLE IF NOT EXISTS `hpc_reports` (
@@ -207,13 +206,14 @@ CREATE TABLE IF NOT EXISTS `hpc_reports` (
   CONSTRAINT `fk_reports_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes`(`id`),
   CONSTRAINT `fk_reports_section` FOREIGN KEY (`section_id`) REFERENCES `sch_sections`(`id`),
   CONSTRAINT `fk_reports_template` FOREIGN KEY (`template_id`) REFERENCES `hpc_templates`(`id`),
-  CONSTRAINT `fk_reports_preparedBy` FOREIGN KEY (`prepared_by`) REFERENCES `staff`(`id`),
+  CONSTRAINT `fk_reports_preparedBy` FOREIGN KEY (`prepared_by`) REFERENCES `sys_users`(`id`),
   KEY `idx_reports_template` (`template_id`),
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `hpc_report_items` (
   `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
   `report_id` INT UNSIGNED NOT NULL,        -- FK to hpc_reports.id
+  `template_id` INT UNSIGNED NOT NULL,      -- Fk to hpc_templates.id
   `rubric_id` INT UNSIGNED NOT NULL,        -- FK to hpc_template_rubrics.id
   `rubric_item_id` INT UNSIGNED NULL,       -- FK to hpc_template_rubric_items.id
   -- Input
@@ -234,15 +234,18 @@ CREATE TABLE IF NOT EXISTS `hpc_report_items` (
   `out_filename` VARCHAR(100) NULL,           -- to capture file name (Will Cover File)
   `out_filepath` VARCHAR(255) NULL,           -- to capture file path (Will Cover File)
   `out_json_value` JSON NULL,                 -- to capture table data (Will Cover Table)
+  -- Assessment
   `remark` TEXT NULL,                         -- to capture remark (Will Cover Remark)
+  `assessed_by` INT UNSIGNED NULL,            -- Fk to sys_users.id
+  `assessed_at` TIMESTAMP NULL,               -- Assessment Date
   `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `deleted_at` TIMESTAMP NULL DEFAULT NULL,
   CONSTRAINT `fk_reportItems_reportId` FOREIGN KEY (`report_id`) REFERENCES `hpc_reports`(`id`),
+  CONSTRAINT `fk_reportItems_templateId` FOREIGN KEY (`template_id`) REFERENCES `hpc_templates`(`id`),
   CONSTRAINT `fk_reportItems_rubricId` FOREIGN KEY (`rubric_id`) REFERENCES `hpc_template_rubrics`(`id`),
-  CONSTRAINT `fk_reportItems_rubricLevelId` FOREIGN KEY (`rubric_level_id`) REFERENCES `hpc_rubric_levels`(`id`),
-  KEY `idx_items_reportRubricLevel` (`report_id`,`rubric_id`,`rubric_level_id`),
-  KEY `idx_items_rubric` (`rubric_id`)
+  CONSTRAINT `fk_reportItems_rubricItemId` FOREIGN KEY (`rubric_item_id`) REFERENCES `hpc_template_rubric_items`(`id`),
+  KEY `idx_reportItems_reportId_rubricId_rubricItemId` (`report_id`,`rubric_id`,`rubric_item_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `hpc_report_table` (
@@ -266,4 +269,39 @@ CREATE TABLE IF NOT EXISTS `hpc_report_table` (
 
 SET FOREIGN_KEY_CHECKS = 1;
 
+
+
+
+
+
+-- Verification Queries
+
+-- Verify template structure
+SELECT 
+    t.code AS template_code,
+    t.title AS template_title,
+    COUNT(DISTINCT p.id) AS part_count,
+    COUNT(DISTINCT s.id) AS section_count,
+    COUNT(DISTINCT r.id) AS rubric_count,
+    COUNT(DISTINCT ri.id) AS rubric_item_count
+FROM hpc_templates t
+LEFT JOIN hpc_template_parts p ON p.template_id = t.id
+LEFT JOIN hpc_template_sections s ON s.template_id = t.id
+LEFT JOIN hpc_template_rubrics r ON r.template_id = t.id
+LEFT JOIN hpc_template_rubric_items ri ON ri.rubric_id = r.id
+WHERE t.code = 'HPC-FOUND'
+GROUP BY t.id;
+
+-- List all parts with their sections
+SELECT 
+    p.code AS part_code,
+    p.page_no,
+    s.code AS section_code,
+    s.display_order,
+    si.level_display AS item_display
+FROM hpc_template_parts p
+LEFT JOIN hpc_template_sections s ON s.part_id = p.id
+LEFT JOIN hpc_template_section_items si ON si.section_id = s.id
+WHERE p.template_id = 1
+ORDER BY p.display_order, s.display_order, si.ordinal;
 
