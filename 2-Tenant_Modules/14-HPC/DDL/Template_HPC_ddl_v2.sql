@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS `hpc_templates` (
   UNIQUE KEY `ux_templates_code_version` (`code`,`version`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- tab 2 --
 CREATE TABLE IF NOT EXISTS `hpc_template_parts` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `template_id` INT UNSIGNED NOT NULL,  -- FK to hpc_templates
@@ -59,7 +60,7 @@ CREATE TABLE IF NOT EXISTS `hpc_template_parts_items` (
   CONSTRAINT `fk_templatePartsItems_partId` FOREIGN KEY (`part_id`) REFERENCES `hpc_template_parts`(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-
+-- tab 3 --
 CREATE TABLE IF NOT EXISTS `hpc_template_sections` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `template_id` INT UNSIGNED NOT NULL,      -- FK to hpc_templates
@@ -116,6 +117,7 @@ CREATE TABLE IF NOT EXISTS `hpc_template_section_table` (
   CONSTRAINT `fk_sectionTable_sectionItemId` FOREIGN KEY (`section_item_id`) REFERENCES `hpc_template_section_items`(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- tab 4 --
 CREATE TABLE IF NOT EXISTS `hpc_template_rubrics` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `template_id` INT UNSIGNED NOT NULL,  -- FK to hpc_templates
