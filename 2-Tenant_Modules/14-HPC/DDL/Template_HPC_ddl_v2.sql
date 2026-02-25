@@ -42,6 +42,9 @@ CREATE TABLE IF NOT EXISTS `hpc_template_parts` (
   KEY `idx_parts_pageNo` (`page_no`),
   CONSTRAINT `fk_templateParts_templateId` FOREIGN KEY (`template_id`) REFERENCES `hpc_templates`(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Conditions:
+-- 1. If has_items = 1 then only hpc_template_parts_items table will be used
+-- 2. If has_items = 0 then only hpc_template_parts table will be used
 
 CREATE TABLE IF NOT EXISTS `hpc_template_parts_items` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
@@ -79,6 +82,10 @@ CREATE TABLE IF NOT EXISTS `hpc_template_sections` (
   CONSTRAINT `fk_templateSections_partId` FOREIGN KEY (`part_id`) REFERENCES `hpc_template_parts`(`id`),
   CONSTRAINT `fk_templateSections_templateId` FOREIGN KEY (`template_id`) REFERENCES `hpc_templates`(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Conditions:
+-- 1. If has_items = 1 then only hpc_template_sections_items table will be used
+-- 2. If has_items = 0 then only hpc_template_sections table will be used
+
 
 CREATE TABLE IF NOT EXISTS `hpc_template_section_items` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
@@ -97,6 +104,9 @@ CREATE TABLE IF NOT EXISTS `hpc_template_section_items` (
   UNIQUE KEY `ux_templateSectionItems_sectionId_ordinal` (`section_id`,`ordinal`),
   CONSTRAINT `fk_templateSectionItems_sectionId` FOREIGN KEY (`section_id`) REFERENCES `hpc_template_sections`(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Conditions:
+-- 1. If section_type = 'Table' then only `hpc_template_section_table` table will be used
+-- 2. If section_type = 'Text' or section_type = 'Image' then only `hpc_template_section_items` table will be used
 
 CREATE TABLE IF NOT EXISTS `hpc_template_section_table` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
@@ -126,10 +136,6 @@ CREATE TABLE IF NOT EXISTS `hpc_template_rubrics` (
   `display_order` SMALLINT UNSIGNED DEFAULT 0,
   `code` VARCHAR(50) NULL,
   `description` VARCHAR(512) NULL,
-  `input_required` TINYINT(1) DEFAULT 1,  -- new
-  `input_type` ENUM('KeyValue','Descriptor','Numeric','Grade','Text','Boolean','Image','Json') DEFAULT 'Descriptor',  -- change
-  `output_type` ENUM('KeyValue','Descriptor','Numeric','Grade','Text','Boolean','Image','Json') DEFAULT 'Descriptor',  -- New
-  `has_items` TINYINT(1) DEFAULT 1,  -- New
   `mandatory` TINYINT(1) DEFAULT 0,
   `visible` TINYINT(1) DEFAULT 1,
   `print` TINYINT(1) DEFAULT 1,
@@ -144,31 +150,37 @@ CREATE TABLE IF NOT EXISTS `hpc_template_rubrics` (
   CONSTRAINT `fk_templateRubrics_sectionId` FOREIGN KEY (`section_id`) REFERENCES `hpc_template_sections`(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 -- Condition:
--- If input_type = Descriptor OR input_type = Grade, then we need to have rubric_items
--- If input_type != output_type, then we need to have rubric_items
-
+-- If has_items = 1 then only hpc_template_rubric_items table will be used
+-- If has_items = 0 then only hpc_template_rubric_items table will be used
 
 CREATE TABLE IF NOT EXISTS `hpc_template_rubric_items` (
-  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   `rubric_id` INT UNSIGNED NOT NULL,
-  `html_object_name` VARCHAR(50) NOT NULL,                     -- Name of the object in HTML.
-  `input_level` VARCHAR(100) NOT NULL,                         -- Input level (e.g., Excellent, Good, Developing, Needs Support)
-  `output_level` VARCHAR(100) NOT NULL,                        -- Output level (e.g., Excellent, Good, Developing, Needs Support)
-  `input_level_numeric` INT UNSIGNED NULL,                     -- Numeric mapping (e.g., 4 = Excellent, 3 = Good, 2 = Developing, 1 = Needs Support)
-  `output_level_numeric` INT UNSIGNED NULL,                    -- Numeric mapping (e.g., 4 = Excellent, 3 = Good, 2 = Developing, 1 = Needs Support)
-  `display_input_label` TINYINT(1) NOT NULL DEFAULT 0,         -- Default we will display input_level but if this is 1 then we will display input_level_value
-  `print_output_label` TINYINT(1) NOT NULL DEFAULT 0,          -- Default we will display input_level but if this is 1 then we will display input_level_value
-  `weight` DECIMAL(8,3) NULL,                                  -- Useful to add weightage. For example, we may map Outstanding to weight 4.5
-  `description` VARCHAR(255) NULL,
+  `html_object_name` VARCHAR(50) NOT NULL,
+  `input_required` TINYINT(1) DEFAULT 1,
+  `input_type` ENUM('Descriptor','Numeric','Grade','Text','Boolean','Image','Json') DEFAULT 'Descriptor',
+  `output_type` ENUM('Descriptor','Numeric','Grade','Text','Boolean','Image','Json') DEFAULT 'Descriptor',
+  `input_level` VARCHAR(255) NOT NULL,                      -- Input level (e.g., Excellent, Good, Developing, Needs Support)
+  `output_level` VARCHAR(255) NOT NULL,                     -- Output level (e.g., Excellent, Good, Developing, Needs Support)
+  `input_level_numeric` INT UNSIGNED NULL,                  -- Input level numeric (e.g., 4 = Excellent, 3 = Good, 2 = Developing, 1 = Needs Support)
+  `output_level_numeric` INT UNSIGNED NULL,                 -- Output level numeric (e.g., 4 = Excellent, 3 = Good, 2 = Developing, 1 = Needs Support)
+  `display_input_label` TINYINT(1) NOT NULL DEFAULT 0,      -- Default we will display input_level but if this is 1 then we will display input_level_value
+  `print_output_label` TINYINT(1) NOT NULL DEFAULT 0,       -- Default we will display input_level but if this is 1 then we will display input_level_value
+  `weight` DECIMAL(8,3) NULL,                               -- Useful to add weightage. For example, we may map Outstanding to weight 4.5
+  `description` VARCHAR(255) NULL,                          -- Description of the rubric item
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
   `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+  UNIQUE KEY `ux_levels_rubric_value` (`rubric_id`, `input_level`), 
+  KEY `idx_levels_rubric` (`rubric_id`),
   CONSTRAINT `fk_rubricLevels_rubricId` FOREIGN KEY (`rubric_id`) REFERENCES `hpc_template_rubrics`(`id`),
-  UNIQUE KEY `ux_levels_rubric_value` (`rubric_id`,`level_value`),
-  KEY `idx_levels_rubric` (`rubric_id`)
+  -- JSON Validations (Only triggers if type is 'Json' AND content is valid JSON)
+  CONSTRAINT `chk_input_json` CHECK (`input_type` <> 'Json' OR (JSON_VALID(`input_level`) AND JSON_SCHEMA_VALID('{"type": "object","required": ["key", "value"]}', `input_level`))),
+  CONSTRAINT `chk_output_json` CHECK (`output_type` <> 'Json' OR (JSON_VALID(`output_level`) AND JSON_SCHEMA_VALID('{"type": "object","required": ["key", "value"]}', `output_level`)))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- -----------------------------------------------------------------------------------------------
 
 
 -- ================================================================================================
@@ -176,44 +188,53 @@ CREATE TABLE IF NOT EXISTS `hpc_template_rubric_items` (
 
 CREATE TABLE IF NOT EXISTS `hpc_reports` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,  -- Auto Generate
-  `academic_session_id` INT UNSIGNED  NOT NULL,        -- Fk to sch_academic_sessions.id
-  `term_id` INT UNSIGNED NOT NULL,      -- Fk to sch_academic_term.id
-  `student_id` INT UNSIGNED NOT NULL,            -- Fk to students.id
+  `academic_session_id` INT UNSIGNED  NOT NULL,  -- Fk to std_student_academic_sessions.id
+  `term_id` INT UNSIGNED NOT NULL,               -- Fk to sch_academic_term.id
+  `student_id` INT UNSIGNED NOT NULL,            -- Fk to std_students.id
+  `class_id` INT UNSIGNED NOT NULL,              -- Fk to sch_classes.id
+  `section_id` INT UNSIGNED NOT NULL,            -- Fk to sch_sections.id
   `template_id` INT UNSIGNED NOT NULL,           -- Fk to hpc_templates.id
-
-  `prepared_by` INT UNSIGNED NULL,    -- Fk to staff.id
-  `report_date` DATE NOT NULL,          -- Report Generation Date
-  `status` ENUM('draft','final','archived') DEFAULT 'draft',
+  `prepared_by` INT UNSIGNED NULL,               -- Fk to staff.id
+  `report_date` DATE NOT NULL,                   -- Report Generation Date
+  `status` ENUM('Draft','Final','Published','Archived') DEFAULT 'Draft',
   `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `deleted_at` TIMESTAMP NULL DEFAULT NULL,
-  CONSTRAINT `fk_reports_student` FOREIGN KEY (`student_id`) REFERENCES `students`(`id`),
-  CONSTRAINT `fk_reports_template` FOREIGN KEY (`template_id`) REFERENCES `hpc_templates`(`id`),
-  CONSTRAINT `fk_reports_session` FOREIGN KEY (`session_id`) REFERENCES `sch_setting`(`id`),
+  UNIQUE KEY `ux_reports_student_session_term` (`academic_session_id`,`term_id`,`student_id`),
+  CONSTRAINT `fk_reports_session` FOREIGN KEY (`academic_session_id`) REFERENCES `std_student_academic_sessions`(`id`),
   CONSTRAINT `fk_reports_term` FOREIGN KEY (`term_id`) REFERENCES `cbse_terms`(`id`),
-  UNIQUE KEY `ux_reports_student_session_term` (`student_id`,`session_id`,`term_id`),
+  CONSTRAINT `fk_reports_student` FOREIGN KEY (`student_id`) REFERENCES `std_students`(`id`),
+  CONSTRAINT `fk_reports_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes`(`id`),
+  CONSTRAINT `fk_reports_section` FOREIGN KEY (`section_id`) REFERENCES `sch_sections`(`id`),
+  CONSTRAINT `fk_reports_template` FOREIGN KEY (`template_id`) REFERENCES `hpc_templates`(`id`),
+  CONSTRAINT `fk_reports_preparedBy` FOREIGN KEY (`prepared_by`) REFERENCES `staff`(`id`),
   KEY `idx_reports_template` (`template_id`),
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `hpc_report_items` (
   `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
-  `report_id` INT UNSIGNED NOT NULL,
-  `rubric_id` INT UNSIGNED NOT NULL,
-  `rubric_level_id` INT UNSIGNED NULL,
-  `in_numeric_value` DECIMAL(10,3) NULL,  -- to capture numeric type value
-  `in_text_value` VARCHAR(255) NULL,              -- to capture text type
-  `in_boolean_value` TINYINT(1) NULL,     -- to capture boolean type
-  `in_label` VARCHAR(100) NULL,     -- to capture categorical Value (descriptor & grade)
-  `in_image_path` VARCHAR(255) NULL,
-  `in_table` JSON NULL,
-  `in_remark` TEXT NULL,
-  `out_numeric_value` DECIMAL(10,3) NULL,  -- to capture numeric type value
-  `out_text_value` VARCHAR(255) NULL,              -- to capture text type
-  `out_boolean_value` TINYINT(1) NULL,     -- to capture boolean type
-  `out_label` VARCHAR(100) NULL,     -- to capture categorical Value (descriptor & grade)
-  `out_image_path` VARCHAR(255) NULL,
-  `filename` VARCHAR(100) NULL,
-  `filepath` VARCHAR(255) NULL,
+  `report_id` INT UNSIGNED NOT NULL,        -- FK to hpc_reports.id
+  `rubric_id` INT UNSIGNED NOT NULL,        -- FK to hpc_template_rubrics.id
+  `rubric_item_id` INT UNSIGNED NULL,       -- FK to hpc_template_rubric_items.id
+  -- Input
+  `in_numeric_value` DECIMAL(10,3) NULL,    -- to capture numeric type value (Will Cover Numeric)
+  `in_text_value` VARCHAR(512) NULL,        -- to capture text type (Will Cover Text, KeyValue)
+  `in_boolean_value` TINYINT(1) NULL,       -- to capture boolean type (Will Cover Boolean)
+  `in_selected_value` VARCHAR(100) NULL,    -- to capture categorical Value (descriptor & grade)
+  `in_image_path` VARCHAR(255) NULL,        -- to capture image path (Will Cover Image)
+  `in_filename` VARCHAR(100) NULL,          -- to capture file name (Will Cover File)
+  `in_filepath` VARCHAR(255) NULL,          -- to capture file path (Will Cover File)
+  `in_json_value` JSON NULL,                -- to capture table data (Will Cover Table)
+  -- Output
+  `out_numeric_value` DECIMAL(10,3) NULL,     -- to capture numeric type value (Will Cover Numeric)
+  `out_text_value` VARCHAR(512) NULL,         -- to capture text type (Will Cover Text, KeyValue, Descriptor, Grade)
+  `out_boolean_value` TINYINT(1) NULL,        -- to capture boolean type (Will Cover Boolean)
+  `out_selected_value` VARCHAR(100) NULL,     -- to capture categorical Value (descriptor & grade)
+  `out_image_path` VARCHAR(255) NULL,         -- to capture image path (Will Cover Image)
+  `out_filename` VARCHAR(100) NULL,           -- to capture file name (Will Cover File)
+  `out_filepath` VARCHAR(255) NULL,           -- to capture file path (Will Cover File)
+  `out_json_value` JSON NULL,                 -- to capture table data (Will Cover Table)
+  `remark` TEXT NULL,                         -- to capture remark (Will Cover Remark)
   `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `deleted_at` TIMESTAMP NULL DEFAULT NULL,
@@ -241,6 +262,7 @@ CREATE TABLE IF NOT EXISTS `hpc_report_table` (
   CONSTRAINT `fk_reportTable_reportId` FOREIGN KEY (`report_id`) REFERENCES `hpc_reports`(`id`),
   CONSTRAINT `fk_reportTable_sectionId` FOREIGN KEY (`section_id`) REFERENCES `hpc_template_sections`(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 
 SET FOREIGN_KEY_CHECKS = 1;
 
