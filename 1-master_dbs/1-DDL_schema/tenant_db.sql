@@ -300,6 +300,10 @@
     `name` varchar(150) NOT NULL,
     `udise_code` varchar(30) DEFAULT NULL,      -- U-DISE Code of the School
     `affiliation_no` varchar(60) DEFAULT NULL,  -- Affiliation Number of the School
+    `crc_code` varchar(30) DEFAULT NULL,        -- CRC Code of the School
+    `brc_code` varchar(30) DEFAULT NULL,        -- BRC Code of the School
+    `instruction_language` varchar(20) DEFAULT NULL,  -- FK to sys_dropdown_table.id
+    `rural_urban` ENUM('RURAL','URBAN') DEFAULT 'URBAN',     -- Rural/Urban of the School
     `email` varchar(100) DEFAULT NULL,
     `website_url` varchar(150) DEFAULT NULL,
     `address_1` varchar(200) DEFAULT NULL,

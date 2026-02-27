@@ -137,14 +137,14 @@ CREATE TABLE IF NOT EXISTS `sys_users` (
 
 /* Optional triggers to prevent deleting/demoting super admin (you already used triggers for sessions) */
 DELIMITER $$
-CREATE TRIGGER trg_users_prevent_delete_super BEFORE DELETE ON users
+CREATE TRIGGER `trg_users_prevent_delete_super` BEFORE DELETE ON users
   FOR EACH ROW
   BEGIN
     IF OLD.is_super_admin = 1 THEN
       SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Super Admin cannot be deleted';
     END IF;
   END$$
-CREATE TRIGGER trg_users_prevent_update_super BEFORE UPDATE ON users
+CREATE TRIGGER `trg_users_prevent_update_super` BEFORE UPDATE ON users
   FOR EACH ROW
   BEGIN
     IF OLD.is_super_admin = 1 AND NEW.is_super_admin = 0 THEN
@@ -165,7 +165,7 @@ CREATE TABLE IF NOT EXISTS `sys_settings` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_settings_key` (`key`),
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
+-- Conditions:
   -- Ths Table will capture the detail of which Field of Which Table fo Which Databse Type, I can create a Dropdown in sys_dropdown_table of?
   -- This will help us to make sure we can only create create a Dropdown in sys_dropdown_table whcih has been configured by Developer.
   CREATE TABLE IF NOT EXISTS `sys_dropdown_needs` (
@@ -221,7 +221,7 @@ CREATE TABLE IF NOT EXISTS `sys_dropdown_table` (
   UNIQUE KEY `uq_dropdownTable_key_ordinal` (`key`,`ordinal`),
   UNIQUE KEY `uq_dropdownTable_key_value` (`key`,`value`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-  -- conditions:
+-- conditions:
   -- 1. When we go to create a New Dropdown, 
   --    1.1 PG_USER (PG-Admin/PG-Support) will get 2 option to select -
   --        Option 1 - Dropdown creation by DB details.
@@ -317,83 +317,91 @@ CREATE TABLE IF NOT EXISTS `sys_activity_logs` (
 -- Tenant Creation
 -- ------------------------------------
 CREATE TABLE IF NOT EXISTS `prm_tenant_groups` (
-  id INT unsigned NOT NULL AUTO_INCREMENT,
-  code VARCHAR(20) NOT NULL,
-  short_name varchar(50) NOT NULL,
-  name varchar(150) NOT NULL,
-  address_1 varchar(200) DEFAULT NULL,
-  address_2 varchar(200) DEFAULT NULL,
-  city_id INT unsigned NOT NULL,
-  pincode varchar(10) DEFAULT NULL,
-  website_url varchar(150) DEFAULT NULL,
-  email varchar(100) DEFAULT NULL,
-  is_active tinyint(1) NOT NULL DEFAULT 1,
-  deleted_at timestamp NULL DEFAULT NULL,
-  created_at timestamp NULL DEFAULT NULL,
-  updated_at timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (id),
-  UNIQUE KEY uq_tenantGroups_shortName (short_name),
-  CONSTRAINT fk_tenantGroups_cityId FOREIGN KEY (city_id) REFERENCES glb_cities (id) ON DELETE RESTRICT
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
+  `code` VARCHAR(20) NOT NULL,
+  `short_name` varchar(50) NOT NULL,
+  `name` varchar(150) NOT NULL,
+  `address_1` varchar(200) DEFAULT NULL,
+  `address_2` varchar(200) DEFAULT NULL,
+  `city_id` INT unsigned NOT NULL,
+  `pincode` varchar(10) DEFAULT NULL,
+  `website_url` varchar(150) DEFAULT NULL,
+  `email` varchar(100) DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_tenantGroups_shortName` (`short_name`),
+  CONSTRAINT `fk_tenantGroups_cityId` FOREIGN KEY (`city_id`) REFERENCES glb_cities (`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `prm_tenant` (
-  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  tenant_group_id INT unsigned NOT NULL,
-  code VARCHAR(20) NOT NULL,
-  short_name varchar(50) NOT NULL,
-  name varchar(150) NOT NULL,
-  udise_code varchar(30) DEFAULT NULL,
-  affiliation_no varchar(60) DEFAULT NULL,
-  email varchar(100) DEFAULT NULL,
-  website_url varchar(150) DEFAULT NULL,
-  address_1 varchar(200) DEFAULT NULL,
-  address_2 varchar(200) DEFAULT NULL,
-  area varchar(100) DEFAULT NULL,
-  city_id INT unsigned NOT NULL,
-  pincode varchar(10) DEFAULT NULL,
-  phone_1 varchar(20) DEFAULT NULL,
-  phone_2 varchar(20) DEFAULT NULL,
-  whatsapp_number varchar(20) DEFAULT NULL,
-  longitude decimal(10,7) DEFAULT NULL,
-  latitude decimal(10,7) DEFAULT NULL,
-  locale varchar(16) DEFAULT 'en_IN',
-  currency varchar(8) DEFAULT 'INR',
-  established_date date DEFAULT NULL,
-  is_active tinyint(1) NOT NULL DEFAULT 1,
-  created_at timestamp NULL DEFAULT NULL,
-  updated_at timestamp NULL DEFAULT NULL,
-  deleted_at timestamp NULL DEFAULT NULL,
-  UNIQUE KEY uq_org (org_id),
-  CONSTRAINT fk_tenantGroups_cityId FOREIGN KEY (city_id) REFERENCES glb_cities (id) ON DELETE RESTRICT
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
+  `tenant_group_id` INT unsigned NOT NULL,
+  `code` VARCHAR(20) NOT NULL,
+  `short_name` varchar(50) NOT NULL,
+  `name` varchar(150) NOT NULL,
+  `udise_code` varchar(30) DEFAULT NULL,
+  `affiliation_no` varchar(60) DEFAULT NULL,
+  `crc_code` varchar(30) DEFAULT NULL,        -- CRC Code of the School
+  `brc_code` varchar(30) DEFAULT NULL,        -- BRC Code of the School
+  `instruction_language` varchar(20) DEFAULT NULL,  -- FK to sys_dropdown_table.id
+  `rural_urban` ENUM('RURAL','URBAN') DEFAULT 'URBAN',     -- Rural/Urban of the School
+  `email` varchar(100) DEFAULT NULL,
+  `website_url` varchar(150) DEFAULT NULL,
+  `address_1` varchar(200) DEFAULT NULL,
+  `address_2` varchar(200) DEFAULT NULL,
+  `area` varchar(100) DEFAULT NULL,
+  `city_id` INT unsigned NOT NULL,
+  `pincode` varchar(10) DEFAULT NULL,
+  `phone_1` varchar(20) DEFAULT NULL,
+  `phone_2` varchar(20) DEFAULT NULL,
+  `whatsapp_number` varchar(20) DEFAULT NULL,
+  `longitude` decimal(10,7) DEFAULT NULL,
+  `latitude` decimal(10,7) DEFAULT NULL,
+  `locale` varchar(16) DEFAULT 'en_IN',
+  `currency` varchar(8) DEFAULT 'INR',
+  `established_date` date DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_tenant_code` (`code`),
+  CONSTRAINT `fk_tenant_tenantGroupId` FOREIGN KEY (`tenant_group_id`) REFERENCES prm_tenant_groups (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `fk_tenant_cityId` FOREIGN KEY (`city_id`) REFERENCES glb_cities (`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `prm_tenant_domains` (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  tenant_id INT NOT NULL,
-  domain VARCHAR(255) NOT NULL,
-  db_name VARCHAR(100) NOT NULL,
-  db_host VARCHAR(200) NOT NULL,
-  db_port VARCHAR(10) NOT NULL DEFAULT '3306',
-  db_username VARCHAR(100) NOT NULL,
-  db_password VARCHAR(255) NOT NULL,
-  is_active TINYINT(1) DEFAULT 1,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-  updated_at timestamp NULL DEFAULT NULL,
-  deleted_at timestamp NULL DEFAULT NULL,
-  CONSTRAINT fk_tenantDomains_tenantId FOREIGN KEY (tenant_id) REFERENCES prm_tenant (id) ON DELETE RESTRICT
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
+  `tenant_id` INT NOT NULL,
+  `domain` VARCHAR(255) NOT NULL,
+  `db_name` VARCHAR(100) NOT NULL,
+  `db_host` VARCHAR(200) NOT NULL,
+  `db_port` VARCHAR(10) NOT NULL DEFAULT '3306',
+  `db_username` VARCHAR(100) NOT NULL,
+  `db_password` VARCHAR(255) NOT NULL,
+  `is_active` TINYINT(1) DEFAULT 1,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  CONSTRAINT `fk_tenantDomains_tenantId` FOREIGN KEY (`tenant_id`) REFERENCES prm_tenant (`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 -- Plan & Module
 -- ------------------------------------
 CREATE TABLE IF NOT EXISTS `prm_billing_cycles` (
-  `id` SMALLINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `id` SMALLINT unsigned NOT NULL AUTO_INCREMENT,
   `short_name` VARCHAR(50) NOT NULL,  -- 'MONTHLY','QUARTERLY','YEARLY','ONE_TIME'
   `name` VARCHAR(50) NOT NULL,
-  `months_count` TINYINT UNSIGNED NOT NULL,
+  `months_count` TINYINT unsigned NOT NULL,
   `description` VARCHAR(255) DEFAULT NULL,
   `is_recurring` TINYINT(1) NOT NULL DEFAULT 1,
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+  PRIMARY KEY (`id`),
   UNIQUE KEY `uq_billingCycles_code` (`short_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
