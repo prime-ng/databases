@@ -21,5 +21,7 @@ Key - `section_of_a_class_has_home_room` Value - True/False (Boolean)
     (This key will be used to define whether School has a Room Assigned to Every Section of a Class and Teacher will change Rooms according to the Class they need to teach)
 Key - `teacher_has_home_room` Value - True/False (Boolean)
     (This key will be used to define whether School has a Room Assigned to Every Teacher and Student will change the Room according to the Subject Teacher)
+Key - `library_media_storage_folder` Value - "" (String)
+    (This key will be used to define the folder path where library media files will be stored)
     
 
