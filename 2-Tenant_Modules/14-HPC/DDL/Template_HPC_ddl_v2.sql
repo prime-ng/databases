@@ -270,7 +270,7 @@ SET FOREIGN_KEY_CHECKS = 1;
 
 
 
-
+-- -------------------------------------------------------------------------
 -- Verification Queries
 
 -- Verify template structure

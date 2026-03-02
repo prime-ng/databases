@@ -167,7 +167,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- -------------------------------------------------
 	-- 1.1 Shift (Enhanced with time validation)
     -- Here we are setting what all Shifts will be used for the Timetable Module 'MORNING', 'TODLER', 'AFTERNOON', 'EVENING'
-	CREATE TABLE IF NOT EXISTS `tt_shift` (
+	CREATE TABLE IF NOT EXISTS `tt_shifts` (
     `id` TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `code` VARCHAR(20) NOT NULL,
     `name` VARCHAR(100) NOT NULL,
@@ -188,7 +188,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 	-- 1.2 Day Type (Enhanced with metadata)
-	CREATE TABLE IF NOT EXISTS `tt_day_type` (
+	CREATE TABLE IF NOT EXISTS `tt_day_types` (
     `id` TINYINT UNSIGNED NOT NULL AUTO_INCREMENT, -- Modified on 20Feb
     `code` VARCHAR(20) NOT NULL,
     `name` VARCHAR(100) NOT NULL,
@@ -208,7 +208,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 	-- 1.3 Period Type (Enhanced with workload calculation)
-	CREATE TABLE IF NOT EXISTS `tt_period_type` (
+	CREATE TABLE IF NOT EXISTS `tt_period_types` (
     `id` TINYINT UNSIGNED NOT NULL AUTO_INCREMENT, -- Modified on 20Feb
     `code` CHAR(2) NOT NULL,
     `name` VARCHAR(50) NOT NULL,
@@ -235,7 +235,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 	-- 1.4 Teacher Assignment Role (Enhanced)
-	CREATE TABLE IF NOT EXISTS `tt_teacher_assignment_role` (
+	CREATE TABLE IF NOT EXISTS `tt_teacher_assignment_roles` (
     `id` TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `code` VARCHAR(30) NOT NULL,
     `name` VARCHAR(100) NOT NULL,
@@ -297,11 +297,11 @@ SET FOREIGN_KEY_CHECKS = 0;
     INDEX `idx_workday_session` (`academic_session_id`),
     INDEX `idx_workday_daytype` (`day_type1_id`, `day_type2_id`, `day_type3_id`, `day_type4_id`),
     CONSTRAINT `fk_workday_session` FOREIGN KEY (`academic_session_id`) REFERENCES `sch_org_academic_sessions_jnt`(`id`),
-    CONSTRAINT `fk_workday_daytype1` FOREIGN KEY (`day_type1_id`) REFERENCES `tt_day_type` (`id`),
-    CONSTRAINT `fk_workday_daytype2` FOREIGN KEY (`day_type2_id`) REFERENCES `tt_day_type` (`id`),
-    CONSTRAINT `fk_workday_daytype3` FOREIGN KEY (`day_type3_id`) REFERENCES `tt_day_type` (`id`),
-    CONSTRAINT `fk_workday_daytype4` FOREIGN KEY (`day_type4_id`) REFERENCES `tt_day_type` (`id`),
-    CONSTRAINT `fk_workday_period_set` FOREIGN KEY (`period_set_id`) REFERENCES `tt_period_set` (`id`)
+    CONSTRAINT `fk_workday_daytype1` FOREIGN KEY (`day_type1_id`) REFERENCES `tt_day_types` (`id`),
+    CONSTRAINT `fk_workday_daytype2` FOREIGN KEY (`day_type2_id`) REFERENCES `tt_day_types` (`id`),
+    CONSTRAINT `fk_workday_daytype3` FOREIGN KEY (`day_type3_id`) REFERENCES `tt_day_types` (`id`),
+    CONSTRAINT `fk_workday_daytype4` FOREIGN KEY (`day_type4_id`) REFERENCES `tt_day_types` (`id`),
+    CONSTRAINT `fk_workday_period_set` FOREIGN KEY (`period_set_id`) REFERENCES `tt_period_sets` (`id`)
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 	-- 1.7 Class Working Day (Enhanced)
@@ -326,11 +326,11 @@ SET FOREIGN_KEY_CHECKS = 0;
     UNIQUE KEY `uq_class_working_day` (`class_id`, `section_id`, `date`),
     INDEX `idx_class_working_day_working` (`working_day_id`),
     CONSTRAINT `fk_class_working_day_working` FOREIGN KEY (`working_day_id`) REFERENCES `tt_working_day` (`id`),
-    CONSTRAINT `fk_class_working_day_period_set` FOREIGN KEY (`period_set_id`) REFERENCES `tt_period_set` (`id`)
+    CONSTRAINT `fk_class_working_day_period_set` FOREIGN KEY (`period_set_id`) REFERENCES `tt_period_sets` (`id`)
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 	-- 1.8 Period Set (Enhanced)
-	CREATE TABLE IF NOT EXISTS `tt_period_set` (
+	CREATE TABLE IF NOT EXISTS `tt_period_sets` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `code` VARCHAR(30) NOT NULL,
     `name` VARCHAR(100) NOT NULL,
@@ -377,13 +377,13 @@ SET FOREIGN_KEY_CHECKS = 0;
     UNIQUE KEY `uq_psp_set_ord` (`period_set_id`, `period_ord`),
     UNIQUE KEY `uq_psp_set_code` (`period_set_id`, `code`),
     INDEX `idx_psp_type` (`period_type_id`),
-    CONSTRAINT `fk_psp_period_set` FOREIGN KEY (`period_set_id`) REFERENCES `tt_period_set` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_psp_period_type` FOREIGN KEY (`period_type_id`) REFERENCES `tt_period_type` (`id`),
+    CONSTRAINT `fk_psp_period_set` FOREIGN KEY (`period_set_id`) REFERENCES `tt_period_sets` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_psp_period_type` FOREIGN KEY (`period_type_id`) REFERENCES `tt_period_types` (`id`),
     CONSTRAINT `chk_psp_time` CHECK (`end_time` > `start_time`)
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 	-- 1.10 Timetable Type (Enhanced)
-	CREATE TABLE IF NOT EXISTS `tt_timetable_type` (
+	CREATE TABLE IF NOT EXISTS `tt_timetable_types` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `code` VARCHAR(30) NOT NULL,
     `name` VARCHAR(100) NOT NULL,
@@ -407,7 +407,7 @@ SET FOREIGN_KEY_CHECKS = 0;
     UNIQUE KEY `uq_tttype_code` (`code`),
     INDEX `idx_tttype_shift` (`shift_id`),
     INDEX `idx_tttype_dates` (`effective_from_date`, `effective_to_date`),
-    CONSTRAINT `fk_tttype_shift` FOREIGN KEY (`shift_id`) REFERENCES `tt_shift` (`id`),
+    CONSTRAINT `fk_tttype_shift` FOREIGN KEY (`shift_id`) REFERENCES `tt_shifts` (`id`),
     CONSTRAINT `chk_tttype_time` CHECK (`school_end_time` > `school_start_time` OR (`school_start_time` IS NULL AND `school_end_time` IS NULL)),
     CONSTRAINT `chk_tttype_dates` CHECK (`effective_from_date` <= `effective_to_date` OR (`effective_from_date` IS NULL AND `effective_to_date` IS NULL))
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -439,10 +439,10 @@ SET FOREIGN_KEY_CHECKS = 0;
     INDEX `idx_cttj_timetable` (`timetable_type_id`),
     INDEX `idx_cttj_period_set` (`period_set_id`),
     CONSTRAINT `fk_cttj_term` FOREIGN KEY (`academic_term_id`) REFERENCES `sch_academic_term` (`id`),
-    CONSTRAINT `fk_cttj_timetable` FOREIGN KEY (`timetable_type_id`) REFERENCES `tt_timetable_type` (`id`),
+    CONSTRAINT `fk_cttj_timetable` FOREIGN KEY (`timetable_type_id`) REFERENCES `tt_timetable_types` (`id`),
     CONSTRAINT `fk_cttj_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`),
     CONSTRAINT `fk_cttj_section` FOREIGN KEY (`section_id`) REFERENCES `sch_sections` (`id`),
-    CONSTRAINT `fk_cttj_period_set` FOREIGN KEY (`period_set_id`) REFERENCES `tt_period_set` (`id`),
+    CONSTRAINT `fk_cttj_period_set` FOREIGN KEY (`period_set_id`) REFERENCES `tt_period_sets` (`id`),
     CONSTRAINT `chk_cttj_dates` CHECK (`effective_from` < `effective_to` OR (`effective_from` IS NULL AND `effective_to` IS NULL)),
     CONSTRAINT `chk_cttj_apply_to_all` CHECK ((`section_id` IS NULL AND `applies_to_all_sections` = 1) OR (`section_id` IS NOT NULL))
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -453,7 +453,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- -------------------------------------------------
 
 	-- 2.1 Slot Requirement (Enhanced with validation)
-	CREATE TABLE IF NOT EXISTS `tt_slot_requirement` (
+	CREATE TABLE IF NOT EXISTS `tt_slot_requirements` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `academic_term_id` INT UNSIGNED NOT NULL,
     `timetable_type_id` INT UNSIGNED NOT NULL,
@@ -474,12 +474,12 @@ SET FOREIGN_KEY_CHECKS = 0;
     UNIQUE KEY `uq_slot_requirement` (`academic_term_id`, `timetable_type_id`, `class_id`, `section_id`),
     INDEX `idx_slot_requirement_class` (`class_id`, `section_id`),
     INDEX `idx_slot_requirement_activity` (`activity_id`),
-    CONSTRAINT `fk_slot_requirement_academic_term` FOREIGN KEY (`academic_term_id`) REFERENCES `sch_academic_term` (`id`),
-    CONSTRAINT `fk_slot_requirement_timetable_type` FOREIGN KEY (`timetable_type_id`) REFERENCES `tt_timetable_type` (`id`),
-    CONSTRAINT `fk_slot_requirement_class_timetable` FOREIGN KEY (`class_timetable_type_id`) REFERENCES `tt_class_timetable_type_jnt` (`id`),
-    CONSTRAINT `fk_slot_requirement_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`),
-    CONSTRAINT `fk_slot_requirement_section` FOREIGN KEY (`section_id`) REFERENCES `sch_sections` (`id`),
-    CONSTRAINT `fk_slot_requirement_room` FOREIGN KEY (`class_house_room_id`) REFERENCES `sch_rooms` (`id`),
+    CONSTRAINT `fk_slot_requirements_academic_term` FOREIGN KEY (`academic_term_id`) REFERENCES `sch_academic_term` (`id`),
+    CONSTRAINT `fk_slot_requirements_timetable_type` FOREIGN KEY (`timetable_type_id`) REFERENCES `tt_timetable_types` (`id`),
+    CONSTRAINT `fk_slot_requirements_class_timetable` FOREIGN KEY (`class_timetable_type_id`) REFERENCES `tt_class_timetable_type_jnt` (`id`),
+    CONSTRAINT `fk_slot_requirements_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`),
+    CONSTRAINT `fk_slot_requirements_section` FOREIGN KEY (`section_id`) REFERENCES `sch_sections` (`id`),
+    CONSTRAINT `fk_slot_requirements_room` FOREIGN KEY (`class_house_room_id`) REFERENCES `sch_rooms` (`id`),
     CONSTRAINT `chk_slot_requirement_counts` CHECK (`weekly_total_slots` >= `weekly_teaching_slots` + `weekly_exam_slots`)
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -546,7 +546,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 	-- 2.4 Requirement Consolidation (Enhanced with all constraints)
-	CREATE TABLE IF NOT EXISTS `tt_requirement_consolidation` (
+	CREATE TABLE IF NOT EXISTS `tt_requirement_consolidations` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `uuid` BINARY(16) NOT NULL, -- Added on 20Feb
     `academic_term_id` INT UNSIGNED NOT NULL,
@@ -607,15 +607,15 @@ SET FOREIGN_KEY_CHECKS = 0;
     INDEX `idx_requirement_consolidation_room_type` (`required_room_type_id`),
     INDEX `idx_requirement_consolidation_room` (`required_room_id`),
     INDEX `idx_requirement_consolidation_priority` (`priority_score`, `difficulty_score`),
-    CONSTRAINT `fk_requirement_consolidation_academic_term` FOREIGN KEY (`academic_term_id`) REFERENCES `sch_academic_term` (`id`),
-    CONSTRAINT `fk_requirement_consolidation_timetable_type` FOREIGN KEY (`timetable_type_id`) REFERENCES `tt_timetable_type` (`id`),
-    CONSTRAINT `fk_requirement_consolidation_group` FOREIGN KEY (`class_requirement_group_id`) REFERENCES `tt_class_requirement_groups` (`id`) ON DELETE SET NULL,
-    CONSTRAINT `fk_requirement_consolidation_subgroup` FOREIGN KEY (`class_requirement_subgroup_id`) REFERENCES `tt_class_requirement_subgroups` (`id`) ON DELETE SET NULL,
-    CONSTRAINT `fk_requirement_consolidation_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`),
-    CONSTRAINT `fk_requirement_consolidation_section` FOREIGN KEY (`section_id`) REFERENCES `sch_sections` (`id`),
-    CONSTRAINT `fk_requirement_consolidation_subject_study` FOREIGN KEY (`subject_study_format_id`) REFERENCES `sch_subject_study_format_jnt` (`id`),
-    CONSTRAINT `fk_requirement_consolidation_room_type` FOREIGN KEY (`required_room_type_id`) REFERENCES `sch_rooms_type` (`id`),
-    CONSTRAINT `fk_requirement_consolidation_room` FOREIGN KEY (`required_room_id`) REFERENCES `sch_rooms` (`id`),
+    CONSTRAINT `fk_requirement_consolidations_academic_term` FOREIGN KEY (`academic_term_id`) REFERENCES `sch_academic_term` (`id`),
+    CONSTRAINT `fk_requirement_consolidations_timetable_type` FOREIGN KEY (`timetable_type_id`) REFERENCES `tt_timetable_types` (`id`),
+    CONSTRAINT `fk_requirement_consolidations_group` FOREIGN KEY (`class_requirement_group_id`) REFERENCES `tt_class_requirement_groups` (`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_requirement_consolidations_subgroup` FOREIGN KEY (`class_requirement_subgroup_id`) REFERENCES `tt_class_requirement_subgroups` (`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_requirement_consolidations_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`),
+    CONSTRAINT `fk_requirement_consolidations_section` FOREIGN KEY (`section_id`) REFERENCES `sch_sections` (`id`),
+    CONSTRAINT `fk_requirement_consolidations_subject_study` FOREIGN KEY (`subject_study_format_id`) REFERENCES `sch_subject_study_format_jnt` (`id`),
+    CONSTRAINT `fk_requirement_consolidations_room_type` FOREIGN KEY (`required_room_type_id`) REFERENCES `sch_rooms_type` (`id`),
+    CONSTRAINT `fk_requirement_consolidations_room` FOREIGN KEY (`required_room_id`) REFERENCES `sch_rooms` (`id`),
     CONSTRAINT `chk_requirement_consolidation_target` CHECK (
         (`class_requirement_group_id` IS NOT NULL AND `class_requirement_subgroup_id` IS NULL) OR
         (`class_requirement_group_id` IS NULL AND `class_requirement_subgroup_id` IS NOT NULL)
@@ -629,7 +629,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- -------------------------------------------------
 
 	-- 3.1 Constraint Category Master (System-defined)
-	CREATE TABLE IF NOT EXISTS `tt_constraint_category` (
+	CREATE TABLE IF NOT EXISTS `tt_constraint_categories` (
 		`id` TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
 		`code` VARCHAR(30) NOT NULL,                    -- e.g., 'TEACHER', 'CLASS', 'ACTIVITY', 'ROOM', 'STUDENT', 'GLOBAL'
 		`name` VARCHAR(100) NOT NULL,                    -- e.g., 'Teacher Constraints', 'Class Constraints'
@@ -645,7 +645,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 	COMMENT='Constraint categories (Teacher, Class, Activity, Room, etc.)';
 
 	-- 3.2 Constraint Scope Master (System-defined)
-	CREATE TABLE IF NOT EXISTS `tt_constraint_scope` (
+	CREATE TABLE IF NOT EXISTS `tt_constraint_scopes` (
 		`id` TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
 		`code` VARCHAR(30) NOT NULL,                    -- e.g., 'GLOBAL', 'INDIVIDUAL', 'GROUP', 'PAIR'
 		`name` VARCHAR(100) NOT NULL,                    -- e.g., 'Global', 'Individual', 'Group', 'Pair'
@@ -662,7 +662,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 	COMMENT='Constraint scopes (Global, Individual, Group, Pair)';
 
 	-- 3.3 Target Type Master (What can constraints be applied to)
-	CREATE TABLE IF NOT EXISTS `tt_constraint_target_type` (
+	CREATE TABLE IF NOT EXISTS `tt_constraint_target_types` (
 		`id` TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
 		`code` VARCHAR(30) NOT NULL,                    -- e.g., 'TEACHER', 'CLASS', 'SECTION', 'SUBJECT', 'ROOM', 'ACTIVITY'
 		`name` VARCHAR(100) NOT NULL,                    -- e.g., 'Teacher', 'Class', 'Section', 'Subject', 'Room', 'Activity'
@@ -676,7 +676,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 	COMMENT='Target types for constraints (Teacher, Class, Room, etc.)';
 
 	-- 3.4 Constraint Type Master (Core constraint definitions)
-	CREATE TABLE IF NOT EXISTS `tt_constraint_type` (
+	CREATE TABLE IF NOT EXISTS `tt_constraint_types` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `code` VARCHAR(60) NOT NULL, -- Added on 20Feb
     `name` VARCHAR(150) NOT NULL,
@@ -701,13 +701,13 @@ SET FOREIGN_KEY_CHECKS = 0;
 		INDEX `idx_constraint_type_category` (`category_id`),
 		INDEX `idx_constraint_type_scope` (`scope_id`),
 		INDEX `idx_constraint_type_level` (`constraint_level`),
-		CONSTRAINT `fk_constraint_type_category` FOREIGN KEY (`category_id`) REFERENCES `tt_constraint_category` (`id`),
-		CONSTRAINT `fk_constraint_type_scope` FOREIGN KEY (`scope_id`) REFERENCES `tt_constraint_scope` (`id`)
+		CONSTRAINT `fk_constraints_types_category` FOREIGN KEY (`category_id`) REFERENCES `tt_constraint_categories` (`id`),
+		CONSTRAINT `fk_constraints_types_scope` FOREIGN KEY (`scope_id`) REFERENCES `tt_constraint_scopes` (`id`)
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 	COMMENT='Master definition of all constraint types';
 
 	-- 3.5 Constraints (Instance-level constraints)
-	CREATE TABLE IF NOT EXISTS `tt_constraint` (
+	CREATE TABLE IF NOT EXISTS `tt_constraints` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `uuid` BINARY(16) NOT NULL, -- Added on 20Feb
     `constraint_type_id` INT UNSIGNED NOT NULL,
@@ -746,14 +746,14 @@ SET FOREIGN_KEY_CHECKS = 0;
 		INDEX `idx_constraint_target` (`target_type_id`, `target_id`),
 		INDEX `idx_constraint_dates` (`effective_from_date`, `effective_to_date`),
 		INDEX `idx_constraint_active` (`is_active`),
-		CONSTRAINT `fk_constraint_type` FOREIGN KEY (`constraint_type_id`) REFERENCES `tt_constraint_type` (`id`),
-		CONSTRAINT `fk_constraint_target_type` FOREIGN KEY (`target_type_id`) REFERENCES `tt_constraint_target_type` (`id`),
-		CONSTRAINT `fk_constraint_created_by` FOREIGN KEY (`created_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
+		CONSTRAINT `fk_constraints_types` FOREIGN KEY (`constraint_type_id`) REFERENCES `tt_constraint_types` (`id`),
+		CONSTRAINT `fk_constraints_target_type` FOREIGN KEY (`target_type_id`) REFERENCES `tt_constraint_target_types` (`id`),
+		CONSTRAINT `fk_constraints_created_by` FOREIGN KEY (`created_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 	COMMENT='Instance-level constraints for timetable generation';
 
 	-- 3.6 Constraint Group (For grouping related constraints)
-	CREATE TABLE IF NOT EXISTS `tt_constraint_group` (
+	CREATE TABLE IF NOT EXISTS `tt_constraint_groups` (
 		`id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
 		`name` VARCHAR(200) NOT NULL,
 		`description` VARCHAR(500) DEFAULT NULL,
@@ -770,7 +770,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 	COMMENT='Groups of related constraints (for mutex/concurrent rules)';
 
 	-- 3.7 Constraint Group Members
-	CREATE TABLE IF NOT EXISTS `tt_constraint_group_member` (
+	CREATE TABLE IF NOT EXISTS `tt_constraint_group_members` (
 		`id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
 		`constraint_group_id` INT UNSIGNED NOT NULL,
 		`constraint_id` INT UNSIGNED NOT NULL,
@@ -779,12 +779,12 @@ SET FOREIGN_KEY_CHECKS = 0;
 		`created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
 		PRIMARY KEY (`id`),
 		UNIQUE KEY `uq_constraint_group_member` (`constraint_group_id`, `constraint_id`),
-		CONSTRAINT `fk_constraint_group_member_group` FOREIGN KEY (`constraint_group_id`) REFERENCES `tt_constraint_group` (`id`) ON DELETE CASCADE,
-		CONSTRAINT `fk_constraint_group_member_constraint` FOREIGN KEY (`constraint_id`) REFERENCES `tt_constraint` (`id`) ON DELETE CASCADE
+		CONSTRAINT `fk_constraints_groups_members_group` FOREIGN KEY (`constraint_group_id`) REFERENCES `tt_constraint_groups` (`id`) ON DELETE CASCADE,
+		CONSTRAINT `fk_constraints_groups_members_constraint` FOREIGN KEY (`constraint_id`) REFERENCES `tt_constraints` (`id`) ON DELETE CASCADE
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 	-- 3.8 Teacher Unavailability (Specialized constraint for performance)
-	CREATE TABLE IF NOT EXISTS `tt_teacher_unavailable` (
+	CREATE TABLE IF NOT EXISTS `tt_teacher_unavailables` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `teacher_id` INT UNSIGNED NOT NULL,
     `constraint_id` INT UNSIGNED DEFAULT NULL,
@@ -804,12 +804,12 @@ SET FOREIGN_KEY_CHECKS = 0;
 		INDEX `idx_teacher_unavailable_teacher` (`teacher_id`),
 		INDEX `idx_teacher_unavailable_day_period` (`day_of_week`, `period_ord`),
 		INDEX `idx_teacher_unavailable_dates` (`start_date`, `end_date`),
-		CONSTRAINT `fk_teacher_unavailable_teacher` FOREIGN KEY (`teacher_id`) REFERENCES `sch_teachers` (`id`),
-		CONSTRAINT `fk_teacher_unavailable_constraint` FOREIGN KEY (`constraint_id`) REFERENCES `tt_constraint` (`id`) ON DELETE SET NULL
+		CONSTRAINT `fk_teacher_unavailables_teacher` FOREIGN KEY (`teacher_id`) REFERENCES `sch_teachers` (`id`),
+		CONSTRAINT `fk_teacher_unavailables_constraint` FOREIGN KEY (`constraint_id`) REFERENCES `tt_constraints` (`id`) ON DELETE SET NULL
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 	-- 3.9 Room Unavailability (Specialized constraint for performance)
-	CREATE TABLE IF NOT EXISTS `tt_room_unavailable` (
+	CREATE TABLE IF NOT EXISTS `tt_room_unavailables` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `room_id` INT UNSIGNED NOT NULL,
     `constraint_id` INT UNSIGNED DEFAULT NULL,
@@ -826,12 +826,12 @@ SET FOREIGN_KEY_CHECKS = 0;
 		PRIMARY KEY (`id`),
 		INDEX `idx_room_unavailable_room` (`room_id`),
 		INDEX `idx_room_unavailable_day_period` (`day_of_week`, `period_ord`),
-		CONSTRAINT `fk_room_unavailable_room` FOREIGN KEY (`room_id`) REFERENCES `sch_rooms` (`id`),
-		CONSTRAINT `fk_room_unavailable_constraint` FOREIGN KEY (`constraint_id`) REFERENCES `tt_constraint` (`id`) ON DELETE SET NULL
+		CONSTRAINT `fk_room_unavailables_room` FOREIGN KEY (`room_id`) REFERENCES `sch_rooms` (`id`),
+		CONSTRAINT `fk_room_unavailables_constraint` FOREIGN KEY (`constraint_id`) REFERENCES `tt_constraints` (`id`) ON DELETE SET NULL
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 	-- 3.10 Constraint Violation Log (During generation)
-	CREATE TABLE IF NOT EXISTS `tt_constraint_violation` (
+	CREATE TABLE IF NOT EXISTS `tt_constraint_violations` (
 		`id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
 		`timetable_id` INT UNSIGNED NOT NULL,
 		`generation_run_id` INT UNSIGNED DEFAULT NULL, -- Added on 20Feb
@@ -851,13 +851,13 @@ SET FOREIGN_KEY_CHECKS = 0;
 		INDEX `idx_violation_timetable` (`timetable_id`),
 		INDEX `idx_violation_constraint` (`constraint_id`),
 		INDEX `idx_violation_entity` (`affected_entity_type`, `affected_entity_id`),
-		CONSTRAINT `fk_violation_timetable` FOREIGN KEY (`timetable_id`) REFERENCES `tt_timetable` (`id`) ON DELETE CASCADE,
-		CONSTRAINT `fk_violation_constraint` FOREIGN KEY (`constraint_id`) REFERENCES `tt_constraint` (`id`)
+		CONSTRAINT `fk_violation_timetable` FOREIGN KEY (`timetable_id`) REFERENCES `tt_timetables` (`id`) ON DELETE CASCADE,
+		CONSTRAINT `fk_violation_constraint` FOREIGN KEY (`constraint_id`) REFERENCES `tt_constraints` (`id`)
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 	COMMENT='Tracks constraint violations during generation';
 
 	-- 3.11 Constraint Template (For reusability)
-	CREATE TABLE IF NOT EXISTS `tt_constraint_template` (
+	CREATE TABLE IF NOT EXISTS `tt_constraint_templates` (
 		`id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
 		`name` VARCHAR(200) NOT NULL,
 		`description` VARCHAR(500) DEFAULT NULL,
@@ -873,7 +873,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 		`deleted_at` TIMESTAMP NULL DEFAULT NULL,
 		PRIMARY KEY (`id`),
 		UNIQUE KEY `uq_constraint_template_name` (`name`),
-		CONSTRAINT `fk_constraint_template_type` FOREIGN KEY (`constraint_type_id`) REFERENCES `tt_constraint_type` (`id`)
+		CONSTRAINT `fk_constraints_template_type` FOREIGN KEY (`constraint_type_id`) REFERENCES `tt_constraint_types` (`id`)
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 	COMMENT='Templates for commonly used constraints';
 
@@ -883,7 +883,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- -------------------------------------------------
 
 	-- 4.1 Teacher Availability Master
-	CREATE TABLE IF NOT EXISTS `tt_teacher_availability` (
+	CREATE TABLE IF NOT EXISTS `tt_teacher_availabilities` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `requirement_consolidation_id` INT UNSIGNED NOT NULL,
     `class_id` INT UNSIGNED NOT NULL,
@@ -944,17 +944,17 @@ SET FOREIGN_KEY_CHECKS = 0;
     INDEX `idx_teacher_availability_teacher` (`teacher_profile_id`),
     INDEX `idx_teacher_availability_activity` (`activity_id`),
     INDEX `idx_teacher_availability_scores` (`min_availability_score`, `max_availability_score`),
-    CONSTRAINT `fk_teacher_availability_requirement` FOREIGN KEY (`requirement_consolidation_id`)  REFERENCES `tt_requirement_consolidation` (`id`),
-    CONSTRAINT `fk_teacher_availability_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`),
-    CONSTRAINT `fk_teacher_availability_section` FOREIGN KEY (`section_id`) REFERENCES `sch_sections` (`id`),
-    CONSTRAINT `fk_teacher_availability_subject_study` FOREIGN KEY (`subject_study_format_id`)  REFERENCES `sch_subject_study_format_jnt` (`id`),
-    CONSTRAINT `fk_teacher_availability_teacher_profile` FOREIGN KEY (`teacher_profile_id`)  REFERENCES `sch_teachers_profile` (`id`),
-    CONSTRAINT `fk_teacher_availability_activity` FOREIGN KEY (`activity_id`) REFERENCES `tt_activity` (`id`) ON DELETE SET NULL
+    CONSTRAINT `fk_teacher_availabilities_requirement` FOREIGN KEY (`requirement_consolidation_id`)  REFERENCES `tt_requirement_consolidations` (`id`),
+    CONSTRAINT `fk_teacher_availabilities_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`),
+    CONSTRAINT `fk_teacher_availabilities_section` FOREIGN KEY (`section_id`) REFERENCES `sch_sections` (`id`),
+    CONSTRAINT `fk_teacher_availabilities_subject_study` FOREIGN KEY (`subject_study_format_id`)  REFERENCES `sch_subject_study_format_jnt` (`id`),
+    CONSTRAINT `fk_teacher_availabilities_teacher_profile` FOREIGN KEY (`teacher_profile_id`)  REFERENCES `sch_teachers_profile` (`id`),
+    CONSTRAINT `fk_teacher_availabilities_activity` FOREIGN KEY (`activity_id`) REFERENCES `tt_activities` (`id`) ON DELETE SET NULL
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 	COMMENT='Teacher availability per requirement';
 
 	-- 4.2 Teacher Availability Detail (Period-level)
-	CREATE TABLE IF NOT EXISTS `tt_teacher_availability_detail` (
+	CREATE TABLE IF NOT EXISTS `tt_teacher_availability_details` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `teacher_availability_id` INT UNSIGNED NOT NULL,
     `teacher_profile_id` INT UNSIGNED NOT NULL,
@@ -974,17 +974,17 @@ SET FOREIGN_KEY_CHECKS = 0;
     UNIQUE KEY `uq_teacher_availability_detail` (`teacher_profile_id`, `day_number`, `period_number`),
     INDEX `idx_teacher_availability_detail_teacher` (`teacher_profile_id`),
     INDEX `idx_teacher_availability_detail_assigned` (`assigned_class_id`, `assigned_section_id`),    
-    CONSTRAINT `fk_teacher_availability_detail_master` FOREIGN KEY (`teacher_availability_id`)  REFERENCES `tt_teacher_availability` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_teacher_availability_detail_teacher` FOREIGN KEY (`teacher_profile_id`)  REFERENCES `sch_teachers_profile` (`id`),
-    CONSTRAINT `fk_teacher_availability_detail_class` FOREIGN KEY (`assigned_class_id`) REFERENCES `sch_classes` (`id`),
-    CONSTRAINT `fk_teacher_availability_detail_section` FOREIGN KEY (`assigned_section_id`) REFERENCES `sch_sections` (`id`),
-    CONSTRAINT `fk_teacher_availability_detail_subject` FOREIGN KEY (`assigned_subject_study_format_id`)  REFERENCES `sch_subject_study_format_jnt` (`id`),
-    CONSTRAINT `fk_teacher_availability_detail_activity` FOREIGN KEY (`assigned_activity_id`) REFERENCES `tt_activity` (`id`)
+    CONSTRAINT `fk_teacher_availabilities_details_master` FOREIGN KEY (`teacher_availability_id`)  REFERENCES `tt_teacher_availabilities` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_teacher_availabilities_details_teacher` FOREIGN KEY (`teacher_profile_id`)  REFERENCES `sch_teachers_profile` (`id`),
+    CONSTRAINT `fk_teacher_availabilities_details_class` FOREIGN KEY (`assigned_class_id`) REFERENCES `sch_classes` (`id`),
+    CONSTRAINT `fk_teacher_availabilities_details_section` FOREIGN KEY (`assigned_section_id`) REFERENCES `sch_sections` (`id`),
+    CONSTRAINT `fk_teacher_availabilities_details_subject` FOREIGN KEY (`assigned_subject_study_format_id`)  REFERENCES `sch_subject_study_format_jnt` (`id`),
+    CONSTRAINT `fk_teacher_availabilities_details_activity` FOREIGN KEY (`assigned_activity_id`) REFERENCES `tt_activities` (`id`)
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 	COMMENT='Period-level teacher availability';
 
 	-- 4.3 Room Availability Master
-	CREATE TABLE IF NOT EXISTS `tt_room_availability` (
+	CREATE TABLE IF NOT EXISTS `tt_room_availabilities` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `room_id` INT UNSIGNED NOT NULL,
     `room_type_id` INT UNSIGNED NOT NULL, -- Added on 20Feb
@@ -1016,16 +1016,16 @@ SET FOREIGN_KEY_CHECKS = 0;
     UNIQUE KEY `uq_room_availability` (`room_id`, `activity_id`),
     INDEX `idx_room_availability_type` (`room_type_id`),
     INDEX `idx_room_availability_house` (`house_room_class_id`, `house_room_section_id`),
-    CONSTRAINT `fk_room_availability_room` FOREIGN KEY (`room_id`) REFERENCES `sch_rooms` (`id`),
-    CONSTRAINT `fk_room_availability_room_type` FOREIGN KEY (`room_type_id`) REFERENCES `sch_rooms_type` (`id`),
-    CONSTRAINT `fk_room_availability_class` FOREIGN KEY (`house_room_class_id`) REFERENCES `sch_classes` (`id`),
-    CONSTRAINT `fk_room_availability_section` FOREIGN KEY (`house_room_section_id`) REFERENCES `sch_sections` (`id`),
-    CONSTRAINT `fk_room_availability_activity` FOREIGN KEY (`activity_id`) REFERENCES `tt_activity` (`id`) ON DELETE SET NULL
+    CONSTRAINT `fk_room_availabilities_room` FOREIGN KEY (`room_id`) REFERENCES `sch_rooms` (`id`),
+    CONSTRAINT `fk_room_availabilities_room_type` FOREIGN KEY (`room_type_id`) REFERENCES `sch_rooms_type` (`id`),
+    CONSTRAINT `fk_room_availabilities_class` FOREIGN KEY (`house_room_class_id`) REFERENCES `sch_classes` (`id`),
+    CONSTRAINT `fk_room_availabilities_section` FOREIGN KEY (`house_room_section_id`) REFERENCES `sch_sections` (`id`),
+    CONSTRAINT `fk_room_availabilities_activity` FOREIGN KEY (`activity_id`) REFERENCES `tt_activities` (`id`) ON DELETE SET NULL
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 	COMMENT='Room availability overview';
 
 	-- 4.4 Room Availability Detail (Period-level)
-	CREATE TABLE IF NOT EXISTS `tt_room_availability_detail` (
+	CREATE TABLE IF NOT EXISTS `tt_room_availability_details` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `room_availability_id` INT UNSIGNED NOT NULL,
     `room_id` INT UNSIGNED NOT NULL,
@@ -1046,13 +1046,13 @@ SET FOREIGN_KEY_CHECKS = 0;
     UNIQUE KEY `uq_room_availability_detail` (`room_id`, `day_number`, `period_number`),
     INDEX `idx_room_availability_detail_room` (`room_id`),
     INDEX `idx_room_availability_detail_assigned` (`assigned_class_id`, `assigned_section_id`),
-    CONSTRAINT `fk_room_availability_detail_master` FOREIGN KEY (`room_availability_id`)  REFERENCES `tt_room_availability` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_room_availability_detail_room` FOREIGN KEY (`room_id`) REFERENCES `sch_rooms` (`id`),
-    CONSTRAINT `fk_room_availability_detail_room_type` FOREIGN KEY (`room_type_id`) REFERENCES `sch_rooms_type` (`id`),
-    CONSTRAINT `fk_room_availability_detail_class` FOREIGN KEY (`assigned_class_id`) REFERENCES `sch_classes` (`id`),
-    CONSTRAINT `fk_room_availability_detail_section` FOREIGN KEY (`assigned_section_id`) REFERENCES `sch_sections` (`id`),
-    CONSTRAINT `fk_room_availability_detail_subject` FOREIGN KEY (`assigned_subject_study_format_id`)  REFERENCES `sch_subject_study_format_jnt` (`id`),
-    CONSTRAINT `fk_room_availability_detail_activity` FOREIGN KEY (`assigned_activity_id`) REFERENCES `tt_activity` (`id`)
+    CONSTRAINT `fk_room_availabilities_details_master` FOREIGN KEY (`room_availability_id`)  REFERENCES `tt_room_availabilities` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_room_availabilities_details_room` FOREIGN KEY (`room_id`) REFERENCES `sch_rooms` (`id`),
+    CONSTRAINT `fk_room_availabilities_details_room_type` FOREIGN KEY (`room_type_id`) REFERENCES `sch_rooms_type` (`id`),
+    CONSTRAINT `fk_room_availabilities_details_class` FOREIGN KEY (`assigned_class_id`) REFERENCES `sch_classes` (`id`),
+    CONSTRAINT `fk_room_availabilities_details_section` FOREIGN KEY (`assigned_section_id`) REFERENCES `sch_sections` (`id`),
+    CONSTRAINT `fk_room_availabilities_details_subject` FOREIGN KEY (`assigned_subject_study_format_id`)  REFERENCES `sch_subject_study_format_jnt` (`id`),
+    CONSTRAINT `fk_room_availabilities_details_activity` FOREIGN KEY (`assigned_activity_id`) REFERENCES `tt_activities` (`id`)
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 	COMMENT='Period-level room availability';
 
@@ -1062,7 +1062,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- -------------------------------------------------
 
 	-- 5.1 Priority Configuration
-	CREATE TABLE IF NOT EXISTS `tt_priority_config` (
+	CREATE TABLE IF NOT EXISTS `tt_priority_configs` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `requirement_consolidation_id` INT UNSIGNED NOT NULL,
     -- Scoring components
@@ -1091,12 +1091,12 @@ SET FOREIGN_KEY_CHECKS = 0;
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_priority_config_requirement` (`requirement_consolidation_id`),
     INDEX `idx_priority_config_final` (`final_priority`),
-    CONSTRAINT `fk_priority_config_requirement` FOREIGN KEY (`requirement_consolidation_id`) REFERENCES `tt_requirement_consolidation` (`id`) ON DELETE CASCADE
+    CONSTRAINT `fk_priority_config_requirement` FOREIGN KEY (`requirement_consolidation_id`) REFERENCES `tt_requirement_consolidations` (`id`) ON DELETE CASCADE
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 	COMMENT='Priority configuration for activities';
 
 	-- 5.2 Activity (Enhanced with comprehensive fields)
-	CREATE TABLE IF NOT EXISTS `tt_activity` (
+	CREATE TABLE IF NOT EXISTS `tt_activities` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `uuid` BINARY(16) NOT NULL, -- Added on 20Feb
     `code` VARCHAR(50) NOT NULL,
@@ -1175,16 +1175,16 @@ SET FOREIGN_KEY_CHECKS = 0;
     INDEX `idx_activity_subject` (`subject_study_format_id`),
     INDEX `idx_activity_priority` (`final_priority`, `difficulty_score`),
     INDEX `idx_activity_status` (`status`, `placement_complete`),
-    CONSTRAINT `fk_activity_academic_term` FOREIGN KEY (`academic_term_id`) REFERENCES `sch_academic_term` (`id`),
-    CONSTRAINT `fk_activity_timetable_type` FOREIGN KEY (`timetable_type_id`) REFERENCES `tt_timetable_type` (`id`),
-    CONSTRAINT `fk_activity_class_group` FOREIGN KEY (`class_requirement_group_id`)  REFERENCES `tt_class_requirement_groups` (`id`) ON DELETE SET NULL,
-    CONSTRAINT `fk_activity_subgroup` FOREIGN KEY (`class_requirement_subgroup_id`)  REFERENCES `tt_class_requirement_subgroups` (`id`) ON DELETE SET NULL,
-    CONSTRAINT `fk_activity_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`),
-    CONSTRAINT `fk_activity_section` FOREIGN KEY (`section_id`) REFERENCES `sch_sections` (`id`),
-    CONSTRAINT `fk_activity_subject_study` FOREIGN KEY (`subject_study_format_id`)  REFERENCES `sch_subject_study_format_jnt` (`id`),
-    CONSTRAINT `fk_activity_room_type` FOREIGN KEY (`required_room_type_id`) REFERENCES `sch_rooms_type` (`id`),
-    CONSTRAINT `fk_activity_room` FOREIGN KEY (`required_room_id`) REFERENCES `sch_rooms` (`id`),
-    CONSTRAINT `fk_activity_created_by` FOREIGN KEY (`created_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_activities_academic_term` FOREIGN KEY (`academic_term_id`) REFERENCES `sch_academic_term` (`id`),
+    CONSTRAINT `fk_activities_timetable_type` FOREIGN KEY (`timetable_type_id`) REFERENCES `tt_timetable_types` (`id`),
+    CONSTRAINT `fk_activities_class_group` FOREIGN KEY (`class_requirement_group_id`)  REFERENCES `tt_class_requirement_groups` (`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_activities_subgroup` FOREIGN KEY (`class_requirement_subgroup_id`)  REFERENCES `tt_class_requirement_subgroups` (`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_activities_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`),
+    CONSTRAINT `fk_activities_section` FOREIGN KEY (`section_id`) REFERENCES `sch_sections` (`id`),
+    CONSTRAINT `fk_activities_subject_study` FOREIGN KEY (`subject_study_format_id`)  REFERENCES `sch_subject_study_format_jnt` (`id`),
+    CONSTRAINT `fk_activities_room_type` FOREIGN KEY (`required_room_type_id`) REFERENCES `sch_rooms_type` (`id`),
+    CONSTRAINT `fk_activities_room` FOREIGN KEY (`required_room_id`) REFERENCES `sch_rooms` (`id`),
+    CONSTRAINT `fk_activities_created_by` FOREIGN KEY (`created_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL,
     CONSTRAINT `chk_activity_target` CHECK (
         (`class_requirement_group_id` IS NOT NULL AND `class_requirement_subgroup_id` IS NULL) OR
         (`class_requirement_group_id` IS NULL AND `class_requirement_subgroup_id` IS NOT NULL)
@@ -1193,7 +1193,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 	COMMENT='Main activities for timetable scheduling';
 
 	-- 5.3 Sub Activity (Enhanced)
-	CREATE TABLE IF NOT EXISTS `tt_sub_activity` (
+	CREATE TABLE IF NOT EXISTS `tt_sub_activities` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `parent_activity_id` INT UNSIGNED NOT NULL,
     `class_requirement_subgroup_id` INT UNSIGNED NOT NULL, -- Added on 20Feb
@@ -1217,16 +1217,16 @@ SET FOREIGN_KEY_CHECKS = 0;
     UNIQUE KEY `uq_sub_activity_parent_ord` (`parent_activity_id`, `ordinal`),
     INDEX `idx_sub_activity_parent` (`parent_activity_id`),
     INDEX `idx_sub_activity_class` (`class_id`, `section_id`),
-    CONSTRAINT `fk_sub_activity_parent` FOREIGN KEY (`parent_activity_id`) REFERENCES `tt_activity` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_sub_activity_subgroup` FOREIGN KEY (`class_requirement_subgroup_id`)  REFERENCES `tt_class_requirement_subgroups` (`id`),
-    CONSTRAINT `fk_sub_activity_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`),
-    CONSTRAINT `fk_sub_activity_section` FOREIGN KEY (`section_id`) REFERENCES `sch_sections` (`id`),
-    CONSTRAINT `fk_sub_activity_subject` FOREIGN KEY (`subject_study_format_id`)  REFERENCES `sch_subject_study_format_jnt` (`id`)
+    CONSTRAINT `fk_sub_activities_parent` FOREIGN KEY (`parent_activity_id`) REFERENCES `tt_activities` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_sub_activities_subgroup` FOREIGN KEY (`class_requirement_subgroup_id`)  REFERENCES `tt_class_requirement_subgroups` (`id`),
+    CONSTRAINT `fk_sub_activities_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`),
+    CONSTRAINT `fk_sub_activities_section` FOREIGN KEY (`section_id`) REFERENCES `sch_sections` (`id`),
+    CONSTRAINT `fk_sub_activities_subject` FOREIGN KEY (`subject_study_format_id`)  REFERENCES `sch_subject_study_format_jnt` (`id`)
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 	COMMENT='Sub-activities for split activities';
 
 	-- 5.4 Activity Teacher Mapping
-	CREATE TABLE IF NOT EXISTS `tt_activity_teacher` (
+	CREATE TABLE IF NOT EXISTS `tt_activity_teachers` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `activity_id` INT UNSIGNED NOT NULL,
     `teacher_id` INT UNSIGNED NOT NULL,
@@ -1243,9 +1243,9 @@ SET FOREIGN_KEY_CHECKS = 0;
     UNIQUE KEY `uq_activity_teacher` (`activity_id`, `teacher_id`),
     INDEX `idx_activity_teacher_teacher` (`teacher_id`),
     INDEX `idx_activity_teacher_status` (`allocation_status`),
-    CONSTRAINT `fk_activity_teacher_activity` FOREIGN KEY (`activity_id`) REFERENCES `tt_activity` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_activity_teacher_teacher` FOREIGN KEY (`teacher_id`) REFERENCES `sch_teachers` (`id`),
-    CONSTRAINT `fk_activity_teacher_role` FOREIGN KEY (`assignment_role_id`) REFERENCES `tt_teacher_assignment_role` (`id`)
+    CONSTRAINT `fk_activities_teachers_activity` FOREIGN KEY (`activity_id`) REFERENCES `tt_activities` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_activities_teachers_teacher` FOREIGN KEY (`teacher_id`) REFERENCES `sch_teachers` (`id`),
+    CONSTRAINT `fk_activities_teachers_role` FOREIGN KEY (`assignment_role_id`) REFERENCES `tt_teacher_assignment_roles` (`id`)
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 	COMMENT='Teacher assignments to activities';
 
@@ -1255,7 +1255,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- -------------------------------------------------
 
 	-- 6.1 Generation Queue
-	CREATE TABLE IF NOT EXISTS `tt_generation_queue` (
+	CREATE TABLE IF NOT EXISTS `tt_generation_queues` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `uuid` BINARY(16) NOT NULL,
     `timetable_id` INT UNSIGNED NOT NULL,
@@ -1275,13 +1275,13 @@ SET FOREIGN_KEY_CHECKS = 0;
     UNIQUE KEY `uq_generation_queue_uuid` (`uuid`),
     INDEX `idx_generation_queue_status` (`status`, `priority`),
     INDEX `idx_generation_queue_scheduled` (`scheduled_at`),
-    CONSTRAINT `fk_generation_queue_timetable` FOREIGN KEY (`timetable_id`) REFERENCES `tt_timetable` (`id`),
-    CONSTRAINT `fk_generation_queue_strategy` FOREIGN KEY (`generation_strategy_id`) REFERENCES `tt_generation_strategy` (`id`)
+    CONSTRAINT `fk_generation_queues_timetable` FOREIGN KEY (`timetable_id`) REFERENCES `tt_timetables` (`id`),
+    CONSTRAINT `fk_generation_queues_strategy` FOREIGN KEY (`generation_strategy_id`) REFERENCES `tt_generation_strategy` (`id`)
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 	COMMENT='Queue for asynchronous timetable generation';
 
 	-- 6.2 Timetable (Enhanced)
-	CREATE TABLE IF NOT EXISTS `tt_timetable` (
+	CREATE TABLE IF NOT EXISTS `tt_timetables` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `uuid` BINARY(16) NOT NULL,
     `code` VARCHAR(50) NOT NULL,
@@ -1336,19 +1336,19 @@ SET FOREIGN_KEY_CHECKS = 0;
     INDEX `idx_timetable_type` (`timetable_type_id`),
     INDEX `idx_timetable_status` (`status`, `validation_status`),
     INDEX `idx_timetable_dates` (`effective_from`, `effective_to`),
-    CONSTRAINT `fk_timetable_session` FOREIGN KEY (`academic_session_id`) REFERENCES `sch_org_academic_sessions_jnt` (`id`),
-    CONSTRAINT `fk_timetable_term` FOREIGN KEY (`academic_term_id`) REFERENCES `sch_academic_term` (`id`),
-    CONSTRAINT `fk_timetable_type` FOREIGN KEY (`timetable_type_id`) REFERENCES `tt_timetable_type` (`id`),
-    CONSTRAINT `fk_timetable_period_set` FOREIGN KEY (`period_set_id`) REFERENCES `tt_period_set` (`id`),
-    CONSTRAINT `fk_timetable_strategy` FOREIGN KEY (`generation_strategy_id`) REFERENCES `tt_generation_strategy` (`id`),
-    CONSTRAINT `fk_timetable_parent` FOREIGN KEY (`parent_timetable_id`) REFERENCES `tt_timetable` (`id`) ON DELETE SET NULL,
-    CONSTRAINT `fk_timetable_published_by` FOREIGN KEY (`published_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL,
-    CONSTRAINT `fk_timetable_created_by` FOREIGN KEY (`created_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
+    CONSTRAINT `fk_timetables_session` FOREIGN KEY (`academic_session_id`) REFERENCES `sch_org_academic_sessions_jnt` (`id`),
+    CONSTRAINT `fk_timetables_term` FOREIGN KEY (`academic_term_id`) REFERENCES `sch_academic_term` (`id`),
+    CONSTRAINT `fk_timetables_type` FOREIGN KEY (`timetable_type_id`) REFERENCES `tt_timetable_types` (`id`),
+    CONSTRAINT `fk_timetables_period_set` FOREIGN KEY (`period_set_id`) REFERENCES `tt_period_sets` (`id`),
+    CONSTRAINT `fk_timetables_strategy` FOREIGN KEY (`generation_strategy_id`) REFERENCES `tt_generation_strategy` (`id`),
+    CONSTRAINT `fk_timetables_parent` FOREIGN KEY (`parent_timetable_id`) REFERENCES `tt_timetables` (`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_timetables_published_by` FOREIGN KEY (`published_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_timetables_created_by` FOREIGN KEY (`created_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 	COMMENT='Main timetable records';
 
 	-- 6.3 Generation Run (Enhanced)
-	CREATE TABLE IF NOT EXISTS `tt_generation_run` (
+	CREATE TABLE IF NOT EXISTS `tt_generation_runs` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `uuid` BINARY(16) NOT NULL,
     `timetable_id` INT UNSIGNED NOT NULL,
@@ -1394,15 +1394,15 @@ SET FOREIGN_KEY_CHECKS = 0;
     UNIQUE KEY `uq_generation_run_tt_run` (`timetable_id`, `run_number`),
     INDEX `idx_generation_run_status` (`status`),
     INDEX `idx_generation_run_queue` (`queue_id`),
-    CONSTRAINT `fk_generation_run_timetable` FOREIGN KEY (`timetable_id`) REFERENCES `tt_timetable` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_generation_run_queue` FOREIGN KEY (`queue_id`) REFERENCES `tt_generation_queue` (`id`) ON DELETE SET NULL,
-    CONSTRAINT `fk_generation_run_strategy` FOREIGN KEY (`strategy_id`) REFERENCES `tt_generation_strategy` (`id`),
-    CONSTRAINT `fk_generation_run_triggered_by` FOREIGN KEY (`triggered_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
+    CONSTRAINT `fk_generation_runs_timetable` FOREIGN KEY (`timetable_id`) REFERENCES `tt_timetables` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_generation_runs_queue` FOREIGN KEY (`queue_id`) REFERENCES `tt_generation_queues` (`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_generation_runs_strategy` FOREIGN KEY (`strategy_id`) REFERENCES `tt_generation_strategy` (`id`),
+    CONSTRAINT `fk_generation_runs_triggered_by` FOREIGN KEY (`triggered_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 	COMMENT='Timetable generation run details';
 
 	-- 6.4 Timetable Cell (Enhanced)
-	CREATE TABLE IF NOT EXISTS `tt_timetable_cell` (
+	CREATE TABLE IF NOT EXISTS `tt_timetable_cells` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `uuid` BINARY(16) NOT NULL, -- Added on 20Feb
     `timetable_id` INT UNSIGNED NOT NULL,
@@ -1439,20 +1439,20 @@ SET FOREIGN_KEY_CHECKS = 0;
     INDEX `idx_timetable_cell_room` (`room_id`),
     INDEX `idx_timetable_cell_date` (`cell_date`),
     INDEX `idx_timetable_cell_locked` (`is_locked`),
-    CONSTRAINT `fk_timetable_cell_timetable` FOREIGN KEY (`timetable_id`) REFERENCES `tt_timetable` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_timetable_cell_run` FOREIGN KEY (`generation_run_id`) REFERENCES `tt_generation_run` (`id`) ON DELETE SET NULL,
-    CONSTRAINT `fk_timetable_cell_activity` FOREIGN KEY (`activity_id`) REFERENCES `tt_activity` (`id`) ON DELETE SET NULL,
-    CONSTRAINT `fk_timetable_cell_sub_activity` FOREIGN KEY (`sub_activity_id`) REFERENCES `tt_sub_activity` (`id`) ON DELETE SET NULL,
-    CONSTRAINT `fk_timetable_cell_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`),
-    CONSTRAINT `fk_timetable_cell_section` FOREIGN KEY (`section_id`) REFERENCES `sch_sections` (`id`),
-    CONSTRAINT `fk_timetable_cell_subject` FOREIGN KEY (`subject_study_format_id`) REFERENCES `sch_subject_study_format_jnt` (`id`),
-    CONSTRAINT `fk_timetable_cell_room` FOREIGN KEY (`room_id`) REFERENCES `sch_rooms` (`id`) ON DELETE SET NULL,
-    CONSTRAINT `fk_timetable_cell_locked_by` FOREIGN KEY (`locked_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
+    CONSTRAINT `fk_timetables_cells_timetable` FOREIGN KEY (`timetable_id`) REFERENCES `tt_timetables` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_timetables_cells_run` FOREIGN KEY (`generation_run_id`) REFERENCES `tt_generation_runs` (`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_timetables_cells_activity` FOREIGN KEY (`activity_id`) REFERENCES `tt_activities` (`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_timetables_cells_sub_activity` FOREIGN KEY (`sub_activity_id`) REFERENCES `tt_sub_activities` (`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_timetables_cells_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`),
+    CONSTRAINT `fk_timetables_cells_section` FOREIGN KEY (`section_id`) REFERENCES `sch_sections` (`id`),
+    CONSTRAINT `fk_timetables_cells_subject` FOREIGN KEY (`subject_study_format_id`) REFERENCES `sch_subject_study_format_jnt` (`id`),
+    CONSTRAINT `fk_timetables_cells_room` FOREIGN KEY (`room_id`) REFERENCES `sch_rooms` (`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_timetables_cells_locked_by` FOREIGN KEY (`locked_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 	COMMENT='Individual timetable cells (period-level assignments)';
 
 	-- 6.5 Timetable Cell Teacher
-	CREATE TABLE IF NOT EXISTS `tt_timetable_cell_teacher` (
+	CREATE TABLE IF NOT EXISTS `tt_timetable_cell_teachers` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `cell_id` INT UNSIGNED NOT NULL,
     `teacher_id` INT UNSIGNED NOT NULL,
@@ -1466,15 +1466,15 @@ SET FOREIGN_KEY_CHECKS = 0;
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_cell_teacher` (`cell_id`, `teacher_id`),
     INDEX `idx_cell_teacher_teacher` (`teacher_id`),
-    CONSTRAINT `fk_cell_teacher_cell` FOREIGN KEY (`cell_id`) REFERENCES `tt_timetable_cell` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_cell_teacher_cell` FOREIGN KEY (`cell_id`) REFERENCES `tt_timetable_cells` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_cell_teacher_teacher` FOREIGN KEY (`teacher_id`) REFERENCES `sch_teachers` (`id`),
-    CONSTRAINT `fk_cell_teacher_role` FOREIGN KEY (`assignment_role_id`) REFERENCES `tt_teacher_assignment_role` (`id`),
-    CONSTRAINT `fk_cell_teacher_substitution` FOREIGN KEY (`substitution_log_id`) REFERENCES `tt_substitution_log` (`id`) ON DELETE SET NULL
+    CONSTRAINT `fk_cell_teacher_role` FOREIGN KEY (`assignment_role_id`) REFERENCES `tt_teacher_assignment_roles` (`id`),
+    CONSTRAINT `fk_cell_teacher_substitution` FOREIGN KEY (`substitution_log_id`) REFERENCES `tt_substitution_logs` (`id`) ON DELETE SET NULL
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 	COMMENT='Teacher assignments to timetable cells';
 
 	-- 6.6 Resource Booking
-	CREATE TABLE IF NOT EXISTS `tt_resource_booking` (
+	CREATE TABLE IF NOT EXISTS `tt_resource_bookings` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `resource_type` ENUM('ROOM', 'LAB', 'TEACHER', 'EQUIPMENT', 'SPORTS', 'SPECIAL') NOT NULL,
     `resource_id` INT UNSIGNED NOT NULL,
@@ -1497,8 +1497,8 @@ SET FOREIGN_KEY_CHECKS = 0;
     UNIQUE KEY `uq_resource_booking` (`resource_type`, `resource_id`, `booking_date`, `period_ord`),
     INDEX `idx_resource_booking_date` (`booking_date`),
     INDEX `idx_resource_booking_status` (`status`),
-    CONSTRAINT `fk_resource_booking_cell` FOREIGN KEY (`timetable_cell_id`) REFERENCES `tt_timetable_cell` (`id`) ON DELETE SET NULL,
-    CONSTRAINT `fk_resource_booking_supervisor` FOREIGN KEY (`supervisor_id`) REFERENCES `sch_teachers` (`id`)
+    CONSTRAINT `fk_resource_bookings_cell` FOREIGN KEY (`timetable_cell_id`) REFERENCES `tt_timetable_cells` (`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_resource_bookings_supervisor` FOREIGN KEY (`supervisor_id`) REFERENCES `sch_teachers` (`id`)
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 	COMMENT='Resource booking and allocation tracking';
 
@@ -1508,7 +1508,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- -------------------------------------------------
 
 	-- Validation Sessions Table
-	CREATE TABLE IF NOT EXISTS `tt_validation_session` (
+	CREATE TABLE IF NOT EXISTS `tt_validation_sessions` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `uuid` BINARY(16) NOT NULL,
     `academic_term_id` INT UNSIGNED NOT NULL,
@@ -1528,14 +1528,14 @@ SET FOREIGN_KEY_CHECKS = 0;
     UNIQUE KEY `uq_validation_session_uuid` (`uuid`),
     INDEX `idx_validation_session_term` (`academic_term_id`),
     INDEX `idx_validation_session_status` (`status`),
-    CONSTRAINT `fk_validation_session_term` FOREIGN KEY (`academic_term_id`) REFERENCES `sch_academic_term` (`id`),
-    CONSTRAINT `fk_validation_session_timetable` FOREIGN KEY (`timetable_type_id`) REFERENCES `tt_timetable_type` (`id`),
-    CONSTRAINT `fk_validation_session_created_by` FOREIGN KEY (`created_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
+    CONSTRAINT `fk_validation_sessions_term` FOREIGN KEY (`academic_term_id`) REFERENCES `sch_academic_term` (`id`),
+    CONSTRAINT `fk_validation_sessions_timetable` FOREIGN KEY (`timetable_type_id`) REFERENCES `tt_timetable_types` (`id`),
+    CONSTRAINT `fk_validation_sessions_created_by` FOREIGN KEY (`created_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 	COMMENT='Tracks validation sessions across timetable lifecycle';
 
 	-- Validation Checks Table
-	CREATE TABLE IF NOT EXISTS `tt_validation_check` (
+	CREATE TABLE IF NOT EXISTS `tt_validation_checks` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `validation_session_id` INT UNSIGNED NOT NULL,
     `check_type` ENUM(
@@ -1563,12 +1563,12 @@ SET FOREIGN_KEY_CHECKS = 0;
     PRIMARY KEY (`id`),
     INDEX `idx_validation_check_session` (`validation_session_id`),
     INDEX `idx_validation_check_type` (`check_type`, `status`),
-    CONSTRAINT `fk_validation_check_session` FOREIGN KEY (`validation_session_id`) REFERENCES `tt_validation_session` (`id`) ON DELETE CASCADE
+    CONSTRAINT `fk_validation_checks_session` FOREIGN KEY (`validation_session_id`) REFERENCES `tt_validation_sessions` (`id`) ON DELETE CASCADE
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 	COMMENT='Individual validation checks within a session';
 
 	-- Validation Issue Details
-	CREATE TABLE IF NOT EXISTS `tt_validation_issue` (
+	CREATE TABLE IF NOT EXISTS `tt_validation_issues` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `validation_check_id` INT UNSIGNED NOT NULL,
     `issue_type` ENUM('MISSING_TEACHER', 'INSUFFICIENT_ROOMS', 'CONSTRAINT_VIOLATION', 'CAPACITY_EXCEEDED', 'DATA_MISSING', 'WORKLOAD_OVERLOAD') NOT NULL,
@@ -1588,13 +1588,13 @@ SET FOREIGN_KEY_CHECKS = 0;
     INDEX `idx_validation_issue_check` (`validation_check_id`),
     INDEX `idx_validation_issue_target` (`target_type`, `target_id`),
     INDEX `idx_validation_issue_severity` (`severity`, `is_resolved`),
-    CONSTRAINT `fk_validation_issue_check` FOREIGN KEY (`validation_check_id`) REFERENCES `tt_validation_check` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_validation_issue_resolved_by` FOREIGN KEY (`resolved_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
+    CONSTRAINT `fk_validation_issues_check` FOREIGN KEY (`validation_check_id`) REFERENCES `tt_validation_checks` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_validation_issues_resolved_by` FOREIGN KEY (`resolved_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 	COMMENT='Individual validation issues with resolution tracking';
 
 	-- Validation Rules Configuration
-	CREATE TABLE IF NOT EXISTS `tt_validation_rule` (
+	CREATE TABLE IF NOT EXISTS `tt_validation_rules` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `rule_code` VARCHAR(50) NOT NULL,
     `rule_name` VARCHAR(100) NOT NULL,
@@ -1624,7 +1624,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 	COMMENT='Configurable validation rules';
 
 	-- Validation Override Log
-	CREATE TABLE IF NOT EXISTS `tt_validation_override` (
+	CREATE TABLE IF NOT EXISTS `tt_validation_overrides` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `validation_session_id` INT UNSIGNED NOT NULL,
     `validation_issue_id` INT UNSIGNED DEFAULT NULL,
@@ -1638,10 +1638,10 @@ SET FOREIGN_KEY_CHECKS = 0;
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     INDEX `idx_validation_override_session` (`validation_session_id`),
-    CONSTRAINT `fk_validation_override_session` FOREIGN KEY (`validation_session_id`) REFERENCES `tt_validation_session` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_validation_override_issue` FOREIGN KEY (`validation_issue_id`) REFERENCES `tt_validation_issue` (`id`) ON DELETE SET NULL,
-    CONSTRAINT `fk_validation_override_approved_by` FOREIGN KEY (`approved_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL,
-    CONSTRAINT `fk_validation_override_created_by` FOREIGN KEY (`created_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
+    CONSTRAINT `fk_validation_overrides_session` FOREIGN KEY (`validation_session_id`) REFERENCES `tt_validation_sessions` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_validation_overrides_issue` FOREIGN KEY (`validation_issue_id`) REFERENCES `tt_validation_issues` (`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_validation_overrides_approved_by` FOREIGN KEY (`approved_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_validation_overrides_created_by` FOREIGN KEY (`created_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 	COMMENT='Tracks manual overrides during validation';
 
@@ -1650,7 +1650,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 --  SECTION 8: TEACHER WORKLOAD & ANALYTICS
 -- -------------------------------------------------
 
-	CREATE TABLE IF NOT EXISTS `tt_teacher_workload` (
+	CREATE TABLE IF NOT EXISTS `tt_teacher_workloads` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `teacher_id` INT UNSIGNED NOT NULL,
     `academic_session_id` INT UNSIGNED NOT NULL,
@@ -1680,15 +1680,15 @@ SET FOREIGN_KEY_CHECKS = 0;
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_teacher_workload` (`teacher_id`, `academic_session_id`, `academic_term_id`, `timetable_id`),
     INDEX `idx_teacher_workload_session` (`academic_session_id`),
-    CONSTRAINT `fk_teacher_workload_teacher` FOREIGN KEY (`teacher_id`) REFERENCES `sch_teachers` (`id`),
-    CONSTRAINT `fk_teacher_workload_session` FOREIGN KEY (`academic_session_id`) REFERENCES `sch_org_academic_sessions_jnt` (`id`),
-    CONSTRAINT `fk_teacher_workload_term` FOREIGN KEY (`academic_term_id`) REFERENCES `sch_academic_term` (`id`),
-    CONSTRAINT `fk_teacher_workload_timetable` FOREIGN KEY (`timetable_id`) REFERENCES `tt_timetable` (`id`) ON DELETE SET NULL
+    CONSTRAINT `fk_teacher_workloads_teacher` FOREIGN KEY (`teacher_id`) REFERENCES `sch_teachers` (`id`),
+    CONSTRAINT `fk_teacher_workloads_session` FOREIGN KEY (`academic_session_id`) REFERENCES `sch_org_academic_sessions_jnt` (`id`),
+    CONSTRAINT `fk_teacher_workloads_term` FOREIGN KEY (`academic_term_id`) REFERENCES `sch_academic_term` (`id`),
+    CONSTRAINT `fk_teacher_workloads_timetable` FOREIGN KEY (`timetable_id`) REFERENCES `tt_timetables` (`id`) ON DELETE SET NULL
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 	COMMENT='Teacher workload analysis';
 
 	-- 8.2 Room Utilization
-	CREATE TABLE IF NOT EXISTS `tt_room_utilization` (
+	CREATE TABLE IF NOT EXISTS `tt_room_utilizations` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `room_id` INT UNSIGNED NOT NULL,
     `academic_session_id` INT UNSIGNED NOT NULL,
@@ -1714,14 +1714,14 @@ SET FOREIGN_KEY_CHECKS = 0;
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_room_utilization` (`room_id`, `academic_session_id`, `academic_term_id`),
     INDEX `idx_room_utilization_session` (`academic_session_id`),
-    CONSTRAINT `fk_room_utilization_room` FOREIGN KEY (`room_id`) REFERENCES `sch_rooms` (`id`),
-    CONSTRAINT `fk_room_utilization_session` FOREIGN KEY (`academic_session_id`) REFERENCES `sch_org_academic_sessions_jnt` (`id`),
-    CONSTRAINT `fk_room_utilization_term` FOREIGN KEY (`academic_term_id`) REFERENCES `sch_academic_term` (`id`)
+    CONSTRAINT `fk_room_utilizations_room` FOREIGN KEY (`room_id`) REFERENCES `sch_rooms` (`id`),
+    CONSTRAINT `fk_room_utilizations_session` FOREIGN KEY (`academic_session_id`) REFERENCES `sch_org_academic_sessions_jnt` (`id`),
+    CONSTRAINT `fk_room_utilizations_term` FOREIGN KEY (`academic_term_id`) REFERENCES `sch_academic_term` (`id`)
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 	COMMENT='Room utilization analysis';
 
 	-- 8.3 Daily Snapshot
-	CREATE TABLE IF NOT EXISTS `tt_analytics_daily_snapshot` (
+	CREATE TABLE IF NOT EXISTS `tt_analytics_daily_snapshots` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `snapshot_date` DATE NOT NULL,
     `academic_session_id` INT UNSIGNED NOT NULL,
@@ -1744,7 +1744,7 @@ SET FOREIGN_KEY_CHECKS = 0;
     INDEX `idx_daily_snapshot_date` (`snapshot_date`),
     CONSTRAINT `fk_daily_snapshot_session` FOREIGN KEY (`academic_session_id`) REFERENCES `sch_org_academic_sessions_jnt` (`id`),
     CONSTRAINT `fk_daily_snapshot_term` FOREIGN KEY (`academic_term_id`) REFERENCES `sch_academic_term` (`id`),
-    CONSTRAINT `fk_daily_snapshot_timetable` FOREIGN KEY (`timetable_id`) REFERENCES `tt_timetable` (`id`) ON DELETE SET NULL
+    CONSTRAINT `fk_daily_snapshot_timetable` FOREIGN KEY (`timetable_id`) REFERENCES `tt_timetables` (`id`) ON DELETE SET NULL
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 	COMMENT='Daily analytics snapshots';
 
@@ -1753,7 +1753,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 --  SECTION 9: AUDIT & HISTORY
 -- -------------------------------------------------
 
-	CREATE TABLE IF NOT EXISTS `tt_change_log` (
+	CREATE TABLE IF NOT EXISTS `tt_change_logs` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `uuid` BINARY(16) NOT NULL, -- Added on 20Feb
     `timetable_id` INT UNSIGNED NOT NULL,
@@ -1777,9 +1777,9 @@ SET FOREIGN_KEY_CHECKS = 0;
     INDEX `idx_change_log_cell` (`cell_id`),
     INDEX `idx_change_log_date` (`change_date`),
     INDEX `idx_change_log_type` (`change_type`),
-    CONSTRAINT `fk_change_log_timetable` FOREIGN KEY (`timetable_id`) REFERENCES `tt_timetable` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_change_log_cell` FOREIGN KEY (`cell_id`) REFERENCES `tt_timetable_cell` (`id`) ON DELETE SET NULL,
-    CONSTRAINT `fk_change_log_changed_by` FOREIGN KEY (`changed_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
+    CONSTRAINT `fk_change_logs_timetable` FOREIGN KEY (`timetable_id`) REFERENCES `tt_timetables` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_change_logs_cell` FOREIGN KEY (`cell_id`) REFERENCES `tt_timetable_cells` (`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_change_logs_changed_by` FOREIGN KEY (`changed_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 	COMMENT='Audit log for all timetable changes';
 
@@ -1789,7 +1789,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- -------------------------------------------------
 
 	-- 10.1 Teacher Absence
-	CREATE TABLE IF NOT EXISTS `tt_teacher_absence` (
+	CREATE TABLE IF NOT EXISTS `tt_teacher_absences` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `uuid` BINARY(16) NOT NULL, -- Added on 20Feb
     `teacher_id` INT UNSIGNED NOT NULL,
@@ -1824,14 +1824,14 @@ SET FOREIGN_KEY_CHECKS = 0;
     INDEX `idx_teacher_absence_teacher` (`teacher_id`),
     INDEX `idx_teacher_absence_date` (`absence_date`),
     INDEX `idx_teacher_absence_status` (`status`),
-    CONSTRAINT `fk_teacher_absence_teacher` FOREIGN KEY (`teacher_id`) REFERENCES `sch_teachers` (`id`),
-    CONSTRAINT `fk_teacher_absence_approved_by` FOREIGN KEY (`approved_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL,
-    CONSTRAINT `fk_teacher_absence_created_by` FOREIGN KEY (`created_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
+    CONSTRAINT `fk_teacher_absences_teacher` FOREIGN KEY (`teacher_id`) REFERENCES `sch_teachers` (`id`),
+    CONSTRAINT `fk_teacher_absences_approved_by` FOREIGN KEY (`approved_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_teacher_absences_created_by` FOREIGN KEY (`created_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 	COMMENT='Teacher absence records';
 
 	-- 10.2 Substitution Recommendation
-	CREATE TABLE IF NOT EXISTS `tt_substitution_recommendation` (
+	CREATE TABLE IF NOT EXISTS `tt_substitution_recommendations` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `teacher_absence_id` INT UNSIGNED NOT NULL,
     `cell_id` INT UNSIGNED NOT NULL,
@@ -1856,14 +1856,14 @@ SET FOREIGN_KEY_CHECKS = 0;
     INDEX `idx_sub_recommendation_cell` (`cell_id`),
     INDEX `idx_sub_recommendation_teacher` (`recommended_teacher_id`),
     INDEX `idx_sub_recommendation_score` (`overall_compatibility_score`),
-    CONSTRAINT `fk_sub_recommendation_absence` FOREIGN KEY (`teacher_absence_id`) REFERENCES `tt_teacher_absence` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_sub_recommendation_cell` FOREIGN KEY (`cell_id`) REFERENCES `tt_timetable_cell` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_sub_recommendation_absence` FOREIGN KEY (`teacher_absence_id`) REFERENCES `tt_teacher_absences` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_sub_recommendation_cell` FOREIGN KEY (`cell_id`) REFERENCES `tt_timetable_cells` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_sub_recommendation_teacher` FOREIGN KEY (`recommended_teacher_id`) REFERENCES `sch_teachers` (`id`)
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 	COMMENT='Substitution recommendations';
 
 	-- 10.3 Substitution Log (Enhanced)
-	CREATE TABLE IF NOT EXISTS `tt_substitution_log` (
+	CREATE TABLE IF NOT EXISTS `tt_substitution_logs` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `uuid` BINARY(16) NOT NULL, -- Added on 20Feb
     `teacher_absence_id` INT UNSIGNED DEFAULT NULL,
@@ -1898,18 +1898,18 @@ SET FOREIGN_KEY_CHECKS = 0;
     INDEX `idx_substitution_log_absent` (`absent_teacher_id`),
     INDEX `idx_substitution_log_substitute` (`substitute_teacher_id`),
     INDEX `idx_substitution_log_status` (`status`),
-    CONSTRAINT `fk_substitution_log_absence` FOREIGN KEY (`teacher_absence_id`) REFERENCES `tt_teacher_absence` (`id`) ON DELETE SET NULL,
-    CONSTRAINT `fk_substitution_log_cell` FOREIGN KEY (`cell_id`) REFERENCES `tt_timetable_cell` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_substitution_log_recommendation` FOREIGN KEY (`recommendation_id`) REFERENCES `tt_substitution_recommendation` (`id`) ON DELETE SET NULL,
-    CONSTRAINT `fk_substitution_log_absent` FOREIGN KEY (`absent_teacher_id`) REFERENCES `sch_teachers` (`id`),
-    CONSTRAINT `fk_substitution_log_substitute` FOREIGN KEY (`substitute_teacher_id`) REFERENCES `sch_teachers` (`id`),
-    CONSTRAINT `fk_substitution_log_original` FOREIGN KEY (`original_teacher_id`) REFERENCES `sch_teachers` (`id`),
-    CONSTRAINT `fk_substitution_log_assigned_by` FOREIGN KEY (`assigned_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
+    CONSTRAINT `fk_substitution_logs_absence` FOREIGN KEY (`teacher_absence_id`) REFERENCES `tt_teacher_absences` (`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_substitution_logs_cell` FOREIGN KEY (`cell_id`) REFERENCES `tt_timetable_cells` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_substitution_logs_recommendation` FOREIGN KEY (`recommendation_id`) REFERENCES `tt_substitution_recommendations` (`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_substitution_logs_absent` FOREIGN KEY (`absent_teacher_id`) REFERENCES `sch_teachers` (`id`),
+    CONSTRAINT `fk_substitution_logs_substitute` FOREIGN KEY (`substitute_teacher_id`) REFERENCES `sch_teachers` (`id`),
+    CONSTRAINT `fk_substitution_logs_original` FOREIGN KEY (`original_teacher_id`) REFERENCES `sch_teachers` (`id`),
+    CONSTRAINT `fk_substitution_logs_assigned_by` FOREIGN KEY (`assigned_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 	COMMENT='Substitution records';
 
 	-- 10.4 Substitution Pattern Learning
-	CREATE TABLE IF NOT EXISTS `tt_substitution_pattern` (
+	CREATE TABLE IF NOT EXISTS `tt_substitution_patterns` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `subject_study_format_id` INT UNSIGNED NOT NULL,
     `class_id` INT UNSIGNED NOT NULL,
@@ -1933,11 +1933,11 @@ SET FOREIGN_KEY_CHECKS = 0;
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_substitution_pattern` (`subject_study_format_id`, `class_id`, `section_id`, `original_teacher_id`, `substitute_teacher_id`),
     INDEX `idx_substitution_pattern_success` (`success_rate`),
-    CONSTRAINT `fk_substitution_pattern_subject` FOREIGN KEY (`subject_study_format_id`) REFERENCES `sch_subject_study_format_jnt` (`id`),
-    CONSTRAINT `fk_substitution_pattern_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`),
-    CONSTRAINT `fk_substitution_pattern_section` FOREIGN KEY (`section_id`) REFERENCES `sch_sections` (`id`),
-    CONSTRAINT `fk_substitution_pattern_original` FOREIGN KEY (`original_teacher_id`) REFERENCES `sch_teachers` (`id`),
-    CONSTRAINT `fk_substitution_pattern_substitute` FOREIGN KEY (`substitute_teacher_id`) REFERENCES `sch_teachers` (`id`)
+    CONSTRAINT `fk_substitution_patterns_subject` FOREIGN KEY (`subject_study_format_id`) REFERENCES `sch_subject_study_format_jnt` (`id`),
+    CONSTRAINT `fk_substitution_patterns_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`),
+    CONSTRAINT `fk_substitution_patterns_section` FOREIGN KEY (`section_id`) REFERENCES `sch_sections` (`id`),
+    CONSTRAINT `fk_substitution_patterns_original` FOREIGN KEY (`original_teacher_id`) REFERENCES `sch_teachers` (`id`),
+    CONSTRAINT `fk_substitution_patterns_substitute` FOREIGN KEY (`substitute_teacher_id`) REFERENCES `sch_teachers` (`id`)
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 	COMMENT='ML pattern learning for substitutions';
 
@@ -1951,7 +1951,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- -------------------------------------------------
 
 	-- Optimization Runs
-	CREATE TABLE IF NOT EXISTS `tt_optimization_run` (
+	CREATE TABLE IF NOT EXISTS `tt_optimization_runs` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `uuid` BINARY(16) NOT NULL,
     `timetable_id` INT UNSIGNED NOT NULL,
@@ -1987,13 +1987,13 @@ SET FOREIGN_KEY_CHECKS = 0;
     UNIQUE KEY `uq_optimization_run_uuid` (`uuid`),
     INDEX `idx_optimization_run_timetable` (`timetable_id`),
     INDEX `idx_optimization_run_status` (`status`),
-    CONSTRAINT `fk_optimization_run_timetable` FOREIGN KEY (`timetable_id`) REFERENCES `tt_timetable` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_optimization_run_generation` FOREIGN KEY (`generation_run_id`) REFERENCES `tt_generation_run` (`id`) ON DELETE SET NULL
+    CONSTRAINT `fk_optimization_runs_timetable` FOREIGN KEY (`timetable_id`) REFERENCES `tt_timetables` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_optimization_runs_generation` FOREIGN KEY (`generation_run_id`) REFERENCES `tt_generation_runs` (`id`) ON DELETE SET NULL
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 	COMMENT='Tracks optimization algorithm runs';
 
 	-- Optimization Iteration Details
-	CREATE TABLE IF NOT EXISTS `tt_optimization_iteration` (
+	CREATE TABLE IF NOT EXISTS `tt_optimization_iterations` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `optimization_run_id` INT UNSIGNED NOT NULL,
     `iteration_number` INT UNSIGNED NOT NULL,
@@ -2011,12 +2011,12 @@ SET FOREIGN_KEY_CHECKS = 0;
     
     PRIMARY KEY (`id`),
     INDEX `idx_optimization_iteration_run` (`optimization_run_id`, `iteration_number`),
-    CONSTRAINT `fk_optimization_iteration_run` FOREIGN KEY (`optimization_run_id`) REFERENCES `tt_optimization_run` (`id`) ON DELETE CASCADE
+    CONSTRAINT `fk_optimization_iterations_run` FOREIGN KEY (`optimization_run_id`) REFERENCES `tt_optimization_runs` (`id`) ON DELETE CASCADE
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 	COMMENT='Detailed iteration data for optimization runs';
 
 	-- Optimization Move Log
-	CREATE TABLE IF NOT EXISTS `tt_optimization_move` (
+	CREATE TABLE IF NOT EXISTS `tt_optimization_moves` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `optimization_run_id` INT UNSIGNED NOT NULL,
     `iteration_number` INT UNSIGNED NOT NULL,
@@ -2035,9 +2035,9 @@ SET FOREIGN_KEY_CHECKS = 0;
     
     PRIMARY KEY (`id`),
     INDEX `idx_optimization_move_run` (`optimization_run_id`, `iteration_number`),
-    CONSTRAINT `fk_optimization_move_run` FOREIGN KEY (`optimization_run_id`) REFERENCES `tt_optimization_run` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_optimization_move_source` FOREIGN KEY (`source_activity_id`) REFERENCES `tt_activity` (`id`) ON DELETE SET NULL,
-    CONSTRAINT `fk_optimization_move_target` FOREIGN KEY (`target_activity_id`) REFERENCES `tt_activity` (`id`) ON DELETE SET NULL
+    CONSTRAINT `fk_optimization_moves_run` FOREIGN KEY (`optimization_run_id`) REFERENCES `tt_optimization_runs` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_optimization_moves_source` FOREIGN KEY (`source_activity_id`) REFERENCES `tt_activities` (`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_optimization_moves_target` FOREIGN KEY (`target_activity_id`) REFERENCES `tt_activities` (`id`) ON DELETE SET NULL
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 	COMMENT='Individual moves during optimization';
 
@@ -2047,7 +2047,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- -------------------------------------------------
 
 	-- Conflict Resolution Sessions
-	CREATE TABLE IF NOT EXISTS `tt_conflict_resolution_session` (
+	CREATE TABLE IF NOT EXISTS `tt_conflict_resolution_sessions` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `uuid` BINARY(16) NOT NULL,
     `timetable_id` INT UNSIGNED NOT NULL,
@@ -2071,14 +2071,14 @@ SET FOREIGN_KEY_CHECKS = 0;
     UNIQUE KEY `uq_conflict_resolution_session_uuid` (`uuid`),
     INDEX `idx_conflict_resolution_session_timetable` (`timetable_id`),
     INDEX `idx_conflict_resolution_session_status` (`status`),
-    CONSTRAINT `fk_conflict_resolution_session_timetable` FOREIGN KEY (`timetable_id`) REFERENCES `tt_timetable` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_conflict_resolution_session_generation` FOREIGN KEY (`generation_run_id`) REFERENCES `tt_generation_run` (`id`) ON DELETE SET NULL,
-    CONSTRAINT `fk_conflict_resolution_session_created_by` FOREIGN KEY (`created_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
+    CONSTRAINT `fk_conflict_resolution_sessions_timetable` FOREIGN KEY (`timetable_id`) REFERENCES `tt_timetables` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_conflict_resolution_sessions_generation` FOREIGN KEY (`generation_run_id`) REFERENCES `tt_generation_runs` (`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_conflict_resolution_sessions_created_by` FOREIGN KEY (`created_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 	COMMENT='Tracks conflict resolution workflow sessions';
 
 	-- Conflict Resolution Options
-	CREATE TABLE IF NOT EXISTS `tt_conflict_resolution_option` (
+	CREATE TABLE IF NOT EXISTS `tt_conflict_resolution_options` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `conflict_id` INT UNSIGNED NOT NULL COMMENT 'References tt_conflict_detection.id',
     `resolution_session_id` INT UNSIGNED DEFAULT NULL,
@@ -2114,14 +2114,14 @@ SET FOREIGN_KEY_CHECKS = 0;
     INDEX `idx_conflict_resolution_option_conflict` (`conflict_id`),
     INDEX `idx_conflict_resolution_option_session` (`resolution_session_id`),
     INDEX `idx_conflict_resolution_option_rank` (`option_rank`, `is_selected`),
-    CONSTRAINT `fk_conflict_resolution_option_conflict` FOREIGN KEY (`conflict_id`) REFERENCES `tt_conflict_detection` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_conflict_resolution_option_session` FOREIGN KEY (`resolution_session_id`) REFERENCES `tt_conflict_resolution_session` (`id`) ON DELETE SET NULL,
-    CONSTRAINT `fk_conflict_resolution_option_selected_by` FOREIGN KEY (`selected_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
+    CONSTRAINT `fk_conflict_resolution_options_conflict` FOREIGN KEY (`conflict_id`) REFERENCES `tt_conflict_detections` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_conflict_resolution_options_session` FOREIGN KEY (`resolution_session_id`) REFERENCES `tt_conflict_resolution_sessions` (`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_conflict_resolution_options_selected_by` FOREIGN KEY (`selected_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 	COMMENT='Resolution options for each conflict';
 
 	-- Escalation Rules
-	CREATE TABLE IF NOT EXISTS `tt_escalation_rule` (
+	CREATE TABLE IF NOT EXISTS `tt_escalation_rules` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `rule_name` VARCHAR(100) NOT NULL,
     `trigger_type` ENUM('CONFLICT_COUNT', 'SEVERITY', 'TIME_ELAPSED', 'MANUAL_REQUEST', 'AUTO_FAILED') NOT NULL,
@@ -2141,7 +2141,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 	COMMENT='Rules for escalating unresolved conflicts';
 
 	-- Escalation Log
-	CREATE TABLE IF NOT EXISTS `tt_escalation_log` (
+	CREATE TABLE IF NOT EXISTS `tt_escalation_logs` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `conflict_id` INT UNSIGNED NOT NULL,
     `resolution_session_id` INT UNSIGNED DEFAULT NULL,
@@ -2160,10 +2160,10 @@ SET FOREIGN_KEY_CHECKS = 0;
     PRIMARY KEY (`id`),
     INDEX `idx_escalation_log_conflict` (`conflict_id`),
     INDEX `idx_escalation_log_status` (`status`),
-    CONSTRAINT `fk_escalation_log_conflict` FOREIGN KEY (`conflict_id`) REFERENCES `tt_conflict_detection` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_escalation_log_session` FOREIGN KEY (`resolution_session_id`) REFERENCES `tt_conflict_resolution_session` (`id`) ON DELETE SET NULL,
-    CONSTRAINT `fk_escalation_log_rule` FOREIGN KEY (`escalation_rule_id`) REFERENCES `tt_escalation_rule` (`id`) ON DELETE SET NULL,
-    CONSTRAINT `fk_escalation_log_user` FOREIGN KEY (`escalated_to`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
+    CONSTRAINT `fk_escalation_logs_conflict` FOREIGN KEY (`conflict_id`) REFERENCES `tt_conflict_detections` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_escalation_logs_session` FOREIGN KEY (`resolution_session_id`) REFERENCES `tt_conflict_resolution_sessions` (`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_escalation_logs_rule` FOREIGN KEY (`escalation_rule_id`) REFERENCES `tt_escalation_rules` (`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_escalation_logs_user` FOREIGN KEY (`escalated_to`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 	COMMENT='Log of conflict escalations';
 
@@ -2173,7 +2173,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- -------------------------------------------------
 
 	-- Approval Workflow Definitions
-	CREATE TABLE IF NOT EXISTS `tt_approval_workflow` (
+	CREATE TABLE IF NOT EXISTS `tt_approval_workflows` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `workflow_code` VARCHAR(50) NOT NULL,
     `workflow_name` VARCHAR(100) NOT NULL,
@@ -2190,7 +2190,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 	COMMENT='Defines approval workflows for different processes';
 
 	-- Approval Levels
-	CREATE TABLE IF NOT EXISTS `tt_approval_level` (
+	CREATE TABLE IF NOT EXISTS `tt_approval_levels` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `workflow_id` INT UNSIGNED NOT NULL,
     `level_number` TINYINT UNSIGNED NOT NULL,
@@ -2207,12 +2207,12 @@ SET FOREIGN_KEY_CHECKS = 0;
     
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_approval_level_workflow_level` (`workflow_id`, `level_number`),
-    CONSTRAINT `fk_approval_level_workflow` FOREIGN KEY (`workflow_id`) REFERENCES `tt_approval_workflow` (`id`) ON DELETE CASCADE
+    CONSTRAINT `fk_approval_levels_workflow` FOREIGN KEY (`workflow_id`) REFERENCES `tt_approval_workflows` (`id`) ON DELETE CASCADE
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 	COMMENT='Levels within an approval workflow';
 
 	-- Approval Requests
-	CREATE TABLE IF NOT EXISTS `tt_approval_request` (
+	CREATE TABLE IF NOT EXISTS `tt_approval_requests` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `uuid` BINARY(16) NOT NULL,
     `workflow_id` INT UNSIGNED NOT NULL,
@@ -2236,13 +2236,13 @@ SET FOREIGN_KEY_CHECKS = 0;
     UNIQUE KEY `uq_approval_request_uuid` (`uuid`),
     INDEX `idx_approval_request_target` (`target_type`, `target_id`),
     INDEX `idx_approval_request_status` (`status`, `priority`),
-    CONSTRAINT `fk_approval_request_workflow` FOREIGN KEY (`workflow_id`) REFERENCES `tt_approval_workflow` (`id`),
-    CONSTRAINT `fk_approval_request_submitted_by` FOREIGN KEY (`submitted_by`) REFERENCES `sys_users` (`id`)
+    CONSTRAINT `fk_approval_requests_workflow` FOREIGN KEY (`workflow_id`) REFERENCES `tt_approval_workflows` (`id`),
+    CONSTRAINT `fk_approval_requests_submitted_by` FOREIGN KEY (`submitted_by`) REFERENCES `sys_users` (`id`)
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 	COMMENT='Approval requests for various actions';
 
 	-- Approval Decisions
-	CREATE TABLE IF NOT EXISTS `tt_approval_decision` (
+	CREATE TABLE IF NOT EXISTS `tt_approval_decisions` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `approval_request_id` INT UNSIGNED NOT NULL,
     `level_number` TINYINT UNSIGNED NOT NULL,
@@ -2257,13 +2257,13 @@ SET FOREIGN_KEY_CHECKS = 0;
     PRIMARY KEY (`id`),
     INDEX `idx_approval_decision_request` (`approval_request_id`),
     INDEX `idx_approval_decision_approver` (`approver_id`),
-    CONSTRAINT `fk_approval_decision_request` FOREIGN KEY (`approval_request_id`) REFERENCES `tt_approval_request` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_approval_decision_approver` FOREIGN KEY (`approver_id`) REFERENCES `sys_users` (`id`)
+    CONSTRAINT `fk_approval_decisions_request` FOREIGN KEY (`approval_request_id`) REFERENCES `tt_approval_requests` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_approval_decisions_approver` FOREIGN KEY (`approver_id`) REFERENCES `sys_users` (`id`)
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 	COMMENT='Decisions made at each approval level';
 
 	-- Approval Notifications
-	CREATE TABLE IF NOT EXISTS `tt_approval_notification` (
+	CREATE TABLE IF NOT EXISTS `tt_approval_notifications` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `approval_request_id` INT UNSIGNED NOT NULL,
     `notification_type` ENUM('REQUEST_CREATED', 'LEVEL_ASSIGNED', 'REMINDER', 'ESCALATED', 'DECISION_MADE', 'COMPLETED') NOT NULL,
@@ -2279,8 +2279,8 @@ SET FOREIGN_KEY_CHECKS = 0;
     PRIMARY KEY (`id`),
     INDEX `idx_approval_notification_request` (`approval_request_id`),
     INDEX `idx_approval_notification_recipient` (`recipient_id`, `read_at`),
-    CONSTRAINT `fk_approval_notification_request` FOREIGN KEY (`approval_request_id`) REFERENCES `tt_approval_request` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_approval_notification_recipient` FOREIGN KEY (`recipient_id`) REFERENCES `sys_users` (`id`)
+    CONSTRAINT `fk_approval_notifications_request` FOREIGN KEY (`approval_request_id`) REFERENCES `tt_approval_requests` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_approval_notifications_recipient` FOREIGN KEY (`recipient_id`) REFERENCES `sys_users` (`id`)
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 	COMMENT='Notifications related to approval workflow';
 
@@ -2290,7 +2290,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- -------------------------------------------------
 
 	-- ML Model Registry
-	CREATE TABLE IF NOT EXISTS `tt_ml_model` (
+	CREATE TABLE IF NOT EXISTS `tt_ml_models` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `model_code` VARCHAR(50) NOT NULL,
     `model_name` VARCHAR(100) NOT NULL,
@@ -2339,12 +2339,12 @@ SET FOREIGN_KEY_CHECKS = 0;
     PRIMARY KEY (`id`),
     INDEX `idx_training_data_model` (`model_id`),
     INDEX `idx_training_data_dates` (`start_date`, `end_date`),
-    CONSTRAINT `fk_training_data_model` FOREIGN KEY (`model_id`) REFERENCES `tt_ml_model` (`id`) ON DELETE CASCADE
+    CONSTRAINT `fk_training_data_model` FOREIGN KEY (`model_id`) REFERENCES `tt_ml_models` (`id`) ON DELETE CASCADE
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 	COMMENT='Training data sets used for ML models';
 
 	-- Feature Importance
-	CREATE TABLE IF NOT EXISTS `tt_feature_importance` (
+	CREATE TABLE IF NOT EXISTS `tt_feature_importances` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `model_id` INT UNSIGNED NOT NULL,
     `feature_name` VARCHAR(100) NOT NULL,
@@ -2356,12 +2356,12 @@ SET FOREIGN_KEY_CHECKS = 0;
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_feature_importance_model_feature` (`model_id`, `feature_name`),
     INDEX `idx_feature_importance_rank` (`model_id`, `importance_rank`),
-    CONSTRAINT `fk_feature_importance_model` FOREIGN KEY (`model_id`) REFERENCES `tt_ml_model` (`id`) ON DELETE CASCADE
+    CONSTRAINT `fk_feature_importance_model` FOREIGN KEY (`model_id`) REFERENCES `tt_ml_models` (`id`) ON DELETE CASCADE
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 	COMMENT='Feature importance from ML models';
 
 	-- Prediction Log
-	CREATE TABLE IF NOT EXISTS `tt_prediction_log` (
+	CREATE TABLE IF NOT EXISTS `tt_prediction_logs` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `model_id` INT UNSIGNED NOT NULL,
     `prediction_type` ENUM('SUBSTITUTION_SUCCESS', 'CONFLICT_PROBABILITY', 'WORKLOAD_FORECAST', 'PRIORITY_SCORE') NOT NULL,
@@ -2379,12 +2379,12 @@ SET FOREIGN_KEY_CHECKS = 0;
     PRIMARY KEY (`id`),
     INDEX `idx_prediction_log_model` (`model_id`, `prediction_type`),
     INDEX `idx_prediction_log_dates` (`predicted_at`, `actual_at`),
-    CONSTRAINT `fk_prediction_log_model` FOREIGN KEY (`model_id`) REFERENCES `tt_ml_model` (`id`) ON DELETE CASCADE
+    CONSTRAINT `fk_prediction_logs_model` FOREIGN KEY (`model_id`) REFERENCES `tt_ml_models` (`id`) ON DELETE CASCADE
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 	COMMENT='Log of predictions made by ML models';
 
 	-- Pattern Recognition Results
-	CREATE TABLE IF NOT EXISTS `tt_pattern_result` (
+	CREATE TABLE IF NOT EXISTS `tt_pattern_results` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `model_id` INT UNSIGNED NOT NULL,
     `pattern_type` ENUM('SUBSTITUTION_PATTERN', 'CONFLICT_PATTERN', 'WORKLOAD_PATTERN', 'ABSENCE_PATTERN') NOT NULL,
@@ -2401,7 +2401,7 @@ SET FOREIGN_KEY_CHECKS = 0;
     PRIMARY KEY (`id`),
     INDEX `idx_pattern_result_model` (`model_id`, `pattern_type`),
     INDEX `idx_pattern_result_confidence` (`confidence`, `support_count`),
-    CONSTRAINT `fk_pattern_result_model` FOREIGN KEY (`model_id`) REFERENCES `tt_ml_model` (`id`) ON DELETE CASCADE
+    CONSTRAINT `fk_pattern_results_model` FOREIGN KEY (`model_id`) REFERENCES `tt_ml_models` (`id`) ON DELETE CASCADE
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 	COMMENT='Discovered patterns from ML analysis';
 
@@ -2411,7 +2411,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- -------------------------------------------------
 
 	-- Impact Analysis Sessions
-	CREATE TABLE IF NOT EXISTS `tt_impact_analysis_session` (
+	CREATE TABLE IF NOT EXISTS `tt_impact_analysis_sessions` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `uuid` BINARY(16) NOT NULL,
     `timetable_id` INT UNSIGNED NOT NULL,
@@ -2429,13 +2429,13 @@ SET FOREIGN_KEY_CHECKS = 0;
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_impact_analysis_session_uuid` (`uuid`),
     INDEX `idx_impact_analysis_session_timetable` (`timetable_id`),
-    CONSTRAINT `fk_impact_analysis_session_timetable` FOREIGN KEY (`timetable_id`) REFERENCES `tt_timetable` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_impact_analysis_session_created_by` FOREIGN KEY (`created_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
+    CONSTRAINT `fk_impact_analysis_sessions_timetable` FOREIGN KEY (`timetable_id`) REFERENCES `tt_timetables` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_impact_analysis_sessions_created_by` FOREIGN KEY (`created_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 	COMMENT='Sessions for impact analysis of changes';
 
 	-- Impact Analysis Details
-	CREATE TABLE IF NOT EXISTS `tt_impact_analysis_detail` (
+	CREATE TABLE IF NOT EXISTS `tt_impact_analysis_details` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `analysis_session_id` INT UNSIGNED NOT NULL,
     `impact_category` ENUM('TEACHER', 'CLASS', 'ROOM', 'CONSTRAINT', 'WORKLOAD', 'STUDENT', 'RESOURCE') NOT NULL,
@@ -2453,12 +2453,12 @@ SET FOREIGN_KEY_CHECKS = 0;
     PRIMARY KEY (`id`),
     INDEX `idx_impact_analysis_detail_session` (`analysis_session_id`),
     INDEX `idx_impact_analysis_detail_target` (`impact_category`, `target_id`),
-    CONSTRAINT `fk_impact_analysis_detail_session` FOREIGN KEY (`analysis_session_id`) REFERENCES `tt_impact_analysis_session` (`id`) ON DELETE CASCADE
+    CONSTRAINT `fk_impact_analysis_details_session` FOREIGN KEY (`analysis_session_id`) REFERENCES `tt_impact_analysis_sessions` (`id`) ON DELETE CASCADE
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 	COMMENT='Detailed impact analysis results';
 
 	-- What-If Scenarios
-	CREATE TABLE IF NOT EXISTS `tt_what_if_scenario` (
+	CREATE TABLE IF NOT EXISTS `tt_what_if_scenarios` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `uuid` BINARY(16) NOT NULL,
     `timetable_id` INT UNSIGNED NOT NULL,
@@ -2476,9 +2476,9 @@ SET FOREIGN_KEY_CHECKS = 0;
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_what_if_scenario_uuid` (`uuid`),
     INDEX `idx_what_if_scenario_timetable` (`timetable_id`),
-    CONSTRAINT `fk_what_if_scenario_timetable` FOREIGN KEY (`timetable_id`) REFERENCES `tt_timetable` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_what_if_scenario_analysis` FOREIGN KEY (`analysis_session_id`) REFERENCES `tt_impact_analysis_session` (`id`) ON DELETE SET NULL,
-    CONSTRAINT `fk_what_if_scenario_created_by` FOREIGN KEY (`created_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
+    CONSTRAINT `fk_what_if_scenarios_timetable` FOREIGN KEY (`timetable_id`) REFERENCES `tt_timetables` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_what_if_scenarios_analysis` FOREIGN KEY (`analysis_session_id`) REFERENCES `tt_impact_analysis_sessions` (`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_what_if_scenarios_created_by` FOREIGN KEY (`created_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 	COMMENT='What-if scenarios for testing changes';
 
@@ -2488,7 +2488,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- -------------------------------------------------
 
 	-- Batch Operation Sessions
-	CREATE TABLE IF NOT EXISTS `tt_batch_operation` (
+	CREATE TABLE IF NOT EXISTS `tt_batch_operations` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `uuid` BINARY(16) NOT NULL,
     `timetable_id` INT UNSIGNED NOT NULL,
@@ -2511,13 +2511,13 @@ SET FOREIGN_KEY_CHECKS = 0;
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_batch_operation_uuid` (`uuid`),
     INDEX `idx_batch_operation_timetable` (`timetable_id`, `status`),
-    CONSTRAINT `fk_batch_operation_timetable` FOREIGN KEY (`timetable_id`) REFERENCES `tt_timetable` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_batch_operation_created_by` FOREIGN KEY (`created_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
+    CONSTRAINT `fk_batch_operations_timetable` FOREIGN KEY (`timetable_id`) REFERENCES `tt_timetables` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_batch_operations_created_by` FOREIGN KEY (`created_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 	COMMENT='Batch operations on timetable';
 
 	-- Batch Operation Items
-	CREATE TABLE IF NOT EXISTS `tt_batch_operation_item` (
+	CREATE TABLE IF NOT EXISTS `tt_batch_operation_items` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `batch_operation_id` INT UNSIGNED NOT NULL,
     `cell_id` INT UNSIGNED NOT NULL,
@@ -2535,8 +2535,8 @@ SET FOREIGN_KEY_CHECKS = 0;
     INDEX `idx_batch_operation_item_batch` (`batch_operation_id`),
     INDEX `idx_batch_operation_item_cell` (`cell_id`),
     INDEX `idx_batch_operation_item_status` (`execution_status`),
-    CONSTRAINT `fk_batch_operation_item_batch` FOREIGN KEY (`batch_operation_id`) REFERENCES `tt_batch_operation` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_batch_operation_item_cell` FOREIGN KEY (`cell_id`) REFERENCES `tt_timetable_cell` (`id`) ON DELETE CASCADE
+    CONSTRAINT `fk_batch_operations_items_batch` FOREIGN KEY (`batch_operation_id`) REFERENCES `tt_batch_operations` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_batch_operations_items_cell` FOREIGN KEY (`cell_id`) REFERENCES `tt_timetable_cells` (`id`) ON DELETE CASCADE
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 	COMMENT='Individual items in a batch operation';
 
@@ -2546,7 +2546,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- -------------------------------------------------
 
 	-- Re-validation Triggers
-	CREATE TABLE IF NOT EXISTS `tt_revalidation_trigger` (
+	CREATE TABLE IF NOT EXISTS `tt_revalidation_triggers` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `trigger_type` ENUM('MANUAL_CHANGE', 'BATCH_OPERATION', 'SUBSTITUTION', 'CONSTRAINT_CHANGE', 'SCHEDULED', 'THRESHOLD_CROSSED') NOT NULL,
     `trigger_source` VARCHAR(50) NOT NULL COMMENT 'Table or process that triggered',
@@ -2562,12 +2562,12 @@ SET FOREIGN_KEY_CHECKS = 0;
     PRIMARY KEY (`id`),
     INDEX `idx_revalidation_trigger_status` (`status`, `priority`),
     INDEX `idx_revalidation_trigger_source` (`trigger_source`, `source_id`),
-    CONSTRAINT `fk_revalidation_trigger_validation` FOREIGN KEY (`validation_session_id`) REFERENCES `tt_validation_session` (`id`) ON DELETE SET NULL
+    CONSTRAINT `fk_revalidation_triggers_validation` FOREIGN KEY (`validation_session_id`) REFERENCES `tt_validation_sessions` (`id`) ON DELETE SET NULL
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 	COMMENT='Triggers for automatic re-validation';
 
 	-- Re-validation Schedule
-	CREATE TABLE IF NOT EXISTS `tt_revalidation_schedule` (
+	CREATE TABLE IF NOT EXISTS `tt_revalidation_schedules` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `timetable_id` INT UNSIGNED NOT NULL,
     `schedule_type` ENUM('PERIODIC', 'THRESHOLD_BASED', 'EVENT_BASED') NOT NULL,
@@ -2582,7 +2582,7 @@ SET FOREIGN_KEY_CHECKS = 0;
     
     PRIMARY KEY (`id`),
     INDEX `idx_revalidation_schedule_next` (`next_run_at`, `is_active`),
-    CONSTRAINT `fk_revalidation_schedule_timetable` FOREIGN KEY (`timetable_id`) REFERENCES `tt_timetable` (`id`) ON DELETE CASCADE
+    CONSTRAINT `fk_revalidation_schedules_timetable` FOREIGN KEY (`timetable_id`) REFERENCES `tt_timetables` (`id`) ON DELETE CASCADE
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 	COMMENT='Scheduled re-validation jobs';
 
@@ -2592,7 +2592,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- -------------------------------------------------
 
 	-- Version Comparison Sessions
-	CREATE TABLE IF NOT EXISTS `tt_version_comparison` (
+	CREATE TABLE IF NOT EXISTS `tt_version_comparisons` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `uuid` BINARY(16) NOT NULL,
     `timetable_id` INT UNSIGNED NOT NULL,
@@ -2609,13 +2609,13 @@ SET FOREIGN_KEY_CHECKS = 0;
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_version_comparison_uuid` (`uuid`),
     INDEX `idx_version_comparison_timetable` (`timetable_id`),
-    CONSTRAINT `fk_version_comparison_timetable` FOREIGN KEY (`timetable_id`) REFERENCES `tt_timetable` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_version_comparison_created_by` FOREIGN KEY (`created_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
+    CONSTRAINT `fk_version_comparisons_timetable` FOREIGN KEY (`timetable_id`) REFERENCES `tt_timetables` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_version_comparisons_created_by` FOREIGN KEY (`created_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 	COMMENT='Version comparison sessions';
 
 	-- Version Comparison Details
-	CREATE TABLE IF NOT EXISTS `tt_version_comparison_detail` (
+	CREATE TABLE IF NOT EXISTS `tt_version_comparison_details` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `comparison_id` INT UNSIGNED NOT NULL,
     `change_type` ENUM('ADDED', 'REMOVED', 'MODIFIED', 'MOVED', 'UNCHANGED') NOT NULL,
@@ -2631,7 +2631,7 @@ SET FOREIGN_KEY_CHECKS = 0;
     PRIMARY KEY (`id`),
     INDEX `idx_version_comparison_detail_comparison` (`comparison_id`),
     INDEX `idx_version_comparison_detail_type` (`change_type`, `entity_type`),
-    CONSTRAINT `fk_version_comparison_detail_comparison` FOREIGN KEY (`comparison_id`) REFERENCES `tt_version_comparison` (`id`) ON DELETE CASCADE
+    CONSTRAINT `fk_version_comparisons_details_comparison` FOREIGN KEY (`comparison_id`) REFERENCES `tt_version_comparisons` (`id`) ON DELETE CASCADE
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 	COMMENT='Detailed changes between versions';
 
@@ -2643,8 +2643,8 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- SEED DATA FOR CONSTRAINT TABLES
 -- -------------------------------
 
--- Seed tt_constraint_category
-INSERT INTO `tt_constraint_category` (`code`, `name`, `ordinal`) VALUES
+-- Seed tt_constraint_categories
+INSERT INTO `tt_constraint_categories` (`code`, `name`, `ordinal`) VALUES
 ('TEACHER', 'Teacher Constraints', 1),
 ('CLASS', 'Class Constraints', 2),
 ('ACTIVITY', 'Activity Constraints', 3),
@@ -2652,15 +2652,15 @@ INSERT INTO `tt_constraint_category` (`code`, `name`, `ordinal`) VALUES
 ('STUDENT', 'Student Group Constraints', 5),
 ('GLOBAL', 'Global Constraints', 6);
 
--- Seed tt_constraint_scope
-INSERT INTO `tt_constraint_scope` (`code`, `name`, `target_type_required`, `target_id_required`) VALUES
+-- Seed tt_constraint_scopes
+INSERT INTO `tt_constraint_scopes` (`code`, `name`, `target_type_required`, `target_id_required`) VALUES
 ('GLOBAL', 'Global', 0, 0),
 ('INDIVIDUAL', 'Individual', 1, 1),
 ('GROUP', 'Group', 1, 0),
 ('PAIR', 'Pair', 1, 0);
 
--- Seed tt_constraint_target_type
-INSERT INTO `tt_constraint_target_type` (`code`, `name`, `table_name`) VALUES
+-- Seed tt_constraint_target_types
+INSERT INTO `tt_constraint_target_types` (`code`, `name`, `table_name`) VALUES
 ('TEACHER', 'Teacher', 'sch_teachers'),
 ('CLASS', 'Class', 'sch_classes'),
 ('SECTION', 'Section', 'sch_sections'),
@@ -2673,27 +2673,27 @@ INSERT INTO `tt_constraint_target_type` (`code`, `name`, `table_name`) VALUES
 ('ROOM_TYPE', 'Room Type', 'sch_rooms_type'),
 ('BUILDING', 'Building', 'sch_buildings');
 
--- Seed tt_constraint_type (sample - full list from A2)
-INSERT INTO `tt_constraint_type` 
+-- Seed tt_constraint_types (sample - full list from A2)
+INSERT INTO `tt_constraint_types` 
 (`code`, `name`, `category_id`, `scope_id`, `constraint_level`, `default_weight`, 
  `parameter_schema`, `applicable_target_types`) VALUES
 ('TEACHER_MAX_DAILY', 'Teacher Maximum Daily Periods', 
- (SELECT id FROM tt_constraint_category WHERE code='TEACHER'),
- (SELECT id FROM tt_constraint_scope WHERE code='INDIVIDUAL'),
+ (SELECT id FROM tt_constraint_categories WHERE code='TEACHER'),
+ (SELECT id FROM tt_constraint_scopes WHERE code='INDIVIDUAL'),
  'HARD', 100,
  '{"max_periods_per_day":{"type":"integer","minimum":1,"maximum":12,"default":8}}',
  '[{"target_type":"TEACHER"}]'),
 
 ('TEACHER_MAX_WEEKLY', 'Teacher Maximum Weekly Periods',
- (SELECT id FROM tt_constraint_category WHERE code='TEACHER'),
- (SELECT id FROM tt_constraint_scope WHERE code='INDIVIDUAL'),
+ (SELECT id FROM tt_constraint_categories WHERE code='TEACHER'),
+ (SELECT id FROM tt_constraint_scopes WHERE code='INDIVIDUAL'),
  'HARD', 100,
  '{"max_periods_per_week":{"type":"integer","minimum":1,"maximum":60,"default":48}}',
  '[{"target_type":"TEACHER"}]'),
 
 ('CLASS_MAX_PER_DAY', 'Class Maximum Periods Per Day',
- (SELECT id FROM tt_constraint_category WHERE code='CLASS'),
- (SELECT id FROM tt_constraint_scope WHERE code='INDIVIDUAL'),
+ (SELECT id FROM tt_constraint_categories WHERE code='CLASS'),
+ (SELECT id FROM tt_constraint_scopes WHERE code='INDIVIDUAL'),
  'HARD', 100,
  '{"max_periods_per_day":{"type":"integer","minimum":1,"maximum":12,"default":8}}',
  '[{"target_type":"CLASS_SECTION"}]');
