@@ -265,7 +265,6 @@ CREATE TABLE IF NOT EXISTS `sys_dropdown_need_table_jnt` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
-
 CREATE TABLE IF NOT EXISTS `sys_media` (
   `id` INT unsigned NOT NULL AUTO_INCREMENT,
   `model_type` varchar(255) NOT NULL,
