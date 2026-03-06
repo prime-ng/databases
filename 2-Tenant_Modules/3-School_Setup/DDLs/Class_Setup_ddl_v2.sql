@@ -141,6 +141,12 @@
     `subject_type_id` int unsigned NOT NULL,      -- FK to 'sch_subject_types'
     `code` CHAR(30) NOT NULL,                     -- e.g., 'SCI_LAC','SCI_LAB','SST_LAC','ENG_LAC' (Changed from 'subject_studyformat_code')
     `name` varchar(50) NOT NULL,                  -- e.g., 'Science Lecture','Science Lab','Math Lecture','Math Lab' and so on
+       --
+    `require_class_house_room` TINYINT(1) NOT NULL DEFAULT 0, -- Whether Class House Room is required for this Class Group
+    `compulsory_specific_room_type` TINYINT(1) NOT NULL DEFAULT 0, -- Whether specific room type is required (TRUE - if Specific Room Type is Must)
+    `required_room_type_id` INT UNSIGNED NOT NULL,      -- FK to sch_rooms_type.id (Required)
+    `required_room_id` INT UNSIGNED DEFAULT NULL,      -- FK to sch_rooms.id (Optional)
+    --
     `is_active` tinyint(1) NOT NULL DEFAULT '1',
     `deleted_at` timestamp NULL DEFAULT NULL,
     `created_at` timestamp NULL DEFAULT NULL,
@@ -176,6 +182,7 @@
     `max_consecutive_periods` TINYINT UNSIGNED DEFAULT 1,          -- Maximum consecutive periods
     `priority_score` SMALLINT UNSIGNED DEFAULT 10,                 -- Priority of this requirement on 1-100 scale
     --
+    `require_class_house_room` TINYINT(1) NOT NULL DEFAULT 0, -- Whether Class House Room is required for this Class Group
     `compulsory_specific_room_type` TINYINT(1) NOT NULL DEFAULT 0, -- Whether specific room type is required (TRUE - if Specific Room Type is Must)
     `required_room_type_id` INT UNSIGNED NOT NULL,      -- FK to sch_rooms_type.id (Required)
     `required_room_id` INT UNSIGNED DEFAULT NULL,      -- FK to sch_rooms.id (Optional)
