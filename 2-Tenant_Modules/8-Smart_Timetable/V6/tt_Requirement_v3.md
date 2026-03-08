@@ -7,7 +7,7 @@ This document outlines the requirements for a web-based version of the ‘Automa
 I want to develop this application using PHP with Laravel and MySQL database. To develop a full-featured timetable generation and management module that supports automatic and manual timetable scheduling for schools, incorporating the advanced constraint-based engine similar to FET. 
 
 Below are the functionalities which should be covered in the application -
-0- Preliminary Tables required
+0- Check Preliminary Data availability in dependent Tables
 	- 
 1. Landing page which should have a dashboard with Menu and Submenu to run all below functionalities of the Application. Below are Menu and Submenu options –
    - Setup
