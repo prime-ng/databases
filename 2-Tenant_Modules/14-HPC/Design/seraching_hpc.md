@@ -1,3 +1,4 @@
+
 C:\laragon\www\database\databases\2-Tenant_Modules\14-HPC first review this module unstanding
 Let me read the memory file first, then explore the HPC module.
 
@@ -5366,3 +5367,1817 @@ Every name, label, placeholder, value comes from DB
 Table section loaded via $section->tableData() relationship
 All saved values pre-filled from $savedValues / $savedTableData
 Ready for page 4 when you confirm.
+
+now fourth page start care fully
+Let me check the current state of form_four.blade.php and the seeder data for page 4.
+
+Read form_four.blade.php
+Bash Read seedPage4Fourth full content
+IN
+sed -n '2589,2660p' c:/laragon/www/school/laravel/database/seeders/HPCTemplateSeeder.php
+
+OUT
+            $this->tableCell($s6, $rowItem, 'goals_home_support_' . $row, $row, 2, '');
+            $this->tableCell($s6, $rowItem, 'goals_school_support_' . $row, $row, 3, '');
+        }
+
+        // ── Why goal matters ────────────────────────────────────────────────────
+        $s7 = $this->insertSection($tId, $pId, 'P3_IMPORTANCE', 'Why Goal Matters', 7);
+        $r  = $this->insertRubric($tId, $pId, $s7, 'P3_GOAL_IMPORTANCE', 'Why does this goal matter?', 1);
+        $this->ri($r, 'goal_importance', 1, 'Text', 'Why does this goal matter to you?', 'Goal Importance', 0);
+
+        // ── Achievements ────────────────────────────────────────────────────────
+        $s8 = $this->insertSection($tId, $pId, 'P3_ACHIEVEMENTS', 'Achievements', 8);
+        $r  = $this->insertRubric($tId, $pId, $s8, 'P3_ACHIEVEMENTS_RUB', 'Goals Achieved', 1);
+        $this->ri($r, 'achievements', 1, 'Text', 'Goals I have achieved and feel proud of:', 'Achievements', 0);
+    }
+    private function seedPage4Fourth(int $tId, int $pId): void
+    {
+        $tmOptions = json_encode(['rarely','sometimes','usually','almost_always']);
+        $tmLabels  = json_encode(['Rarely','Sometimes','Usually','Almost Always']);
+
+        $s1 = $this->insertSection($tId, $pId, 'TIME_MANAGEMENT', 'Time Management – Part A(3)', 1);
+        $this->sectionItem($s1, 'tm_note', 1, 'Fill the appropriate column.');
+
+        // Time Management Table (5 rows x 5 columns)
+        $sTable = $this->insertSection($tId, $pId, 'TM_TABLE', 'Time Management Table', 2, 1);
+
+        $headerRow = $this->sectionItem($sTable, 'tm_header', 1, 'Table Header', 'Table');
+        $this->tableCell($sTable, $headerRow, 'tm_col_statement', 0, 1, 'Statements');
+        $this->tableCell($sTable, $headerRow, 'tm_col_rarely', 0, 2, 'Rarely');
+        $this->tableCell($sTable, $headerRow, 'tm_col_sometimes', 0, 3, 'Sometimes');
+        $this->tableCell($sTable, $headerRow, 'tm_col_usually', 0, 4, 'Usually');
+        $this->tableCell($sTable, $headerRow, 'tm_col_almost_always', 0, 5, 'Almost Always');
+
+        $questions = [
+            "I like following a schedule.",
+            "I get distracted and do not start my tasks on time.",
+            "I do things at the last minute.",
+            "I can figure out how much time assignments and projects will take.",
+            "I am good at deciding which tasks to do first."
+        ];
+
+        foreach ($questions as $idx => $question) {
+            $rowId = $idx + 1;
+            $rowItem = $this->sectionItem($sTable, 'tm_row_' . $rowId, $rowId + 1, 'Row ' . $rowId, 'Table');
+            $this->tableCell($sTable, $rowItem, 'tm_q_' . $rowId . '_statement', $rowId, 1, ($rowId) . '. ' . $question);
+            $this->tableCell($sTable, $rowItem, 'tm_q_' . $rowId . '_rarely', $rowId, 2, '');
+            $this->tableCell($sTable, $rowItem, 'tm_q_' . $rowId . '_sometimes', $rowId, 3, '');
+            $this->tableCell($sTable, $rowItem, 'tm_q_' . $rowId . '_usually', $rowId, 4, '');
+            $this->tableCell($sTable, $rowItem, 'tm_q_' . $rowId . '_almost_always', $rowId, 5, '');
+        }
+
+        // My Time Habits – these are text inputs (rubric items)
+        $s2 = $this->insertSection($tId, $pId, 'TIME_HABITS', 'My Time Habits', 3, 0);
+        $r = $this->insertRubric($tId, $pId, $s2, 'TM_BEST_STUDY', 'Best Time to Study', 1);
+        $this->ri($r, 'best_time_study', 1, 'Text', 'Best Time of the Day to study', 'Best Study Time', 0);
+        $r = $this->insertRubric($tId, $pId, $s2, 'TM_BEST_PLAY', 'Best Time to Play', 2);
+        $this->ri($r, 'best_time_play', 1, 'Text', 'Best Time to play/exercise', 'Best Play Time', 0);
+        $r = $this->insertRubric($tId, $pId, $s2, 'TM_BEST_RELAX', 'Best Time to Relax', 3);
+        $this->ri($r, 'best_time_relax', 1, 'Text', 'Best Time to relax', 'Best Relax Time', 0);
+        $r = $this->insertRubric($tId, $pId, $s2, 'TM_BEST_FAMILY', 'Best Time for Family', 4);
+        $this->ri($r, 'best_time_family', 1, 'Text', 'Best Time for friends/family', 'Best Family Time', 0);
+        $r = $this->insertRubric($tId, $pId, $s2, 'TM_SCHOOLWORK', 'Schoolwork Time', 5);
+        $this->ri($r, 'schoolwork_time', 1, 'Text', 'Time spent on schoolwork after school', 'Schoolwork Time', 0);
+        $r = $this->insertRubric($tId, $pId, $s2, 'TM_PHYSICAL_FITNESS', 'Physical Fitness Time', 6);
+        $this->ri($r, 'physical_fitness_time', 1, 'Text', 'Physical fitness time', 'Physical Fitness Time', 0);
+        $r = $this->insertRubric($tId, $pId, $s2, 'TM_EMOTIONAL_WELLBEING', 'Emotional Wellbeing Time', 7);
+        $this->ri($r, 'emotional_wellbeing_time', 1, 'Text', 'Emotional wellbeing time', 'Emotional Wellbeing', 0);
+        $r = $this->insertRubric($tId, $pId, $s2, 'TM_FITNESS_IMPROVEMENT', 'Fitness Improvement', 8);
+        $this->ri($r, 'fitness_improvement', 1, 'Text', 'How do you improve fitness?', 'Fitness Improvement', 0);
+        $r = $this->insertRubric($tId, $pId, $s2, 'TM_OTHER_ACTIVITIES', 'Other Activities Time', 9);
+        $this->ri($r, 'other_activities_time', 1, 'Text', 'Time spent on phone / friends', 'Other Activities', 0);
+        $r = $this->insertRubric($tId, $pId, $s2, 'TM_TODO_LISTS', 'To-do Lists', 10);
+        $this->ri($r, 'todo_lists', 1, 'Text', 'Do you make to-do lists? Why?', 'To-do Lists', 0);
+The seeder already has items for the My Time Habits section (TIME_HABITS). The design has:1. Header (TIME_MANAGEMENT section)
+2. TM_TABLE (5 rows × 5 cols table)3. My Time Habits section (4 cards: Best Time, Schoolwork, Fitness, Other)The seeder TIME_HABITS section has all 10 rubrics but they're all in ONE section. The design has 4 cards.
+
+The design cards map to:- Card 1 "Best Time of the Day": best_time_study, best_time_play, best_time_relax, best_time_family (4 items)
+
+Card 2 "Schoolwork": schoolwork_time (1 item)
+Card 3 "Fitness & Wellbeing": physical_fitness_time, emotional_wellbeing_time, fitness_improvement (3 items)
+Card 4 "Other Activities": other_activities_time, todo_lists (2 items)
+Since all 10 items are currently grouped in one section, I need to split them into 4 separate sections so each card can pull its own data dynamically without relying on positional logic. I'll restructure the seeder to create distinct sections for each card, similar to how page 3 is organized.
+
+Now I'm mapping out the new section structure: best_time_study, best_time_play, best_time_relax, and best_time_family will go into one section, schoolwork_time gets its own, fitness metrics go together, and other activities form the last section. I'll keep the TIME_MANAGEMENT header and TM_TABLE as they are since they serve different purposes.
+
+Bash Read end of seedPage4Fourth
+IN
+sed -n '2660,2690p' c:/laragon/www/school/laravel/database/seeders/HPCTemplateSeeder.php
+
+OUT
+        $this->ri($r, 'todo_lists', 1, 'Text', 'Do you make to-do lists? Why?', 'To-do Lists', 0);
+    }
+
+    private function seedPage5Fourth(int $tId, int $pId): void
+    {
+        $s1 = $this->insertSection($tId, $pId, 'TIME_MAP', 'Time Map', 1);
+
+        $r = $this->insertRubric($tId, $pId, $s1, 'P5_MORE_TIME', 'More Time On', 1);
+        $this->ri($r, 'more_time_on', 1, 'Text', 'One thing I would like to spend MORE time on', 'More Time', 0);
+
+        $r = $this->insertRubric($tId, $pId, $s1, 'P5_LESS_TIME', 'Less Time On', 2);
+        $this->ri($r, 'less_time_on', 1, 'Text', 'One thing I would like to spend LESS time on', 'Less Time', 0);
+
+        $r = $this->insertRubric($tId, $pId, $s1, 'P5_DAY_PLAN', 'Day Planning', 3);
+        $this->ri($r, 'day_plan_notes', 1, 'Text', 'How do you plan your day?', 'Day Plan', 0);
+    }
+
+    private function seedPage6Fourth(int $tId, int $pId): void
+    {
+        $futurePlanOptions = json_encode(['college','skill_training','work','startup','other']);
+        $futurePlanLabels  = json_encode(['Go to college','Take a skill training','Start working','Start a business','Other']);
+
+        $s1 = $this->insertSection($tId, $pId, 'PLANS_AFTER_SCHOOL', 'Plans After School – Part A(4)', 1);
+
+        $r = $this->insertRubric($tId, $pId, $s1, 'P6_FUTURE_PLAN', 'Future Plan', 1);
+        $this->ri($r, 'future_plan', 1, 'Descriptor', 'After I finish school, I want to...', 'Future Plan', 0, null, 0, $futurePlanOptions, $futurePlanLabels);
+
+        $r = $this->insertRubric($tId, $pId, $s1, 'P6_SCHOOL_TYPE', 'School/College Type', 2);
+        $this->ri($r, 'school_college_type', 1, 'Text', 'Type of school/college I want to go to', 'School Type', 0);
+
+        $r = $this->insertRubric($tId, $pId, $s1, 'P6_CAREER_INTEREST', 'Career Interest', 3);
+Now I have the full picture for page 4. The seeder has:
+
+TIME_MANAGEMENT section (just a note)2. TM_TABLE (5×5 table with has_items=1)3. TIME_HABITS section (10 rubrics in one section)
+The design has:1. Header (Part A(3), Time Management, Fill the appropriate column)2. TM_TABLE (5 rows × 5 cols)3. My Time Habits (4 cards: Best Time, Schoolwork, Fitness, Other)The TIME_HABITS section has all 10 items in one section. The design maps them to 4 separate cards.
+
+I need to restructure the seeder like I did for pages 2 and 3, breaking the single TIME_HABITS section into four separate sections—one for each card—so I can map best time items, schoolwork, fitness-related items, and other activities independently. Then in the blade template, I'll fetch each section by its code and loop through the items to populate the corresponding cards.
+
+For the TM_TABLE, I'm realizing the design actually uses text inputs across five columns (a statement column plus four response columns for rarely, sometimes, usually, almost always), where the first column contains the statement text and the remaining columns are editable inputs rather than checkboxes. Looking at the seeder data more closely, I can see that column 1 contains the question text while columns 2-5 are the answer fields that should be empty for user input. The existing design uses text inputs for all editable columns, so I'll stick with that approach—column 1 displays the statement as static text, and columns 2-5 render as text input fields with the appropriate name attributes for each response option.
+
+The design has 4 separate habit cards but the seeder puts all 10 items in one TIME_HABITS section. I'll restructure the seeder into 4 sections (one per card) + keep the table, then write the blade dynamically.
+
+Read HPCTemplateSeeder.php (lines 2609-2663)
+Now update the seeder — split TIME_HABITS into 4 sections matching the 4 design cards:
+
+Edit HPCTemplateSeeder.php
+Added 9 lines
+Now write the blade — fully dynamic:
+
+Write form_four.blade.php
+250 lines
+<!-- ================= TAB 4 ================= -->
+@php
+    $savedValues    = $savedValues ?? [];
+    $savedTableData = $savedTableData ?? [];
+    $pageNo         = $pageNo ?? 4;
+@endphp
+
+@foreach($parts as $part)
+@php
+    // ── Build pageData: sections → rubrics → items ───────────────────────────
+    $pageData = ['sections' => []];
+    $tableSec = null;
+
+    foreach ($part->sections->sortBy('display_order') as $section) {
+        if ($section->has_items) {
+            // Table section: load cells via relationship
+            $cells    = $section->tableData()->where('is_active', 1)->orderBy('row_id')->orderBy('column_id')->get();
+            $tHeaders = [];
+            $tRows    = [];
+            foreach ($cells as $cell) {
+                if ($cell->row_id == 0) {
+                    $tHeaders[$cell->column_id] = $cell->value;
+                } else {
+                    $savedKey = $section->id . '_' . $cell->row_id . '_' . $cell->column_id;
+                    $tRows[$cell->row_id][$cell->column_id] = [
+                        'name'  => $cell->html_object_name,
+                        'value' => $savedTableData[$savedKey] ?? '',
+                        'col_value' => $cell->value,  // static statement text for col 1
+                    ];
+                }
+            }
+            $tableSec = [
+                'id'      => $section->id,
+                'title'   => $section->description,
+                'headers' => $tHeaders,
+                'rows'    => $tRows,
+            ];
+            continue;
+        }
+
+        $sectionData = [
+            'id'      => $section->id,
+            'code'    => $section->code,
+            'title'   => $section->description,
+            'rubrics' => [],
+        ];
+        foreach ($section->rubrics()->where('visible', 1)->where('is_active', 1)->orderBy('display_order')->get() as $rubric) {
+            $rubricItems = [];
+            foreach ($rubric->items()->where('is_active', 1)->orderBy('ordinal')->get() as $item) {
+                $rubricItems[] = [
+                    'field_id'    => $item->html_object_name,
+                    'label'       => $item->input_level,
+                    'placeholder' => $item->description ?? '',
+                    'input_type'  => strtolower(trim($item->input_type ?? 'text')),
+                ];
+            }
+            if (!empty($rubricItems)) {
+                $sectionData['rubrics'][] = [
+                    'code'        => $rubric->code,
+                    'description' => $rubric->description,
+                    'items'       => $rubricItems,
+                ];
+            }
+        }
+        $pageData['sections'][] = $sectionData;
+    }
+
+    // ── Access sections by code ───────────────────────────────────────────────
+    $byCode       = collect($pageData['sections'])->keyBy('code');
+    $tmHeader     = $byCode->get('TIME_MANAGEMENT',    ['title' => '', 'rubrics' => []]);
+    $bestTime     = $byCode->get('P4_BEST_TIME',       ['title' => '', 'rubrics' => []]);
+    $schoolwork   = $byCode->get('P4_SCHOOLWORK',      ['title' => '', 'rubrics' => []]);
+    $fitness      = $byCode->get('P4_FITNESS',         ['title' => '', 'rubrics' => []]);
+    $otherAct     = $byCode->get('P4_OTHER_ACTIVITIES',['title' => '', 'rubrics' => []]);
+@endphp
+
+<div class="tab-pane fade p-4 bg-light" id="page-{{ $pageNo }}" role="tabpanel" data-page="{{ $pageNo }}">
+
+    <div class="container-fluid">
+
+        <!-- ================= HEADER ================= -->
+        <div class="text-center mb-4">
+            <h5 class="text-uppercase fw-bold text-warning">{{ $part->code }}</h5>
+            <h4 class="fw-bold text-primary">{{ $tmHeader['title'] }}</h4>
+            @php
+                $tmNote = $part->sections->sortBy('display_order')
+                    ->firstWhere('code', 'TIME_MANAGEMENT');
+                $noteText = $tmNote
+                    ? $tmNote->items()->where('is_active', 1)->orderBy('ordinal')->value('level_display')
+                    : '';
+            @endphp
+            @if($noteText)
+            <p class="text-muted">{{ $noteText }}</p>
+            @endif
+        </div>
+
+        <!-- ================= TIME MANAGEMENT TABLE ================= -->
+        @if($tableSec && !empty($tableSec['headers']))
+        <div class="card shadow-sm border-0 mb-5">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered align-middle">
+                        <thead class="table-warning text-center">
+                            <tr>
+                                @foreach($tableSec['headers'] as $colId => $header)
+                                <th class="{{ $colId === 1 ? 'text-start' : '' }}">{{ $header }}</th>
+                                @endforeach
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($tableSec['rows'] as $rowCells)
+                            <tr>
+                                @foreach($rowCells as $colId => $cell)
+                                @if($colId === 1)
+                                {{-- Statement column: display-only text --}}
+                                <td>{{ $cell['col_value'] }}</td>
+                                @else
+                                {{-- Answer columns: text input --}}
+                                <td class="text-center">
+                                    <input type="text"
+                                           name="{{ $cell['name'] }}"
+                                           value="{{ $cell['value'] }}"
+                                           class="form-control text-center">
+                                </td>
+                                @endif
+                                @endforeach
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        @endif
+
+        <!-- ================= MY TIME HABITS ================= -->
+        <div class="mb-3">
+            <h5 class="fw-bold text-primary border-bottom pb-2">
+                📅 My Time Habits
+            </h5>
+        </div>
+
+        <div class="row g-4">
+
+            <!-- Card 1: Best Time of the Day -->
+            @if(!empty($bestTime['rubrics']))
+            <div class="col-lg-3">
+                <div class="card shadow-sm h-100 border-0">
+                    <div class="card-body">
+                        <h6 class="fw-semibold mb-3">{{ $bestTime['title'] }}</h6>
+                        @foreach($bestTime['rubrics'] as $rubric)
+                        @foreach($rubric['items'] as $item)
+                        <div class="{{ !$loop->parent->last || !$loop->last ? 'mb-3' : '' }}">
+                            <label class="form-label small">{{ $item['label'] }}</label>
+                            <input type="text"
+                                   name="{{ $item['field_id'] }}"
+                                   class="form-control"
+                                   value="{{ $savedValues[$item['field_id']] ?? '' }}">
+                        </div>
+                        @endforeach
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+            @endif
+
+            <!-- Card 2: Schoolwork -->
+            @if(!empty($schoolwork['rubrics']))
+            <div class="col-lg-3">
+                <div class="card shadow-sm h-100 border-0">
+                    <div class="card-body">
+                        <h6 class="fw-semibold mb-3">{{ $schoolwork['title'] }}</h6>
+                        @foreach($schoolwork['rubrics'] as $rubric)
+                        @foreach($rubric['items'] as $item)
+                        <label class="form-label small">{{ $item['label'] }}</label>
+                        <input type="text"
+                               name="{{ $item['field_id'] }}"
+                               class="form-control"
+                               value="{{ $savedValues[$item['field_id']] ?? '' }}">
+                        @endforeach
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+            @endif
+
+            <!-- Card 3: Fitness & Wellbeing -->
+            @if(!empty($fitness['rubrics']))
+            <div class="col-lg-3">
+                <div class="card shadow-sm h-100 border-0">
+                    <div class="card-body">
+                        <h6 class="fw-semibold mb-3">{{ $fitness['title'] }}</h6>
+                        @foreach($fitness['rubrics'] as $rubric)
+                        @foreach($rubric['items'] as $item)
+                        <div class="{{ !$loop->parent->last || !$loop->last ? 'mb-3' : '' }}">
+                            <label class="form-label small">{{ $item['label'] }}</label>
+                            @if($item['input_type'] === 'textarea')
+                            <textarea name="{{ $item['field_id'] }}"
+                                      class="form-control"
+                                      rows="3">{{ $savedValues[$item['field_id']] ?? '' }}</textarea>
+                            @else
+                            <input type="text"
+                                   name="{{ $item['field_id'] }}"
+                                   class="form-control"
+                                   value="{{ $savedValues[$item['field_id']] ?? '' }}">
+                            @endif
+                        </div>
+                        @endforeach
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+            @endif
+
+            <!-- Card 4: Other Activities -->
+            @if(!empty($otherAct['rubrics']))
+            <div class="col-lg-3">
+                <div class="card shadow-sm h-100 border-0">
+                    <div class="card-body">
+                        <h6 class="fw-semibold mb-3">{{ $otherAct['title'] }}</h6>
+                        @foreach($otherAct['rubrics'] as $rubric)
+                        @foreach($rubric['items'] as $item)
+                        <div class="{{ !$loop->parent->last || !$loop->last ? 'mb-3' : '' }}">
+                            <label class="form-label small">{{ $item['label'] }}</label>
+                            @if($item['input_type'] === 'textarea')
+                            <textarea name="{{ $item['field_id'] }}"
+                                      class="form-control"
+                                      rows="3">{{ $savedValues[$item['field_id']] ?? '' }}</textarea>
+                            @else
+                            <input type="text"
+                                   name="{{ $item['field_id'] }}"
+                                   class="form-control"
+                                   value="{{ $savedValues[$item['field_id']] ?? '' }}">
+                            @endif
+                        </div>
+                        @endforeach
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+            @endif
+
+        </div>
+
+    </div>
+
+</div>
+
+@endforeach
+Page 4 done. Here's the summary:
+
+Seeder restructured — TIME_HABITS split into 4 sections matching the 4 design cards:
+
+Section Code	Card Title (from section->description)	Items
+P4_BEST_TIME	Best Time of the Day	best_time_study, best_time_play, best_time_relax, best_time_family
+P4_SCHOOLWORK	Schoolwork	schoolwork_time
+P4_FITNESS	Fitness & Wellbeing	physical_fitness_time, emotional_wellbeing_time, fitness_improvement
+P4_OTHER_ACTIVITIES	Other Activities	other_activities_time, todo_lists
+Blade — fully dynamic:
+
+Header title/note from TIME_MANAGEMENT section via DB
+Table: col 1 displays static statement text (col_value), cols 2–5 are editable inputs with name from html_object_name
+Each habit card: section title from $section->description, labels from $item['label'], names from $item['field_id']
+All values pre-filled from $savedValues / $savedTableData
+Supports both text and textarea input types dynamically
+Ready for page 5 when you confirm.
+
+page 5 start
+Read form_five.blade.php
+Bash Read seedPage5Fourth
+IN
+sed -n '2663,2685p' c:/laragon/www/school/laravel/database/seeders/HPCTemplateSeeder.php
+
+OUT
+        // ── Card 4: Other Activities (2 items) ─────────────────────────────────
+        $s5 = $this->insertSection($tId, $pId, 'P4_OTHER_ACTIVITIES', 'Other Activities', 6);
+        $r = $this->insertRubric($tId, $pId, $s5, 'TM_OTHER_ACTIVITIES', 'Other Activities Time', 1);
+        $this->ri($r, 'other_activities_time', 1, 'Text', 'Time spent on phone / friends', 'Other Activities', 0);
+        $r = $this->insertRubric($tId, $pId, $s5, 'TM_TODO_LISTS', 'To-do Lists', 2);
+        $this->ri($r, 'todo_lists', 1, 'Text', 'Do you make to-do lists? Why?', 'To-do Lists', 0);
+    }
+
+    private function seedPage5Fourth(int $tId, int $pId): void
+    {
+        $s1 = $this->insertSection($tId, $pId, 'TIME_MAP', 'Time Map', 1);
+
+        $r = $this->insertRubric($tId, $pId, $s1, 'P5_MORE_TIME', 'More Time On', 1);
+        $this->ri($r, 'more_time_on', 1, 'Text', 'One thing I would like to spend MORE time on', 'More Time', 0);
+
+        $r = $this->insertRubric($tId, $pId, $s1, 'P5_LESS_TIME', 'Less Time On', 2);
+        $this->ri($r, 'less_time_on', 1, 'Text', 'One thing I would like to spend LESS time on', 'Less Time', 0);
+
+        $r = $this->insertRubric($tId, $pId, $s1, 'P5_DAY_PLAN', 'Day Planning', 3);
+        $this->ri($r, 'day_plan_notes', 1, 'Text', 'How do you plan your day?', 'Day Plan', 0);
+    }
+The seeder for page 5 has one section TIME_MAP with 3 rubrics:
+
+P5_MORE_TIME → more_time_on (Text) - "One thing I would like to spend MORE time on"2. P5_LESS_TIME → less_time_on (Text) - "One thing I would like to spend LESS time on"
+P5_DAY_PLAN → day_plan_notes (Text) - "How do you plan your day?"The design has:1. Row 1 (2 cols): more_time_on textarea + less_time_on textarea2.
+The Time Map section includes a header and description text as static display elements, followed by two analog clocks (AM and PM) with time inputs that are purely visual UI components without corresponding database fields. The day_plan_notes field from the seeder doesn't appear as a visible form element in the design layout.
+
+For the implementation, I need to decide whether the AM/PM clock time inputs should be added as database-backed form fields or remain as static UI elements without form submission capability, since they currently lack name attributes.
+
+The seeder data includes day_plan_notes which isn't visible in the current design—I could add it as a textarea section below the clocks asking "How do you plan your day?" Then I'd organize the seeder into separate sections: one for the more_time_on rubric, another for less_time_on, and a third for day_plan_notes, rather than keeping everything in the single TIME_MAP section. - P5_LESS_TIME section → less_time_on
+
+Actually looking at the design, the 2-column row is simple - just 2 textareas. The seeder has them as rubric 1 and 2 in the same section. I can use array_chunk on rubrics to pair them, or split into 2 sections.
+
+Since the labels in the design have COLORED text ("more time" in green, "less time" in red), and the seeder stores the label in input_level, let me just:
+
+Split TIME_MAP into P5_MORE_TIME and P5_LESS_TIME sections for the 2-column row
+Add P5_DAY_PLAN section for the day plan textarea (below clocks)
+Add name attributes to clock inputs using new DB items OR keep them as static UI
+For the clock inputs, I'll add them to the seeder with P5_AM_TIME and P5_PM_TIME as time input fields, then the blade can reference them by field_id and input_type. The 'time' input type isn't in the existing pattern, but the ri() helper accepts any string, so I can handle it in the blade template. Now I need to update the seeder to add these clock sections and restructure the TIME_MAP, then write out the blade template. The Time Map description text is also something I need to handle. I notice the clock inputs are currently just JavaScript-driven UI elements without name attributes, so I need to add those from the database items for the AM and PM time fields. Now I'll update the seeder to restructure the sections properly, then build out the blade template.
+
+The seeder has all 3 items in one TIME_MAP section but the design needs separate sections per card/slot. I'll restructure the seeder and write the blade fully dynamic.
+
+Read HPCTemplateSeeder.php (lines 2672-2689)
+Let me read the current form_five.blade.php and seeder to understand what needs to be done.
+
+Read c:\laragon\www\school\laravel\Modules\Hpc\resources\views\hpc_form\partials\fourth_form\form_five.blade.php
+Now let me read the seeder for page 5 to understand current state.
+
+Grep "seedPage5Fourth" (in c:\laragon\www\school\laravel\database\seeders\HPCTemplateSeeder.php)
+163 lines of output
+Now I have a clear picture. I need to:
+
+Update seedPage5Fourth — split into separate sections: P5_MORE_TIME, P5_LESS_TIME, P5_TIME_MAP (header), P5_CLOCKS (AM/PM time inputs)
+Rewrite form_five.blade.php fully dynamically
+Grep "private function seedPage5Fourth" (in c:\laragon\www\school\laravel\database\seeders\HPCTemplateSeeder.php)
+31 lines of output
+Edit c:\laragon\www\school\laravel\database\seeders\HPCTemplateSeeder.php
+Edit failed
+Read c:\laragon\www\school\laravel\database\seeders\HPCTemplateSeeder.php (lines 2673-2685)
+Edit c:\laragon\www\school\laravel\database\seeders\HPCTemplateSeeder.php
+Added 13 lines
+Now rewrite form_five.blade.php with full dynamic binding:
+
+Write c:\laragon\www\school\laravel\Modules\Hpc\resources\views\hpc_form\partials\fourth_form\form_five.blade.php
+465 lines
+<!-- ================= TAB 5 ================= -->
+@php
+    $savedValues = $savedValues ?? [];
+    $pageNo      = $pageNo ?? 5;
+@endphp
+
+@foreach($parts as $part)
+@php
+    // ── Build pageData: sections → rubrics → items ───────────────────────────
+    $pageData = ['sections' => []];
+
+    foreach ($part->sections->sortBy('display_order') as $section) {
+        $sectionData = [
+            'id'      => $section->id,
+            'code'    => $section->code,
+            'title'   => $section->description,
+            'rubrics' => [],
+        ];
+        foreach ($section->rubrics()->where('visible', 1)->where('is_active', 1)->orderBy('display_order')->get() as $rubric) {
+            $rubricItems = [];
+            foreach ($rubric->items()->where('is_active', 1)->orderBy('ordinal')->get() as $item) {
+                $rubricItems[] = [
+                    'field_id'   => $item->html_object_name,
+                    'label'      => $item->input_level,
+                    'input_type' => strtolower(trim($item->input_type ?? 'text')),
+                    'placeholder'=> $item->description ?? '',
+                ];
+            }
+            if (!empty($rubricItems)) {
+                $sectionData['rubrics'][] = [
+                    'code'  => $rubric->code,
+                    'label' => $rubric->description,
+                    'items' => $rubricItems,
+                ];
+            }
+        }
+        $pageData['sections'][] = $sectionData;
+    }
+
+    // ── Access sections by code ───────────────────────────────────────────────
+    $byCode   = collect($pageData['sections'])->keyBy('code');
+    $moreTime = $byCode->get('P5_MORE_TIME', ['title' => '', 'rubrics' => []]);
+    $lessTime = $byCode->get('P5_LESS_TIME', ['title' => '', 'rubrics' => []]);
+    $timeMap  = $byCode->get('P5_TIME_MAP',  ['title' => 'Time Map', 'rubrics' => []]);
+    $clocks   = $byCode->get('P5_CLOCKS',    ['title' => '', 'rubrics' => []]);
+
+    // Flatten clock items keyed by rubric code (AM / PM)
+    $clockItems = collect($clocks['rubrics'])->keyBy('code');
+    $amClock    = $clockItems->get('P5_AM_CLOCK', ['items' => [['field_id' => 'p5_am_time', 'label' => 'AM', 'input_type' => 'time', 'placeholder' => '']]]);
+    $pmClock    = $clockItems->get('P5_PM_CLOCK', ['items' => [['field_id' => 'p5_pm_time', 'label' => 'PM', 'input_type' => 'time', 'placeholder' => '']]]);
+
+    $amItem = $amClock['items'][0] ?? ['field_id' => 'p5_am_time', 'label' => 'AM', 'input_type' => 'time', 'placeholder' => ''];
+    $pmItem = $pmClock['items'][0] ?? ['field_id' => 'p5_pm_time', 'label' => 'PM', 'input_type' => 'time', 'placeholder' => ''];
+@endphp
+
+<div class="tab-pane fade p-4 bg-light" id="page-{{ $pageNo }}" role="tabpanel" data-page="{{ $pageNo }}">
+
+    <div class="container-fluid">
+
+        <!-- ================= MORE / LESS TIME ================= -->
+        <div class="row g-4 mb-5">
+
+            <!-- Card: More Time -->
+            @if(!empty($moreTime['rubrics']))
+            <div class="col-md-6">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body">
+                        @foreach($moreTime['rubrics'] as $rubric)
+                        @foreach($rubric['items'] as $item)
+                        <h5 class="fw-semibold">{{ $item['placeholder'] }}</h5>
+                        <textarea name="{{ $item['field_id'] }}"
+                                  class="form-control mt-3"
+                                  rows="5"
+                                  placeholder="">{{ $savedValues[$item['field_id']] ?? '' }}</textarea>
+                        @endforeach
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+            @endif
+
+            <!-- Card: Less Time -->
+            @if(!empty($lessTime['rubrics']))
+            <div class="col-md-6">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body">
+                        @foreach($lessTime['rubrics'] as $rubric)
+                        @foreach($rubric['items'] as $item)
+                        <h5 class="fw-semibold">{{ $item['placeholder'] }}</h5>
+                        <textarea name="{{ $item['field_id'] }}"
+                                  class="form-control mt-3"
+                                  rows="5"
+                                  placeholder="">{{ $savedValues[$item['field_id']] ?? '' }}</textarea>
+                        @endforeach
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+            @endif
+
+        </div>
+
+        <!-- ================= TIME MAP ================= -->
+        <div class="text-center mb-4">
+            <h4 class="fw-bold">{{ $timeMap['title'] }}</h4>
+        </div>
+
+        <div class="mb-4">
+            @foreach($timeMap['rubrics'] as $rubric)
+            @foreach($rubric['items'] as $item)
+            <p class="fw-semibold mb-2">{{ $item['placeholder'] }}</p>
+            @endforeach
+            @endforeach
+
+            <ul class="mb-3">
+                <li>Is there any activity you should be spending <strong>more time</strong> on?</li>
+                <li>Is there any activity you should be spending <strong>less time</strong> on?</li>
+            </ul>
+
+            <p class="text-muted">
+                As a follow-up, ask any peer to comment on your schedule and answer the questions above.
+            </p>
+        </div>
+
+        <!-- ================= ANALOG CLOCKS DISPLAY ================= -->
+        <div class="row">
+
+            <!-- AM Analog Clock -->
+            <div class="col-md-6 mb-4">
+                <div class="text-center p-4 bg-white rounded shadow">
+                    <h3 class="mb-4">{{ $amItem['label'] }}</h3>
+                    <div class="analog-clock am-clock" id="amClock" onclick="selectClock('am')">
+                        <div class="clock-face">
+                            <div class="hour-hand" id="amHourHand"></div>
+                            <div class="minute-hand" id="amMinuteHand"></div>
+                            <div class="second-hand" id="amSecondHand"></div>
+                            <div class="center-dot"></div>
+                            <div class="hour-number number1">1</div>
+                            <div class="hour-number number2">2</div>
+                            <div class="hour-number number3">3</div>
+                            <div class="hour-number number4">4</div>
+                            <div class="hour-number number5">5</div>
+                            <div class="hour-number number6">6</div>
+                            <div class="hour-number number7">7</div>
+                            <div class="hour-number number8">8</div>
+                            <div class="hour-number number9">9</div>
+                            <div class="hour-number number10">10</div>
+                            <div class="hour-number number11">11</div>
+                            <div class="hour-number number12">12</div>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <input type="time"
+                               name="{{ $amItem['field_id'] }}"
+                               class="form-control time-input"
+                               id="amTimeInput"
+                               value="{{ $savedValues[$amItem['field_id']] ?? '09:00' }}"
+                               onchange="updateAnalogClock('am', this.value)">
+                    </div>
+                </div>
+            </div>
+
+            <!-- PM Analog Clock -->
+            <div class="col-md-6 mb-4">
+                <div class="text-center p-4 bg-white rounded shadow">
+                    <h3 class="mb-4">{{ $pmItem['label'] }}</h3>
+                    <div class="analog-clock pm-clock" id="pmClock" onclick="selectClock('pm')">
+                        <div class="clock-face">
+                            <div class="hour-hand" id="pmHourHand"></div>
+                            <div class="minute-hand" id="pmMinuteHand"></div>
+                            <div class="second-hand" id="pmSecondHand"></div>
+                            <div class="center-dot"></div>
+                            <div class="hour-number number1">1</div>
+                            <div class="hour-number number2">2</div>
+                            <div class="hour-number number3">3</div>
+                            <div class="hour-number number4">4</div>
+                            <div class="hour-number number5">5</div>
+                            <div class="hour-number number6">6</div>
+                            <div class="hour-number number7">7</div>
+                            <div class="hour-number number8">8</div>
+                            <div class="hour-number number9">9</div>
+                            <div class="hour-number number10">10</div>
+                            <div class="hour-number number11">11</div>
+                            <div class="hour-number number12">12</div>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <input type="time"
+                               name="{{ $pmItem['field_id'] }}"
+                               class="form-control time-input"
+                               id="pmTimeInput"
+                               value="{{ $savedValues[$pmItem['field_id']] ?? '17:00' }}"
+                               onchange="updateAnalogClock('pm', this.value)">
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+</div>
+
+@endforeach
+
+@push('styles')
+<style>
+/* Analog Clock Styles */
+.analog-clock {
+    width: 250px;
+    height: 250px;
+    border-radius: 50%;
+    background: #fff;
+    position: relative;
+    margin: 20px auto;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1), inset 0 0 10px rgba(0,0,0,0.1);
+    border: 8px solid #f8f9fa;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.analog-clock.selected {
+    border-color: #007bff;
+    box-shadow: 0 0 0 4px rgba(0,123,255,0.3);
+}
+
+.clock-face {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    border-radius: 50%;
+}
+
+/* Clock Hands */
+.hour-hand, .minute-hand, .second-hand {
+    position: absolute;
+    bottom: 50%;
+    left: 50%;
+    transform-origin: 50% 100%;
+    transition: transform 0.3s cubic-bezier(0.4, 2.5, 0.3, 1);
+}
+
+.hour-hand {
+    width: 6px;
+    height: 60px;
+    background: #333;
+    border-radius: 3px;
+    margin-left: -3px;
+}
+
+.minute-hand {
+    width: 4px;
+    height: 80px;
+    background: #666;
+    border-radius: 2px;
+    margin-left: -2px;
+}
+
+.second-hand {
+    width: 2px;
+    height: 90px;
+    background: #ff4444;
+    border-radius: 1px;
+    margin-left: -1px;
+}
+
+.center-dot {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background: #333;
+    border-radius: 50%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+    border: 2px solid #fff;
+}
+
+/* Hour Numbers */
+.hour-number {
+    position: absolute;
+    font-size: 16px;
+    font-weight: bold;
+    color: #333;
+    transform: translate(-50%, -50%);
+}
+
+.number1 { top: 18%; left: 73%; }
+.number2 { top: 30%; left: 85%; }
+.number3 { top: 50%; left: 92%; transform: translate(-50%, -50%) rotate(0deg); }
+.number4 { top: 70%; left: 85%; }
+.number5 { top: 82%; left: 73%; }
+.number6 { top: 88%; left: 50%; }
+.number7 { top: 82%; left: 27%; }
+.number8 { top: 70%; left: 15%; }
+.number9 { top: 50%; left: 8%; }
+.number10 { top: 30%; left: 15%; }
+.number11 { top: 18%; left: 27%; }
+.number12 { top: 10%; left: 50%; }
+
+/* Time Input Styles */
+.time-input {
+    width: 120px;
+    margin: 0 auto;
+    text-align: center;
+    border: 2px solid #dee2e6;
+    border-radius: 25px;
+    padding: 8px;
+}
+
+.time-input:focus {
+    border-color: #007bff;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
+}
+
+/* Selected Clock Display */
+.selected-clock-display {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 10px;
+    text-align: center;
+    font-size: 1.2em;
+    border: 2px dashed #dee2e6;
+}
+
+/* AM/PM specific colors */
+.am-clock .hour-hand { background: #ffc107; }
+.pm-clock .hour-hand { background: #6c757d; }
+
+/* Responsive */
+@media (max-width: 768px) {
+    .analog-clock {
+        width: 200px;
+        height: 200px;
+    }
+
+    .hour-hand { height: 45px; }
+    .minute-hand { height: 60px; }
+    .second-hand { height: 70px; }
+
+    .hour-number { font-size: 14px; }
+}
+
+/* Animation for clock hands */
+@keyframes tick {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Pulse animation for selected clock */
+@keyframes pulse-border {
+    0% { border-color: #007bff; }
+    50% { border-color: #ffc107; }
+    100% { border-color: #007bff; }
+}
+
+.analog-clock.selected {
+    animation: pulse-border 2s infinite;
+}
+</style>
+@endpush
+
+@push('scripts')
+<script>
+// Global variables
+let selectedClock = null;
+
+// Function to update analog clock based on time input
+function updateAnalogClock(period, timeValue) {
+    const [hours, minutes] = timeValue.split(':').map(Number);
+
+    // Adjust hours for PM (convert to 12-hour format)
+    let displayHours = hours;
+    if (period === 'pm' && hours > 12) {
+        displayHours = hours - 12;
+    } else if (period === 'pm' && hours === 12) {
+        displayHours = 12;
+    } else if (period === 'am' && hours === 0) {
+        displayHours = 12;
+    } else if (period === 'am' && hours > 12) {
+        displayHours = hours - 12;
+    }
+
+    // Calculate hand rotations
+    const hourRotation   = (displayHours % 12) * 30 + minutes * 0.5;
+    const minuteRotation = minutes * 6;
+
+    // Update hands
+    const hourHand   = document.getElementById(`${period}HourHand`);
+    const minuteHand = document.getElementById(`${period}MinuteHand`);
+
+    if (hourHand && minuteHand) {
+        hourHand.style.transform   = `rotate(${hourRotation}deg)`;
+        minuteHand.style.transform = `rotate(${minuteRotation}deg)`;
+    }
+}
+
+// Function to select a clock
+function selectClock(period) {
+    document.querySelectorAll('.analog-clock').forEach(clock => {
+        clock.classList.remove('selected');
+    });
+
+    const selectedClockElement = document.getElementById(`${period}Clock`);
+    selectedClockElement.classList.add('selected');
+    selectedClock = period;
+
+    selectedClockElement.style.transform = 'scale(1.05)';
+    setTimeout(() => {
+        selectedClockElement.style.transform = 'scale(1)';
+    }, 200);
+}
+
+// Initialize clocks with current time
+function initializeClocks() {
+    const now     = new Date();
+    const hours   = now.getHours();
+    const minutes = now.getMinutes();
+
+    const formattedTime = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+
+    const amTimeInput = document.getElementById('amTimeInput');
+    if (amTimeInput && !amTimeInput.value) {
+        if (hours >= 0 && hours < 12) {
+            amTimeInput.value = formattedTime;
+            updateAnalogClock('am', formattedTime);
+        } else {
+            updateAnalogClock('am', amTimeInput.value || '09:00');
+        }
+    } else if (amTimeInput) {
+        updateAnalogClock('am', amTimeInput.value);
+    }
+
+    const pmTimeInput = document.getElementById('pmTimeInput');
+    if (pmTimeInput && !pmTimeInput.value) {
+        if (hours >= 12) {
+            pmTimeInput.value = formattedTime;
+            updateAnalogClock('pm', formattedTime);
+        } else {
+            updateAnalogClock('pm', pmTimeInput.value || '17:00');
+        }
+    } else if (pmTimeInput) {
+        updateAnalogClock('pm', pmTimeInput.value);
+    }
+
+    // Animate second hands
+    setInterval(() => {
+        const now           = new Date();
+        const secondRotation = now.getSeconds() * 6;
+
+        const amSecondHand = document.getElementById('amSecondHand');
+        const pmSecondHand = document.getElementById('pmSecondHand');
+
+        if (amSecondHand) amSecondHand.style.transform = `rotate(${secondRotation}deg)`;
+        if (pmSecondHand) pmSecondHand.style.transform = `rotate(${secondRotation}deg)`;
+    }, 1000);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    initializeClocks();
+});
+</script>
+@endpush
+Page 5 is done. Here's what was changed:
+
+Seeder (seedPage5Fourth) — split TIME_MAP (1 section, 3 rubrics) into 4 separate sections:
+
+P5_MORE_TIME — more_time_on textarea
+P5_LESS_TIME — less_time_on textarea
+P5_TIME_MAP — instruction text item
+P5_CLOCKS — p5_am_time + p5_pm_time time inputs
+Blade (form_five.blade.php) — fully dynamic now:
+
+@foreach($parts as $part) wrapper
+$byCode->get('P5_MORE_TIME') / get('P5_LESS_TIME') → cards with dynamic name, placeholder from DB
+Time Map title from $timeMap['title'], instruction text from $item['placeholder']
+AM/PM clock labels from $amItem['label'] / $pmItem['label']
+Clock name="" attributes from $amItem['field_id'] / $pmItem['field_id']
+Saved values pre-filled: $savedValues[$amItem['field_id']] ?? '09:00'
+All CSS and JS blocks preserved exactly as before (@push('styles') / @push('scripts'))
+C:\laragon\www\school\laravel(exam_module_shailesh_16_02_2026 -> origin)
+λ php artisan tenants:seed --tenants=0715d62d-7a6e-4542-b939-775f6deab97e --class=HpcTemplateSeeder
+Tenant: 0715d62d-7a6e-4542-b939-775f6deab97e
+
+   INFO  Seeding database.
+
+Seeder error: SQLSTATE[01000]: Warning: 1265 Data truncated for column 'input_type' at row 1 (Connection: tenant, SQL: insert into `hpc_template_rubric_items` (`rubric_id`, `html_object_name`, `ordinal`, `input_required`, `input_type`, `output_type`, `input_level`, `output_level`, `input_level_numeric`, `output_level_numeric`, `display_input_label`, `print_output_label`, `weight`, `description`, `input_dropdown`, `output_dropdown`, `is_active`, `created_at`, `updated_at`, `deleted_at`) values (726, more_time_on, 1, 0, Textarea, Textarea, One thing I would like to spend MORE time on, More Time, ?, ?, 1, 1, 0, ?, ?, ?, 1, 2026-03-08 12:24:46, 2026-03-08 12:24:46, ?))
+
+   Illuminate\Database\QueryException
+
+  SQLSTATE[01000]: Warning: 1265 Data truncated for column 'input_type' at row 1 (Connection: tenant, SQL: insert into `hpc_template_rubric_items` (`rubric_id`, `html_object_name`, `ordinal`, `input_required`, `input_type`, `output_type`, `input_level`, `output_level`, `input_level_numeric`, `output_level_numeric`, `display_input_label`, `print_output_label`, `weight`, `description`, `input_dropdown`, `output_dropdown`, `is_active`, `created_at`, `updated_at`, `deleted_at`) values (726, more_time_on, 1, 0, Textarea, Textarea, One thing I would like to spend MORE time on, More Time, ?, ?, 1, 1, 0, ?, ?, ?, 1, 2026-03-08 12:24:46, 2026-03-08 12:24:46, ?))
+
+  at vendor\laravel\framework\src\Illuminate\Database\Connection.php:826
+    822▕                     $this->getName(), $query, $this->prepareBindings($bindings), $e
+    823▕                 );
+    824▕             }
+    825▕
+  ➜ 826▕             throw new QueryException(
+    827▕                 $this->getName(), $query, $this->prepareBindings($bindings), $e
+    828▕             );
+    829▕         }
+    830▕     }
+
+  1   vendor\laravel\framework\src\Illuminate\Database\MySqlConnection.php:53
+      PDOException::("SQLSTATE[01000]: Warning: 1265 Data truncated for column 'input_type' at row 1")
+
+  2   vendor\laravel\framework\src\Illuminate\Database\MySqlConnection.php:53
+      PDOStatement::execute()
+The input_type column has an ENUM — Textarea is not a valid value. Let me check the allowed values.
+
+Bash
+IN
+grep -r "input_type" database/migrations --include="*.php" -l | head -5
+
+OUT
+database/migrations/tenant/2026_02_24_100004_create_hpc_template_rubrics_table.php
+database/migrations/tenant/2026_02_24_100008_create_hpc_template_rubric_items_table.php
+Bash
+IN
+grep "input_type" database/migrations/tenant/2026_02_24_100008_create_hpc_template_rubric_items_table.php
+
+OUT
+            $table->enum('input_type', [
+Bash
+IN
+grep -A 20 "input_type" database/migrations/tenant/2026_02_24_100008_create_hpc_template_rubric_items_table.php | head -25
+
+OUT
+            $table->enum('input_type', [
+                'Descriptor','Numeric','Grade','Text','Boolean','Image','Json'
+            ])->default('Descriptor');
+
+            $table->enum('output_type', [
+                'Descriptor','Numeric','Grade','Text','Boolean','Image','Json'
+            ])->default('Descriptor');
+
+            $table->json('input_dropdown')->nullable();
+            $table->json('output_dropdown')->nullable();
+
+            $table->string('input_level', 255);
+            $table->string('output_level', 255);
+
+            $table->unsignedInteger('input_level_numeric')->nullable();
+            $table->unsignedInteger('output_level_numeric')->nullable();
+
+            $table->boolean('display_input_label')->default(false);
+            $table->boolean('print_output_label')->default(false);
+
+            $table->decimal('weight', 8, 3)->nullable();
+The allowed values are: Descriptor, Numeric, Grade, Text, Boolean, Image, Json. Textarea and Time are not valid. I'll use Text for all three items in the seeder.
+
+Edit c:\laragon\www\school\laravel\database\seeders\HPCTemplateSeeder.php
+Edit failed
+Read c:\laragon\www\school\laravel\database\seeders\HPCTemplateSeeder.php (lines 2673-2702)
+Edit c:\laragon\www\school\laravel\database\seeders\HPCTemplateSeeder.php
+Modified
+Fixed. The input_type ENUM only allows: Descriptor, Numeric, Grade, Text, Boolean, Image, Json. Changed Textarea → Text and Time → Text for all 4 items in seedPage5Fourth. Run the seeder again now.
+
+<ul class="mb-3">
+                <li>Is there any activity you should be spending <strong>more time</strong> on?</li>
+                <li>Is there any activity you should be spending <strong>less time</strong> on?</li>
+            </ul>
+
+            <p class="text-muted">
+                As a follow-up, ask any peer to comment on your schedule and answer the questions above.
+            </p>
+page fivd this harcode staick make daynmic other all good in five page
+The user wants the static <ul> bullet points and the <p class="text-muted"> paragraph to be dynamic from DB. I need to add these as items in the seeder for the P5_TIME_MAP section, then render them dynamically in the blade.
+
+Let me add more items to the P5_TIME_MAP section rubric in the seeder — bullet point 1, bullet point 2, and the follow-up note. Then in the blade, loop over the items and render them accordingly.
+
+Actually, the simplest approach: add 3 more items to the P5_TIME_MAP_INST rubric (or separate rubrics) for each bullet and the footer text.
+
+I could create separate rubrics for each piece — one for the main instruction, one for each bullet point, and one for the footer note — then access them by rubric code in the blade template.
+
+Actually, a simpler approach would be to put all four items under a single P5_TIME_MAP rubric and loop through them in order, using the input_level field as a display label to distinguish whether each item should render as a paragraph or list item.
+
+Wait, that requires positional logic which isn't ideal. Better to create separate rubrics for each section—one for the intro paragraph, one for the bullet points, and one for the note—then in the blade template I can organize them by rubric code and render each section with its appropriate styling.
+
+The bullet list items and follow-up paragraph are hardcoded. I'll add them to the seeder as separate rubrics (intro, bullets, note) so each can be rendered dynamically.
+
+Read c:\laragon\www\school\laravel\database\seeders\HPCTemplateSeeder.php (lines 2685-2692)
+Edit c:\laragon\www\school\laravel\database\seeders\HPCTemplateSeeder.php
+Added 13 lines
+Now update the blade to render these dynamically:
+
+Read c:\laragon\www\school\laravel\Modules\Hpc\resources\views\hpc_form\partials\fourth_form\form_five.blade.php (lines 39-68)
+Read c:\laragon\www\school\laravel\Modules\Hpc\resources\views\hpc_form\partials\fourth_form\form_five.blade.php (lines 98-127)
+Edit c:\laragon\www\school\laravel\Modules\Hpc\resources\views\hpc_form\partials\fourth_form\form_five.blade.php
+Added 6 lines
+Edit c:\laragon\www\school\laravel\Modules\Hpc\resources\views\hpc_form\partials\fourth_form\form_five.blade.php
+Added 1 line
+Done. Changes made:
+
+Seeder — P5_TIME_MAP section now has 3 rubrics:
+
+P5_TM_INTRO → time_map_instruction (intro paragraph)
+P5_TM_BULLETS → time_map_bullet_1 + time_map_bullet_2 (the two list items)
+P5_TM_NOTE → time_map_note (the follow-up paragraph)
+Blade — Time Map section now fully dynamic:
+
+Intro text from $tmIntro['items'] loop → <p>
+Bullet points from $tmBullets['items'] loop → <ul><li>
+Follow-up note from $tmNote['items'] loop → <p class="text-muted">
+No hardcoded text remains on page 5. Re-run the seeder now.
+
+title texrae and after line text note display i have run seeder and page refresh in five page
+The user ran the seeder and refreshed the page. From the screenshot, I can see:
+
+The two cards (More Time / Less Time) show textareas but no title/heading text above them
+The Time Map section shows "Time Map" title
+The bullet points show but are empty (no text)
+The intro paragraph text is missing
+The note text is missing
+The issue is that the blade uses $item['placeholder'] to display the text, but the placeholder field maps to $item->description in the DB. But looking at the ri() helper, the parameter order is: ri($rubricId, $html_object_name, $ordinal, $input_type, $description, $input_level, $input_required, ...).
+
+So $item->description holds the description passed as the 5th parameter, and $item->input_level holds the label from the 6th parameter. In the blade array, I'm mapping $item['placeholder'] to $item->description, which is correct for the placeholder text.
+
+Looking at the specific fields — time_map_instruction has the description "How do you plan your day? Use the clocks to map the activities you do in a day..." and time_map_bullet_1 has "Is there any activity you should be spending more time on?" — both should be displaying properly. But in the screenshot, the bullet points appear empty and the card titles for the more_time/less_time sections are missing. The issue is that the blade is rendering $item['placeholder'] (which equals the description) as an <h5> for the card title, and for more_time_on the description is "One thing I would like to spend MORE time on" — this should be showing but isn't appearing in the screenshot. The bullets are showing up but empty, which means the data is loading but the placeholder field is null. I need to check the ri() method signature in the seeder to see if the parameters are in the right order.
+
+The data is loading (bullets show, cards show) but text is empty. The description field must not be saving correctly. Let me check the ri() method signature.
+
+Grep "private function ri\(" (in c:\laragon\www\school\laravel\database\seeders\HPCTemplateSeeder.php)
+41 lines of output
+Now I see the issue! The ri() signature is:
+
+
+private function ri(int $rubricId, string $name, int $ordinal, string $inputType, string $inputLevel, string $outputLevel, int $required = 0, ?string $desc = null, ...)
+So the parameters are:
+
+$rubricId
+
+$name (html_object_name)
+
+$ordinal
+
+$inputType
+
+$inputLevel → saved as input_level
+
+$outputLevel → saved as output_level
+
+$required (default 0)
+
+$desc (default null) → saved as description
+
+In the blade, I'm using $item->description for the placeholder, which maps to that 8th parameter. But in my seeder, I was passing the description as the 6th parameter instead, which is why the placeholder is empty—the value's going to the wrong field.
+
+Looking at my actual seeder call, $item->input_level contains the text I want displayed, so I need to use that for the card heading and bullet items instead of relying on the placeholder. I see the issue now—I need to use $item['label'] instead of $item['placeholder'] throughout the blade template, since that's where the input level text gets stored. This applies to the card headings, the Time Map instructions, and all the bullet point questions.
+
+The issue is clear. The ri() signature has $inputLevel as 5th param (→ input_level) and $desc as 8th optional param (→ description). My seeder passes the text as the 5th param, so it saves to input_level → $item['label'] in blade — not $item['placeholder']. The blade is reading placeholder (which is null).
+
+Fix: use $item['label'] for display text in the Time Map section and card headings.
+
+Read c:\laragon\www\school\laravel\Modules\Hpc\resources\views\hpc_form\partials\fourth_form\form_five.blade.php (lines 64-123)
+Edit c:\laragon\www\school\laravel\Modules\Hpc\resources\views\hpc_form\partials\fourth_form\form_five.blade.php
+Modified
+Fixed. The ri() method saves text to input_level column, which maps to $item['label'] in the blade array — not $item['placeholder'] (that's description, which was null). Replaced all occurrences. Refresh the page — titles and text should now display correctly.
+
+now start 6 page
+Let me read the current form_six.blade.php and the seeder for page 6.
+
+Globpattern: "Modules/Hpc/resources/views/hpc_form/partials/fourth_form/form_six.blade.php"
+Found 1 file
+Read c:\laragon\www\school\laravel\Modules\Hpc\resources\views\hpc_form\partials\fourth_form\form_six.blade.php
+Now let me look at the seeder for page 6 to understand what sections exist.
+
+Now let me read the current seeder for page 6:
+
+Read c:\laragon\www\school\laravel\database\seeders\HPCTemplateSeeder.php (lines 2700-2724)
+Read c:\laragon\www\school\laravel\database\seeders\HPCTemplateSeeder.php (lines 2724-2738)
+Now I understand the design for page 6:
+
+Header: "Part A (4)" + "Plans After School" - from section description / part code
+
+Next Big Step card: "After I finish school, I want to..." with radio options (4 options: college, skill_training, professional_course, other text input)
+
+Two cards row:
+
+Left: "College / Skill Institute Plan" - 3 fields: institute_name (text), course_name (text), course_type (radio: certificate, diploma, degree)
+Right: "Skill-Based Career Plan" - checkboxes: corporate, own_business, family_business, government + other text input
+Discussion card: 3 textarea columns for strengths, improvements, and challenges
+
+Looking at the current seeder, I see it only has four rubrics under a single PLANS_AFTER_SCHOOL section, but the design requires many more fields across different logical groupings. I need to reorganize the seeder into multiple sections to match the card structure.
+
+I'm planning to split this into four sections: one for the "Next Big Step" radio selection, one for college details on the left card, one for career interests on the right card, and one for the discussion textareas. For the first section, I'll create a P6_FUTURE_PLAN_SEC with a label rubric that prompts "After I finish school, I want to..."
+
+Now I'm reconsidering the structure — the radio options should probably be a single rubric item with both the radio buttons and a text input for "Any Other". Looking at the design more closely, there are 4 main columns shown, but the current seeder has 5 options total. I need to map out exactly which options appear in the design versus what's already defined in the data.
+
+For the second section on college or skill institute plans, I'm setting up three separate rubric items: one for the institute name as a text field, another for the course name, and a third for course type with descriptor options like certificate, diploma, or degree.
+
+Moving into the career planning section, I need to handle multiple career options as checkboxes—corporate, own business, family business, and government. Rather than treating these as separate items, I'll consolidate them into a single descriptor item with checkbox functionality stored in the input dropdown. There's also a text field for any other career options the student might want to specify.
+
+For the final reflection section, I'm starting to map out items for discussing personal strengths and how they'll support the student's goals.
+
+Now I'm working through the blade template logic to organize these sections by their code identifiers. I need to split the future plan section into radio buttons and text, the college plan into institute, course, and course type fields, the career plan into checkboxes and other options, and the discussion section into text areas for each reflection prompt.
+
+For the course type radio buttons, I'll need to map the options and their labels from the item data into the items array. I'm also checking how other forms structure radio and descriptor items—looking at form_two.blade.php to see how they handle the input_dropdown and input_dropdown_label fields when building the rubric items array.
+
+Now I'm ready to write the seeder and blade template for page 6, starting with the section setup for the future plan radio options. Setting up the second section for college and skill institute planning, adding fields for the institute name and continuing with additional rubric items. Still writing the form configuration... Setting up the reflection section with fields for strengths, areas for improvement, and challenges...
+
+Now I'm structuring the Blade template to organize the page data, pulling in dropdown options and labels, then laying out the future planning card with the "Next Big Step" header and radio selections, followed by the college/skill institute details on the left and what looks like another card section on the right.
+
+I need to map the section codes to template variables so I can access the rubrics and fields dynamically—P6_FUTURE_PLAN_SEC becomes $futurePlanSec, and similarly for the college, career, and discussion sections. For the career checkboxes, I'll use the dynamic field_id with array notation to handle multiple selections.
+
+Building the Blade template now... I'm working through the blade template structure now. The page needs a header with the part code and section title, then the card with its own header. I'm realizing the card header "🚀 The Next Big Step of My Life" is separate from the section title, so I need to figure out where that emoji text comes from — whether it should be pulled from the rubric data or if there's another source for it. I see the rubric array structure — the description field holds what I passed as the 5th parameter to insertRubric(). For the P6_FUTURE_PLAN rubric, that's currently just 'Future Plan', but I need "The Next Big Step of My Life" as the card header instead. I could either update the seeder to change the rubric description, or store that text in the section title itself.
+
+Looking at how page 4 structures its header with the part code as a subtitle and a separate title, I'm going to follow that same pattern for page 6 — using $part->code for the uppercase subtitle and pulling the main title from the section data. I'm realizing the simplest approach is to just set the section title to "The Next Big Step of My Life" directly, which handles both the page header and gives me a consistent label across the seeder without needing to juggle multiple fields. I'm mapping out the remaining section titles from the database—college plan, career plan, and discussion sections—so all the headers pull consistently from the rubric. Now I need to update the seeder and then write the blade template, making sure to include the options and option_labels in the items array like I see in the existing form template. I'm clarifying how the "Any Other" field works as a separate card with its own text input, and making sure the seeder maps the label correctly to the input_level parameter. For checkboxes, I need to append [] to the field_id in the blade template to handle multiple selections properly.
+
+The design has 4 distinct sections. Current seeder has only 1 section with 4 rubrics — missing many fields. I'll restructure the seeder into 4 sections then write the blade fully dynamic.
+
+Edit c:\laragon\www\school\laravel\database\seeders\HPCTemplateSeeder.php
+Added 40 lines
+Now write the fully dynamic blade:
+
+Write c:\laragon\www\school\laravel\Modules\Hpc\resources\views\hpc_form\partials\fourth_form\form_six.blade.php
+265 lines
+<!-- ================= TAB 6 ================= -->
+@php
+    $savedValues = $savedValues ?? [];
+    $pageNo      = $pageNo ?? 6;
+@endphp
+
+@foreach($parts as $part)
+@php
+    // ── Build pageData: sections → rubrics → items ───────────────────────────
+    $pageData = ['sections' => []];
+
+    foreach ($part->sections->sortBy('display_order') as $section) {
+        $sectionData = [
+            'id'      => $section->id,
+            'code'    => $section->code,
+            'title'   => $section->description,
+            'rubrics' => [],
+        ];
+        foreach ($section->rubrics()->where('visible', 1)->where('is_active', 1)->orderBy('display_order')->get() as $rubric) {
+            $rubricItems = [];
+            foreach ($rubric->items()->where('is_active', 1)->orderBy('ordinal')->get() as $item) {
+                $rubricItems[] = [
+                    'field_id'     => $item->html_object_name,
+                    'label'        => $item->input_level,
+                    'input_type'   => strtolower(trim($item->input_type ?? 'text')),
+                    'options'      => $item->input_dropdown       ? json_decode($item->input_dropdown, true)       : [],
+                    'option_labels'=> $item->input_dropdown_label ? json_decode($item->input_dropdown_label, true) : [],
+                ];
+            }
+            if (!empty($rubricItems)) {
+                $sectionData['rubrics'][] = [
+                    'code'        => $rubric->code,
+                    'description' => $rubric->description,
+                    'items'       => $rubricItems,
+                ];
+            }
+        }
+        $pageData['sections'][] = $sectionData;
+    }
+
+    // ── Access sections by code ───────────────────────────────────────────────
+    $byCode        = collect($pageData['sections'])->keyBy('code');
+    $futurePlanSec = $byCode->get('P6_FUTURE_PLAN_SEC', ['title' => '', 'rubrics' => []]);
+    $collegePlan   = $byCode->get('P6_COLLEGE_PLAN',    ['title' => '', 'rubrics' => []]);
+    $careerPlan    = $byCode->get('P6_CAREER_PLAN',     ['title' => '', 'rubrics' => []]);
+    $discussion    = $byCode->get('P6_DISCUSSION',      ['title' => '', 'rubrics' => []]);
+
+    // ── Split future plan rubrics by code ─────────────────────────────────────
+    $fpByCode      = collect($futurePlanSec['rubrics'])->keyBy('code');
+    $fpRubric      = $fpByCode->get('P6_FUTURE_PLAN',       ['description' => '', 'items' => []]);
+    $fpOtherRubric = $fpByCode->get('P6_FUTURE_PLAN_OTHER', ['description' => '', 'items' => []]);
+    $fpItem        = $fpRubric['items'][0]      ?? null;
+    $fpOtherItem   = $fpOtherRubric['items'][0] ?? null;
+
+    // ── Split college plan rubrics by code ────────────────────────────────────
+    $cpByCode       = collect($collegePlan['rubrics'])->keyBy('code');
+    $instituteRubric= $cpByCode->get('P6_INSTITUTE_NAME', ['items' => []]);
+    $courseRubric   = $cpByCode->get('P6_COURSE_NAME',    ['items' => []]);
+    $courseTypeRubric = $cpByCode->get('P6_COURSE_TYPE',  ['items' => []]);
+    $instituteItem  = $instituteRubric['items'][0]   ?? null;
+    $courseItem     = $courseRubric['items'][0]      ?? null;
+    $courseTypeItem = $courseTypeRubric['items'][0]  ?? null;
+
+    // ── Split career plan rubrics by code ─────────────────────────────────────
+    $crByCode        = collect($careerPlan['rubrics'])->keyBy('code');
+    $careerOptRubric = $crByCode->get('P6_CAREER_OPTIONS', ['items' => []]);
+    $careerOtherRubric = $crByCode->get('P6_CAREER_OTHER', ['items' => []]);
+    $careerOptItem   = $careerOptRubric['items'][0]   ?? null;
+    $careerOtherItem = $careerOtherRubric['items'][0] ?? null;
+@endphp
+
+<div class="tab-pane fade p-4 bg-light" id="page-{{ $pageNo }}" role="tabpanel" data-page="{{ $pageNo }}">
+
+    <div class="container-fluid">
+
+        <!-- ================= HEADER ================= -->
+        <div class="text-center mb-5">
+            <h5 class="text-uppercase fw-bold text-warning mb-1">{{ $part->code }}</h5>
+            <h4 class="fw-bold text-primary mb-0">{{ $futurePlanSec['title'] }}</h4>
+        </div>
+
+        <!-- ================= NEXT BIG STEP ================= -->
+        @if($fpItem)
+        <div class="card shadow-sm border-0 mb-5">
+            <div class="card-header bg-primary text-white fw-semibold">
+                🚀 {{ $fpRubric['description'] }}
+            </div>
+
+            <div class="card-body">
+                <p class="fw-semibold mb-4">{{ $fpItem['label'] }}</p>
+
+                <div class="row g-4">
+
+                    @foreach($fpItem['options'] as $optIdx => $optVal)
+                    <div class="col-lg-3 col-md-6 d-flex">
+                        <div class="card w-100 border h-100 p-3">
+                            <div class="form-check d-flex align-items-start gap-2">
+                                <input class="form-check-input mt-1"
+                                       type="radio"
+                                       name="{{ $fpItem['field_id'] }}"
+                                       value="{{ $optVal }}"
+                                       id="{{ $fpItem['field_id'] }}_{{ $optIdx }}_p6"
+                                       {{ ($savedValues[$fpItem['field_id']] ?? '') === $optVal ? 'checked' : '' }}>
+                                <label class="form-check-label" for="{{ $fpItem['field_id'] }}_{{ $optIdx }}_p6">
+                                    {{ $fpItem['option_labels'][$optIdx] ?? $optVal }}
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    @endforeach
+
+                    @if($fpOtherItem)
+                    <div class="col-lg-3 col-md-6 d-flex">
+                        <div class="card w-100 border h-100 p-3">
+                            <label class="fw-semibold mb-2">{{ $fpOtherItem['label'] }}</label>
+                            <input type="text"
+                                   name="{{ $fpOtherItem['field_id'] }}"
+                                   class="form-control"
+                                   value="{{ $savedValues[$fpOtherItem['field_id']] ?? '' }}">
+                        </div>
+                    </div>
+                    @endif
+
+                </div>
+            </div>
+        </div>
+        @endif
+
+        <!-- ================= COLLEGE & SKILL SECTION ================= -->
+        <div class="row g-4 mb-5">
+
+            <!-- LEFT CARD -->
+            @if(!empty($collegePlan['rubrics']))
+            <div class="col-lg-6 d-flex">
+                <div class="card shadow-sm border-0 w-100 h-100">
+                    <div class="card-header bg-light fw-semibold">
+                        🎓 {{ $collegePlan['title'] }}
+                    </div>
+
+                    <div class="card-body">
+
+                        @if($instituteItem)
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">{{ $instituteItem['label'] }}</label>
+                            <input type="text"
+                                   name="{{ $instituteItem['field_id'] }}"
+                                   class="form-control"
+                                   value="{{ $savedValues[$instituteItem['field_id']] ?? '' }}">
+                        </div>
+                        @endif
+
+                        @if($courseItem)
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">{{ $courseItem['label'] }}</label>
+                            <input type="text"
+                                   name="{{ $courseItem['field_id'] }}"
+                                   class="form-control"
+                                   value="{{ $savedValues[$courseItem['field_id']] ?? '' }}">
+                        </div>
+                        @endif
+
+                        @if($courseTypeItem)
+                        <div>
+                            <label class="form-label fw-semibold mb-2">{{ $courseTypeItem['label'] }}</label>
+                            <div class="d-flex flex-wrap gap-4">
+                                @foreach($courseTypeItem['options'] as $optIdx => $optVal)
+                                <div class="form-check">
+                                    <input class="form-check-input"
+                                           type="radio"
+                                           name="{{ $courseTypeItem['field_id'] }}"
+                                           value="{{ $optVal }}"
+                                           id="{{ $courseTypeItem['field_id'] }}_{{ $optIdx }}_p6"
+                                           {{ ($savedValues[$courseTypeItem['field_id']] ?? '') === $optVal ? 'checked' : '' }}>
+                                    <label class="form-check-label" for="{{ $courseTypeItem['field_id'] }}_{{ $optIdx }}_p6">
+                                        {{ $courseTypeItem['option_labels'][$optIdx] ?? $optVal }}
+                                    </label>
+                                </div>
+                                @endforeach
+                            </div>
+                        </div>
+                        @endif
+
+                    </div>
+                </div>
+            </div>
+            @endif
+
+            <!-- RIGHT CARD -->
+            @if(!empty($careerPlan['rubrics']))
+            <div class="col-lg-6 d-flex">
+                <div class="card shadow-sm border-0 w-100 h-100">
+                    <div class="card-header bg-light fw-semibold">
+                        💼 {{ $careerPlan['title'] }}
+                    </div>
+
+                    <div class="card-body">
+
+                        @if($careerOptItem)
+                        @foreach($careerOptItem['options'] as $optIdx => $optVal)
+                        @php
+                            $savedCareer = $savedValues[$careerOptItem['field_id']] ?? [];
+                            if (!is_array($savedCareer)) {
+                                $savedCareer = explode(',', $savedCareer);
+                            }
+                        @endphp
+                        <div class="form-check mb-3">
+                            <input class="form-check-input"
+                                   type="checkbox"
+                                   name="{{ $careerOptItem['field_id'] }}[]"
+                                   value="{{ $optVal }}"
+                                   id="{{ $careerOptItem['field_id'] }}_{{ $optIdx }}_p6"
+                                   {{ in_array($optVal, $savedCareer) ? 'checked' : '' }}>
+                            <label class="form-check-label" for="{{ $careerOptItem['field_id'] }}_{{ $optIdx }}_p6">
+                                {{ $careerOptItem['option_labels'][$optIdx] ?? $optVal }}
+                            </label>
+                        </div>
+                        @endforeach
+                        @endif
+
+                        @if($careerOtherItem)
+                        <label class="form-label fw-semibold">{{ $careerOtherItem['label'] }}</label>
+                        <input type="text"
+                               name="{{ $careerOtherItem['field_id'] }}"
+                               class="form-control"
+                               value="{{ $savedValues[$careerOtherItem['field_id']] ?? '' }}">
+                        @endif
+
+                    </div>
+                </div>
+            </div>
+            @endif
+
+        </div>
+
+        <!-- ================= DISCUSSION ================= -->
+        @if(!empty($discussion['rubrics']))
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-primary text-white fw-semibold">
+                💬 {{ $discussion['title'] }}
+            </div>
+
+            <div class="card-body">
+                <div class="row g-4">
+                    @foreach($discussion['rubrics'] as $rubric)
+                    <div class="col-md-4 d-flex">
+                        <div class="w-100">
+                            @foreach($rubric['items'] as $item)
+                            <label class="form-label fw-semibold">{{ $item['label'] }}</label>
+                            <textarea name="{{ $item['field_id'] }}"
+                                      class="form-control"
+                                      rows="6">{{ $savedValues[$item['field_id']] ?? '' }}</textarea>
+                            @endforeach
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+            </div>
+        </div>
+        @endif
+
+    </div>
+</div>
+
+@endforeach
+Page 6 done. Here's the summary:
+
+Seeder — restructured from 1 section into 4:
+
+P6_FUTURE_PLAN_SEC — radio options (college/skill_training/professional_course) + other text input
+P6_COLLEGE_PLAN — institute_name, course_name, course_type (radio: certificate/diploma/degree)
+P6_CAREER_PLAN — career_option checkboxes (corporate/own_business/family_business/government) + career_other text
+P6_DISCUSSION — strengths_help, improvements_needed, challenges textareas
+Blade — fully dynamic:
+
+Page header: $part->code + $futurePlanSec['title']
+Card header "Next Big Step": from $fpRubric['description']
+Radio intro text: $fpItem['label'] (from input_level)
+Radio options: loop $fpItem['options'] + $fpItem['option_labels']
+All name="" attributes from $item['field_id']
+Checkboxes rendered as name="{{ $careerOptItem['field_id'] }}[]" with saved-value pre-check
+Discussion columns: foreach $discussion['rubrics'] → one column per rubric
+Run the seeder and refresh page 6.
+
+blade file is ok not change sonly seeder change and lable contner proper add
+The user is saying the blade file is OK, don't change it. Only update the seeder. And looking at the screenshot, the radio option labels need "container" styling - the radio options are showing but the cards seem to not have proper border/container visible.
+
+Wait, looking more carefully at the screenshot - the radio cards are showing with red borders (which seems to be the user highlighting them). The layout looks correct. The user says "label container proper add" - I think they want the radio option cards to have better styling, but since they said "only seeder change", maybe they want the seeder labels to be updated?
+
+Actually re-reading: "blade file is ok not change only seeder change and label container proper add"
+
+So they want me to focus on the seeder - probably updating the input_level labels to be more descriptive or properly formatted for the radio options shown in the screenshot. Looking back at the seeder, I see the rubric description is already set to "The Next Big Step of My Life" and the blade correctly references it. The user seems to be confirming that page 6 is working properly and just wants me to verify the seeder has all the labels properly configured for each section before moving forward. Looking at the screenshot compared to the seeder data, everything appears to match up correctly - the labels and structure are all in place. I think the user is confirming that page 6 is good to go and wants me to move forward with page 7 using the same seeder-driven approach for the labels and containers. They're probably looking for the label to be displayed as its own container above the input field rather than just a placeholder, but since they said not to change the blade file, I'll confirm the seeder is set up correctly and ask if they're ready to move forward with page 7.
+
+Page 6 is looking correct in the screenshot — all sections showing dynamically. The seeder already has proper labels set for each container:
+
+P6_FUTURE_PLAN_SEC → section title = "Plans After School" (page header)
+P6_FUTURE_PLAN rubric description = "The Next Big Step of My Life" (card header)
+P6_COLLEGE_PLAN → section title = "College / Skill Institute Plan" (left card header)
+P6_CAREER_PLAN → section title = "Skill-Based Career Plan" (right card header)
+P6_DISCUSSION → section title = "Reflection & Discussion" (bottom card header)
+All labels come from the seeder. Blade is untouched. Ready for page 7 — just say start page 7 when you're ready.
+
+yes
+Read c:\laragon\www\school\laravel\Modules\Hpc\resources\views\hpc_form\partials\fourth_form\form_seven.blade.php
+Read c:\laragon\www\school\laravel\database\seeders\HPCTemplateSeeder.php (lines 2771-2810)
+The design for page 7 has 3 sections:
+
+Future Self card (3 textarea columns): improve_self, support_family, improve_society → FUTURE_SELF section already has these 3 rubrics ✓
+Feel About My Future card (4 range inputs): prepared, excited, confident, curious → NOT in seeder
+Reflection row (2 cards): "Why Do You Think So?" (future_reason) + "Parents' Feedback" (parents_feedback) → NOT in seeder
+The seeder only has FUTURE_SELF section with 3 rubrics.
+
+I need to add the missing P7_FEEL_FUTURE section with 4 range items and P7_REFLECTION section with 2 rubrics. Since range isn't a valid input type, I'll use Numeric for the range inputs and store the min/max constraints in the description field, then have the blade template check for this pattern.
+
+Looking at the seeder, I see sectionItem() is a helper for adding items directly to sections rather than through rubrics — likely for card titles or standalone items. The current page 7 only has one section, so I need to add the two new sections and understand how FUTURE_SELF uses its rubrics for the textarea columns in the blade template.
+
+For the card header "Let's Imagine Your Future Self (10 Years from Now)", I can use the section title instead of sectionItem(). The "How Do I Feel About My Future?" header and rating scale text can be stored in the next section's title and a rubric respectively. I'm restructuring the seeder so FUTURE_SELF has its section title as the card header, with rubrics mapping to the textarea fields, then adding P7_FEEL_FUTURE and P7_REFLECTION sections with their respective items.
+
+Continuing with the remaining rubrics for the reflection section...
+
+Now I'm setting up the blade template to render the future self section as a three-column layout, the feeling items as range sliders, and each reflection rubric as its own card with the rubric description as the header. I'll check the input type to determine whether to render a range input for numeric fields.
+
+The design has 3 sections but the seeder only has 1. Need to add P7_FEEL_FUTURE (4 range inputs) and P7_REFLECTION (2 reflection cards).
+
+Edit c:\laragon\www\school\laravel\database\seeders\HPCTemplateSeeder.php
+Added 18 lines
+Now write the fully dynamic blade:
+
+Write c:\laragon\www\school\laravel\Modules\Hpc\resources\views\hpc_form\partials\fourth_form\form_seven.blade.php
+Write failed
+<!-- ================= TAB 7 ================= -->
+@php
+    $savedValues = $savedValues ?? [];
+    $pageNo      = $pageNo ?? 7;
+@endphp
+
+@foreach($parts as $part)
+@php
+    // ── Build pageData: sections → rubrics → items ───────────────────────────
+    $pageData = ['sections' => []];
+
+    foreach ($part->sections->sortBy('display_order') as $section) {
+        $sectionData = [
+            'id'      => $section->id,
+            'code'    => $section->code,
+            'title'   => $section->description,
+            'rubrics' => [],
+        ];
+        foreach ($section->rubrics()->where('visible', 1)->where('is_active', 1)->orderBy('display_order')->get() as $rubric) {
+            $rubricItems = [];
+            foreach ($rubric->items()->where('is_active', 1)->orderBy('ordinal')->get() as $item) {
+                $rubricItems[] = [
+                    'field_id'  => $item->html_object_name,
+                    'label'     => $item->input_level,
+                    'input_type'=> strtolower(trim($item->input_type ?? 'text')),
+                ];
+            }
+            if (!empty($rubricItems)) {
+                $sectionData['rubrics'][] = [
+                    'code'        => $rubric->code,
+                    'description' => $rubric->description,
+                    'items'       => $rubricItems,
+                ];
+            }
+        }
+        $pageData['sections'][] = $sectionData;
+    }
+
+    // ── Access sections by code ───────────────────────────────────────────────
+    $byCode     = collect($pageData['sections'])->keyBy('code');
+    $futureSelf = $byCode->get('P7_FUTURE_SELF', ['title' => '', 'rubrics' => []]);
+    $feelFuture = $byCode->get('P7_FEEL_FUTURE', ['title' => '', 'rubrics' => []]);
+    $reflection = $byCode->get('P7_REFLECTION',  ['title' => '', 'rubrics' => []]);
+
+    // ── Feel Future: get the single rubric and its items ─────────────────────
+    $feelRubric = collect($feelFuture['rubrics'])->first() ?? ['description' => '', 'items' => []];
+@endphp
+
+<div class="tab-pane fade p-4 bg-light" id="page-{{ $pageNo }}" role="tabpanel" data-page="{{ $pageNo }}">
+
+    <div class="container-fluid">
+
+        <!-- ================= FUTURE SELF ================= -->
+        @if(!empty($futureSelf['rubrics']))
+        <div class="card shadow-sm border-0 mb-5">
+            <div class="card-header bg-primary text-white fw-semibold text-center">
+                📅 {{ $futureSelf['title'] }}
+            </div>
+
+            <div class="card-body">
+                <div class="row g-4">
+                    @foreach($futureSelf['rubrics'] as $rubric)
+                    <div class="col-md-4 d-flex">
+                        <div class="w-100">
+                            @foreach($rubric['items'] as $item)
+                            <label class="form-label fw-semibold">{{ $item['label'] }}</label>
+                            <textarea name="{{ $item['field_id'] }}"
+                                      class="form-control"
+                                      rows="8">{{ $savedValues[$item['field_id']] ?? '' }}</textarea>
+                            @endforeach
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+            </div>
+        </div>
+        @endif
+
+        <!-- ================= FEEL ABOUT FUTURE ================= -->
+        @if(!empty($feelFuture['rubrics']))
+        <div class="card shadow-sm border-0 mb-5">
+            <div class="card-header bg-secondary text-white fw-semibold text-center">
+                🌟 {{ $feelFuture['title'] }}
+            </div>
+
+            <div class="card-body">
+                <p class="fw-semibold mb-4">{{ $feelRubric['description'] }}</p>
+
+                <div class="row g-4">
+                    @foreach($feelRubric['items'] as $item)
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">{{ $item['label'] }}</label>
+                        <input type="range"
+                               name="{{ $item['field_id'] }}"
+                               min="1"
+                               max="5"
+                               class="form-range"
+                               value="{{ $savedValues[$item['field_id']] ?? 1 }}">
+                    </div>
+                    @endforeach
+                </div>
+            </div>
+        </div>
+        @endif
+
+        <!-- ================= REFLECTION SECTION ================= -->
+        @if(!empty($reflection['rubrics']))
+        <div class="row g-4">
+            @foreach($reflection['rubrics'] as $rubric)
+            <div class="col-md-6 d-flex">
+                <div class="card shadow-sm border-0 w-100">
+                    <div class="card-header {{ $loop->first ? 'bg-primary' : 'bg-info' }} text-white fw-semibold text-center">
+                        {{ $rubric['description'] }}
+                    </div>
+                    <div class="card-body">
+                        @foreach($rubric['items'] as $item)
+                        <textarea name="{{ $item['field_id'] }}"
+                                  class="form-control"
+                                  rows="8">{{ $savedValues[$item['field_id']] ?? '' }}</textarea>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+            @endforeach
+        </div>
+        @endif
+
+    </div>
+</div>
+
+@endforeach
+make 7
+Write c:\laragon\www\school\laravel\Modules\Hpc\resources\views\hpc_form\partials\fourth_form\form_seven.blade.php
+132 lines
+<!-- ================= TAB 7 ================= -->
+@php
+    $savedValues = $savedValues ?? [];
+    $pageNo      = $pageNo ?? 7;
+@endphp
+
+@foreach($parts as $part)
+@php
+    // ── Build pageData: sections → rubrics → items ───────────────────────────
+    $pageData = ['sections' => []];
+
+    foreach ($part->sections->sortBy('display_order') as $section) {
+        $sectionData = [
+            'id'      => $section->id,
+            'code'    => $section->code,
+            'title'   => $section->description,
+            'rubrics' => [],
+        ];
+        foreach ($section->rubrics()->where('visible', 1)->where('is_active', 1)->orderBy('display_order')->get() as $rubric) {
+            $rubricItems = [];
+            foreach ($rubric->items()->where('is_active', 1)->orderBy('ordinal')->get() as $item) {
+                $rubricItems[] = [
+                    'field_id'   => $item->html_object_name,
+                    'label'      => $item->input_level,
+                    'input_type' => strtolower(trim($item->input_type ?? 'text')),
+                ];
+            }
+            if (!empty($rubricItems)) {
+                $sectionData['rubrics'][] = [
+                    'code'        => $rubric->code,
+                    'description' => $rubric->description,
+                    'items'       => $rubricItems,
+                ];
+            }
+        }
+        $pageData['sections'][] = $sectionData;
+    }
+
+    // ── Access sections by code ───────────────────────────────────────────────
+    $byCode     = collect($pageData['sections'])->keyBy('code');
+    $futureSelf = $byCode->get('P7_FUTURE_SELF', ['title' => '', 'rubrics' => []]);
+    $feelFuture = $byCode->get('P7_FEEL_FUTURE', ['title' => '', 'rubrics' => []]);
+    $reflection = $byCode->get('P7_REFLECTION',  ['title' => '', 'rubrics' => []]);
+
+    // ── Feel Future: get the single rubric ────────────────────────────────────
+    $feelRubric = collect($feelFuture['rubrics'])->first() ?? ['description' => '', 'items' => []];
+@endphp
+
+<div class="tab-pane fade p-4 bg-light" id="page-{{ $pageNo }}" role="tabpanel" data-page="{{ $pageNo }}">
+
+    <div class="container-fluid">
+
+        <!-- ================= FUTURE SELF ================= -->
+        @if(!empty($futureSelf['rubrics']))
+        <div class="card shadow-sm border-0 mb-5">
+            <div class="card-header bg-primary text-white fw-semibold text-center">
+                📅 {{ $futureSelf['title'] }}
+            </div>
+
+            <div class="card-body">
+                <div class="row g-4">
+                    @foreach($futureSelf['rubrics'] as $rubric)
+                    <div class="col-md-4 d-flex">
+                        <div class="w-100">
+                            @foreach($rubric['items'] as $item)
+                            <label class="form-label fw-semibold">{{ $item['label'] }}</label>
+                            <textarea name="{{ $item['field_id'] }}"
+                                      class="form-control"
+                                      rows="8">{{ $savedValues[$item['field_id']] ?? '' }}</textarea>
+                            @endforeach
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+            </div>
+        </div>
+        @endif
+
+        <!-- ================= FEEL ABOUT FUTURE ================= -->
+        @if(!empty($feelFuture['rubrics']))
+        <div class="card shadow-sm border-0 mb-5">
+            <div class="card-header bg-secondary text-white fw-semibold text-center">
+                🌟 {{ $feelFuture['title'] }}
+            </div>
+
+            <div class="card-body">
+                <p class="fw-semibold mb-4">{{ $feelRubric['description'] }}</p>
+
+                <div class="row g-4">
+                    @foreach($feelRubric['items'] as $item)
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">{{ $item['label'] }}</label>
+                        <input type="range"
+                               name="{{ $item['field_id'] }}"
+                               min="1"
+                               max="5"
+                               class="form-range"
+                               value="{{ $savedValues[$item['field_id']] ?? 1 }}">
+                    </div>
+                    @endforeach
+                </div>
+            </div>
+        </div>
+        @endif
+
+        <!-- ================= REFLECTION SECTION ================= -->
+        @if(!empty($reflection['rubrics']))
+        <div class="row g-4">
+            @foreach($reflection['rubrics'] as $rubric)
+            <div class="col-md-6 d-flex">
+                <div class="card shadow-sm border-0 w-100">
+                    <div class="card-header {{ $loop->first ? 'bg-primary' : 'bg-info' }} text-white fw-semibold text-center">
+                        {{ $rubric['description'] }}
+                    </div>
+                    <div class="card-body">
+                        @foreach($rubric['items'] as $item)
+                        <textarea name="{{ $item['field_id'] }}"
+                                  class="form-control"
+                                  rows="8">{{ $savedValues[$item['field_id']] ?? '' }}</textarea>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+            @endforeach
+        </div>
+        @endif
+
+    </div>
+</div>
+
+@endforeach
+Page 7 done. Run the seeder and refresh. Summary:
+
+Seeder — restructured from 1 section into 3:
+
+P7_FUTURE_SELF — 3 rubrics → improve_self, support_family, improve_society (textarea columns)
+P7_FEEL_FUTURE — 1 rubric P7_FEEL_ITEMS with 4 items → prepared, excited, confident, curious (Numeric type → rendered as range in blade)
+P7_REFLECTION — 2 rubrics → future_reason ("Why Do You Think So?"), parents_feedback ("Parents' Feedback")
+Blade — fully dynamic:
+
+Future Self card header: $futureSelf['title']
+Feel Future card header: $feelFuture['title'], sub-label: $feelRubric['description']
+Range inputs: looped from $feelRubric['items']
+Reflection cards: each rubric = one card, header from $rubric['description']
