@@ -6,7 +6,7 @@
 -- 1. FINE SLAB CONFIGURATION TABLE
 -- ----------------------------------------------------------------------------
 
-CREATE TABLE IF NOT EXISTS `lib_fine_slab_config` (
+	CREATE TABLE IF NOT EXISTS `lib_fine_slab_config` (
     `id` INT PRIMARY KEY AUTO_INCREMENT,
     `name` VARCHAR(100) NOT NULL COMMENT 'e.g., Standard Student Fine Slab, Staff Fine Slab',
     `membership_type_id` INT NULL COMMENT 'If NULL, applies to all membership types',
@@ -26,13 +26,13 @@ CREATE TABLE IF NOT EXISTS `lib_fine_slab_config` (
     INDEX `idx_fine_slab_membership` (`membership_type_id`),
     INDEX `idx_fine_slab_active` (`is_active`, `effective_from`, `effective_to`),
     INDEX `idx_fine_slab_priority` (`priority`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ----------------------------------------------------------------------------
--- 2. FINE SLAB DETAILS TABLE (for day ranges)
--- ----------------------------------------------------------------------------
+	-- ----------------------------------------------------------------------------
+	-- 2. FINE SLAB DETAILS TABLE (for day ranges)
+	-- ----------------------------------------------------------------------------
 
-CREATE TABLE IF NOT EXISTS `lib_fine_slab_details` (
+	CREATE TABLE IF NOT EXISTS `lib_fine_slab_details` (
     `id` INT PRIMARY KEY AUTO_INCREMENT,
     `fine_slab_config_id` INT NOT NULL,
     `from_day` INT NOT NULL CHECK (from_day >= 0),
@@ -45,13 +45,13 @@ CREATE TABLE IF NOT EXISTS `lib_fine_slab_details` (
     FOREIGN KEY (`fine_slab_config_id`) REFERENCES `lib_fine_slab_config`(`id`) ON DELETE CASCADE,
     UNIQUE KEY `uk_slab_days` (`fine_slab_config_id`, `from_day`, `to_day`),
     INDEX `idx_slab_day_range` (`from_day`, `to_day`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ----------------------------------------------------------------------------
--- 3. ENHANCED LIB_FINES TABLE (modified)
--- ----------------------------------------------------------------------------
+	-- ----------------------------------------------------------------------------
+	-- 3. ENHANCED LIB_FINES TABLE (modified)
+	-- ----------------------------------------------------------------------------
 
-CREATE TABLE IF NOT EXISTS `lib_fines` (
+	CREATE TABLE IF NOT EXISTS `lib_fines` (
     `id` INT PRIMARY KEY AUTO_INCREMENT,
     `transaction_id` BIGINT NOT NULL,
     `member_id` INT NOT NULL,
@@ -77,20 +77,20 @@ CREATE TABLE IF NOT EXISTS `lib_fines` (
     INDEX `idx_fine_transaction` (`transaction_id`),
     INDEX `idx_fine_member` (`member_id`, `status`),
     INDEX `idx_fine_status` (`status`, `created_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- ----------------------------------------------------------------------------
--- 4. UPDATED AUTO-CALCULATE FINES EVENT
--- ----------------------------------------------------------------------------
+	-- ----------------------------------------------------------------------------
+	-- 4. UPDATED AUTO-CALCULATE FINES EVENT
+	-- ----------------------------------------------------------------------------
 
-DELIMITER $$
+	DELIMITER $$
 
-CREATE OR REPLACE EVENT auto_calculate_fines_slab_based
-ON SCHEDULE EVERY 1 DAY
-STARTS CURRENT_DATE
-DO
-BEGIN
+	CREATE OR REPLACE EVENT auto_calculate_fines_slab_based
+	ON SCHEDULE EVERY 1 DAY
+	STARTS CURRENT_DATE
+	DO
+	BEGIN
     DECLARE done INT DEFAULT FALSE;
     DECLARE v_transaction_id BIGINT;
     DECLARE v_copy_id INT;
@@ -186,20 +186,20 @@ BEGIN
     END LOOP;
     
     CLOSE cur;
-END$$
+	END$$
 
--- ----------------------------------------------------------------------------
--- 5. STORED PROCEDURE FOR SLAB-BASED FINE CALCULATION
--- ----------------------------------------------------------------------------
+	-- ----------------------------------------------------------------------------
+	-- 5. STORED PROCEDURE FOR SLAB-BASED FINE CALCULATION
+	-- ----------------------------------------------------------------------------
 
-CREATE PROCEDURE calculate_slab_fine(
+	CREATE PROCEDURE calculate_slab_fine(
     IN p_slab_config_id INT,
     IN p_days_overdue INT,
     IN p_book_cost DECIMAL(10,2),
     OUT p_fine_amount DECIMAL(10,2),
     OUT p_breakdown JSON
-)
-BEGIN
+	)
+	BEGIN
     DECLARE v_from_day INT;
     DECLARE v_to_day INT;
     DECLARE v_rate_per_day DECIMAL(10,2);
@@ -274,9 +274,9 @@ BEGIN
         'calculated_at', NOW()
     );
     
-END$$
+	END$$
 
-DELIMITER ;
+	DELIMITER ;
 
 -- ----------------------------------------------------------------------------
 -- 6. SAMPLE SEED DATA FOR FINE SLABS

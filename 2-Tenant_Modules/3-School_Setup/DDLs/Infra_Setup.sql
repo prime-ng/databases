@@ -2,7 +2,7 @@
 -- 3.2 - INFRA SETUP SUB-MODULE (sch)
 -- ===========================================================================
 
--- Building Coding format is - 2 Digit for Buildings(10-99)
+  -- Building Coding format is - 2 Digit for Buildings(10-99)
   CREATE TABLE IF NOT EXISTS `sch_buildings` (
     `id` int unsigned NOT NULL AUTO_INCREMENT,
     `code` char(10) NOT NULL,                      -- 2 digits code (10,11,12) 

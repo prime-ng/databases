@@ -13,7 +13,7 @@
   -- tpt - Transport Module
   -- lib - Library Module
   -- fnt - FrontDesk Module
-  -- fin - Finance Mgmt
+  -- acc - Account
   -- hos - Hostel Mgmt
   -- mes - Mess Management
   -- bil - Billing & plans

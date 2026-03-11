@@ -4,13 +4,11 @@
    Tenant DB Level with Multi-Tenant Support
    ========================================================= */
 
-SET FOREIGN_KEY_CHECKS = 0;
-
--- =========================================================
--- TABLE: ntf_channel_master
--- Purpose: Defines available notification channels
--- =========================================================
-CREATE TABLE IF NOT EXISTS `ntf_channel_master` (
+	-- -----------------------------------------------------------------
+	-- TABLE: ntf_channel_master
+	-- Purpose: Defines available notification channels
+	-- -----------------------------------------------------------------
+	CREATE TABLE IF NOT EXISTS `ntf_channel_master` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `tenant_id` INT UNSIGNED NOT NULL COMMENT 'Multi-tenant isolation',
     `code` VARCHAR(20) NOT NULL COMMENT 'EMAIL, SMS, WHATSAPP, IN_APP, PUSH',
@@ -33,13 +31,13 @@ CREATE TABLE IF NOT EXISTS `ntf_channel_master` (
     INDEX `idx_ntf_channel_code` (`code`),
     CONSTRAINT `uq_ntf_channel_tenant_code` UNIQUE (`tenant_id`, `code`),
     CONSTRAINT `fk_ntf_channel_fallback` FOREIGN KEY (`fallback_channel_id`) REFERENCES `ntf_channel_master`(`id`)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
+	) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
--- =========================================================
--- TABLE: ntf_provider_master
--- Purpose: External service providers configuration
--- =========================================================
-CREATE TABLE IF NOT EXISTS `ntf_provider_master` (
+	-- -----------------------------------------------------------------
+	-- TABLE: ntf_provider_master
+	-- Purpose: External service providers configuration
+	-- -----------------------------------------------------------------
+	CREATE TABLE IF NOT EXISTS `ntf_provider_master` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `tenant_id` INT UNSIGNED NOT NULL,
     `channel_id` INT UNSIGNED NOT NULL,
@@ -57,13 +55,13 @@ CREATE TABLE IF NOT EXISTS `ntf_provider_master` (
     `deleted_at` TIMESTAMP NULL,
     INDEX `idx_ntf_provider_channel` (`channel_id`),
     CONSTRAINT `fk_ntf_provider_channel` FOREIGN KEY (`channel_id`) REFERENCES `ntf_channel_master`(`id`)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+	) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
--- =========================================================
--- TABLE: ntf_notifications
--- Purpose: Core notification request registry
--- =========================================================
-CREATE TABLE IF NOT EXISTS `ntf_notifications` (
+		-- -----------------------------------------------------------------
+	-- TABLE: ntf_notifications
+	-- Purpose: Core notification request registry
+	-- -----------------------------------------------------------------
+	CREATE TABLE IF NOT EXISTS `ntf_notifications` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `tenant_id` INT UNSIGNED NOT NULL,
     `notification_uuid` CHAR(36) NOT NULL COMMENT 'Public-facing unique ID',
@@ -121,13 +119,13 @@ CREATE TABLE IF NOT EXISTS `ntf_notifications` (
     CONSTRAINT `fk_ntf_confidentiality` FOREIGN KEY (`confidentiality_level_id`) REFERENCES `sys_dropdown_table`(`id`),
     CONSTRAINT `fk_ntf_template` FOREIGN KEY (`template_id`) REFERENCES `ntf_templates`(`id`),
     CONSTRAINT `fk_ntf_notification_status` FOREIGN KEY (`notification_status_id`) REFERENCES `sys_dropdown_table`(`id`)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+	) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
--- =========================================================
--- TABLE: ntf_notification_channels
--- Purpose: Channel assignments per notification
--- =========================================================
-CREATE TABLE IF NOT EXISTS `ntf_notification_channels` (
+	-- -----------------------------------------------------------------
+	-- TABLE: ntf_notification_channels
+	-- Purpose: Channel assignments per notification
+	-- -----------------------------------------------------------------
+	CREATE TABLE IF NOT EXISTS `ntf_notification_channels` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `notification_id` INT UNSIGNED NOT NULL,
     `channel_id` INT UNSIGNED NOT NULL,
@@ -154,13 +152,13 @@ CREATE TABLE IF NOT EXISTS `ntf_notification_channels` (
     CONSTRAINT `fk_ntf_channel_provider` FOREIGN KEY (`provider_id`) REFERENCES `ntf_provider_master`(`id`),
     CONSTRAINT `fk_ntf_channel_template` FOREIGN KEY (`template_id`) REFERENCES `ntf_templates`(`id`),
     CONSTRAINT `fk_ntf_channel_status` FOREIGN KEY (`status_id`) REFERENCES `sys_dropdown_table`(`id`)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+	) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
--- =========================================================
--- TABLE: ntf_target_groups
--- Purpose: Reusable user segments/target groups
--- =========================================================
-CREATE TABLE IF NOT EXISTS `ntf_target_groups` (
+	-- -----------------------------------------------------------------
+	-- TABLE: ntf_target_groups
+	-- Purpose: Reusable user segments/target groups
+	-- -----------------------------------------------------------------
+	CREATE TABLE IF NOT EXISTS `ntf_target_groups` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `tenant_id` INT UNSIGNED NOT NULL,
     `group_name` VARCHAR(100) NOT NULL,
@@ -179,13 +177,13 @@ CREATE TABLE IF NOT EXISTS `ntf_target_groups` (
     
     UNIQUE KEY `uq_target_group_tenant_code` (`tenant_id`, `group_code`),
     INDEX `idx_target_group_type` (`group_type`)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+	) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
--- =========================================================
--- TABLE: ntf_notification_targets
--- Purpose: Target definitions for notifications
--- =========================================================
-CREATE TABLE IF NOT EXISTS `ntf_notification_targets` (
+	-- -----------------------------------------------------------------
+	-- TABLE: ntf_notification_targets
+	-- Purpose: Target definitions for notifications
+	-- -----------------------------------------------------------------
+	CREATE TABLE IF NOT EXISTS `ntf_notification_targets` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `notification_id` INT UNSIGNED NOT NULL,
     `target_type_id` INT UNSIGNED NOT NULL,
@@ -206,13 +204,13 @@ CREATE TABLE IF NOT EXISTS `ntf_notification_targets` (
     CONSTRAINT `fk_ntf_target_notification` FOREIGN KEY (`notification_id`) REFERENCES `ntf_notifications`(`id`),
     CONSTRAINT `fk_ntf_target_type` FOREIGN KEY (`target_type_id`) REFERENCES `sys_dropdown_table`(`id`),
     CONSTRAINT `fk_ntf_target_group` FOREIGN KEY (`target_group_id`) REFERENCES `ntf_target_groups`(`id`)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+	) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
--- =========================================================
--- TABLE: ntf_user_devices
--- Purpose: Push notification device registry
--- =========================================================
-CREATE TABLE IF NOT EXISTS `ntf_user_devices` (
+	-- -----------------------------------------------------------------
+	-- TABLE: ntf_user_devices
+	-- Purpose: Push notification device registry
+	-- -----------------------------------------------------------------
+	CREATE TABLE IF NOT EXISTS `ntf_user_devices` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `user_id` INT UNSIGNED NOT NULL,
     `device_type` ENUM('ANDROID', 'IOS', 'WEB', 'DESKTOP') NOT NULL,
@@ -228,13 +226,13 @@ CREATE TABLE IF NOT EXISTS `ntf_user_devices` (
     UNIQUE KEY `uq_user_device_token` (`user_id`, `device_token`),
     INDEX `idx_device_token` (`device_token`),
     CONSTRAINT `fk_ntf_device_user` FOREIGN KEY (`user_id`) REFERENCES `sys_user`(`id`)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+	) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
--- =========================================================
--- TABLE: ntf_user_preferences
--- Purpose: Enhanced user notification preferences
--- =========================================================
-CREATE TABLE IF NOT EXISTS `ntf_user_preferences` (
+	-- -----------------------------------------------------------------
+	-- TABLE: ntf_user_preferences
+	-- Purpose: Enhanced user notification preferences
+	-- -----------------------------------------------------------------
+	CREATE TABLE IF NOT EXISTS `ntf_user_preferences` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `user_id` INT UNSIGNED NOT NULL,
     `channel_id` INT UNSIGNED NOT NULL,
@@ -259,13 +257,13 @@ CREATE TABLE IF NOT EXISTS `ntf_user_preferences` (
     
     CONSTRAINT `fk_ntf_pref_channel` FOREIGN KEY (`channel_id`) REFERENCES `ntf_channel_master`(`id`),
     CONSTRAINT `fk_ntf_pref_priority` FOREIGN KEY (`priority_threshold_id`) REFERENCES `sys_dropdown_table`(`id`)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+	) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
--- =========================================================
--- TABLE: ntf_templates
--- Purpose: Enhanced notification templates
--- =========================================================
-CREATE TABLE IF NOT EXISTS `ntf_templates` (
+	-- -----------------------------------------------------------------
+	-- TABLE: ntf_templates
+	-- Purpose: Enhanced notification templates
+	-- -----------------------------------------------------------------
+	CREATE TABLE IF NOT EXISTS `ntf_templates` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `tenant_id` INT UNSIGNED NOT NULL,
     `template_code` VARCHAR(50) NOT NULL,
@@ -296,13 +294,13 @@ CREATE TABLE IF NOT EXISTS `ntf_templates` (
     
     CONSTRAINT `fk_ntf_template_channel` FOREIGN KEY (`channel_id`) REFERENCES `ntf_channel_master`(`id`),
     CONSTRAINT `fk_ntf_template_media` FOREIGN KEY (`media_id`) REFERENCES `sys_media`(`id`)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+	) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
--- =========================================================
--- TABLE: ntf_resolved_recipients
--- Purpose: Final resolved recipient list with personalization
--- =========================================================
-CREATE TABLE IF NOT EXISTS `ntf_resolved_recipients` (
+	-- -----------------------------------------------------------------
+	-- TABLE: ntf_resolved_recipients
+	-- Purpose: Final resolved recipient list with personalization
+	-- -----------------------------------------------------------------
+	CREATE TABLE IF NOT EXISTS `ntf_resolved_recipients` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `notification_id` INT UNSIGNED NOT NULL,
     `channel_id` INT UNSIGNED NOT NULL,
@@ -337,13 +335,13 @@ CREATE TABLE IF NOT EXISTS `ntf_resolved_recipients` (
     CONSTRAINT `fk_ntf_recipient_target` FOREIGN KEY (`notification_target_id`) REFERENCES `ntf_notification_targets`(`id`),
     CONSTRAINT `fk_ntf_recipient_user` FOREIGN KEY (`resolved_user_id`) REFERENCES `sys_user`(`id`),
     CONSTRAINT `fk_ntf_recipient_device` FOREIGN KEY (`device_id`) REFERENCES `ntf_user_devices`(`id`)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+	) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
--- =========================================================
--- TABLE: ntf_delivery_queue
--- Purpose: Queue management for notification sending
--- =========================================================
-CREATE TABLE IF NOT EXISTS `ntf_delivery_queue` (
+	-- -----------------------------------------------------------------
+	-- TABLE: ntf_delivery_queue
+	-- Purpose: Queue management for notification sending
+	-- -----------------------------------------------------------------
+	CREATE TABLE IF NOT EXISTS `ntf_delivery_queue` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `resolved_recipient_id` INT UNSIGNED NOT NULL,
     `notification_id` INT UNSIGNED NOT NULL,
@@ -369,13 +367,13 @@ CREATE TABLE IF NOT EXISTS `ntf_delivery_queue` (
     CONSTRAINT `fk_queue_notification` FOREIGN KEY (`notification_id`) REFERENCES `ntf_notifications`(`id`),
     CONSTRAINT `fk_queue_channel` FOREIGN KEY (`channel_id`) REFERENCES `ntf_channel_master`(`id`),
     CONSTRAINT `fk_queue_provider` FOREIGN KEY (`provider_id`) REFERENCES `ntf_provider_master`(`id`)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+	) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
--- =========================================================
--- TABLE: ntf_delivery_logs
--- Purpose: Complete delivery audit trail
--- =========================================================
-CREATE TABLE IF NOT EXISTS `ntf_delivery_logs` (
+	-- -----------------------------------------------------------------
+	-- TABLE: ntf_delivery_logs
+	-- Purpose: Complete delivery audit trail
+	-- -----------------------------------------------------------------
+	CREATE TABLE IF NOT EXISTS `ntf_delivery_logs` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `notification_id` INT UNSIGNED NOT NULL,
     `channel_id` INT UNSIGNED NOT NULL,
@@ -412,13 +410,13 @@ CREATE TABLE IF NOT EXISTS `ntf_delivery_logs` (
     CONSTRAINT `fk_ntf_log_recipient` FOREIGN KEY (`resolved_recipient_id`) REFERENCES `ntf_resolved_recipients`(`id`),
     CONSTRAINT `fk_ntf_log_provider` FOREIGN KEY (`provider_id`) REFERENCES `ntf_provider_master`(`id`),
     CONSTRAINT `fk_ntf_log_status` FOREIGN KEY (`delivery_status_id`) REFERENCES `sys_dropdown_table`(`id`)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+	) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
--- =========================================================
--- TABLE: ntf_notification_threads
--- Purpose: Group related notifications (conversations)
--- =========================================================
-CREATE TABLE IF NOT EXISTS `ntf_notification_threads` (
+	-- -----------------------------------------------------------------
+	-- TABLE: ntf_notification_threads
+	-- Purpose: Group related notifications (conversations)
+	-- -----------------------------------------------------------------
+	CREATE TABLE IF NOT EXISTS `ntf_notification_threads` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `tenant_id` INT UNSIGNED NOT NULL,
     `thread_uuid` CHAR(36) NOT NULL,
@@ -436,13 +434,13 @@ CREATE TABLE IF NOT EXISTS `ntf_notification_threads` (
     INDEX `idx_thread_parent` (`parent_thread_id`),
     
     CONSTRAINT `fk_thread_parent` FOREIGN KEY (`parent_thread_id`) REFERENCES `ntf_notification_threads`(`id`)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+	) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
--- =========================================================
--- TABLE: ntf_notification_thread_members
--- Purpose: Thread-notification association
--- =========================================================
-CREATE TABLE IF NOT EXISTS `ntf_notification_thread_members` (
+	-- -----------------------------------------------------------------
+	-- TABLE: ntf_notification_thread_members
+	-- Purpose: Thread-notification association
+	-- -----------------------------------------------------------------
+	CREATE TABLE IF NOT EXISTS `ntf_notification_thread_members` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `thread_id` INT UNSIGNED NOT NULL,
     `notification_id` INT UNSIGNED NOT NULL,
@@ -452,13 +450,13 @@ CREATE TABLE IF NOT EXISTS `ntf_notification_thread_members` (
     UNIQUE KEY `uq_thread_notification` (`thread_id`, `notification_id`),
     CONSTRAINT `fk_thread_member_thread` FOREIGN KEY (`thread_id`) REFERENCES `ntf_notification_threads`(`id`),
     CONSTRAINT `fk_thread_member_notification` FOREIGN KEY (`notification_id`) REFERENCES `ntf_notifications`(`id`)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+	) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
--- =========================================================
--- TABLE: ntf_schedule_audit
--- Purpose: Track recurring notification executions
--- =========================================================
-CREATE TABLE IF NOT EXISTS `ntf_schedule_audit` (
+	-- -----------------------------------------------------------------
+	-- TABLE: ntf_schedule_audit
+	-- Purpose: Track recurring notification executions
+	-- -----------------------------------------------------------------
+	CREATE TABLE IF NOT EXISTS `ntf_schedule_audit` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `notification_id` INT UNSIGNED NOT NULL,
     `scheduled_instance_id` INT UNSIGNED NULL COMMENT 'Child notification ID',
@@ -470,6 +468,5 @@ CREATE TABLE IF NOT EXISTS `ntf_schedule_audit` (
     
     INDEX `idx_schedule_notification` (`notification_id`, `scheduled_execution_time`),
     CONSTRAINT `fk_schedule_notification` FOREIGN KEY (`notification_id`) REFERENCES `ntf_notifications`(`id`)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+	) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
-SET FOREIGN_KEY_CHECKS = 1;

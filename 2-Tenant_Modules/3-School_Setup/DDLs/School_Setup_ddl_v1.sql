@@ -5,11 +5,10 @@
    Style  : Audit-ready, Soft Delete
    ============================================================ */
 
-SET FOREIGN_KEY_CHECKS = 0;
-
-/* ============================================================
-   ATTENDANCE TYPE
-   ============================================================ */
+   -- ----------------------------------------------------------------------------
+   -- This table will capture different types of attendance status for both students and staff. 
+   -- It will be used in attendance marking and reporting.
+   -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `sch_attendance_types` (
     `id`  INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
     `code`     VARCHAR(10) NOT NULL,  -- e.g. 'P', 'A', 'L', 'H'
@@ -27,9 +26,10 @@ CREATE TABLE IF NOT EXISTS `sch_attendance_types` (
 ) ENGINE=InnoDB;
 
 
-/* ============================================================
-   STAFF LEAVE TYPE
-   ============================================================ */
+   -- ----------------------------------------------------------------------------
+   -- This table will capture type of Leaves available for staff. 
+   -- It will be used in leave application and reporting.
+   -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `sch_leave_types` (
     `id`       INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
     `code`          VARCHAR(10) NOT NULL,  -- e.g. 'CL', 'SL', 'PL', 'LOP'
@@ -46,9 +46,10 @@ CREATE TABLE IF NOT EXISTS `sch_leave_types` (
 ) ENGINE=InnoDB;
 
 
-/* ============================================================
-   STUDENT CATEGORIES
-   ============================================================ */
+   -- ----------------------------------------------------------------------------
+   -- This table will capture different categories for both students and staff. 
+   -- It will be used in various configurations and reporting.
+   -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `sch_categories` (
     `id`     INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
     `code`       VARCHAR(30) NOT NULL,
@@ -63,9 +64,10 @@ CREATE TABLE IF NOT EXISTS `sch_categories` (
 ) ENGINE=InnoDB;
 
 
-/* ============================================================
-   STAFF LEAVE CONFIGURATION
-   ============================================================ */
+   -- ----------------------------------------------------------------------------
+   -- This table will capture Leave configuration for different staff categories and leave types.
+   -- It will be used in leave application and reporting.
+   -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `sch_leave_config` (
     `id`     INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
     `academic_year`       VARCHAR(9) NOT NULL,
@@ -84,9 +86,10 @@ CREATE TABLE IF NOT EXISTS `sch_leave_config` (
 ) ENGINE=InnoDB;
 
 
-/* ============================================================
-   DISABLE REASONS
-   ============================================================ */
+   -- ----------------------------------------------------------------------------
+   -- This table will capture the reasons for disabling a student or staff. 
+   -- It will be used in disable/enable operations and reporting.
+   -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `sch_disable_reasons` (
     `id`     INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
     `code`         VARCHAR(30) NOT NULL,
@@ -102,5 +105,3 @@ CREATE TABLE IF NOT EXISTS `sch_disable_reasons` (
     UNIQUE KEY `uq_disable_reason_code` (`code`)
 ) ENGINE=InnoDB;
 
-
-SET FOREIGN_KEY_CHECKS = 1;

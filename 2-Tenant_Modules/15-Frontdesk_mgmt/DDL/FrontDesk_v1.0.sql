@@ -9,8 +9,6 @@ SET FOREIGN_KEY_CHECKS = 0;
    1. VISITOR MANAGEMENT
    ========================================================= */
 
-DROP TABLE IF EXISTS fd_visitor_visits;
-DROP TABLE IF EXISTS fd_visitors;
 
 CREATE TABLE fd_visitors (
     id INT PRIMARY KEY AUTO_INCREMENT,

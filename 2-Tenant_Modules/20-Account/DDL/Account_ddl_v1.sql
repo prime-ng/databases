@@ -9,8 +9,8 @@
 -- PART 1: ACCOUNTING CORE STRUCTURES
 -- =====================================================
 
--- 1.1 Account Groups (Hierarchical Chart of Accounts)
-CREATE TABLE `account_groups` (
+	-- 1.1 Account Groups (Hierarchical Chart of Accounts)
+	CREATE TABLE `acc_account_groups` (
     `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
     `name` varchar(100) NOT NULL,
     `code` varchar(20) NOT NULL,
@@ -26,10 +26,10 @@ CREATE TABLE `account_groups` (
     KEY `account_groups_parent_id_foreign` (`parent_id`),
     CONSTRAINT `account_groups_parent_id_foreign` 
         FOREIGN KEY (`parent_id`) REFERENCES `account_groups` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 1.2 Ledgers (Individual Accounts)
-CREATE TABLE `ledgers` (
+	-- 1.2 Ledgers (Individual Accounts)
+	CREATE TABLE `acc_ledgers` (
     `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
     `name` varchar(150) NOT NULL,
     `code` varchar(20) NOT NULL,
@@ -49,10 +49,10 @@ CREATE TABLE `ledgers` (
     KEY `ledgers_account_group_id_foreign` (`account_group_id`),
     CONSTRAINT `ledgers_account_group_id_foreign` 
         FOREIGN KEY (`account_group_id`) REFERENCES `account_groups` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 1.3 Ledger Mappings (Links to other modules)
-CREATE TABLE `ledger_mappings` (
+	-- 1.3 Ledger Mappings (Links to other modules)
+	CREATE TABLE `acc_ledger_mappings` (
     `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
     `ledger_id` bigint UNSIGNED NOT NULL,
     `source_module` enum('Fees','Library','Transport','HR','Vendor') NOT NULL,
@@ -65,10 +65,10 @@ CREATE TABLE `ledger_mappings` (
     KEY `ledger_mappings_source_index` (`source_module`, `source_id`),
     CONSTRAINT `ledger_mappings_ledger_id_foreign` 
         FOREIGN KEY (`ledger_id`) REFERENCES `ledgers` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 1.4 Fiscal Years
-CREATE TABLE `fiscal_years` (
+	-- 1.4 Fiscal Years
+	CREATE TABLE `acc_fiscal_years` (
     `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
     `name` varchar(100) NOT NULL,
     `start_date` date NOT NULL,
@@ -81,10 +81,10 @@ CREATE TABLE `fiscal_years` (
     PRIMARY KEY (`id`),
     UNIQUE KEY `fiscal_years_name_unique` (`name`),
     KEY `fiscal_years_dates_index` (`start_date`, `end_date`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 1.5 Journal Entries (Master)
-CREATE TABLE `journal_entries` (
+	-- 1.5 Journal Entries (Master)
+	CREATE TABLE `acc_journal_entries` (
     `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
     `entry_number` varchar(50) NOT NULL,
     `entry_date` date NOT NULL,
@@ -108,10 +108,10 @@ CREATE TABLE `journal_entries` (
     KEY `journal_entries_entry_date_index` (`entry_date`),
     CONSTRAINT `journal_entries_fiscal_year_id_foreign` 
         FOREIGN KEY (`fiscal_year_id`) REFERENCES `fiscal_years` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 1.6 Journal Entry Lines (Details)
-CREATE TABLE `journal_entry_lines` (
+	-- 1.6 Journal Entry Lines (Details)
+	CREATE TABLE `acc_journal_entry_lines` (
     `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
     `journal_entry_id` bigint UNSIGNED NOT NULL,
     `ledger_id` bigint UNSIGNED NOT NULL,
@@ -129,10 +129,10 @@ CREATE TABLE `journal_entry_lines` (
         FOREIGN KEY (`journal_entry_id`) REFERENCES `journal_entries` (`id`) ON DELETE CASCADE,
     CONSTRAINT `journal_entry_lines_ledger_id_foreign` 
         FOREIGN KEY (`ledger_id`) REFERENCES `ledgers` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 1.7 Recurring Journal Templates
-CREATE TABLE `recurring_journal_templates` (
+	-- 1.7 Recurring Journal Templates
+	CREATE TABLE `acc_recurring_journal_templates` (
     `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
     `name` varchar(150) NOT NULL,
     `start_date` date NOT NULL,
@@ -146,10 +146,10 @@ CREATE TABLE `recurring_journal_templates` (
     `created_at` timestamp NULL DEFAULT NULL,
     `updated_at` timestamp NULL DEFAULT NULL,
     PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 1.8 Recurring Journal Template Lines
-CREATE TABLE `recurring_journal_template_lines` (
+	-- 1.8 Recurring Journal Template Lines
+	CREATE TABLE `acc_recurring_journal_template_lines` (
     `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
     `recurring_journal_template_id` bigint UNSIGNED NOT NULL,
     `ledger_id` bigint UNSIGNED NOT NULL,
@@ -163,14 +163,14 @@ CREATE TABLE `recurring_journal_template_lines` (
         FOREIGN KEY (`recurring_journal_template_id`) REFERENCES `recurring_journal_templates` (`id`) ON DELETE CASCADE,
     CONSTRAINT `recurring_template_lines_ledger_id_foreign` 
         FOREIGN KEY (`ledger_id`) REFERENCES `ledgers` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- =====================================================
--- PART 2: FEE MANAGEMENT MODULE
--- =====================================================
+	-- =====================================================
+	-- PART 2: FEE MANAGEMENT MODULE
+	-- =====================================================
 
--- 2.1 Fee Heads (Master)
-CREATE TABLE `fee_heads` (
+	-- 2.1 Fee Heads (Master)
+	CREATE TABLE `acc_fee_heads` (
     `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
     `name` varchar(100) NOT NULL,
     `code` varchar(20) NOT NULL,
@@ -188,10 +188,10 @@ CREATE TABLE `fee_heads` (
     KEY `fee_heads_income_ledger_id_foreign` (`income_ledger_id`),
     CONSTRAINT `fee_heads_income_ledger_id_foreign` 
         FOREIGN KEY (`income_ledger_id`) REFERENCES `ledgers` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 2.2 Fee Structures (Templates)
-CREATE TABLE `fee_structures` (
+	-- 2.2 Fee Structures (Templates)
+	CREATE TABLE `acc_fee_structures` (
     `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
     `name` varchar(150) NOT NULL,
     `code` varchar(20) NOT NULL,
@@ -210,10 +210,10 @@ CREATE TABLE `fee_structures` (
     KEY `fee_structures_academic_session_id_foreign` (`academic_session_id`),
     KEY `fee_structures_class_id_foreign` (`class_id`),
     KEY `fee_structures_category_id_foreign` (`student_category_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 2.3 Fee Structure Lines
-CREATE TABLE `fee_structure_lines` (
+	-- 2.3 Fee Structure Lines
+	CREATE TABLE `acc_fee_structure_lines` (
     `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
     `fee_structure_id` bigint UNSIGNED NOT NULL,
     `fee_head_id` bigint UNSIGNED NOT NULL,
@@ -229,10 +229,10 @@ CREATE TABLE `fee_structure_lines` (
         FOREIGN KEY (`fee_structure_id`) REFERENCES `fee_structures` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fee_structure_lines_fee_head_id_foreign` 
         FOREIGN KEY (`fee_head_id`) REFERENCES `fee_heads` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 2.4 Discount/Scholarship Types
-CREATE TABLE `discount_types` (
+	-- 2.4 Discount/Scholarship Types
+	CREATE TABLE `acc_discount_types` (
     `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
     `name` varchar(100) NOT NULL,
     `code` varchar(20) NOT NULL,
@@ -244,10 +244,10 @@ CREATE TABLE `discount_types` (
     `deleted_at` timestamp NULL DEFAULT NULL,
     PRIMARY KEY (`id`),
     UNIQUE KEY `discount_types_code_unique` (`code`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 2.5 Student Fee Concessions
-CREATE TABLE `student_fee_concessions` (
+	-- 2.5 Student Fee Concessions
+	CREATE TABLE `acc_student_fee_concessions` (
     `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
     `student_id` bigint UNSIGNED NOT NULL,
     `fee_structure_line_id` bigint UNSIGNED NOT NULL,
@@ -269,14 +269,14 @@ CREATE TABLE `student_fee_concessions` (
         FOREIGN KEY (`discount_type_id`) REFERENCES `discount_types` (`id`),
     CONSTRAINT `student_concessions_line_id_foreign` 
         FOREIGN KEY (`fee_structure_line_id`) REFERENCES `fee_structure_lines` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- =====================================================
--- PART 3: INVOICES & TRANSACTIONS
--- =====================================================
+	-- =====================================================
+	-- PART 3: INVOICES & TRANSACTIONS
+	-- =====================================================
 
--- 3.1 Tax Rates
-CREATE TABLE `tax_rates` (
+	-- 3.1 Tax Rates
+	CREATE TABLE `acc_tax_rates` (
     `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
     `name` varchar(100) NOT NULL,
     `rate` decimal(5,2) NOT NULL,
@@ -286,10 +286,10 @@ CREATE TABLE `tax_rates` (
     `created_at` timestamp NULL DEFAULT NULL,
     `updated_at` timestamp NULL DEFAULT NULL,
     PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 3.2 Sales Invoices (Student Fees)
-CREATE TABLE `sales_invoices` (
+	-- 3.2 Sales Invoices (Student Fees)
+	CREATE TABLE `acc_sales_invoices` (
     `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
     `invoice_number` varchar(50) NOT NULL,
     `student_id` bigint UNSIGNED NOT NULL,
@@ -314,10 +314,10 @@ CREATE TABLE `sales_invoices` (
     KEY `sales_invoices_status_index` (`status`),
     CONSTRAINT `sales_invoices_journal_entry_id_foreign` 
         FOREIGN KEY (`journal_entry_id`) REFERENCES `journal_entries` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 3.3 Purchase Invoices (Vendor Bills)
-CREATE TABLE `purchase_invoices` (
+	-- 3.3 Purchase Invoices (Vendor Bills)
+	CREATE TABLE `acc_purchase_invoices` (
     `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
     `invoice_number` varchar(50) NOT NULL,
     `vendor_id` bigint UNSIGNED NOT NULL,
@@ -338,10 +338,10 @@ CREATE TABLE `purchase_invoices` (
     KEY `purchase_invoices_journal_entry_id_foreign` (`journal_entry_id`),
     CONSTRAINT `purchase_invoices_journal_entry_id_foreign` 
         FOREIGN KEY (`journal_entry_id`) REFERENCES `journal_entries` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 3.4 Invoice Tax Lines
-CREATE TABLE `invoice_tax_lines` (
+	-- 3.4 Invoice Tax Lines
+	CREATE TABLE `acc_invoice_tax_lines` (
     `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
     `source_invoice_type` enum('Sales','Purchase') NOT NULL,
     `source_invoice_id` bigint UNSIGNED NOT NULL,
@@ -354,10 +354,10 @@ CREATE TABLE `invoice_tax_lines` (
     KEY `invoice_tax_lines_tax_rate_id_foreign` (`tax_rate_id`),
     CONSTRAINT `invoice_tax_lines_tax_rate_id_foreign` 
         FOREIGN KEY (`tax_rate_id`) REFERENCES `tax_rates` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 3.5 Invoice Items/Lines
-CREATE TABLE `invoice_lines` (
+	-- 3.5 Invoice Items/Lines
+	CREATE TABLE `acc_invoice_lines` (
     `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
     `source_invoice_type` enum('Sales','Purchase') NOT NULL,
     `source_invoice_id` bigint UNSIGNED NOT NULL,
@@ -376,10 +376,10 @@ CREATE TABLE `invoice_lines` (
     KEY `invoice_lines_fee_head_id_foreign` (`fee_head_id`),
     CONSTRAINT `invoice_lines_fee_head_id_foreign` 
         FOREIGN KEY (`fee_head_id`) REFERENCES `fee_heads` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 3.6 Payment Transactions (Gateway Logs)
-CREATE TABLE `payment_transactions` (
+	-- 3.6 Payment Transactions (Gateway Logs)
+	CREATE TABLE `acc_payment_transactions` (
     `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
     `student_id` bigint UNSIGNED NOT NULL,
     `invoice_id` bigint UNSIGNED NOT NULL,
@@ -401,10 +401,10 @@ CREATE TABLE `payment_transactions` (
         FOREIGN KEY (`invoice_id`) REFERENCES `sales_invoices` (`id`),
     CONSTRAINT `payment_transactions_student_id_foreign` 
         FOREIGN KEY (`student_id`) REFERENCES `students` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 3.7 Receipts
-CREATE TABLE `receipts` (
+	-- 3.7 Receipts
+	CREATE TABLE `acc_receipts` (
     `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
     `receipt_number` varchar(50) NOT NULL,
     `journal_entry_id` bigint UNSIGNED NOT NULL,
@@ -425,14 +425,14 @@ CREATE TABLE `receipts` (
         FOREIGN KEY (`journal_entry_id`) REFERENCES `journal_entries` (`id`),
     CONSTRAINT `receipts_student_id_foreign` 
         FOREIGN KEY (`student_id`) REFERENCES `students` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- =====================================================
--- PART 4: BUDGETING & COST CENTERS
--- =====================================================
+	-- =====================================================
+	-- PART 4: BUDGETING & COST CENTERS
+	-- =====================================================
 
--- 4.1 Cost Centers
-CREATE TABLE `cost_centers` (
+	-- 4.1 Cost Centers
+	CREATE TABLE `acc_cost_centers` (
     `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
     `name` varchar(100) NOT NULL,
     `code` varchar(20) NOT NULL,
@@ -441,10 +441,10 @@ CREATE TABLE `cost_centers` (
     `updated_at` timestamp NULL DEFAULT NULL,
     PRIMARY KEY (`id`),
     UNIQUE KEY `cost_centers_code_unique` (`code`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 4.2 Budgets
-CREATE TABLE `budgets` (
+	-- 4.2 Budgets
+	CREATE TABLE `acc_budgets` (
     `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
     `fiscal_year_id` bigint UNSIGNED NOT NULL,
     `cost_center_id` bigint UNSIGNED NOT NULL,
@@ -460,14 +460,14 @@ CREATE TABLE `budgets` (
         FOREIGN KEY (`cost_center_id`) REFERENCES `cost_centers` (`id`),
     CONSTRAINT `budgets_ledger_id_foreign` 
         FOREIGN KEY (`ledger_id`) REFERENCES `ledgers` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- =====================================================
--- PART 5: EXPENSE CLAIM MANAGEMENT
--- =====================================================
+	-- =====================================================
+	-- PART 5: EXPENSE CLAIM MANAGEMENT
+	-- =====================================================
 
--- 5.1 Expense Claims
-CREATE TABLE `expense_claims` (
+	-- 5.1 Expense Claims
+	CREATE TABLE `acc_expense_claims` (
     `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
     `claim_number` varchar(50) NOT NULL,
     `employee_id` bigint UNSIGNED NOT NULL,
@@ -486,10 +486,10 @@ CREATE TABLE `expense_claims` (
     KEY `expense_claims_journal_entry_id_foreign` (`journal_entry_id`),
     CONSTRAINT `expense_claims_journal_entry_id_foreign` 
         FOREIGN KEY (`journal_entry_id`) REFERENCES `journal_entries` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 5.2 Expense Claim Lines
-CREATE TABLE `expense_claim_lines` (
+	-- 5.2 Expense Claim Lines
+	CREATE TABLE `acc_expense_claim_lines` (
     `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
     `expense_claim_id` bigint UNSIGNED NOT NULL,
     `expense_date` date NOT NULL,
@@ -507,14 +507,14 @@ CREATE TABLE `expense_claim_lines` (
         FOREIGN KEY (`expense_claim_id`) REFERENCES `expense_claims` (`id`) ON DELETE CASCADE,
     CONSTRAINT `expense_claim_lines_ledger_id_foreign` 
         FOREIGN KEY (`ledger_id`) REFERENCES `ledgers` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- =====================================================
--- PART 6: BANK RECONCILIATION
--- =====================================================
+	-- =====================================================
+	-- PART 6: BANK RECONCILIATION
+	-- =====================================================
 
--- 6.1 Bank Reconciliation Statements
-CREATE TABLE `bank_reconciliations` (
+	-- 6.1 Bank Reconciliation Statements
+	CREATE TABLE `acc_bank_reconciliations` (
     `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
     `ledger_id` bigint UNSIGNED NOT NULL,
     `statement_date` date NOT NULL,
@@ -528,10 +528,10 @@ CREATE TABLE `bank_reconciliations` (
     KEY `bank_reconciliations_ledger_id_foreign` (`ledger_id`),
     CONSTRAINT `bank_reconciliations_ledger_id_foreign` 
         FOREIGN KEY (`ledger_id`) REFERENCES `ledgers` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 6.2 Bank Transaction Matches
-CREATE TABLE `reconciliation_matches` (
+	-- 6.2 Bank Transaction Matches
+	CREATE TABLE `acc_reconciliation_matches` (
     `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
     `bank_reconciliation_id` bigint UNSIGNED NOT NULL,
     `journal_entry_line_id` bigint UNSIGNED NOT NULL,
@@ -546,14 +546,14 @@ CREATE TABLE `reconciliation_matches` (
         FOREIGN KEY (`bank_reconciliation_id`) REFERENCES `bank_reconciliations` (`id`) ON DELETE CASCADE,
     CONSTRAINT `reconciliation_matches_line_id_foreign` 
         FOREIGN KEY (`journal_entry_line_id`) REFERENCES `journal_entry_lines` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- =====================================================
--- PART 7: FIXED ASSETS MANAGEMENT
--- =====================================================
+	-- =====================================================
+	-- PART 7: FIXED ASSETS MANAGEMENT
+	-- =====================================================
 
--- 7.1 Asset Categories
-CREATE TABLE `asset_categories` (
+	-- 7.1 Asset Categories
+	CREATE TABLE `acc_asset_categories` (
     `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
     `name` varchar(100) NOT NULL,
     `code` varchar(20) NOT NULL,
@@ -565,10 +565,10 @@ CREATE TABLE `asset_categories` (
     `updated_at` timestamp NULL DEFAULT NULL,
     PRIMARY KEY (`id`),
     UNIQUE KEY `asset_categories_code_unique` (`code`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 7.2 Fixed Assets
-CREATE TABLE `fixed_assets` (
+	-- 7.2 Fixed Assets
+	CREATE TABLE `acc_fixed_assets` (
     `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
     `name` varchar(150) NOT NULL,
     `asset_code` varchar(50) NOT NULL,
@@ -594,10 +594,10 @@ CREATE TABLE `fixed_assets` (
         FOREIGN KEY (`asset_category_id`) REFERENCES `asset_categories` (`id`),
     CONSTRAINT `fixed_assets_journal_entry_id_foreign` 
         FOREIGN KEY (`journal_entry_id`) REFERENCES `journal_entries` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 7.3 Depreciation Entries
-CREATE TABLE `depreciation_entries` (
+	-- 7.3 Depreciation Entries
+	CREATE TABLE `acc_depreciation_entries` (
     `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
     `fixed_asset_id` bigint UNSIGNED NOT NULL,
     `fiscal_year_id` bigint UNSIGNED NOT NULL,
@@ -616,14 +616,14 @@ CREATE TABLE `depreciation_entries` (
         FOREIGN KEY (`fiscal_year_id`) REFERENCES `fiscal_years` (`id`),
     CONSTRAINT `depreciation_entries_journal_entry_id_foreign` 
         FOREIGN KEY (`journal_entry_id`) REFERENCES `journal_entries` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- =====================================================
--- PART 8: DATA EXPORT (TALLY)
--- =====================================================
+	-- =====================================================
+	-- PART 8: DATA EXPORT (TALLY)
+	-- =====================================================
 
--- 8.1 Tally Export Logs
-CREATE TABLE `tally_export_logs` (
+	-- 8.1 Tally Export Logs
+	CREATE TABLE `acc_tally_export_logs` (
     `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
     `export_type` enum('Ledgers','Journal_Vouchers','Inventory') NOT NULL,
     `export_date` datetime NOT NULL,
@@ -656,14 +656,14 @@ CREATE INDEX idx_receipts_date ON receipts(receipt_date);
 -- =====================================================
 
 -- Sample Account Groups
-INSERT INTO `account_groups` (`name`, `code`, `parent_id`, `group_type`, `nature`) VALUES
+INSERT INTO `acc_account_groups` (`name`, `code`, `parent_id`, `group_type`, `nature`) VALUES
 ('Assets', 'A01', NULL, 'Assets', 'Debit'),
 ('Liabilities', 'L01', NULL, 'Liabilities', 'Credit'),
 ('Income', 'I01', NULL, 'Income', 'Credit'),
 ('Expenses', 'E01', NULL, 'Expense', 'Debit');
 
 -- Assuming first 4 IDs are taken, insert children
-INSERT INTO `account_groups` (`name`, `code`, `parent_id`, `group_type`, `nature`) VALUES
+INSERT INTO `acc_account_groups` (`name`, `code`, `parent_id`, `group_type`, `nature`) VALUES
 ('Current Assets', 'A02', 1, 'Assets', 'Debit'),
 ('Fixed Assets', 'A03', 1, 'Assets', 'Debit'),
 ('Bank Accounts', 'A04', 5, 'Assets', 'Debit'),
@@ -675,7 +675,7 @@ INSERT INTO `account_groups` (`name`, `code`, `parent_id`, `group_type`, `nature
 ('Indirect Expenses', 'E03', 4, 'Expense', 'Debit');
 
 -- Sample Tax Rates
-INSERT INTO `tax_rates` (`name`, `rate`, `type`, `is_interstate`) VALUES
+INSERT INTO `acc_tax_rates` (`name`, `rate`, `type`, `is_interstate`) VALUES
 ('CGST 9%', 9.00, 'CGST', 0),
 ('SGST 9%', 9.00, 'SGST', 0),
 ('IGST 18%', 18.00, 'IGST', 1),
@@ -683,7 +683,7 @@ INSERT INTO `tax_rates` (`name`, `rate`, `type`, `is_interstate`) VALUES
 ('SGST 2.5%', 2.50, 'SGST', 0);
 
 -- Sample Cost Centers
-INSERT INTO `cost_centers` (`name`, `code`) VALUES
+INSERT INTO `acc_cost_centers` (`name`, `code`) VALUES
 ('Academics - Science', 'CC-SCI'),
 ('Academics - Arts', 'CC-ART'),
 ('Sports Department', 'CC-SPT'),
@@ -691,7 +691,7 @@ INSERT INTO `cost_centers` (`name`, `code`) VALUES
 ('IT Infrastructure', 'CC-IT');
 
 -- Sample Fiscal Year
-INSERT INTO `fiscal_years` (`name`, `start_date`, `end_date`, `is_closed`) VALUES
+INSERT INTO `acc_fiscal_years` (`name`, `start_date`, `end_date`, `is_closed`) VALUES
 ('2024-2025', '2024-04-01', '2025-03-31', 0),
 ('2023-2024', '2023-04-01', '2024-03-31', 1);
 

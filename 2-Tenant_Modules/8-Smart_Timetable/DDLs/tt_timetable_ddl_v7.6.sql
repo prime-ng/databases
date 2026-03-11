@@ -3,9 +3,6 @@
 -- Enhanced from tt_timetable_ddl_v7.4.sql
 -- =====================================================================
 
-SET NAMES utf8mb4;
-SET FOREIGN_KEY_CHECKS = 0;
-
 --  Smart Timetable Module Menu Items :
   -- Category : Smart Timetable (below are Main Menu & Sub-Menu Items)
   -- 1.  Pre-Requisites Setup
