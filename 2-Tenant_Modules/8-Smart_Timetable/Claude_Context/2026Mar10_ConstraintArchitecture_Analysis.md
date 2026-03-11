@@ -14,56 +14,56 @@
 ┌─────────────────────────────────────────────────────────────────────┐
 │                    CONSTRAINT TYPE SYSTEM (Schema Layer)            │
 │                                                                     │
-│  ┌──────────────────────────┐    ┌───────────────────────────────┐  │
-│  │ ConstraintCategoryScope  │    │ ConstraintTargetType          │  │
-│  │ (tt_constraint_          │    │ (tt_constraint_target_type)   │  │
-│  │  category_scope)         │    │                               │  │
-│  │ type: CATEGORY|SCOPE     │    │ TEACHER, CLASS, SECTION,      │  │
-│  │                          │    │ SUBJECT, ROOM, ACTIVITY       │  │
-│  └────────┬───────┬─────────┘    └───────────────┬───────────────┘  │
-│           │       │                              │                  │
-│    category_id  scope_id           applicable_target_types (JSON)   │
-│           │       │                              │                  │
-│  ┌────────▼───────▼──────────────────────────────▼──────────────┐   │
-│  │               ConstraintType (tt_constraint_type)            │   │
-│  │   code, name, description, constraint_level,                 │   │
-│  │   category_id → CatScope, scope_id → CatScope,               │   │
-│  │   parameter_schema (JSON), validation_logic,                 │   │
-│  │   applicable_target_types (JSON), requires_time_slots        │   │
-│  └───────────────────────────┬──────────────────────────────────┘   │
+│  ┌──────────────────────────┐    ┌──────────────────────────────┐      │
+│  │ ConstraintCategoryScope  │   │ ConstraintTargetType         │      │
+│  │ (tt_constraint_          │   │ (tt_constraint_target_type)   │      │
+│  │  category_scope)         │   │                               │      │
+│  │ type: CATEGORY|SCOPE     │   │ TEACHER, CLASS, SECTION,      │      │
+│  │                          │   │ SUBJECT, ROOM, ACTIVITY       │      │
+│  └────────┬───────┬─────────┘   └───────────────┬───────────────┘      │
+│           │       │                             │                      │
+│    category_id  scope_id          applicable_target_types (JSON)     │
+│           │       │                             │                      │
+│  ┌────────▼───────▼─────────────────────────────▼──────────────┐      │
+│  │              ConstraintType (tt_constraint_type)            │      │
+│  │  code, name, description, constraint_level,                 │      │
+│  │  category_id → CatScope, scope_id → CatScope,               │      │
+│  │  parameter_schema (JSON), validation_logic,                 │      │
+│  │  applicable_target_types (JSON), requires_time_slots        │      │
+│  └───────────────────────────┬─────────────────────────────────┘      │
 │                              │                                      │
 └──────────────────────────────┼──────────────────────────────────────┘
                                │ constraint_type_id
 ┌──────────────────────────────▼──────────────────────────────────────┐
 │                    CONSTRAINT INSTANCE LAYER                        │
 │                                                                     │
-│  ┌──────────────────────────────────────────────────────────────┐   │
+│  ┌─────────────────────────────────────────────────────────────┐   │
 │  │              Constraint (tt_constraint)                      │   │
-│  │  constraint_type_id, target_type_id → TargetType,            │   │
-│  │  target_id (polymorphic), is_hard, weight, priority,         │   │
-│  │  params_json, applicable_days_json, applicable_periods_json, │   │
-│  │  effective_from_date, effective_to_date, academic_term_id    │   │
-│  └──────┬──────────────────────────────┬────────────────────────┘   │
+│  │  constraint_type_id, target_type_id → TargetType,           │   │
+│  │  target_id (polymorphic), is_hard, weight, priority,        │   │
+│  │  params_json, applicable_days_json, applicable_periods_json,│   │
+│  │  effective_from_date, effective_to_date, academic_term_id   │   │
+│  └──────┬──────────────────────────────┬───────────────────────┘   │
 │         │                              │                            │
 │    (group membership)            (violations)                       │
 │         │                              │                            │
-│  ┌──────▼──────────────┐    ┌──────────▼─────────────────────┐      │
-│  │ ConstraintGroupMember│   │ ConstraintViolation            │      │
-│  │ (tt_constraint_group_│   │ (tt_constraint_violation)      │      │
-│  │  member)             │   │ constraint_id, timetable_id,   │      │
-│  │ constraint_id,       │   │ severity, affected_entity_type,│      │
-│  │ constraint_group_id, │   │ affected_entity_id, details,   │      │
-│  │ sequence_order       │   │ resolution_status, resolved_by │      │
-│  └──────┬───────────────┘   └────────────────────────────────┘      │
+│  ┌──────▼──────────────┐    ┌─────────▼─────────────────────┐     │
+│  │ ConstraintGroupMember│   │ ConstraintViolation            │     │
+│  │ (tt_constraint_group_│   │ (tt_constraint_violation)      │     │
+│  │  member)             │   │ constraint_id, timetable_id,   │     │
+│  │ constraint_id,       │   │ severity, affected_entity_type,│     │
+│  │ constraint_group_id, │   │ affected_entity_id, details,   │     │
+│  │ sequence_order       │   │ resolution_status, resolved_by │     │
+│  └──────┬───────────────┘   └────────────────────────────────┘     │
 │         │                                                           │
-│  ┌──────▼──────────────────┐  ┌────────────────────────────────┐    │
-│  │ ConstraintGroup         │  │ ConstraintTemplate             │    │
-│  │ (tt_constraint_group)   │  │ (tt_constraint_template)       │    │
-│  │ group_type: MUTEX |     │  │ constraint_type_id,            │    │
-│  │  CONCURRENT | ORDERED | │  │ default_params (JSON),         │    │
-│  │  PREFERRED              │  │ description, is_system         │    │
-│  │ evaluation_strategy     │  │ (reusable presets)             │    │
-│  └─────────────────────────┘  └────────────────────────────────┘    │
+│  ┌──────▼──────────────────┐  ┌────────────────────────────────┐  │
+│  │ ConstraintGroup         │  │ ConstraintTemplate             │  │
+│  │ (tt_constraint_group)   │  │ (tt_constraint_template)       │  │
+│  │ group_type: MUTEX |     │  │ constraint_type_id,            │  │
+│  │  CONCURRENT | ORDERED | │  │ default_params (JSON),         │  │
+│  │  PREFERRED              │  │ description, is_system         │  │
+│  │ evaluation_strategy     │  │ (reusable presets)             │  │
+│  └─────────────────────────┘  └────────────────────────────────┘  │
 │                                                                     │
 └─────────────────────────────────────────────────────────────────────┘
 ```
