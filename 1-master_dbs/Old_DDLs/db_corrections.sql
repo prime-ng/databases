@@ -8141,7 +8141,7 @@
     INDEX `idx_copy_barcode` (`barcode`),
     INDEX `idx_copy_accession` (`accession_number`),
     INDEX `idx_copy_location` (`shelf_location_id`),
-    INDEX `idx_copy_status` (`status`, `is_active`, `is_deleted`),
+    INDEX `idx_copy_status` (`status`, `is_active`),
     INDEX `idx_copy_condition` (`current_condition_id`),
     UNIQUE KEY `unique_copy_barcode` (`barcode`),
     UNIQUE KEY `unique_copy_accession` (`accession_number`),
