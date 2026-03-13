@@ -12,8 +12,8 @@
 │  StudentFee  │     │   Payment    │     │   Razorpay   │
 │   Module     │────►│   Service    │────►│    API       │
 │              │     │              │     │              │
-│  Fee Invoice │     │ GatewayMgr  │     │ Orders       │
-│  Checkout    │     │ RazorpayGW  │     │ Payments     │
+│  Fee Invoice │     │ GatewayMgr   │     │ Orders       │
+│  Checkout    │     │ RazorpayGW   │     │ Payments     │
 │              │     │              │     │ Webhooks     │
 └──────────────┘     └──────────────┘     └──────────────┘
 ```

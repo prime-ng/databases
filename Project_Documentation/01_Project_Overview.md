@@ -42,24 +42,24 @@ Each school operates as a completely isolated tenant with its own database, ensu
 ## High-Level Architecture
 
 ```
-                    ┌──────────────────────────────────┐
-                    │         Load Balancer / DNS       │
-                    └──────────────┬───────────────────┘
-                                   │
-              ┌────────────────────┼────────────────────┐
-              │                    │                     │
+                    ┌─────────────────────────────────┐
+                    │        Load Balancer / DNS      │
+                    └─────────────┬───────────────────┘
+                                  │
+              ┌───────────────────┼────────────────────┐
+              │                   │                    │
     ┌─────────▼─────────┐  ┌──────▼──────┐  ┌──────────▼──────────┐
-    │  Central Domain    │  │  school1.*  │  │   school2.*         │
-    │  (Prime Admin)     │  │  (Tenant 1) │  │   (Tenant 2)        │
+    │  Central Domain   │  │  school1.*  │  │   school2.*         │
+    │  (Prime Admin)    │  │  (Tenant 1) │  │   (Tenant 2)        │
     └─────────┬─────────┘  └──────┬──────┘  └──────────┬──────────┘
-              │                    │                     │
+              │                   │                    │
     ┌─────────▼─────────┐  ┌──────▼──────┐  ┌──────────▼──────────┐
-    │  Laravel 12.0      │  │  Tenancy    │  │  Tenancy            │
-    │  29 Modules        │  │  Bootstrap  │  │  Bootstrap          │
-    │  Sanctum + Spatie  │  │  (DB,Cache, │  │  (DB,Cache,         │
-    │                    │  │  FS,Queue)  │  │  FS,Queue)          │
+    │  Laravel 12.0     │  │  Tenancy    │  │     Tenancy         │
+    │  29 Modules       │  │  Bootstrap  │  │     Bootstrap       │
+    │  Sanctum + Spatie │  │  (DB,Cache, │  │     (DB,Cache,      │
+    │                   │  │  FS,Queue)  │  │     FS,Queue)       │
     └────┬────┬─────────┘  └──────┬──────┘  └──────────┬──────────┘
-         │    │                    │                     │
+         │    │                   │                    │
     ┌────▼────▼───┐        ┌──────▼──────┐      ┌──────▼──────┐
     │ global_db   │        │ tenant_uuid1│      │ tenant_uuid2│
     │ prime_db    │        │  (368 tbls) │      │  (368 tbls) │

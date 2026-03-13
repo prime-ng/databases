@@ -127,8 +127,8 @@ Based on the project scope (ERP + LMS + LXP for K-12 schools), the following fea
 ██████████████████████████░░░░░░  80%  LmsHomework
 ██████████████████████████░░░░░░  80%  LmsQuests
 ██████████████████████████░░░░░░  80%  StudentFee
-██████░░░░░░░░░░░░░░░░░░░░░░░░░  20%  StudentPortal
-██░░░░░░░░░░░░░░░░░░░░░░░░░░░░░   5%  Library
+██████░░░░░░░░░░░░░░░░░░░░░░░░░░  20%  StudentPortal
+██░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░   5%  Library
 ```
 
 ---
