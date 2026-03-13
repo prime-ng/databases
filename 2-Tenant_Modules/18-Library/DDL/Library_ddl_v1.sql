@@ -3,9 +3,9 @@
 -- MySQL 8 Compatible
 -- =====================================================
 
--- ----------------------------------------------------------------------------
--- 1. CORE LOOKUP TABLES (System Dropdowns)
--- ----------------------------------------------------------------------------
+ -- ----------------------------------------------------------------------------
+ -- 1. CORE LOOKUP TABLES (System Dropdowns)
+ -- ----------------------------------------------------------------------------
 
   -- Defines different types of library memberships with their associated privileges and rules. Controls borrowing limits, loan periods, and fine calculations.
   CREATE TABLE IF NOT EXISTS `lib_membership_types` (
@@ -134,9 +134,9 @@
     INDEX `idx_condition_active` (`is_active`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ----------------------------------------------------------------------------
--- 2. MASTER TABLES
--- ----------------------------------------------------------------------------
+ -- ----------------------------------------------------------------------------
+ -- 2. MASTER TABLES
+ -- ----------------------------------------------------------------------------
 
   -- Master catalog of all books and resources owned by the library.
   CREATE TABLE IF NOT EXISTS `lib_books_master` (
@@ -185,20 +185,20 @@
     FULLTEXT INDEX `ft_book_search` (`title`, `subtitle`, `summary`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `lib_authors` (
-  `id` INT AUTO_INCREMENT PRIMARY KEY,
-  `short_name` VARCHAR(50) NOT NULL,
-  `author_name` VARCHAR(200) NOT NULL,
-  `country` VARCHAR(120),  -- FK to glb_countries
-  `primary_genre_id` INT,  -- FK to lib_genres
-  `notes` TEXT DEFAULT NULL,
-  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `deleted_at` TIMESTAMP NULL,
-  UNIQUE KEY `uq_author_shortName` (`short_name`),
-  UNIQUE KEY `uq_author_name` (`author_name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  CREATE TABLE IF NOT EXISTS `lib_authors` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `short_name` VARCHAR(50) NOT NULL,
+    `author_name` VARCHAR(200) NOT NULL,
+    `country` VARCHAR(120),  -- FK to glb_countries
+    `primary_genre_id` INT,  -- FK to lib_genres
+    `notes` TEXT DEFAULT NULL,
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL,
+    UNIQUE KEY `uq_author_shortName` (`short_name`),
+    UNIQUE KEY `uq_author_name` (`author_name`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
   -- Junction table to link books with their authors (many-to-many).
   CREATE TABLE IF NOT EXISTS `lib_book_author_jnt` (
@@ -300,11 +300,11 @@ CREATE TABLE IF NOT EXISTS `lib_authors` (
     INDEX `idx_condition_book` (`condition_id`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ----------------------------------------------------------------------------
--- RESOURCES MANAGEMENT
--- ----------------------------------------------------------------------------
+ -- ----------------------------------------------------------------------------
+ -- RESOURCES MANAGEMENT
+ -- ----------------------------------------------------------------------------
 
--- Item-level tracking of each physical copy of a book, including location, condition, and circulation status.
+  -- Item-level tracking of each physical copy of a book, including location, condition, and circulation status.
   CREATE TABLE IF NOT EXISTS `lib_book_copies` (
     `id` INT PRIMARY KEY AUTO_INCREMENT,
     `book_id` INT NOT NULL,                 -- FK to lib_books_master.book_id
@@ -420,9 +420,9 @@ CREATE TABLE IF NOT EXISTS `lib_authors` (
     INDEX `idx_member_active` (`is_active`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ----------------------------------------------------------------------------
--- OPERATION MANAGEMENT
--- ----------------------------------------------------------------------------
+ -- ----------------------------------------------------------------------------
+ -- OPERATION MANAGEMENT
+ -- ----------------------------------------------------------------------------
 
   CREATE TABLE IF NOT EXISTS `lib_transactions` (
     `id` BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -526,7 +526,7 @@ CREATE TABLE IF NOT EXISTS `lib_authors` (
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
-CREATE TABLE IF NOT EXISTS `lib_fine_slab_config` (
+  CREATE TABLE IF NOT EXISTS `lib_fine_slab_config` (
     `id` INT PRIMARY KEY AUTO_INCREMENT,
     `name` VARCHAR(100) NOT NULL COMMENT 'e.g., Standard Student Fine Slab, Staff Fine Slab',
     `membership_type_id` INT NULL COMMENT 'If NULL, applies to all membership types',
@@ -546,13 +546,13 @@ CREATE TABLE IF NOT EXISTS `lib_fine_slab_config` (
     INDEX `idx_fine_slab_membership` (`membership_type_id`),
     INDEX `idx_fine_slab_active` (`is_active`, `effective_from`, `effective_to`),
     INDEX `idx_fine_slab_priority` (`priority`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ----------------------------------------------------------------------------
--- 2. FINE SLAB DETAILS TABLE (for day ranges)
--- ----------------------------------------------------------------------------
+ -- ----------------------------------------------------------------------------
+ -- 2. FINE SLAB DETAILS TABLE (for day ranges)
+ -- ----------------------------------------------------------------------------
 
-CREATE TABLE IF NOT EXISTS `lib_fine_slab_details` (
+  CREATE TABLE IF NOT EXISTS `lib_fine_slab_details` (
     `id` INT PRIMARY KEY AUTO_INCREMENT,
     `fine_slab_config_id` INT NOT NULL,
     `from_day` INT NOT NULL CHECK (from_day >= 0),
@@ -565,13 +565,13 @@ CREATE TABLE IF NOT EXISTS `lib_fine_slab_details` (
     FOREIGN KEY (`fine_slab_config_id`) REFERENCES `lib_fine_slab_config`(`id`) ON DELETE CASCADE,
     UNIQUE KEY `uk_slab_days` (`fine_slab_config_id`, `from_day`, `to_day`),
     INDEX `idx_slab_day_range` (`from_day`, `to_day`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ----------------------------------------------------------------------------
--- 3. ENHANCED LIB_FINES TABLE (modified)
--- ----------------------------------------------------------------------------
+  -- ----------------------------------------------------------------------------
+  -- 3. ENHANCED LIB_FINES TABLE (modified)
+  -- ----------------------------------------------------------------------------
 
-CREATE TABLE IF NOT EXISTS `lib_fines` (
+  CREATE TABLE IF NOT EXISTS `lib_fines` (
     `id` INT PRIMARY KEY AUTO_INCREMENT,
     `transaction_id` BIGINT NOT NULL,
     `member_id` INT NOT NULL,
@@ -597,16 +597,16 @@ CREATE TABLE IF NOT EXISTS `lib_fines` (
     INDEX `idx_fine_transaction` (`transaction_id`),
     INDEX `idx_fine_member` (`member_id`, `status`),
     INDEX `idx_fine_status` (`status`, `created_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 
 
 
 
--- ----------------------------------------------------------------------------
--- AUDIT AND HISTORY
--- ----------------------------------------------------------------------------
+  -- ----------------------------------------------------------------------------
+  -- AUDIT AND HISTORY
+  -- ----------------------------------------------------------------------------
 
   CREATE TABLE IF NOT EXISTS `lib_transaction_history` (
     `id` INT PRIMARY KEY AUTO_INCREMENT,
@@ -670,9 +670,9 @@ CREATE TABLE IF NOT EXISTS `lib_fines` (
 
 
 
--- ----------------------------------------------------------------------------
--- ADVANCED ANALYTICS & INSIGHTS
--- ----------------------------------------------------------------------------
+  -- ----------------------------------------------------------------------------
+  -- ADVANCED ANALYTICS & INSIGHTS
+  -- ----------------------------------------------------------------------------
 	-- Tracks individual member reading patterns, preferences, and behavior metrics for personalized recommendations and engagement analysis.
 	CREATE TABLE IF NOT EXISTS `lib_reading_behavior_analytics` (
 			`id` BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -856,9 +856,9 @@ CREATE TABLE IF NOT EXISTS `lib_fines` (
 
 
 
--- ----------------------------------------------------------------------------
--- 11. INDEX PERFORMANCE OPTIMIZATION
--- ----------------------------------------------------------------------------
+  -- ----------------------------------------------------------------------------
+  -- 11. INDEX PERFORMANCE OPTIMIZATION
+  -- ----------------------------------------------------------------------------
 
 	-- Additional indexes for complex queries
 	CREATE INDEX idx_transactions_overdue ON lib_transactions(status, due_date) WHERE status = 'issued';
@@ -872,9 +872,9 @@ CREATE TABLE IF NOT EXISTS `lib_fines` (
 	CREATE INDEX idx_copies_location_status ON lib_book_copies(shelf_location_id, status);
 	CREATE INDEX idx_transactions_member_dates ON lib_transactions(member_id, issue_date, return_date);
 
--- ----------------------------------------------------------------------------
--- 12. TRIGGERS FOR DATA INTEGRITY
--- ----------------------------------------------------------------------------
+  -- ----------------------------------------------------------------------------
+  -- 12. TRIGGERS FOR DATA INTEGRITY
+  -- ----------------------------------------------------------------------------
 
 	DELIMITER $$
 
@@ -949,9 +949,9 @@ CREATE TABLE IF NOT EXISTS `lib_fines` (
 
 
 
--- ----------------------------------------------------------------------------
--- 13. VIEWS FOR COMMON REPORTING
--- ----------------------------------------------------------------------------
+  -- ----------------------------------------------------------------------------
+  -- 13. VIEWS FOR COMMON REPORTING
+  -- ----------------------------------------------------------------------------
 
 	-- Comprehensive 360-degree view of member engagement and behavior.
 	CREATE OR REPLACE VIEW `lib_view_member_360` AS
@@ -1084,95 +1084,95 @@ CREATE TABLE IF NOT EXISTS `lib_fines` (
 
 
 
-CREATE VIEW lib_view_overdue_books AS
-SELECT 
-    t.transaction_id, b.title, b.isbn, c.barcode, m.membership_number, u.first_name, u.last_name, u.email, u.phone, t.due_date, DATEDIFF(CURDATE(), t.due_date) as days_overdue, 
-    mt.fine_rate_per_day, DATEDIFF(CURDATE(), t.due_date) * mt.fine_rate_per_day as estimated_fine
-FROM lib_transactions t
-INNER JOIN lib_book_copies c ON t.copy_id = c.copy_id
-INNER JOIN lib_books_master b ON c.book_id = b.book_id
-INNER JOIN lib_members m ON t.member_id = m.member_id
-INNER JOIN users u ON m.user_id = u.id
-INNER JOIN lib_membership_types mt ON m.membership_type_id = mt.membership_type_id
-WHERE t.status = 'issued' AND t.due_date < CURDATE() AND DATEDIFF(CURDATE(), t.due_date) > mt.grace_period_days;
-CREATE VIEW lib_view_most_issued_books AS
-SELECT 
-    b.book_id, b.title, COUNT(t.transaction_id) as issue_count, COUNT(DISTINCT t.member_id) as unique_borrowers,
-    AVG(CASE WHEN t.return_date IS NOT NULL THEN DATEDIFF(t.return_date, t.issue_date) END) as avg_loan_days
-FROM lib_books_master b
-LEFT JOIN lib_book_copies c ON b.book_id = c.book_id
-LEFT JOIN lib_transactions t ON c.copy_id = t.copy_id
-WHERE t.status = 'returned'
-GROUP BY b.book_id, b.title
-ORDER BY issue_count DESC;
+  CREATE VIEW lib_view_overdue_books AS
+  SELECT 
+      t.transaction_id, b.title, b.isbn, c.barcode, m.membership_number, u.first_name, u.last_name, u.email, u.phone, t.due_date, DATEDIFF(CURDATE(), t.due_date) as days_overdue, 
+      mt.fine_rate_per_day, DATEDIFF(CURDATE(), t.due_date) * mt.fine_rate_per_day as estimated_fine
+  FROM lib_transactions t
+  INNER JOIN lib_book_copies c ON t.copy_id = c.copy_id
+  INNER JOIN lib_books_master b ON c.book_id = b.book_id
+  INNER JOIN lib_members m ON t.member_id = m.member_id
+  INNER JOIN users u ON m.user_id = u.id
+  INNER JOIN lib_membership_types mt ON m.membership_type_id = mt.membership_type_id
+  WHERE t.status = 'issued' AND t.due_date < CURDATE() AND DATEDIFF(CURDATE(), t.due_date) > mt.grace_period_days;
+  CREATE VIEW lib_view_most_issued_books AS
+  SELECT 
+      b.book_id, b.title, COUNT(t.transaction_id) as issue_count, COUNT(DISTINCT t.member_id) as unique_borrowers,
+      AVG(CASE WHEN t.return_date IS NOT NULL THEN DATEDIFF(t.return_date, t.issue_date) END) as avg_loan_days
+  FROM lib_books_master b
+  LEFT JOIN lib_book_copies c ON b.book_id = c.book_id
+  LEFT JOIN lib_transactions t ON c.copy_id = t.copy_id
+  WHERE t.status = 'returned'
+  GROUP BY b.book_id, b.title
+  ORDER BY issue_count DESC;
 
 
--- ----------------------------------------------------------------------------
--- 10. SEED DATA (Lookup Tables)
--- ----------------------------------------------------------------------------
+  -- ----------------------------------------------------------------------------
+  -- 10. SEED DATA (Lookup Tables)
+  -- ----------------------------------------------------------------------------
 
--- Membership Types
-INSERT INTO lib_membership_types (membership_type_code, membership_type_name, max_books_allowed, loan_period_days, fine_rate_per_day, grace_period_days, priority_level) VALUES
-('STD_STUDENT', 'Standard Student', 5, 14, 5.00, 2, 1),
-('STD_STAFF', 'Standard Staff', 10, 30, 2.00, 5, 3),
-('RESEARCH_SCHOLAR', 'Research Scholar', 15, 45, 2.00, 7, 4),
-('PREMIUM_STUDENT', 'Premium Student', 10, 21, 3.00, 3, 2),
-('EXTERNAL', 'External Member', 3, 14, 10.00, 0, 0);
+  -- Membership Types
+  INSERT INTO lib_membership_types (membership_type_code, membership_type_name, max_books_allowed, loan_period_days, fine_rate_per_day, grace_period_days, priority_level) VALUES
+  ('STD_STUDENT', 'Standard Student', 5, 14, 5.00, 2, 1),
+  ('STD_STAFF', 'Standard Staff', 10, 30, 2.00, 5, 3),
+  ('RESEARCH_SCHOLAR', 'Research Scholar', 15, 45, 2.00, 7, 4),
+  ('PREMIUM_STUDENT', 'Premium Student', 10, 21, 3.00, 3, 2),
+  ('EXTERNAL', 'External Member', 3, 14, 10.00, 0, 0);
 
--- Categories
-INSERT INTO lib_categories (category_code, category_name, category_level) VALUES
-('FIC', 'Fiction', 1),
-('NFIC', 'Non-Fiction', 1),
-('SCI', 'Science', 2),
-('MATH', 'Mathematics', 2),
-('CS', 'Computer Science', 2),
-('LIT', 'Literature', 2),
-('HIST', 'History', 2),
-('GEO', 'Geography', 2),
-('ART', 'Art', 2);
+  -- Categories
+  INSERT INTO lib_categories (category_code, category_name, category_level) VALUES
+  ('FIC', 'Fiction', 1),
+  ('NFIC', 'Non-Fiction', 1),
+  ('SCI', 'Science', 2),
+  ('MATH', 'Mathematics', 2),
+  ('CS', 'Computer Science', 2),
+  ('LIT', 'Literature', 2),
+  ('HIST', 'History', 2),
+  ('GEO', 'Geography', 2),
+  ('ART', 'Art', 2);
 
--- Genres
-INSERT INTO lib_genres (genre_code, genre_name) VALUES
-('SF', 'Science Fiction'),
-('FAN', 'Fantasy'),
-('MYS', 'Mystery'),
-('BIO', 'Biography'),
-('TECH', 'Technology'),
-('EDU', 'Educational'),
-('REF', 'Reference'),
-('CLS', 'Classics'),
-('POE', 'Poetry');
+  -- Genres
+  INSERT INTO lib_genres (genre_code, genre_name) VALUES
+  ('SF', 'Science Fiction'),
+  ('FAN', 'Fantasy'),
+  ('MYS', 'Mystery'),
+  ('BIO', 'Biography'),
+  ('TECH', 'Technology'),
+  ('EDU', 'Educational'),
+  ('REF', 'Reference'),
+  ('CLS', 'Classics'),
+  ('POE', 'Poetry');
 
--- Resource Types
-INSERT INTO lib_resource_types (resource_type_code, resource_type_name, is_physical, is_digital) VALUES
-('PHY_BOOK', 'Physical Book', TRUE, FALSE),
-('EBOOK', 'E-Book', FALSE, TRUE),
-('PDF', 'PDF Document', FALSE, TRUE),
-('AUDIO', 'Audio Book', FALSE, TRUE),
-('VIDEO', 'Video Resource', FALSE, TRUE),
-('JOURNAL', 'Journal', TRUE, TRUE),
-('MAGAZINE', 'Magazine', TRUE, FALSE);
+  -- Resource Types
+  INSERT INTO lib_resource_types (resource_type_code, resource_type_name, is_physical, is_digital) VALUES
+  ('PHY_BOOK', 'Physical Book', TRUE, FALSE),
+  ('EBOOK', 'E-Book', FALSE, TRUE),
+  ('PDF', 'PDF Document', FALSE, TRUE),
+  ('AUDIO', 'Audio Book', FALSE, TRUE),
+  ('VIDEO', 'Video Resource', FALSE, TRUE),
+  ('JOURNAL', 'Journal', TRUE, TRUE),
+  ('MAGAZINE', 'Magazine', TRUE, FALSE);
 
--- Book Conditions
-INSERT INTO lib_book_conditions (condition_code, condition_name, description, is_borrowable) VALUES
-('NEW', 'New', 'Brand new condition, never issued', TRUE),
-('EXC', 'Excellent', 'Like new, no signs of wear', TRUE),
-('GOOD', 'Good', 'Normal wear and tear, fully readable', TRUE),
-('FAIR', 'Fair', 'Significant wear but all pages intact', TRUE),
-('POOR', 'Poor', 'Damaged, may have missing pages', FALSE),
-('DAMAGED', 'Damaged', 'Needs repair before circulation', FALSE),
-('LOST', 'Lost', 'Reported lost by member', FALSE),
-('WITHDRAWN', 'Withdrawn', 'Removed from collection', FALSE);
+  -- Book Conditions
+  INSERT INTO lib_book_conditions (condition_code, condition_name, description, is_borrowable) VALUES
+  ('NEW', 'New', 'Brand new condition, never issued', TRUE),
+  ('EXC', 'Excellent', 'Like new, no signs of wear', TRUE),
+  ('GOOD', 'Good', 'Normal wear and tear, fully readable', TRUE),
+  ('FAIR', 'Fair', 'Significant wear but all pages intact', TRUE),
+  ('POOR', 'Poor', 'Damaged, may have missing pages', FALSE),
+  ('DAMAGED', 'Damaged', 'Needs repair before circulation', FALSE),
+  ('LOST', 'Lost', 'Reported lost by member', FALSE),
+  ('WITHDRAWN', 'Withdrawn', 'Removed from collection', FALSE);
 
--- Shelf Locations
-INSERT INTO lib_shelf_locations (location_code, aisle_number, shelf_number, rack_number, floor_number, building) VALUES
-('A1-S1-R1', 'A1', 'S1', 'R1', '1', 'Main Library'),
-('A1-S1-R2', 'A1', 'S1', 'R2', '1', 'Main Library'),
-('A1-S2-R1', 'A1', 'S2', 'R1', '1', 'Main Library'),
-('B2-S1-R1', 'B2', 'S1', 'R1', '2', 'Science Block'),
-('REF-A1', 'REF', 'A1', NULL, '1', 'Reference Section');
+  -- Shelf Locations
+  INSERT INTO lib_shelf_locations (location_code, aisle_number, shelf_number, rack_number, floor_number, building) VALUES
+  ('A1-S1-R1', 'A1', 'S1', 'R1', '1', 'Main Library'),
+  ('A1-S1-R2', 'A1', 'S1', 'R2', '1', 'Main Library'),
+  ('A1-S2-R1', 'A1', 'S2', 'R1', '1', 'Main Library'),
+  ('B2-S1-R1', 'B2', 'S1', 'R1', '2', 'Science Block'),
+  ('REF-A1', 'REF', 'A1', NULL, '1', 'Reference Section');
 
--- --------------------------------------------------------------------------------------------------------------------------
--- Dropdown Table Entry
+  -- --------------------------------------------------------------------------------------------------------------------------
+  -- Dropdown Table Entry
 
--- use existing Dropdown table of table-name - bok_books coloumn_name - language
+  -- use existing Dropdown table of table-name - bok_books coloumn_name - language

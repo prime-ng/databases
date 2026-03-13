@@ -11,8 +11,8 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- VENDOR MASTER
 -- =======================================================================
 
--- 1-Screen Name - Vendor Master
-CREATE TABLE IF NOT EXISTS `vnd_vendors` (
+	-- 1-Screen Name - Vendor Master
+	CREATE TABLE IF NOT EXISTS `vnd_vendors` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `vendor_name` VARCHAR(100) NOT NULL,
     `vendor_type_id` INT UNSIGNED NOT NULL,  -- FK to sys_dropdown_table (e.g., 'Transport', 'Canteen', 'Security')
@@ -35,14 +35,14 @@ CREATE TABLE IF NOT EXISTS `vnd_vendors` (
     CONSTRAINT `fk_vnd_vendors_type` FOREIGN KEY (`vendor_type_id`) REFERENCES `sys_dropdown_table`(`id`) ON DELETE RESTRICT,
     UNIQUE KEY `uq_vnd_vendor_name` (`vendor_name`),
     INDEX `idx_vnd_vendor_type` (`vendor_type_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- =======================================================================
--- ITEM MASTER (Services & Products)
--- =======================================================================
+	-- =======================================================================
+	-- ITEM MASTER (Services & Products)
+	-- =======================================================================
 
--- 2-Screen Name - Item Master
-CREATE TABLE IF NOT EXISTS `vnd_items` (
+	-- 2-Screen Name - Item Master
+	CREATE TABLE IF NOT EXISTS `vnd_items` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `item_code` VARCHAR(50) DEFAULT NULL,       -- SKU or Internal Item Code (Can be used for barcode printing)
     `item_name` VARCHAR(100) NOT NULL,
@@ -64,14 +64,14 @@ CREATE TABLE IF NOT EXISTS `vnd_items` (
     CONSTRAINT `fk_vnd_items_unit` FOREIGN KEY (`unit_id`) REFERENCES `sys_dropdown_table`(`id`) ON DELETE RESTRICT,
     UNIQUE KEY `uq_vnd_items_code` (`item_code`),
     INDEX `idx_vnd_items_type` (`item_type`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- =======================================================================
--- VENDOR AGREEMENTS (Contracts)
--- =======================================================================
+	-- =======================================================================
+	-- VENDOR AGREEMENTS (Contracts)
+	-- =======================================================================
 
--- 3-Screen Name - Agreement Master
-CREATE TABLE IF NOT EXISTS `vnd_agreements` (
+	-- 3-Screen Name - Agreement Master
+	CREATE TABLE IF NOT EXISTS `vnd_agreements` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `vendor_id` INT UNSIGNED NOT NULL,
     `agreement_ref_no` VARCHAR(50) DEFAULT NULL,  -- Physical contract reference
@@ -88,14 +88,14 @@ CREATE TABLE IF NOT EXISTS `vnd_agreements` (
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at` TIMESTAMP NULL DEFAULT NULL,
     CONSTRAINT `fk_vnd_agreements_vendor` FOREIGN KEY (`vendor_id`) REFERENCES `vnd_vendors`(`id`) ON DELETE CASCADE,
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- =======================================================================
--- AGREEMENT ITEMS (Line Items & Rates)
--- =======================================================================
+	-- =======================================================================
+	-- AGREEMENT ITEMS (Line Items & Rates)
+	-- =======================================================================
 
--- 3-Screen Name - Agreement Master (Agreement Items). This will be part of above Screen
-CREATE TABLE IF NOT EXISTS `vnd_agreement_items_jnt` (
+	-- 3-Screen Name - Agreement Master (Agreement Items). This will be part of above Screen
+	CREATE TABLE IF NOT EXISTS `vnd_agreement_items_jnt` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `agreement_id` INT UNSIGNED NOT NULL,
     `item_id` INT UNSIGNED NOT NULL,
@@ -124,26 +124,26 @@ CREATE TABLE IF NOT EXISTS `vnd_agreement_items_jnt` (
     CONSTRAINT `fk_vnd_agr_items_agreement` FOREIGN KEY (`agreement_id`) REFERENCES `vnd_agreements`(`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_vnd_agr_items_item` FOREIGN KEY (`item_id`) REFERENCES `vnd_items`(`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_vnd_agr_items_entity_type` FOREIGN KEY (`related_entity_type`) REFERENCES `sys_dropdown_table`(`id`) ON DELETE RESTRICT,
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
--- conditions: 
--- related_entity_type = (Vehicle, Asset, Service, etc.) will have table name as `additional_info` in `sys_dropdown_table` table.
--- e.g. related_entity_type = 'Vehicle' will have table_name as `tpt_vehicle` in 'additional_info' field of `sys_dropdown_table` table.
--- related_entity_id will be the id of the entity in the related_entity_type table.
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	-- conditions: 
+	-- related_entity_type = (Vehicle, Asset, Service, etc.) will have table name as `additional_info` in `sys_dropdown_table` table.
+	-- e.g. related_entity_type = 'Vehicle' will have table_name as `tpt_vehicle` in 'additional_info' field of `sys_dropdown_table` table.
+	-- related_entity_id will be the id of the entity in the related_entity_type table.
 
---Example
-Drop Down - Vehicle 
-sys_dropdown_table
-Key                                             Value                   Additional_Info(JSON)
-vnd_agreement_items_jnt.related_entity_type     Vehicle                 {"table_name": "tpt_vehicle"}
-vnd_agreement_items_jnt.related_entity_type     Asset                   {"table_name": "sch_asset"}
-vnd_agreement_items_jnt.related_entity_type     Service                 {"table_name": "sch_service"}
+	--Example
+	Drop Down - Vehicle 
+	sys_dropdown_table
+	Key                                             Value                   Additional_Info(JSON)
+	vnd_agreement_items_jnt.related_entity_type     Vehicle                 {"table_name": "tpt_vehicle"}
+	vnd_agreement_items_jnt.related_entity_type     Asset                   {"table_name": "sch_asset"}
+	vnd_agreement_items_jnt.related_entity_type     Service                 {"table_name": "sch_service"}
 
--- =======================================================================
--- SERVICE/PRODUCT USAGE LOG (Analytics Hook)
--- =======================================================================
--- This table is used to log the usage of services/products by vendors.
--- 4-Screen Name - Usage Log
-CREATE TABLE IF NOT EXISTS `vnd_usage_logs` (
+	-- =======================================================================
+	-- SERVICE/PRODUCT USAGE LOG (Analytics Hook)
+	-- =======================================================================
+	-- This table is used to log the usage of services/products by vendors.
+	-- 4-Screen Name - Usage Log
+	CREATE TABLE IF NOT EXISTS `vnd_usage_logs` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `vendor_id` INT UNSIGNED NOT NULL,
     `agreement_item_id` INT UNSIGNED NOT NULL, -- Optional, can map to specific agreement line
@@ -155,17 +155,17 @@ CREATE TABLE IF NOT EXISTS `vnd_usage_logs` (
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT `fk_vnd_usage_vendor` FOREIGN KEY (`vendor_id`) REFERENCES `vnd_vendors`(`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_vnd_usage_agr_item` FOREIGN KEY (`agreement_item_id`) REFERENCES `vnd_agreement_items`(`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
--- Conditions:
--- 1. If 'billing_mode' in `vnd_agreement_items` is 'PER_UNIT'OR 'HYBRID', AND'qty_used'  > 0 then only record will be created. in 'vnd_usage_logs' table.
--- 2. If 'billing_mode' in `vnd_agreement_items` is 'FIXED', OR 'qty_used' is 0 then no record will be created in 'vnd_usage_logs' table.
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	-- Conditions:
+	-- 1. If 'billing_mode' in `vnd_agreement_items` is 'PER_UNIT'OR 'HYBRID', AND'qty_used'  > 0 then only record will be created. in 'vnd_usage_logs' table.
+	-- 2. If 'billing_mode' in `vnd_agreement_items` is 'FIXED', OR 'qty_used' is 0 then no record will be created in 'vnd_usage_logs' table.
 
--- =======================================================================
--- VENDOR INVOICES (Bill)
--- =======================================================================
+	-- =======================================================================
+	-- VENDOR INVOICES (Bill)
+	-- =======================================================================
 
--- 5-Screen Name - Invoice
-CREATE TABLE IF NOT EXISTS `vnd_invoices` (
+	-- 5-Screen Name - Invoice
+	CREATE TABLE IF NOT EXISTS `vnd_invoices` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `vendor_id` INT UNSIGNED NOT NULL,
     `agreement_id` INT UNSIGNED DEFAULT NULL, -- Optional, if invoice covers one agreement
@@ -205,15 +205,15 @@ CREATE TABLE IF NOT EXISTS `vnd_invoices` (
     CONSTRAINT `fk_vnd_inv_agreement_item` FOREIGN KEY (`agreement_item_id`) REFERENCES `vnd_agreement_items`(`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_vnd_inv_status` FOREIGN KEY (`status`) REFERENCES `sys_dropdown_table`(`id`) ON DELETE RESTRICT,
     UNIQUE KEY `uq_vnd_invoice_no` (`vendor_id`, `invoice_number`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- =======================================================================
--- VENDOR PAYMENTS
--- =======================================================================
+	-- =======================================================================
+	-- VENDOR PAYMENTS
+	-- =======================================================================
 
--- 6-Screen Name - Payment
-CREATE TABLE IF NOT EXISTS `vnd_payments` (
+	-- 6-Screen Name - Payment
+	CREATE TABLE IF NOT EXISTS `vnd_payments` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `vendor_id` INT UNSIGNED NOT NULL,
     `invoice_id` INT UNSIGNED NOT NULL,
@@ -234,9 +234,9 @@ CREATE TABLE IF NOT EXISTS `vnd_payments` (
     CONSTRAINT `fk_vnd_pay_invoice` FOREIGN KEY (`invoice_id`) REFERENCES `vnd_invoices`(`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_vnd_pay_vendor` FOREIGN KEY (`vendor_id`) REFERENCES `vnd_vendors`(`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_vnd_pay_mode` FOREIGN KEY (`payment_mode`) REFERENCES `sys_dropdown_table`(`id`) ON DELETE RESTRICT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Vendor Complaints will be handled using common Complaint Module.
+	-- Vendor Complaints will be handled using common Complaint Module.
 
 
 

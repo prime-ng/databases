@@ -1,12 +1,13 @@
 # Smart Timetable Generation Process
 
 ## Timetable Menu :
-1. Pre-Requisites
+1. Pre-Requisites & Data Check
 2. Timetable Configuration
 3. Timetable Masters
 4. Timetable Requirement
 5. Timetable Resource Availability
 6. Timetable Constraint Engine
+   Validation
 7. Timetable Operations
 8. Timetable Generation
 9. Manual Refinement

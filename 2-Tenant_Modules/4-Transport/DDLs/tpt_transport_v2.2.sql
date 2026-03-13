@@ -3,14 +3,11 @@
 -- Strategy: Enhanced v1.9 with Vendor Lease, Billing, and Payment tables.
 -- =======================================================================
 
-SET NAMES utf8mb4;
-SET FOREIGN_KEY_CHECKS = 0;
-
 -- =======================================================================
 -- TRANSPORT MASTER TABLES
 -- =======================================================================
 
-CREATE TABLE IF NOT EXISTS `tpt_vehicle` (
+	CREATE TABLE IF NOT EXISTS `tpt_vehicle` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `vehicle_no` VARCHAR(20) NOT NULL,              -- Vehicle number(Vehicle Identification Number (VIN)/Chassis Number: A unique 17-character code stamped on the vehicle's chassis)
     `registration_no` VARCHAR(30) NOT NULL,         -- Unique govt registration number
@@ -48,9 +45,9 @@ CREATE TABLE IF NOT EXISTS `tpt_vehicle` (
     CONSTRAINT `fk_vehicle_ownership_type` FOREIGN KEY (`ownership_type_id`) REFERENCES `sys_dropdown_table`(`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_vehicle_vendor` FOREIGN KEY (`vendor_id`) REFERENCES `tpt_vendor`(`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_vehicle_vehicle_emission_class` FOREIGN KEY (`vehicle_emission_class_id`) REFERENCES `sys_dropdown_table`(`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `tpt_personnel` (
+	CREATE TABLE IF NOT EXISTS `tpt_personnel` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `user_id` INT UNSIGNED DEFAULT NULL,
     `user_qr_code` VARCHAR(30) NOT NULL,
@@ -76,10 +73,10 @@ CREATE TABLE IF NOT EXISTS `tpt_personnel` (
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at` TIMESTAMP NULL DEFAULT NULL,
     CONSTRAINT `fk_personnel_user` FOREIGN KEY (`user_id`) REFERENCES `sys_users`(`id`) ON DELETE SET NULL,
-    CONSTRAINT `fk_personnel_vehicle` FOREIGN KEY (`assigned_vehicle_id`) REFERENCES `tpt_vehicle`(`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    CONSTRAINT `fk_personnel_vehicle` FOREIGN KEY (`assigned_vehicle_id`) REFERENCES `tpt_vehicle`(`id`) ON DELETE SET NULL	
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `tpt_shift` (
+	CREATE TABLE IF NOT EXISTS `tpt_shift` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `code` VARCHAR(20) NOT NULL,
     `name` VARCHAR(100) NOT NULL,
@@ -91,9 +88,9 @@ CREATE TABLE IF NOT EXISTS `tpt_shift` (
     `deleted_at` TIMESTAMP NULL DEFAULT NULL,
     UNIQUE KEY `uq_shift_code` (`code`),
     UNIQUE KEY `uq_shift_name` (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `tpt_route` (
+	CREATE TABLE IF NOT EXISTS `tpt_route` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `code` VARCHAR(50) NOT NULL,
     `name` VARCHAR(200) NOT NULL,
@@ -109,9 +106,9 @@ CREATE TABLE IF NOT EXISTS `tpt_route` (
     UNIQUE KEY `uq_route_name` (`name`),
     SPATIAL INDEX `sp_idx_route_geometry` (`route_geometry`),
     CONSTRAINT `fk_route_shiftId` FOREIGN KEY (`shift_id`) REFERENCES `tpt_shift`(`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `tpt_pickup_points` (
+	CREATE TABLE IF NOT EXISTS `tpt_pickup_points` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `shift_id` INT UNSIGNED NOT NULL,
     `code` VARCHAR(50) NOT NULL,
@@ -130,9 +127,9 @@ CREATE TABLE IF NOT EXISTS `tpt_pickup_points` (
     UNIQUE KEY `uq_pickup_name` (`name`),
     SPATIAL INDEX `sp_idx_pickup_location` (`location`),
     CONSTRAINT `fk_pickupPoint_shiftId` FOREIGN KEY (`shift_id`) REFERENCES `tpt_shift`(`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `tpt_pickup_points_route_jnt` (
+	CREATE TABLE IF NOT EXISTS `tpt_pickup_points_route_jnt` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `shift_id` INT UNSIGNED NOT NULL,
     `route_id` INT UNSIGNED NOT NULL,
@@ -154,13 +151,13 @@ CREATE TABLE IF NOT EXISTS `tpt_pickup_points_route_jnt` (
     CONSTRAINT `fk_pickupPointRoute_shiftId` FOREIGN KEY (`shift_id`) REFERENCES `tpt_shift`(`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_pickupPointRoute_routeId` FOREIGN KEY (`route_id`) REFERENCES `tpt_route`(`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_pickupPointRoute_pickupPointId` FOREIGN KEY (`pickup_point_id`) REFERENCES `tpt_pickup_points`(`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- =======================================================================
--- ROUTE SCHEDULE & DRIVER ASSIGNMENT
--- =======================================================================
+	-- =======================================================================
+	-- ROUTE SCHEDULE & DRIVER ASSIGNMENT
+	-- =======================================================================
 
-CREATE TABLE IF NOT EXISTS `tpt_driver_route_vehicle_jnt` (
+	CREATE TABLE IF NOT EXISTS `tpt_driver_route_vehicle_jnt` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `shift_id` INT UNSIGNED NOT NULL,
     `route_id` INT UNSIGNED NOT NULL,
@@ -180,34 +177,34 @@ CREATE TABLE IF NOT EXISTS `tpt_driver_route_vehicle_jnt` (
     CONSTRAINT `fk_routeVehicle_vehicleId` FOREIGN KEY (`vehicle_id`) REFERENCES `tpt_vehicle`(`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_routeVehicle_driverId` FOREIGN KEY (`driver_id`) REFERENCES `tpt_personnel`(`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_routeVehicle_helperId` FOREIGN KEY (`helper_id`) REFERENCES `tpt_personnel`(`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-DELIMITER $$
-CREATE TRIGGER `trg_driver_route_vehicle_unique_assignment`
-BEFORE INSERT ON `tpt_driver_route_vehicle_jnt`
-FOR EACH ROW
-BEGIN
-    IF EXISTS (
-        SELECT 1 FROM `tpt_driver_route_vehicle_jnt`
-        WHERE `shift_id` = NEW.`shift_id`
-          AND `route_id` = NEW.`route_id`
-          AND `vehicle_id` = NEW.`vehicle_id`
-          AND `driver_id` = NEW.`driver_id`
-          AND (
-              (NEW.`effective_to` IS NULL AND (`effective_to` IS NULL OR `effective_to` >= NEW.`effective_from`))
-              OR
-              (NEW.`effective_to` IS NOT NULL AND (
-                  (`effective_from` <= NEW.`effective_to` AND `effective_to` >= NEW.`effective_from`)
-              ))
-          )
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Overlapping assignment for the same shift, route, vehicle, and driver.';
-    END IF;
-END$$
-DELIMITER ;
+	DELIMITER $$
+	CREATE TRIGGER `trg_driver_route_vehicle_unique_assignment`
+	BEFORE INSERT ON `tpt_driver_route_vehicle_jnt`
+	FOR EACH ROW
+	BEGIN
+			IF EXISTS (
+					SELECT 1 FROM `tpt_driver_route_vehicle_jnt`
+					WHERE `shift_id` = NEW.`shift_id`
+						AND `route_id` = NEW.`route_id`
+						AND `vehicle_id` = NEW.`vehicle_id`
+						AND `driver_id` = NEW.`driver_id`
+						AND (
+								(NEW.`effective_to` IS NULL AND (`effective_to` IS NULL OR `effective_to` >= NEW.`effective_from`))
+								OR
+								(NEW.`effective_to` IS NOT NULL AND (
+										(`effective_from` <= NEW.`effective_to` AND `effective_to` >= NEW.`effective_from`)
+								))
+						)
+			) THEN
+					SIGNAL SQLSTATE '45000'
+					SET MESSAGE_TEXT = 'Overlapping assignment for the same shift, route, vehicle, and driver.';
+			END IF;
+	END$$
+	DELIMITER ;
 
-CREATE TABLE IF NOT EXISTS `tpt_route_scheduler_jnt` (
+	CREATE TABLE IF NOT EXISTS `tpt_route_scheduler_jnt` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `scheduled_date` DATE NOT NULL,
     `shift_id` INT UNSIGNED NOT NULL,
@@ -229,13 +226,13 @@ CREATE TABLE IF NOT EXISTS `tpt_route_scheduler_jnt` (
     CONSTRAINT `fk_sched_vehicle` FOREIGN KEY (`vehicle_id`) REFERENCES `tpt_vehicle`(`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_sched_driver` FOREIGN KEY (`driver_id`) REFERENCES `tpt_personnel`(`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_sched_helper` FOREIGN KEY (`helper_id`) REFERENCES `tpt_personnel`(`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- =======================================================================
--- TRIPS
--- =======================================================================
+	-- =======================================================================
+	-- TRIPS
+	-- =======================================================================
 
-CREATE TABLE IF NOT EXISTS `tpt_trip` (
+	CREATE TABLE IF NOT EXISTS `tpt_trip` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `trip_date` DATE NOT NULL,      --  Date of the trip
     `route_scheduler_id` INT UNSIGNED NOT NULL, -- FK to tpt_route_scheduler_jnt
@@ -263,9 +260,9 @@ CREATE TABLE IF NOT EXISTS `tpt_trip` (
     CONSTRAINT `fk_trip_vehicle` FOREIGN KEY (`vehicle_id`) REFERENCES `tpt_vehicle`(`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_trip_driver` FOREIGN KEY (`driver_id`) REFERENCES `tpt_personnel`(`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_trip_helper` FOREIGN KEY (`helper_id`) REFERENCES `tpt_personnel`(`id`) ON DELETE RESTRICT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `tpt_trip_stop_detail` (
+  CREATE TABLE IF NOT EXISTS `tpt_trip_stop_detail` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `trip_id` INT UNSIGNED NOT NULL,     -- fk to tpt_trip
     `stop_id` INT UNSIGNED DEFAULT NULL, -- fk to tpt_stop
@@ -285,23 +282,13 @@ CREATE TABLE IF NOT EXISTS `tpt_trip_stop_detail` (
     CONSTRAINT `fk_trip_stop_detail_trip` FOREIGN KEY (`trip_id`) REFERENCES `tpt_trip`(`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_trip_stop_detail_stop` FOREIGN KEY (`stop_id`) REFERENCES `tpt_pickup_points`(`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_trip_stop_detail_updated_by` FOREIGN KEY (`updated_by`) REFERENCES `tpt_personnel`(`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- =======================================================================
--- DRIVER ATTENDANCE
--- =======================================================================
+	-- =======================================================================
+	-- DRIVER ATTENDANCE
+	-- =======================================================================
 
--- CREATE TABLE IF NOT EXISTS `tpt_attendance_device` (
---     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
---     `device_code` VARCHAR(50) NOT NULL UNIQUE,
---     `device_name` VARCHAR(100) NOT NULL,
---     `device_type` ENUM('Mobile','Scanner','Tablet','Gate') NOT NULL,
---     `location` VARCHAR(150) NULL,
---     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
---     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
--- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE IF NOT EXISTS `tpt_attendance_device` (
+  CREATE TABLE IF NOT EXISTS `tpt_attendance_device` (
     `id` INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
     `user_id` INT UNSIGNED NOT NULL,     -- fk to tpt_personnel
     `device_uuid` CHAR(36) NOT NULL,        -- Unique identifier of the device
@@ -323,9 +310,9 @@ CREATE TABLE IF NOT EXISTS `tpt_attendance_device` (
     UNIQUE KEY uq_device (device_uuid),
     UNIQUE KEY uq_user_device (user_id, device_uuid),
     CONSTRAINT `fk_attendance_device_user` FOREIGN KEY (`user_id`) REFERENCES `tpt_personnel`(`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `tpt_driver_attendance` (
+  CREATE TABLE IF NOT EXISTS `tpt_driver_attendance` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `driver_id` INT UNSIGNED NOT NULL,
     `attendance_date` DATE NOT NULL,
@@ -338,9 +325,9 @@ CREATE TABLE IF NOT EXISTS `tpt_driver_attendance` (
     UNIQUE KEY `uq_driver_day` (`driver_id`, `attendance_date`),
     FOREIGN KEY (`driver_id`) REFERENCES `tpt_personnel`(`id`) ON DELETE CASCADE,
     FOREIGN KEY (`attendance_status`) REFERENCES `sys_dropdown_table`(`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `tpt_driver_attendance_log` (
+  CREATE TABLE IF NOT EXISTS `tpt_driver_attendance_log` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `attendance_id` INT UNSIGNED NOT NULL,
     `scan_time` DATETIME NOT NULL,
@@ -354,13 +341,13 @@ CREATE TABLE IF NOT EXISTS `tpt_driver_attendance_log` (
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT `fk_da_attendance` FOREIGN KEY (`attendance_id`) REFERENCES `tpt_driver_attendance`(`id`) ON DELETE CASCADE,
     CONSTRAINT `FK_da_device` FOREIGN KEY (`device_id`) REFERENCES `tpt_attendance_device`(`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- =======================================================================
--- STUDENT ALLOCATION
--- =======================================================================
+	-- =======================================================================
+	-- STUDENT ALLOCATION
+	-- =======================================================================
 
-CREATE TABLE IF NOT EXISTS `tpt_student_route_allocation_jnt` (
+  CREATE TABLE IF NOT EXISTS `tpt_student_route_allocation_jnt` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `student_session_id` INT UNSIGNED NOT NULL,
     `student_id` INT UNSIGNED NOT NULL,
@@ -378,13 +365,13 @@ CREATE TABLE IF NOT EXISTS `tpt_student_route_allocation_jnt` (
     CONSTRAINT `fk_sa_route` FOREIGN KEY (`route_id`) REFERENCES `tpt_route`(`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_sa_pickup` FOREIGN KEY (`pickup_stop_id`) REFERENCES `tpt_pickup_points`(`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_sa_drop` FOREIGN KEY (`drop_stop_id`) REFERENCES `tpt_pickup_points`(`id`) ON DELETE RESTRICT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- =======================================================================
--- TRANSPORT FEE
--- =======================================================================
+	-- =======================================================================
+	-- TRANSPORT FEE
+	-- =======================================================================
 
-CREATE TABLE IF NOT EXISTS `tpt_fine_master` (
+  CREATE TABLE IF NOT EXISTS `tpt_fine_master` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `std_academic_sessions_id` INT UNSIGNED NOT NULL,
     `fine_from_days` TINYINT DEFAULT 0,
@@ -395,9 +382,9 @@ CREATE TABLE IF NOT EXISTS `tpt_fine_master` (
     `Remark` VARCHAR(512) DEFAULT NULL,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `deleted_at` TIMESTAMP NULL DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `tpt_student_fee_detail` (
+  CREATE TABLE IF NOT EXISTS `tpt_student_fee_detail` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `std_academic_sessions_id` INT UNSIGNED NOT NULL,
     `month` DATE NOT NULL,
@@ -409,9 +396,9 @@ CREATE TABLE IF NOT EXISTS `tpt_student_fee_detail` (
     `status` VARCHAR(20) NOT NULL DEFAULT 'Pending',
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `deleted_at` TIMESTAMP NULL DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `tpt_student_fine_detail` (
+  CREATE TABLE IF NOT EXISTS `tpt_student_fine_detail` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `student_fee_detail_id` INT UNSIGNED NOT NULL,
     `fine_master_id` INT UNSIGNED NOT NULL,
@@ -426,9 +413,9 @@ CREATE TABLE IF NOT EXISTS `tpt_student_fine_detail` (
     `deleted_at` TIMESTAMP NULL DEFAULT NULL,
     CONSTRAINT `fk_sf_master` FOREIGN KEY (`student_fee_detail_id`) REFERENCES `tpt_student_fee_detail`(`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_sf_fine_master` FOREIGN KEY (`fine_master_id`) REFERENCES `tpt_fine_master`(`id`) ON DELETE RESTRICT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `tpt_student_fee_collection` (
+  CREATE TABLE IF NOT EXISTS `tpt_student_fee_collection` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `student_fee_detail_id` INT UNSIGNED NOT NULL,
     `payment_date` DATE NOT NULL,
@@ -443,40 +430,40 @@ CREATE TABLE IF NOT EXISTS `tpt_student_fee_collection` (
     CONSTRAINT `fk_fc_fee_detail` FOREIGN KEY (`student_fee_detail_id`) REFERENCES `tpt_student_fee_detail`(`id`) ON DELETE RESTRICT
     -- Removed fk_fc_master as tpt_fee_master is not directly linked here in v1.9 schema provided in context,
     -- or if it was intended, the column fee_master_id was missing in the column list in v1.9.
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `std_student_pay_log` (
-  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  `student_id` INT UNSIGNED NOT NULL,
-  `academic_session_id` INT UNSIGNED NOT NULL,
-  `module_name` VARCHAR(50) NOT NULL,
-  `activity_type` VARCHAR(50) NOT NULL,
-  `amount` DECIMAL(10,2) DEFAULT NULL,
-  `log_date` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `reference_id` INT UNSIGNED DEFAULT NULL,
-  `reference_table` VARCHAR(100) DEFAULT NULL,
-  `description` VARCHAR(512) DEFAULT NULL,
-  `triggered_by` INT UNSIGNED DEFAULT NULL,
-  `is_system_generated` TINYINT(1) DEFAULT 0,
-  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  `deleted_at` TIMESTAMP NULL DEFAULT NULL,
-  KEY `idx_payLog_student` (`student_id`),
-  KEY `idx_payLog_module` (`module_name`),
-  KEY `idx_payLog_date` (`log_date`),
-  KEY `idx_payLog_reference` (`reference_table`, `reference_id`),
-  KEY `idx_payLog_trigger` (`triggered_by`),
-  CONSTRAINT `fk_payLog_studentId` FOREIGN KEY (`student_id`) REFERENCES `std_students` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_payLog_sessionId` FOREIGN KEY (`academic_session_id`) REFERENCES `sch_org_academic_sessions_jnt` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `fk_payLog_triggeredBy` FOREIGN KEY (`triggered_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  CREATE TABLE IF NOT EXISTS `std_student_pay_log` (
+		`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+		`student_id` INT UNSIGNED NOT NULL,
+		`academic_session_id` INT UNSIGNED NOT NULL,
+		`module_name` VARCHAR(50) NOT NULL,
+		`activity_type` VARCHAR(50) NOT NULL,
+		`amount` DECIMAL(10,2) DEFAULT NULL,
+		`log_date` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		`reference_id` INT UNSIGNED DEFAULT NULL,
+		`reference_table` VARCHAR(100) DEFAULT NULL,
+		`description` VARCHAR(512) DEFAULT NULL,
+		`triggered_by` INT UNSIGNED DEFAULT NULL,
+		`is_system_generated` TINYINT(1) DEFAULT 0,
+		`created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		`deleted_at` TIMESTAMP NULL DEFAULT NULL,
+		KEY `idx_payLog_student` (`student_id`),
+		KEY `idx_payLog_module` (`module_name`),
+		KEY `idx_payLog_date` (`log_date`),
+		KEY `idx_payLog_reference` (`reference_table`, `reference_id`),
+		KEY `idx_payLog_trigger` (`triggered_by`),
+		CONSTRAINT `fk_payLog_studentId` FOREIGN KEY (`student_id`) REFERENCES `std_students` (`id`) ON DELETE CASCADE,
+		CONSTRAINT `fk_payLog_sessionId` FOREIGN KEY (`academic_session_id`) REFERENCES `sch_org_academic_sessions_jnt` (`id`) ON DELETE SET NULL,
+		CONSTRAINT `fk_payLog_triggeredBy` FOREIGN KEY (`triggered_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- =======================================================================
--- FUEL & MAINTENANCE
--- =======================================================================
+	-- =======================================================================
+	-- FUEL & MAINTENANCE
+	-- =======================================================================
 
--- Single Screen - 5 tab (Fuel, Inspection, Service Request, Maintenance, Approval)
+	-- Single Screen - 5 tab (Fuel, Inspection, Service Request, Maintenance, Approval)
 
-CREATE TABLE IF NOT EXISTS `tpt_vehicle_fuel` (
+	CREATE TABLE IF NOT EXISTS `tpt_vehicle_fuel` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `vehicle_id` INT UNSIGNED NOT NULL,
     `driver_id` INT UNSIGNED DEFAULT NULL,
@@ -492,12 +479,12 @@ CREATE TABLE IF NOT EXISTS `tpt_vehicle_fuel` (
     `deleted_at` TIMESTAMP NULL DEFAULT NULL,
     CONSTRAINT `fk_vfl_vehicle` FOREIGN KEY (`vehicle_id`) REFERENCES `tpt_vehicle`(`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_vfl_driver` FOREIGN KEY (`driver_id`) REFERENCES `tpt_personnel`(`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
--- Condition:
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	-- Condition:
     -- 1. After Fuel Entry, it need to be approved by the adminAuthorised Personnel.
     -- 2. To make sure the availaibility of Approval to the Authorise Person only, we need to keep Approval on Fuel & Maintenance on a seperate Tab.
 
-Create Table if not EXISTS `tpt_daily_vehicle_inspection` (
+	Create Table if not EXISTS `tpt_daily_vehicle_inspection` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `vehicle_id` INT UNSIGNED NOT NULL,
     `driver_id` INT UNSIGNED DEFAULT NULL,
@@ -531,14 +518,14 @@ Create Table if not EXISTS `tpt_daily_vehicle_inspection` (
     CONSTRAINT `fk_dvil_vehicle` FOREIGN KEY (`vehicle_id`) REFERENCES `tpt_vehicle`(`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_dvil_driver` FOREIGN KEY (`driver_id`) REFERENCES `tpt_personnel`(`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_dvil_inspectedBy` FOREIGN KEY (`inspected_by`) REFERENCES `sys_users`(`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
--- Condition:
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	-- Condition:
     -- 1. If Inspection is Failed, a new entry will be created in 'tpt_vehicle_service_request' table with available information.
     -- 2. If Inspection is Failed, application will change Status in the "tpt_Vehicle make '`availability_status` to 'Not Available'
 
 
 
-Create Table if not EXISTS `tpt_vehicle_service_request` (
+	Create Table if not EXISTS `tpt_vehicle_service_request` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `vehicle_inspection_id` INT UNSIGNED NOT NULL,
     `request_date` TIMESTAMP NOT NULL,
@@ -553,8 +540,8 @@ Create Table if not EXISTS `tpt_vehicle_service_request` (
     `deleted_at` TIMESTAMP NULL DEFAULT NULL,
     CONSTRAINT `fk_vsl_vehicleInspection` FOREIGN KEY (`vehicle_inspection_id`) REFERENCES `tpt_daily_vehicle_inspection`(`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_vsl_approvedBy` FOREIGN KEY (`approved_by`) REFERENCES `sys_users`(`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
--- Condition:
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	-- Condition:
     -- 1. If Inspection is Failed, a new entry will be created in 'tpt_vehicle_service_request' table with available information.
     -- 2. To make sure the availaibility of Approval to the Authorise Person only, we need to keep Approval in a seperate Tab.
     -- 3. user can create a new entry in 'tpt_vehicle_service_request' table as per the need.
@@ -563,7 +550,7 @@ Create Table if not EXISTS `tpt_vehicle_service_request` (
     -- 6. Once Entry is created in 'tpt_vehicle_service_request' table, it will be redirected to 'tpt_vehicle_maintenance' table.
 
 
-CREATE TABLE IF NOT EXISTS `tpt_vehicle_maintenance` (
+	CREATE TABLE IF NOT EXISTS `tpt_vehicle_maintenance` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `vehicle_service_request_id` INT UNSIGNED NOT NULL,
     `maintenance_initiation_date` DATE NOT NULL,  -- Date of Service Initiated (Vehicle reached in garage)
@@ -582,17 +569,17 @@ CREATE TABLE IF NOT EXISTS `tpt_vehicle_maintenance` (
     `deleted_at` TIMESTAMP NULL DEFAULT NULL,
     CONSTRAINT `fk_vm_vehicle_service_request` FOREIGN KEY (`vehicle_service_request_id`) REFERENCES `tpt_vehicle_service_request`(`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_vm_approvedBy` FOREIGN KEY (`approved_by`) REFERENCES `sys_users`(`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
--- Condition:
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	-- Condition:
     -- 1. New Entry Can not be created in 'tpt_vehicle_maintenance' table. Only Edit of existing entry is allowed.
     -- 2. Approval of Both the Tables should be done by Authorised Person in "Approval" Tab.
     -- 3. Once Maintenance Entry is Approved by Authorised Person, it will create a entry in 'vnd_vendor_bill_due_for_payment' table.
 
--- =======================================================================
--- TRIP INCIDENTS & ALERTS
--- =======================================================================
+	-- =======================================================================
+	-- TRIP INCIDENTS & ALERTS
+	-- =======================================================================
 
-CREATE TABLE IF NOT EXISTS `tpt_trip_incidents` (
+	CREATE TABLE IF NOT EXISTS `tpt_trip_incidents` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `trip_id` INT UNSIGNED NOT NULL,
     `incident_time` TIMESTAMP NOT NULL,
@@ -612,17 +599,17 @@ CREATE TABLE IF NOT EXISTS `tpt_trip_incidents` (
     CONSTRAINT `fk_ti_trip` FOREIGN KEY (`trip_id`) REFERENCES `tpt_trip`(`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_ti_raisedBy` FOREIGN KEY (`raised_by`) REFERENCES `sys_users`(`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_ti_resolvedBy` FOREIGN KEY (`resolved_by`) REFERENCES `sys_users`(`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ---------------------------------------------------------------------------------------------------------------
--- New Tables
--- ---------------------------------------------------------------------------------------------------------------
+	-- ---------------------------------------------------------------------------------------------------------------
+	-- New Tables
+	-- ---------------------------------------------------------------------------------------------------------------
 
--- =======================================================================
--- STUDENT BOARD/UN-BOARD EVENTS
--- =======================================================================
+	-- =======================================================================
+	-- STUDENT BOARD/UN-BOARD EVENTS
+	-- =======================================================================
 
-CREATE TABLE IF NOT EXISTS `tpt_student_boarding_log` (
+	CREATE TABLE IF NOT EXISTS `tpt_student_boarding_log` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `trip_date` DATE NOT NULL,
     `student_id` INT UNSIGNED DEFAULT NULL,      -- FK to tpt_students
@@ -648,13 +635,13 @@ CREATE TABLE IF NOT EXISTS `tpt_student_boarding_log` (
     CONSTRAINT `fk_sel_unboardingTrip` FOREIGN KEY (`unboarding_trip_id`) REFERENCES `tpt_trip`(`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_sel_unboardingStop` FOREIGN KEY (`unboarding_stop_id`) REFERENCES `tpt_pickup_points`(`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_sel_device` FOREIGN KEY (`device_id`) REFERENCES `tpt_attendance_device`(`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- =======================================================================
--- NOTIFICATIONS & LOGS
--- =======================================================================
+	-- =======================================================================
+	-- NOTIFICATIONS & LOGS
+	-- =======================================================================
 
-CREATE TABLE IF NOT EXISTS `tpt_notification_log` (
+	CREATE TABLE IF NOT EXISTS `tpt_notification_log` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `student_session_id` INT UNSIGNED DEFAULT NULL,
     `trip_id` INT UNSIGNED DEFAULT NULL,
@@ -671,43 +658,25 @@ CREATE TABLE IF NOT EXISTS `tpt_notification_log` (
     CONSTRAINT `fk_nl_studentSession` FOREIGN KEY (`student_session_id`) REFERENCES `tpt_student_session`(`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_nl_trip` FOREIGN KEY (`trip_id`) REFERENCES `tpt_trip`(`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_nl_stop` FOREIGN KEY (`stop_id`) REFERENCES `tpt_pickup_points`(`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-
--- =======================================================================
--- AUDIT TRACKING. 
--- This may not be required. we use Common Audit Log of the System
--- =======================================================================
-
--- CREATE TABLE IF NOT EXISTS `tpt_audit_log` (
---     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
---     `entity` VARCHAR(128) NOT NULL,
---     `entity_id` INT UNSIGNED DEFAULT NULL,
---     `action` VARCHAR(64) NOT NULL,
---     `performed_by` VARCHAR(128) DEFAULT NULL,
---     `payload` JSON DEFAULT NULL,
---     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
--- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-SET FOREIGN_KEY_CHECKS = 1;
-
--- -------------------------------------------------------------------------------------------------------------------
--- New Conditions:
--- 1. When Bus will complete the Trip and register it's Trip completion in the System. Someone (Authorise Person) will Approve the Trip Completion. 
--- 2. Application will check the Status of "trip_usage_needs_to_be_updated_into_vendor_usage_log" variable in "sch_settings" table.
--- 3. If "trip_usage_needs_to_be_updated_into_vendor_usage_log" is True, then application will update the 'vnd_usage_logs' with the Trip Usage.
--- -------------------------------------------------------------------------------------------------------------------
--- Change on 29th Dec 2025:
--- 1. Enhanced Table tpt_attendance_device to have unique device_uuid for each user.
--- 2. Add New Table tpt_student_boarding_log to track the Boarding and Unboarding of Students.
--- 3. Add New Table tpt_notification_log to track the Notifications sent to Students.
--- -------------------------------------------------------------------------------------------------------------------
--- Change on 31st Dec 2025:
--- 1. Changed the UNIQUE KEY `uq_pickupPointRoute_shift_pickupPoint` (`shift_id`,`route_id`,`pickup_point_id`), to `uq_pickupPointRoute_shift_pickupPoint` (`route_id`,`pickup_point_id`),
---    to make sure one Route can have multiple Pickup Points but One Route can be allocate only in one Shift.
--- 2. Change filed `route_id` to `pickup_route_id` in tpt_student_route_allocation_jnt
--- 3. Add filed `drop_route_id` in tpt_student_route_allocation_jnt
--- 4. Enhanced Table tpt_student_boarding_log to track the Boarding and Unboarding of Students.
--- 5. Enhanced Table tpt_student_route_allocation_jnt to have `pickup_route_id` and `drop_route_id`.
--- 6. Enhanced Table tpt_route to have `pickup_drop` field to define if the Route is for Pickup or Drop, can not be for Both.
+	-- -------------------------------------------------------------------------------------------------------------------
+	-- New Conditions:
+	-- 1. When Bus will complete the Trip and register it's Trip completion in the System. Someone (Authorise Person) will Approve the Trip Completion. 
+	-- 2. Application will check the Status of "trip_usage_needs_to_be_updated_into_vendor_usage_log" variable in "sch_settings" table.
+	-- 3. If "trip_usage_needs_to_be_updated_into_vendor_usage_log" is True, then application will update the 'vnd_usage_logs' with the Trip Usage.
+	-- -------------------------------------------------------------------------------------------------------------------
+	-- Change on 29th Dec 2025:
+	-- 1. Enhanced Table tpt_attendance_device to have unique device_uuid for each user.
+	-- 2. Add New Table tpt_student_boarding_log to track the Boarding and Unboarding of Students.
+	-- 3. Add New Table tpt_notification_log to track the Notifications sent to Students.
+	-- -------------------------------------------------------------------------------------------------------------------
+	-- Change on 31st Dec 2025:
+	-- 1. Changed the UNIQUE KEY `uq_pickupPointRoute_shift_pickupPoint` (`shift_id`,`route_id`,`pickup_point_id`), to `uq_pickupPointRoute_shift_pickupPoint` (`route_id`,`pickup_point_id`),
+	--    to make sure one Route can have multiple Pickup Points but One Route can be allocate only in one Shift.
+	-- 2. Change filed `route_id` to `pickup_route_id` in tpt_student_route_allocation_jnt
+	-- 3. Add filed `drop_route_id` in tpt_student_route_allocation_jnt
+	-- 4. Enhanced Table tpt_student_boarding_log to track the Boarding and Unboarding of Students.
+	-- 5. Enhanced Table tpt_student_route_allocation_jnt to have `pickup_route_id` and `drop_route_id`.
+	-- 6. Enhanced Table tpt_route to have `pickup_drop` field to define if the Route is for Pickup or Drop, can not be for Both.
 
