@@ -187,6 +187,80 @@
 - **Symptom:** 1000+ queries for 500 students — 1 query per student per operation
 - **Fix:** Pre-load all existing records into collections; batch insert/update
 
+## HPC PDF / DomPDF Rendering (discovered during PDF fix session 2026-03-14)
+
+### PDF-001: `display:inline` on `<table>` Causes Hard Crash
+- **Module/Area:** HPC PDF templates (`*_pdf.blade.php`)
+- **Symptom:** DomPDF fatal: *"Min/max width is undefined for table rows"* — entire PDF fails to render
+- **Root Cause:** `<table style="display:inline;">` — DomPDF's table layout engine requires block or table display modes; inline mode corrupts internal width calculations
+- **Fix:** Remove `display:inline;` from any `<table>` style. Use `<td style="text-align:right;">` on the parent cell instead
+- **Prevention:** Never apply `display:inline` or `display:inline-block` to `<table>` elements in DomPDF templates
+
+### PDF-002: Nested `<table>` Without HTML `width` Attribute Causes Hard Crash
+- **Module/Area:** HPC PDF templates
+- **Symptom:** DomPDF fatal: *"Min/max width is undefined for table rows"* when a `<table>` is inside a `<td>` cell
+- **Root Cause:** CSS-only `style="width:100%"` is insufficient — DomPDF requires the HTML `width` attribute for layout calculation on nested tables. Without it, the width is undefined and table row rendering crashes.
+- **Fix:** Always add `width="100%"` as an HTML attribute on every `<table>`: `<table width="100%" style="...">`
+- **Prevention:** In DomPDF: EVERY `<table>` element (especially those nested inside `<td>`) needs `width="100%"` as an HTML attribute, not just in CSS
+
+### PDF-003: `</div>` Instead of `</td>` Inside `<table><tr>` Causes Hard Crash
+- **Module/Area:** HPC PDF templates (fourth_pdf Fix 1)
+- **Symptom:** DomPDF fatal: *"Parent table not found for table cell"* — entire PDF fails to render
+- **Root Cause:** A closing `</div>` tag inside `<table><tr>...</tr></table>` where `</td>` was expected. DomPDF's HTML parser is strict about table structure — mismatched closing tags cause the internal table cell registry to lose track of context.
+- **Fix:** Always verify closing tags in multi-column table structures; change `</div>` → `</td>` at the exact location
+- **Prevention:** In complex two-column `<table>` layouts, always check that each `<td>` opened in a `<tr>` is closed with `</td>` not `</div>` before the next `<td>` or `</tr>`
+
+### PDF-004: Unclosed `<div>` Page-Container in `@foreach` Loop — All Pages Nest
+- **Module/Area:** HPC PDF templates (fourth_pdf Fix 2)
+- **Symptom:** DomPDF renders all pages nested inside each other — first page's content fills the entire PDF; subsequent pages appear as overflow artifacts
+- **Root Cause:** `<div class="page-container">` opened once per `@foreach($sortedParts as $part)` iteration but `</div>` to close it was never written before `@endforeach`. DomPDF parses the resulting deeply nested `<div>` tree as one huge block.
+- **Fix:** Add `</div>{{-- close page-container --}}` immediately before `@endforeach`
+- **Prevention:** Any `<div>` opened inside a `@foreach` loop MUST be closed before `@endforeach`. Use `{{-- open page-container --}}` and `{{-- close page-container --}}` comments to make the open/close pair visible during review.
+
+### PDF-005: Duplicate `@if` Page Block Outside Page-Container — Page Renders Twice
+- **Module/Area:** HPC PDF templates (fourth_pdf Fix 3)
+- **Symptom:** One page in the PDF renders twice in a row; content appears duplicated
+- **Root Cause:** An old `@if($part->page_no == N)` block remained outside the page-container loop as an unindented leftover (copy-paste artifact). The block inside the loop renders the page once; the orphan block renders it a second time outside any proper page wrapper.
+- **Fix:** Delete the unindented orphan block entirely; keep only the properly indented version inside the `@foreach` page-container
+- **Prevention:** Before adding page-specific content blocks, search the entire file for other `@if($part->page_no == N)` occurrences to ensure no duplicates exist
+
+### PDF-006: HTTP Image URLs Blocked by DomPDF — Student Photo Blank
+- **Module/Area:** HPC PDF templates (all four PDFs, Fix 9 / Fix 6)
+- **Symptom:** Student photo box renders blank/empty; no error thrown
+- **Root Cause:** `getFirstMediaUrl()` returns an HTTP URL (e.g., `https://schoolname.prime-ai.com/storage/...`). DomPDF has `isRemoteEnabled = false` by default — HTTP URLs for images are silently ignored.
+- **Fix:** Use `getFirstMedia()->getPath()` to get the filesystem path, read file contents via `file_get_contents()`, and encode as base64 data URI: `data:image/jpeg;base64,...`
+- **Prevention:** NEVER pass `getFirstMediaUrl()` / `tenant_asset()` / `asset()` HTTP URLs to `<img src>` in DomPDF templates. Always convert to base64 data URIs via filesystem path. Also add `file_exists()` guard before reading.
+
+### PDF-007: `overflow:hidden` on Divs Silently Ignored or Clips Content
+- **Module/Area:** HPC PDF templates (Fix 6/Fix 5)
+- **Symptom:** Section borders/border-radius don't clip inner content as expected; or inner content is clipped in unexpected ways that make the layout look broken
+- **Root Cause:** DomPDF does not implement CSS `overflow:hidden` reliably on block elements. It is either silently ignored or partially applied in ways that differ from browser behavior.
+- **Fix:** Remove all `overflow:hidden` from `<div>` styles in DomPDF templates. Use explicit padding/margin instead of relying on overflow clipping for layout.
+- **Prevention:** Never use `overflow:hidden` in DomPDF PDF templates. It is a browser-only layout property.
+
+### PDF-008: `display:inline-block` on `<div>` Silently Ignored
+- **Module/Area:** HPC PDF templates (fourth_pdf Fix 8 — 20 occurrences)
+- **Symptom:** Divs that should appear side-by-side stack vertically instead; layout looks like everything is full-width
+- **Root Cause:** DomPDF does not support `display:inline-block` on `<div>` (block) elements. The property is silently ignored, and the elements render as `display:block`.
+- **Fix:** Replace `display:inline-block` divs with `<table width="100%"><tr><td>` layout. Or use `<span>` (which DomPDF does render inline).
+- **Prevention:** In DomPDF, `display:inline-block` on `<div>` does not work. Use `<table>` for all side-by-side layouts per D13 pattern.
+
+### PDF-009: `<ol>` / `<ul>` Inside `<td>` Cells — Unreliable Rendering
+- **Module/Area:** HPC PDF templates (fourth_pdf Fix 7 — 6 occurrences)
+- **Symptom:** List items disappear, bullets/numbers not shown, or items overflow out of the cell
+- **Root Cause:** DomPDF has inconsistent `<ol>/<ul>` support when lists are nested inside `<td>` table cells. The list indentation and marker rendering are unreliable.
+- **Fix:** Replace `<ol>/<ul>` inside `<td>` with explicit numbered `<div>` pattern: `<div style="...">{{ $idx + 1 }}. {{ $item }}</div>` per item, or a `<table width="100%">` with a number cell and content cell per row.
+- **Prevention:** Avoid `<ol>/<ul>` anywhere inside `<table><td>` in DomPDF templates. Use manual numbering with divs or inner tables instead.
+
+### PDF-010: `page-break-inside:avoid` on Containers Taller than One Page
+- **Module/Area:** HPC PDF templates (Fix 10 in third_pdf, Fix 9 in fourth_pdf)
+- **Symptom:** Page breaks occur in unexpected places despite `page-break-inside:avoid`; large sections get split mid-content
+- **Root Cause:** DomPDF honors `page-break-inside:avoid` only if the element fits on the remaining page. If the container is taller than one page height, DomPDF overrides the rule and breaks wherever it can.
+- **Fix:** Remove `page-break-inside:avoid` from large section containers (activity domains, section blocks). Use it only on small atomic units (individual rows, small tables). Add `<div style="page-break-inside:avoid;">` wrappers around specific sub-elements (question tables, grid rows) that should not be split.
+- **Prevention:** `page-break-inside:avoid` is not absolute in DomPDF. Only apply to containers that fit within a single page. For large sections, structure content into smaller pageable units.
+
+---
+
 ## Hpc Specific (deep-audited 2026-03-14, updated 2026-03-14)
 
 ### SEC-HPC-001: HpcController — Zero Authorization on 12/13 Methods (CRITICAL)

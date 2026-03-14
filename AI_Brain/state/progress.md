@@ -115,6 +115,53 @@
   - Fix 4: Page 15 summary circles 230px→190px (summary_circle_container); page-break-before:always wrapper added
   - Fix 5: Blank trailing page — removed window.print() script block (DomPDF-incompatible)
   - Fix 6: ZIP download URL — replaced tenant_asset() with route('hpc.download.zip'); added downloadZip() controller method; added route in web.php
+- [x] HPC fourth_pdf.blade.php — 10 issues fixed (2026-03-14):
+  - Fix 1 (CRASH): </div> → </td> at line 525 in goals section — "Parent table not found" error eliminated
+  - Fix 2 (STRUCTURAL): Added </div>{{-- close page-container --}} before @endforeach at line 5407 — every loop iteration's page-container div now properly closed
+  - Fix 3 (STRUCTURAL): Deleted duplicate @if($part->page_no == 16) block (125 lines) — page 16 now renders once
+  - Fix 4: Added width="100%" to: 2 inner checkbox tables (668,1281); future plan table (1213); rating circles table (1430); all CSS-only width tables (15 occurrences with style="width:100%;border-collapse:collapse;")
+  - Fix 5: photo_box $css key overflow:hidden removed
+  - Fix 6: Student photo getFirstMediaUrl() → base64 data URI with getFirstMedia()->getPath() + file_exists() guard
+  - Fix 7: Replaced 4 <ol>/<ul> instances with table-based/div numbered lists — career aspirations (463), support grid (574), teacher instructions (2916), learner instructions (3000), peer instructions (~2970), pfSectionData notes (~4469)
+  - Fix 8: Removed display:inline-block from all 20 <div> elements using perl regex (left <span> elements unchanged)
+  - Fix 9: Removed page-break-inside:avoid from 5+ tall section-block divs (16px: 4 occurrences; 15px: triple-feedback pages)
+  - Fix 10: window.print() <script> block after </html> removed
+- [x] HPC third_pdf.blade.php — 13 issues fixed (2026-03-14):
+  - Fix 1 (CRASH): display:inline on performance card table → removed, added width=100% and width:33% on each td
+  - Fix 2 (CRASH): 3 credit tables missing HTML width attribute → added width="100%" to all <table style="{{ $css['c_table'] }}">
+  - Fix 3 (CRASH): 2 inner emoji option tables CSS-only width → changed to HTML width="100%" attribute
+  - Fix 4 (CRASH): 4 inner checkbox tables (lines 727,876,906,936) missing width → added width="100%" to all
+  - Fix 5 (CRASH): Approach "Other" table missing width → added width="100%"
+  - Fix 6: overflow:hidden removed from 6 locations (goals/competencies/approach divs, activity/assessment tds, observations div)
+  - Fix 7: overflow:hidden removed from 2 emoji circle containers (self-reflection + peer feedback)
+  - Fix 8: photo_box $css key overflow:hidden removed
+  - Fix 9: Student photo getFirstMediaUrl() → getFirstMedia()->getPath() + base64_encode with file_exists() guard
+  - Fix 10: page-break-inside:avoid removed from 3 outer domain wrappers (line 855 inline, lines 1119+1352 concatenation, line 1723 str_replace)
+  - Fix 11: Assessment rubric <th> explicit widths added (40%/20%/20%/20%) in both @if and @else branches
+  - Fix 12: page-break-inside:avoid wrappers added around questions table and progress grid in self-reflection AND peer feedback sections
+  - Fix 13: window.print() <script> block after </html> removed
+- [x] HPC second_pdf.blade.php — Round 1: 10 issues fixed (2026-03-14):
+  - Fix 1 (CRASH): Undefined $emojiUrls — defined with base64 data URIs for 5 icons (family/star/balloon/rocket/books) using file_exists() guard + asset() fallback
+  - Fix 2 (CRASH): display:inline-flex in curricular goals + competencies loops — replaced with display:inline-table <table> layouts (18px×18px checkbox cell + label td)
+  - Fix 3: overflow:hidden on subject-page containers (pages 8,11,14,17,20,23) — removed (DomPDF ignores, breaks border-radius)
+  - Fix 4: !important on self-assessment cell borders — removed; padding 20px→12px/8px; font-size 14px→13px on question td
+  - Fix 5: Family photo via tenant_asset() HTTP URL — replaced with storage_path() + base64_encode + file_exists() + try/catch(Throwable) guard
+  - Fix 6: Emoji 42px→32px in $emojiImgMap; dynamic option cell width via intval(100/max(1,count($displayOptions)))%; added selection border styling
+  - Fix 7: Page 2 page-break splits — removed page-break-inside:avoid from outer div + 2-col table; changed 3-col cellspacing 8→6; moved avoid to each column <td>
+  - Fix 8: Teacher Feedback page-break — removed outer avoid; added page-break-inside:avoid wrappers around Observational Notes @foreach and Challenges/Solutions div
+  - Fix 9: min-height reduction — activity/assessment textareas 100px→60px (replace_all); rubric cells 70px→40px
+  - Fix 10: Blank trailing page — removed window.print() script block
+- [x] HPC second_pdf.blade.php — Round 2: 10 issues fixed (2026-03-14, v3_06 prompt):
+  - Fix 7A: $css['page'] contradictory → removed page-break-inside:avoid and height:0
+  - Fix 7A/7D: $css['section_container'] → removed page-break-inside:avoid; $css['display_value'/'disp_chk'/'photo_box'/'res_check'/'res_check_sel'] → removed display:inline-block, overflow:hidden, line-height from circles
+  - Fix 2: $emojiUrls fallback → replaced asset() HTTP fallback with emoji/ folder base64 fallback (no HTTP URLs)
+  - Fix 7B: style block .page-break → removed !important from page-break-after and page-break-inside
+  - Fix 7D: Removed page-break-inside:avoid from family photo div (441), About Me+My Family wrappers (461+501), 3-column tds (527+545+563), observational notes+challenges wrappers (1720+1736)
+  - Fix 5+6: Removed inline page-break-inside:avoid from outer wrappers on pages 4,5,6 (lines 684+770+867)
+  - Fix 4: ALL 5 emoji circle divs (lines 648,734,820,957,1112) → replaced overflow:hidden div with border-radius:50% table (DomPDF-safe)
+  - Fix 7D: Checkbox flex divs (lines 1140+1149) → replaced display:flex with table-based layout
+  - Fix 8A+8B+8C+8D: Performance pages 26-28 — flex descriptor row→table, subject block+page-break-inside:avoid, flex notes→table, checkmark asset()→$checkImg base64
+  - Fix 9: page-break-before:always wrapper on performance section; Fix 7C: @loop->last page break guard; Fix 10: page-break-before:always on page 30, separator between Grade4/Grade5, explicit col widths (8%/40%/28%/24%), removed !important from inline borders
 
 ## Recently Completed (2026-03-14, Parallel Periods Steps 4–9)
 - [x] SmartTimetable — Parallel Periods full implementation complete

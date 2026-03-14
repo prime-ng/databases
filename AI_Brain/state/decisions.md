@@ -55,9 +55,22 @@
 - **Components location:** `resources/views/components/hpc-form/` (6 components: activity-tab, student-self-reflection, peer-feedback, tab-eight-teacher-feedback, performance-card, self-assessment)
 - **Emoji:** `asset('emoji/happy.png')`, `asset('emoji/no.png')`, `asset('emoji/not_sure.png')`, `asset('emoji/sometimes.png')` — local public folder files
 - **Layout rule:** Use `<table>` for all multi-column layouts (no flexbox/grid in DomPDF)
-- **Files created:** first_pdf (Template 1, Grades 3-5), second_pdf (Template 2, Grades 3-5 variant), third_pdf (Template 3, Grades 6-8, 46 pages), fourth_pdf (Template 4, Grades 9-12, 44 pages — DomPDF-fixed 2026-03-14)
+- **Files created:** first_pdf (Template 1, Grades 3-5), second_pdf (Template 2, Grades 3-5 variant), third_pdf (Template 3, Grades 6-8, 46 pages — DomPDF-fixed 2026-03-14), fourth_pdf (Template 4, Grades 9-12, 44 pages — DomPDF-fixed 2026-03-14)
 - **HPC shared tabbed index pattern:** All 15 HPC controllers render the same `hpc::hpc.index` view with different active tabs. Each controller's `index()` loads data for ALL tabs (~15 queries per request). This is an intentional design choice for the tab-based UI but causes significant performance overhead. Should be refactored to AJAX-loaded tabs.
 - **HPC report save pattern:** `HpcReportService::saveReport()` uses a delete-then-reinsert strategy inside a DB transaction — it force-deletes ALL existing HpcReportItem and HpcReportTable rows for a report, then bulk-inserts fresh rows from form data (batches of 200 with per-row retry). This is intentional to avoid complex merge logic but means partial saves are all-or-nothing.
+
+**DomPDF Hard Constraints (enforced — do NOT violate in any `*_pdf.blade.php`):**
+1. **CRASH** — `display:inline` on `<table>` → *"Min/max width is undefined for table rows"*. Remove it; use parent `<td style="text-align:right">` for alignment.
+2. **CRASH** — Nested `<table>` without `width="100%"` HTML attribute inside `<td>` → same crash. Every `<table>` must have `<table width="100%" ...>`.
+3. **CRASH** — Wrong closing tag (`</div>` where `</td>` expected) inside `<table><tr>` → *"Parent table not found for table cell"*. Always verify table cell closing tags.
+4. **STRUCTURAL** — `<div class="page-container">` opened in `@foreach` but never closed before `@endforeach` → all pages nest. Must add `</div>{{-- close page-container --}}` before `@endforeach`.
+5. **STRUCTURAL** — Duplicate `@if($part->page_no == N)` blocks (orphan outside loop) → page renders twice. Search for all occurrences before writing any new page block.
+6. **IMAGE** — `getFirstMediaUrl()` / `tenant_asset()` / HTTP URLs in `<img src>` → blank (DomPDF blocks remote). Must use base64 data URIs via `file_get_contents(getPath())`.
+7. **LAYOUT** — `overflow:hidden` on `<div>` → silently ignored or mis-clips. Remove from all containers; use padding instead.
+8. **LAYOUT** — `display:inline-block` on `<div>` → silently ignored. Use `<table>` for side-by-side layouts.
+9. **LAYOUT** — `<ol>/<ul>` inside `<td>` → unreliable markers/overflow. Replace with manual `{{ $idx+1 }}. {{ $item }}` divs or inner `<table width="100%">`.
+10. **LAYOUT** — `page-break-inside:avoid` on containers taller than one page → overridden by DomPDF. Only use on small atomic units; remove from full-section wrappers.
+11. **JAVASCRIPT** — Any `<script>` block in the template is ignored by DomPDF. Remove `window.onload` / `window.print()` scripts.
 
 ### D15: DB Schema — v2 Enhanced DDLs as Single Source of Truth
 - **Why:** Original DDLs had syntax errors, missing FKs, inconsistent naming, duplicate columns. Engineering audit identified 51+ issues in tenant_db alone. Consolidated + corrected into 3 v2 files.

@@ -6,9 +6,9 @@
 Good question. The AI Brain needs a full codebase audit now. Here's the prompt to give me — split into two phases for best  
   results:                                                                                                                  
                                                                                                                               
-  ---                                                                                                                         
-  Phase 1 — Codebase Structure Audit (run first)                                                                              
-                                                                                                                              
+---                                                                                                                         
+### Phase 1 — Codebase Structure Audit (run first)                                                                              
+--------------------------------------------------                                                                                                                             
   I need you to audit the entire codebase and update the AI Brain with accurate                                               
   information about all merged modules.                                                                                       
 
@@ -35,8 +35,9 @@ Good question. The AI Brain needs a full codebase audit now. Here's the prompt t
 
   Do NOT guess completion % — base it only on what routes, models, and controllers actually exist.
 
-  ---
-  Phase 2 — Deep Module Audit (run after Phase 1)
+---
+### Phase 2 — Deep Module Audit (run after Phase 1)
+---------------------------------------------------
 
   Now do a deep audit of each tenant module for known issues, bugs, and gaps.
 
@@ -72,7 +73,7 @@ Good question. The AI Brain needs a full codebase audit now. Here's the prompt t
 
 
 ## Question : Which Model and with what effort type I should use for AI Brain update?
---------------------------------------------------------------------------------------
+=====================================================================================
 
 ┌─────────────────────────────────────────┬─────────┬────────┬──────────────────────────────────────────────────────────────┐    
 │                  Phase                  │  Model  │ Effort │                            Reason                            │    
@@ -102,7 +103,8 @@ Some work in going on different Branch also. So what will be a best prompt to up
 
 Good question. There are two approaches depending on what you want:
 
-Option 1 — Read another branch without switching (recommended)
+### Option 1 — Read another branch without switching (recommended)
+------------------------------------------------------------------
 
   I need you to audit the code on branch `{branch_name}` for the `{ModuleName}` module.
   Do NOT switch my current branch. Use `git show` or `git diff` to read files from that branch.
@@ -118,7 +120,8 @@ Option 1 — Read another branch without switching (recommended)
   - `AI_Brain/memory/modules-map.md` — update controller/model/service counts
   - `AI_Brain/lessons/known-issues.md` — add any new issues found or mark fixed ones
 
-Option 2 — Full module audit on a specific branch
+### Option 2 — Full module audit on a specific branch
+-----------------------------------------------------
 
   Checkout branch `{branch_name}` in a worktree (do NOT touch my current branch),
   then do a deep audit of the `{ModuleName}` module — same as the Phase 2 audit
@@ -126,8 +129,8 @@ Option 2 — Full module audit on a specific branch
 
   Update AI Brain with findings. Then clean up the worktree.
 
-Option 3 — Diff-only (lightest, fastest)
-
+### Option 3 — Diff-only (lightest, fastest)
+------------------------------------------------------
   Show me what changed on branch `{branch_name}` vs `main` for `Modules/{ModuleName}/`.
   Summarize: new files, changed files, deleted files, key functional changes.
   Update AI Brain progress only — no deep audit.
@@ -158,18 +161,18 @@ Option 3 — Diff-only (lightest, fastest)
 
 
 ===================================================================================================================
-Prompt - First-Time Module Audit & Memory Update &
-Prompt - Subsequent Module Memory Update (incremental)
+## Prompt - First-Time Module Audit & Memory Update &
+## Prompt - Subsequent Module Memory Update (incremental)
 ===================================================================================================================
 
 Here are the two prompts:                       
                                                                                           
   ---
-### Prompt 1 — First-Time Module Audit & Memory Update                                                                                                 
-======================================================
+### Prompt 1 — First-Time Module Audit & Memory Update
+=======================================================
 
 
-  ## Module First-Time Audit                                                                                                                         
+#### Module First-Time Audit
                                                             
   **Module:** [HPC]
   **Branch:** [brijesh_hpc]
@@ -180,7 +183,7 @@ Here are the two prompts:
 
   ---
 
-  ### Step 1 — Load Context (read ALL before doing anything)
+#### Step 1 — Load Context (read ALL before doing anything)
   1. AI_Brain/README.md
   2. AI_Brain/memory/project-context.md
   3. AI_Brain/memory/tenancy-map.md
@@ -191,7 +194,7 @@ Here are the two prompts:
   8. AI_Brain/state/progress.md
 
 ---
-  ### Step 2 — Deep Audit of `Modules/[HPC]/`
+#### Step 2 — Deep Audit of `Modules/[HPC]/`
 
 
   Count and verify:
@@ -212,7 +215,7 @@ Here are the two prompts:
 
   ---
 
-  ### Step 3 — Update AI Brain
+#### Step 3 — Update AI Brain
 
   After the audit, update ALL of the following:
 
@@ -233,7 +236,7 @@ Here are the two prompts:
 
   ---
 
-  ### Step 4 — Report
+#### Step 4 — Report
 
   Output a concise summary:
   - Completion % (justify with findings)
@@ -245,9 +248,10 @@ Here are the two prompts:
 
 
 ===================================================================================================================
-### Prompt 2 — Subsequent Module Memory Update (incremental)
+## Prompt 2 — Subsequent Module Memory Update (incremental)
 ===================================================================================================================
-  ## Module Incremental Memory Update
+  
+### Module Incremental Memory Update
 
   **Module:** [MODULE_NAME]
   **Branch:** [BRANCH_NAME]
@@ -256,28 +260,26 @@ Here are the two prompts:
   You are Claude Code working on the Prime-AI multi-tenant school ERP.
   AI Brain is at: /Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases/AI_Brain/
 
-  ---
-
-  ### Step 1 — Load Existing State (read ALL before doing anything)
+---
+#### Step 1 — Load Existing State (read ALL before doing anything)
   1. AI_Brain/state/progress.md  ← find the [MODULE_NAME] entry
   2. AI_Brain/lessons/known-issues.md  ← find the [MODULE_NAME] section
   3. AI_Brain/memory/modules-map.md  ← find the [MODULE_NAME] row
   4. AI_Brain/state/decisions.md  ← find any [MODULE_NAME] decisions
 
-  ---
-
-  ### Step 2 — Identify What Changed
+---
+#### Step 2 — Identify What Changed
 
   Run these to find what has changed since the last audit date (from progress.md):
 
   ```bash
   git log --oneline --since="[LAST_AUDIT_DATE]" -- Modules/[MODULE_NAME]/
   git diff HEAD~10..HEAD -- Modules/[MODULE_NAME]/
-
+  ```
   Focus only on files that were added, changed, or deleted in this branch.
 
-  ---
-  Step 3 — Targeted Re-Audit
+---
+#### Step 3 — Targeted Re-Audit
 
   For each changed file:
   1. If a new controller was added — check auth, validation, stubs, N+1
@@ -286,8 +288,8 @@ Here are the two prompts:
   4. If a new route was added — check it is covered by EnsureTenantHasModule and Gate
   5. If a bug was fixed — verify the fix is complete, not partial
 
-  ---
-  Step 4 — Update AI Brain (only changed items)
+---
+#### Step 4 — Update AI Brain (only changed items)
 
   A. AI_Brain/lessons/known-issues.md
   - Mark resolved issues as ✅ RESOLVED with date
@@ -303,8 +305,8 @@ Here are the two prompts:
   D. AI_Brain/state/decisions.md
   - Add any new architectural decisions made in this branch
 
-  ---
-  Step 5 — Report
+---
+#### Step 5 — Report
 
   Output a concise delta summary:
   - What was completed since last audit
@@ -312,8 +314,7 @@ Here are the two prompts:
   - Updated completion %
   - Remaining top priorities
 
-  ---
-
+---
   **Usage notes:**
   - Replace `[MODULE_NAME]`, `[BRANCH_NAME]`, `[DEVELOPER_NAME]`, `[LAST_AUDIT_DATE]` before pasting
   - Prompt 1 = full audit from scratch (first time that module is documented)
@@ -321,17 +322,17 @@ Here are the two prompts:
   - Both prompts are self-contained — they pull context from AI Brain directly, so each VS Code instance stays independent
 
 
-  Whilch Model should I use for these prompts?                                                                                                       
-                                                                                                                                  
-⏺ Prompt 1 (First-Time Deep Audit) → Opus                                                                                                            
-                                                                                                                                                     
-  It reads 8 AI Brain files + every controller/model/service in the module, reasons about auth gaps, N+1, tenancy violations, and writes to 4 AI
-  Brain files simultaneously. This is the kind of high-context, high-reasoning task where Sonnet will miss subtle bugs. Run it once, run it right.   
-                                                            
-  claude --model claude-opus-4-6                                                                                                                     
-                                                                                                                                                     
+## Question - Whilch Model should I use for these prompts?
+==========================================================
+
+**Prompt 1 (First-Time Deep Audit) → Opus**
+
+  It reads 8 AI Brain files + every controller/model/service in the module, reasons about auth gaps, N+1, tenancy violations, and writes to 4 AI Brain files simultaneously. This is the kind of high-context, high-reasoning task where Sonnet will miss subtle bugs. Run it once, run it right.
+
+  claude --model claude-opus-4-6
+
   ---
-  Prompt 2 (Incremental Update) → Sonnet
+**Prompt 2 (Incremental Update) → Sonnet**
 
   It only looks at the git diff since the last audit date — much smaller context, straightforward pattern matching (did this method get auth added?
   is this new route covered?). Sonnet handles this well and is significantly faster and cheaper.
@@ -354,4 +355,57 @@ Here are the two prompts:
   Cost note: Opus costs ~5x more than Sonnet per token. Since Prompt 1 loads a lot of context, run it only once per module. After that, Prompt 2 on
   Sonnet for all incremental updates.
 
+
   
+### Question - Do I need to use 2nd Prompt after every Tasks I complete OR is there some other quick Prompt I need to use after every tasks and then I can use 2nd Prompt on daily basis or aulternat days Or how exactly i need to perform the update?
+===============================================================================================================================
+
+  Here's the 3-tier workflow — running Prompt 2 after every task is overkill:
+
+---
+Tier 1 — After Each Task (within same Claude session)
+-----------------------------------------------------
+  Zero extra cost. Claude already has full context. Just say:
+
+  Update AI Brain for what we just completed:
+  - progress.md → mark [TASK NAME] as done
+  - known-issues.md → mark [BUG-XXX-00N] as ✅ RESOLVED if fixed
+  - decisions.md → add D[N] if any architectural decision was made
+
+  This takes 30 seconds and costs almost nothing (context already loaded).
+
+---
+Tier 2 — End of Day OR After a PR Merge
+-----------------------------------------------------
+
+  Run Prompt 2 (Sonnet). This does the git-diff-based catch-up for everything done that day — catches anything missed in Tier 1 quick updates.
+
+  Frequency: Once per day per module being actively worked on, or after each PR merge.
+
+
+
+---
+Tier 3 — Start of New Sprint / Major Feature Complete
+-----------------------------------------------------
+
+  Run Prompt 1 (Opus) for a full re-audit. This validates the AI Brain is still accurate after many changes accumulate.
+
+  Frequency: Once per sprint (or when handing a module to a new developer).
+
+
+---
+Summary Table
+-----------------------------------------------------
+
+  ┌────────────────────────┬────────────────────────────┬────────────────┬────────────┐
+  │          When          │           Action           │     Model      │    Time    │
+  ├────────────────────────┼────────────────────────────┼────────────────┼────────────┤
+  │ Just finished a task   │ Ask Claude in same session │ (same session) │ ~30s       │
+  ├────────────────────────┼────────────────────────────┼────────────────┼────────────┤
+  │ End of day / PR merged │ Run Prompt 2               │ Sonnet         │ ~3-5 min   │
+  ├────────────────────────┼────────────────────────────┼────────────────┼────────────┤
+  │ Sprint start / handoff │ Run Prompt 1               │ Opus           │ ~10-15 min │
+  └────────────────────────┴────────────────────────────┴────────────────┴────────────┘
+
+  ---
+  Practical rule: If you're still in the same VS Code Claude session — use Tier 1. Never open a new session just to update the brain for one task.
