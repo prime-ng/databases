@@ -197,6 +197,149 @@
 
 ---
 
+## Constraint System Gap — 155+ Rule Inventory
+
+> **Source:** `2026Mar10_ConstraintArchitecture_Analysis.md` + `2026Mar10_ConstraintList_and_Categories.md`
+> These two files define 155+ constraint rules across 8 categories (A-H).
+> The constraint system architecture is sound (10 models, lifecycle, plug-and-play design),
+> but only ~30 of 155+ rules are actually enforced during generation.
+
+### Category-by-Category Implementation Status
+
+| Cat | Name | Total Rules | Implemented | Gap | Effort to Close |
+|-----|------|-------------|-------------|-----|-----------------|
+| **A** | Engine Hard Rules | 5 | 5 ✅ | 0 | — |
+| **B1** | Teacher (per-teacher) | 22 | ~7 partial | **15 rules** | 5 days |
+| **B2** | Teacher (global/all) | 20 | 0 | **20 rules** | 2 days (reuse B1 classes) |
+| **C1** | Class (per-class) | 18 | ~5 partial | **13 rules** | 4 days |
+| **C2** | Class (global/all) | 15 | 0 | **15 rules** | 1 day (reuse C1 classes) |
+| **D** | Activity-Level | 22 fields exist | 7 scored by solver | **15 fields ignored** | 2 days |
+| **E1** | Room Availability | 6 | 3 (basic alloc) | **3 rules** | 1 day |
+| **E2** | Teacher Room Prefs | 10 | 0 | **10 rules** | 3 days |
+| **E3** | Student Room Prefs | 10 | 0 | **10 rules** | 2 days (mirror E2) |
+| **E4** | Subject Room Prefs | 6 | 0 (partially via D17-D20) | **6 rules** | 1 day |
+| **F** | DB-Configurable | 25 seeded, 12 PHP classes | 12 PHP classes | **13 types without PHP class** | 3 days |
+| **G** | Global Policy | 9 | ~4 via settings | **5 rules** | 2 days |
+| **H** | Inter-Activity | 22 | 1 (H8 Parallel Periods ✅) | **21 rules** | 8 days |
+| | **TOTAL** | **~155** | **~30** | **~125 rules** | **~34 days** |
+
+### Category B — Teacher Constraints: Detailed Gap
+
+**Implemented (B1.1–B1.7):** Unavailable times, max/min daily periods, max weekly, min/max days, max consecutive
+
+**NOT implemented (B1.8–B1.22):**
+
+| # | Constraint | Complexity | Notes |
+|---|-----------|-----------|-------|
+| B1.8 | No two consecutive working days | LOW | Boolean check |
+| B1.9 | Max gaps per day | LOW | Count free periods between first/last |
+| B1.10 | Max gaps per week | LOW | Sum of daily gaps |
+| B1.11 | Max single gaps in selected slots | MED | Time-range filtering needed |
+| B1.12 | Max span per day | LOW | Last - first period |
+| B1.13 | Mutually exclusive time slots | MED | Pair-based constraint |
+| B1.14 | Max hours in hourly interval | MED | Window-based counting |
+| B1.15 | Max consecutive with study format | MED | Study format awareness needed |
+| B1.16 | Min/max daily with study format | MED | Study format filtering |
+| B1.17 | Max study formats per day | MED | Set counting |
+| B1.18 | Min gap between study format pair | HIGH | Ordered pair + gap tracking |
+| B1.19 | Max days in hourly interval | MED | Cross-day interval tracking |
+| B1.20 | Min resting hours | HIGH | Cross-day period calculation |
+| B1.21 | Preferred free day | LOW | Soft scoring |
+| B1.22 | Free period in each half | MED | Half-day split logic |
+
+### Category C — Class/Student Constraints: Detailed Gap
+
+**NOT implemented (C1.6–C1.18):**
+
+| # | Constraint | School Requirement | Complexity |
+|---|-----------|-------------------|-----------|
+| C1.6 | Max gaps per week | General | LOW |
+| C1.7 | Max hours continuously | General | LOW |
+| C1.8 | Max span per day | General | LOW |
+| C1.9 | Min hours daily | General | LOW |
+| C1.10 | Max hours with study format | General | MED |
+| C1.11 | Min hours with study format | General | MED |
+| C1.12 | Max consecutive with study format | General | MED |
+| C1.13 | Min gap between study format pair | General | HIGH |
+| C1.14 | Max days in hourly interval | General | MED |
+| C1.15 | Min resting hours | General | HIGH |
+| C1.16 | Max minor subjects per day | **School #6** | MED |
+| C1.17 | Major subjects must fall every day | **School #4** | MED |
+| C1.18 | Class teacher first period | **School #2** | LOW |
+
+### Category E — Room & Space Constraints: Detailed Gap
+
+**26 unimplemented rules across 3 sub-categories:**
+- **E2 (Teacher Room):** Home room, max room/building changes per day/week/interval, min gaps between changes — 10 rules
+- **E3 (Student Room):** Mirror of E2 for student-sets — 10 rules
+- **E4 (Subject Room):** Subject/StudyFormat preferred room/room-set — 6 rules (partially handled by Activity D17-D20 fields)
+
+### Category H — Inter-Activity Constraints: Detailed Gap
+
+**21 unimplemented rules — these require solver-level changes (like parallel periods H8 required):**
+
+| # | Constraint | Hard/Soft | Solver Change Needed | School Req |
+|---|-----------|-----------|---------------------|-----------|
+| H1 | Same starting time | HARD/SOFT | Activity group sync (like H8 but simpler) | — |
+| H2 | Same day | HARD/SOFT | Day matching in backtrack | — |
+| H3 | Same hour | HARD/SOFT | Period matching in backtrack | — |
+| H4 | Not overlapping | HARD | Overlap check | — |
+| H5 | Consecutive (ordered) | HARD/SOFT | Adjacent slot enforcement | — |
+| H6 | Ordered if same day | HARD/SOFT | Sequence enforcement | — |
+| H7 | Grouped (2-3 activities block) | HARD | Block placement | — |
+| H9 | Min days between | SOFT | Calendar gap check | — |
+| H10 | Max days between | SOFT | Calendar gap check | — |
+| H11 | End students day | SOFT | Last-period enforcement | — |
+| H12-H15 | Occupy min/max slots from selection | SOFT | Slot-set counting | — |
+| H16 | Min gaps between activity set | SOFT | Gap enforcement | — |
+| H17 | Same room if consecutive | SOFT | Room consistency | — |
+| H18 | Max different rooms for set | SOFT | Room counting | — |
+| H19 | Non-concurrent minor subjects | SOFT | Day exclusion | **School #6** |
+| H20 | Activity fixed to specific day | HARD/SOFT | Day pinning | **School #14** |
+| H21 | Activity excluded from specific day | HARD/SOFT | Day exclusion | **School #14** |
+| H22 | Activity fixed to period range | HARD/SOFT | Period range enforcement | **School #1** |
+
+### Constraint Architecture Gaps
+
+**3 proposed architectural components NOT yet implemented:**
+
+| Component | Purpose | Status | Source |
+|-----------|---------|--------|--------|
+| `ConstraintRegistry` | Plugin registration system — replaces hardcoded `CONSTRAINT_CLASS_MAP` | NOT BUILT | ConstraintArchitecture_Analysis §3.2 |
+| `ConstraintEvaluator` | Separated evaluation logic with caching — decouples from ConstraintManager | NOT BUILT | ConstraintArchitecture_Analysis §3.3 |
+| `ConstraintContext` | Value object for slot+activity context — replaces ad-hoc array building | NOT BUILT | ConstraintArchitecture_Analysis §3.4 |
+
+**Constraint Group evaluation NOT wired:**
+- `ConstraintGroup` model supports MUTEX/CONCURRENT/ORDERED/PREFERRED semantics
+- `ConstraintGroupMember` bridge table exists
+- `ConstraintManager` does NOT evaluate group logic — groups are ignored during generation
+- Impact: Cannot express "at most one of these constraints should apply" (MUTEX) or "all must apply together" (CONCURRENT)
+
+### Constraint Class Map — Current vs Required
+
+**Currently registered in `ConstraintFactory::CONSTRAINT_CLASS_MAP` (13 entries including PARALLEL_PERIODS):**
+
+| Code | PHP Class | Type |
+|------|-----------|------|
+| PARALLEL_PERIODS | ParallelPeriodConstraint | Hard |
+| LUNCH_BREAK | LunchBreakConstraint | Hard |
+| SHORT_BREAK | ShortBreakConstraint | Hard |
+| BREAK_PERIOD | BreakConstraint | Hard |
+| TEACHER_CONFLICT | TeacherConflictConstraint | Hard |
+| ROOM_AVAILABILITY | RoomAvailabilityConstraint | Hard |
+| MAX_DAILY_LOAD | MaximumDailyLoadConstraint | Hard |
+| NO_SAME_SUBJECT_SAME_DAY | NoSameSubjectSameDayConstraint | Hard |
+| FIXED_PERIOD_HIGH_PRIORITY | FixedPeriodForHighPriorityConstraint | Hard |
+| HIGH_PRIORITY_FIXED_PERIOD | HighPriorityFixedPeriodConstraint | Hard |
+| DAILY_SPREAD | DailySpreadConstraint | Hard |
+| PREFERRED_TIME_OF_DAY | PreferredTimeOfDayConstraint | Soft |
+| BALANCED_DAILY_SCHEDULE | BalancedDailyScheduleConstraint | Soft |
+
+**25 seeded ConstraintTypes WITHOUT PHP class (fall through to Generic):**
+F1–F7 (teacher), F8–F13 (class), F14–F16 (room), F17–F19 (activity), F20–F25 (global/optimization)
+
+---
+
 ## Risk Assessment
 
 **Highest risk to production:**
@@ -206,9 +349,11 @@
 4. 17 controllers with zero auth (SEC-009) — any user can generate/delete timetables
 
 **Highest risk to correctness:**
-1. Activity-level constraints ignored (GAP-1) — preferences not respected
-2. Room allocation missing (GAP-3) — room_id always NULL
-3. `violatesNoConsecutiveRule()` blocks labs (BUG-B3) — multi-period activities forced-placed only
+1. 125+ constraint rules not enforced — timetable ignores most school preferences
+2. Activity-level constraints ignored (GAP-1) — preferences not respected
+3. Room allocation missing (GAP-3) — room_id always NULL
+4. `violatesNoConsecutiveRule()` blocks labs (BUG-B3) — multi-period activities forced-placed only
+5. Inter-activity constraints (H1-H22 except H8) — activity group relationships not enforced
 
 **Lowest risk (deferred):**
 1. Substitution management (GAP-6) — not needed for initial deployment

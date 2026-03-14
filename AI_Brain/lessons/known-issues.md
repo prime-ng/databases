@@ -187,32 +187,93 @@
 - **Symptom:** 1000+ queries for 500 students — 1 query per student per operation
 - **Fix:** Pre-load all existing records into collections; batch insert/update
 
-## Hpc Specific (deep-audited 2026-03-14)
+## Hpc Specific (deep-audited 2026-03-14, updated 2026-03-14)
 
-### BUG-HPC-001: 4 Template Controllers Completely Unwired
-- **Module/Area:** HpcTemplatesController, HpcTemplatePartsController, HpcTemplateSectionsController, HpcTemplateRubricsController
-- **Symptom:** Template management features completely inaccessible — zero routes in tenant.php
-- **Fix:** Register routes in tenant.php under hpc prefix with tenancy middleware
+### SEC-HPC-001: HpcController — Zero Authorization on 12/13 Methods (CRITICAL)
+- **Module/Area:** `Modules/Hpc/app/Http/Controllers/HpcController.php` (2290 lines)
+- **Symptom:** Any authenticated user can view any student's HPC form, save evaluations for any student, generate/download any student's PDF report. Only `index()` has `Gate::any()`.
+- **Affected methods:** `hpcTemplates`, `create`, `store`, `show`, `edit`, `update`, `destroy`, `hpc_form`, `formStore`, `generateReportPdf`, `viewPdfPage`, `generateSingleStudentPdf`
+- **Fix:** Add `Gate::authorize('tenant.hpc.view|create|update|delete')` to every public method
 
-### BUG-HPC-002: Core HPC Workflow Methods Unrouted
-- **Module/Area:** `HpcController::hpc_form()`, `formStore()`, `generateReportPdf()`, `viewPdfPage()`, `generateSingleStudentPdf()`
-- **Symptom:** HPC form rendering, saving, and PDF generation cannot be reached
-- **Fix:** Add routes for these methods in tenant.php
+### SEC-HPC-002: 10 Controllers Missing Gate on store/update — FormRequest authorize() Returns true
+- **Module/Area:** CircularGoalsController, HpcParametersController, HpcPerformanceDescriptorController, KnowledgeGraphValidationController, LearningActivitiesController, LearningOutcomesController, QuestionMappingController, StudentHpcEvaluationController, SyllabusCoverageSnapshotController, TopicEquivalencyController
+- **Symptom:** store() and update() have no Gate::authorize(). Controller comments say "Authorization is handled in the request class" — but 7 of 14 FormRequests have hardcoded `return true`. Only HpcParametersRequest, HpcPerformanceDescriptorRequest, LearningActivitiesRequest, LearningOutcomesRequest, StudentHpcEvaluationRequest, TopicEquivalencyRequest have real Gate logic.
+- **Fix:** Add Gate::authorize() to store/update in all controllers; also fix the 7 FormRequests that return true (CircularGoalsRequest, HpcTemplatePartsRequest, HpcTemplateRubricsRequest, HpcTemplateSectionsRequest, HpcTemplatesRequest, KnowledgeGraphValidationRequest, QuestionMappingRequest, SyllabusCoverageSnapshotRequest)
 
-### SEC-HPC-001: HpcController — Zero Authorization on All Methods
-- **Module/Area:** `Modules/Hpc/app/Http/Controllers/HpcController.php`
-- **Symptom:** Any authenticated user can access HPC forms and generate any student's PDF report
-- **Fix:** Add `Gate::authorize()` to all public methods
+### SEC-HPC-003: No EnsureTenantHasModule Middleware on HPC Routes
+- **Module/Area:** `routes/tenant.php` line 2498 — HPC route group
+- **Symptom:** Any authenticated tenant user can access HPC features even if tenant's plan excludes HPC module
+- **Fix:** Add `EnsureTenantHasModule::class.':HPC'` to HPC route group middleware
+
+### SEC-HPC-004: Module web.php/api.php Register Routes Outside Tenancy Middleware
+- **Module/Area:** `Modules/Hpc/routes/web.php`, `Modules/Hpc/routes/api.php`
+- **Symptom:** `Route::resource('hpcs', HpcController::class)` accessible on central domain, completely bypassing tenancy isolation (no InitializeTenancyByDomain, no PreventAccessFromCentralDomains, no EnsureTenantIsActive)
+- **Fix:** Remove or empty these scaffold route files; all HPC routes must be in `routes/tenant.php` only
+
+### BUG-HPC-001: 4 Template Controller Class Imports Missing in tenant.php (UPDATED)
+- **Module/Area:** `routes/tenant.php` — HpcTemplatesController, HpcTemplatePartsController, HpcTemplateSectionsController, HpcTemplateRubricsController
+- **Symptom:** Routes for `hpc-templates`, `hpc-template-parts`, `hpc-template-sections`, `hpc-template-rubrics` ARE registered (lines 2667-2708) but the controller classes are NOT imported via `use` statements. All routes will 500 (class not found) when accessed.
+- **Fix:** Add `use Modules\Hpc\Http\Controllers\{HpcTemplatesController, HpcTemplatePartsController, HpcTemplateSectionsController, HpcTemplateRubricsController};` to tenant.php imports
 
 ### BUG-HPC-003: Garbled Permission String in HpcTemplatesController::show()
 - **Module/Area:** `Modules/Hpc/app/Http/Controllers/HpcTemplatesController.php` line 97
 - **Symptom:** Permission `tenant.hpc-templates.viHpcTemplatesRequest ew` always throws 403
 - **Fix:** Correct to `tenant.hpc-templates.view`
 
-### BUG-HPC-004: Global AcademicSession Used in Tenant Controllers
-- **Module/Area:** `StudentHpcEvaluationController`, `SyllabusCoverageSnapshotController`
-- **Symptom:** Academic session dropdown data pulled from global DB, not tenant DB — cross-layer data leak
-- **Fix:** Use `OrganizationAcademicSession` or tenant-side session model
+### BUG-HPC-004: Global AcademicSession Used in Tenant Controllers (Cross-Layer)
+- **Module/Area:** `StudentHpcEvaluationController`, `SyllabusCoverageSnapshotController`, `HpcController`
+- **Symptom:** `Modules\Prime\Models\AcademicSession` imported and queried in tenant context — data leaks from global/prime DB. Also `App\Models\User` imported in StudentHpcEvaluationController for assessor dropdown.
+- **Fix:** Use `OrganizationAcademicSession` or tenant-side session model; use tenant-scoped staff/employee model instead of central User
+
+### BUG-HPC-005: 3 Routes Point to Non-Existent HpcController Methods
+- **Module/Area:** `routes/tenant.php` lines 2508-2510
+- **Symptom:** `GET /hpc/hpc-second-form` → `hpcSecondForm`, `GET /hpc/hpc-thred-form` → `hpcThredForm`, `GET /hpc/hpc-four-form` → `hpcFourthForm` — none of these methods exist. All return 500 (BadMethodCallException).
+- **Fix:** Either add these methods to HpcController or remove the dead routes
+
+### BUG-HPC-006: HpcTemplates Model Uses Uppercase Class Refs — Breaks on Linux
+- **Module/Area:** `Modules/Hpc/app/Models/HpcTemplates.php`
+- **Symptom:** Relationships reference `HPCTemplateSections`, `HPCTemplateRubrics`, `HPCTemplateRubricItems` (uppercase HPC) but actual class files use `HpcTemplateSections`, `HpcTemplateRubrics`, `HpcTemplateRubricItems`. Works on macOS (case-insensitive) but **will break on Linux deployment** (case-sensitive filesystem).
+- **Fix:** Change all uppercase references to correct case: `HpcTemplateSections`, `HpcTemplateRubrics`, `HpcTemplateRubricItems`
+
+### BUG-HPC-007: StudentHpcSnapshot Imports Wrong Student Model
+- **Module/Area:** `Modules/Hpc/app/Models/StudentHpcSnapshot.php`
+- **Symptom:** Imports `Modules\SchoolSetup\Models\Student` — SchoolSetup does NOT have a Student model. Should be `Modules\StudentProfile\Models\Student`.
+- **Fix:** Change import to `Modules\StudentProfile\Models\Student`
+
+### BUG-HPC-008: Orphan Import in tenant.php — LearningActivityController (Singular)
+- **Module/Area:** `routes/tenant.php` line 19
+- **Symptom:** `use Modules\Hpc\Http\Controllers\LearningActivityController` — file does not exist (plural `LearningActivitiesController` exists separately). May cause fatal autoload error on route:cache.
+- **Fix:** Remove the orphan import line
+
+### BUG-HPC-009: All trash/view Routes Shadowed by Resource show Route
+- **Module/Area:** All 10 resource controllers in HPC
+- **Symptom:** `GET /hpc/{resource}/trash/view` is registered AFTER `Route::resource()`. The resource `show` route (`GET {resource}/{id}`) matches `trash` as the `{id}` parameter first, making trash routes unreachable.
+- **Fix:** Register trash/trashed routes BEFORE `Route::resource()`, or exclude `show` from resource
+
+### BUG-HPC-010: Duplicate Table Name Prefixes on 2 Models
+- **Module/Area:** `HpcLevels` (table `hpc_hpc_levels`), `StudentHpcSnapshot` (table `hpc_student_hpc_snapshot`)
+- **Symptom:** Redundant `hpc_` in table names. Not a runtime error but violates naming convention.
+- **Fix:** Rename tables via additive migration if data exists, or fix directly if empty
+
+### PERF-HPC-001: generateReportPdf() Per-Student Loop Queries
+- **Module/Area:** `HpcController::generateReportPdf()`
+- **Symptom:** Loops over student IDs loading each student individually; attendance/sibling queries repeat per student without batching. Slow for bulk PDF generation.
+- **Fix:** Pre-load all students and attendance data before loop; batch queries
+
+### PERF-HPC-002: 15× Duplicated index() Query Block Across All Controllers
+- **Module/Area:** All 15 HPC controllers
+- **Symptom:** Every controller's `index()` contains near-identical ~70-line block querying 10+ models to populate the shared tabbed index page. Fires ~15 queries per request for data the active tab may not display.
+- **Fix:** Extract shared tab data loading to a service or base controller; lazy-load tab data via AJAX
+
+### BUG-HPC-011: 18/26 Models Missing created_by from $fillable
+- **Module/Area:** All HPC models except LearningOutcomes
+- **Symptom:** `created_by` column cannot be mass-assigned. Models with `createdBy()` relationship never actually set the FK.
+- **Fix:** Add `created_by` to $fillable on all models; set it in controller/service before save
+
+### BUG-HPC-012: LearningOutcomesController Imports Prime\Dropdown (Cross-Layer)
+- **Module/Area:** `Modules/Hpc/app/Http/Controllers/LearningOutcomesController.php`
+- **Symptom:** `Modules\Prime\Models\Dropdown` imported — Central/Prime model used in tenant context
+- **Fix:** Use tenant-side dropdown data or query via `tenancy()->central(fn() => ...)`
 
 ## Recommendation Specific (deep-audited 2026-03-14)
 

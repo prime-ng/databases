@@ -49,7 +49,7 @@
 - [ ] **LmsExam** (~65%) — `dd($e)` in prod store(); 2 controllers (Blueprint, Scope) have all Gate calls commented out; no EnsureTenantHasModule; answer submission & grading absent
 - [ ] **StudentFee** (~60%) — Missing `FeeConcessionController` (imported but doesn't exist); exposed seeder route with no auth; permission prefix mismatch (`student-fee.*` vs `studentfee.*`) on 3 controllers; no Form Requests; N+1 in bulk invoice/assignment generation; no EnsureTenantHasModule
 - [ ] **LmsHomework** (~60%) — Fatal crash: `HoemworkData()` missing `$request` param; `review()` has no auth or validation; no EnsureTenantHasModule
-- [ ] **Hpc** (~55%) — 4 template controllers (Templates, Parts, Sections, Rubrics) completely unwired; core workflow (hpc_form, formStore, generateReportPdf) unrouted; HpcController stubs with zero auth; garbled permission string in HpcTemplatesController::show(); global AcademicSession used in tenant context
+- [ ] **Hpc** (~60%) — Deep-audited 2026-03-14. 15 controllers, 26 models, 1 service (HpcReportService 788 lines), 14 FormRequests, 4 PDF templates complete. **Critical blockers:** SEC-HPC-001 (HpcController zero auth on 12/13 methods); BUG-HPC-001 (4 template controller imports missing → 500s); BUG-HPC-006 (uppercase class refs break on Linux); SEC-HPC-003 (no EnsureTenantHasModule). See known-issues.md for full list of 18 issues.
 - [ ] **Library** (~45%) — NOT wired into tenant.php at all; 7 controllers with zero authorization; 5 stub methods on only registered route; N+1 in ReservationController; Prime\Setting cross-layer import; permission namespace mismatch in LibTransactionController
 
 ---
@@ -106,7 +106,15 @@
 - TenantTestCase base class (needed for tenant-scoped HTTP tests)
 
 ## Current Work
-<!-- Update this section when starting new tasks -->
+- [x] HPC Module deep audit complete (2026-03-14) — 18 issues logged (4 critical security, 12 bugs, 2 perf)
+- [x] HPC fourth_pdf.blade.php DomPDF compatibility fix (2026-03-14) — all display:flex/grid/box-shadow/emoji/overflow-x:auto/transform:rotate converted to table-based layouts
+- [x] HPC first_pdf.blade.php — 6 issues fixed (2026-03-14):
+  - Fix 1: Icon table overflow — assess_content width:100%, inner icon tables width=100%, cells width=33%, icon sizes 28px→22px (self/peer/resource)
+  - Fix 2: Teacher Feedback page-break split — single section_container replaced with 3 blocks (Block A: header+circle+notes, Block B: self+peer keep-together, Block C: parents+comments keep-together)
+  - Fix 3: Circle label % positions → px (sky left:120px, mountain left:130px, stream left:110px, levels top:96px); letterPos feedback left:78px→left:104px
+  - Fix 4: Page 15 summary circles 230px→190px (summary_circle_container); page-break-before:always wrapper added
+  - Fix 5: Blank trailing page — removed window.print() script block (DomPDF-incompatible)
+  - Fix 6: ZIP download URL — replaced tenant_asset() with route('hpc.download.zip'); added downloadZip() controller method; added route in web.php
 
 ## Recently Completed (2026-03-14, Parallel Periods Steps 4–9)
 - [x] SmartTimetable — Parallel Periods full implementation complete
