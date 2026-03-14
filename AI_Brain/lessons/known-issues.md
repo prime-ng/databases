@@ -99,6 +99,16 @@
 - **Root Cause:** Routes not defined yet
 - **Fix:** Define routes first, then HTTP tests can be added.
 
+## Library Module
+
+### Library Code Built But Not Wired Into Tenancy
+- **Module/Area:** `Modules/Library/` — all controllers, models, services
+- **Symptom:** Library features are inaccessible in tenant context despite 26 controllers, 35 models, 9 services, 140 views, and 36 tenant migrations being built
+- **Root Cause:** Library routes only registered via module's own `RouteServiceProvider` (maps `routes/web.php` with standard `web` middleware), not through `routes/tenant.php` with tenancy middleware. Only 1 route exists: `Route::resource('libraries', LibraryController::class)`.
+- **Fix needed:** Register all Library routes in `routes/tenant.php` under `auth` + `verified` + tenant middleware group. Use `lib_` table prefix. Verify all models use correct table names.
+- **Prevention:** All new tenant modules must have routes registered in `routes/tenant.php`, not just in their module-level `routes/web.php`.
+- **Discovered:** 2026-03-14 codebase audit after module merge.
+
 ## SmartTimetable Specific
 
 ### TimetableSolution::remove() Used Wrong Placement Key
@@ -111,11 +121,115 @@
 
 ---
 
-## LMS Modules
+## LMS Modules (deep-audited 2026-03-14)
 
-*(Add LmsExam, LmsQuiz, LmsHomework issues here as discovered)*
+### BUG-LMS-001: `dd($e)` in LmsExamController::store() — Exposes Stack Traces in Prod
+- **Module/Area:** `Modules/LmsExam/app/Http/Controllers/LmsExamController.php` line 565
+- **Symptom:** Any exam creation error dumps raw PHP exception to browser
+- **Root Cause:** `dd($e)` left in catch block; also prevents `DB::rollBack()` from executing
+- **Fix:** Remove `dd($e)`, use `Log::error($e)` + `DB::rollBack()` + `return back()`
 
----
+### BUG-LMS-002: ExamBlueprintController + ExamScopeController — All Gate Calls Commented Out
+- **Module/Area:** `Modules/LmsExam/app/Http/Controllers/ExamBlueprintController.php`, `ExamScopeController.php`
+- **Symptom:** Any authenticated user can CRUD exam blueprints and scopes
+- **Fix:** Uncomment all `Gate::authorize()` calls
+
+### BUG-LMS-003: LmsHomeworkController::HoemworkData() — Missing $request Parameter
+- **Module/Area:** `Modules/LmsHomework/app/Http/Controllers/LmsHomeworkController.php` line 49
+- **Symptom:** Fatal `Undefined variable $request` on every homework listing page load
+- **Root Cause:** Method declared with no params but uses `$request->class`, `$request->subject_id`
+- **Fix:** Add `Request $request` parameter to method signature
+
+### BUG-LMS-004: HomeworkSubmissionController::review() — No Auth or Validation
+- **Module/Area:** `Modules/LmsHomework/app/Http/Controllers/HomeworkSubmissionController.php` line 285
+- **Symptom:** Any authenticated user can overwrite student grades and teacher feedback
+- **Fix:** Add `Gate::authorize()` and input validation
+
+### BUG-LMS-005: LmsQuizController + LmsQuestController — Gate Commented Out in index()
+- **Module/Area:** `LmsQuizController.php` line 34, `LmsQuestController.php` line 35
+- **Symptom:** All quizzes/quests visible to any authenticated user
+- **Fix:** Uncomment the `Gate::authorize()` calls
+
+### SEC-LMS-001: No EnsureTenantHasModule Middleware on Any LMS Route Group
+- **Module/Area:** `routes/tenant.php` lines 478, 591, 646, 704
+- **Symptom:** Schools without LMS module in their plan can access all LMS features
+- **Fix:** Add `EnsureTenantHasModule` middleware to all 4 LMS route groups
+
+### PERF-LMS-001: 12 Unbounded Queries in LmsExamController::index()
+- **Module/Area:** `LmsExamController.php` lines 60–67
+- **Symptom:** Full-table scans on Student, QuestionBank, etc. on every page load
+- **Fix:** Move dropdown data to AJAX endpoints; cache reference data
+
+## StudentFee Specific (deep-audited 2026-03-14)
+
+### BUG-FEE-001: FeeConcessionController Imported But Does Not Exist
+- **Module/Area:** `routes/tenant.php` line 47
+- **Symptom:** Fatal class-not-found error when routes are cached (`php artisan route:cache`)
+- **Fix:** Remove dead import or create the missing controller
+
+### SEC-FEE-001: Seeder Route Exposed in Production
+- **Module/Area:** `routes/tenant.php` line 307 — `GET /student-fee/seeder`
+- **Symptom:** Any authenticated user can create fake students/teachers/fee data via `StudentFeeController::seederFunction()`
+- **Fix:** Remove route entirely or gate with `abort_unless(app()->isLocal(), 403)`
+
+### SEC-FEE-002: Permission Prefix Mismatch on 3 Controllers
+- **Module/Area:** `FeeHeadMasterController`, `FeeGroupMasterController`, `FeeStructureMasterController`
+- **Symptom:** Authorization silently broken — uses `student-fee.*` prefix but RBAC registers `studentfee.*`
+- **Fix:** Standardize all Gate calls to `studentfee.*` (no hyphen)
+
+### SEC-FEE-003: StudentFeeManagementController — Zero Auth on All 8 View Methods
+- **Module/Area:** `Modules/StudentFee/app/Http/Controllers/StudentFeeManagementController.php`
+- **Symptom:** Any authenticated user can see full financial dashboard, all fee data
+- **Fix:** Add `Gate::authorize()` to all view methods
+
+### PERF-FEE-001: N+1 in Bulk Invoice + Assignment Generation
+- **Module/Area:** `FeeInvoiceController::generateFeeInvoice()`, `FeeStudentAssignmentController::generateStudentAssignment()`
+- **Symptom:** 1000+ queries for 500 students — 1 query per student per operation
+- **Fix:** Pre-load all existing records into collections; batch insert/update
+
+## Hpc Specific (deep-audited 2026-03-14)
+
+### BUG-HPC-001: 4 Template Controllers Completely Unwired
+- **Module/Area:** HpcTemplatesController, HpcTemplatePartsController, HpcTemplateSectionsController, HpcTemplateRubricsController
+- **Symptom:** Template management features completely inaccessible — zero routes in tenant.php
+- **Fix:** Register routes in tenant.php under hpc prefix with tenancy middleware
+
+### BUG-HPC-002: Core HPC Workflow Methods Unrouted
+- **Module/Area:** `HpcController::hpc_form()`, `formStore()`, `generateReportPdf()`, `viewPdfPage()`, `generateSingleStudentPdf()`
+- **Symptom:** HPC form rendering, saving, and PDF generation cannot be reached
+- **Fix:** Add routes for these methods in tenant.php
+
+### SEC-HPC-001: HpcController — Zero Authorization on All Methods
+- **Module/Area:** `Modules/Hpc/app/Http/Controllers/HpcController.php`
+- **Symptom:** Any authenticated user can access HPC forms and generate any student's PDF report
+- **Fix:** Add `Gate::authorize()` to all public methods
+
+### BUG-HPC-003: Garbled Permission String in HpcTemplatesController::show()
+- **Module/Area:** `Modules/Hpc/app/Http/Controllers/HpcTemplatesController.php` line 97
+- **Symptom:** Permission `tenant.hpc-templates.viHpcTemplatesRequest ew` always throws 403
+- **Fix:** Correct to `tenant.hpc-templates.view`
+
+### BUG-HPC-004: Global AcademicSession Used in Tenant Controllers
+- **Module/Area:** `StudentHpcEvaluationController`, `SyllabusCoverageSnapshotController`
+- **Symptom:** Academic session dropdown data pulled from global DB, not tenant DB — cross-layer data leak
+- **Fix:** Use `OrganizationAcademicSession` or tenant-side session model
+
+## Recommendation Specific (deep-audited 2026-03-14)
+
+### SEC-REC-001: Wrong Gate Permission on 8/9 StudentRecommendation Write Routes
+- **Module/Area:** `Modules/Recommendation/app/Http/Controllers/StudentRecommendationController.php`
+- **Symptom:** All destructive actions use `tenant.student-recommendation.create` instead of matching permission
+- **Fix:** Use correct permission per action (view, update, delete, restore, forceDelete)
+
+### BUG-REC-001: Broken Validation — `exists:users` Should Be `exists:sys_users`
+- **Module/Area:** `StudentRecommendationController::update()` lines 154, 169
+- **Symptom:** Update always throws validation error — `users` table doesn't exist in tenant DB
+- **Fix:** Change to `exists:sys_users,id`
+
+### BUG-REC-002: Table Name Mismatch in complexity_level Validation
+- **Module/Area:** `RecommendationMaterialController` store vs update
+- **Symptom:** One of `slb_complexity_levels` (store) vs `slb_complexity_level` (update) will throw
+- **Fix:** Verify actual table name in DDL, standardize both
 
 ---
 

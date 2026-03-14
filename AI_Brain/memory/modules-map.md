@@ -65,42 +65,44 @@ Modules/ModuleName/
 └── vite.config.js
 ```
 
-## All Modules (29)
+## All Modules (27)
+> **Audited:** 2026-03-14. Counts are actual filesystem counts from `Modules/` directory.
+> Services count includes all .php files under `app/Services/**`. Controllers include subdirectories.
 
 ### Central-Scoped Modules (run on central domain, access prime_db/global_db)
-| Module | Controllers | Models | Description |
-|--------|-------------|--------|-------------|
-| **Prime** | 22 | 27 | Tenant CRUD, plans, billing, users, roles, modules, menus, geography |
-| **GlobalMaster** | 15 | 12 | Countries, states, cities, boards, languages, plans, dropdowns |
-| **SystemConfig** | 3 | 3 | Settings, menus, translations |
-| **Billing** | 6 | 6 | Invoice generation, payment tracking, billing cycles |
-| **Documentation** | 3 | 2 | Knowledge base, help docs |
+| Module | Controllers | Models | Services | Requests | Route refs (web.php) | Description |
+|--------|-------------|--------|----------|----------|----------------------|-------------|
+| **Prime** | 22 | 27 | 1 | 7 | 20 (central) | Tenant CRUD, plans, billing, users, roles, modules, menus, geography |
+| **GlobalMaster** | 15 | 12 | 0 | 10 | 8 (central) | Countries, states, cities, boards, languages, plans, dropdowns |
+| **SystemConfig** | 3 | 3 | 0 | 1 | 0 (via Prime) | Settings, menus, translations |
+| **Billing** | 6 | 6 | 0 | 3 | 5 (central) | Invoice generation, payment tracking, billing cycles |
+| **Documentation** | 3 | 2 | 0 | 2 | 3 (central) | Knowledge base, help docs |
 
 ### Tenant-Scoped Modules (run on tenant domain, access tenant_db)
-| Module | Controllers | Models | Services | Status | Description |
-|--------|-------------|--------|----------|--------|-------------|
-| **SchoolSetup** | 40 | 42 | 0 | 100% | Core infrastructure: classes, sections, subjects, teachers, rooms, buildings |
-| **SmartTimetable** | 27 | 84 | 35 | 100% | AI timetable: FET solver, constraints, generation, analytics, substitution |
-| **Transport** | 31 | 36 | 0 | 100% | Vehicles, routes, trips, driver attendance, student boarding, fees |
-| **StudentProfile** | 5 | 14 | 0 | 100% | Student data, health profiles, documents, attendance, guardians |
-| **Syllabus** | 15 | 22 | 0 | 100% | Lessons, topics, competencies, Bloom taxonomy, cognitive skills |
-| **SyllabusBooks** | 4 | 6 | 0 | 100% | Textbooks, authors, topic mappings |
-| **QuestionBank** | 7 | 17 | 0 | 100% | Questions, tags, versions, statistics, AI generation |
-| **Notification** | 12 | 14 | 2 | 100% | Multi-channel notifications, templates, delivery logs |
-| **Complaint** | 8 | 6 | 2 | 100% | Categories, SLA, actions, AI insights, medical checks |
-| **Vendor** | 7 | 8 | 0 | 100% | Vendors, agreements, items, invoices, payments, usage logs |
-| **Payment** | 4 | 5 | 2 | 100% | Razorpay integration, payment processing |
-| **Dashboard** | 1 | 0 | 0 | 100% | Admin dashboards |
-| **Scheduler** | 1 | 2 | 2 | 100% | Job scheduling |
-| **Hpc** | 11 | 15 | 0 | ~90% | Holistic Progress Card, learning outcomes, evaluations |
-| **LmsExam** | 11 | 11 | 0 | ~80% | Examination system |
-| **LmsQuiz** | 5 | 6 | 0 | ~80% | Quiz/assessment system |
-| **LmsHomework** | 5 | 5 | 0 | ~80% | Homework assignment & submission |
-| **LmsQuests** | 4 | 4 | 0 | ~80% | Learning paths |
-| **StudentFee** | 9 | 20 | 0 | ~80% | Fee heads, invoices, receipts, concessions, scholarships, fines |
-| **Recommendation** | 10 | 11 | 0 | ~90% | AI recommendations, trigger events, rule engine |
-| **StudentPortal** | 3 | 0 | 0 | Pending | Student-facing interface |
-| **Library** | 1 | 0 | 0 | Pending | Library management |
+| Module | Controllers | Models | Services | Requests | Tenant route refs | Status | Description |
+|--------|-------------|--------|----------|----------|-------------------|--------|-------------|
+| **SchoolSetup** | 40 | 42 | 0 | 27 | 35 | 100% | Core infrastructure: classes, sections, subjects, teachers, rooms, buildings |
+| **SmartTimetable** | 28 | 86 | 22 | 12 | 29 | 100% | AI timetable: FET solver, constraints, parallel periods, generation, analytics |
+| **Transport** | 31 | 36 | 0 | 18 | 31 | 100% | Vehicles, routes, trips, driver attendance, student boarding, fees |
+| **StudentProfile** | 5 | 14 | 0 | 0 | 4 | 100% | Student data, health profiles, documents, attendance, guardians |
+| **Syllabus** | 15 | 22 | 0 | 14 | 14 | 100% | Lessons, topics, competencies, Bloom taxonomy, cognitive skills |
+| **SyllabusBooks** | 4 | 6 | 0 | 3 | 4 | 100% | Textbooks, authors, topic mappings |
+| **QuestionBank** | 7 | 17 | 0 | 6 | 7 | 100% | Questions, tags, versions, statistics, AI generation |
+| **Notification** | 12 | 14 | 2 | 10 | 14 | 100% | Multi-channel notifications, templates, delivery logs |
+| **Complaint** | 8 | 6 | 2 | 0 | 8 | 100% | Categories, SLA, actions, AI insights, medical checks |
+| **Vendor** | 7 | 8 | 0 | 3 | 7 | 100% | Vendors, agreements, items, invoices, payments, usage logs |
+| **Payment** | 4 | 5 | 2 | 0 | 3 | 100% | Razorpay integration, payment processing |
+| **Dashboard** | 1 | 0 | 0 | 0 | 1 | 100% | Admin dashboards |
+| **Scheduler** | 1 | 2 | 2 | 1 | 0* | 100% | Job scheduling (*uses module-level routing, not tenant.php) |
+| **LmsQuiz** | 5 | 6 | 0 | 5 | 5 | **~72%** | Quiz CRUD works; Gate commented out in index; student attempt tracking absent |
+| **LmsQuests** | 4 | 4 | 0 | 4 | 4 | **~68%** | Quest CRUD works; Gate commented out in index; progress tracking absent |
+| **Recommendation** | 10 | 11 | 0 | 0 | 10 | **~65%** | 3 empty stubs; wrong perms 8/9 routes; broken validation; no FormRequests |
+| **LmsExam** | 11 | 11 | 0 | 11 | 11 | **~65%** | dd($e) in prod; 2 controllers Gate disabled; no EnsureTenantHasModule |
+| **StudentFee** | 15 | 23 | 0 | 0 | 16 | **~60%** | Missing controller; seeder route exposed; perm prefix mismatch; no FormRequests |
+| **LmsHomework** | 5 | 5 | 0 | 5 | 5 | **~60%** | Fatal crash missing $request param; review() no auth; no EnsureTenantHasModule |
+| **Hpc** | 15 | 26 | 1 | 14 | 12 | **~55%** | 4 template controllers unwired; core workflow unrouted; auth gaps; tenancy violation |
+| **Library** | 26 | 35 | 9 | 19 | 0† | **~45%** | NOT in tenant.php; 7 controllers zero auth; 5 stubs; cross-layer import (†see below) |
+| **StudentPortal** | 3 | 0 | 0 | 0 | 3 | ~25% | Student-facing interface (dashboard, complaints, notifications only) |
 
 ### Key Module Routes
 
@@ -129,19 +131,19 @@ Modules/ModuleName/
 | StudentPortal | `/student-portal/*` | dashboard, academic-info, payments |
 | SystemConfig | `/system-config/*` | settings, menus |
 
-### Module Completion Detail
+### Module Completion Detail (deep-audited 2026-03-14)
 
-| Module | What's Complete | What's Missing |
-|--------|----------------|----------------|
-| LmsExam (80%) | Exams, types, blueprints, papers, paper sets, questions, student groups, scopes, allocations | Student answer submission, grading, result generation, report cards |
-| LmsQuiz (80%) | Quizzes, questions (from QB), allocations, assessment types, difficulty distribution | Student attempt tracking, auto-grading, analytics |
-| LmsHomework (80%) | Homework creation, submissions, action types, trigger events, rule engine config | Grading workflow, feedback system, late submission handling |
-| LmsQuests (80%) | Quests, questions, allocations, scopes | Student progress tracking, completion awards, adaptive path logic |
-| StudentFee (80%) | Fee structures, heads, groups, installments, invoices, concessions, fines, scholarships | Payment gateway integration flow, bulk invoice generation, comprehensive reporting |
-| Hpc (90%) | Learning outcomes, evaluations, snapshots, activities, parameters, descriptors, circular goals, knowledge graph | Syllabus coverage snapshot integration with actual class delivery data |
-| Recommendation (90%) | Rules, materials, bundles, trigger events, assessment types, student recs, dynamic material types | Performance snapshot integration with actual student data |
-| StudentPortal (20%) | 3 controllers exist (dashboard, academic info, notifications, complaints) | Full student UI, academic transcript, timetable view, homework submission, quiz taking, grade reports, parent portal |
-| Library (5%) | 1 controller stub | Full library: book inventory, issue/return, catalog, fines, reservations |
+| Module | What's Complete | What's Missing / Broken |
+|--------|----------------|------------------------|
+| LmsQuiz (~72%) | CRUD for quizzes, questions, allocations, assessment types, difficulty distribution; Form Requests exist | Gate commented out in index(); student attempt tracking absent; auto-grading absent; no EnsureTenantHasModule |
+| LmsQuests (~68%) | CRUD for quests, questions, allocations, scopes; Form Requests exist | Gate commented out in index(); student progress tracking absent; completion awards absent; no EnsureTenantHasModule |
+| Recommendation (~65%) | 8 of 10 controllers fully working CRUD with activity logging | RecommendationController has 3 empty stubs + 3 non-functional read methods; wrong Gate permission on 8/9 StudentRecommendation write routes (`create` used for all); broken `exists:users` validation (should be `sys_users`); inconsistent permission namespace (`recommendation.*` vs `tenant.*`); no Form Requests (0 in module); no EnsureTenantHasModule; `complexity_level` table name mismatch between store/update |
+| LmsExam (~65%) | Exam CRUD, types, blueprints, papers, student groups, scopes, allocations; Form Requests exist | **`dd($e)` in LmsExamController::store()** exposes stack traces; ExamBlueprintController + ExamScopeController have ALL Gate calls commented out; ExamStudentGroupMemberController::store() uses raw $request without validation; no EnsureTenantHasModule; student answer submission & grading absent |
+| StudentFee (~60%) | Invoice create/edit/cancel/pay, fine rules, scholarships, concessions, assignment workflows | **FeeConcessionController imported but doesn't exist** (fatal on route:cache); **GET /student-fee/seeder exposed in prod** with no auth (creates fake data); permission prefix mismatch on 3 controllers (`student-fee.*` vs `studentfee.*`); StudentFeeManagementController has zero auth on all 8 view methods + 3 empty stubs; `update()` trusts frontend `total_fee_amount`; no Form Requests (0 in module); N+1 in bulk invoice gen + assignment gen; non-tenant-scoped invoice PDF storage; no EnsureTenantHasModule |
+| LmsHomework (~60%) | Homework CRUD, submissions, action types; Form Requests exist | **Fatal crash: `HoemworkData()` missing `$request` parameter** — all filter logic is dead code; `HomeworkSubmissionController::review()` has no Gate check or validation — any user can overwrite grades; `HomeworkSubmissionController::show()` no Gate check; no EnsureTenantHasModule; grading workflow incomplete |
+| Hpc (~55%) | CRUD for 9 controllers (outcomes, evaluations, snapshots, goals, parameters, descriptors, equivalencies, activities, question mappings); 3 PDF templates | **4 template controllers completely unwired** (HpcTemplates, Parts, Sections, Rubrics — zero routes); **Core workflow methods unrouted** (hpc_form, formStore, generateReportPdf, viewPdfPage, generateSingleStudentPdf); HpcController store/update are empty stubs with zero auth; garbled permission string in HpcTemplatesController::show(); global AcademicSession used in tenant context (cross-layer); SyllabusCoverageSnapshotRequest::authorize() hardcoded `true` |
+| Library (~45%) | 26 controllers, 35 models, 9 services, 19 requests, 140 views, 36 migrations — book catalog, members, transactions, fines, reservations, digital resources, reports, audits | **NOT wired into tenant.php** (zero tenancy middleware); 7 controllers with zero authorization (LibraryController, LibFineController, 5 report/dashboard controllers); 5 stub methods on only registered resource route; `$request->all()` in 5 controllers bypassing Form Requests; `Modules\Prime\Models\Setting` cross-layer import; N+1 in LibReservationController::create(); User::all() unbounded in 10+ index methods; 20+ duplicate queries per page load (God-controller pattern) |
+| StudentPortal (~25%) | Dashboard, complaints, notifications controllers wired (3 refs in tenant.php) | Academic transcript, timetable view, homework submission, quiz taking, grade reports, parent portal, fee view |
 
 ### Missing Modules (Reserved Prefixes)
 | Prefix | Module | Status |

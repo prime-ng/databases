@@ -26,7 +26,7 @@
 - [x] **QuestionBank** — Questions, tags, versions, statistics, AI generation
 
 ### Timetable
-- [x] **SmartTimetable** — All 10 stages complete:
+- [x] **SmartTimetable** — All 10 stages + Parallel Periods feature complete:
   - Stage 1: Schema & Foundation (28 table renames, 47 models)
   - Stage 2: Seeders (9 config seeders)
   - Stage 3: Validation Framework
@@ -37,25 +37,27 @@
   - Stage 8: Substitution Management (SubstitutionService, pattern learning)
   - Stage 9: API & Integration (REST API, Standard Timetable views)
   - Stage 10: Testing & Cleanup (Form Requests, Pest tests)
+  - **Parallel Periods** (2026-03-14): Schema, Models, UI, Solver (anchor/sibling backtrack + rescue pass), Constraint Engine, Pre/Post-Gen validation, soft constraint wiring, 9 unit tests — 100% complete
 
 ---
 
-## Near Complete (80-95%)
+## Partially Complete (45–72%) — Deep-audited 2026-03-14
 
-- [ ] **Hpc** (~95%) — Holistic Progress Card; all 3 PDF templates done (first_pdf, second_pdf, third_pdf)
-- [ ] **LmsExam** (~80%) — Examination system
-- [ ] **LmsQuiz** (~80%) — Quiz/assessment system
-- [ ] **LmsHomework** (~80%) — Homework assignment & submission
-- [ ] **LmsQuests** (~80%) — Learning paths
-- [ ] **StudentFee** (~80%) — Fee management (invoices, receipts, concessions)
-- [ ] **Recommendation** (~90%) — AI recommendations, trigger events
+- [ ] **LmsQuiz** (~72%) — Admin CRUD works; auth gap (Gate commented out in index); student attempt/tracking absent
+- [ ] **LmsQuests** (~68%) — Auth gap (Gate commented out in index); student progress tracking and adaptive path absent
+- [ ] **Recommendation** (~65%) — 3 empty stubs on RecommendationController; wrong permissions on 8/9 StudentRecommendation routes; broken `exists:users` validation; no Form Requests; no EnsureTenantHasModule
+- [ ] **LmsExam** (~65%) — `dd($e)` in prod store(); 2 controllers (Blueprint, Scope) have all Gate calls commented out; no EnsureTenantHasModule; answer submission & grading absent
+- [ ] **StudentFee** (~60%) — Missing `FeeConcessionController` (imported but doesn't exist); exposed seeder route with no auth; permission prefix mismatch (`student-fee.*` vs `studentfee.*`) on 3 controllers; no Form Requests; N+1 in bulk invoice/assignment generation; no EnsureTenantHasModule
+- [ ] **LmsHomework** (~60%) — Fatal crash: `HoemworkData()` missing `$request` param; `review()` has no auth or validation; no EnsureTenantHasModule
+- [ ] **Hpc** (~55%) — 4 template controllers (Templates, Parts, Sections, Rubrics) completely unwired; core workflow (hpc_form, formStore, generateReportPdf) unrouted; HpcController stubs with zero auth; garbled permission string in HpcTemplatesController::show(); global AcademicSession used in tenant context
+- [ ] **Library** (~45%) — NOT wired into tenant.php at all; 7 controllers with zero authorization; 5 stub methods on only registered route; N+1 in ReservationController; Prime\Setting cross-layer import; permission namespace mismatch in LibTransactionController
 
 ---
 
-## In Progress
+## In Progress / Partial
 
+- [ ] **StudentPortal** (~25%) — Dashboard, complaints, notifications wired; missing: academic transcript, timetable view, homework, quiz taking, fee view, parent portal
 - [ ] **Standard Timetable** (~70%) — Standard views and scheduling
-- [x] **SmartTimetable Parallel Periods** (100%) — All 9 steps complete (2026-03-14)
 - [ ] **Event Engine** (~20%) — Cross-module event system
 
 ---
@@ -91,10 +93,12 @@
 
 ### Tests Written
 
-| Model | Module | Unit Tests | DB Tests | HTTP Tests | Total |
-|-------|--------|-----------|----------|------------|-------|
+| Model / Area | Module | Unit Tests | DB Tests | HTTP Tests | Total |
+|-------------|--------|-----------|----------|------------|-------|
 | `Student` | StudentProfile | 4 ✅ | — | — | 4 |
 | `Setting` (Prime) | Prime | 16 ✅ | 14 ✅ | ❌ no routes | 30 |
+| `TimetableSolution::isPlaced()` | SmartTimetable | 4 ✅ | — | — | 4 |
+| Parallel group backtrack + rescue | SmartTimetable | 5 ✅ | — | — | 5 |
 
 ### Tests Pending
 - All other models (to be added as we go)
