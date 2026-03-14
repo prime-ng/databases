@@ -1,0 +1,428 @@
+# Screen Design Specification: Substitution Workflow
+## Document Version: 1.0
+**Last Updated:** December 14, 2025
+
+---
+
+## 1. OVERVIEW
+
+### 1.1 Purpose
+This document provides detailed UI/UX specifications for the **Substitution Workflow** screen, enabling administrators and teachers to manage teacher absences, find suitable substitutes, approve substitution requests, and track substitution history.
+
+### 1.2 User Roles & Permissions
+| Role         | Create | View | Update | Delete | Print | Export | Import |
+|--------------|--------|------|--------|--------|-------|--------|--------|
+| Super Admin  |   ✓    |   ✓  |   ✓    |   ✓    |   ✓   |   ✓    |   ✓    |
+| PG Support   |   ✓    |   ✓  |   ✓    |   ✓    |   ✓   |   ✓    |   ✓    |
+| School Admin |   ✓    |   ✓  |   ✓    |   ✓    |   ✓   |   ✓    |   ✗    |
+| Principal    |   ✓    |   ✓  |   ✓    |   ✓    |   ✓   |   ✓    |   ✗    |
+| Teacher      |   ✓    |   ✓  |   ✓    |   ✗    |   ✓   |   ✓    |   ✗    |
+| Student      |   ✗    |   ✗  |   ✗    |   ✗    |   ✗   |   ✗    |   ✗    |
+| Parents      |   ✗    |   ✗  |   ✗    |   ✗    |   ✗   |   ✗    |   ✗    |
+
+### 1.3 Data Context
+
+**Core Tables:**
+- `tim_substitution_request` - Substitution requests
+- `tim_substitution_assignment` - Approved substitutions
+- `tim_teacher_availability` - Teacher availability
+- `tim_substitution_log` - Audit trail
+
+**Key Relationships:**
+- Requests → Assignments (one-to-one)
+- Teachers → Requests (many-to-one)
+- Availability → Requests (validation)
+
+---
+
+## 2. SCREEN LAYOUTS
+
+### 2.1 Substitution Dashboard
+**Route:** `/timetable/substitutions` or `/timetable/substitute-management`
+
+#### 2.1.1 Page Layout
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ TIMETABLE MANAGEMENT > SUBSTITUTION WORKFLOW                                                                                                 │
+├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│   [New Request] [Bulk Assign] [Settings]                                                     Current Term : Regular Term 1 2025              │
+├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ ┌─ TODAY'S SUBSTITUTIONS ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐ │
+│ │ ☐ │ Absent Teacher │ Time Slot     │ Class│ Subject      │ St.Format │ Substitute  │ Subs. Previous Assignment | Status       │ Action   │ │
+│ │──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────│ │
+│ │ ☐ │ Mr. Ramkishan Joshi │ 09:45 - 10:25 │ 9A   │ Math         │ Theory    │ Ms. Davis   │ Free Period               │ ✓ Approved   │ 👁️ ✏️ 📋 │ │
+│ │ ☐ │ Ms. Johnson    │ 11:20 - 11:45 │ 10B  │ Science      │ Theory    │ Mr. Wilson  │ Other Department          │ ◐ Pending    │ 👁️ ✏️ 📋 │ │
+│ │ ☐ │ Ms. Davis      │ 14:35 - 15:05 │ 11C  │ English      │ Theory    │ Mr. Davis   │ Free Period               │ 🔍 Searching │ 👁️ ✏️ 📋 │ │
+│ └──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘ │
+├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ ┌─ PENDING REQUESTS ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐ │
+│ │ ☐ │ Request ID     │ Absent Teacher       │ Date    │ Period │ Reason    │ Status   │ Action │
+│ │──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────│ │
+│ │ ☐ │ SUB-2025-001.  │ Mr. Smith            │ Dec 14 │ P1-P3 │ Sick Leave │ ◐ Pending │ 👁️ ✏️ 📋 │
+│ │ ☐ │ SUB-2025-002   │ Ms. Johnson  │ Dec 15 │ P2   │ Meeting   │ ✓ Approved│ 👁️ ✏️ 📋 │
+│ │ ☐ │ SUB-2025-003   │ Mr. Davis    │ Dec 16 │ All  │ Training  │ ⚠ Rejected│ 👁️ ✏️ 📋 │
+│ └──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘ │
+├─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ ┌─ SUBSTITUTION METRICS ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐ │
+│ │ Total Requests Today: 8                   Approved: 5                           │ │
+│ │ Pending: 2                                Rejected: 1                          │ │
+│ │ Coverage Rate: 92%                        Average Response Time: 45 min         │ │
+│ └──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘ │
+└──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+#### 2.1.2 Components & Interactions
+
+**Today's Substitutions:**
+- **Real-time Status** – Approved, Pending, Finding
+- **Quick Actions** – View details, edit assignment, print
+
+**Pending Requests:**
+- **Request Tracking** – ID, teacher, timing, reason
+- **Status Workflow** – Pending → Approved/Rejected
+
+---
+
+### 2.2 Create Substitution Request
+**Route:** `/timetable/substitutions/new` or `/timetable/substitutions/request`
+
+#### 2.2.1 Layout (Request Form)
+
+```
+┌────────────────────────────────────────────────────────────────────────────────────┐
+│ CREATE SUBSTITUTION REQUEST                                                        │
+├────────────────────────────────────────────────────────────────────────────────────┤
+│ [← Back to Dashboard] [Save Draft] [Submit Request]                                │
+├────────────────────────────────────────────────────────────────────────────────────┤
+│ ┌─ REQUEST DETAILS ───────────────────────────────────────────────────────────────┐ │
+│ │ Teacher: [Mr. Smith ▼]                    Date: [Dec 14, 2025 ▼]               │ │
+│ │                                                                                  │ │
+│ │ Reason: [Sick Leave ▼]                    Other: [_________________________]    │ │
+│ │                                                                                  │ │
+│ │ Duration: □ Full Day    □ Partial Day                                         │ │
+│ │                                                                                  │ │
+│ │ If Partial:                                                                     │ │
+│ │ Periods: [P1 ▼] to [P3 ▼]    Start Time: [09:45]    End Time: [11:20]          │ │
+│ └─────────────────────────────────────────────────────────────────────────────────┘ │
+├────────────────────────────────────────────────────────────────────────────────────┤
+│ ┌─ AFFECTED CLASSES ──────────────────────────────────────────────────────────────┐ │
+│ │ The following classes will need substitutes:                                   │ │
+│ │                                                                                │ │
+│ │ ☐ 9A Mathematics (Period 1) - Room 101                                        │ │
+│ │ ☐ 10B Mathematics (Period 2) - Room 102                                       │ │
+│ │ ☐ 11C Mathematics (Period 3) - Lab 1                                          │ │
+│ │                                                                                │ │
+│ │ Total affected periods: 3                                                      │ │
+│ └─────────────────────────────────────────────────────────────────────────────────┘ │
+├────────────────────────────────────────────────────────────────────────────────────┤
+│ ┌─ SUBSTITUTION PREFERENCES ──────────────────────────────────────────────────────┐ │
+│ │ Preferred Substitute: [Any ▼]                                                  │ │
+│ │ Subject Match Required: □ Yes □ No                                            │ │
+│ │ Qualification Level: [Any ▼]                                                   │ │
+│ │ Notes: [___________________________________________________________________]   │ │
+│ └─────────────────────────────────────────────────────────────────────────────────┘ │
+├────────────────────────────────────────────────────────────────────────────────────┤
+│ [Submit Request] [Save Draft] [Cancel]                                            │
+└────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+#### 2.2.2 Components & Interactions
+
+**Request Details:**
+- **Teacher Selection** – Dropdown with availability check
+- **Date/Time Selection** – Calendar picker with conflict validation
+- **Reason Categories** – Sick Leave, Meeting, Training, Personal, Other
+
+**Affected Classes:**
+- **Auto-Detection** – System identifies impacted periods
+- **Manual Override** – Allow teacher to modify affected periods
+
+---
+
+### 2.3 Substitute Matching & Assignment
+**Route:** `/timetable/substitutions/assign/{requestId}` or `/timetable/substitutions/match`
+
+#### 2.3.1 Layout (Matching Interface)
+
+```
+┌────────────────────────────────────────────────────────────────────────────────────┐
+│ SUBSTITUTION ASSIGNMENT > SUB-2025-001 (Mr. Smith - Sick Leave)                    │
+├────────────────────────────────────────────────────────────────────────────────────┤
+│ [← Back to Request] [Auto Assign] [Manual Assign] [Reject Request]                │
+├────────────────────────────────────────────────────────────────────────────────────┤
+│ ┌─ REQUEST SUMMARY ───────────────────────────────────────────────────────────────┐ │
+│ │ Teacher: Mr. Smith                         Date: Dec 14, 2025                  │ │
+│ │ Reason: Sick Leave                         Periods: P1-P3 (09:45-11:20)        │ │
+│ │ Subject: Mathematics                       Classes: 9A, 10B, 11C               │ │
+│ └─────────────────────────────────────────────────────────────────────────────────┘ │
+├────────────────────────────────────────────────────────────────────────────────────┤
+│ ┌─ AVAILABLE SUBSTITUTES ─────────────────────────────────────────────────────────┐ │
+│ │ ☐ │ Substitute │ Match % │ Availability │ Qualifications │ Distance │ Action │
+│ │─────────────────────────────────────────────────────────────────────────────────│ │
+│ │ ☐ │ Ms. Davis   │ 95%     │ ✓ Available  │ Math Certified │ On-site  │ [Assign]│
+│ │ ☐ │ Mr. Wilson  │ 78%     │ ✓ Available  │ Science Focus  │ 2km      │ [Assign]│
+│ │ ☐ │ Ms. Brown   │ 82%     │ ⚠ Conflicts │ English/Math   │ On-site  │ [Assign]│
+│ │ ☐ │ Mr. Johnson │ 65%     │ ✓ Available  │ General        │ 5km      │ [Assign]│
+│ └─────────────────────────────────────────────────────────────────────────────────┘ │
+├────────────────────────────────────────────────────────────────────────────────────┤
+│ ┌─ MATCHING CRITERIA ─────────────────────────────────────────────────────────────┐ │
+│ │ Subject Match: Required                   Qualification: Preferred               │ │
+│ │ Availability: Required                    Distance: Preferred <5km              │ │
+│ │ Experience Level: Any                     Previous Performance: Good            │ │
+│ └─────────────────────────────────────────────────────────────────────────────────┘ │
+├────────────────────────────────────────────────────────────────────────────────────┤
+│ ┌─ ALTERNATIVE OPTIONS ───────────────────────────────────────────────────────────┐ │
+│ │ □ Combine classes (if same subject)                                         │ │
+│ │ □ Use free period from another teacher                                     │ │
+│ │ □ Cancel affected periods                                                 │ │
+│ │ □ Assign homework/self-study                                              │ │
+│ └─────────────────────────────────────────────────────────────────────────────────┘ │
+├────────────────────────────────────────────────────────────────────────────────────┤
+│ [Assign Selected] [Bulk Assign All] [Modify Criteria] [Reject]                   │
+└────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+#### 2.3.2 Components & Interactions
+
+**Substitute Matching:**
+- **Match Percentage** – Algorithm-based compatibility score
+- **Availability Status** – Real-time availability check
+- **Qualification Match** – Subject certification alignment
+
+**Alternative Options:**
+- **Class Combination** – Merge compatible classes
+- **Period Cancellation** – Administrative override
+- **Self-Study** – Assign independent work
+
+---
+
+### 2.4 Substitution Approval Workflow
+**Route:** `/timetable/substitutions/approve` or `/timetable/substitutions/workflow`
+
+#### 2.4.1 Layout (Approval Queue)
+
+```
+┌────────────────────────────────────────────────────────────────────────────────────┐
+│ SUBSTITUTION APPROVAL WORKFLOW                                                     │
+├────────────────────────────────────────────────────────────────────────────────────┤
+│ [Refresh] [Bulk Approve] [Settings]    Pending Approvals: 12                      │
+├────────────────────────────────────────────────────────────────────────────────────┤
+│ ┌─ APPROVAL QUEUE ────────────────────────────────────────────────────────────────┐ │
+│ │ ☐ │ Priority │ Request ID │ Teacher │ Date/Time │ Substitute │ Status │ Action │
+│ │─────────────────────────────────────────────────────────────────────────────────│ │
+│ │ ☐ │ 🔴 High   │ SUB-2025-001│ Mr. Smith│ Today P1-P3│ Ms. Davis │ ◐ Pending│ [👁️] │
+│ │ ☐ │ 🟡 Medium │ SUB-2025-002│ Ms. Johnson│Today P2│ Auto-assigned│ ◐ Pending│ [👁️] │
+│ │ ☐ │ 🟢 Low    │ SUB-2025-003│ Mr. Davis│ Tomorrow │ Finding... │ 🔍 Searching│[👁️]│
+│ └─────────────────────────────────────────────────────────────────────────────────┘ │
+├────────────────────────────────────────────────────────────────────────────────────┤
+│ ┌─ APPROVAL DETAILS ──────────────────────────────────────────────────────────────┐ │
+│ │ Selected: SUB-2025-001 (Mr. Smith)                                             │ │
+│ │                                                                                │ │
+│ │ Request Details:                                                               │ │
+│ │ • Teacher: Mr. Smith (Mathematics)                                             │ │
+│ │ • Date: December 14, 2025                                                      │ │
+│ │ • Periods: 1-3 (09:45-11:20)                                                   │ │
+│ │ • Reason: Sick Leave                                                           │ │
+│ │ • Affected Classes: 9A, 10B, 11C Mathematics                                  │ │
+│ │                                                                                │ │
+│ │ Proposed Substitute:                                                           │ │
+│ │ • Ms. Davis (Mathematics Certified)                                            │ │
+│ │ • Match Score: 95%                                                             │ │
+│ │ • Availability: Confirmed                                                      │ │
+│ │ • Previous Substitutions: 12 (Success Rate: 100%)                              │ │
+│ │                                                                                │ │
+│ │ Impact Assessment:                                                             │ │
+│ │ • No scheduling conflicts                                                      │ │
+│ │ • All qualification requirements met                                           │ │
+│ │ • Substitute workload within limits                                            │ │
+│ └─────────────────────────────────────────────────────────────────────────────────┘ │
+├────────────────────────────────────────────────────────────────────────────────────┤
+│ [Approve] [Reject] [Modify Assignment] [Request More Info]                       │
+└────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+#### 2.4.2 Components & Interactions
+
+**Approval Queue:**
+- **Priority Levels** – High (emergency), Medium, Low
+- **Status Tracking** – Pending, Approved, Rejected, In Review
+
+**Approval Actions:**
+- **Quick Approve** – One-click approval for standard cases
+- **Reject with Reason** – Provide rejection rationale
+- **Modify Assignment** – Change substitute or timing
+
+---
+
+### 2.5 Substitution History & Analytics
+**Route:** `/timetable/substitutions/history` or `/timetable/substitutions/analytics`
+
+#### 2.5.1 Layout (History View)
+
+```
+┌────────────────────────────────────────────────────────────────────────────────────┐
+│ SUBSTITUTION HISTORY & ANALYTICS                                                   │
+├────────────────────────────────────────────────────────────────────────────────────┤
+│ [Export Report] [Print Summary] [Settings]    Period: [Last 30 Days ▼]            │
+├────────────────────────────────────────────────────────────────────────────────────┤
+│ ┌─ SUMMARY METRICS ───────────────────────────────────────────────────────────────┐ │
+│ │ Total Substitutions: 156                  Average Response Time: 42 minutes     │ │
+│ │ Coverage Rate: 94%                        Teacher Satisfaction: 4.2/5           │ │
+│ │ Most Requested: Mr. Smith (8)              Most Substituted: Ms. Davis (12)     │ │
+│ └─────────────────────────────────────────────────────────────────────────────────┘ │
+├────────────────────────────────────────────────────────────────────────────────────┤
+│ ┌─ RECENT SUBSTITUTIONS ──────────────────────────────────────────────────────────┐ │
+│ │ ☐ │ Date    │ Teacher │ Substitute │ Subject │ Status │ Rating │ Notes   │
+│ │─────────────────────────────────────────────────────────────────────────────────│ │
+│ │ ☐ │ Dec 14 │ Mr. Smith│ Ms. Davis │ Math    │ ✓ Completed│ ⭐⭐⭐⭐⭐ │ On time │
+│ │ ☐ │ Dec 13 │ Ms. Johnson│Mr. Wilson│ Science │ ✓ Completed│ ⭐⭐⭐⭐  │ Good   │
+│ │ ☐ │ Dec 12 │ Mr. Davis│ Ms. Brown │ English │ ✓ Completed│ ⭐⭐⭐⭐⭐ │ Excellent│
+│ └─────────────────────────────────────────────────────────────────────────────────┘ │
+├────────────────────────────────────────────────────────────────────────────────────┤
+│ ┌─ COMMON REASONS ────────────────────────────────────────────────────────────────┐ │
+│ │ Sick Leave: 45%                           Training: 20%                         │ │
+│ │ Meetings: 15%                             Personal: 10%                         │ │
+│ │ Other: 10%                                                                       │ │
+│ └─────────────────────────────────────────────────────────────────────────────────┘ │
+└────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 3. DATA MODEL & API CONTRACTS
+
+### 3.1 Create Substitution Request
+```
+POST /api/v1/timetable/substitutions/requests
+Content-Type: application/json
+
+{
+  "teacher_id": 12,
+  "date": "2025-12-14",
+  "periods": ["P1", "P2", "P3"],
+  "reason": "sick_leave",
+  "notes": "Fever and cough"
+}
+```
+
+### 3.2 Get Available Substitutes
+```
+GET /api/v1/timetable/substitutions/available?date=2025-12-14&periods=P1,P2,P3&subject=mathematics
+```
+
+### 3.3 Assign Substitute
+```
+POST /api/v1/timetable/substitutions/assign
+Content-Type: application/json
+
+{
+  "request_id": "SUB-2025-001",
+  "substitute_id": 15,
+  "approved_by": 5,
+  "notes": "Ms. Davis is qualified for Mathematics"
+}
+```
+
+---
+
+## 4. USER WORKFLOWS
+
+### 4.1 Complete Substitution Workflow
+```
+1. Teacher submits absence request
+2. System identifies affected periods
+3. System finds available substitutes
+4. Administrator reviews and assigns substitute
+5. Substitute receives notification
+6. Classes proceed with substitute
+7. Feedback collected after substitution
+8. History recorded for analytics
+```
+
+---
+
+## 5. VISUAL DESIGN GUIDELINES
+
+### 5.1 Colors & Typography
+| Element | Color | Font | Size | Weight |
+|---------|-------|------|------|--------|
+| Request Status | Dynamic | Inter/Roboto | 14px | Bold (700) |
+| Teacher Names | #1F2937 | Inter/Roboto | 13px | Medium (500) |
+| Match Scores | #10B981 | Inter/Roboto | 12px | Medium (500) |
+| Priority Indicators | Dynamic | Inter/Roboto | 11px | Bold (700) |
+
+### 5.2 Status Colors
+| Status | Background | Text | Icon |
+|--------|------------|------|------|
+| Approved | #DCFCE7 | #166534 | ✓ |
+| Pending | #FEF3C7 | #92400E | ◐ |
+| Rejected | #FEE2E2 | #DC2626 | ✗ |
+| Finding | #DBEAFE | #1E40AF | 🔍 |
+
+---
+
+## 6. ACCESSIBILITY & USABILITY
+
+### 6.1 Keyboard Navigation
+- **Tab:** Navigate between requests
+- **Enter:** View request details
+- **Space:** Select/deselect items
+
+### 6.2 Screen Reader Support
+```html
+<table role="table" aria-label="Substitution requests queue">
+  <caption>Current substitution requests requiring approval</caption>
+  <!-- table content -->
+</table>
+```
+
+---
+
+## 7. EDGE CASES & ERROR SCENARIOS
+
+| Scenario | Behavior |
+|----------|----------|
+| No Substitutes Available | Show alternative options modal |
+| Emergency Request | Priority escalation and notifications |
+| Last Minute Cancellation | Immediate reassignment workflow |
+
+---
+
+## 8. PERFORMANCE CONSIDERATIONS
+
+### 8.1 Optimization
+- **Real-time Matching:** Cached availability data
+- **Background Processing:** Asynchronous substitute finding
+- **Push Notifications:** WebSocket updates for urgent requests
+
+---
+
+## 9. TESTING CHECKLIST
+
+### 9.1 Functional Testing
+- [ ] Create substitution requests
+- [ ] Find available substitutes
+- [ ] Approve/reject assignments
+- [ ] Track substitution history
+
+### 9.2 UI/UX Testing
+- [ ] Real-time status updates
+- [ ] Notification system
+- [ ] Mobile responsiveness
+
+---
+
+## 10. FUTURE ENHANCEMENTS
+
+1. **AI Matching:** Machine learning for better substitute recommendations
+2. **Mobile App:** Dedicated app for substitute teachers
+3. **Automated Scheduling:** Pre-assign substitutes for known absences
+4. **Performance Tracking:** Detailed analytics on substitute effectiveness
+
+---
+
+**Document Created By:** ERP Architect GPT  
+**Last Reviewed:** December 14, 2025  
+**Next Review Date:** March 14, 2026  
+**Version Control:** Initial creation

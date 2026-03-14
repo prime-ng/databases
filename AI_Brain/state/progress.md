@@ -26,18 +26,14 @@
 - [x] **QuestionBank** — Questions, tags, versions, statistics, AI generation
 
 ### Timetable
-- [x] **SmartTimetable** — All 10 stages + Parallel Periods feature complete:
-  - Stage 1: Schema & Foundation (28 table renames, 47 models)
-  - Stage 2: Seeders (9 config seeders)
-  - Stage 3: Validation Framework
-  - Stage 4: Activity & Generation Updates (v7.6 column renames)
-  - Stage 5: Advanced Generation (TabuSearch, SimulatedAnnealing, ConflictDetection)
-  - Stage 6: Post-Generation Analytics (AnalyticsService, CSV exports)
-  - Stage 7: Manual Refinement (RefinementService, swap/move/lock)
-  - Stage 8: Substitution Management (SubstitutionService, pattern learning)
-  - Stage 9: API & Integration (REST API, Standard Timetable views)
-  - Stage 10: Testing & Cleanup (Form Requests, Pest tests)
-  - **Parallel Periods** (2026-03-14): Schema, Models, UI, Solver (anchor/sibling backtrack + rescue pass), Constraint Engine, Pre/Post-Gen validation, soft constraint wiring, 9 unit tests — 100% complete
+- [ ] **SmartTimetable** (~60%, deep-audited 2026-03-14, re-verified 2026-03-15) — 28 controllers, 86 models, 22 services, 12 FormRequests, 9 unit tests
+  - **Done:** Schema & Foundation, Seeders, Validation Framework, Activity & Generation, Constraint CRUD (6-tab management), Parallel Periods (anchor/sibling solver + 9 tests), soft constraint wiring (D18)
+  - **Critical open:** 6 runtime crash bugs (BUG-B1 through BUG-NEW-06), 17/28 controllers zero auth (SEC-009), no EnsureTenantHasModule, 3 unprotected truncate()
+  - **Missing features:** Room allocation (room_id always NULL), Analytics (15%), Refinement (5%), Substitution (0%), API/Async (0%)
+  - **Constraint gap:** ~30/155 rules enforced; 125+ unimplemented across Categories B-H. Architecture foundation (Registry, Evaluator, Context) not yet built.
+  - **Code quality:** SmartTimetableController 3,160 lines (god controller), 40 models lack SoftDeletes, 16 controllers use inline validation
+  - **Full development plan:** 19 phases, ~69 days → see `6-Module-In-Progress/8-Smart_Timetable/Claude_Context/2026Mar14_DevelopmentPlan_v2.md`
+  - **Prompt files:** 21 execution prompts (P01–P21) in `6-Module-In-Progress/8-Smart_Timetable/Claude_Prompt/`
 
 ---
 

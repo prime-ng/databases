@@ -82,7 +82,7 @@ Modules/ModuleName/
 | Module | Controllers | Models | Services | Requests | Tenant route refs | Status | Description |
 |--------|-------------|--------|----------|----------|-------------------|--------|-------------|
 | **SchoolSetup** | 40 | 42 | 0 | 27 | 35 | 100% | Core infrastructure: classes, sections, subjects, teachers, rooms, buildings |
-| **SmartTimetable** | 28 | 86 | 22 | 12 | 29 | 100% | AI timetable: FET solver, constraints, parallel periods, generation, analytics |
+| **SmartTimetable** | 28 | 86 | 22 | 12 | 29 | **~60%** | AI timetable: FET solver, constraints, parallel periods; 17/28 controllers zero auth; 125+ constraint rules unimplemented; room allocation missing; analytics/refinement/substitution/API incomplete |
 | **Transport** | 31 | 36 | 0 | 18 | 31 | 100% | Vehicles, routes, trips, driver attendance, student boarding, fees |
 | **StudentProfile** | 5 | 14 | 0 | 0 | 4 | 100% | Student data, health profiles, documents, attendance, guardians |
 | **Syllabus** | 15 | 22 | 0 | 14 | 14 | 100% | Lessons, topics, competencies, Bloom taxonomy, cognitive skills |
@@ -135,6 +135,7 @@ Modules/ModuleName/
 
 | Module | What's Complete | What's Missing / Broken |
 |--------|----------------|------------------------|
+| SmartTimetable (~60%) | 28 controllers, 86 models, 22 services, 12 FormRequests; FET solver with backtracking + greedy + rescue; Parallel Periods (anchor/sibling + 9 tests); Constraint CRUD (6-tab management, ConstraintTypeSeeder, 13 PHP constraint classes); soft constraint wiring in scoreSlotForActivity(); pre/post-gen validation | **6 runtime crash bugs** (set_time_limit×60, saveGeneratedTimetable deletes all, Shift model missing, Period model missing, FETConstraintBridge bad refs, duplicate routes); **17/28 controllers zero auth** (SEC-009); **3 unprotected truncate()** with FK_CHECKS=0; **No EnsureTenantHasModule**; SmartTimetablePolicy empty; **125+ constraint rules unimplemented** (B1.8-B1.22, C1.6-C1.18, E2-E4, H1-H7/H9-H22); Room allocation always NULL; Analytics 15%; Refinement 5%; Substitution 0%; API 0%; SmartTimetableController 3160 lines god controller; 40 models lack SoftDeletes; 16 controllers inline validation; session stores 10-50MB Eloquent models; per-row updateOrCreate in 2 controllers |
 | LmsQuiz (~72%) | CRUD for quizzes, questions, allocations, assessment types, difficulty distribution; Form Requests exist | Gate commented out in index(); student attempt tracking absent; auto-grading absent; no EnsureTenantHasModule |
 | LmsQuests (~68%) | CRUD for quests, questions, allocations, scopes; Form Requests exist | Gate commented out in index(); student progress tracking absent; completion awards absent; no EnsureTenantHasModule |
 | Recommendation (~65%) | 8 of 10 controllers fully working CRUD with activity logging | RecommendationController has 3 empty stubs + 3 non-functional read methods; wrong Gate permission on 8/9 StudentRecommendation write routes (`create` used for all); broken `exists:users` validation (should be `sys_users`); inconsistent permission namespace (`recommendation.*` vs `tenant.*`); no Form Requests (0 in module); no EnsureTenantHasModule; `complexity_level` table name mismatch between store/update |
