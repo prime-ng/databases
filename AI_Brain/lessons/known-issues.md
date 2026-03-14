@@ -263,10 +263,10 @@
 
 ## Hpc Specific (deep-audited 2026-03-14, updated 2026-03-14)
 
-### SEC-HPC-001: HpcController — Zero Authorization on 12/13 Methods (CRITICAL)
-- **Module/Area:** `Modules/Hpc/app/Http/Controllers/HpcController.php` (2290 lines)
-- **Symptom:** Any authenticated user can view any student's HPC form, save evaluations for any student, generate/download any student's PDF report. Only `index()` has `Gate::any()`.
-- **Affected methods:** `hpcTemplates`, `create`, `store`, `show`, `edit`, `update`, `destroy`, `hpc_form`, `formStore`, `generateReportPdf`, `viewPdfPage`, `generateSingleStudentPdf`
+### SEC-HPC-001: HpcController — Zero Authorization on 13/14 Methods (CRITICAL) [UPDATED 2026-03-15]
+- **Module/Area:** `Modules/Hpc/app/Http/Controllers/HpcController.php` (~2300 lines)
+- **Symptom:** Any authenticated user can view any student's HPC form, save evaluations for any student, generate/download any student's PDF report, download ZIP archives. Only `index()` has `Gate::any()`.
+- **Affected methods:** `hpcTemplates`, `create`, `store`, `show`, `edit`, `update`, `destroy`, `hpc_form`, `formStore`, `generateReportPdf`, `viewPdfPage`, `generateSingleStudentPdf`, `downloadZip` *(new)*
 - **Fix:** Add `Gate::authorize('tenant.hpc.view|create|update|delete')` to every public method
 
 ### SEC-HPC-002: 10 Controllers Missing Gate on store/update — FormRequest authorize() Returns true
@@ -347,6 +347,16 @@
 ### BUG-HPC-012: LearningOutcomesController Imports Prime\Dropdown (Cross-Layer)
 - **Module/Area:** `Modules/Hpc/app/Http/Controllers/LearningOutcomesController.php`
 - **Symptom:** `Modules\Prime\Models\Dropdown` imported — Central/Prime model used in tenant context
+
+### BUG-HPC-013: ZIP Files Never Cleaned Up — Storage Bloat (added 2026-03-15)
+- **Module/Area:** `HpcController::generateReportPdf()` + `downloadZip()`
+- **Symptom:** Each bulk PDF generation creates a ZIP in `storage/app/public/hpc-reports/zip/`. Files are never deleted (`deleteFileAfterSend(false)`). Over time, storage fills up.
+- **Fix:** Either use `deleteFileAfterSend(true)` on `downloadZip()`, or add a scheduled job to prune ZIPs older than 24h. Also consider cleaning individual PDFs after ZIP creation.
+
+### BUG-HPC-014: Individual PDF URLs Still Use tenant_asset() (added 2026-03-15)
+- **Module/Area:** `HpcController::generateReportPdf()` line 1528
+- **Symptom:** `$pdfUrl = tenant_asset("storage/hpc-reports/pdf/{$filename}")` — `tenant_asset()` returns HTTP URLs. While the primary flow now uses ZIP download, the `pdf_urls` array in the JSON response still contains tenant_asset() URLs. These may not resolve correctly in all deployment configs.
+- **Fix:** Replace with a route-based download endpoint similar to `downloadZip()`, or remove individual URLs since ZIP is now the primary delivery method.
 - **Fix:** Use tenant-side dropdown data or query via `tenancy()->central(fn() => ...)`
 
 ## Recommendation Specific (deep-audited 2026-03-14)

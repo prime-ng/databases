@@ -49,7 +49,7 @@
 - [ ] **LmsExam** (~65%) — `dd($e)` in prod store(); 2 controllers (Blueprint, Scope) have all Gate calls commented out; no EnsureTenantHasModule; answer submission & grading absent
 - [ ] **StudentFee** (~60%) — Missing `FeeConcessionController` (imported but doesn't exist); exposed seeder route with no auth; permission prefix mismatch (`student-fee.*` vs `studentfee.*`) on 3 controllers; no Form Requests; N+1 in bulk invoice/assignment generation; no EnsureTenantHasModule
 - [ ] **LmsHomework** (~60%) — Fatal crash: `HoemworkData()` missing `$request` param; `review()` has no auth or validation; no EnsureTenantHasModule
-- [ ] **Hpc** (~60%) — Deep-audited 2026-03-14. 15 controllers, 26 models, 1 service (HpcReportService 788 lines), 14 FormRequests, 4 PDF templates complete. **Critical blockers:** SEC-HPC-001 (HpcController zero auth on 12/13 methods); BUG-HPC-001 (4 template controller imports missing → 500s); BUG-HPC-006 (uppercase class refs break on Linux); SEC-HPC-003 (no EnsureTenantHasModule). See known-issues.md for full list of 18 issues.
+- [ ] **Hpc** (~68%) — Re-audited 2026-03-15. 15 controllers, 26 models, 1 service, 14 FormRequests. All 4 PDF templates DomPDF-fixed (8+ rounds of fixes: display:flex→table, overflow:hidden removed, base64 images, page-break fixes, table widths, emoji circles). New: ZIP bundle download feature (generateReportPdf → ZipArchive + downloadZip route). **Critical blockers still open:** SEC-HPC-001 (13/14 methods zero auth, including new downloadZip); BUG-HPC-001 (4 template controller imports missing → 500s); SEC-HPC-003 (no EnsureTenantHasModule). 2 new minor issues: BUG-HPC-013 (ZIP cleanup), BUG-HPC-014 (tenant_asset on individual PDFs). See known-issues.md for full list of 20 issues.
 - [ ] **Library** (~45%) — NOT wired into tenant.php at all; 7 controllers with zero authorization; 5 stub methods on only registered route; N+1 in ReservationController; Prime\Setting cross-layer import; permission namespace mismatch in LibTransactionController
 
 ---
@@ -108,13 +108,20 @@
 ## Current Work
 - [x] HPC Module deep audit complete (2026-03-14) — 18 issues logged (4 critical security, 12 bugs, 2 perf)
 - [x] HPC fourth_pdf.blade.php DomPDF compatibility fix (2026-03-14) — all display:flex/grid/box-shadow/emoji/overflow-x:auto/transform:rotate converted to table-based layouts
-- [x] HPC first_pdf.blade.php — 6 issues fixed (2026-03-14):
+- [x] HPC first_pdf.blade.php — Round 1: 6 issues fixed (2026-03-14):
   - Fix 1: Icon table overflow — assess_content width:100%, inner icon tables width=100%, cells width=33%, icon sizes 28px→22px (self/peer/resource)
   - Fix 2: Teacher Feedback page-break split — single section_container replaced with 3 blocks (Block A: header+circle+notes, Block B: self+peer keep-together, Block C: parents+comments keep-together)
   - Fix 3: Circle label % positions → px (sky left:120px, mountain left:130px, stream left:110px, levels top:96px); letterPos feedback left:78px→left:104px
   - Fix 4: Page 15 summary circles 230px→190px (summary_circle_container); page-break-before:always wrapper added
   - Fix 5: Blank trailing page — removed window.print() script block (DomPDF-incompatible)
   - Fix 6: ZIP download URL — replaced tenant_asset() with route('hpc.download.zip'); added downloadZip() controller method; added route in web.php
+- [x] HPC first_pdf.blade.php — Round 2: 8 issues fixed (2026-03-15, v3_05 prompt):
+  - Fix 1+2: Self/Peer Assessment — dynamic icon column width via $iconColPct; table-layout:fixed; 'needed' icons 22px→18px
+  - Fix 3: Block B+C page-break-inside:avoid removed from tall wrappers; circle container 230px→180px; border-only circles
+  - Fix 5: Circle badge positions recalculated for 180px (feedback left:77px, summary left:82px)
+  - Fix 6: $pdfImg moved to global scope; $favIconMap + $favBullet for My Favorites icons
+  - Fix 7: Separate summary_circle_* CSS keys for 190px container (distinct from 180px feedback circles)
+  - Fix 8: Credits section — removed page-break-inside:avoid via str_replace
 - [x] HPC fourth_pdf.blade.php — 10 issues fixed (2026-03-14):
   - Fix 1 (CRASH): </div> → </td> at line 525 in goals section — "Parent table not found" error eliminated
   - Fix 2 (STRUCTURAL): Added </div>{{-- close page-container --}} before @endforeach at line 5407 — every loop iteration's page-container div now properly closed

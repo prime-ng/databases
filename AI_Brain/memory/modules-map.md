@@ -100,7 +100,7 @@ Modules/ModuleName/
 | **LmsExam** | 11 | 11 | 0 | 11 | 11 | **~65%** | dd($e) in prod; 2 controllers Gate disabled; no EnsureTenantHasModule |
 | **StudentFee** | 15 | 23 | 0 | 0 | 16 | **~60%** | Missing controller; seeder route exposed; perm prefix mismatch; no FormRequests |
 | **LmsHomework** | 5 | 5 | 0 | 5 | 5 | **~60%** | Fatal crash missing $request param; review() no auth; no EnsureTenantHasModule |
-| **Hpc** | 15 | 26 | 1 | 14 | ~100+ | **~60%** | 4 template controller imports missing (500s); zero auth on HpcController; 7/14 FormRequests `return true`; 3 routes to non-existent methods; no EnsureTenantHasModule; cross-layer AcademicSession; case-sensitive class refs break on Linux |
+| **Hpc** | 15 | 26 | 1 | 14 | ~100+ | **~68%** | All 4 PDF templates DomPDF-fixed + ZIP download feature. **Still open:** 4 template controller imports missing (500s); zero auth on 13/14 HpcController methods; 7/14 FormRequests `return true`; 3 routes to non-existent methods; no EnsureTenantHasModule; cross-layer AcademicSession; case-sensitive class refs; ZIP cleanup missing |
 | **Library** | 26 | 35 | 9 | 19 | 0† | **~45%** | NOT in tenant.php; 7 controllers zero auth; 5 stubs; cross-layer import (†see below) |
 | **StudentPortal** | 3 | 0 | 0 | 0 | 3 | ~25% | Student-facing interface (dashboard, complaints, notifications only) |
 

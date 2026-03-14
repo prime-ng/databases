@@ -55,7 +55,7 @@
 - **Components location:** `resources/views/components/hpc-form/` (6 components: activity-tab, student-self-reflection, peer-feedback, tab-eight-teacher-feedback, performance-card, self-assessment)
 - **Emoji:** `asset('emoji/happy.png')`, `asset('emoji/no.png')`, `asset('emoji/not_sure.png')`, `asset('emoji/sometimes.png')` — local public folder files
 - **Layout rule:** Use `<table>` for all multi-column layouts (no flexbox/grid in DomPDF)
-- **Files created:** first_pdf (Template 1, Grades 3-5), second_pdf (Template 2, Grades 3-5 variant), third_pdf (Template 3, Grades 6-8, 46 pages — DomPDF-fixed 2026-03-14), fourth_pdf (Template 4, Grades 9-12, 44 pages — DomPDF-fixed 2026-03-14)
+- **Files created:** first_pdf (Template 1, Grades 3-5 — DomPDF-fixed R1+R2 2026-03-14/15), second_pdf (Template 2, Grades 3-5 variant — DomPDF-fixed R1+R2 2026-03-14/15), third_pdf (Template 3, Grades 6-8, 46 pages — DomPDF-fixed 2026-03-14), fourth_pdf (Template 4, Grades 9-12, 44 pages — DomPDF-fixed 2026-03-14)
 - **HPC shared tabbed index pattern:** All 15 HPC controllers render the same `hpc::hpc.index` view with different active tabs. Each controller's `index()` loads data for ALL tabs (~15 queries per request). This is an intentional design choice for the tab-based UI but causes significant performance overhead. Should be refactored to AJAX-loaded tabs.
 - **HPC report save pattern:** `HpcReportService::saveReport()` uses a delete-then-reinsert strategy inside a DB transaction — it force-deletes ALL existing HpcReportItem and HpcReportTable rows for a report, then bulk-inserts fresh rows from form data (batches of 200 with per-row retry). This is intentional to avoid complex merge logic but means partial saves are all-or-nothing.
 
