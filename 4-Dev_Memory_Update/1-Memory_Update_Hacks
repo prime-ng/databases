@@ -103,25 +103,25 @@ Once per day per module being actively worked on, or after each PR merge.
 ---
 
 ### Module Incremental Memory Update
-  **Module:** [MODULE_NAME]
-  **Branch:** [BRANCH_NAME]
-  **Developer:** [DEVELOPER_NAME]
+  **Module:** [HPC]
+  **Branch:** [brijesh_hpc]
+  **Developer:** [Shailesh]
 
   You are Claude Code working on the Prime-AI multi-tenant school ERP.
   AI Brain is at: /Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases/AI_Brain/
 
 ### Step 1 — Load Existing State (read ALL before doing anything)
-  1. AI_Brain/state/progress.md  ← find the [MODULE_NAME] entry
-  2. AI_Brain/lessons/known-issues.md  ← find the [MODULE_NAME] section
-  3. AI_Brain/memory/modules-map.md  ← find the [MODULE_NAME] row
-  4. AI_Brain/state/decisions.md  ← find any [MODULE_NAME] decisions
+  1. AI_Brain/state/progress.md  ← find the [HPC] entry
+  2. AI_Brain/lessons/known-issues.md  ← find the [HPC] section
+  3. AI_Brain/memory/modules-map.md  ← find the [HPC] row
+  4. AI_Brain/state/decisions.md  ← find any [HPC] decisions
 
 ### Step 2 — Identify What Changed
   Run these to find what has changed since the last audit date (from progress.md):
 
   ```bash
-  git log --oneline --since="[LAST_AUDIT_DATE]" -- Modules/[MODULE_NAME]/
-  git diff HEAD~10..HEAD -- Modules/[MODULE_NAME]/
+  git log --oneline --since="[14th Mar 2026]" -- Modules/[HPC]/
+  git diff HEAD~10..HEAD -- Modules/[HPC]/
   ```
   Focus only on files that were added, changed, or deleted in this branch.
 
@@ -139,7 +139,7 @@ Once per day per module being actively worked on, or after each PR merge.
   - Add any NEW issues found with next available code (BUG-[MOD]-00N)
 
   B. AI_Brain/state/progress.md
-  - Update [MODULE_NAME] entry: new % complete, what was done, date [TODAY'S DATE]
+  - Update [HPC] entry: new % complete, what was done, date [TODAY'S DATE]
 
   C. AI_Brain/memory/modules-map.md
   - Update controller/model/service counts if any were added
@@ -155,6 +155,10 @@ Once per day per module being actively worked on, or after each PR merge.
   - Updated completion %
   - Remaining top priorities
 
+
+
+
+---
   **Usage notes:**
   - Replace `[MODULE_NAME]`, `[BRANCH_NAME]`, `[DEVELOPER_NAME]`, `[LAST_AUDIT_DATE]` before pasting
   - Prompt 1 = full audit from scratch (first time that module is documented)
