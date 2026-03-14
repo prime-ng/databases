@@ -1,0 +1,23 @@
+{
+	"folders": [
+		{
+			"name": "Database - Legacy",
+			"path": "/Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases"
+		}
+		{
+			"name": "Database - New (pgdatabase)",
+			"path": "/Users/bkwork/2-New_Primedb/pgdatabase"
+		},
+		{
+			"name": "Prime-AI_Gaurav",
+			"path": "/Users/bkwork/Herd/prime_ai_gaurav"
+		},
+	],
+	"settings": {
+		"search.exclude": {
+		"**/node_modules": true,
+		"**/vendor": true,
+		"**/storage": true
+		}
+	}
+}

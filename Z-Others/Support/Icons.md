@@ -1,0 +1,63 @@
+# Icons Collection
+
+✅ Approved
+❌ Rejected
+🎯 Target
+🧠 Brain
+🏫 School
+🎓 Graduation
+📝 Note
+📄 Document
+📅 Calendar
+⏰ Time
+🏭 Factory
+🔧 Tools
+🔨 Hammer
+⚒️ Pickaxe
+📊 Chart
+📈 Graph
+📉 Graph
+🤖 Robot
+🔁 Loop
+🔄 Refresh
+🔹 Bullet
+📌 Pin
+📍 Location
+🗺️ Map
+✔ Check
+❌ Cross
+👍 Like
+👎 Dislike
+💡 Lightbulb
+🚨 Alert
+⚠️ Warning
+➡️ Arrow
+🔬 Lab
+❓ Question
+🔑 Key
+🔒 Lock
+🔓 Unlock
+🔰 Level
+🧱 Foundation
+🧪 Test
+🧪 Exam
+🎓 Graduation
+📝 Note
+📄 Document
+📅 Calendar
+⏰ Time
+✍️ Edit
+✏️ Edit
+➕ Add
+
+
+
+🔴 Red
+🟢 Green
+🟡 Yellow
+🟣 Orange
+🟤 Purple
+🟥 Pink
+🟦 Blue
+🟧 Brown
+🟨 Yellow

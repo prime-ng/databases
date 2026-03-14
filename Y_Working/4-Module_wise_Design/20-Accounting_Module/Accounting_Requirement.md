@@ -1,0 +1,73 @@
+# Accounting Requirement
+
+1. High Level Detail of the Fuctionality, needs to be covered in the Module
+   - Chart of Accounts
+   - Journal Entry
+   - Receipt
+   - Payment
+   - Sales Invoice
+   - Purchase Invoice
+   - Trail Balance
+   - Ledger
+   - Budgeting
+   - GST & Tax Management
+   - Opening Balance Entry
+   - Approval Workflow
+   - Recurring Entries
+   - Automated Journal Entry Generation
+   - Payment Gateway Integration
+   - Expense Claim Management
+   - Bank Reconciliation
+
+2. Highlevel RBS -
+
+   - Define primary group (Assets/Liabilities/Income/Expense)
+   - Assign accounting nature (Debit/Credit)
+   - Create hierarchical sub-groups
+   - Set posting permissions
+   - Define ledger name & code
+   - Assign parent account group
+   - Link GST/TAX configuration
+   - Enable reconciliation
+   - Set allowed modules for ledger usage
+   - Trial Balance & Profit & Loss
+   - Revenue vs Expense analysis
+   - Cashflow trend visualization
+   - Download Tally-compatible files
+   - Synchronize ledgers
+   - Set overall institutional budget for the fiscal year
+   - Allocate budgets to departments/cost centers (Academics, Sports, Admin)
+   - Record commitments (POs) and actual expenditures against budget
+   - Calculate available balance per cost center in real-time
+   - Show budget vs. actual spend with variance percentages
+   - Highlight departments exceeding budget thresholds
+   - Provision for HSN/SAC codes for fee heads and services
+   - Configure tax rates (CGST, SGST, IGST) based on location
+   - Enter debit/credit opening balance
+   - Validate fiscal year constraints
+   - Export outstanding fee CSV/Excel file
+   - Map vendor outstanding balances
+   - Add narration & attachments
+   - Submit JE for approval
+   - Track approval history
+   - Define recurrence cycle
+   - Auto-post according to period
+   - Generate fee JE automatically
+   - Map fee heads to income ledgers
+   - Accept multi-mode payments
+   - Auto-send receipt to parent
+   - Produce 30/60/90-day aging
+   - Identify high-risk accounts
+   - Send due reminders
+   - Escalate chronic defaulters
+   - Attach bill copy
+   - Verify purchase order linkage
+   - Select payment mode
+   - Auto-generate payment voucher
+   - Select vendor & items from Vendor Module (already Developed)
+   - Upload claim receipts (Expense Reimbursement)
+   - Approve/Reject staff claims (Expense Reimbursement)
+   - Identify Transaction mismatches
+   - Record cash inflow/outflow
+   - Track daily cash balance
+   

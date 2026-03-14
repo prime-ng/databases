@@ -1,0 +1,6 @@
+I will be very clear and enterprise-honest first 👇
+👉 You should NOT train a large ML model from scratch for this use case.
+👉 Correct enterprise approach = Retrieval-Augmented Generation (RAG) + Guardrails + Feedback Learning.
+
+This is exactly how Google Classroom AI, Khan Academy AI Tutor, BYJU’s AI, Coursera Coach work.
+

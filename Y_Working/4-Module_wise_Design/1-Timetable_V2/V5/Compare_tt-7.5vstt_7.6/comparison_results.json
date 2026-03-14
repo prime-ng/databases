@@ -1,0 +1,1097 @@
+{
+  "added_tables": [
+    "tt_constraint_category",
+    "tt_constraint_scope",
+    "tt_constraint_target_type",
+    "tt_constraint_group",
+    "tt_constraint_group_member",
+    "tt_constraint_template",
+    "tt_generation_queue",
+    "tt_validation_session",
+    "tt_validation_check",
+    "tt_validation_issue",
+    "tt_validation_rule",
+    "tt_validation_override",
+    "tt_room_utilization",
+    "tt_analytics_daily_snapshot",
+    "tt_substitution_recommendation",
+    "tt_substitution_pattern",
+    "tt_optimization_run",
+    "tt_optimization_iteration",
+    "tt_optimization_move",
+    "tt_conflict_resolution_session",
+    "tt_conflict_resolution_option",
+    "tt_escalation_rule",
+    "tt_escalation_log",
+    "tt_approval_workflow",
+    "tt_approval_level",
+    "tt_approval_request",
+    "tt_approval_decision",
+    "tt_approval_notification",
+    "tt_ml_model",
+    "tt_training_data",
+    "tt_feature_importance",
+    "tt_prediction_log",
+    "tt_pattern_result",
+    "tt_impact_analysis_session",
+    "tt_impact_analysis_detail",
+    "tt_what_if_scenario",
+    "tt_batch_operation",
+    "tt_batch_operation_item",
+    "tt_revalidation_trigger",
+    "tt_revalidation_schedule",
+    "tt_version_comparison",
+    "tt_version_comparison_detail"
+  ],
+  "removed_tables": [
+    "tt_constraint_category_scope",
+    "tt_activity_priority",
+    "tt_conflict_detection",
+    "sch_organizations",
+    "sch_org_academic_sessions_jnt",
+    "sch_classes",
+    "sch_sections",
+    "sch_class_section_jnt",
+    "sch_subject_types",
+    "sch_study_formats",
+    "sch_subjects",
+    "sch_subject_study_format_jnt",
+    "sch_class_groups_jnt",
+    "sch_subject_groups",
+    "sch_subject_group_subject_jnt",
+    "sch_buildings",
+    "sch_rooms_type",
+    "sch_rooms",
+    "sch_employees",
+    "sch_employees_profile",
+    "sch_teachers_profile",
+    "std_students",
+    "std_student_academic_sessions"
+  ],
+  "common_tables": {
+    "sch_academic_term": {
+      "added_cols": [
+        "uq_academic_term_session_term",
+        "idx_academic_term_dates",
+        "idx_academic_term_current",
+        "fk_academic_term_session",
+        "chk_academic_term_dates",
+        "chk_academic_term_year_range"
+      ],
+      "removed_cols": [
+        "uq_AcademicTerm_session_code",
+        "idx_AcademicTerm_dates",
+        "idx_AcademicTerm_current"
+      ],
+      "modified_cols": [
+        "term_week_start_day",
+        "settings_json"
+      ],
+      "missing_comments": []
+    },
+    "tt_config": {
+      "added_cols": [
+        "validation_rules",
+        "version",
+        "uq_config_key",
+        "uq_config_ordinal",
+        "idx_config_active"
+      ],
+      "removed_cols": [
+        "uq_settings_ordinal",
+        "uq_settings_key"
+      ],
+      "modified_cols": [
+        "ordinal",
+        "tenant_can_modify",
+        "mandatory",
+        "used_by_app",
+        "is_active"
+      ],
+      "missing_comments": []
+    },
+    "tt_generation_strategy": {
+      "added_cols": [
+        "algorithm_version",
+        "tabu_tenure",
+        "initial_temperature",
+        "min_temperature",
+        "mutation_rate",
+        "crossover_rate",
+        "elite_count",
+        "max_iterations",
+        "parallel_threads",
+        "idx_strategy_default"
+      ],
+      "removed_cols": [],
+      "modified_cols": [],
+      "missing_comments": []
+    },
+    "tt_shift": {
+      "added_cols": [
+        "max_periods_per_shift",
+        "idx_shift_active",
+        "chk_shift_times"
+      ],
+      "removed_cols": [
+        "uq_shift_name"
+      ],
+      "modified_cols": [],
+      "missing_comments": []
+    },
+    "tt_day_type": {
+      "added_cols": [
+        "color_code",
+        "icon"
+      ],
+      "removed_cols": [
+        "uq_daytype_name"
+      ],
+      "modified_cols": [],
+      "missing_comments": []
+    },
+    "tt_period_type": {
+      "added_cols": [
+        "requires_teacher",
+        "requires_room",
+        "workload_factor"
+      ],
+      "removed_cols": [],
+      "modified_cols": [],
+      "missing_comments": []
+    },
+    "tt_teacher_assignment_role": {
+      "added_cols": [
+        "max_concurrent_classes"
+      ],
+      "removed_cols": [],
+      "modified_cols": [],
+      "missing_comments": []
+    },
+    "tt_school_days": {
+      "added_cols": [
+        "iso_weekday",
+        "is_weekend"
+      ],
+      "removed_cols": [],
+      "modified_cols": [
+        "day_of_week"
+      ],
+      "missing_comments": []
+    },
+    "tt_working_day": {
+      "added_cols": [
+        "period_set_id",
+        "idx_workday_session",
+        "fk_workday_session",
+        "fk_workday_period_set"
+      ],
+      "removed_cols": [],
+      "modified_cols": [
+        "fk_workday_daytype1",
+        "fk_workday_daytype2",
+        "fk_workday_daytype3",
+        "fk_workday_daytype4"
+      ],
+      "missing_comments": []
+    },
+    "tt_class_working_day_jnt": {
+      "added_cols": [
+        "period_set_id",
+        "idx_class_working_day_working",
+        "fk_class_working_day_working",
+        "fk_class_working_day_period_set"
+      ],
+      "removed_cols": [
+        "idx_class_working_day_class",
+        "idx_class_working_day_working_day"
+      ],
+      "modified_cols": [],
+      "missing_comments": []
+    },
+    "tt_period_set": {
+      "added_cols": [
+        "total_duration_minutes",
+        "idx_periodset_default",
+        "chk_periodset_times"
+      ],
+      "removed_cols": [],
+      "modified_cols": [],
+      "missing_comments": []
+    },
+    "tt_period_set_period_jnt": {
+      "added_cols": [
+        "is_consecutive_allowed",
+        "max_consecutive"
+      ],
+      "removed_cols": [],
+      "modified_cols": [
+        "fk_psp_period_type"
+      ],
+      "missing_comments": []
+    },
+    "tt_timetable_type": {
+      "added_cols": [
+        "max_weekly_periods_teacher",
+        "min_weekly_periods_teacher",
+        "idx_tttype_dates",
+        "chk_tttype_dates"
+      ],
+      "removed_cols": [],
+      "modified_cols": [
+        "chk_tttype_time"
+      ],
+      "missing_comments": []
+    },
+    "tt_class_timetable_type_jnt": {
+      "added_cols": [
+        "priority",
+        "uq_cttj_class_section_term",
+        "idx_cttj_timetable",
+        "idx_cttj_period_set",
+        "fk_cttj_timetable",
+        "chk_cttj_dates",
+        "chk_cttj_apply_to_all"
+      ],
+      "removed_cols": [
+        "fk_cttj_mode",
+        "chk_valid_effective_range",
+        "chk_cttj_apply_to_all_section"
+      ],
+      "modified_cols": [
+        "idx_cttj_term",
+        "fk_cttj_term"
+      ],
+      "missing_comments": []
+    },
+    "tt_slot_requirement": {
+      "added_cols": [
+        "daily_slots_distribution_json",
+        "created_at",
+        "updated_at",
+        "uq_slot_requirement",
+        "idx_slot_requirement_class",
+        "idx_slot_requirement_activity",
+        "fk_slot_requirement_academic_term",
+        "fk_slot_requirement_timetable_type",
+        "fk_slot_requirement_class_timetable",
+        "fk_slot_requirement_class",
+        "fk_slot_requirement_section",
+        "fk_slot_requirement_room",
+        "chk_slot_requirement_counts"
+      ],
+      "removed_cols": [
+        "uq_sa_class_section",
+        "fk_sa_academic_term",
+        "fk_sa_class",
+        "fk_sa_section",
+        "fk_sa_timetable_type",
+        "fk_sa_class_timetable_type",
+        "fk_sa_activity"
+      ],
+      "modified_cols": [],
+      "missing_comments": []
+    },
+    "tt_class_requirement_groups": {
+      "added_cols": [
+        "uq_class_req_groups",
+        "uq_class_req_groups_code",
+        "idx_class_req_groups_subject",
+        "idx_class_req_groups_room",
+        "fk_class_req_groups_class",
+        "fk_class_req_groups_section",
+        "fk_class_req_groups_subject_study",
+        "fk_class_req_groups_room"
+      ],
+      "removed_cols": [
+        "uq_clsReqGroups_code",
+        "uq_clsReqGroups_class_section_subjectType",
+        "idx_clsReqGroups_class_id_foreign",
+        "idx_clsReqGroups_subject_type_id_foreign",
+        "idx_clsReqGroups_rooms_type_id_foreign",
+        "fk_clsReqGroups_class_id_foreign",
+        "fk_clsReqGroups_rooms_type_id_foreign",
+        "fk_clsReqGroups_required_room_id_foreign",
+        "fk_clsReqGroups_section_id_foreign",
+        "fk_clsReqGroups_sub_stdy_frmt_id_foreign",
+        "fk_clsReqGroups_subject_type_id_foreign"
+      ],
+      "modified_cols": [
+        "is_active"
+      ],
+      "missing_comments": []
+    },
+    "tt_class_requirement_subgroups": {
+      "added_cols": [
+        "uq_class_req_subgroups",
+        "uq_class_req_subgroups_code",
+        "idx_class_req_subgroups_subject",
+        "idx_class_req_subgroups_room",
+        "fk_class_req_subgroups_class",
+        "fk_class_req_subgroups_section",
+        "fk_class_req_subgroups_subject_study",
+        "fk_class_req_subgroups_room"
+      ],
+      "removed_cols": [
+        "uq_subgroup_code",
+        "uq_classGroup_subStdFmt_class_section_subjectType",
+        "idx_subgroup_type",
+        "fk_subgroup_class_group"
+      ],
+      "modified_cols": [],
+      "missing_comments": []
+    },
+    "tt_requirement_consolidation": {
+      "added_cols": [
+        "uuid",
+        "min_periods_per_week",
+        "max_periods_per_week",
+        "min_periods_per_day",
+        "max_periods_per_day",
+        "preferred_days_json",
+        "avoid_days_json",
+        "preferred_room_type_id",
+        "preferred_room_ids_json",
+        "priority_score",
+        "difficulty_score",
+        "resource_scarcity_index",
+        "teacher_scarcity_index",
+        "created_at",
+        "updated_at",
+        "deleted_at",
+        "uq_requirement_consolidation_uuid",
+        "uq_requirement_consolidation",
+        "idx_requirement_consolidation_class",
+        "idx_requirement_consolidation_subject",
+        "idx_requirement_consolidation_room_type",
+        "idx_requirement_consolidation_room",
+        "idx_requirement_consolidation_priority",
+        "fk_requirement_consolidation_academic_term",
+        "fk_requirement_consolidation_timetable_type",
+        "fk_requirement_consolidation_group",
+        "fk_requirement_consolidation_subgroup",
+        "fk_requirement_consolidation_class",
+        "fk_requirement_consolidation_section",
+        "fk_requirement_consolidation_subject_study",
+        "fk_requirement_consolidation_room_type",
+        "fk_requirement_consolidation_room",
+        "chk_requirement_consolidation_target"
+      ],
+      "removed_cols": [
+        "min_periods_required_per_week",
+        "max_periods_required_per_week",
+        "min_periods_required_per_day",
+        "max_periods_required_per_day",
+        "min_required_consecutive_periods",
+        "class_priority_score",
+        "uq_cgr_group_session",
+        "fk_cgr_class_group",
+        "fk_cgr_subgroup",
+        "fk_cgr_session",
+        "fk_cgr_timetable_type",
+        "chk_cgr_target"
+      ],
+      "modified_cols": [
+        "class_requirement_group_id",
+        "required_room_type_id",
+        "is_active"
+      ],
+      "missing_comments": []
+    },
+    "tt_constraint_type": {
+      "added_cols": [
+        "constraint_level",
+        "is_hard_capable",
+        "is_soft_capable",
+        "parameter_schema",
+        "validation_logic",
+        "conflict_detection_logic",
+        "resolution_priority",
+        "applicable_target_types",
+        "uq_constraint_type_code",
+        "idx_constraint_type_category",
+        "idx_constraint_type_scope",
+        "idx_constraint_type_level",
+        "fk_constraint_type_category",
+        "fk_constraint_type_scope"
+      ],
+      "removed_cols": [
+        "applicable_to",
+        "target_id_required",
+        "is_hard_constraint",
+        "param_schema",
+        "is_system",
+        "uq_ctype_code",
+        "idx_ctype_category",
+        "idx_ctype_scope",
+        "fk_ctype_category",
+        "fk_ctype_scope"
+      ],
+      "modified_cols": [
+        "description",
+        "category_id",
+        "scope_id",
+        "default_weight"
+      ],
+      "missing_comments": []
+    },
+    "tt_constraint": {
+      "added_cols": [
+        "uuid",
+        "timetable_type_id",
+        "target_type_id",
+        "effective_from_date",
+        "effective_to_date",
+        "applicable_days_json",
+        "applicable_periods_json",
+        "constraint_hash",
+        "uq_constraint_hash",
+        "idx_constraint_dates",
+        "idx_constraint_active",
+        "fk_constraint_type",
+        "fk_constraint_target_type"
+      ],
+      "removed_cols": [
+        "target_type",
+        "effective_from",
+        "effective_to",
+        "applicable_days"
+      ],
+      "modified_cols": [
+        "target_id",
+        "weight",
+        "idx_constraint_target"
+      ],
+      "missing_comments": []
+    },
+    "tt_teacher_unavailable": {
+      "added_cols": [
+        "period_ord",
+        "idx_teacher_unavailable_teacher",
+        "idx_teacher_unavailable_day_period",
+        "idx_teacher_unavailable_dates",
+        "fk_teacher_unavailable_teacher",
+        "fk_teacher_unavailable_constraint"
+      ],
+      "removed_cols": [
+        "period_no",
+        "recurring_frequency",
+        "idx_tu_teacher",
+        "idx_tu_day_period",
+        "fk_tu_teacher",
+        "fk_tu_constraint"
+      ],
+      "modified_cols": [
+        "day_of_week"
+      ],
+      "missing_comments": []
+    },
+    "tt_room_unavailable": {
+      "added_cols": [
+        "idx_room_unavailable_room",
+        "idx_room_unavailable_day_period",
+        "fk_room_unavailable_room",
+        "fk_room_unavailable_constraint"
+      ],
+      "removed_cols": [
+        "idx_ru_room",
+        "idx_ru_day_period",
+        "fk_ru_room",
+        "fk_ru_constraint"
+      ],
+      "modified_cols": [],
+      "missing_comments": []
+    },
+    "tt_teacher_availability": {
+      "added_cols": [
+        "current_allocated_periods",
+        "competency_level",
+        "available_for_full_timetable",
+        "days_not_available",
+        "min_availability_score",
+        "max_availability_score",
+        "created_at",
+        "updated_at",
+        "uq_teacher_availability",
+        "idx_teacher_availability_teacher",
+        "idx_teacher_availability_activity",
+        "idx_teacher_availability_scores",
+        "fk_teacher_availability_requirement",
+        "fk_teacher_availability_class",
+        "fk_teacher_availability_section",
+        "fk_teacher_availability_subject_study",
+        "fk_teacher_availability_teacher_profile",
+        "fk_teacher_availability_activity"
+      ],
+      "removed_cols": [
+        "competancy_level",
+        "teacher_profile_from_date",
+        "teacher_profile_to_date",
+        "available_for_full_timetable_duration",
+        "no_of_days_not_available",
+        "min_teacher_availability_score",
+        "max_teacher_availability_score",
+        "uq_ta_requirement_teacher",
+        "fk_ta_class",
+        "fk_ta_section",
+        "fk_ta_subject_study_format",
+        "fk_ta_teacher_profile",
+        "fk_ta_activity"
+      ],
+      "modified_cols": [
+        "teacher_available_from_date"
+      ],
+      "missing_comments": []
+    },
+    "tt_teacher_availability_detail": {
+      "added_cols": [
+        "availability_status",
+        "assigned_activity_id",
+        "constraint_id",
+        "created_at",
+        "updated_at",
+        "uq_teacher_availability_detail",
+        "idx_teacher_availability_detail_teacher",
+        "idx_teacher_availability_detail_assigned",
+        "fk_teacher_availability_detail_master",
+        "fk_teacher_availability_detail_teacher",
+        "fk_teacher_availability_detail_class",
+        "fk_teacher_availability_detail_section",
+        "fk_teacher_availability_detail_subject",
+        "fk_teacher_availability_detail_activity"
+      ],
+      "removed_cols": [
+        "can_be_assigned",
+        "availability_for_period",
+        "teacher_available_from_date",
+        "activity_id",
+        "uq_ta_class_wise",
+        "fk_ta_class",
+        "fk_ta_section",
+        "fk_ta_subject_study_format",
+        "fk_ta_teacher_profile",
+        "fk_ta_activity"
+      ],
+      "modified_cols": [],
+      "missing_comments": []
+    },
+    "tt_room_availability": {
+      "added_cols": [
+        "room_type_id",
+        "overall_status",
+        "available_for_full_timetable",
+        "current_occupancy",
+        "created_at",
+        "updated_at",
+        "uq_room_availability",
+        "idx_room_availability_type",
+        "idx_room_availability_house"
+      ],
+      "removed_cols": [
+        "rooms_type_id",
+        "can_be_assigned",
+        "overall_availability_status",
+        "available_for_full_timetable_duration",
+        "uq_ra_class_wise",
+        "fk_room_availability_subject_study_format",
+        "chk_class_house_logic"
+      ],
+      "modified_cols": [
+        "fk_room_availability_room_type",
+        "fk_room_availability_class",
+        "fk_room_availability_section",
+        "fk_room_availability_activity"
+      ],
+      "missing_comments": []
+    },
+    "tt_room_availability_detail": {
+      "added_cols": [
+        "availability_status",
+        "assigned_activity_id",
+        "constraint_id",
+        "created_at",
+        "updated_at",
+        "uq_room_availability_detail",
+        "idx_room_availability_detail_room",
+        "idx_room_availability_detail_assigned",
+        "fk_room_availability_detail_master",
+        "fk_room_availability_detail_room",
+        "fk_room_availability_detail_room_type",
+        "fk_room_availability_detail_subject"
+      ],
+      "removed_cols": [
+        "availability_for_period",
+        "room_available_from_date",
+        "activity_id",
+        "uq_ra_class_wise",
+        "fk_room_availability_detail_room_availability",
+        "fk_room_availability_detail_subject_study_format"
+      ],
+      "modified_cols": [
+        "assigned_class_id",
+        "assigned_subject_study_format_id",
+        "fk_room_availability_detail_activity"
+      ],
+      "missing_comments": []
+    },
+    "tt_priority_config": {
+      "added_cols": [
+        "average_teacher_availability",
+        "constraint_count",
+        "historical_success_rate",
+        "calculated_priority",
+        "manual_override_priority",
+        "final_priority",
+        "weight_teacher_scarcity",
+        "weight_weekly_load",
+        "weight_teacher_availability",
+        "weight_rigidity",
+        "weight_resource_scarcity",
+        "weight_subject_difficulty",
+        "created_at",
+        "updated_at",
+        "uq_priority_config_requirement",
+        "idx_priority_config_final",
+        "fk_priority_config_requirement"
+      ],
+      "removed_cols": [
+        "priority_type",
+        "priority_name",
+        "priority_value",
+        "tot_students",
+        "average_teacher_availability_ratio",
+        "uq_priority_type_name"
+      ],
+      "modified_cols": [],
+      "missing_comments": []
+    },
+    "tt_activity": {
+      "added_cols": [
+        "class_requirement_group_id",
+        "class_requirement_subgroup_id",
+        "required_consecutive",
+        "preferred_days_json",
+        "avoid_days_json",
+        "eligible_room_count",
+        "weekly_occurrences",
+        "manual_priority",
+        "calculated_priority",
+        "final_priority",
+        "preferred_room_ids_json",
+        "placement_complete",
+        "placed_periods_count",
+        "idx_activity_academic_term",
+        "idx_activity_timetable_type",
+        "idx_activity_class",
+        "idx_activity_priority",
+        "fk_activity_academic_term",
+        "fk_activity_timetable_type",
+        "fk_activity_class",
+        "fk_activity_section",
+        "fk_activity_subject_study",
+        "fk_activity_room"
+      ],
+      "removed_cols": [
+        "activity_group_id",
+        "weekly_periods",
+        "priority",
+        "preferred_room_ids",
+        "difficulty_score_calculated",
+        "teacher_availability_score",
+        "preferred_time_slots_json",
+        "avoid_time_slots_json",
+        "idx_activity_difficulty",
+        "idx_activity_session",
+        "idx_activity_class_group",
+        "idx_activity_subgroup",
+        "idx_activity_generation",
+        "fk_activity_session",
+        "fk_activity_subject",
+        "fk_activity_study_format"
+      ],
+      "modified_cols": [
+        "room_availability_score",
+        "total_periods",
+        "required_room_type_id",
+        "idx_activity_subject",
+        "idx_activity_status",
+        "fk_activity_class_group",
+        "fk_activity_subgroup",
+        "fk_activity_room_type",
+        "chk_activity_target"
+      ],
+      "missing_comments": [
+        {
+          "col": "room_availability_score",
+          "v75_comment": "Percentage of available rooms for this activity",
+          "v75_inline": null,
+          "v76_comment": null,
+          "v76_inline": null
+        },
+        {
+          "col": "constraint_count",
+          "v75_comment": "Number of constraints affecting this activity",
+          "v75_inline": null,
+          "v76_comment": null,
+          "v76_inline": null
+        }
+      ]
+    },
+    "tt_sub_activity": {
+      "added_cols": [
+        "class_requirement_subgroup_id",
+        "name",
+        "subject_study_format_id",
+        "min_gap_from_previous",
+        "max_gap_from_previous",
+        "uq_sub_activity_code",
+        "uq_sub_activity_parent_ord",
+        "idx_sub_activity_parent",
+        "idx_sub_activity_class",
+        "fk_sub_activity_parent",
+        "fk_sub_activity_subgroup",
+        "fk_sub_activity_class",
+        "fk_sub_activity_section",
+        "fk_sub_activity_subject"
+      ],
+      "removed_cols": [
+        "class_requirement_subgroups",
+        "uq_subact_parent_ord",
+        "uq_subact_code",
+        "idx_subact_parent",
+        "fk_subact_parent"
+      ],
+      "modified_cols": [],
+      "missing_comments": []
+    },
+    "tt_activity_teacher": {
+      "added_cols": [
+        "preference_score",
+        "allocation_status",
+        "uq_activity_teacher",
+        "idx_activity_teacher_teacher",
+        "idx_activity_teacher_status",
+        "fk_activity_teacher_activity",
+        "fk_activity_teacher_teacher",
+        "fk_activity_teacher_role"
+      ],
+      "removed_cols": [
+        "uq_at_activity_teacher",
+        "idx_at_teacher",
+        "fk_at_activity",
+        "fk_at_teacher",
+        "fk_at_role"
+      ],
+      "modified_cols": [],
+      "missing_comments": []
+    },
+    "tt_timetable": {
+      "added_cols": [
+        "validation_status",
+        "generated_at",
+        "validated_at",
+        "total_activities",
+        "placed_activities",
+        "failed_activities",
+        "hard_violations",
+        "soft_violations",
+        "settings_json",
+        "uq_timetable_uuid",
+        "uq_timetable_code",
+        "idx_timetable_session",
+        "idx_timetable_type",
+        "idx_timetable_status",
+        "idx_timetable_dates",
+        "fk_timetable_session",
+        "fk_timetable_term",
+        "fk_timetable_type",
+        "fk_timetable_period_set",
+        "fk_timetable_strategy",
+        "fk_timetable_parent",
+        "fk_timetable_published_by",
+        "fk_timetable_created_by"
+      ],
+      "removed_cols": [
+        "uq_tt_uuid",
+        "uq_tt_code",
+        "idx_tt_session",
+        "idx_tt_type",
+        "idx_tt_status",
+        "idx_tt_effective",
+        "fk_tt_session",
+        "fk_tt_type",
+        "fk_tt_period_set",
+        "fk_tt_parent",
+        "fk_tt_published_by",
+        "fk_tt_generation_strategy",
+        "fk_tt_created_by"
+      ],
+      "modified_cols": [
+        "generation_strategy_id",
+        "optimization_cycles",
+        "last_optimized_at"
+      ],
+      "missing_comments": []
+    },
+    "tt_resource_booking": {
+      "added_cols": [
+        "duration_minutes",
+        "timetable_cell_id",
+        "uq_resource_booking",
+        "idx_resource_booking_status",
+        "fk_resource_booking_cell",
+        "fk_resource_booking_supervisor"
+      ],
+      "removed_cols": [
+        "idx_resource_booking_time",
+        "fk_idx_resource_booking_supervisor"
+      ],
+      "modified_cols": [
+        "idx_resource_booking_date"
+      ],
+      "missing_comments": []
+    },
+    "tt_generation_run": {
+      "added_cols": [
+        "queue_id",
+        "duration_seconds",
+        "progress_percentage",
+        "placement_attempts",
+        "swaps_performed",
+        "backtracks_performed",
+        "error_trace",
+        "uq_generation_run_uuid",
+        "uq_generation_run_tt_run",
+        "idx_generation_run_status",
+        "idx_generation_run_queue",
+        "fk_generation_run_timetable",
+        "fk_generation_run_queue",
+        "fk_generation_run_strategy",
+        "fk_generation_run_triggered_by"
+      ],
+      "removed_cols": [
+        "uq_gr_uuid",
+        "uq_gr_tt_run",
+        "idx_gr_status",
+        "fk_gr_timetable",
+        "fk_gr_triggered_by"
+      ],
+      "modified_cols": [
+        "strategy_id"
+      ],
+      "missing_comments": []
+    },
+    "tt_constraint_violation": {
+      "added_cols": [
+        "generation_run_id",
+        "severity",
+        "affected_entity_type",
+        "affected_entity_id",
+        "day_of_week",
+        "period_ord",
+        "violation_details_json",
+        "suggested_resolution_json",
+        "resolved_at",
+        "idx_violation_timetable",
+        "idx_violation_constraint",
+        "idx_violation_entity",
+        "fk_violation_timetable",
+        "fk_violation_constraint"
+      ],
+      "removed_cols": [
+        "violation_details",
+        "updated_at",
+        "idx_cv_timetable",
+        "idx_cv_constraint",
+        "fk_cv_timetable",
+        "fk_cv_constraint"
+      ],
+      "modified_cols": [
+        "violation_count"
+      ],
+      "missing_comments": []
+    },
+    "tt_timetable_cell": {
+      "added_cols": [
+        "uuid",
+        "class_id",
+        "section_id",
+        "subject_study_format_id",
+        "validation_status",
+        "uq_timetable_cell_uuid",
+        "uq_timetable_cell_position",
+        "idx_timetable_cell_timetable",
+        "idx_timetable_cell_activity",
+        "idx_timetable_cell_room",
+        "idx_timetable_cell_date",
+        "idx_timetable_cell_locked",
+        "fk_timetable_cell_timetable",
+        "fk_timetable_cell_run",
+        "fk_timetable_cell_activity",
+        "fk_timetable_cell_sub_activity",
+        "fk_timetable_cell_class",
+        "fk_timetable_cell_section",
+        "fk_timetable_cell_subject",
+        "fk_timetable_cell_room",
+        "fk_timetable_cell_locked_by"
+      ],
+      "removed_cols": [
+        "class_group_id",
+        "class_subgroup_id",
+        "uq_cell_tt_day_period_group",
+        "idx_cell_tt",
+        "idx_cell_day_period",
+        "idx_cell_activity",
+        "idx_cell_room",
+        "idx_cell_date",
+        "fk_cell_timetable",
+        "fk_cell_gen_run",
+        "fk_cell_class_group",
+        "fk_cell_subgroup",
+        "fk_cell_activity",
+        "fk_cell_sub_activity",
+        "fk_cell_room",
+        "fk_cell_locked_by",
+        "chk_cell_target"
+      ],
+      "modified_cols": [],
+      "missing_comments": []
+    },
+    "tt_timetable_cell_teacher": {
+      "added_cols": [
+        "substitution_log_id",
+        "uq_cell_teacher",
+        "idx_cell_teacher_teacher",
+        "fk_cell_teacher_cell",
+        "fk_cell_teacher_teacher",
+        "fk_cell_teacher_role",
+        "fk_cell_teacher_substitution"
+      ],
+      "removed_cols": [
+        "uq_cct_cell_teacher",
+        "idx_cct_teacher",
+        "fk_cct_cell",
+        "fk_cct_teacher",
+        "fk_cct_role"
+      ],
+      "modified_cols": [],
+      "missing_comments": []
+    },
+    "tt_teacher_workload": {
+      "added_cols": [
+        "academic_term_id",
+        "preference_satisfaction_rate",
+        "requested_changes_count",
+        "uq_teacher_workload",
+        "idx_teacher_workload_session",
+        "fk_teacher_workload_teacher",
+        "fk_teacher_workload_session",
+        "fk_teacher_workload_term",
+        "fk_teacher_workload_timetable"
+      ],
+      "removed_cols": [
+        "uq_tw_teacher_session_tt",
+        "idx_tw_session",
+        "fk_tw_teacher",
+        "fk_tw_session",
+        "fk_tw_timetable"
+      ],
+      "modified_cols": [],
+      "missing_comments": []
+    },
+    "tt_change_log": {
+      "added_cols": [
+        "uuid",
+        "change_timestamp",
+        "metadata_json",
+        "ip_address",
+        "user_agent",
+        "uq_change_log_uuid",
+        "idx_change_log_timetable",
+        "idx_change_log_cell",
+        "idx_change_log_date",
+        "idx_change_log_type",
+        "fk_change_log_timetable",
+        "fk_change_log_cell",
+        "fk_change_log_changed_by"
+      ],
+      "removed_cols": [
+        "updated_at",
+        "deleted_at",
+        "idx_cl_timetable",
+        "idx_cl_cell",
+        "idx_cl_date",
+        "idx_cl_type",
+        "fk_cl_timetable",
+        "fk_cl_cell",
+        "fk_cl_changed_by"
+      ],
+      "modified_cols": [],
+      "missing_comments": []
+    },
+    "tt_teacher_absence": {
+      "added_cols": [
+        "uuid",
+        "is_full_day",
+        "document_proof",
+        "contact_during_absence",
+        "substitution_deadline",
+        "notified_at",
+        "acknowledged_at",
+        "uq_teacher_absence_uuid",
+        "idx_teacher_absence_teacher",
+        "idx_teacher_absence_date",
+        "idx_teacher_absence_status",
+        "fk_teacher_absence_teacher",
+        "fk_teacher_absence_approved_by",
+        "fk_teacher_absence_created_by"
+      ],
+      "removed_cols": [
+        "uq_ta_teacher_date",
+        "idx_ta_date",
+        "idx_ta_status",
+        "fk_ta_teacher",
+        "fk_ta_approved_by",
+        "fk_ta_created_by"
+      ],
+      "modified_cols": [],
+      "missing_comments": []
+    },
+    "tt_substitution_log": {
+      "added_cols": [
+        "uuid",
+        "original_teacher_id",
+        "recommendation_id",
+        "rejected_at",
+        "effectiveness_rating",
+        "uq_substitution_log_uuid",
+        "idx_substitution_log_date",
+        "idx_substitution_log_absent",
+        "idx_substitution_log_substitute",
+        "idx_substitution_log_status",
+        "fk_substitution_log_absence",
+        "fk_substitution_log_cell",
+        "fk_substitution_log_recommendation",
+        "fk_substitution_log_absent",
+        "fk_substitution_log_substitute",
+        "fk_substitution_log_original",
+        "fk_substitution_log_assigned_by"
+      ],
+      "removed_cols": [
+        "idx_sub_date",
+        "idx_sub_absent",
+        "idx_sub_substitute",
+        "idx_sub_status",
+        "fk_sub_absence",
+        "fk_sub_cell",
+        "fk_sub_absent_teacher",
+        "fk_sub_substitute_teacher",
+        "fk_sub_assigned_by"
+      ],
+      "modified_cols": [
+        "status"
+      ],
+      "missing_comments": []
+    }
+  }
+}

@@ -1,0 +1,225 @@
+DTO (FILTER OBJECT – VERY IMPORTANT)
+TransportReportFilterDTO.php
+
+<?php
+
+namespace App\DTO\Transport;
+
+class TransportReportFilterDTO
+{
+    public ?int $sessionId = null;
+    public ?int $routeId = null;
+    public ?int $vehicleId = null;
+    public ?int $classId = null;
+    public ?int $sectionId = null;
+    public ?string $fromDate = null;
+    public ?string $toDate = null;
+}
+
+------------------------------------------------------------------------------
+
+REPOSITORY LAYER (DATA ACCESS)
+TransportReportRepository.php
+
+<?php
+
+namespace App\Repositories\Transport;
+
+use Illuminate\Support\Facades\DB;
+use App\DTO\Transport\TransportReportFilterDTO;
+
+class TransportReportRepository
+{
+    /**
+     * 1. Route Master Report
+     */
+    public function getRouteMasterReport(TransportReportFilterDTO $filter)
+    {
+        return DB::table('tpt_routes as r')
+            ->leftJoin('tpt_route_stop_mapping as rs', 'rs.route_id', '=', 'r.id')
+            ->select(
+                'r.id',
+                'r.route_code',
+                'r.route_name',
+                'r.route_type',
+                DB::raw('COUNT(rs.stop_id) as total_stops'),
+                'r.is_active'
+            )
+            ->when($filter->routeId, fn($q) =>
+                $q->where('r.id', $filter->routeId)
+            )
+            ->groupBy('r.id')
+            ->get();
+    }
+
+    /**
+     * 2. Route-wise Stop List
+     */
+    public function getRouteStopList(TransportReportFilterDTO $filter)
+    {
+        return DB::table('tpt_route_stop_mapping as rs')
+            ->join('tpt_routes as r', 'r.id', '=', 'rs.route_id')
+            ->join('tpt_route_stops as s', 's.id', '=', 'rs.stop_id')
+            ->select(
+                'r.route_name',
+                'rs.sequence_no',
+                's.stop_name',
+                'rs.pickup_time',
+                'rs.drop_time'
+            )
+            ->when($filter->routeId, fn($q) =>
+                $q->where('r.id', $filter->routeId)
+            )
+            ->orderBy('rs.sequence_no')
+            ->get();
+    }
+
+    /**
+     * 3. Student Route Allocation Report
+     */
+    public function getStudentRouteAllocation(TransportReportFilterDTO $filter)
+    {
+        return DB::table('tpt_student_route_allocation as sa')
+            ->join('students as s', 's.id', '=', 'sa.student_id')
+            ->join('classes as c', 'c.id', '=', 'sa.class_id')
+            ->join('sections as sec', 'sec.id', '=', 'sa.section_id')
+            ->join('tpt_routes as r', 'r.id', '=', 'sa.route_id')
+            ->join('tpt_route_stops as st', 'st.id', '=', 'sa.stop_id')
+            ->select(
+                's.id as student_id',
+                DB::raw("CONCAT(s.first_name,' ',s.last_name) as student_name"),
+                'c.class_name',
+                'sec.section_name',
+                'r.route_name',
+                'st.stop_name'
+            )
+            ->when($filter->sessionId, fn($q) =>
+                $q->where('sa.session_id', $filter->sessionId)
+            )
+            ->when($filter->classId, fn($q) =>
+                $q->where('sa.class_id', $filter->classId)
+            )
+            ->when($filter->routeId, fn($q) =>
+                $q->where('sa.route_id', $filter->routeId)
+            )
+            ->get();
+    }
+
+    /**
+     * 4. Vehicle Utilization Report
+     */
+    public function getVehicleUtilizationReport(TransportReportFilterDTO $filter)
+    {
+        return DB::table('tpt_vehicles as v')
+            ->leftJoin('tpt_student_route_allocation as sa', 'sa.vehicle_id', '=', 'v.id')
+            ->select(
+                'v.vehicle_number',
+                'v.seating_capacity',
+                DB::raw('COUNT(sa.student_id) as allocated_students'),
+                DB::raw('ROUND(COUNT(sa.student_id)/v.seating_capacity*100,2) as utilization_percentage')
+            )
+            ->when($filter->routeId, fn($q) =>
+                $q->where('sa.route_id', $filter->routeId)
+            )
+            ->groupBy('v.id')
+            ->get();
+    }
+
+    /**
+     * 5. Transport Fee vs Usage (Leakage)
+     */
+    public function getTransportFeeLeakageReport(TransportReportFilterDTO $filter)
+    {
+        return DB::table('tpt_student_route_allocation as sa')
+            ->join('students as s', 's.id', '=', 'sa.student_id')
+            ->join('tpt_routes as r', 'r.id', '=', 'sa.route_id')
+            ->leftJoin('tpt_student_transport_attendance as a', 'a.student_id', '=', 'sa.student_id')
+            ->leftJoin('fee_collections as fc', 'fc.student_id', '=', 'sa.student_id')
+            ->select(
+                's.id as student_id',
+                DB::raw("CONCAT(s.first_name,' ',s.last_name) as student_name"),
+                'r.route_name',
+                DB::raw('COUNT(a.id) as attendance_days'),
+                DB::raw('COALESCE(SUM(fc.amount_paid),0) as fee_paid')
+            )
+            ->when($filter->sessionId, fn($q) =>
+                $q->where('sa.session_id', $filter->sessionId)
+            )
+            ->groupBy('s.id', 'r.route_name')
+            ->havingRaw('attendance_days > 0 AND fee_paid = 0')
+            ->get();
+    }
+}
+
+
+------------------------------------------------------------------------------
+
+SERVICE LAYER (BUSINESS LOGIC)
+TransportReportService.php
+
+<?php
+
+namespace App\Services\Transport;
+
+use App\Repositories\Transport\TransportReportRepository;
+use App\DTO\Transport\TransportReportFilterDTO;
+
+class TransportReportService
+{
+    public function __construct(
+        protected TransportReportRepository $repository
+    ) {}
+
+    public function routeMaster(TransportReportFilterDTO $filter)
+    {
+        return $this->repository->getRouteMasterReport($filter);
+    }
+
+    public function routeStops(TransportReportFilterDTO $filter)
+    {
+        return $this->repository->getRouteStopList($filter);
+    }
+
+    public function studentRouteAllocation(TransportReportFilterDTO $filter)
+    {
+        return $this->repository->getStudentRouteAllocation($filter);
+    }
+
+    public function vehicleUtilization(TransportReportFilterDTO $filter)
+    {
+        return $this->repository->getVehicleUtilizationReport($filter);
+    }
+
+    public function transportFeeLeakage(TransportReportFilterDTO $filter)
+    {
+        return $this->repository->getTransportFeeLeakageReport($filter);
+    }
+}
+
+
+-------------------------------------------------------------------------------------
+
+CONTROLLER EXAMPLE
+TransportReportController.php
+
+public function vehicleUtilization(Request $request)
+{
+    $filter = new TransportReportFilterDTO();
+    $filter->routeId = $request->route_id;
+    $filter->sessionId = $request->session_id;
+
+    return response()->json(
+        $this->service->vehicleUtilization($filter)
+    );
+}
+
+-------------------------------------------------------------------------------------
+
+HOW THIS MAPS TO REPORTS & DASHBOARDS
+| Report	                    | Repository Method
+| Route Master	                | getRouteMasterReport()
+| Route Stop List	            | getRouteStopList()
+| Student Allocation	        | getStudentRouteAllocation()
+| Vehicle Utilization	        | getVehicleUtilizationReport()
+| Fee Leakage	                | getTransportFeeLeakageReport()
+
