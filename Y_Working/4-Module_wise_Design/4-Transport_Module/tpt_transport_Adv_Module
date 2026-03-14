@@ -1,0 +1,246 @@
+-- Advance Transport Module
+-- ------------------------
+
+
+-- =======================================================================
+-- ML / FEATURE STORE
+-- =======================================================================
+
+CREATE TABLE IF NOT EXISTS `ml_models` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `name` VARCHAR(200) NOT NULL,
+    `version` VARCHAR(50) NOT NULL,
+    `model_type` VARCHAR(50) DEFAULT NULL,
+    `artifact_uri` VARCHAR(1024) DEFAULT NULL,
+    `parameters` JSON DEFAULT NULL,
+    `metrics` JSON DEFAULT NULL,
+    `status` ENUM('TRAINED','DEPLOYED','DEPRECATED') DEFAULT 'TRAINED',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY `uq_ml_model_name_version` (`name`,`version`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `ml_model_features` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `model_id` BIGINT UNSIGNED NOT NULL,
+    `feature_name` VARCHAR(200) NOT NULL,
+    `feature_type` VARCHAR(50) DEFAULT NULL,
+    `transformation` JSON DEFAULT NULL,
+    CONSTRAINT `fk_mmf_model` FOREIGN KEY (`model_id`) REFERENCES `ml_models`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4_COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `tpt_feature_store` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `feature_date` DATE NOT NULL,
+    `route_id` BIGINT UNSIGNED DEFAULT NULL,
+    `vehicle_id` BIGINT UNSIGNED DEFAULT NULL,
+    `feature_vector` JSON NOT NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    KEY `idx_feature_date_route` (`feature_date`, `route_id`),
+    CONSTRAINT `fk_fs_route` FOREIGN KEY (`route_id`) REFERENCES `tpt_route`(`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_fs_vehicle` FOREIGN KEY (`vehicle_id`) REFERENCES `tpt_vehicle`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4_COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `tpt_model_recommendations` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `model_id` BIGINT UNSIGNED NOT NULL,
+    `model_version` VARCHAR(50) DEFAULT NULL,
+    `run_id` VARCHAR(100) DEFAULT NULL,
+    `generated_for_date` DATE DEFAULT NULL,
+    `route_id` BIGINT UNSIGNED DEFAULT NULL,
+    `recommended_path` LINESTRING SRID 4326 DEFAULT NULL,
+    `predicted_time_minutes` INT DEFAULT NULL,
+    `predicted_distance_km` DECIMAL(7,2) DEFAULT NULL,
+    `confidence` DECIMAL(5,4) DEFAULT NULL,
+    `parameters` JSON DEFAULT NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    SPATIAL INDEX `sp_idx_recommended_path` (`recommended_path`),
+    CONSTRAINT `fk_mr_model` FOREIGN KEY (`model_id`) REFERENCES `ml_models`(`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_mr_route` FOREIGN KEY (`route_id`) REFERENCES `tpt_route`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4_COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `tpt_recommendation_history` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `recommendation_id` BIGINT UNSIGNED NOT NULL,
+    `applied_at` DATETIME DEFAULT NULL,
+    `applied_by` BIGINT UNSIGNED DEFAULT NULL,
+    `outcome` JSON DEFAULT NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT `fk_rh_recommendation` FOREIGN KEY (`recommendation_id`) REFERENCES `tpt_model_recommendations`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4_COLLATE=utf8mb4_unicode_ci;
+
+-- ADVANCED (AI MODULE)
+-- =======================================================================
+
+CREATE TABLE transport_route_simulation (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    simulation_date DATETIME NOT NULL,
+    input_students_json JSON NOT NULL,
+    input_stops_json JSON NOT NULL,
+    optimized_route_json JSON NOT NULL,
+    optimized_distance DECIMAL(6,2),
+    optimized_time INT,
+    ai_notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE transport_route_ai_recommendation (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    simulation_id BIGINT UNSIGNED NOT NULL,
+    suggested_stops_json JSON NOT NULL,
+    merged_stops_json JSON,
+    student_shift_json JSON,
+    potential_distance_saving DECIMAL(6,2),
+    potential_fuel_saving DECIMAL(10,2),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (simulation_id) REFERENCES transport_route_simulation(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- =======================================================================
+-- STUDENT BOARD/UN-BORDING LOG
+-- =======================================================================
+
+CREATE TABLE IF NOT EXISTS `tpt_student_event_log` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `trip_id` BIGINT UNSIGNED DEFAULT NULL,
+    `student_session_id` BIGINT UNSIGNED DEFAULT NULL,
+    `stop_id` BIGINT UNSIGNED DEFAULT NULL,
+    `event_type` ENUM('BOARD','ALIGHT') NOT NULL,
+    `recorded_at` DATETIME NOT NULL,
+    `device_id` VARCHAR(200) DEFAULT NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    CONSTRAINT `fk_sel_trip` FOREIGN KEY (`trip_id`) REFERENCES `tpt_trip`(`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_sel_stop` FOREIGN KEY (`stop_id`) REFERENCES `tpt_pickup_points`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4_COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `tpt_gps_trip_log` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `trip_id` BIGINT UNSIGNED NOT NULL,
+    `vehicle_id` BIGINT UNSIGNED DEFAULT NULL,
+    `log_time` DATETIME NOT NULL,
+    `latitude` DECIMAL(10,7) NOT NULL,
+    `longitude` DECIMAL(10,7) NOT NULL,
+    `location` POINT NOT NULL SRID 4326,
+    `speed` DECIMAL(6,2) DEFAULT NULL,
+    `ignition_status` TINYINT(1) DEFAULT NULL,
+    `deviation_flag` TINYINT(1) DEFAULT 0,
+    `raw_payload` JSON DEFAULT NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    KEY `idx_gps_trip_time` (`trip_id`, `log_time`),
+    KEY `idx_gps_vehicle_time` (`vehicle_id`, `log_time`),
+    SPATIAL INDEX `sp_idx_gps_location` (`location`),
+    CONSTRAINT `fk_gps_trip` FOREIGN KEY (`trip_id`) REFERENCES `tpt_trip`(`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_gps_vehicle` FOREIGN KEY (`vehicle_id`) REFERENCES `tpt_vehicle`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- PRODUCTION NOTE: Partition this table by month or week after deployment
+-- Example (run only after data is in place):
+-- ALTER TABLE tpt_gps_trip_log PARTITION BY RANGE (YEAR(log_time)*100 + MONTH(log_time))
+-- (PARTITION p202401 VALUES LESS THAN (202402),
+--  PARTITION p202402 VALUES LESS THAN (202403),
+--  PARTITION p_future VALUES LESS THAN MAXVALUE);
+
+
+CREATE TABLE IF NOT EXISTS `tpt_gps_alerts` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `vehicle_id` BIGINT UNSIGNED NOT NULL,
+    `alert_type` ENUM('Overspeed','Idle','RouteDeviation','GeofenceBreach') NOT NULL,
+    `log_time` DATETIME NOT NULL,
+    `message` VARCHAR(512) NOT NULL,
+    `meta` JSON DEFAULT NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    KEY `idx_gps_alerts_vehicle` (`vehicle_id`, `log_time`),
+    CONSTRAINT `fk_gps_alert_vehicle` FOREIGN KEY (`vehicle_id`) REFERENCES `tpt_vehicle`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- =======================================================================
+-- NOTIFICATIONS & LOGS
+-- =======================================================================
+
+CREATE TABLE IF NOT EXISTS `tpt_notification_log` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `student_session_id` BIGINT UNSIGNED DEFAULT NULL,
+    `trip_id` BIGINT UNSIGNED DEFAULT NULL,
+    `stop_id` BIGINT UNSIGNED DEFAULT NULL,
+    `notification_type` ENUM('TripStart','ApproachingStop','ReachedStop','Delayed','Cancelled') DEFAULT NULL,
+    `sent_time` DATETIME DEFAULT NULL,
+    `status` ENUM('Sent','Failed') NOT NULL DEFAULT 'Sent',
+    `payload` JSON DEFAULT NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    CONSTRAINT `fk_nl_trip` FOREIGN KEY (`trip_id`) REFERENCES `tpt_trip`(`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_nl_stop` FOREIGN KEY (`stop_id`) REFERENCES `tpt_pickup_points`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- =======================================================================
+-- GPS LOGS - CRITICAL TELEMETRY TABLE
+-- Heavy table: Composite index on (trip_id, log_time) and (vehicle_id, log_time)
+-- Spatial index on location (SRID 4326). NO PARTITION by request (add later via ALTER).
+-- Recommended: stream to object storage (S3), curate time-window data here.
+-- =======================================================================
+
+CREATE TABLE IF NOT EXISTS `tpt_data_migration_jobs` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `job_key` VARCHAR(128) NOT NULL,
+    `description` VARCHAR(512) DEFAULT NULL,
+    `status` ENUM('Pending','Running','Completed','Failed') NOT NULL DEFAULT 'Pending',
+    `started_at` DATETIME DEFAULT NULL,
+    `finished_at` DATETIME DEFAULT NULL,
+    `meta` JSON DEFAULT NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =======================================================================
+-- LIVE TRIP STATUS
+-- =======================================================================
+-- Table to track live status of trips including current stop, ETA, and emergency situations.
+-- This table needs to be filled and updated in real-time by GPS tracking system or mobile app. No Entry Screen needed.
+CREATE TABLE IF NOT EXISTS `tpt_live_trip` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `trip_id` BIGINT UNSIGNED NOT NULL,                 -- FK to 'tpt_trip'
+    `current_stop_id` BIGINT UNSIGNED DEFAULT NULL,     -- FK to 'tpt_pickup_points'
+    `eta` DATETIME DEFAULT NULL,                        -- Estimated time of arrival at next stop
+    `reached_flag` TINYINT(1) NOT NULL DEFAULT 0,       -- 1=Reached current stop, 0=Not yet reached
+    `emergency_flag` TINYINT(1) DEFAULT 0,              -- 1=Emergency situation, 0=Normal
+    `last_update` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    CONSTRAINT `fk_live_trip` FOREIGN KEY (`trip_id`) REFERENCES `tpt_trip`(`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_live_current_stop` FOREIGN KEY (`current_stop_id`) REFERENCES `tpt_pickup_points`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =======================================================================
+-- AUDIT & ANALYTICS
+-- =======================================================================
+
+CREATE TABLE IF NOT EXISTS `tpt_trip_analysis` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `trip_id` BIGINT UNSIGNED NOT NULL,     -- FK to tpt_trip
+    `driver_id` BIGINT UNSIGNED NOT NULL,   -- FK to sys_users
+    `vehicle_id` BIGINT UNSIGNED NOT NULL,  -- FK to tpt_vehicles
+    `actual_start_time` TIMESTAMP NULL DEFAULT NULL,
+    `actual_end_time` TIMESTAMP NULL DEFAULT NULL,
+    `planned_start_time` TIMESTAMP NULL DEFAULT NULL,
+    `planned_end_time` TIMESTAMP NULL DEFAULT NULL,
+    `actual_distance_km` DECIMAL(10,2) DEFAULT NULL,
+    `planned_distance_km` DECIMAL(10,2) DEFAULT NULL,
+    `fuel_consumed_liters` DECIMAL(10,2) DEFAULT NULL,
+    `average_speed_kmh` DECIMAL(5,2) DEFAULT NULL,
+    `max_speed_kmh` DECIMAL(5,2) DEFAULT NULL,
+    `harsh_braking_events` INT UNSIGNED DEFAULT 0,
+    `harsh_acceleration_events` INT UNSIGNED DEFAULT 0,
+    `idle_time_minutes` INT UNSIGNED DEFAULT 0,
+    `on_time_delivery_percentage` DECIMAL(5,2) DEFAULT NULL,
+    `incident_count` INT UNSIGNED DEFAULT 0,
+    `driver_rating` DECIMAL(3,2) DEFAULT NULL, -- e.g., 1.00 to 5.00
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    CONSTRAINT `fk_ta_trip` FOREIGN KEY (`trip_id`) REFERENCES `tpt_trip`(`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_ta_driver` FOREIGN KEY (`driver_id`) REFERENCES `sys_users`(`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_ta_vehicle` FOREIGN KEY (`vehicle_id`) REFERENCES `tpt_vehicles`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

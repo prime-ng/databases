@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find /home/tarun/Desktop/Apps/laravel -name *RequirementConsolidation* -type f)",
+      "Bash(find /home/tarun/Desktop/Apps/laravel/Modules/SmartTimetable -type f -name *Service*)",
+      "Bash(./vendor/bin/pest tests/Unit/SmartTimetable/ActivityModelTest.php --no-ansi)"
+    ]
+  }
+}

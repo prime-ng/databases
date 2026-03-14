@@ -1,0 +1,7 @@
+Some Unique Requirement
+-----------------------
+
+Problem:
+            - School may open for Few Classes, whereas closed for other classes. i.e. In Winter sometime it happens that DM/Govt. declare holiday for Kids but Senior classes remain open.
+Solution:   - 
+

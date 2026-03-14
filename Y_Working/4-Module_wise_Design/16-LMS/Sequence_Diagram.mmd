@@ -1,0 +1,14 @@
+```mermaid
+sequenceDiagram
+    Teacher->>LMS: Mark Topic Completed
+    LMS->>RuleEngine: Evaluate Rules
+    RuleEngine->>Homework: Auto Assign
+    RuleEngine->>Quiz: Assign Quiz
+    Student->>Quiz: Attempt
+    Quiz->>Analytics: Capture Behavior
+    Analytics->>AI Engine: Evaluate Performance
+    AI Engine->>RuleEngine: Recommend Retest
+    RuleEngine->>Quiz: Assign Retest (if required)
+```
+
+

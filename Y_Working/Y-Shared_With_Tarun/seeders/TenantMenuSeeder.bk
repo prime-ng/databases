@@ -1,0 +1,453 @@
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
+use Modules\SystemConfig\Models\Menu;
+
+class TenantMenuSeeder extends Seeder
+{
+    /**
+     * Run the database seeds.
+     */
+    public function run(): void
+    {
+        $menus = [
+
+            // Core Configuration (category)
+            [
+                'code' => Str::slug('Core Configuration', '_'),
+                'title' => 'Core Configuration',
+                'slug' => Str::slug('Core Configuration'),
+                'description' => 'Core system configuration and management',
+                'menu_for' => 'tenant',
+                'icon' => 'fa-solid fa-cog',
+                'is_category' => true,
+                'parent_id' => null,
+                'sort_order' => 1,
+                'visible_by_default' => true,
+                'route' => 'dashboard.core-configuration',
+                'permission' => 'system-config.core.viewAny',
+                'is_active' => true,
+                'children' => [
+
+                    // System Configuration
+                    [
+                        'code' => Str::slug('System Configuration', '_'),
+                        'title' => 'System Configuration',
+                        'slug' => Str::slug('System Configuration'),
+                        'description' => 'Global system settings and preferences',
+                        'menu_for' => 'tenant',
+                        'icon' => 'fa-solid fa-sliders',
+                        'is_category' => false,
+                        'parent_id' => null,
+                        'sort_order' => 1,
+                        'route' => 'system-config.setting.index',
+                        'visible_by_default' => true,
+                        'permission' => '',
+                        'is_active' => true,
+                    ],
+
+                    // Dropdown Menus
+                    [
+                        'code' => Str::slug('Dropdown Menus', '_'),
+                        'title' => 'Dropdown Menus',
+                        'slug' => Str::slug('Dropdown Menus'),
+                        'description' => 'Manage reusable dropdown lists',
+                        'menu_for' => 'tenant',
+                        'icon' => 'fa-solid fa-list',
+                        'is_category' => false,
+                        'parent_id' => null,
+                        'sort_order' => 2,
+                        'route' => 'global-master.dropdown.index',
+                        'visible_by_default' => true,
+                        'permission' => '',
+                        'is_active' => true,
+                    ],
+
+                    // View Activities
+                    [
+                        'code' => Str::slug('View Activities', '_'),
+                        'title' => 'View Activities',
+                        'slug' => Str::slug('View Activities'),
+                        'description' => 'Audit logs and activity viewer',
+                        'menu_for' => 'tenant',
+                        'icon' => 'fa-solid fa-eye',
+                        'is_category' => false,
+                        'parent_id' => null,
+                        'sort_order' => 3,
+                        'route' => 'global-master.activity-log.index',
+                        'visible_by_default' => true,
+                        'permission' => '',
+                        'is_active' => true,
+                    ],
+
+                ],
+            ],
+
+            // Foundational Setup (category)
+            [
+                'code' => Str::slug('Foundational Setup', '_'),
+                'title' => 'Foundational Setup',
+                'slug' => Str::slug('Foundational Setup'),
+                'description' => 'Base entities and role/session/module setup',
+                'menu_for' => 'tenant',
+                'icon' => 'fa-solid fa-layer-group',
+                'is_category' => true,
+                'parent_id' => null,
+                'sort_order' => 2,
+                'route' => 'dashboard.foundational-setup',
+                'visible_by_default' => true,
+                'permission' => '',
+                'is_active' => true,
+                'children' => [
+
+                    // Roles & Permission (Prime)
+                    [
+                        'code' => Str::slug('Roles & Permission', '_'),
+                        'title' => 'Roles & Permission',
+                        'slug' => Str::slug('Roles & Permission'),
+                        'description' => 'Manage roles, permissions and assignments',
+                        'menu_for' => 'tenant',
+                        'icon' => 'fa-solid fa-user-shield',
+                        'is_category' => false,
+                        'parent_id' => null,
+                        'sort_order' => 1,
+                        'route' => 'school-setup.user-role-prm.index',
+                        'visible_by_default' => true,
+                        'permission' => '',
+                        'is_active' => true,
+                    ],
+
+                    // Session & Board Setup
+                    [
+                        'code' => Str::slug('Session & Board Setup', '_'),
+                        'title' => 'Session & Board Setup',
+                        'slug' => Str::slug('Session & Board Setup'),
+                        'description' => 'Configure sessions and boards',
+                        'menu_for' => 'tenant',
+                        'icon' => 'fa-solid fa-calendar-check',
+                        'is_category' => false,
+                        'parent_id' => null,
+                        'sort_order' => 2,
+                        'route' => '',
+                        'visible_by_default' => true,
+                        'permission' => '',
+                        'is_active' => true,
+                    ],
+
+                ],
+            ],
+
+            // SCHOOL SETUP (category)
+            [
+                'code' => Str::slug('School Setup', '_'),
+                'title' => 'School Setup',
+                'slug' => Str::slug('School Setup'),
+                'description' => 'School related entities: classes, teachers, syllabus',
+                'menu_for' => 'tenant',
+                'icon' => 'fa-solid fa-school',
+                'is_category' => true,
+                'parent_id' => null,
+                'sort_order' => 3,
+                'visible_by_default' => true,
+                'permission' => '',
+                'route' => 'dashboard.school-setup',
+                'is_active' => true,
+                'children' => [
+
+
+                    // Infra Setup Management
+                    [
+                        'code' => Str::slug('Infrasetup Management', '_'),
+                        'title' => 'Infrasetup Management',
+                        'slug' => Str::slug('Infrasetup Management'),
+                        'description' => 'Create and manage Infrasetup',
+                        'menu_for' => 'tenant',
+                        'icon' => 'fa-solid fa-book',
+                        'is_category' => false,
+                        'parent_id' => null,
+                        'sort_order' => 1,
+                        'route' => 'school-setup.infrasetup.index',
+                        'visible_by_default' => true,
+                        'permission' => '',
+                        'is_active' => true,
+                    ],
+
+                    // Class & Subject Mgmt.
+                    [
+                        'code' => Str::slug('Class & Subject Mgmt', '_'),
+                        'title' => 'Class & Subject Mgmt.',
+                        'slug' => Str::slug('Class & Subject Mgmt'),
+                        'description' => 'Manage classes, sections and subjects',
+                        'menu_for' => 'tenant',
+                        'icon' => 'fa-solid fa-chalkboard',
+                        'is_category' => false,
+                        'parent_id' => null,
+                        'sort_order' => 2,
+                        'route' => 'school-setup.school-class.index',
+                        'visible_by_default' => true,
+                        'permission' => '',
+                        'is_active' => true,
+                    ],
+
+                    // Teacher
+                    [
+                        'code' => Str::slug('Teacher', '_'),
+                        'title' => 'Teacher',
+                        'slug' => Str::slug('Teacher'),
+                        'description' => 'Manage teacher profiles and assignments',
+                        'menu_for' => 'tenant',
+                        'icon' => 'fa-solid fa-user',
+                        'is_category' => false,
+                        'parent_id' => null,
+                        'sort_order' => 3,
+                        'route' => '',
+                        'visible_by_default' => true,
+                        'permission' => '',
+                        'is_active' => true,
+                    ],
+
+                    // Syllabus Management
+                    [
+                        'code' => Str::slug('Syllabus Management', '_'),
+                        'title' => 'Syllabus Management',
+                        'slug' => Str::slug('Syllabus Management'),
+                        'description' => 'Create and manage syllabus content',
+                        'menu_for' => 'tenant',
+                        'icon' => 'fa-solid fa-book',
+                        'is_category' => false,
+                        'parent_id' => null,
+                        'sort_order' => 4,
+                        'route' => 'school-setup.lesson.index',
+                        'visible_by_default' => true,
+                        'permission' => '',
+                        'is_active' => true,
+                    ],
+
+                ],
+            ],
+
+            // Admission & Student Mgmt. (category)
+            [
+                'code' => Str::slug('Admission & Student Mgmt', '_'),
+                'title' => 'Admission & Student Mgmt.',
+                'slug' => Str::slug('Admission & Student Mgmt'),
+                'description' => 'Admission workflows and student records',
+                'menu_for' => 'tenant',
+                'icon' => 'fa-solid fa-user-plus',
+                'is_category' => true,
+                'parent_id' => null,
+                'sort_order' => 4,
+                'visible_by_default' => true,
+                'route' => 'dashboard.admission-student-management',
+                'permission' => '',
+                'is_active' => true,
+                'children' => [
+
+                    // Admission Mgmt.
+                    [
+                        'code' => Str::slug('Admission Mgmt', '_'),
+                        'title' => 'Admission Mgmt.',
+                        'slug' => Str::slug('Admission Mgmt'),
+                        'description' => 'Manage admission forms and processes',
+                        'menu_for' => 'tenant',
+                        'icon' => 'fa-solid fa-file-signature',
+                        'is_category' => false,
+                        'parent_id' => null,
+                        'sort_order' => 1,
+                        'route' => '',
+                        'visible_by_default' => true,
+                        'permission' => '',
+                        'is_active' => true,
+                    ],
+
+                    // Student Management
+                    [
+                        'code' => Str::slug('Student Management', '_'),
+                        'title' => 'Student Management',
+                        'slug' => Str::slug('Student Management'),
+                        'description' => 'Student records, profiles and progress',
+                        'menu_for' => 'tenant',
+                        'icon' => 'fa-solid fa-user-graduate',
+                        'is_category' => false,
+                        'parent_id' => null,
+                        'sort_order' => 2,
+                        'route' => '',
+                        'visible_by_default' => true,
+                        'permission' => '',
+                        'is_active' => true,
+                    ],
+
+                ],
+            ],
+
+            // Operation Mgmt (Category)
+            [
+                'code' => Str::slug('Operation Mgmt', '_'),
+                'title' => 'Operation Mgmt.',
+                'slug' => Str::slug('Operation Mgmt'),
+                'description' => 'Operational modules like transport and timetables',
+                'menu_for' => 'tenant',
+                'icon' => 'fa-solid fa-gear',
+                'is_category' => true,
+                'sort_order' => 5,
+                'visible_by_default' => true,
+                'permission' => '',
+                'route' => 'dashboard.operation-management',
+                'is_active' => true,
+
+                'children' => [
+
+                    // Transport Management
+                    [
+                        'code' => Str::slug('Transport Management', '_'),
+                        'title' => 'Transport Management',
+                        'slug' => Str::slug('Transport Management'),
+                        'description' => 'Manage transport, routes and vehicles',
+                        'menu_for' => 'tenant',
+                        'icon' => 'fa-solid fa-bus',
+                        'is_category' => true,
+                        'sort_order' => 1,
+                        'route' => 'transport.transport-master.index',
+                        'visible_by_default' => true,
+                        'permission' => '',
+                        'is_active' => true,
+
+                        'children' => [
+
+                            [
+                                'code' => Str::slug('Transport Master', '_'),
+                                'title' => 'Transport Master',
+                                'slug' => Str::slug('Transport Master'),
+                                'menu_for' => 'tenant',
+                                'icon' => 'fa-solid fa-route',
+                                'is_category' => false,
+                                'sort_order' => 1,
+                                'route' => 'transport.transport-master.index',
+                                'visible_by_default' => true,
+                                'permission' => '',
+                                'is_active' => true,
+                            ],
+
+                            [
+                                'code' => Str::slug('Vehicle Mgmt', '_'),
+                                'title' => 'Vehicle Mgmt',
+                                'slug' => Str::slug('Vehicle Mgmt'),
+                                'menu_for' => 'tenant',
+                                'icon' => 'fa-solid fa-truck',
+                                'is_category' => false,
+                                'sort_order' => 2,
+                                'route' => 'transport.vehicle-mgmt.index',
+                                'visible_by_default' => true,
+                                'permission' => '',
+                                'is_active' => true,
+                            ],
+
+                            [
+                                'code' => Str::slug('Staff Mgmt', '_'),
+                                'title' => 'Staff Mgmt',
+                                'slug' => Str::slug('Staff Mgmt'),
+                                'menu_for' => 'tenant',
+                                'icon' => 'fa-solid fa-users',
+                                'is_category' => false,
+                                'sort_order' => 3,
+                                'route' => 'transport.staff-mgmt.index',
+                                'visible_by_default' => true,
+                                'permission' => '',
+                                'is_active' => true,
+                            ],
+
+                            [
+                                'code' => Str::slug('Trip Management', '_'),
+                                'title' => 'Trip Management',
+                                'slug' => Str::slug('Trip Management'),
+                                'menu_for' => 'tenant',
+                                'icon' => 'fa-solid fa-map-location-dot',
+                                'is_category' => false,
+                                'sort_order' => 4,
+                                'route' => 'transport.trip-management.index',
+                                'visible_by_default' => true,
+                                'permission' => '',
+                                'is_active' => true,
+                            ],
+
+                            [
+                                'code' => Str::slug('Std Route & Fees Mgmt', '_'),
+                                'title' => 'Std. Route & Fees Mgmt.',
+                                'slug' => Str::slug('Std Route & Fees Mgmt'),
+                                'menu_for' => 'tenant',
+                                'icon' => 'fa-solid fa-money-check',
+                                'is_category' => false,
+                                'sort_order' => 5,
+                                'route' => 'transport.std-route-Fees-mgmt.index',
+                                'visible_by_default' => true,
+                                'permission' => '',
+                                'is_active' => true,
+                            ],
+
+                            [
+                                'code' => Str::slug('Transport Report', '_'),
+                                'title' => 'Transport Report',
+                                'slug' => Str::slug('Transport Report'),
+                                'menu_for' => 'tenant',
+                                'icon' => 'fa-solid fa-chart-line',
+                                'is_category' => false,
+                                'sort_order' => 6,
+                                'route' => 'transport.transport-report.index',
+                                'visible_by_default' => true,
+                                'permission' => '',
+                                'is_active' => true,
+                            ],
+                        ],
+                    ],
+
+                    // Timetable Management
+                    [
+                        'code' => Str::slug('Timetable Management', '_'),
+                        'title' => 'Timetable Management',
+                        'slug' => Str::slug('Timetable Management'),
+                        'description' => 'Create and manage timetables',
+                        'menu_for' => 'tenant',
+                        'icon' => 'fa-solid fa-clock',
+                        'is_category' => false,
+                        'sort_order' => 2,
+                        'route' => 'smart-timetable.smart-timetable-management.index',
+                        'visible_by_default' => true,
+                        'permission' => '',
+                        'is_active' => true,
+                    ],
+                ],
+            ],
+
+        ];
+        foreach ($menus as $menu) {
+            $this->seedMenu($menu);
+        }
+    }
+    private function seedMenu(array $menuData, $parentId = null)
+    {
+        $children = $menuData['children'] ?? [];
+        unset($menuData['children']);
+
+        // Enforce DB rule automatically
+        // if ($menuData['is_category']) {
+        //     $menuData['route'] = null;
+        // }
+
+        $menu = Menu::updateOrCreate(
+            [
+                'code' => $menuData['code'],
+                'menu_for' => $menuData['menu_for'],
+            ],
+            array_merge($menuData, [
+                'parent_id' => $parentId,
+            ])
+        );
+
+        foreach ($children as $child) {
+            $this->seedMenu($child, $menu->id);
+        }
+    }
+}
