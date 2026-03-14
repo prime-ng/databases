@@ -1,4 +1,22 @@
 # Claude Code — Quick Guide
+===========================
+
+## Comand Summary
+-----------------
+
+### To Execute Prompt (.md) file
+--------------------------------
+Option 1 — Just tell me the path (simplest)
+    Read and execute the prompt in `/path/to/prompt.md`
+    I'll read the file and execute it. No setup needed.  
+
+
+
+
+
+
+
+
 
 > Daily-use commands for working with Claude Code + AI Brain on Prime-AI
 > **Full Manual:** [Claude_User_Mannual.md](./Claude_User_Mannual.md)
