@@ -1,0 +1,262 @@
+# Screen Design Specification: Vendor Management Module
+## Document Version: 2.1
+**Last Updated:** December 25, 2025
+
+---
+
+## 1. OVERVIEW
+
+### 1.1 Purpose
+This document provides detailed UI/UX specifications for the **Vendor Management Module**, enabling School Admins and Accountants to manage the entire lifecycle of external service providers—from onboarding and contract definition to daily usage logging, invoicing, and payment processing.
+
+### 1.2 User Roles & Permissions
+| Role         | View | Create | Edit | Delete | Approve | Payment | Export |
+|--------------|------|--------|------|--------|---------|---------|--------|
+| Super Admin  |  ✓   |   ✓    |  ✓   |   ✓    |    ✓    |    ✓    |   ✓    |
+| School Admin |  ✓   |   ✓    |  ✓   |   ✓    |    ✓    |    ✓    |   ✓    |
+| Accountant   |  ✓   |   ✓    |  ✓   |   ✗    |    ✗    |    ✓    |   ✓    |
+| Tpt Manager  |  ✓   |   ✗    |  ✗   |   ✗    |    ✗    |    ✗    |   ✗    |
+| Vendor User  |  ✓*  |   ✗    |  ✗   |   ✗    |    ✗    |    ✗    |   ✓    |
+
+*Vendor User sees only their own data (Future Scope).
+
+### 1.3 Data Context
+
+**Primary Table**: `vnd_vendors`
+- `id`: PK
+- `vendor_name`: Legal Name
+- `vendor_type_id`: FK (Type)
+- `gst_number`: Tax ID
+- `is_active`: Status
+
+**Related Tables**: `vnd_agreements`, `vnd_agreement_items_jnt`, `vnd_usage_logs`, `vnd_invoices`
+
+---
+
+## 2. SCREEN LAYOUTS
+
+### 2.0 Vendor Dashboard (Deliverable D)
+**Route:** `/operations/vendor/dashboard`
+
+#### 2.0.1 Layout
+```
+┌────────────────────────────────────────────────────────────────────────────────────┐
+│ OPERATIONS > VENDOR MANAGEMENT > DASHBOARD                                         │
+│ [Period: This Month ▼]                                          [Export Report]    │
+├────────────────────────────────────────────────────────────────────────────────────┤
+│ ┌──────────────────────┐  ┌──────────────────────┐  ┌──────────────────────┐       │
+│ │ TOTAL PAYABLE        │  │ PENDING INVOICES     │  │ ACTIVE AGREEMENTS    │       │
+│ │ ₹ 12,45,000          │  │ 8 Bills              │  │ 24 Contracts         │       │
+│ │ ▲ 12% vs last month  │  │ (3 Overdue)          │  │ (2 expiring soon)    │       │
+│ └──────────────────────┘  └──────────────────────┘  └──────────────────────┘       │
+├────────────────────────────────────────────────────────────────────────────────────┤
+│ ┌──────────────────────────────────────────┐  ┌──────────────────────────────────┐ │
+│ │ SPEND BY CATEGORY (Pie Chart)            │  │ RECENT INVOICE STATUS            │ │
+│ │                                          │  │                                  │ │
+│ │  [|||||||||||] Transport (60%)           │  │ • INV-001 (ABC Bus) - [Paid]     │ │
+│ │  [|||||]       Canteen (20%)             │  │ • INV-002 (Securitas)-[Pending]  │ │
+│ │  [|||]         Security (15%)            │  │ • INV-003 (City Cat) -[Approved] │ │
+│ │  [||]          Others (5%)               │  │ • INV-004 (Jio Net)  -[Overdue]  │ │
+│ │                                          │  │                                  │ │
+│ └──────────────────────────────────────────┘  └──────────────────────────────────┘ │
+├────────────────────────────────────────────────────────────────────────────────────┤
+│ ┌────────────────────────────────────────────────────────────────────────────────┐ │
+│ │ VENDOR PERFORMANCE ALERTS                                                      │ │
+│ │ [!] "ABC Travels" Bus usage is 15% higher than average this week.              │ │
+│ │ [!] "Star Canteen" Agreement expires in 15 days. [Renew Now]                   │ │
+│ └────────────────────────────────────────────────────────────────────────────────┘ │
+└────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### 2.1 Vendor List Screen
+**Route:** `/operations/vendor/list`
+
+#### 2.1.1 Page Layout
+```
+┌────────────────────────────────────────────────────────────────────────────────────┐
+│ VENDOR MASTER LIST                                                                 │
+├────────────────────────────────────────────────────────────────────────────────────┤
+│ [Search Name/GST...]                                      [+ Add Vendor] [Import]  │
+├────────────────────────────────────────────────────────────────────────────────────┤
+│ TYPE: [All Types ▼]    STATUS: [Active ▼]    SORT: [Name A-Z ▼]                    │
+├────────────────────────────────────────────────────────────────────────────────────┤
+│ ☐ │ Vendor Name     | Type       │ Contact Person │ Mobile       │ Balance │ Action│
+│────────────────────────────────────────────────────────────────────────────────────│
+│ ☐ │ ABC Travels     | Transport  | Mr. Rajesh     | 9876543210   | ₹ 0.00  | ✎ 🗑  │
+│ ☐ │ City Security   | Security   | Col. Singh     | 8888888888   | ₹ 12k   | ✎ 🗑  │
+│ ☐ │ Fresh Meals     | Canteen    | Mrs. Gupta     | 7777777777   | ₹ 5k    | ✎ 🗑  │
+│   │ ...             | ...        | ...            | ...          | ...     |       │
+│────────────────────────────────────────────────────────────────────────────────────│
+│ Showing 1-10 of 45 vendors                                           [< 1 2 3 >]   │
+└────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+#### 2.1.2 Components
+- **Filters**: Type (from `sys_dropdown_table`), Status.
+- **Actions**: Edit, Delete (Soft), View Details.
+- **Balance Column**: Computed from `vnd_invoices` (Total Payable - Total Paid).
+
+---
+
+### 2.2 Create/Edit Vendor Screen (Modal)
+**Route:** `POST /operations/vendor/create`
+
+#### 2.2.1 Layout
+```
+┌──────────────────────────────────────────────────┐
+│ ADD NEW VENDOR                               [✕] │
+├──────────────────────────────────────────────────┤
+│ BASIC INFO                                       │
+│ Vendor Name *      [___________________________] │
+│ Vendor Type *      [Select Type ▼]               │
+│ Contact Person *   [___________________________] │
+│ Contact Mobile *   [__________]                  │
+│ Email              [___________________________] │
+│                                                  │
+│ STATUTORY DETAILS                                │
+│ GST Number         [________________]            │
+│ PAN Number         [__________]                  │
+│ Address            [___________________________] │
+│                                                  │
+│ BANK DETAILS (Secured)                           │
+│ Bank Name          [________________]            │
+│ Account No.        [________________]            │
+│ IFSC Code          [________________]            │
+│ UPI ID             [________________]            │
+│                                                  │
+│ Status             [☑] Active                    │
+├──────────────────────────────────────────────────┤
+│              [Cancel]  [Save Vendor]             │
+└──────────────────────────────────────────────────┘
+```
+
+---
+
+### 2.3 Agreement Studio (Contract Management)
+**Route:** `/operations/vendor/{id}/agreement/new`
+
+#### 2.3.1 Layout
+```
+┌────────────────────────────────────────────────────────────────────────────────────┐
+│ CREATE AGREEMENT: ABC Travels                                                      │
+├────────────────────────────────────────────────────────────────────────────────────┤
+│ 1. AGREEMENT HEADER                                                                │
+│    Ref No: [Agr-2024-01]   Start: [DD/MM/YYYY]   End: [DD/MM/YYYY]                 │
+│    Cycle: [Monthly ▼]      PDF Upload: [Browse...]                                 │
+├────────────────────────────────────────────────────────────────────────────────────┤
+│ 2. LINE ITEMS (Services/Products)                                                  │
+│                                                                                    │
+│ ROW #1                                                                             │
+│ Item: [40 Seater Bus ▼]    Linked to: [Vehicle: KA-01-1234 ▼]                      │
+│ Billing Model: [Hybrid (Fixed+Var) ▼]                                              │
+│                                                                                    │
+│    Fixed Charge (Monthly Rent) : [ ₹ 50,000 ]                                      │
+│    Variable Rate (Per Km)      : [ ₹ 25.00  ]                                      │
+│    Min Guarantee (Km/Month)    : [ 1000     ]                                      │
+│    Tax Rate (GST)              : [ 18 %     ]                                      │
+│                                                   [🗑 Remove]                      │
+│ -----------------------------------------------------------                        │
+│ [+ Add Another Item]                                                               │
+├────────────────────────────────────────────────────────────────────────────────────┤
+│                                                      [Cancel]   [Create Contract]  │
+└────────────────────────────────────────────────────────────────────────────────────┘
+```
+**Logic**:
+- **Linked to**: Dynamic dropdown based on Item Nature. If Item is 'Transport', show Vehicles list.
+- **Tax**: Auto-calculates effective tax.
+
+---
+
+### 2.4 Usage Log Entry (Analytics Hook)
+**Route:** `/operations/vendor/usage-log`
+
+#### 2.4.1 Layout
+```
+┌────────────────────────────────────────────────────────────────────────────────────┐
+│ DAILY SERVICE USAGE LOG                                                            │
+├────────────────────────────────────────────────────────────────────────────────────┤
+│ Vendor: [ABC Travels ▼]   Agreement: [Annual Bus Contract ▼]   Date: [Today ▼]     │
+├────────────────────────────────────────────────────────────────────────────────────┤
+│ Service Item               | Linked Asset   | Previous Qty | Current Qty | Consumed│
+│────────────────────────────────────────────────────────────────────────────────────│
+│ 40 Seater Bus (Rate: ₹25)  | KA-01-1234     | 10,500 km    | [10,650]    | 150 km  │
+│ 40 Seater Bus (Rate: ₹25)  | KA-02-5678     | 12,000 km    | [12,050]    | 50 km   │
+│ Driver Overtime (Rate: ₹100)| Ram Singh     | -            | -           | [ 2  ]Hr│
+│────────────────────────────────────────────────────────────────────────────────────│
+│ Total Billable estimate for today: ₹ 4,200                                         │
+│                                                                      [Save Logs]   │
+└────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 3. DATA MODEL & API CONTRACTS
+
+### 3.1 Create Invoice Request (Auto-Generation)
+```json
+POST /api/v1/vendor/invoices/generate
+{
+  "vendor_id": 105,
+  "agreement_id": 202,
+  "billing_month": "2025-01-01",
+  "auto_approve": false
+}
+```
+
+### 3.2 Response (Draft Invoice)
+```json
+{
+  "status": "success",
+  "data": {
+    "invoice_id": 9001,
+    "line_items": [
+      {"item": "Bus Rent", "type": "Fixed", "amount": 50000},
+      {"item": "Fuel Surcharge", "type": "Variable", "qty": 1500, "rate": 25, "amount": 37500}
+    ],
+    "sub_total": 87500,
+    "tax_total": 15750,
+    "net_payable": 103250
+  }
+}
+```
+
+---
+
+## 4. REPORT DESIGN (Deliverable E)
+
+### 4.1 Vendor Spend Analysis
+*   **Purpose**: Analyze total expenditure per vendor over time.
+*   **Primary Tables**: `vnd_invoices`, `vnd_vendors`.
+*   **Filters**: Date Range, Vendor Type, Status (Paid/Pending).
+*   **Columns**: Vendor Name, Type, Total Billed, Total Paid, Outstanding.
+*   **User Role**: Accountant, School Admin.
+
+### 4.2 Vehicle Consumption Report
+*   **Purpose**: Track fuel/km usage per vehicle billed by vendors.
+*   **Primary Tables**: `vnd_usage_logs`, `vnd_agreement_items_jnt`.
+*   **Filters**: Vehicle Number, Month.
+*   **Columns**: Date, Vehicle, Opening Reading, Closing Reading, Km Run, Vendor Billed Amount.
+*   **User Role**: Transport Manager.
+
+### 4.3 Payable Aging Report
+*   **Purpose**: Identify payments overdue to vendors.
+*   **Primary Tables**: `vnd_invoices`.
+*   **Filters**: Due Date < Today, Status != Paid.
+*   **Columns**: Vendor, Invoice #, Invoice Date, Due Date, Days Overdue, Balance Amount.
+*   **Frequency**: Weekly (Auto-email to Accountant).
+
+---
+
+## 5. TESTING & DEPLOYMENT
+
+### 5.1 Test Scenarios
+1.  **Contract Logic**: Verify "Min Guarantee" applies when `qty_used` < `min_qty`.
+2.  **Tax**: Verify 18% GST calculation on hybrid billing (Fixed + Variable).
+3.  **Payment**: Ensure partial payment reduces `balance_due` correctly but keeps Invoice status 'Partial'.
+
+### 5.2 Deployment Steps
+1.  Execute `vendor_mgmt_v2.1.sql`.
+2.  Run Seed: `php artisan db:seed --class=VendorDropdownSeeder`.
+3.  Configure Media Disk for Agreement Uploads.
