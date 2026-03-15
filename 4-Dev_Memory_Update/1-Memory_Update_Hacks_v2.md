@@ -326,15 +326,7 @@ When: AI Brain is stale or missing. Full codebase audit across ALL modules (not 
 
 ---
 
-### CONFIGURATION
-  MODULE         = HPC                    # Used in: issue codes (BUG-HPC-001), section headers, AI Brain lookups
-  MODULE_DIR     = Hpc                    # Used in: file paths (Modules/Hpc/), git commands
-  BRANCH         = Brijesh_HPC            # Used in: context for the prompt
-  DEVELOPER      = Shailesh               # Used in: context for the prompt
-  LAST_AUDIT_DATE = 14th Mar 2026         # Used in: git --since filter (Tier 3)
-
-  AI_BRAIN = /Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases/AI_Brain/
----
+AI_BRAIN = /Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases/AI_Brain/
 
 ### Phase 1 — Codebase Structure Audit (run first)
 
@@ -368,15 +360,7 @@ Do NOT guess completion % — base it only on what routes, models, and controlle
 
 ---
 
-### CONFIGURATION
-  MODULE         = HPC                    # Used in: issue codes (BUG-HPC-001), section headers, AI Brain lookups
-  MODULE_DIR     = Hpc                    # Used in: file paths (Modules/Hpc/), git commands
-  BRANCH         = Brijesh_HPC            # Used in: context for the prompt
-  DEVELOPER      = Shailesh               # Used in: context for the prompt
-  LAST_AUDIT_DATE = 14th Mar 2026         # Used in: git --since filter (Tier 3)
-
-  AI_BRAIN = /Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases/AI_Brain/
----
+AI_BRAIN = /Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases/AI_Brain/
 
 Now do a deep audit of each tenant module for known issues, bugs, and gaps.
 
@@ -409,7 +393,7 @@ Tips for running Tier 5:
 | Phase 1 (structure scan — count     | Sonnet  | High   | Mechanical task — reading files and counting.                |
 | files, read module.json)            | 4.6     |        |                                                              |
 +-------------------------------------+---------+--------+--------------------------------------------------------------+
-| Phase 2 (deep audit — spot bugs,   | Opus    | High   | Requires real judgment: recognizing missing auth checks,     |
+| Phase 2 (deep audit — spot bugs,    | Opus    | High   | Requires real judgment: recognizing missing auth checks,     |
 | judge completion %, read ctrls)     | 4.6     |        | N+1s, stub methods. Opus is significantly better at this.    |
 +-------------------------------------+---------+--------+--------------------------------------------------------------+
 

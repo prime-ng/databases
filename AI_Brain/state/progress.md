@@ -1,37 +1,47 @@
 # Development Progress Tracker
 
-## Completed Modules (100%)
+> **Last full audit:** 2026-03-15 against `prime_ai_shailesh` (branch `Brijesh_HPC`)
+> **Codebases:** `prime_ai_tarun` (Tarun — SmartTimetable), `prime_ai_shailesh` (Shailesh — HPC)
+> **Global stats:** 27 modules | 2715 lines in tenant.php | 1328 Route:: calls | 312 tenant migrations
+> **Security note:** Only 1 `EnsureTenantHasModule` usage across entire tenant.php. Library has 0 refs in tenant.php.
+> **RBS baseline:** 1112 sub-tasks across 27 RBS modules. ~350 completed (~31%). See `2-Project_Planning/` for Gap Analysis + Work Status + Estimation.
 
-### Core Platform
-- [x] **Prime** — Tenant management, plans, billing, users, roles, modules, menus, geography
-- [x] **GlobalMaster** — Countries, states, cities, boards, languages, plans, dropdowns
-- [x] **SystemConfig** — Settings, menus, translations
-- [x] **Billing** — Invoice generation, payment tracking, billing cycles
-- [x] **Dashboard** — Admin dashboards
-- [x] **Documentation** — Knowledge base, help docs
+## Modules Previously Marked 100% — Deep-Audited 2026-03-15
 
-### School Administration
-- [x] **SchoolSetup** — Classes, sections, subjects, teachers, rooms, buildings, departments, designations
-- [x] **StudentProfile** — Student data, health profiles, documents, attendance, guardians
-- [x] **Transport** — Vehicles, routes, trips, driver attendance, student boarding, fees, maintenance
-- [x] **Vendor** — Vendor management, agreements, items, invoices, payments
-- [x] **Complaint** — Categories, SLA, actions, AI insights, medical checks
-- [x] **Notification** — Multi-channel notifications, templates, delivery logs
-- [x] **Payment** — Razorpay integration, payment processing
-- [x] **Scheduler** — Job scheduling
+> **NONE are truly 100%.** Every module has security gaps (missing Gate auth, $request->all()),
+> stub controllers, and/or missing EnsureTenantHasModule. See `known-issues.md` for full details.
 
-### Academic & Curriculum
-- [x] **Syllabus** — Lessons, topics, competencies, Bloom taxonomy, cognitive skills
-- [x] **SyllabusBooks** — Textbooks, authors, topic mappings
-- [x] **QuestionBank** — Questions, tags, versions, statistics, AI generation
+### Core Platform (revised from 100%)
+- [ ] **Prime** (~80%) — 8 controllers with stub methods; `is_super_admin` mass-assignable; `$request->all()` in 5 controllers; `RolePermissionController::destroy()` doesn't delete; wrong permission on TenantController
+- [ ] **GlobalMaster** (~82%) — `$request->all()` in 4 controllers; `GlobalMasterController` zero auth on 7 stubs; wrong permission on ModuleController::show()
+- [ ] **SystemConfig** (~75%) — MenuController: 5 methods zero auth; create() empty stub
+- [ ] **Billing** (~70%) — store() no auth on invoice generation; toggleStatus() no auth on reconciliation; 4 controllers with stubs; `Tenancy::initialize()` without try/finally; printData crash on `isNotEmpty()` on float
+- [x] **Dashboard** — Admin dashboards (minimal, likely fine)
+- [x] **Documentation** — Knowledge base, help docs (minimal, likely fine)
+
+### School Administration (revised from 100%)
+- [ ] **SchoolSetup** (~80%) — 5 stub controllers; `is_super_admin` settable via UserController; PHP concat crash in SectionController; assignSubjects route → non-existent method; 15+ unprotected methods; inconsistent permission naming
+- [ ] **StudentProfile** (~80%) — `is_super_admin` writable from student login form; AttendanceController zero auth; StudentProfileController empty stub; StudentController.bk backup with dd()
+- [ ] **Transport** (~82%) — 5 controllers zero auth (FeeMaster, FeeCollection, StudentFine, StudentBoarding, StudentAttendance); `tested.*` typo in AttendanceDevice (all Gates broken); undefined `$request` crash; double-delete race; 5 stub controllers
+- [ ] **Vendor** (~60%) — 6 of 7 controllers NOT registered in routes; VendorInvoiceController zero auth on 14 financial methods; index() auth commented out
+- [ ] **Complaint** (~70%) — dd() in production store() catch + filter(); 3 stub controllers; show/edit/store/update no auth; ComplaintReportController zero auth
+- [ ] **Notification** (~55%) — ALL routes commented out in web.php (module inaccessible); stub target types; 7 controllers duplicate same index queries
+- [ ] **Payment** (~45%) — Razorpay keys hardcoded; PaymentController copy.php with class collision; 2 stub controllers; webhook behind auth (always 401); webhook stores before verification
+- [x] **Scheduler** — Job scheduling (minimal)
+
+### Academic & Curriculum (revised from 100%)
+- [ ] **Syllabus** (~78%) — CompetencieController + TopicController zero auth on all methods; SyllabusController fully empty stub; $request->all() mass assignment; TopicController::destroy() uses forceDelete
+- [ ] **SyllabusBooks** (~65%) — SyllabusBooksController fully empty stub; BookTopicMappingController zero auth all 9 methods; undefined variable crash; central AcademicSession cross-layer
+- [ ] **QuestionBank** (~75%) — **API KEYS HARDCODED (OpenAI + Gemini)** — REVOKE NOW; AIQuestionGeneratorController zero auth; generateQuestions() always returns demo data (dead code)
 
 ### Timetable
-- [ ] **SmartTimetable** (~60%, deep-audited 2026-03-14, re-verified 2026-03-15) — 28 controllers, 86 models, 22 services, 12 FormRequests, 9 unit tests
-  - **Done:** Schema & Foundation, Seeders, Validation Framework, Activity & Generation, Constraint CRUD (6-tab management), Parallel Periods (anchor/sibling solver + 9 tests), soft constraint wiring (D18)
-  - **Critical open:** 6 runtime crash bugs (BUG-B1 through BUG-NEW-06), 17/28 controllers zero auth (SEC-009), no EnsureTenantHasModule, 3 unprotected truncate()
+- [ ] **SmartTimetable** (~60%, audited 2026-03-15)
+  - **Branch state:** `Brijesh_HPC` (Shailesh): 27 controllers, 86 models, 21 services, 12 FormRequests, SmartTimetableController 3037 lines. `Tarun_SmartTimetable` (Tarun): +1 controller (ParallelGroupController), +1 service (ParallelPeriodConstraint), 9 unit tests
+  - **Done:** Schema & Foundation, Seeders, Validation Framework, Activity & Generation, Constraint CRUD (6-tab management). Parallel Periods only in Tarun's branch.
+  - **Critical open:** 6 runtime crash bugs (BUG-B1 through BUG-NEW-06), 17/27 controllers zero auth (SEC-009), no EnsureTenantHasModule, 3 unprotected truncate()
   - **Missing features:** Room allocation (room_id always NULL), Analytics (15%), Refinement (5%), Substitution (0%), API/Async (0%)
   - **Constraint gap:** ~30/155 rules enforced; 125+ unimplemented across Categories B-H. Architecture foundation (Registry, Evaluator, Context) not yet built.
-  - **Code quality:** SmartTimetableController 3,160 lines (god controller), 40 models lack SoftDeletes, 16 controllers use inline validation
+  - **Code quality:** God controller (3037 lines), 40 models lack SoftDeletes, 16 controllers use inline validation
   - **Full development plan:** 19 phases, ~69 days → see `6-Module-In-Progress/8-Smart_Timetable/Claude_Context/2026Mar14_DevelopmentPlan_v2.md`
   - **Prompt files:** 21 execution prompts (P01–P21) in `6-Module-In-Progress/8-Smart_Timetable/Claude_Prompt/`
 
@@ -45,7 +55,7 @@
 - [ ] **LmsExam** (~65%) — `dd($e)` in prod store(); 2 controllers (Blueprint, Scope) have all Gate calls commented out; no EnsureTenantHasModule; answer submission & grading absent
 - [ ] **StudentFee** (~60%) — Missing `FeeConcessionController` (imported but doesn't exist); exposed seeder route with no auth; permission prefix mismatch (`student-fee.*` vs `studentfee.*`) on 3 controllers; no Form Requests; N+1 in bulk invoice/assignment generation; no EnsureTenantHasModule
 - [ ] **LmsHomework** (~60%) — Fatal crash: `HoemworkData()` missing `$request` param; `review()` has no auth or validation; no EnsureTenantHasModule
-- [ ] **Hpc** (~68%) — Re-audited 2026-03-15. 15 controllers, 26 models, 1 service, 14 FormRequests. All 4 PDF templates DomPDF-fixed (8+ rounds of fixes: display:flex→table, overflow:hidden removed, base64 images, page-break fixes, table widths, emoji circles). New: ZIP bundle download feature (generateReportPdf → ZipArchive + downloadZip route). **Critical blockers still open:** SEC-HPC-001 (13/14 methods zero auth, including new downloadZip); BUG-HPC-001 (4 template controller imports missing → 500s); SEC-HPC-003 (no EnsureTenantHasModule). 2 new minor issues: BUG-HPC-013 (ZIP cleanup), BUG-HPC-014 (tenant_asset on individual PDFs). See known-issues.md for full list of 20 issues.
+- [ ] **Hpc** (~68%) — Re-audited 2026-03-15 against `prime_ai_shailesh` branch `Brijesh_HPC`. 15 controllers, 26 models, 1 service, 14 FormRequests, HpcController 2300 lines. All 4 PDF templates exist (first/second/third/fourth_pdf). ZIP download feature (downloadZip route). 12 new PDF fix commits since 2026-03-14 (first_pdf, second_pdf, fourth_pdf updates). **Critical blockers STILL OPEN:** SEC-HPC-001 (only 1 Gate call in entire HpcController — 13/14 methods zero auth); BUG-HPC-001 (4 template controller imports still missing in tenant.php → 500s on hpc-templates/parts/sections/rubrics routes); SEC-HPC-003 (no EnsureTenantHasModule); BUG-HPC-008 (orphan singular LearningActivityController import at tenant.php line 19). BUG-HPC-013 (ZIP cleanup), BUG-HPC-014 (tenant_asset on individual PDFs). See known-issues.md for full list.
 - [ ] **Library** (~45%) — NOT wired into tenant.php at all; 7 controllers with zero authorization; 5 stub methods on only registered route; N+1 in ReservationController; Prime\Setting cross-layer import; permission namespace mismatch in LibTransactionController
 
 ---

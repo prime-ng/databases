@@ -316,15 +316,7 @@ When: AI Brain is stale or missing. Full codebase audit across ALL modules (not 
 
 ---
 
-### CONFIGURATION
-  MODULE         = SmartTimetable           # Used in: issue codes (BUG-HPC-001), section headers, AI Brain lookups
-  MODULE_DIR     = SmartTimetable           # Used in: file paths (Modules/Hpc/), git commands
-  BRANCH         = Brijesh_SmartTimetable   # Used in: context for the prompt
-  DEVELOPER      = Tarun.                   # Used in: context for the prompt
-  LAST_AUDIT_DATE = 15th Mar 2026           # Used in: git --since filter (Tier 3)
-
-  AI_BRAIN = /Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases/AI_Brain/
----
+AI_BRAIN = /Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases/AI_Brain/
 
 ### Phase 1 — Codebase Structure Audit (run first)
 
@@ -351,6 +343,11 @@ Then update:
 - `AI_Brain/memory/modules-map.md` — accurate model/controller/service counts per module
 - `AI_Brain/state/progress.md` — accurate completion % based on what's actually in the code
 
+Use below file to update your Understanding better :
+- Gap Analysis from "2-Project_Planning/2-Gap_Analysis"
+- Work status & Estimation from "2-Project_Planning/9-Work_Status"
+- Detailed Requirement from "2-Project_Planning/1-RBS"
+
 Do NOT guess completion % — base it only on what routes, models, and controllers actually exist.
 
 
@@ -358,15 +355,7 @@ Do NOT guess completion % — base it only on what routes, models, and controlle
 
 ---
 
-### CONFIGURATION
-  MODULE         = SmartTimetable           # Used in: issue codes (BUG-HPC-001), section headers, AI Brain lookups
-  MODULE_DIR     = SmartTimetable           # Used in: file paths (Modules/Hpc/), git commands
-  BRANCH         = Brijesh_SmartTimetable   # Used in: context for the prompt
-  DEVELOPER      = Tarun.                   # Used in: context for the prompt
-  LAST_AUDIT_DATE = 15th Mar 2026           # Used in: git --since filter (Tier 3)
-
-  AI_BRAIN = /Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases/AI_Brain/
----
+AI_BRAIN = /Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases/AI_Brain/
 
 Now do a deep audit of each tenant module for known issues, bugs, and gaps.
 

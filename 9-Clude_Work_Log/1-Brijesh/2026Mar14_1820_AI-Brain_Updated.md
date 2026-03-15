@@ -102,3 +102,115 @@ AI Brain fully updated with deep audit findings. Here's the summary:
 
 ✻ Cooked for 6m 32s
 
+---
+
+Now let me verify both files are consistent.
+
+⏺ Read 1 file (ctrl+o to expand)
+
+⏺ Both files updated. Here's the audit summary:
+
+  Codebase Audit Summary — prime_ai_shailesh (branch Brijesh_HPC)
+
+  Module Counts (27 modules, all verified)
+
+  ┌────────────────┬───────────────┬────────┬─────────────┬─────┬───────┬─────────────────┐
+  │     Module     │     Ctrl      │ Models │     Svc     │ Req │ Views │ tenant.php refs │
+  ├────────────────┼───────────────┼────────┼─────────────┼─────┼───────┼─────────────────┤
+  │ Prime          │ 22            │ 27     │ 1           │ 7   │ 78    │ central         │
+  ├────────────────┼───────────────┼────────┼─────────────┼─────┼───────┼─────────────────┤
+  │ GlobalMaster   │ 15            │ 12     │ 0           │ 10  │ 48    │ central         │
+  ├────────────────┼───────────────┼────────┼─────────────┼─────┼───────┼─────────────────┤
+  │ SchoolSetup    │ 34 (was 40)   │ 42     │ 0           │ 27  │ 220   │ 46              │
+  ├────────────────┼───────────────┼────────┼─────────────┼─────┼───────┼─────────────────┤
+  │ SmartTimetable │ 27 (was 28)   │ 86     │ 21 (was 22) │ 12  │ 237   │ 42              │
+  ├────────────────┼───────────────┼────────┼─────────────┼─────┼───────┼─────────────────┤
+  │ Hpc            │ 15            │ 26     │ 1           │ 14  │ 229   │ 88              │
+  ├────────────────┼───────────────┼────────┼─────────────┼─────┼───────┼─────────────────┤
+  │ Library        │ 26            │ 35     │ 9           │ 19  │ 140   │ 0               │
+  ├────────────────┼───────────────┼────────┼─────────────┼─────┼───────┼─────────────────┤
+  │ All others     │ Same as Brain │        │             │     │       │                 │
+  └────────────────┴───────────────┴────────┴─────────────┴─────┴───────┴─────────────────┘
+
+  Key Corrections Made to AI Brain
+
+  1. SchoolSetup: 40 → 34 controllers (5 backup files + 1 misplaced competency.blade.php excluded)
+  2. SmartTimetable: 28 → 27 controllers, 22 → 21 services (ParallelGroupController + ParallelPeriodConstraint only exist in Tarun's branch)
+  3. HPC: Updated to reflect 12 new PDF fix commits; confirmed all critical bugs (BUG-HPC-001, SEC-HPC-001, SEC-HPC-003, BUG-HPC-008) still open
+  4. Global: Added note that only 1 EnsureTenantHasModule usage exists across entire 2715-line tenant.php
+  5. Library: Confirmed still 0 refs in tenant.php — completely unwired
+  6. Progress header: Added RBS baseline (1112 sub-tasks, ~31% complete, link to planning files)
+
+  ---
+
+   Now let me verify the final state of both files.
+
+⏺ Read 1 file (ctrl+o to expand)
+
+⏺ All 3 AI Brain files updated. Here's the complete audit summary:
+
+  ---
+  Deep Audit Results — All "100% Complete" Modules
+
+  Result: NONE are truly 100%. Every module has significant gaps.
+
+  Issue Totals Across All 15 Audited Modules
+
+  ┌─────────────────────┬───────┐
+  │      Category       │ Count │
+  ├─────────────────────┼───────┤
+  │ Security (SEC)      │ ~85   │
+  ├─────────────────────┼───────┤
+  │ Bugs (BUG)          │ ~55   │
+  ├─────────────────────┼───────┤
+  │ Performance (PERF)  │ ~25   │
+  ├─────────────────────┼───────┤
+  │ Code Quality (QUAL) │ ~35   │
+  ├─────────────────────┼───────┤
+  │ Total new issues    │ ~200  │
+  └─────────────────────┴───────┘
+
+  Revised Completion Percentages
+
+  ┌────────────────┬──────┬─────┬─────────────────────────────────────────────────────────────┐
+  │     Module     │ Was  │ Now │                        Biggest Issue                        │
+  ├────────────────┼──────┼─────┼─────────────────────────────────────────────────────────────┤
+  │ Payment        │ 100% │ 45% │ Razorpay keys hardcoded; 2 stub controllers; webhook broken │
+  ├────────────────┼──────┼─────┼─────────────────────────────────────────────────────────────┤
+  │ Notification   │ 100% │ 55% │ ALL routes commented out — completely inaccessible          │
+  ├────────────────┼──────┼─────┼─────────────────────────────────────────────────────────────┤
+  │ Vendor         │ 100% │ 60% │ 6/7 controllers not registered in routes                    │
+  ├────────────────┼──────┼─────┼─────────────────────────────────────────────────────────────┤
+  │ SyllabusBooks  │ 100% │ 65% │ Main controller is empty stub                               │
+  ├────────────────┼──────┼─────┼─────────────────────────────────────────────────────────────┤
+  │ Complaint      │ 100% │ 70% │ dd() in production; 3 stub controllers                      │
+  ├────────────────┼──────┼─────┼─────────────────────────────────────────────────────────────┤
+  │ Billing        │ 100% │ 70% │ Invoice gen no auth; reconciliation no auth                 │
+  ├────────────────┼──────┼─────┼─────────────────────────────────────────────────────────────┤
+  │ QuestionBank   │ 100% │ 75% │ API keys hardcoded in source                                │
+  ├────────────────┼──────┼─────┼─────────────────────────────────────────────────────────────┤
+  │ SystemConfig   │ 100% │ 75% │ 5 methods zero auth                                         │
+  ├────────────────┼──────┼─────┼─────────────────────────────────────────────────────────────┤
+  │ Syllabus       │ 100% │ 78% │ 2 controllers zero auth; main stub                          │
+  ├────────────────┼──────┼─────┼─────────────────────────────────────────────────────────────┤
+  │ Prime          │ 100% │ 80% │ is_super_admin mass-assignable; 8 stub controllers          │
+  ├────────────────┼──────┼─────┼─────────────────────────────────────────────────────────────┤
+  │ SchoolSetup    │ 100% │ 80% │ 5 stub controllers; PHP crash; broken route                 │
+  ├────────────────┼──────┼─────┼─────────────────────────────────────────────────────────────┤
+  │ StudentProfile │ 100% │ 80% │ is_super_admin from student form                            │
+  ├────────────────┼──────┼─────┼─────────────────────────────────────────────────────────────┤
+  │ GlobalMaster   │ 100% │ 82% │ $request->all() everywhere; main controller all stubs       │
+  ├────────────────┼──────┼─────┼─────────────────────────────────────────────────────────────┤
+  │ Transport      │ 100% │ 82% │ 5 controllers zero auth; tested.* typo                      │
+  └────────────────┴──────┴─────┴─────────────────────────────────────────────────────────────┘
+
+  Top 5 Items to Fix IMMEDIATELY
+
+  1. Revoke API keys — OpenAI + Gemini in QuestionBank, Razorpay in Payment
+  2. Remove is_super_admin from $fillable on both User models + all update forms
+  3. Fix env() in routes/web.php — all central routes 404 after config:cache
+  4. Add EnsureTenantHasModule to ALL tenant route groups (currently only 1 usage)
+  5. Delete PaymentController copy.php — class collision + credential leak
+
+✻ Baked for 2m 58s
+

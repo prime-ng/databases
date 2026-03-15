@@ -464,3 +464,169 @@
 - **Fix (2026-03-12):** Migration `2026_03_12_100001` adds all missing columns additively. Old `is_hard_constraint`/`param_schema` kept for rollback safety.
 - **Prevention:** Run `php artisan tenants:migrate` after any model column addition before using those columns in queries.
 - **Prevention:** In parallel group logic, each activity gets its own `Slot` with its own `classKey`; only `dayId` and `startIndex` are shared from the anchor.
+
+---
+
+## Deep Audit — "100% Complete" Modules (audited 2026-03-15 against `prime_ai_shailesh` / `Brijesh_HPC`)
+
+> All modules previously marked 100% were deep-audited. **None** are truly 100%.
+> Total new issues found: **200+** across 15 modules.
+> Issue codes: SEC (security), BUG (bug), PERF (performance), QUAL (code quality), TEN (tenancy)
+
+### CRITICAL — Platform-Wide (affects ALL modules)
+
+- **SEC-PLATFORM-001:** Only 1 `EnsureTenantHasModule` usage in entire 2715-line tenant.php. ALL tenant modules are accessible without subscription.
+- **SEC-PLATFORM-002:** `env('APP_DOMAIN')` in `routes/web.php:62` — ALL central routes 404 after `config:cache`.
+- **SEC-PLATFORM-003:** Central route groups duplicated 2-3 times in `routes/web.php` — double registrations.
+- **SEC-PLATFORM-004:** `is_super_admin` in `$fillable` on BOTH User models (`app/Models/User.php` + `Modules/Prime/app/Models/User.php`) — privilege escalation via any user update form.
+- **SEC-PLATFORM-005:** `$request->all()` used instead of `$request->validated()` in 20+ controllers despite having FormRequests — mass assignment bypass.
+- **SEC-PLATFORM-006:** Route names hardcoded as `central-127.0.0.1.*` — breaks on any non-localhost deployment.
+
+### CRITICAL — Secret Leaks
+
+- **SEC-QNS-002:** OpenAI + Gemini API keys hardcoded in `QuestionBank/AIQuestionGeneratorController.php:54-57` — REVOKE IMMEDIATELY.
+- **SEC-PAY-001:** Razorpay test keys hardcoded in `Payment/PaymentController copy.php:28-29` — revoke + delete file.
+
+### SchoolSetup (was 100% → revised to ~80%)
+
+| Code | Severity | Issue |
+|------|----------|-------|
+| SEC-SCH-008 | CRITICAL | `UserController::update()` allows setting `is_super_admin` via request |
+| SEC-SCH-005 | HIGH | `RolePermissionController::destroy()` doesn't actually delete — calls `save()` instead |
+| SEC-SCH-006 | HIGH | `RoomTypeController::destroy()` typo `'tennat.room-type.delete'` — Gate always denies |
+| BUG-SCH-001 | HIGH | `SectionController::index()` PHP concat bug: `'teachers' . 'classSections'` → crash |
+| BUG-SCH-010 | HIGH | Route `teacher/assign-subjects/{user_id}` → `assignSubjects()` method doesn't exist |
+| SEC-SCH-016 | HIGH | `OrganizationAcademicSessionController` — 6 empty stubs + 3 methods no auth |
+| BUG-SCH-004-007 | MED | 5 stub controllers: SchoolSetupController, ClassSubjectManagement, InfrasetupController, OrganizationAcademicSession, UserRolePrm |
+| SEC-SCH-009-017 | MED | 15+ unprotected methods across SubjectClassMapping, SubjectGroup, EmployeeProfile, etc. |
+| PERF-SCH-002 | MED | `SchoolClassController::index()` fires 9+ paginated queries in one request |
+| QUAL-SCH-005 | MED | Inconsistent permission naming: `school-setup.*` vs `tenant.*` vs `prime.*` vs `schoolsetup.*` |
+
+### Transport (was 100% → revised to ~82%)
+
+| Code | Severity | Issue |
+|------|----------|-------|
+| SEC-TPT-002-004 | CRITICAL | `FeeMasterController`, `FeeCollectionController`, `TptStudentFineDetailController` — ZERO auth on ALL methods |
+| SEC-TPT-010 | CRITICAL | `AttendanceDeviceController` — ALL Gate calls use `'tested.*'` instead of `'tenant.*'` — completely broken |
+| BUG-TPT-001 | HIGH | `TptDailyVehicleInspectionController::updateStatus()` — `$request` undefined → runtime crash |
+| BUG-TPT-002 | HIGH | `TripController::destroy()` — double-delete race condition, stop details never cleaned |
+| BUG-TPT-003 | HIGH | `TripMgmtController::tripStopNew()/tripBordUnbord()` — undefined `$q` variable |
+| BUG-TPT-004-005 | MED | `TripController::index()` and `LiveTripController::index()` — empty, return nothing |
+| BUG-TPT-006-007 | MED | Wrong permission strings: `transport.trip.create` (missing tenant.), `tenant.routescheduler.create` (missing _) |
+| BUG-TPT-009 | MED | `DriverRouteVehicleController::store()` — 10-year loop generating 7300+ queries |
+| BUG-TPT-010 | MED | `TripMgmtController::tripStopTimeline()` — writes to DB on GET request |
+| SEC-TPT-021 | MED | Central `AcademicSession` queried without `tenancy()->central()` |
+| QUAL-TPT-001-005 | LOW | 5 controllers with stub CRUD methods |
+
+### Notification (was 100% → revised to ~55%)
+
+| Code | Severity | Issue |
+|------|----------|-------|
+| SEC-NTF-006 | CRITICAL | ALL routes commented out in web.php — module completely inaccessible via web |
+| SEC-NTF-002-003 | HIGH | `$request->all()` in TemplateController store/update — mass assignment bypass |
+| BUG-NTF-004-005 | MED | Stub target types and users — empty arrays passed to views |
+| BUG-NTF-006 | MED | Duplicate `$threads` assignment overwrites paginated data |
+| PERF-NTF-001 | MED | Same 5-8 queries duplicated across 7 controllers' `index()` methods |
+
+### Complaint (was 100% → revised to ~70%)
+
+| Code | Severity | Issue |
+|------|----------|-------|
+| BUG-CMP-001 | CRITICAL | `dd($e->getMessage())` in `ComplaintController::store()` catch — exposes stack traces |
+| BUG-CMP-002 | CRITICAL | `dd('FILTER HIT', request()->all())` in `filter()` — method completely broken |
+| BUG-CMP-003 | HIGH | 3 fully stub controllers: ComplaintAction, ComplaintDashboard, AiInsight |
+| SEC-CMP-001-003 | HIGH | `show()`, `edit()`, `store()`, `update()` have no authorization |
+| SEC-CMP-006 | HIGH | `ComplaintReportController` — zero auth on all methods |
+| BUG-CMP-005 | MED | `MedicalCheckController::create()` uses placeholder dropdown keys — empty forms |
+
+### Vendor (was 100% → revised to ~60%)
+
+| Code | Severity | Issue |
+|------|----------|-------|
+| BUG-VND-001 | CRITICAL | 6 of 7 controllers NOT registered in web.php — unreachable code |
+| SEC-VND-001 | CRITICAL | `VendorController::index()` auth commented out — all vendor data exposed |
+| SEC-VND-002 | CRITICAL | `VendorInvoiceController` — ZERO auth on ALL 14 methods (including invoice gen, bulk email) |
+| SEC-VND-003 | HIGH | `VendorInvoiceController::store()` — zero input validation on financial operations |
+
+### Payment (was 100% → revised to ~45%)
+
+| Code | Severity | Issue |
+|------|----------|-------|
+| SEC-PAY-001 | CRITICAL | Hardcoded Razorpay keys in `PaymentController copy.php` — credential leak |
+| SEC-PAY-004 | HIGH | Webhook stores raw payload BEFORE signature verification |
+| SEC-PAY-008 | HIGH | Webhook behind `auth:sanctum` — Razorpay callbacks always fail 401 |
+| SEC-PAY-005-006 | HIGH | `PaymentGatewayController` + `PaymentCallbackController` — empty stubs, zero auth |
+| BUG-PAY-001 | HIGH | Duplicate `PaymentController copy.php` with class name collision |
+
+### Syllabus (was 100% → revised to ~78%)
+
+| Code | Severity | Issue |
+|------|----------|-------|
+| SEC-SYL-001 | CRITICAL | `CompetencieController` — ZERO auth on all 8 methods |
+| SEC-SYL-002 | CRITICAL | `$request->all()` mass assignment in CompetencieController store/update |
+| SEC-SYL-003 | CRITICAL | `TopicController` — ZERO auth on all 14 methods |
+| BUG-SYL-001 | HIGH | `SyllabusController` is a fully empty stub — routes broken |
+| BUG-SYL-002 | MED | `TopicController::destroy()` uses forceDelete instead of soft delete |
+| PERF-SYL-001 | MED | `LessonController::index()` fires 10+ unbounded queries, `Competencie::all()` called twice |
+
+### SyllabusBooks (was 100% → revised to ~65%)
+
+| Code | Severity | Issue |
+|------|----------|-------|
+| BUG-BOK-001 | HIGH | `SyllabusBooksController` — fully empty stub, routes broken |
+| SEC-BOK-004 | HIGH | `BookTopicMappingController` — ZERO auth on all 9 methods |
+| BUG-BOK-002 | HIGH | `BookTopicMappingController::index()` — undefined `$bookTopicMappings` → crash |
+| TEN-BOK-001 | MED | Central `AcademicSession` queried without tenant context in 8 locations |
+
+### QuestionBank (was 100% → revised to ~75%)
+
+| Code | Severity | Issue |
+|------|----------|-------|
+| SEC-QNS-002 | CRITICAL | OpenAI + Gemini API keys hardcoded in source — REVOKE IMMEDIATELY |
+| SEC-QNS-001 | HIGH | `AIQuestionGeneratorController` — ZERO auth on all methods |
+| BUG-QNS-001 | HIGH | `generateQuestions()` always returns demo data — real AI integration unreachable (dead code after early return) |
+
+### StudentProfile (was 100% → revised to ~80%)
+
+| Code | Severity | Issue |
+|------|----------|-------|
+| SEC-STD-001 | CRITICAL | `createStudentLogin()` allows setting `is_super_admin` — privilege escalation |
+| SEC-STD-002 | HIGH | `AttendanceController` — ZERO auth on all methods |
+| SEC-STD-004 | HIGH | `StudentProfileController` — fully empty stub |
+| SEC-STD-003 | MED | `StudentReportController::index()` — no auth |
+
+### Prime (was 100% → revised to ~80%)
+
+| Code | Severity | Issue |
+|------|----------|-------|
+| SEC-PRM-002 | CRITICAL | `is_super_admin` in `$fillable` + explicitly included in `UserController::update()` `$request->only()` |
+| SEC-PRM-003 | HIGH | `$request->all()` in 5 controllers despite FormRequests (Tenant, TenantGroup, Board, AcademicSession, Menu) |
+| SEC-PRM-004 | HIGH | Wrong permission on `TenantController@edit` — uses `tenant-group.update` instead of `tenant.update` |
+| SEC-PRM-007 | HIGH | `RolePermissionController::destroy()` calls `save()` not `delete()` — role never removed |
+| BUG-PRM-002-011 | MED | 8 controllers with stub methods (Tenant, TenantManagement, SalesPlan, UserRolePrm, SessionBoard, ActivityLog, Menu, Setting) |
+| BUG-PRM-012 | MED | `AcademicSessionController::destroy()` — deletion condition logically inverted |
+
+### GlobalMaster (was 100% → revised to ~82%)
+
+| Code | Severity | Issue |
+|------|----------|-------|
+| SEC-GLB-001 | HIGH | `$request->all()` in 4 controllers despite FormRequests |
+| SEC-GLB-002 | HIGH | `GlobalMasterController` — ZERO auth on all 7 stub methods |
+| BUG-PRM-014 | MED | `ModuleController::show()` uses wrong permission (`create` instead of `view`) |
+
+### Billing (was 100% → revised to ~70%)
+
+| Code | Severity | Issue |
+|------|----------|-------|
+| SEC-BIL-001 | HIGH | `BillingManagementController::store()` — no auth on invoice generation |
+| SEC-BIL-002 | HIGH | `toggleStatus()` — no auth on payment reconciliation |
+| SEC-BIL-005 | HIGH | `Tenancy::initialize()` without try/finally — cross-tenant context leak risk |
+| BUG-BIL-001-004 | MED | 4 controllers with stub CRUD methods |
+| BUG-BIL-005 | MED | `printData()` calls `->isNotEmpty()` on a float — runtime crash |
+
+### SystemConfig (was 100% → revised to ~75%)
+
+| Code | Severity | Issue |
+|------|----------|-------|
+| SEC-SYS-001 | HIGH | MenuController — 5 methods (trashedMenu, restore, forceDelete, destroy, toggleStatus) have ZERO auth |
+| BUG-SYS-001 | MED | `create()` is empty stub |
