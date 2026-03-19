@@ -13,7 +13,7 @@ Verify alignment between database schema and Eloquent models.
 1. Read the specified module's:
    - Model files in `Modules/{Module}/app/Models/`
    - Migration files in `database/migrations/tenant/`
-   - Canonical DDL from `databases/1-master_dbs/1-DDLs/tenant_db_v2.sql`
+   - Canonical DDL from `{TENANT_DDL}`
 
 2. For each model, check:
 

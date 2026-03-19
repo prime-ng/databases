@@ -51,9 +51,9 @@ Per-school isolated data organized by prefix (see consolidated DDL for full list
 - And more (refer to consolidated DDL for complete list)
 
 > **Schema Reference (CANONICAL — v2 files only):**
-> - `/Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases/1-master_dbs/1-DDLs/global_db_v2.sql`
-> - `/Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases/1-master_dbs/1-DDLs/prime_db_v2.sql`
-> - `/Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases/1-master_dbs/1-DDLs/tenant_db_v2.sql`
+> - `{GLOBAL_DDL}`
+> - `{PRIME_DDL}`
+> - `{TENANT_DDL}`
 > **NEVER use old DDL files in subfolders (`2-Prime_Modules/`, `2-Tenant_Modules/`, etc.)**
 
 ## External Services
@@ -84,26 +84,23 @@ Per-school isolated data organized by prefix (see consolidated DDL for full list
 - Alpine.js 3.4
 - Vite 7.0 build tool
 
-## Key Statistics
+## Key Statistics (re-verified 2026-03-15 against `prime_ai_shailesh` branch `Brijesh_HPC`)
 | Metric | Count |
 |--------|-------|
-| Modules | 29 (27 active + 2 pending) |
-| Total Models | 381 |
-| Total Controllers | 283 |
-| Total Services | 12 |
-| Total Jobs | 9 |
+| Modules | 27 (5 central + 22 tenant) |
+| Total Models | ~470 |
+| Total Controllers | ~290 |
+| Total Services | ~40 (SmartTimetable: 21, Library: 9, others) |
 | Tenant DB Tables | 368 |
-| Central DB Tables | 39 (global + prime) |
-| Total DB Tables | 407 |
+| Central DB Tables | ~39 (global + prime) |
 | Authorization Policies | 195+ |
-| Form Requests | 168 |
-| Tenant Migrations | 216 files |
-| Central Migrations | 6 files |
-| Blade Views | 500+ |
-| Central Roles | 6 |
-| Tenant Roles | 9 |
-| Tenant Route Lines | 2,628 |
-| Central Route Lines | 973 |
+| Tenant Migrations | 278 files in `database/migrations/tenant/` |
+| Central Migrations | 5 files in `database/migrations/` + 37 in `Modules/Prime/database/migrations/` |
+| Tenant Route Lines | 2,715 (1,328 Route:: calls) |
+| Blade Views (total) | ~1,800+ |
+| Shared Components | `resources/views/components/backend/` (8 dirs), `prime/` (6 dirs), `frontend/` (2 dirs) |
+| **Overall platform completion** | **~31%** of RBS (1112 sub-tasks), **~70%** of built modules' CRUD |
+| **Full project docs** | `{PROJECT_DOCS}/` (12 files — overview, guides, reference) |
 
 ## Key Business Workflows
 1. **Tenant Onboarding:** TenantController → UUID creation → domain setup → DB provisioning → migrations → CreateRootUser job → plan assignment

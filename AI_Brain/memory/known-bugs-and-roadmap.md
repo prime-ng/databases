@@ -201,6 +201,56 @@
 
 ---
 
+## HPC MODULE — Issues & Roadmap (added 2026-03-16 from comprehensive gap analysis)
+
+> **Source:** `{HPC_GAP_ANALYSIS}`
+> **Total Issues: 20** (4 security, 14 bugs, 2 performance) — ALL OPEN
+
+### Security Issues
+
+| Code | Severity | Description |
+|------|----------|-------------|
+| SEC-HPC-001 | **CRITICAL** | 13/15 HpcController methods have zero authorization — any authenticated user can view/edit/generate/download any student's HPC |
+| SEC-HPC-002 | HIGH | 7/14 FormRequests return `true` in authorize() — store/update unprotected on 10 CRUD controllers |
+| SEC-HPC-003 | HIGH | No EnsureTenantHasModule middleware on HPC route group — accessible without subscription |
+| SEC-HPC-004 | HIGH | Module web.php/api.php register routes outside tenancy middleware — bypasses all tenant isolation |
+
+### Bugs
+
+| Code | Severity | Description |
+|------|----------|-------------|
+| BUG-HPC-001 | HIGH | 4 template controller imports missing in tenant.php → 500 on all template CRUD routes |
+| BUG-HPC-003 | HIGH | Garbled permission string `tenant.hpc-templates.viHpcTemplatesRequest ew` in show() → always 403 |
+| BUG-HPC-004 | HIGH | Global AcademicSession used in tenant controllers — cross-layer data leak |
+| BUG-HPC-005 | MED | 3 routes point to non-existent HpcController methods → 500 BadMethodCallException |
+| BUG-HPC-006 | MED | HpcTemplates model uses uppercase class refs (HPCTemplateSections) — breaks on Linux |
+| BUG-HPC-007 | MED | StudentHpcSnapshot imports wrong Student model (SchoolSetup instead of StudentProfile) |
+| BUG-HPC-008 | MED | Orphan `LearningActivityController` import in tenant.php — may cause autoload error |
+| BUG-HPC-009 | MED | All trash/view routes shadowed by Resource show route — unreachable |
+| BUG-HPC-010 | LOW | Duplicate table prefix on 2 models (hpc_hpc_levels, hpc_student_hpc_snapshot) |
+| BUG-HPC-011 | LOW | 18/26 models missing created_by from $fillable — audit trail FK never set |
+| BUG-HPC-012 | LOW | LearningOutcomesController imports Prime\Dropdown — cross-layer |
+| BUG-HPC-013 | LOW | ZIP files never cleaned up — storage bloat over time |
+| BUG-HPC-014 | LOW | Individual PDF URLs use tenant_asset() — may not resolve in all deployment configs |
+
+### Performance Issues
+
+| Code | Severity | Description |
+|------|----------|-------------|
+| PERF-HPC-001 | MED | generateReportPdf() N+1 — per-student loop queries for attendance/siblings without batching |
+| PERF-HPC-002 | MED | 15× duplicated ~70-line index() query block across all controllers — fires ~15 queries per request |
+
+### HPC Roadmap (4-Sprint Plan)
+
+| Sprint | Scope | Duration | Key Items |
+|--------|-------|----------|-----------|
+| Sprint 1 | P0+P1: Security & Critical Bugs | ~2 days | SEC-HPC-001 (auth on 13 methods), SEC-HPC-002 (fix 7 FormRequests), SEC-HPC-003 (add module middleware), SEC-HPC-004 (remove scaffold routes), BUG-HPC-001 (add 4 imports) |
+| Sprint 2 | P2: Workflows & Data Flow | ~3 weeks | Approval workflow (Draft→Review→Final→Published), Eval-to-Report auto-feed, LMS/Exam integration, Attendance manager screen, Role-based section locking |
+| Sprint 3 | P3: Multi-Actor Data Collection | ~3 weeks | Student self-service portal (35 sections), Parent data collection (9 sections), Peer assessment workflow (14 sections), Credit framework calculator |
+| Sprint 4 | P3: Remaining Screens & Integration | ~3 weeks | 12 unstarted blueprint screens, 15 Schema-2 migration files, Performance fixes, Test suite, Final 8 remaining bugs |
+
+---
+
 ## MASTER IMPROVEMENT ROADMAP
 
 ### Phase 1: Critical — Week 1 (~2-3 days effort)

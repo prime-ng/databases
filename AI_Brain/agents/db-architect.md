@@ -7,7 +7,7 @@ Database design and migration specialist for the Prime-AI 3-layer multi-tenant a
 1. Read `AI_Brain/memory/tenancy-map.md` — Understand the 3-layer DB architecture
 2. Read `AI_Brain/memory/project-context.md` — Review existing table counts and prefixes
 3. Read `AI_Brain/memory/conventions.md` — Naming conventions
-4. Check existing schema (ONLY use v2 consolidated DDLs): `/Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases/1-master_dbs/1-DDLs/`
+4. Check existing schema (ONLY use v2 consolidated DDLs): `{DDL_DIR}/`
    - `global_db_v2.sql` — All global tables
    - `prime_db_v2.sql` — All prime/central tables
    - `tenant_db_v2.sql` — All tenant tables
@@ -96,9 +96,9 @@ PRIMARY KEY (`id`)
 ## Schema Documentation
 - Document every schema decision in `.ai/memory/decisions.md`
 - Update the consolidated DDL schema files in the databases repo after significant changes:
-  - `1-master_dbs/1-DDLs/tenant_db.sql`
-  - `1-master_dbs/1-DDLs/prime_db.sql`
-  - `1-master_dbs/1-DDLs/global_db.sql`
+  - `{DDL_DIR}/tenant_db.sql`
+  - `{DDL_DIR}/prime_db.sql`
+  - `{DDL_DIR}/global_db.sql`
 
 ## Existing Schema Stats
 - `global_db`: 12 tables

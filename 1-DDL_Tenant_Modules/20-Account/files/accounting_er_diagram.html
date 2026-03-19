@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Accounting Module — ER Diagram (Prime-AI)</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+<style>
+  body { background: #1a1d23; color: #e8e9ed; font-family: 'Source Sans 3', -apple-system, sans-serif; margin: 0; overflow: hidden; }
+
+  /* Canvas */
+  #canvas { width: 100vw; height: 100vh; position: relative; overflow: auto; cursor: grab; }
+  #canvas:active { cursor: grabbing; }
+  #diagram { position: absolute; top: 0; left: 0; width: 4200px; height: 2600px; }
+
+  /* SVG lines */
+  #lines { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+  #lines line { stroke-width: 1.5; }
+
+  /* Table entity card */
+  .entity {
+    position: absolute;
+    background: #22252e;
+    border: 1px solid #353845;
+    border-radius: 8px;
+    min-width: 220px;
+    max-width: 280px;
+    box-shadow: 0 4px 20px rgba(0,0,0,.4);
+    transition: box-shadow .15s, border-color .15s;
+    z-index: 2;
+  }
+  .entity:hover { border-color: #5b8def; box-shadow: 0 4px 30px rgba(91,141,239,.25); }
+  .entity-header {
+    padding: 8px 12px;
+    border-radius: 7px 7px 0 0;
+    font-weight: 700;
+    font-size: .8rem;
+    letter-spacing: .3px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .entity-header .tbl-name { font-family: 'JetBrains Mono', monospace; }
+  .entity-body { padding: 0; }
+  .col-row {
+    padding: 3px 12px;
+    font-size: .72rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border-top: 1px solid #2a2d38;
+  }
+  .col-row:hover { background: rgba(91,141,239,.06); }
+  .col-name { font-family: 'JetBrains Mono', monospace; flex: 1; }
+  .col-type { color: #6c757d; font-size: .65rem; text-align: right; }
+  .col-icon { width: 14px; text-align: center; font-size: .65rem; }
+  .pk { color: #fbbf24; }
+  .fk { color: #5b8def; }
+  .col-row.pk-row { background: rgba(251,191,36,.06); }
+  .col-row.fk-row { background: rgba(91,141,239,.04); }
+
+  /* Domain colors */
+  .domain-core .entity-header { background: #1e3a5f; color: #7fb3ff; }
+  .domain-payroll .entity-header { background: #3b1f4e; color: #c49bff; }
+  .domain-inventory .entity-header { background: #1a3d2e; color: #6ee7b7; }
+  .domain-banking .entity-header { background: #3d2f1a; color: #fbbf24; }
+  .domain-assets .entity-header { background: #1a3535; color: #5eead4; }
+  .domain-expense .entity-header { background: #3d1a2a; color: #fda4af; }
+  .domain-support .entity-header { background: #2d2d2d; color: #a1a1aa; }
+
+  /* External module refs */
+  .entity.external { opacity: .6; border-style: dashed; }
+  .entity.external .entity-header { background: #333; color: #888; }
+
+  /* Legend */
+  #legend {
+    position: fixed; bottom: 16px; left: 16px; z-index: 100;
+    background: #22252e; border: 1px solid #353845; border-radius: 8px;
+    padding: 12px 16px; font-size: .75rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,.5);
+  }
+  #legend h6 { font-size: .8rem; margin-bottom: 8px; color: #a1a1aa; }
+  .legend-item { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .legend-dot { width: 12px; height: 12px; border-radius: 3px; }
+
+  /* Controls */
+  #controls {
+    position: fixed; top: 16px; right: 16px; z-index: 100;
+    display: flex; gap: 8px;
+  }
+  #controls button { background: #22252e; border: 1px solid #353845; color: #e8e9ed; border-radius: 6px; padding: 6px 12px; font-size: .8rem; cursor: pointer; }
+  #controls button:hover { background: #353845; }
+
+  /* Title bar */
+  #title-bar {
+    position: fixed; top: 16px; left: 16px; z-index: 100;
+    background: #22252e; border: 1px solid #353845; border-radius: 8px;
+    padding: 10px 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,.5);
+  }
+  #title-bar h5 { margin: 0; font-size: .95rem; }
+  #title-bar small { color: #6c757d; font-size: .7rem; }
+
+  /* Relationship lines */
+  .line-core { stroke: #5b8def; opacity: .5; }
+  .line-payroll { stroke: #a78bfa; opacity: .5; }
+  .line-inventory { stroke: #4ade80; opacity: .5; }
+  .line-banking { stroke: #fbbf24; opacity: .5; }
+  .line-assets { stroke: #2dd4bf; opacity: .5; }
+  .line-expense { stroke: #fda4af; opacity: .5; }
+  .line-cross { stroke: #f87171; opacity: .4; stroke-dasharray: 6,4; }
+  .line-self { stroke: #6c757d; opacity: .4; stroke-dasharray: 4,3; }
+</style>
+</head>
+<body>
+
+<div id="title-bar">
+  <h5><i class="bi bi-diagram-3 me-1 text-primary"></i> Accounting Module — ER Diagram</h5>
+  <small>33 tables | 7 domains | acc_* prefix | Hover tables for details | Scroll to pan</small>
+</div>
+
+<div id="controls">
+  <button onclick="document.getElementById('diagram').style.transform='scale(0.6)';document.getElementById('diagram').style.transformOrigin='0 0'">Zoom Out</button>
+  <button onclick="document.getElementById('diagram').style.transform='scale(1)';document.getElementById('diagram').style.transformOrigin='0 0'">100%</button>
+  <button onclick="document.getElementById('diagram').style.transform='scale(0.8)';document.getElementById('diagram').style.transformOrigin='0 0'">80%</button>
+</div>
+
+<div id="legend">
+  <h6>DOMAINS</h6>
+  <div class="legend-item"><div class="legend-dot" style="background:#1e3a5f"></div> Core Accounting (8)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#3b1f4e"></div> Payroll (8)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#1a3d2e"></div> Inventory (5)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#3d2f1a"></div> Banking (2)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#1a3535"></div> Fixed Assets (3)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#3d1a2a"></div> Expense Claims (2)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#2d2d2d"></div> Supporting (5)</div>
+  <div class="legend-item" style="margin-top:8px"><div class="legend-dot" style="background:transparent;border:1px dashed #666"></div> External Module (ref)</div>
+  <hr style="border-color:#353845;margin:8px 0">
+  <div class="legend-item"><span class="pk" style="font-family:monospace;font-size:.7rem"><i class="bi bi-key-fill"></i> PK</span> Primary Key</div>
+  <div class="legend-item"><span class="fk" style="font-family:monospace;font-size:.7rem"><i class="bi bi-link-45deg"></i> FK</span> Foreign Key</div>
+</div>
+
+<div id="canvas">
+<div id="diagram">
+
+<!-- SVG for relationship lines -->
+<svg id="lines" xmlns="http://www.w3.org/2000/svg">
+  <!-- CORE: acc_account_groups → self -->
+  <line x1="215" y1="80" x2="180" y2="30" class="line-self"/>
+  <line x1="180" y1="30" x2="140" y2="80" class="line-self"/>
+  <!-- acc_account_groups → acc_ledgers -->
+  <line x1="215" y1="330" x2="490" y2="120" class="line-core"/>
+  <!-- acc_ledgers → acc_voucher_items -->
+  <line x1="630" y1="380" x2="880" y2="320" class="line-core"/>
+  <!-- acc_voucher_items → acc_vouchers -->
+  <line x1="1020" y1="180" x2="1020" y2="320" class="line-core"/>
+  <!-- acc_vouchers → acc_voucher_types -->
+  <line x1="1160" y1="100" x2="1330" y2="100" class="line-core"/>
+  <!-- acc_vouchers → acc_financial_years -->
+  <line x1="1020" y1="30" x2="780" y2="30" class="line-core"/>
+  <!-- acc_vouchers → acc_cost_centers -->
+  <line x1="880" y1="180" x2="490" y2="530" class="line-core"/>
+  <!-- acc_cost_centers → self -->
+  <line x1="330" y1="530" x2="290" y2="480" class="line-self"/>
+  <line x1="290" y1="480" x2="250" y2="530" class="line-self"/>
+  <!-- acc_ledgers → acc_budgets -->
+  <line x1="630" y1="380" x2="780" y2="530" class="line-core"/>
+  <!-- acc_budgets → acc_financial_years -->
+  <line x1="780" y1="530" x2="700" y2="60" class="line-core"/>
+  <!-- acc_voucher_items → acc_bank_reconciliations -->
+  <line x1="1020" y1="480" x2="1600" y2="1630" class="line-banking"/>
+  <!-- acc_voucher_items → acc_bank_statement_entries -->
+  <line x1="1020" y1="480" x2="1900" y2="1630" class="line-banking"/>
+  <!-- acc_ledgers → acc_ledger_mappings -->
+  <line x1="630" y1="380" x2="1600" y2="2100" class="line-core"/>
+
+  <!-- PAYROLL domain lines -->
+  <!-- acc_employee_groups → self -->
+  <line x1="215" y1="870" x2="175" y2="820" class="line-self"/>
+  <line x1="175" y1="820" x2="135" y2="870" class="line-self"/>
+  <!-- acc_employee_groups → acc_employees -->
+  <line x1="280" y1="1050" x2="520" y2="870" class="line-payroll"/>
+  <!-- acc_employees → acc_ledgers -->
+  <line x1="520" y1="870" x2="530" y2="380" class="line-cross"/>
+  <!-- acc_employees → acc_employee_attendance -->
+  <line x1="520" y1="1140" x2="215" y2="1300" class="line-payroll"/>
+  <!-- acc_employees → acc_payroll_entries -->
+  <line x1="660" y1="1050" x2="880" y2="1050" class="line-payroll"/>
+  <!-- acc_payroll_entries → acc_payroll_runs -->
+  <line x1="1020" y1="920" x2="1020" y2="1050" class="line-payroll"/>
+  <!-- acc_payroll_entries → acc_pay_heads -->
+  <line x1="880" y1="1200" x2="520" y2="1480" class="line-payroll"/>
+  <!-- acc_payroll_runs → acc_vouchers -->
+  <line x1="1020" y1="780" x2="1020" y2="240" class="line-cross"/>
+  <!-- acc_payroll_runs → acc_financial_years -->
+  <line x1="920" y1="780" x2="700" y2="60" class="line-cross"/>
+  <!-- acc_pay_heads → acc_salary_structure_items -->
+  <line x1="520" y1="1650" x2="880" y2="1480" class="line-payroll"/>
+  <!-- acc_salary_structure_items → acc_salary_structures -->
+  <line x1="1020" y1="1380" x2="1020" y2="1480" class="line-payroll"/>
+  <!-- acc_salary_structures → acc_employee_groups -->
+  <line x1="920" y1="1380" x2="280" y2="1000" class="line-payroll"/>
+  <!-- acc_employees → acc_expense_claims -->
+  <line x1="660" y1="1050" x2="1900" y2="1950" class="line-expense"/>
+  <!-- acc_expense_claim_lines → acc_ledgers -->
+  <line x1="1900" y1="2100" x2="630" y2="380" class="line-cross"/>
+
+  <!-- INVENTORY domain lines -->
+  <!-- acc_stock_groups → self -->
+  <line x1="2150" y1="100" x2="2110" y2="50" class="line-self"/>
+  <line x1="2110" y1="50" x2="2070" y2="100" class="line-self"/>
+  <!-- acc_stock_groups → acc_stock_items -->
+  <line x1="2200" y1="250" x2="2500" y2="100" class="line-inventory"/>
+  <!-- acc_stock_items → acc_units_of_measure -->
+  <line x1="2640" y1="100" x2="2900" y2="100" class="line-inventory"/>
+  <!-- acc_stock_items → acc_stock_entries -->
+  <line x1="2500" y1="360" x2="2500" y2="530" class="line-inventory"/>
+  <!-- acc_stock_entries → acc_godowns -->
+  <line x1="2640" y1="620" x2="2900" y2="400" class="line-inventory"/>
+  <!-- acc_godowns → self -->
+  <line x1="2970" y1="300" x2="2940" y2="260" class="line-self"/>
+  <line x1="2940" y1="260" x2="2900" y2="300" class="line-self"/>
+  <!-- acc_stock_entries → acc_vouchers -->
+  <line x1="2370" y1="620" x2="1160" y2="180" class="line-cross"/>
+
+  <!-- FIXED ASSETS domain lines -->
+  <!-- acc_asset_categories → acc_fixed_assets -->
+  <line x1="2200" y1="870" x2="2500" y2="870" class="line-assets"/>
+  <!-- acc_fixed_assets → acc_depreciation_entries -->
+  <line x1="2500" y1="1050" x2="2500" y2="1200" class="line-assets"/>
+  <!-- acc_fixed_assets → acc_vouchers -->
+  <line x1="2370" y1="870" x2="1160" y2="180" class="line-cross"/>
+  <!-- acc_depreciation_entries → acc_financial_years -->
+  <line x1="2370" y1="1300" x2="700" y2="60" class="line-cross"/>
+
+  <!-- SUPPORTING -->
+  <!-- acc_recurring_templates → acc_recurring_template_lines -->
+  <line x1="1600" y1="2280" x2="1900" y2="2280" class="line-core"/>
+  <!-- acc_recurring_template_lines → acc_ledgers -->
+  <line x1="1900" y1="2200" x2="630" y2="380" class="line-cross"/>
+</svg>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- DOMAIN 1: CORE ACCOUNTING (top-left) -->
+<!-- ═══════════════════════════════════════════════ -->
+
+<!-- acc_financial_years -->
+<div class="entity domain-core" style="left:580px;top:10px">
+  <div class="entity-header"><i class="bi bi-calendar3"></i><span class="tbl-name">acc_financial_years</span></div>
+  <div class="entity-body">
+    <div class="col-row pk-row"><span class="col-icon pk"><i class="bi bi-key-fill"></i></span><span class="col-name">id</span><span class="col-type">BIGINT PK</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">name</span><span class="col-type">VARCHAR(50)</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">start_date</span><span class="col-type">DATE</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">end_date</span><span class="col-type">DATE</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">is_locked</span><span class="col-type">BOOL</span></div>
+  </div>
+</div>
+
+<!-- acc_account_groups -->
+<div class="entity domain-core" style="left:80px;top:80px">
+  <div class="entity-header"><i class="bi bi-diagram-3"></i><span class="tbl-name">acc_account_groups</span></div>
+  <div class="entity-body">
+    <div class="col-row pk-row"><span class="col-icon pk"><i class="bi bi-key-fill"></i></span><span class="col-name">id</span><span class="col-type">BIGINT PK</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">name</span><span class="col-type">VARCHAR(100)</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">code</span><span class="col-type">VARCHAR(20) UQ</span></div>
+    <div class="col-row fk-row"><span class="col-icon fk"><i class="bi bi-link-45deg"></i></span><span class="col-name">parent_id</span><span class="col-type">FK → self</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">nature</span><span class="col-type">ENUM(4)</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">affects_gross_profit</span><span class="col-type">BOOL</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">is_system</span><span class="col-type">BOOL</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">is_subledger</span><span class="col-type">BOOL</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">sequence</span><span class="col-type">INT</span></div>
+  </div>
+</div>
+
+<!-- acc_ledgers -->
+<div class="entity domain-core" style="left:400px;top:120px">
+  <div class="entity-header"><i class="bi bi-journal-text"></i><span class="tbl-name">acc_ledgers</span></div>
+  <div class="entity-body">
+    <div class="col-row pk-row"><span class="col-icon pk"><i class="bi bi-key-fill"></i></span><span class="col-name">id</span><span class="col-type">BIGINT PK</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">name</span><span class="col-type">VARCHAR(150)</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">code</span><span class="col-type">VARCHAR(20)</span></div>
+    <div class="col-row fk-row"><span class="col-icon fk"><i class="bi bi-link-45deg"></i></span><span class="col-name">account_group_id</span><span class="col-type">FK → groups</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">opening_balance</span><span class="col-type">DECIMAL(15,2)</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">opening_balance_type</span><span class="col-type">ENUM(Dr,Cr)</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">is_bank_account</span><span class="col-type">BOOL</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">allow_reconciliation</span><span class="col-type">BOOL</span></div>
+    <div class="col-row fk-row"><span class="col-icon fk"><i class="bi bi-link-45deg"></i></span><span class="col-name">student_id</span><span class="col-type">FK → std_students</span></div>
+    <div class="col-row fk-row"><span class="col-icon fk"><i class="bi bi-link-45deg"></i></span><span class="col-name">employee_id</span><span class="col-type">FK → acc_employees</span></div>
+  </div>
+</div>
+
+<!-- acc_voucher_types -->
+<div class="entity domain-core" style="left:1280px;top:10px">
+  <div class="entity-header"><i class="bi bi-tags"></i><span class="tbl-name">acc_voucher_types</span></div>
+  <div class="entity-body">
+    <div class="col-row pk-row"><span class="col-icon pk"><i class="bi bi-key-fill"></i></span><span class="col-name">id</span><span class="col-type">BIGINT PK</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">name</span><span class="col-type">VARCHAR(80)</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">code</span><span class="col-type">VARCHAR(20) UQ</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">category</span><span class="col-type">ENUM(4)</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">prefix</span><span class="col-type">VARCHAR(20)</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">auto_numbering</span><span class="col-type">BOOL</span></div>
+  </div>
+</div>
+
+<!-- acc_vouchers (CENTRAL HUB) -->
+<div class="entity domain-core" style="left:830px;top:100px;border-color:#5b8def;border-width:2px">
+  <div class="entity-header" style="background:#0d47a1"><i class="bi bi-file-earmark-text"></i><span class="tbl-name">acc_vouchers</span> <span class="badge bg-warning text-dark" style="font-size:.55rem">HUB</span></div>
+  <div class="entity-body">
+    <div class="col-row pk-row"><span class="col-icon pk"><i class="bi bi-key-fill"></i></span><span class="col-name">id</span><span class="col-type">BIGINT PK</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">voucher_number</span><span class="col-type">VARCHAR(50) UQ</span></div>
+    <div class="col-row fk-row"><span class="col-icon fk"><i class="bi bi-link-45deg"></i></span><span class="col-name">voucher_type_id</span><span class="col-type">FK → types</span></div>
+    <div class="col-row fk-row"><span class="col-icon fk"><i class="bi bi-link-45deg"></i></span><span class="col-name">financial_year_id</span><span class="col-type">FK → fy</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">date</span><span class="col-type">DATE</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">total_amount</span><span class="col-type">DECIMAL(15,2)</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">status</span><span class="col-type">ENUM(4)</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">source_type</span><span class="col-type">VARCHAR (poly)</span></div>
+    <div class="col-row fk-row"><span class="col-icon fk"><i class="bi bi-link-45deg"></i></span><span class="col-name">cost_center_id</span><span class="col-type">FK → cc</span></div>
+  </div>
+</div>
+
+<!-- acc_voucher_items -->
+<div class="entity domain-core" style="left:830px;top:380px">
+  <div class="entity-header"><i class="bi bi-list-ol"></i><span class="tbl-name">acc_voucher_items</span></div>
+  <div class="entity-body">
+    <div class="col-row pk-row"><span class="col-icon pk"><i class="bi bi-key-fill"></i></span><span class="col-name">id</span><span class="col-type">BIGINT PK</span></div>
+    <div class="col-row fk-row"><span class="col-icon fk"><i class="bi bi-link-45deg"></i></span><span class="col-name">voucher_id</span><span class="col-type">FK → vouchers</span></div>
+    <div class="col-row fk-row"><span class="col-icon fk"><i class="bi bi-link-45deg"></i></span><span class="col-name">ledger_id</span><span class="col-type">FK → ledgers</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">type</span><span class="col-type">ENUM(Dr,Cr)</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">amount</span><span class="col-type">DECIMAL(15,2)</span></div>
+    <div class="col-row fk-row"><span class="col-icon fk"><i class="bi bi-link-45deg"></i></span><span class="col-name">cost_center_id</span><span class="col-type">FK → cc</span></div>
+  </div>
+</div>
+
+<!-- acc_cost_centers -->
+<div class="entity domain-core" style="left:200px;top:530px">
+  <div class="entity-header"><i class="bi bi-bullseye"></i><span class="tbl-name">acc_cost_centers</span></div>
+  <div class="entity-body">
+    <div class="col-row pk-row"><span class="col-icon pk"><i class="bi bi-key-fill"></i></span><span class="col-name">id</span><span class="col-type">BIGINT PK</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">name</span><span class="col-type">VARCHAR(100)</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">code</span><span class="col-type">VARCHAR(20)</span></div>
+    <div class="col-row fk-row"><span class="col-icon fk"><i class="bi bi-link-45deg"></i></span><span class="col-name">parent_id</span><span class="col-type">FK → self</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">category</span><span class="col-type">VARCHAR(50)</span></div>
+  </div>
+</div>
+
+<!-- acc_budgets -->
+<div class="entity domain-core" style="left:580px;top:530px">
+  <div class="entity-header"><i class="bi bi-piggy-bank"></i><span class="tbl-name">acc_budgets</span></div>
+  <div class="entity-body">
+    <div class="col-row pk-row"><span class="col-icon pk"><i class="bi bi-key-fill"></i></span><span class="col-name">id</span><span class="col-type">BIGINT PK</span></div>
+    <div class="col-row fk-row"><span class="col-icon fk"><i class="bi bi-link-45deg"></i></span><span class="col-name">financial_year_id</span><span class="col-type">FK → fy</span></div>
+    <div class="col-row fk-row"><span class="col-icon fk"><i class="bi bi-link-45deg"></i></span><span class="col-name">ledger_id</span><span class="col-type">FK → ledgers</span></div>
+    <div class="col-row fk-row"><span class="col-icon fk"><i class="bi bi-link-45deg"></i></span><span class="col-name">cost_center_id</span><span class="col-type">FK → cc</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">budget_amount</span><span class="col-type">DECIMAL(15,2)</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">period</span><span class="col-type">ENUM(3)</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- DOMAIN 2: PAYROLL (left-center) -->
+<!-- ═══════════════════════════════════════════════ -->
+
+<!-- acc_employee_groups -->
+<div class="entity domain-payroll" style="left:80px;top:870px">
+  <div class="entity-header"><i class="bi bi-people"></i><span class="tbl-name">acc_employee_groups</span></div>
+  <div class="entity-body">
+    <div class="col-row pk-row"><span class="col-icon pk"><i class="bi bi-key-fill"></i></span><span class="col-name">id</span><span class="col-type">BIGINT PK</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">name</span><span class="col-type">VARCHAR(80)</span></div>
+    <div class="col-row fk-row"><span class="col-icon fk"><i class="bi bi-link-45deg"></i></span><span class="col-name">parent_id</span><span class="col-type">FK → self</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">pf_applicable</span><span class="col-type">BOOL</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">esi_applicable</span><span class="col-type">BOOL</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">pt_applicable</span><span class="col-type">BOOL</span></div>
+  </div>
+</div>
+
+<!-- acc_employees -->
+<div class="entity domain-payroll" style="left:400px;top:870px">
+  <div class="entity-header"><i class="bi bi-person-badge"></i><span class="tbl-name">acc_employees</span></div>
+  <div class="entity-body">
+    <div class="col-row pk-row"><span class="col-icon pk"><i class="bi bi-key-fill"></i></span><span class="col-name">id</span><span class="col-type">BIGINT PK</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">employee_code</span><span class="col-type">VARCHAR(30) UQ</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">name</span><span class="col-type">VARCHAR(150)</span></div>
+    <div class="col-row fk-row"><span class="col-icon fk"><i class="bi bi-link-45deg"></i></span><span class="col-name">employee_group_id</span><span class="col-type">FK → groups</span></div>
+    <div class="col-row fk-row"><span class="col-icon fk"><i class="bi bi-link-45deg"></i></span><span class="col-name">ledger_id</span><span class="col-type">FK → ledgers</span></div>
+    <div class="col-row fk-row"><span class="col-icon fk"><i class="bi bi-link-45deg"></i></span><span class="col-name">teacher_id</span><span class="col-type">FK → sch_teachers</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">pan / aadhaar / uan</span><span class="col-type">VARCHAR</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">is_pf/esi/pt/tds</span><span class="col-type">BOOL x4</span></div>
+  </div>
+</div>
+
+<!-- acc_employee_attendance -->
+<div class="entity domain-payroll" style="left:80px;top:1250px">
+  <div class="entity-header"><i class="bi bi-calendar-check"></i><span class="tbl-name">acc_employee_attendance</span></div>
+  <div class="entity-body">
+    <div class="col-row pk-row"><span class="col-icon pk"><i class="bi bi-key-fill"></i></span><span class="col-name">id</span><span class="col-type">BIGINT PK</span></div>
+    <div class="col-row fk-row"><span class="col-icon fk"><i class="bi bi-link-45deg"></i></span><span class="col-name">employee_id</span><span class="col-type">FK → employees</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">month / year</span><span class="col-type">TINYINT / SMALL</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">present_days</span><span class="col-type">DECIMAL(5,2)</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">leave_without_pay</span><span class="col-type">DECIMAL(5,2)</span></div>
+  </div>
+</div>
+
+<!-- acc_pay_heads -->
+<div class="entity domain-payroll" style="left:350px;top:1450px">
+  <div class="entity-header"><i class="bi bi-list-check"></i><span class="tbl-name">acc_pay_heads</span></div>
+  <div class="entity-body">
+    <div class="col-row pk-row"><span class="col-icon pk"><i class="bi bi-key-fill"></i></span><span class="col-name">id</span><span class="col-type">BIGINT PK</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">name</span><span class="col-type">VARCHAR(100)</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">type</span><span class="col-type">ENUM(earning,ded,emp)</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">calculation_type</span><span class="col-type">ENUM(4)</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">percentage_value</span><span class="col-type">DECIMAL(6,2)</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">statutory_type</span><span class="col-type">VARCHAR(50)</span></div>
+    <div class="col-row fk-row"><span class="col-icon fk"><i class="bi bi-link-45deg"></i></span><span class="col-name">ledger_id</span><span class="col-type">FK → ledgers</span></div>
+  </div>
+</div>
+
+<!-- acc_payroll_entries -->
+<div class="entity domain-payroll" style="left:750px;top:1050px">
+  <div class="entity-header"><i class="bi bi-currency-rupee"></i><span class="tbl-name">acc_payroll_entries</span></div>
+  <div class="entity-body">
+    <div class="col-row pk-row"><span class="col-icon pk"><i class="bi bi-key-fill"></i></span><span class="col-name">id</span><span class="col-type">BIGINT PK</span></div>
+    <div class="col-row fk-row"><span class="col-icon fk"><i class="bi bi-link-45deg"></i></span><span class="col-name">payroll_run_id</span><span class="col-type">FK → runs</span></div>
+    <div class="col-row fk-row"><span class="col-icon fk"><i class="bi bi-link-45deg"></i></span><span class="col-name">employee_id</span><span class="col-type">FK → employees</span></div>
+    <div class="col-row fk-row"><span class="col-icon fk"><i class="bi bi-link-45deg"></i></span><span class="col-name">pay_head_id</span><span class="col-type">FK → pay_heads</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">amount</span><span class="col-type">DECIMAL(12,2)</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">pay_head_type</span><span class="col-type">ENUM(3)</span></div>
+  </div>
+</div>
+
+<!-- acc_payroll_runs -->
+<div class="entity domain-payroll" style="left:830px;top:780px">
+  <div class="entity-header"><i class="bi bi-calculator"></i><span class="tbl-name">acc_payroll_runs</span></div>
+  <div class="entity-body">
+    <div class="col-row pk-row"><span class="col-icon pk"><i class="bi bi-key-fill"></i></span><span class="col-name">id</span><span class="col-type">BIGINT PK</span></div>
+    <div class="col-row fk-row"><span class="col-icon fk"><i class="bi bi-link-45deg"></i></span><span class="col-name">financial_year_id</span><span class="col-type">FK → fy</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">month / year</span><span class="col-type">TINYINT / SMALL</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">total_gross / net</span><span class="col-type">DECIMAL(15,2)</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">status</span><span class="col-type">ENUM(4)</span></div>
+    <div class="col-row fk-row"><span class="col-icon fk"><i class="bi bi-link-45deg"></i></span><span class="col-name">voucher_id</span><span class="col-type">FK → vouchers</span></div>
+  </div>
+</div>
+
+<!-- acc_salary_structures -->
+<div class="entity domain-payroll" style="left:830px;top:1330px">
+  <div class="entity-header"><i class="bi bi-grid-3x3-gap"></i><span class="tbl-name">acc_salary_structures</span></div>
+  <div class="entity-body">
+    <div class="col-row pk-row"><span class="col-icon pk"><i class="bi bi-key-fill"></i></span><span class="col-name">id</span><span class="col-type">BIGINT PK</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">name</span><span class="col-type">VARCHAR(100)</span></div>
+    <div class="col-row fk-row"><span class="col-icon fk"><i class="bi bi-link-45deg"></i></span><span class="col-name">employee_group_id</span><span class="col-type">FK → emp_groups</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">effective_from</span><span class="col-type">DATE</span></div>
+  </div>
+</div>
+
+<!-- acc_salary_structure_items -->
+<div class="entity domain-payroll" style="left:750px;top:1480px">
+  <div class="entity-header"><i class="bi bi-list-nested"></i><span class="tbl-name">acc_salary_structure_items</span></div>
+  <div class="entity-body">
+    <div class="col-row pk-row"><span class="col-icon pk"><i class="bi bi-key-fill"></i></span><span class="col-name">id</span><span class="col-type">BIGINT PK</span></div>
+    <div class="col-row fk-row"><span class="col-icon fk"><i class="bi bi-link-45deg"></i></span><span class="col-name">salary_structure_id</span><span class="col-type">FK → structures</span></div>
+    <div class="col-row fk-row"><span class="col-icon fk"><i class="bi bi-link-45deg"></i></span><span class="col-name">pay_head_id</span><span class="col-type">FK → pay_heads</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">default_amount</span><span class="col-type">DECIMAL(12,2)</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- DOMAIN 3: INVENTORY (top-right) -->
+<!-- ═══════════════════════════════════════════════ -->
+
+<!-- acc_stock_groups -->
+<div class="entity domain-inventory" style="left:2050px;top:80px">
+  <div class="entity-header"><i class="bi bi-collection"></i><span class="tbl-name">acc_stock_groups</span></div>
+  <div class="entity-body">
+    <div class="col-row pk-row"><span class="col-icon pk"><i class="bi bi-key-fill"></i></span><span class="col-name">id</span><span class="col-type">BIGINT PK</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">name</span><span class="col-type">VARCHAR(100)</span></div>
+    <div class="col-row fk-row"><span class="col-icon fk"><i class="bi bi-link-45deg"></i></span><span class="col-name">parent_id</span><span class="col-type">FK → self</span></div>
+  </div>
+</div>
+
+<!-- acc_stock_items -->
+<div class="entity domain-inventory" style="left:2350px;top:80px">
+  <div class="entity-header"><i class="bi bi-box-seam"></i><span class="tbl-name">acc_stock_items</span></div>
+  <div class="entity-body">
+    <div class="col-row pk-row"><span class="col-icon pk"><i class="bi bi-key-fill"></i></span><span class="col-name">id</span><span class="col-type">BIGINT PK</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">name</span><span class="col-type">VARCHAR(200)</span></div>
+    <div class="col-row fk-row"><span class="col-icon fk"><i class="bi bi-link-45deg"></i></span><span class="col-name">stock_group_id</span><span class="col-type">FK → groups</span></div>
+    <div class="col-row fk-row"><span class="col-icon fk"><i class="bi bi-link-45deg"></i></span><span class="col-name">unit_id</span><span class="col-type">FK → uom</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">valuation_method</span><span class="col-type">ENUM(3)</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">reorder_level</span><span class="col-type">DECIMAL(12,2)</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">has_batch / expiry</span><span class="col-type">BOOL x2</span></div>
+  </div>
+</div>
+
+<!-- acc_units_of_measure -->
+<div class="entity domain-inventory" style="left:2750px;top:80px">
+  <div class="entity-header"><i class="bi bi-rulers"></i><span class="tbl-name">acc_units_of_measure</span></div>
+  <div class="entity-body">
+    <div class="col-row pk-row"><span class="col-icon pk"><i class="bi bi-key-fill"></i></span><span class="col-name">id</span><span class="col-type">BIGINT PK</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">name</span><span class="col-type">VARCHAR(30)</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">symbol</span><span class="col-type">VARCHAR(10)</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">decimal_places</span><span class="col-type">TINYINT</span></div>
+  </div>
+</div>
+
+<!-- acc_stock_entries -->
+<div class="entity domain-inventory" style="left:2350px;top:500px">
+  <div class="entity-header"><i class="bi bi-arrow-down-up"></i><span class="tbl-name">acc_stock_entries</span></div>
+  <div class="entity-body">
+    <div class="col-row pk-row"><span class="col-icon pk"><i class="bi bi-key-fill"></i></span><span class="col-name">id</span><span class="col-type">BIGINT PK</span></div>
+    <div class="col-row fk-row"><span class="col-icon fk"><i class="bi bi-link-45deg"></i></span><span class="col-name">voucher_id</span><span class="col-type">FK → vouchers</span></div>
+    <div class="col-row fk-row"><span class="col-icon fk"><i class="bi bi-link-45deg"></i></span><span class="col-name">stock_item_id</span><span class="col-type">FK → items</span></div>
+    <div class="col-row fk-row"><span class="col-icon fk"><i class="bi bi-link-45deg"></i></span><span class="col-name">godown_id</span><span class="col-type">FK → godowns</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">type</span><span class="col-type">ENUM(in,out)</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">quantity / rate / amount</span><span class="col-type">DECIMAL</span></div>
+  </div>
+</div>
+
+<!-- acc_godowns -->
+<div class="entity domain-inventory" style="left:2750px;top:340px">
+  <div class="entity-header"><i class="bi bi-geo-alt"></i><span class="tbl-name">acc_godowns</span></div>
+  <div class="entity-body">
+    <div class="col-row pk-row"><span class="col-icon pk"><i class="bi bi-key-fill"></i></span><span class="col-name">id</span><span class="col-type">BIGINT PK</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">name</span><span class="col-type">VARCHAR(100)</span></div>
+    <div class="col-row fk-row"><span class="col-icon fk"><i class="bi bi-link-45deg"></i></span><span class="col-name">parent_id</span><span class="col-type">FK → self</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">address</span><span class="col-type">TEXT</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- DOMAIN 5: FIXED ASSETS (right-center) -->
+<!-- ═══════════════════════════════════════════════ -->
+
+<!-- acc_asset_categories -->
+<div class="entity domain-assets" style="left:2050px;top:820px">
+  <div class="entity-header"><i class="bi bi-tags"></i><span class="tbl-name">acc_asset_categories</span></div>
+  <div class="entity-body">
+    <div class="col-row pk-row"><span class="col-icon pk"><i class="bi bi-key-fill"></i></span><span class="col-name">id</span><span class="col-type">BIGINT PK</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">name</span><span class="col-type">VARCHAR(100)</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">depreciation_method</span><span class="col-type">ENUM(SLM,WDV)</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">depreciation_rate</span><span class="col-type">DECIMAL(5,2)</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">useful_life_years</span><span class="col-type">INT</span></div>
+  </div>
+</div>
+
+<!-- acc_fixed_assets -->
+<div class="entity domain-assets" style="left:2350px;top:800px">
+  <div class="entity-header"><i class="bi bi-building"></i><span class="tbl-name">acc_fixed_assets</span></div>
+  <div class="entity-body">
+    <div class="col-row pk-row"><span class="col-icon pk"><i class="bi bi-key-fill"></i></span><span class="col-name">id</span><span class="col-type">BIGINT PK</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">name / asset_code</span><span class="col-type">VARCHAR</span></div>
+    <div class="col-row fk-row"><span class="col-icon fk"><i class="bi bi-link-45deg"></i></span><span class="col-name">asset_category_id</span><span class="col-type">FK → categories</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">purchase_cost</span><span class="col-type">DECIMAL(15,2)</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">current_value</span><span class="col-type">DECIMAL(15,2)</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">accum_depreciation</span><span class="col-type">DECIMAL(15,2)</span></div>
+    <div class="col-row fk-row"><span class="col-icon fk"><i class="bi bi-link-45deg"></i></span><span class="col-name">voucher_id</span><span class="col-type">FK → vouchers</span></div>
+  </div>
+</div>
+
+<!-- acc_depreciation_entries -->
+<div class="entity domain-assets" style="left:2350px;top:1100px">
+  <div class="entity-header"><i class="bi bi-graph-down"></i><span class="tbl-name">acc_depreciation_entries</span></div>
+  <div class="entity-body">
+    <div class="col-row pk-row"><span class="col-icon pk"><i class="bi bi-key-fill"></i></span><span class="col-name">id</span><span class="col-type">BIGINT PK</span></div>
+    <div class="col-row fk-row"><span class="col-icon fk"><i class="bi bi-link-45deg"></i></span><span class="col-name">fixed_asset_id</span><span class="col-type">FK → assets</span></div>
+    <div class="col-row fk-row"><span class="col-icon fk"><i class="bi bi-link-45deg"></i></span><span class="col-name">financial_year_id</span><span class="col-type">FK → fy</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">depreciation_date</span><span class="col-type">DATE</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">depreciation_amount</span><span class="col-type">DECIMAL(15,2)</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- DOMAIN 4: BANKING (bottom-center) -->
+<!-- ═══════════════════════════════════════════════ -->
+
+<!-- acc_bank_reconciliations -->
+<div class="entity domain-banking" style="left:1400px;top:1600px">
+  <div class="entity-header"><i class="bi bi-bank"></i><span class="tbl-name">acc_bank_reconciliations</span></div>
+  <div class="entity-body">
+    <div class="col-row pk-row"><span class="col-icon pk"><i class="bi bi-key-fill"></i></span><span class="col-name">id</span><span class="col-type">BIGINT PK</span></div>
+    <div class="col-row fk-row"><span class="col-icon fk"><i class="bi bi-link-45deg"></i></span><span class="col-name">voucher_item_id</span><span class="col-type">FK → v_items</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">bank_date</span><span class="col-type">DATE</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">instrument_number</span><span class="col-type">VARCHAR(50)</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">is_reconciled</span><span class="col-type">BOOL</span></div>
+  </div>
+</div>
+
+<!-- acc_bank_statement_entries -->
+<div class="entity domain-banking" style="left:1750px;top:1600px">
+  <div class="entity-header"><i class="bi bi-file-earmark-spreadsheet"></i><span class="tbl-name">acc_bank_statement_entries</span></div>
+  <div class="entity-body">
+    <div class="col-row pk-row"><span class="col-icon pk"><i class="bi bi-key-fill"></i></span><span class="col-name">id</span><span class="col-type">BIGINT PK</span></div>
+    <div class="col-row fk-row"><span class="col-icon fk"><i class="bi bi-link-45deg"></i></span><span class="col-name">ledger_id</span><span class="col-type">FK → ledgers</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">transaction_date</span><span class="col-type">DATE</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">debit / credit_amount</span><span class="col-type">DECIMAL(15,2)</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">is_matched</span><span class="col-type">BOOL</span></div>
+    <div class="col-row fk-row"><span class="col-icon fk"><i class="bi bi-link-45deg"></i></span><span class="col-name">matched_voucher_item_id</span><span class="col-type">FK → v_items</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- DOMAIN 6: EXPENSE CLAIMS (bottom-right) -->
+<!-- ═══════════════════════════════════════════════ -->
+
+<!-- acc_expense_claims -->
+<div class="entity domain-expense" style="left:1750px;top:1900px">
+  <div class="entity-header"><i class="bi bi-receipt-cutoff"></i><span class="tbl-name">acc_expense_claims</span></div>
+  <div class="entity-body">
+    <div class="col-row pk-row"><span class="col-icon pk"><i class="bi bi-key-fill"></i></span><span class="col-name">id</span><span class="col-type">BIGINT PK</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">claim_number</span><span class="col-type">VARCHAR(50) UQ</span></div>
+    <div class="col-row fk-row"><span class="col-icon fk"><i class="bi bi-link-45deg"></i></span><span class="col-name">employee_id</span><span class="col-type">FK → employees</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">total_amount</span><span class="col-type">DECIMAL(15,2)</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">status</span><span class="col-type">ENUM(5)</span></div>
+    <div class="col-row fk-row"><span class="col-icon fk"><i class="bi bi-link-45deg"></i></span><span class="col-name">voucher_id</span><span class="col-type">FK → vouchers</span></div>
+  </div>
+</div>
+
+<!-- acc_expense_claim_lines -->
+<div class="entity domain-expense" style="left:1750px;top:2120px">
+  <div class="entity-header"><i class="bi bi-list-ul"></i><span class="tbl-name">acc_expense_claim_lines</span></div>
+  <div class="entity-body">
+    <div class="col-row pk-row"><span class="col-icon pk"><i class="bi bi-key-fill"></i></span><span class="col-name">id</span><span class="col-type">BIGINT PK</span></div>
+    <div class="col-row fk-row"><span class="col-icon fk"><i class="bi bi-link-45deg"></i></span><span class="col-name">expense_claim_id</span><span class="col-type">FK → claims</span></div>
+    <div class="col-row fk-row"><span class="col-icon fk"><i class="bi bi-link-45deg"></i></span><span class="col-name">ledger_id</span><span class="col-type">FK → ledgers</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">description</span><span class="col-type">VARCHAR(255)</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">amount / tax_amount</span><span class="col-type">DECIMAL(15,2)</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- DOMAIN 7: SUPPORTING (bottom) -->
+<!-- ═══════════════════════════════════════════════ -->
+
+<!-- acc_tax_rates -->
+<div class="entity domain-support" style="left:1200px;top:1900px">
+  <div class="entity-header"><i class="bi bi-percent"></i><span class="tbl-name">acc_tax_rates</span></div>
+  <div class="entity-body">
+    <div class="col-row pk-row"><span class="col-icon pk"><i class="bi bi-key-fill"></i></span><span class="col-name">id</span><span class="col-type">BIGINT PK</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">name</span><span class="col-type">VARCHAR(100)</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">rate</span><span class="col-type">DECIMAL(5,2)</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">type</span><span class="col-type">ENUM(CGST,...)</span></div>
+  </div>
+</div>
+
+<!-- acc_ledger_mappings -->
+<div class="entity domain-support" style="left:1400px;top:2050px">
+  <div class="entity-header"><i class="bi bi-link-45deg"></i><span class="tbl-name">acc_ledger_mappings</span></div>
+  <div class="entity-body">
+    <div class="col-row pk-row"><span class="col-icon pk"><i class="bi bi-key-fill"></i></span><span class="col-name">id</span><span class="col-type">BIGINT PK</span></div>
+    <div class="col-row fk-row"><span class="col-icon fk"><i class="bi bi-link-45deg"></i></span><span class="col-name">ledger_id</span><span class="col-type">FK → ledgers</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">source_module</span><span class="col-type">ENUM(6)</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">source_id</span><span class="col-type">BIGINT (poly)</span></div>
+  </div>
+</div>
+
+<!-- acc_recurring_templates -->
+<div class="entity domain-support" style="left:1400px;top:2220px">
+  <div class="entity-header"><i class="bi bi-arrow-repeat"></i><span class="tbl-name">acc_recurring_templates</span></div>
+  <div class="entity-body">
+    <div class="col-row pk-row"><span class="col-icon pk"><i class="bi bi-key-fill"></i></span><span class="col-name">id</span><span class="col-type">BIGINT PK</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">name</span><span class="col-type">VARCHAR(150)</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">frequency</span><span class="col-type">ENUM(5)</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">total_amount</span><span class="col-type">DECIMAL(15,2)</span></div>
+  </div>
+</div>
+
+<!-- acc_recurring_template_lines -->
+<div class="entity domain-support" style="left:1750px;top:2300px">
+  <div class="entity-header"><i class="bi bi-list-ol"></i><span class="tbl-name">acc_recurring_template_lines</span></div>
+  <div class="entity-body">
+    <div class="col-row pk-row"><span class="col-icon pk"><i class="bi bi-key-fill"></i></span><span class="col-name">id</span><span class="col-type">BIGINT PK</span></div>
+    <div class="col-row fk-row"><span class="col-icon fk"><i class="bi bi-link-45deg"></i></span><span class="col-name">recurring_template_id</span><span class="col-type">FK → templates</span></div>
+    <div class="col-row fk-row"><span class="col-icon fk"><i class="bi bi-link-45deg"></i></span><span class="col-name">ledger_id</span><span class="col-type">FK → ledgers</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">type</span><span class="col-type">ENUM(Dr,Cr)</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">amount</span><span class="col-type">DECIMAL(15,2)</span></div>
+  </div>
+</div>
+
+<!-- acc_tally_export_logs -->
+<div class="entity domain-support" style="left:1200px;top:2120px">
+  <div class="entity-header"><i class="bi bi-box-arrow-up-right"></i><span class="tbl-name">acc_tally_export_logs</span></div>
+  <div class="entity-body">
+    <div class="col-row pk-row"><span class="col-icon pk"><i class="bi bi-key-fill"></i></span><span class="col-name">id</span><span class="col-type">BIGINT PK</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">export_type</span><span class="col-type">ENUM(4)</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">file_name</span><span class="col-type">VARCHAR(255)</span></div>
+    <div class="col-row"><span class="col-icon"></span><span class="col-name">status</span><span class="col-type">ENUM(3)</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- EXTERNAL MODULE REFERENCES (dashed borders) -->
+<!-- ═══════════════════════════════════════════════ -->
+
+<div class="entity external" style="left:2750px;top:820px;min-width:160px">
+  <div class="entity-header"><i class="bi bi-box-arrow-up-right"></i><span class="tbl-name">vnd_vendors</span></div>
+  <div class="entity-body"><div class="col-row"><span class="col-icon"></span><span class="col-name" style="color:#888">Vendor Module (ext)</span></div></div>
+</div>
+
+<div class="entity external" style="left:2750px;top:920px;min-width:160px">
+  <div class="entity-header"><i class="bi bi-box-arrow-up-right"></i><span class="tbl-name">sch_teachers</span></div>
+  <div class="entity-body"><div class="col-row"><span class="col-icon"></span><span class="col-name" style="color:#888">SchoolSetup (ext)</span></div></div>
+</div>
+
+<div class="entity external" style="left:2750px;top:1010px;min-width:160px">
+  <div class="entity-header"><i class="bi bi-box-arrow-up-right"></i><span class="tbl-name">std_students</span></div>
+  <div class="entity-body"><div class="col-row"><span class="col-icon"></span><span class="col-name" style="color:#888">StudentProfile (ext)</span></div></div>
+</div>
+
+<div class="entity external" style="left:2750px;top:1100px;min-width:160px">
+  <div class="entity-header"><i class="bi bi-box-arrow-up-right"></i><span class="tbl-name">sys_users</span></div>
+  <div class="entity-body"><div class="col-row"><span class="col-icon"></span><span class="col-name" style="color:#888">System (ext)</span></div></div>
+</div>
+
+<!-- Domain Labels -->
+<div style="position:absolute;left:50px;top:10px;font-size:1.1rem;font-weight:700;color:#7fb3ff;opacity:.6"><i class="bi bi-circle-fill me-1" style="font-size:.6rem"></i>CORE ACCOUNTING</div>
+<div style="position:absolute;left:50px;top:800px;font-size:1.1rem;font-weight:700;color:#c49bff;opacity:.6"><i class="bi bi-circle-fill me-1" style="font-size:.6rem"></i>PAYROLL</div>
+<div style="position:absolute;left:2050px;top:10px;font-size:1.1rem;font-weight:700;color:#6ee7b7;opacity:.6"><i class="bi bi-circle-fill me-1" style="font-size:.6rem"></i>INVENTORY</div>
+<div style="position:absolute;left:2050px;top:750px;font-size:1.1rem;font-weight:700;color:#5eead4;opacity:.6"><i class="bi bi-circle-fill me-1" style="font-size:.6rem"></i>FIXED ASSETS</div>
+<div style="position:absolute;left:1400px;top:1540px;font-size:1.1rem;font-weight:700;color:#fbbf24;opacity:.6"><i class="bi bi-circle-fill me-1" style="font-size:.6rem"></i>BANKING</div>
+<div style="position:absolute;left:1750px;top:1850px;font-size:1.1rem;font-weight:700;color:#fda4af;opacity:.6"><i class="bi bi-circle-fill me-1" style="font-size:.6rem"></i>EXPENSE CLAIMS</div>
+<div style="position:absolute;left:1200px;top:1850px;font-size:1.1rem;font-weight:700;color:#a1a1aa;opacity:.6"><i class="bi bi-circle-fill me-1" style="font-size:.6rem"></i>SUPPORTING</div>
+<div style="position:absolute;left:2700px;top:750px;font-size:1rem;font-weight:700;color:#666;opacity:.5"><i class="bi bi-box-arrow-up-right me-1" style="font-size:.6rem"></i>EXTERNAL MODULES</div>
+
+</div><!-- /diagram -->
+</div><!-- /canvas -->
+
+<script>
+// Simple pan with scroll
+const canvas = document.getElementById('canvas');
+canvas.scrollLeft = 200;
+canvas.scrollTop = 0;
+</script>
+</body>
+</html>

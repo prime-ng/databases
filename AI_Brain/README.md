@@ -1,7 +1,7 @@
 # AI Brain — Prime-AI Project
 
 > Call this folder **"the brain"** in conversation and I'll know exactly what you mean.
-> **Location:** Database repo (`prime-ai_db/databases/AI_Brain/`)
+> **Location:** Old database repo (`{AI_BRAIN}/`)
 
 ## What This Folder Is
 This is the persistent knowledge base and instruction system for AI-assisted development on **Prime-AI**,
@@ -36,13 +36,14 @@ DATABASE REPO (AI_Brain/)                    LARAVEL REPO
 ## How to Use This Folder
 
 **Before starting ANY task, read:**
-1. `memory/project-context.md` — Full project overview
-2. `memory/tenancy-map.md` — Multi-tenancy architecture (CRITICAL)
-3. `memory/modules-map.md` — Module inventory and structure
-4. `memory/conventions.md` — Naming, patterns, and coding standards
-5. `state/progress.md` — What's done, what's in progress
-6. Relevant `rules/` files for the task type
-7. Relevant `agents/` file for the task role
+1. `config/paths.md` — **Path configuration** (resolve all `{VARIABLE}` references)
+2. `memory/project-context.md` — Full project overview
+3. `memory/tenancy-map.md` — Multi-tenancy architecture (CRITICAL)
+4. `memory/modules-map.md` — Module inventory and structure
+5. `memory/conventions.md` — Naming, patterns, and coding standards
+6. `state/progress.md` — What's done, what's in progress
+7. Relevant `rules/` files for the task type
+8. Relevant `agents/` file for the task role
 
 ---
 
@@ -161,11 +162,11 @@ AI_Brain/
 Run setup.sh to deploy rules/skills/agents to the correct locations:
 
 ```bash
-cd /Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases/AI_Brain
+cd {AI_BRAIN}
 bash claude-config/setup.sh
 ```
 
 This will:
-1. Copy path-scoped rules → `/Users/bkwork/Herd/laravel/.claude/rules/`
+1. Copy path-scoped rules → `{LARAVEL_CLAUDE}/`
 2. Copy skills → `~/.claude/skills/`
 3. Copy agents → `~/.claude/agents/`

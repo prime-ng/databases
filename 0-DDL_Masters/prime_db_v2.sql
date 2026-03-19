@@ -12,13 +12,15 @@
   -- beh - Behaviour Management
   -- tpt - Transport Module
   -- lib - Library Module
-  -- fnt - FrontDesk Module
+  -- fdm - FrontDesk Module
   -- acc - Account
   -- hos - Hostel Mgmt
   -- mes - Mess Management
   -- bil - Billing & plans
   -- vnd - Vendor Management
   -- bok - Syllabus Books
+  -- inv - Inventory Management
+  -- prl - Payroll Management
 
 -- Below is a Postfix Abbreviation to identify Join Tables
 -- ------------------------------------------------------------

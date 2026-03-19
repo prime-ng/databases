@@ -35,15 +35,15 @@
 - [ ] **QuestionBank** (~75%) — **API KEYS HARDCODED (OpenAI + Gemini)** — REVOKE NOW; AIQuestionGeneratorController zero auth; generateQuestions() always returns demo data (dead code)
 
 ### Timetable
-- [ ] **SmartTimetable** (~60%, audited 2026-03-15)
-  - **Branch state:** `Brijesh_HPC` (Shailesh): 27 controllers, 86 models, 21 services, 12 FormRequests, SmartTimetableController 3037 lines. `Tarun_SmartTimetable` (Tarun): +1 controller (ParallelGroupController), +1 service (ParallelPeriodConstraint), 9 unit tests
-  - **Done:** Schema & Foundation, Seeders, Validation Framework, Activity & Generation, Constraint CRUD (6-tab management). Parallel Periods only in Tarun's branch.
-  - **Critical open:** 6 runtime crash bugs (BUG-B1 through BUG-NEW-06), 17/27 controllers zero auth (SEC-009), no EnsureTenantHasModule, 3 unprotected truncate()
-  - **Missing features:** Room allocation (room_id always NULL), Analytics (15%), Refinement (5%), Substitution (0%), API/Async (0%)
-  - **Constraint gap:** ~30/155 rules enforced; 125+ unimplemented across Categories B-H. Architecture foundation (Registry, Evaluator, Context) not yet built.
-  - **Code quality:** God controller (3037 lines), 40 models lack SoftDeletes, 16 controllers use inline validation
-  - **Full development plan:** 19 phases, ~69 days → see `6-Module-In-Progress/8-Smart_Timetable/Claude_Context/2026Mar14_DevelopmentPlan_v2.md`
-  - **Prompt files:** 21 execution prompts (P01–P21) in `6-Module-In-Progress/8-Smart_Timetable/Claude_Prompt/`
+- [ ] **SmartTimetable** (~72%, audited 2026-03-17, branch `Brijesh_SmartTimetable`)
+  - **Branch state:** 31 controllers, 86+ models (40+ now have SoftDeletes), 25 services, 12 FormRequests, SmartTimetableController ~2732 lines (was 3037 — 305 lines debug code removed)
+  - **Done (structure present):** Schema & Foundation, Seeders, Validation, Activity & Generation, Constraint CRUD (6-tab), Parallel Periods, Constraint Architecture (Registry+Evaluator+Context+Factory), 22 Hard + 55+ Soft constraint classes, 212 seeded ConstraintTypes, AnalyticsController+Service (5 views), RefinementController+Service (1 view), SubstitutionController+Service (2 views), TimetableApiController (6 REST endpoints), GenerateTimetableJob, SmartTimetableServiceProvider, RoomChangeTrackingService, api.php routes
+  - **All 21 prompts (P01–P21) executed** by Tarun in 15 commits since 2026-03-15
+  - **Critical open (NEW — 2026-03-17):** BUG-TT-001 (API zero auth), BUG-TT-002 (Bridge bare context — constraints silently pass), BUG-TT-003 (gap/span period_id vs index mismatch), BUG-TT-004 (SubstitutionService `now()->parse()` crash), BUG-TT-005 (no timetable_id scope), BUG-TT-006 (Job no tenant context), BUG-TT-007 (stale cache), BUG-TT-008 (static/instance call mismatch), BUG-TT-009 (inter-activity checks silently pass), BUG-TT-010–012 (stub/scoping/scoring bugs)
+  - **Security:** SEC-TT-001 (no EnsureTenantHasModule), SEC-TT-002 (cross-tenant API leakage), SEC-TT-003 (stub POST routes)
+  - **Performance:** PERF-TT-001 (Teacher::all + N+1), PERF-TT-002 (uncached analytics), PERF-TT-003 (N+1 teachers.user)
+  - **Assessment:** Structure is ~90% complete but runtime correctness has significant gaps. FETConstraintBridge doesn't pass proper context, gap calculations are wrong, inter-activity checks silently pass, SubstitutionService will crash. Need bug-fix pass before any feature is production-ready.
+  - **Full issue list:** See `known-issues.md` section "SmartTimetable — Post-P01–P21 Audit (2026-03-17)"
 
 ---
 
@@ -55,7 +55,7 @@
 - [ ] **LmsExam** (~65%) — `dd($e)` in prod store(); 2 controllers (Blueprint, Scope) have all Gate calls commented out; no EnsureTenantHasModule; answer submission & grading absent
 - [ ] **StudentFee** (~60%) — Missing `FeeConcessionController` (imported but doesn't exist); exposed seeder route with no auth; permission prefix mismatch (`student-fee.*` vs `studentfee.*`) on 3 controllers; no Form Requests; N+1 in bulk invoice/assignment generation; no EnsureTenantHasModule
 - [ ] **LmsHomework** (~60%) — Fatal crash: `HoemworkData()` missing `$request` param; `review()` has no auth or validation; no EnsureTenantHasModule
-- [ ] **Hpc** (~68%) — Re-audited 2026-03-15 against `prime_ai_shailesh` branch `Brijesh_HPC`. 15 controllers, 26 models, 1 service, 14 FormRequests, HpcController 2300 lines. All 4 PDF templates exist (first/second/third/fourth_pdf). ZIP download feature (downloadZip route). 12 new PDF fix commits since 2026-03-14 (first_pdf, second_pdf, fourth_pdf updates). **Critical blockers STILL OPEN:** SEC-HPC-001 (only 1 Gate call in entire HpcController — 13/14 methods zero auth); BUG-HPC-001 (4 template controller imports still missing in tenant.php → 500s on hpc-templates/parts/sections/rubrics routes); SEC-HPC-003 (no EnsureTenantHasModule); BUG-HPC-008 (orphan singular LearningActivityController import at tenant.php line 19). BUG-HPC-013 (ZIP cleanup), BUG-HPC-014 (tenant_asset on individual PDFs). See known-issues.md for full list.
+- [ ] **Hpc** (~75%) — Holistic Progress Card. Revised from 40% to 75% after completing all 37 gap analysis tasks (2026-03-17). 22 controllers, 32 models, 10 services, 14 FormRequests, 1 Trait, 55 tests. All P0 security fixes done, all P1 bugs fixed, all P2 workflows implemented, all P3 features built. Sub-breakdown: Template 100%, Form 90%, PDF 90%, Auth 95%, Role-locking 100%, Workflow 100%, Student Portal 100%, Parent Portal 100%, Peer Workflow 100%, LMS Feed 90%, Credits 100%, Attendance 90%, Tests 80%. Remaining: god controller refactor (partial), 8 blueprint screens, full MOOC integration.
 - [ ] **Library** (~45%) — NOT wired into tenant.php at all; 7 controllers with zero authorization; 5 stub methods on only registered route; N+1 in ReservationController; Prime\Setting cross-layer import; permission namespace mismatch in LibTransactionController
 
 ---
@@ -252,7 +252,7 @@
   - Created `.ai/memory/MEMORY.md` — full index of all brain files + critical bug quick-reference
   - Updated `project-context.md`, `modules-map.md`, `tenancy-map.md`, `known-issues.md`
   - Updated cross-session memory: DB schema now points to v2 files, critical bugs listed
-  - DB Schema canonical files: `global_db_v2.sql`, `prime_db_v2.sql`, `tenant_db_v2.sql` in `1-master_dbs/1-DDLs/`
+  - DB Schema canonical files: `global_db_v2.sql`, `prime_db_v2.sql`, `tenant_db_v2.sql` in `{DDL_DIR}/`
 - [x] SmartTimetable Parallel Period Configuration — Steps 1-3 (2026-03-12)
   - Migrations: `tt_parallel_group`, `tt_parallel_group_activity`
   - Models: `ParallelGroup`, `ParallelGroupActivity`; updated `Activity` model with `parallelGroups()`, `isInParallelGroup()`
@@ -261,8 +261,8 @@
   - Routes: 11 routes in `routes/web.php`
   - Solver: `FETSolver` parallel group maps, anchor/sibling placement in backtrack + greedy
   - `SmartTimetableController::generateWithFET()` loads and passes parallel groups to solver
-  - Task plan: `/databases/2-Tenant_Modules/8-Smart_Timetable/Claude_Context/2026Mar11_ParallelPeriod_Tasks.md`
+  - Task plan: `{TT_PARALLEL_TASKS}`
 - [x] Testing framework setup and brain documentation (2026-03-11)
 - [x] Setting model unit + DB tests — 30 tests, 44 assertions, 100% pass (2026-03-11)
-- [x] DB Schema validation & enhancement (2026-03-12) — static MySQL analysis on all 3 DDL files; created global_db_v2.sql, prime_db_v2.sql, tenant_db_v2.sql, tenant_db_corrected.sql in `/databases/1-master_dbs/1-DDLs/`; created CHANGELOG.md documenting all changes
+- [x] DB Schema validation & enhancement (2026-03-12) — static MySQL analysis on all 3 DDL files; created global_db_v2.sql, prime_db_v2.sql, tenant_db_v2.sql, tenant_db_corrected.sql in `{DDL_DIR}/`; created CHANGELOG.md documenting all changes
 - [x] HPC third_pdf.blade.php (2026-03-12) — created `Modules/Hpc/resources/views/hpc_form/pdf/third_pdf.blade.php` merging all 46 thred_form partials; all Blade components inlined; DomPDF-compatible; covers Grades 6-8

@@ -27,5 +27,5 @@ php artisan tenants:migrate --tenants=uuid                                  # Sp
 ```
 
 ## Schema Reference (v2 files ONLY)
-- `global_db_v2.sql`, `prime_db_v2.sql`, `tenant_db_v2.sql` in `databases/1-master_dbs/1-DDLs/`
+- `global_db_v2.sql`, `prime_db_v2.sql`, `tenant_db_v2.sql` in `{DDL_DIR}/`
 - NEVER reference non-v2 files or files from subfolders

@@ -38,9 +38,9 @@
   - Stage 9: API & Integration (REST API, Standard Timetable views)
   - Stage 10: Testing & Cleanup (Form Requests, Pest tests)
 
-## Near Complete (80-95%)
+## Near Complete (60-95%)
 
-- [ ] **Hpc** (~90%) — Holistic Progress Card, PDF generation done, web form done
+- [ ] **Hpc** (~75%) — Holistic Progress Card. Revised from 40% to 75% after completing all 37 gap analysis tasks (2026-03-17). 22 controllers, 32 models, 10 services, 14 FormRequests, 1 Trait, 55 tests. All P0 security fixes done, all P1 bugs fixed, all P2 workflows implemented, all P3 features built. Sub-breakdown: Template 100%, Form 90%, PDF 90%, Auth 95%, Role-locking 100%, Workflow 100%, Student Portal 100%, Parent Portal 100%, Peer Workflow 100%, LMS Feed 90%, Credits 100%, Attendance 90%, Tests 80%. Remaining: god controller refactor (partial), 8 blueprint screens, full MOOC integration.
 - [ ] **LmsExam** (~80%) — Examination system
 - [ ] **LmsQuiz** (~80%) — Quiz/assessment system
 - [ ] **LmsHomework** (~80%) — Homework assignment & submission
@@ -71,7 +71,8 @@
 - [ ] **Library** — Book circulation, fines (module exists, features pending)
 
 ## Current Work
-<!-- Update this section when starting new tasks -->
+- HPC module enhancements (Branch: Brijesh_HPC, Developer: Shailesh)
 
 ## Recently Completed
-<!-- Track last 5 completed items -->
+- [x] **HPC: Queued Email Report to Guardians** (2026-03-16) — `SendHpcReportEmail` Job, `HpcReportMail` Mailable, email button + AJAX on student-list, `POST /hpc/send-report-email` route. Job re-initializes tenancy, generates PDF via DomPDF, emails all guardians with PDF attachment. 3 retries, 300s timeout, `emails` queue.
+- [x] **HPC: CRUD Data Auto-Mapping into PDFs** (2026-03-16) — `HpcPdfDataService` fetches 10 CRUD modules (evaluations, coverage, goals, outcomes, activities, parameters, descriptors, question mappings, knowledge graph, topic equivalencies). Data passed as `$hpcData` to all 4 PDF templates. Shared `_crud_sections.blade.php` partial renders tables/bars after existing form sections. Refactored `generateReportPdf()` and `generateSingleStudentPdf()` to use `$viewMap`/`$viewData` pattern.

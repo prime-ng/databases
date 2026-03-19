@@ -74,9 +74,9 @@
 
 ### D15: DB Schema — v2 Enhanced DDLs as Single Source of Truth
 - **Why:** Original DDLs had syntax errors, missing FKs, inconsistent naming, duplicate columns. Engineering audit identified 51+ issues in tenant_db alone. Consolidated + corrected into 3 v2 files.
-- **Canonical files:** `global_db_v2.sql`, `prime_db_v2.sql`, `tenant_db_v2.sql` in `1-master_dbs/1-DDLs/`
+- **Canonical files:** `global_db_v2.sql`, `prime_db_v2.sql`, `tenant_db_v2.sql` in `{DDL_DIR}/`
 - **NEVER use:** Any other DDL file — `Old_DDLs/`, `2-Prime_Modules/`, `2-Tenant_Modules/`, `Working/`, or non-v2 root files
-- **CHANGELOG:** `1-master_dbs/1-DDLs/CHANGELOG.md` documents all changes from v1 → v2
+- **CHANGELOG:** Was in `{DDL_DIR}/CHANGELOG.md` (now archived) — documented all changes from v1 → v2
 
 ### D14: SmartTimetable Parallel Periods — Anchor-Based Solver Pattern
 - **Why:** Activities across sections (Hobby, Skill, Optional) must run simultaneously. FETSolver needs to treat these as atomic units.
@@ -111,6 +111,31 @@
 - **Engine rules tab:** Info alert + no Add/Trash/Action buttons — always-on hardcoded rules.
 - **Activity constraints tab:** Read-only list (link to activity edit) — fields on `tt_activities`, not separate constraint records.
 - **Redirect anchors:** After store/update, redirect to `constraint-management#{category}-pane` using `match($category_code)` anchor map.
+
+### D19: SmartTimetable — Full Constraint Architecture (P09–P13, 2026-03-17)
+- **Why:** Previous constraint system had only 13 PHP classes and ~30/155 rules enforced. FETSolver scored slots with only spread/distribution heuristics. No registry, no evaluator, no formal context.
+- **Architecture (implemented in P01–P21):**
+  - `ConstraintRegistry` — plugin system for registering constraint classes by code. Three-step resolution: Registry → CONSTRAINT_CLASS_MAP → infer → Generic fallback.
+  - `ConstraintEvaluator` — parallel evaluation engine with group support (MUTEX/CONCURRENT/ORDERED). **WARNING:** Not yet wired into generation path — `FETSolver` still uses `ConstraintManager` directly.
+  - `ConstraintContext` — value object for evaluation context (occupied, teacherOccupied, periods, days). **WARNING:** Only used in `FETConstraintBridge`, not in actual `ConstraintManager` calls which use raw `\stdClass`.
+  - `ConstraintFactory` — creates constraint instances from DB records with JSON parameter validation.
+  - `TimetableConstraint` interface — `passes(Slot, Activity, $context): bool`, `getDescription()`, `getWeight()`, `isRelevant()`.
+  - 22 Hard constraint classes in `Constraints/Hard/` (teacher, class, room, activity, global, inter-activity).
+  - 55+ Soft constraint classes in `Constraints/Soft/` (teacher, class, room, inter-activity preferences).
+  - `SmartTimetableServiceProvider` registers all constraints via `registerConstraints()` method.
+  - `ConstraintTypeSeeder` expanded to 212 entries with full parameter schemas.
+- **Known issues:** FETConstraintBridge passes bare context (BUG-TT-002); gap calculations mix period_id/index (BUG-TT-003); ConstraintManager and ConstraintEvaluator duplicate logic (CODE-TT-002); legacy interfaces orphaned (CODE-TT-001).
+
+### D20: SmartTimetable — Service Layer Decomposition (P14–P17, 2026-03-17)
+- **Why:** SmartTimetableController was 3037 lines. New dedicated services and controllers extract analytics, refinement, substitution, and API concerns.
+- **Pattern:** Each feature area gets its own Controller+Service pair. Controllers handle auth (Gate::authorize) and validation. Services contain business logic.
+  - `AnalyticsController` + `AnalyticsService` — workload, utilization, violations, CSV exports
+  - `RefinementController` + `RefinementService` — swap/move/lock cells, impact analysis, change logs
+  - `SubstitutionController` + `SubstitutionService` — absence reporting, candidate scoring, auto-assignment
+  - `TimetableApiController` — REST API (auth:sanctum) for external integrations
+  - `GenerateTimetableJob` — async generation with status polling
+  - `RoomChangeTrackingService` — room/building change violation detection
+- **Known issues:** SubstitutionService crashes (BUG-TT-004/005), Job missing tenant context (BUG-TT-006), API zero auth (BUG-TT-001).
 
 ---
 

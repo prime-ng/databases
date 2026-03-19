@@ -7,9 +7,9 @@
 
 | Database | File | Tables |
 |----------|------|--------|
-| `global_db` | `/Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases/1-master_dbs/1-DDLs/global_db_v2.sql` | 12 |
-| `prime_db` | `/Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases/1-master_dbs/1-DDLs/prime_db_v2.sql` | 27 |
-| `tenant_db` | `/Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases/1-master_dbs/1-DDLs/tenant_db_v2.sql` | 368 |
+| `global_db` | `{GLOBAL_DDL}` | 12 |
+| `prime_db` | `{PRIME_DDL}` | 27 |
+| `tenant_db` | `{TENANT_DDL}` | 368 |
 
 > **CRITICAL WARNING:** NEVER reference old DDL files from any other location:
 > - Do NOT use files in `2-Prime_Modules/`, `2-Tenant_Modules/`, `0-Policies/`, `Working/`, or any other subfolder
@@ -185,8 +185,19 @@ Generation: `tt_generation_runs`, `tt_generation_queues`, `tt_optimization_runs`
 ### Payment Gateway (pmt_* — ~5 tables)
 `pmt_payments`, `pmt_payment_gateways`, `pmt_payment_histories`, `pmt_payment_refunds`, `pmt_payment_webhooks`
 
-### HPC (hpc_* — ~12 tables)
+### HPC (hpc_* — ~26 tables)
 `hpc_learning_outcomes`, `hpc_student_evaluations`, `hpc_student_snapshots`, `hpc_learning_activities`, `hpc_learning_activity_type`, `hpc_levels`, `hpc_parameters`, `hpc_performance_descriptors`, `hpc_circular_goals`, `hpc_circular_goal_competency_jnt`, `hpc_outcome_entity_jnt`, `hpc_outcome_question_jnt`, `hpc_knowledge_graph_validations`, `hpc_topic_equivalencies`, `hpc_syllabus_coverage_snapshots`, `hpc_reports`
+
+#### HPC Schema Gap (identified 2026-03-16)
+- Schema-1 (Template + Report): 11 tables — all have migrations
+- Schema-2 (NEP 2020 / PARAKH): 15 tables — models exist but NO migration files
+  - Missing: hpc_circular_goals, hpc_circular_goal_competency_jnt, hpc_learning_outcomes,
+    hpc_outcome_entity_jnt, hpc_outcome_question_jnt, hpc_knowledge_graph_validation,
+    hpc_topic_equivalency, hpc_syllabus_coverage_snapshot, hpc_ability_parameters,
+    hpc_performance_descriptors, hpc_student_evaluation, hpc_learning_activities,
+    hpc_learning_activity_type, hpc_student_hpc_snapshot, hpc_hpc_levels
+- These tables likely exist in the DB (created via raw SQL or seeder) but lack versioned migrations
+- **Action needed:** Create 15 additive migration files before next deployment
 
 ### LMS (lms_* — ~26 tables)
 Exam: `lms_exams`, `lms_exam_types`, `lms_exam_blueprints`, `lms_exam_papers`, `lms_exam_paper_sets`, `lms_exam_questions`, `lms_exam_student_groups`, `lms_exam_scopes`, `lms_exam_allocations`, `lms_assessment_types`, `lms_student_attempts`, `lms_exam_results`, `lms_exam_grievances`
@@ -259,6 +270,4 @@ Key fixes: typo in sch_class_section_jnt column name, trailing/missing commas, F
 - `-- Note:` comment inside CONSTRAINT lines swallows ON DELETE clauses (3 tables)
 - Forward FK reference in `prm_tenant_plan_billing_schedule` → `bil_tenant_invoices`
 
-**tenant_db_v2.sql:** Multiple errors remain in Vendor, Complaint, Timetable, HPC, LMS Exam, Library, and Accounting modules. See CHANGELOG.md for full list.
-
-> For complete list see: `/Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases/1-master_dbs/1-DDLs/CHANGELOG.md`
+**tenant_db_v2.sql:** Multiple errors remain in Vendor, Complaint, Timetable, HPC, LMS Exam, Library, and Accounting modules.

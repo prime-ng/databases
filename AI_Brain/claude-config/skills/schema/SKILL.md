@@ -16,9 +16,9 @@ Generate DDL, migrations, and models for a module, or validate schema-model alig
 ## Steps
 
 1. Read canonical DDL files (v2 ONLY):
-   - `databases/1-master_dbs/1-DDLs/global_db_v2.sql`
-   - `databases/1-master_dbs/1-DDLs/prime_db_v2.sql`
-   - `databases/1-master_dbs/1-DDLs/tenant_db_v2.sql`
+   - `{GLOBAL_DDL}`
+   - `{PRIME_DDL}`
+   - `{TENANT_DDL}`
 
 2. Determine table prefix from module name
 

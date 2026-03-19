@@ -39,4 +39,4 @@ Run Pest 4.x tests and return a concise summary. You run in isolation to keep ve
 ## Notes
 - Project uses Pest 4.x syntax
 - First run may be slow (~50s) due to migration cold start
-- Run from project root: `/Users/bkwork/Herd/laravel`
+- Run from project root: `{LARAVEL_REPO}`

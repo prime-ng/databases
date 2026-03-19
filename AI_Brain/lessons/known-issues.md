@@ -263,11 +263,12 @@
 
 ## Hpc Specific (deep-audited 2026-03-14, updated 2026-03-14)
 
-### SEC-HPC-001: HpcController — Zero Authorization on 13/14 Methods (CRITICAL) [UPDATED 2026-03-15]
-- **Module/Area:** `Modules/Hpc/app/Http/Controllers/HpcController.php` (~2300 lines)
-- **Symptom:** Any authenticated user can view any student's HPC form, save evaluations for any student, generate/download any student's PDF report, download ZIP archives. Only `index()` has `Gate::any()`.
-- **Affected methods:** `hpcTemplates`, `create`, `store`, `show`, `edit`, `update`, `destroy`, `hpc_form`, `formStore`, `generateReportPdf`, `viewPdfPage`, `generateSingleStudentPdf`, `downloadZip` *(new)*
-- **Fix:** Add `Gate::authorize('tenant.hpc.view|create|update|delete')` to every public method
+### SEC-HPC-001: HpcController — Zero Authorization on 13/15 Methods (CRITICAL) [UPDATED 2026-03-16]
+- **Module/Area:** `Modules/Hpc/app/Http/Controllers/HpcController.php` (~2390 lines)
+- **Symptom:** Any authenticated user can view any student's HPC form, save evaluations for any student, generate/download any student's PDF report, download ZIP archives. Only `index()` has `Gate::any()`. New `sendReportEmail()` added 2026-03-16 **does have** `Gate::authorize('tenant.hpc.viewAny')`.
+- **Affected methods (still missing auth):** `hpcTemplates`, `create`, `store`, `show`, `edit`, `update`, `destroy`, `hpc_form`, `formStore`, `generateReportPdf`, `viewPdfPage`, `generateSingleStudentPdf`, `downloadZip`
+- **Methods with auth:** `index()` (Gate::any), `sendReportEmail()` (Gate::authorize) — 2/15 covered
+- **Fix:** Add `Gate::authorize('tenant.hpc.view|create|update|delete')` to remaining 13 public methods
 
 ### SEC-HPC-002: 10 Controllers Missing Gate on store/update — FormRequest authorize() Returns true
 - **Module/Area:** CircularGoalsController, HpcParametersController, HpcPerformanceDescriptorController, KnowledgeGraphValidationController, LearningActivitiesController, LearningOutcomesController, QuestionMappingController, StudentHpcEvaluationController, SyllabusCoverageSnapshotController, TopicEquivalencyController
@@ -359,6 +360,46 @@
 - **Fix:** Replace with a route-based download endpoint similar to `downloadZip()`, or remove individual URLs since ZIP is now the primary delivery method.
 - **Fix:** Use tenant-side dropdown data or query via `tenancy()->central(fn() => ...)`
 
+### BUG-HPC-015: Permission Typo — `topic-equivalency-snapsho.viewAny` (added 2026-03-16)
+- **Module/Area:** `TopicEquivalencyController` or `AppServiceProvider` Gate registration
+- **Symptom:** Permission string `topic-equivalency-snapsho.viewAny` is truncated — should be `topic-equivalency-snapshot.viewAny`. Gate always denies.
+- **Fix:** Correct permission string to `topic-equivalency-snapshot.viewAny`
+
+### HPC Post-Sprint Status (2026-03-17) — 37 Tasks Completed
+
+**RESOLVED (was OPEN, now FIXED):**
+- SEC-HPC-001: ✅ FIXED — All 15 HpcController methods now have Gate::authorize()
+- SEC-HPC-002: ✅ FIXED — All 14 FormRequests have Gate::allows() (zero return true)
+- SEC-HPC-003: ✅ FIXED — EnsureTenantHasModule::class.':Hpc' on route group
+- SEC-HPC-004: ✅ FIXED — Module web.php/api.php emptied (zero Route:: calls)
+- BUG-HPC-001: ✅ FIXED — 4 template controller imports added to tenant.php
+- BUG-HPC-003: ✅ FIXED — Garbled permission string corrected
+- BUG-HPC-004: ✅ FIXED — Cross-layer AcademicSession replaced with OrganizationAcademicSession
+- BUG-HPC-005: ✅ FIXED — 3 dead routes removed
+- BUG-HPC-006: ✅ FIXED — Case-sensitivity (HPC→Hpc) in HpcTemplates model
+- BUG-HPC-007: ✅ FIXED — Wrong Student import (SchoolSetup→StudentProfile)
+- BUG-HPC-008: ✅ FIXED — Orphan LearningActivityController import removed
+- BUG-HPC-009: ✅ FIXED — All 14 resource trash routes reordered before Route::resource()
+- BUG-HPC-010: ✅ FIXED — Table renames: hpc_hpc_levels→hpc_levels, hpc_student_hpc_snapshot→hpc_student_snapshot
+- BUG-HPC-011: ✅ FIXED — created_by added to all 32 models
+- BUG-HPC-012: ✅ FIXED — Cross-layer Dropdown replaced with DB::table('sys_dropdowns')
+- BUG-HPC-013: ✅ FIXED — deleteFileAfterSend(true) on ZIP download
+- BUG-HPC-014: ✅ FIXED — tenant_asset() replaced with Storage::disk('public')->url()
+- BUG-HPC-015: ✅ FIXED — Permission typo fixed in HpcIndexDataTrait
+- PERF-HPC-001: ✅ FIXED — Batch pre-loading in generateReportPdf() (~160 queries → ~5)
+- PERF-HPC-002: ✅ FIXED — HpcIndexDataTrait extracts shared query (15 controllers)
+- formStore() mass assignment: ✅ FIXED — $request->except() replaces $request->all()
+
+**NEW since last audit:**
+- 10 services created (was 2)
+- 6 new controllers: StudentHpcFormController, ParentHpcFormController, PeerHpcFormController, HpcAttendanceController, HpcActivityAssessmentController, StudentGoalsController, HpcCreditConfigController
+- 6 new models: StudentFormSubmission, ParentFormToken, PeerAssignment, PeerResponse, HpcReportComment, HpcCreditConfig
+- 20 new migrations (15 Schema-2 + 5 feature tables)
+- 55 Pest tests across 7 files
+- Approval workflow: 6-state machine (draft→submitted→under_review→final→published→archived)
+- Role-based section locking: owner_role ENUM on rubric items
+- Student, Parent, Peer data collection portals
+
 ## Recommendation Specific (deep-audited 2026-03-14)
 
 ### SEC-REC-001: Wrong Gate Permission on 8/9 StudentRecommendation Write Routes
@@ -441,9 +482,119 @@
 
 ---
 
-## SmartTimetable Constraint System
+## SmartTimetable — Post-P01–P21 Audit (2026-03-17)
 
-### ConstraintCategory / ConstraintScope Point to Non-Existent Tables
+> 15 commits since 2026-03-15. All 21 execution prompts (P01–P21) implemented by Tarun.
+> 150 files changed, 11,556 insertions. 4 new controllers, 4 new services, 77+ constraint classes, 212 seeded constraint types, 10 views, API routes, SoftDeletes on 40+ models.
+
+### BUG-TT-001: TimetableApiController — Zero Gate Authorization on All 6 Methods (CRITICAL)
+- **Module/Area:** `Modules/SmartTimetable/app/Http/Controllers/Api/TimetableApiController.php`
+- **Symptom:** Any authenticated API user (including students) can view any timetable, trigger generation, and poll run status. `auth:sanctum` only confirms valid token, no permission check.
+- **Affected methods:** `show`, `byClass`, `byTeacher`, `byRoom`, `generate`, `status`
+- **Fix:** Add `Gate::authorize()` to each method (`smart-timetable.timetable.view` for reads, `smart-timetable.timetable.generate` for generate).
+
+### SEC-TT-001: Cross-Tenant Data Leakage in TimetableApiController
+- **Module/Area:** `TimetableApiController` — `show()`, `byClass()`, `byTeacher()`, `byRoom()`, `status()`
+- **Symptom:** `Timetable::findOrFail($id)` and `GenerationRun::findOrFail($runId)` fetch by raw ID with no tenant scope. If models lack global tenant scope, Tenant A can read Tenant B's timetable.
+- **Fix:** Verify models have tenant global scope. If not, add explicit `where('tenant_id', tenant()->id)`.
+
+### SEC-TT-002: No EnsureTenantHasModule on Any SmartTimetable Route
+- **Module/Area:** `routes/tenant.php` line 1771, `Modules/SmartTimetable/routes/web.php`, `routes/api.php`
+- **Symptom:** Any authenticated tenant user can access SmartTimetable features even without module license.
+- **Fix:** Add `module:SMART_TIMETABLE` middleware to all route groups.
+
+### SEC-TT-003: SmartTimetableController store()/update() Are No-Op Stubs on Live POST Routes
+- **Module/Area:** `SmartTimetableController.php` lines 912–915, 940
+- **Symptom:** `POST /smart-timetable/smart-timetable-management` passes Gate auth then returns empty 200.
+- **Fix:** Either `abort(501)` in stubs or exclude from resource registration.
+
+### BUG-TT-002: FETConstraintBridge Passes Bare Context — All DB Constraints Silently Pass (CRITICAL)
+- **Module/Area:** `app/Services/Generator/FETConstraintBridge.php` lines 43–46
+- **Symptom:** Context is `(object)['occupied' => []]` — missing `teacherOccupied`, `periods`, `days`, `activitiesById`. All teacher/class constraints null-coalesce to `[]` and return `true`. Bridge provides zero real enforcement.
+- **Fix:** Bridge must receive the live generation context from `FETSolver::createConstraintContext()` or reconstruct it from `TimetableSolution`.
+
+### BUG-TT-003: Gap/Span Constraints Mix period_id with period_index — Wrong Calculations (CRITICAL)
+- **Module/Area:** `TeacherMaxGapsPerDayConstraint`, `TeacherMaxSpanPerDayConstraint`, `TeacherMaxGapsPerWeekConstraint`, `ClassMaxContinuousConstraint`, `ClassMaxSpanConstraint`
+- **Symptom:** `$context->teacherOccupied[$tid][$dayId]` is keyed by period_id (e.g. 100, 101). Constraints append `$slot->startIndex` (0–9) and sort the combined array. Gap/span counts wildly wrong.
+- **Fix:** Store period_index (not period_id) as the key, or build a `periodId → periodIndex` lookup from `$context->periods`.
+
+### BUG-TT-004: SubstitutionService `now()->parse($date)` Throws BadMethodCallException
+- **Module/Area:** `app/Services/SubstitutionService.php` line 32 and others
+- **Symptom:** `now()->parse()` is not a valid Carbon method. All substitution workflows crash immediately.
+- **Fix:** Replace with `\Carbon\Carbon::parse($date)`.
+
+### BUG-TT-005: SubstitutionService Queries Have No timetable_id Scope
+- **Module/Area:** `SubstitutionService.php` — `reportAbsence()`, `findSubstitutes()`, `autoAssign()`, `getDashboard()`
+- **Symptom:** `TimetableCell::where('is_active', true)` queries match cells across ALL timetables in tenant (drafts, archived, current).
+- **Fix:** Accept `$timetableId` parameter and add `->where('timetable_id', $timetableId)` to every query.
+
+### BUG-TT-006: GenerateTimetableJob — No Tenant Context Initialization
+- **Module/Area:** `app/Jobs/GenerateTimetableJob.php`
+- **Symptom:** If queue worker runs in central context, all tenant model queries hit wrong DB. Generation silently fails or corrupts data.
+- **Fix:** Add `tenancy()->initialize($tenant)` in `handle()`. Serialize tenant ID in constructor.
+
+### BUG-TT-007: ConstraintManager Cache Key Missing Teacher State — Stale Results
+- **Module/Area:** `app/Services/Constraints/ConstraintManager.php` line 244
+- **Symptom:** Cache key is `"{type}-{classKey}-{dayId}-{startIndex}-{activityId}"`. Does not include `teacherOccupied` state. Same slot+activity cached as `true` (teacher free) then returned stale after teacher is occupied.
+- **Fix:** Clear cache after every placement, or make caching opt-in for stateless constraints only.
+
+### BUG-TT-008: ConstraintEvaluator Calls Instance Method as Static
+- **Module/Area:** `app/Services/Constraints/ConstraintEvaluator.php` line 99
+- **Symptom:** `ConstraintFactory::createFromDatabase($m->constraint)` — but `createFromDatabase()` is an instance method. Will throw `BadMethodCallException` when group evaluation triggers.
+- **Fix:** Make `createFromDatabase()` static or inject `ConstraintFactory` instance.
+
+### BUG-TT-009: FETSolver::getClassKeyForActivityId Accesses Unset Property — Inter-Activity Checks Pass
+- **Module/Area:** `app/Services/Generator/FETSolver.php` line 349
+- **Symptom:** `$this->activities` is never set (local var in `solve()`). Always `null`, so `$this->activities ?? []` = `[]`. All inter-activity constraints (SAME_TIME, SAME_DAY, NOT_OVERLAPPING) silently pass.
+- **Fix:** Store activities as `$this->activitiesById` map in `solve()` before generation loop.
+
+### BUG-TT-010: GenericSoftConstraint::buildActivityContext Is a Stub
+- **Module/Area:** `app/Services/Constraints/Soft/GenericSoftConstraint.php` lines 67–73
+- **Symptom:** Returns only `['ACTIVITY' => [$activity->id]]` — missing TEACHER/CLASS/SECTION keys. All target-type filtering falls through to GLOBAL. Every soft constraint applies to every activity.
+- **Fix:** Copy full `buildActivityContext()` from `GenericHardConstraint` or extract to shared trait.
+
+### BUG-TT-011: SubstitutionService $candidates Scoping Bug
+- **Module/Area:** `SubstitutionService.php` line 57
+- **Symptom:** `$candidates` defined inside `foreach` loop. If multiple cells, `$candidates` holds only last iteration's value. `recommendations_generated` count is wrong.
+- **Fix:** Track running total inside loop.
+
+### BUG-TT-012: SubstitutionService Department Scoring Always Applies
+- **Module/Area:** `SubstitutionService.php` lines 136–140
+- **Symptom:** Awards 10 points for "Department match" but only checks `$teacher->department_id` is truthy — never compares to cell's activity department. Every teacher with any department gets the bonus.
+- **Fix:** Compare `$teacher->department_id` with the activity's owning department.
+
+### PERF-TT-001: SubstitutionService — Teacher::all() Unbounded + N+1 on Capabilities
+- **Module/Area:** `SubstitutionService.php` line 72, lines 113–118
+- **Symptom:** Fetches ALL active teachers. Then `$teacher->capabilities` triggers lazy load per teacher (classic N+1).
+- **Fix:** Add `'capabilities'` to `with()` call. Scope by subject if known.
+
+### PERF-TT-002: AnalyticsController — 3 Uncached Service Calls Per Page Load
+- **Module/Area:** `AnalyticsController::index()` lines 27–31
+- **Symptom:** `getWorkloadReport()`, `getUtilizationReport()`, `getViolationReport()` run on every page load with no caching.
+- **Fix:** Cache each result by `timetable_id` with 5-min TTL.
+
+### PERF-TT-003: AnalyticsService — Missing teachers.user Eager Load (N+1)
+- **Module/Area:** `AnalyticsService::getConflictReport()` line 183
+- **Symptom:** Eager loads `['teachers', 'activity']` but accesses `$teacher->user->name` in loop — one query per teacher per cell.
+- **Fix:** Change to `->with(['teachers.user', 'activity'])`.
+
+### CODE-TT-001: Legacy HardConstraint/SoftConstraint Interfaces Orphaned
+- **Module/Area:** `Constraints/Hard/HardConstraint.php`, `Constraints/Soft/SoftConstraint.php`
+- **Symptom:** Old interfaces with different signatures. No constraint implements them (all use `TimetableConstraint`). Confusing for developers — could cause fatal if implemented.
+- **Fix:** Delete both files or add `@deprecated` docblocks.
+
+### CODE-TT-002: ConstraintManager and ConstraintEvaluator Duplicate Functionality
+- **Module/Area:** Both provide `checkHard/checkHardConstraints`, `scoreSoft/evaluateSoftConstraints`, `getViolations`
+- **Symptom:** `FETSolver` uses `ConstraintManager`. `ConstraintEvaluator` (with group evaluation logic) is never called during generation.
+- **Fix:** Unify into single engine. Move `evaluateGroups()` into `ConstraintManager` or delete `ConstraintEvaluator`.
+
+### CODE-TT-003: Dead Faker Import in SmartTimetableController
+- **Module/Area:** `SmartTimetableController.php` line 8
+- **Fix:** Remove `use Faker\Factory as Faker;`.
+
+---
+
+## SmartTimetable Constraint System
 - **Module/Area:** SmartTimetable / Constraint models
 - **Symptom:** Any query on `ConstraintCategory` or `ConstraintScope` throws "Table tt_constraint_categories doesn't exist" or "tt_constraint_scopes doesn't exist"
 - **Root Cause:** Models declared separate tables but the migration created a single shared table `tt_constraint_category_scope` with a `type` ENUM('CATEGORY','SCOPE')

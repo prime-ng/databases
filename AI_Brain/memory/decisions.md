@@ -65,6 +65,24 @@
 - **PHP Class column (db-constraints tab):** Badge `Registered` (bg-primary) if wired in `CONSTRAINT_CLASS_MAP`, `Not wired` (bg-warning text-dark) if not.
 - **Read-only tabs:** `engine-rules` (always-on hardcoded, no Add/Trash) and `activity-constraints` (fields on `tt_activities`, no Action col).
 
+### D18: HPC CRUD Data Auto-Mapping into PDFs — `HpcPdfDataService` + `$hpcData` Variable Pattern
+- **Why:** 10 CRUD modules (Circular Goals, Evaluations, Syllabus Coverage, etc.) store data separately from the teacher-entered `$savedValues`. 8 of 10 have multi-row list data that cannot fit into single `html_object_name` keys. Needed a way to auto-display CRUD data in PDFs without manual teacher re-entry.
+- **Pattern (Approach B — Minimal Blade Change):** `HpcPdfDataService::getData()` fetches all CRUD data into a single `$hpcData` array. Controller passes it alongside `$savedValues` (never merged). Blade templates extract into local vars with safe `?? collect()` defaults. A shared `_crud_sections.blade.php` partial renders tables after existing form sections, guarded by `@if($isPdf)` + `@if($collection->isNotEmpty())`.
+- **Alternative rejected (Approach A):** Augmenting `$savedValues` directly — rejected because multi-row list data cannot fit into single `html_object_name` fields.
+- **Key rule:** Service never throws. All `Throwable` caught, empty defaults returned. PDF generation must never crash due to CRUD data failure.
+
+### D19: HPC Queued Email to Guardians — Job-Based PDF Generation + Email Pattern
+- **Why:** PDF generation (DomPDF) for 30-46 page reports takes 5-30 seconds. Synchronous email would block the HTTP request. Needed background processing with tenant context restoration.
+- **Pattern:** `SendHpcReportEmail` Job implements `ShouldQueue`. Controller dispatches with `$studentId`, `$academicTermId`, `$tenantId` (string only, not model). Job re-initializes tenancy via `tenancy()->initialize($tenantId)` with `try/finally { tenancy()->end() }`. Mailable does NOT implement `ShouldQueue` — Job handles queuing, Mailable sends synchronously inside Job. Uses `Mail::to()->send()` not `Mail::queue()`.
+- **Pre-flight checks:** Controller validates student exists, template resolves, guardian emails exist BEFORE dispatching. Returns JSON with guardian count.
+- **Trade-off:** `buildPdf()` and `minifyHtml()` changed from `private` to `public` on HpcController so Job can call them. Cleaner alternative (future): extract to `HpcReportService`.
+
+### D20: HPC Gap Analysis Findings — Revised Completion Model (2026-03-16)
+- **Why:** Previous estimates (73%) only counted template structure + CRUD completion. Comprehensive gap analysis against official NEP 2020 PDFs (138 pages, 4 templates) and implementation blueprint (20 screens) revealed that multi-actor data collection (student/parent/peer), approval workflows, and 12 of 20 screens are NOT STARTED.
+- **Finding:** Template structure is 100% complete (all 138 pages seeded with correct html_object_names). Web form and PDF generation are 90%. But data can only be entered by teachers — 64 of 138 pages (46%) should be filled by students, parents, or peers.
+- **Revised estimate:** ~40% overall. Need ~13 developer-weeks to reach full implementation.
+- **Reference:** `{HPC_GAP_ANALYSIS}`
+
 ---
 
 ## Future Decisions (Pending)
