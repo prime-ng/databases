@@ -75,3 +75,5 @@ I have renamed "Payroll_Requirement.md" to "Payroll_Requirement_v1.md" and move 
    - `sch_leave_config` - This table will capture Leave configuration for different staff categories and leave types
 - We will be having Dedicated database per tenant ensures complete data isolation. So NO NEED to have `tenant_id` column in any table.
 - Any required changes which you have uderstood from my previous instruction and applicable to these 2 Modules.
+
+

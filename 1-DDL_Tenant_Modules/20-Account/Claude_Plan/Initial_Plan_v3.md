@@ -29,37 +29,38 @@ Three **separate, interconnected** Laravel modules for Prime-AI:
 ## 2. Architecture Overview
 
 ```
-┌────────────────────────┐  ┌────────────────────────┐  ┌────────────────────────┐
-│  Modules/Accounting/   │  │  Modules/Payroll/      │  │  Modules/Inventory/    │
-│  Route: /accounting/*  │  │  Route: /payroll/*     │  │  Route: /inventory/*   │
-│                        │  │                        │  │                        │
-│  acc_account_groups    │  │  prl_pay_heads         │  │  inv_stock_groups      │
-│  acc_ledgers           │  │  prl_salary_structures │  │  inv_stock_items       │
-│  acc_voucher_types     │  │  prl_payroll_runs      │  │  inv_godowns           │
-│  acc_vouchers          │  │  prl_payroll_entries    │  │  inv_stock_entries     │
-│  acc_voucher_items     │  │  prl_leave_applications│  │  inv_purchase_orders   │
-│  acc_cost_centers      │  │  prl_leave_balances    │  │  inv_goods_receipt_notes│
-│  acc_budgets           │  │  prl_attendance_logs   │  │  inv_purchase_reqs     │
-│  acc_tax_rates         │  │  prl_appraisal_*       │  │  inv_issue_requests    │
-│  acc_bank_recon        │  │  prl_training_*        │  │  inv_units_of_measure  │
-│  acc_fixed_assets      │  │                        │  │                        │
-│  acc_expense_claims    │  │  Reuses: sch_employees │  │  Links: vnd_vendors    │
-│  acc_tally_*           │  │  sch_employee_groups   │  │                        │
-│                        │  │  sch_employee_attendance│  │                        │
-│  ┌──────────────────┐  │  │                        │  │                        │
-│  │ VOUCHER ENGINE   │◄─┼──┤  PayrollApproved event │  │                        │
-│  │ (Double-Entry)   │◄─┼──┤                        │◄─┼── GRN Accepted event   │
-│  │ VoucherService   │  │  │                        │  │   Stock Issued event   │
-│  └──────────────────┘  │  │                        │  │                        │
-└────────────┬───────────┘  └────────────────────────┘  └────────────────────────┘
-             │
-     ┌───────┴───────┬──────────────┬──────────────┐
-     ▼               ▼              ▼              ▼
-┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐
-│StudentFee│  │SchoolSetup│ │  Vendor  │  │Transport │
-│ (fin_*)  │  │ (sch_*)  │  │ (vnd_*) │  │ (tpt_*)  │
-│Fee events│  │Employees │  │Suppliers │  │Tpt fees  │
-└──────────┘  └──────────┘  └──────────┘  └──────────┘
+      CORE ACCOUNTING                   PAYROLL                      INVENTORY
+┌──────────────────────────┐  ┌──────────────────────────┐  ┌───────────────────────────┐
+│  Modules/Accounting/     │  │  Modules/Payroll/        │  │  Modules/Inventory/       │
+│  Route: /accounting/*    │  │  Route: /payroll/*       │  │  Route: /inventory/*      │
+│                          │  │                          │  │                           │
+│  acc_account_groups      │  │  prl_pay_heads           │  │  inv_stock_groups         │
+│  acc_ledgers             │  │  prl_salary_structures   │  │  inv_stock_items          │
+│  acc_voucher_types       │  │  prl_payroll_runs        │  │  inv_godowns              │
+│  acc_vouchers            │  │  prl_payroll_entries     │  │  inv_stock_entries        │
+│  acc_voucher_items       │  │  prl_leave_applications  │  │  inv_purchase_orders      │
+│  acc_cost_centers        │  │  prl_leave_balances      │  │  inv_goods_receipt_notes  │
+│  acc_budgets             │  │  prl_attendance_logs     │  │  inv_purchase_reqs        │
+│  acc_tax_rates           │  │  prl_appraisal_*         │  │  inv_issue_requests       │
+│  acc_bank_recon          │  │  prl_training_*          │  │  inv_units_of_measure     │
+│  acc_fixed_assets        │  │                          │  │                           │
+│  acc_expense_claims      │  │  Reuses: sch_employees   │  │  Links: vnd_vendors       │
+│  acc_tally_*             │  │  sch_employee_groups     │  │                           │
+│                          │  │  sch_employee_attendance │  │                           │
+│  ┌────────────────────┐  │  │                          │  │                           │
+│  │   VOUCHER ENGINE   │◄─┼──┤  PayrollApproved event   │  │                           │
+│  │   (Double-Entry)   │◄─┼──┤                          │◄─┼── GRN Accepted event      │
+│  │   VoucherService   │  │  │                          │  │   Stock Issued event      │
+│  └────────────────────┘  │  │                          │  │                           │
+└─────────────┬────────────┘  └──────────────────────────┘  └───────────────────────────┘
+              │
+     ┌────────┴───────┬──────────────┬──────────────┐
+     ▼                ▼              ▼              ▼
+┌──────────┐  ┌───────────┐  ┌──────────┐  ┌──────────┐
+│StudentFee│  │SchoolSetup│  │  Vendor  │  │Transport │
+│ (fin_*)  │  │ (sch_*)   │  │ (vnd_*)  │  │ (tpt_*)  │
+│Fee events│  │Employees  │  │Suppliers │  │Tpt fees  │
+└──────────┘  └───────────┘  └──────────┘  └──────────┘
 ```
 
 ---
@@ -135,6 +136,8 @@ Three **separate, interconnected** Laravel modules for Prime-AI:
 | `prl_appraisal_scores` | KPI-level scores |
 | `prl_training_programs` | Training master |
 | `prl_training_enrollments_jnt` | Employee enrollment + feedback |
+| `sch_employee_groups` | Staff categories (Teaching, Non-Teaching, Contract) |
+| `sch_employee_attendance` | Monthly attendance for LOP calc |
 
 **Enhanced Existing Tables (prefix `sch_`) — NOT new, just add columns**
 | Table | Enhancement |
