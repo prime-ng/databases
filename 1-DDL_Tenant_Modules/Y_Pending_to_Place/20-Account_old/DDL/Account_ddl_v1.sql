@@ -10,7 +10,7 @@
 -- =====================================================
 
 	-- 1.1 Account Groups (Hierarchical Chart of Accounts)
-	CREATE TABLE `acc_account_groups` (
+  CREATE TABLE `acc_account_groups` (
     `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
     `name` varchar(100) NOT NULL,
     `code` varchar(20) NOT NULL,
@@ -24,8 +24,7 @@
     PRIMARY KEY (`id`),
     UNIQUE KEY `account_groups_code_unique` (`code`),
     KEY `account_groups_parent_id_foreign` (`parent_id`),
-    CONSTRAINT `account_groups_parent_id_foreign` 
-        FOREIGN KEY (`parent_id`) REFERENCES `account_groups` (`id`) ON DELETE CASCADE
+    CONSTRAINT `account_groups_parent_id_foreign` FOREIGN KEY (`parent_id`) REFERENCES `account_groups` (`id`) ON DELETE CASCADE
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 	-- 1.2 Ledgers (Individual Accounts)
@@ -657,41 +656,41 @@ CREATE INDEX idx_receipts_date ON receipts(receipt_date);
 
 -- Sample Account Groups
 INSERT INTO `acc_account_groups` (`name`, `code`, `parent_id`, `group_type`, `nature`) VALUES
-('Assets', 'A01', NULL, 'Assets', 'Debit'),
-('Liabilities', 'L01', NULL, 'Liabilities', 'Credit'),
-('Income', 'I01', NULL, 'Income', 'Credit'),
-('Expenses', 'E01', NULL, 'Expense', 'Debit');
+	('Assets', 'A01', NULL, 'Assets', 'Debit'),
+	('Liabilities', 'L01', NULL, 'Liabilities', 'Credit'),
+	('Income', 'I01', NULL, 'Income', 'Credit'),
+	('Expenses', 'E01', NULL, 'Expense', 'Debit');
 
 -- Assuming first 4 IDs are taken, insert children
 INSERT INTO `acc_account_groups` (`name`, `code`, `parent_id`, `group_type`, `nature`) VALUES
-('Current Assets', 'A02', 1, 'Assets', 'Debit'),
-('Fixed Assets', 'A03', 1, 'Assets', 'Debit'),
-('Bank Accounts', 'A04', 5, 'Assets', 'Debit'),
-('Cash in Hand', 'A05', 5, 'Assets', 'Debit'),
-('Current Liabilities', 'L02', 2, 'Liabilities', 'Credit'),
-('Direct Income', 'I02', 3, 'Income', 'Credit'),
-('Indirect Income', 'I03', 3, 'Income', 'Credit'),
-('Direct Expenses', 'E02', 4, 'Expense', 'Debit'),
-('Indirect Expenses', 'E03', 4, 'Expense', 'Debit');
+	('Current Assets', 'A02', 1, 'Assets', 'Debit'),
+	('Fixed Assets', 'A03', 1, 'Assets', 'Debit'),
+	('Bank Accounts', 'A04', 5, 'Assets', 'Debit'),
+	('Cash in Hand', 'A05', 5, 'Assets', 'Debit'),
+	('Current Liabilities', 'L02', 2, 'Liabilities', 'Credit'),
+	('Direct Income', 'I02', 3, 'Income', 'Credit'),
+	('Indirect Income', 'I03', 3, 'Income', 'Credit'),
+	('Direct Expenses', 'E02', 4, 'Expense', 'Debit'),
+	('Indirect Expenses', 'E03', 4, 'Expense', 'Debit');
 
 -- Sample Tax Rates
 INSERT INTO `acc_tax_rates` (`name`, `rate`, `type`, `is_interstate`) VALUES
-('CGST 9%', 9.00, 'CGST', 0),
-('SGST 9%', 9.00, 'SGST', 0),
-('IGST 18%', 18.00, 'IGST', 1),
-('CGST 2.5%', 2.50, 'CGST', 0),
-('SGST 2.5%', 2.50, 'SGST', 0);
+	('CGST 9%', 9.00, 'CGST', 0),
+	('SGST 9%', 9.00, 'SGST', 0),
+	('IGST 18%', 18.00, 'IGST', 1),
+	('CGST 2.5%', 2.50, 'CGST', 0),
+	('SGST 2.5%', 2.50, 'SGST', 0);
 
 -- Sample Cost Centers
 INSERT INTO `acc_cost_centers` (`name`, `code`) VALUES
-('Academics - Science', 'CC-SCI'),
-('Academics - Arts', 'CC-ART'),
-('Sports Department', 'CC-SPT'),
-('Administration', 'CC-ADM'),
-('IT Infrastructure', 'CC-IT');
+	('Academics - Science', 'CC-SCI'),
+	('Academics - Arts', 'CC-ART'),
+	('Sports Department', 'CC-SPT'),
+	('Administration', 'CC-ADM'),
+	('IT Infrastructure', 'CC-IT');
 
 -- Sample Fiscal Year
 INSERT INTO `acc_fiscal_years` (`name`, `start_date`, `end_date`, `is_closed`) VALUES
-('2024-2025', '2024-04-01', '2025-03-31', 0),
-('2023-2024', '2023-04-01', '2024-03-31', 1);
+	('2024-2025', '2024-04-01', '2025-03-31', 0),
+	('2023-2024', '2023-04-01', '2024-03-31', 1);
 

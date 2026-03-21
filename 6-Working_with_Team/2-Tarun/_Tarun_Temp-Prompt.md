@@ -76,4 +76,80 @@ I have renamed "Payroll_Requirement.md" to "Payroll_Requirement_v1.md" and move 
 - We will be having Dedicated database per tenant ensures complete data isolation. So NO NEED to have `tenant_id` column in any table.
 - Any required changes which you have uderstood from my previous instruction and applicable to these 2 Modules.
 
+---
 
+Before I start working on next tasks, update yourself that . I have renamed "Account_Requirement_v3.md" to "Account_Requirement_v2.md" in folder "1-DDL_Tenant_Modules/20-Account/"Claude_Plan/"
+
+In "1-DDL_Tenant_Modules/20-Account/Claude_Plan/Initial_Plan_v3.md", You have written 3 tables in Section "**Enhanced Existing Tables**" :
+`sch_employees`, `sch_employee_groups` & `sch_employee_attendance` but actually we have only 1 Table in Existing Schema that is `sch_employees`.
+
+For "1-DDL_Tenant_Modules/21-Payroll/Claude_Plan/Payroll_Requirement_v2.md", you have to consider below points:
+- Read `sch_leave_config`, `sch_leave_types` & `sch_categories` in Tenant_db.sql. These are the tables which are having school wise statndard configuration for leave Management. 
+- These Tables have below Information :
+   - What type of Leaves are allowed in the school.
+   - What is the standard Leave balance allocation every Year for which category.
+   - School may different categories and school may different No of Leaves allocated to different Categories e.g. Teacher's No of leave may differ from other staff etc.
+   - `sch_leave_types` also capture information which type of leave are Paid which type of leaves are unpaid.
+- you to uderstand those 3 Tables in detail and do enhancement if required in "1-DDL_Tenant_Modules/21-Payroll/Claude_Plan/Payroll_Requirement_v2.md"
+
+Finally I want you to :
+- Read "/databases/0-DDL_Masters/tenant_db_v2.sql" in detail to verify all the table which you mentioned available should be actually available.
+- Evaluate any duplication of Table creationg should not be in any of these 3 Modules.
+- If you find any Duplication or any table does not exeist which you consider exeists then make all require changes in all 4 files accordingly.
+- Stictly Verify whatever Table you consider exists should be in atleast any one of the db Schema file in folder "databases/0-DDL_Masters".
+- Also check Any Table which you consider to be created New should not be duplicate of any exeisting Table in 3 DB Schemas in folder "databases/0-DDL_Masters".
+
+Other than all above points if you find anything needs to be enhanced and modified then include those in your plan and create all Enhanced files at below location :
+- `Initial_Plan_v4.md` at `databases/20-Account/Claude_Plan/`
+- `Account_Requirement_v3.md` at `databases/20-Account/Claude_Plan/`
+- `Payroll_Requirement_v3.md` at `databases/21-Payroll/`
+- `Inventory_Requirement_v3.md` at `databases/22-Inventory/`
+
+*(Same as v2)*
+
+---
+
+Same way enhance "databases/1-DDL_Tenant_Modules/22-Inventory/Claude_Plan/Inventory_Requirement_v3.md" also for below items :
+- Check all the "*(Same as v2)*" in "Inventory_Requirement_v3.md" and find the exact section it refere to and add those sections from source file to in this file to make it completely independent.
+- Remove all "*(Same as v2)*" from the file.
+- Read "databases/0-DDL_Masters/tenant_db_v2.sql" and make sure every reference for other module should be correct in "Inventory_Requirement_v3.md".
+- Create a new Enhanced File with named "databases/1-DDL_Tenant_Modules/22-Inventory/Claude_Plan/Payroll_Requirement_v4.md"
+
+---
+
+I want to create a detailed Prompt for Accounting Module which cover all 
+Now I have 2 below input files for Accountng Module:
+1. "1-DDL_Tenant_Modules/20-Account/Claude_Plan/Initial_Plan_v4.md"
+2. "1-DDL_Tenant_Modules/20-Account/Claude_Plan/Account_Requirement_v4.md"
+
+Provide me a Prompt which shoudl cover all 9 Phases mentioned in "3-Design_Architecture/Module_Wise_Dev_Prompt/Accounting_Dev-Lifecycle.md" and produce All the Outputs mentioned in all the Phases in below Files :
+- `databaes/3-Design_Architecture/Dev_BluePrint/Development_Lifecycle_Blueprint_v1.md`
+- `databaes/3-Design_Architecture/Dev_BluePrint/Development_Lifecycle_Blueprint_v2.md`
+
+Your Mission:
+- Read "databases/1-DDL_Tenant_Modules/20-Account/Claude_Plan/Initial_Plan_v4.md" to understand Initial Plan.
+- Read "dataases/1-DDL_Tenant_Modules/20-Account/Claude_Plan/Account_Requirement_v4.md" to understand Requirement of Accounting Module
+- Read `Development_Lifecycle_Blueprint_v1.md` & `Development_Lifecycle_Blueprint_v2.md` from Folder `databaes/3-Design_Architecture/Dev_BluePrint/` to understand What Output I need from the Prompt.
+- after providing output for each phase, prompt should wait for my confirmation
+- Every Output file will have a different name with MODULE_CODE prefix
+- Use Below Configuration to provide user Input:
+      MODULE_CODE       = ACC                    # Used in: issue codes (BUG-HPC-001), section headers, AI Brain lookups
+      MODULE            = Accounting             # Used in: issue codes (BUG-HPC-001), section headers, AI Brain lookups
+      MODULE_DIR        = Modules/Accounting/    # Used in: file paths (Modules/Hpc/), git commands
+      BRANCH            = Brijesh_Accounting     # Used in: context for the prompt
+      DEVELOPER         = Brijesh                 # Used in: context for the prompt
+      RBS_MODULE_CODE   = K
+      DB_TABLE_PREFIX   = acc_
+      DATABASE_NAME     = tenant_db
+      OUTPUT_DIR        = databases/5-Work-In-Progress/20-Accounting/1-Claude_Prompt
+
+Store the prompt into folder "databases/5-Work-In-Progress/20-Accounting/1-Claude_Prompt"
+
+
+Prompt should cover all below Requirement:
+- Prompt should be capable to produce output mentioned in all the Phases in both the above files.
+-  
+
+
+
+Check Quality Gate mentioned in Every Phase

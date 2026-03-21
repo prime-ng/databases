@@ -431,5 +431,5 @@ Modules/Inventory/
 5. **Backend:** Controllers + FormRequests + Routes + Services
 6. **Frontend:** Blade views following AdminLTE patterns
 7. **Security:** Gate::authorize, EnsureTenantHasModule, PermissionSeeder
-8. **Testing:** Pest 4.x unit + feature tests
+8. **Testing:** Pest 4.x unit + feature tests + Dusk Browser tests
 9. **Deploy:** Migrate, seed, assign permissions, browser test

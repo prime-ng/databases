@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Prime-AI: Controller &amp; View Analysis Map</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+<style>
+:root{--sidebar:#1a1d2e;--accent:#667eea;--bg:#f4f6f9}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);margin:0;font-size:.85rem}
+.sidebar{position:fixed;top:0;left:0;width:250px;height:100vh;background:var(--sidebar);color:#fff;padding:0;overflow-y:auto;z-index:10}
+.sidebar .brand{padding:1rem;font-weight:700;font-size:1rem;color:#fff;border-bottom:1px solid rgba(255,255,255,.08);line-height:1.3}
+.sidebar .brand small{display:block;font-weight:400;font-size:.68rem;color:#8b92a5;margin-top:.3rem}
+.sidebar h5{padding:0 1rem;font-size:.7rem;text-transform:uppercase;letter-spacing:1.5px;color:#8b92a5;margin:1rem 0 .3rem}
+.sidebar a{display:block;padding:.35rem 1rem;color:#c5cad8;text-decoration:none;font-size:.78rem;border-left:3px solid transparent;transition:.15s}
+.sidebar a:hover,.sidebar a.active{background:rgba(255,255,255,.06);color:#fff;border-left-color:var(--accent)}
+.sidebar a i{width:18px;margin-right:.3rem;font-size:.72rem}
+.main{margin-left:250px;padding:1.2rem 1.5rem}
+.section{display:none}.section.active{display:block}
+.stat-card{padding:.8rem 1rem;border-radius:.5rem;color:#fff;position:relative;overflow:hidden;margin-bottom:.6rem}
+.stat-card .num{font-size:1.5rem;font-weight:700}.stat-card .lbl{font-size:.7rem;opacity:.85}
+.stat-card .ico{position:absolute;right:.6rem;top:.3rem;font-size:2rem;opacity:.15}
+.card{border:none;border-radius:.5rem;box-shadow:0 1px 3px rgba(0,0,0,.06);margin-bottom:.8rem}
+.card-header{font-weight:700;font-size:.82rem}
+table{font-size:.78rem}
+.badge-tab{background:#0d6efd;color:#fff;font-size:.65rem;padding:.15rem .4rem;border-radius:.2rem}
+.badge-crud{background:#ffc107;color:#000;font-size:.65rem;padding:.15rem .4rem;border-radius:.2rem}
+.badge-json{background:#6f42c1;color:#fff;font-size:.65rem;padding:.15rem .4rem;border-radius:.2rem}
+.badge-redir{background:#6c757d;color:#fff;font-size:.65rem;padding:.15rem .4rem;border-radius:.2rem}
+.badge-stub{background:#dc3545;color:#fff;font-size:.65rem;padding:.15rem .4rem;border-radius:.2rem}
+.badge-pdf{background:#fd7e14;color:#fff;font-size:.65rem;padding:.15rem .4rem;border-radius:.2rem}
+.badge-central{background:#198754;font-size:.6rem}.badge-tenant{background:#0d6efd;font-size:.6rem}
+.module-header{background:#1e293b;color:#fff;padding:.6rem 1rem;border-radius:.4rem .4rem 0 0;font-weight:700;font-size:.85rem;display:flex;justify-content:space-between;align-items:center;cursor:pointer}
+.module-header:hover{background:#334155}
+.module-body{display:none;border:1px solid #e5e7eb;border-top:0;border-radius:0 0 .4rem .4rem;padding:.5rem;background:#fff}
+.module-body.open{display:block}
+.ctrl-row{padding:.3rem .5rem;border-bottom:1px solid #f1f5f9;display:flex;gap:.5rem;align-items:flex-start}
+.ctrl-row:last-child{border-bottom:none}
+.ctrl-name{font-weight:600;min-width:180px;flex-shrink:0;font-size:.78rem}
+.ctrl-methods{flex:1;font-size:.73rem;line-height:1.6}
+.tab-detail{background:#eff6ff;border:1px solid #bfdbfe;border-radius:.3rem;padding:.4rem .6rem;margin:.3rem 0;font-size:.73rem}
+.tab-detail strong{color:#1d4ed8}
+.legend-box{display:inline-flex;align-items:center;gap:.25rem;padding:.2rem .5rem;margin:.15rem;font-size:.7rem;border-radius:.2rem;background:#f8f9fa;border:1px solid #e5e7eb}
+@media(max-width:768px){.sidebar{display:none}.main{margin-left:0}}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="brand">
+    Controller &amp; View Map
+    <small>Prime-AI Full Application Analysis<br>Generated: 2026-03-20</small>
+  </div>
+  <h5>Sections</h5>
+  <a href="#" id="nav-overview" class="active" onclick="show('overview')"><i class="bi bi-speedometer2"></i> Overview &amp; Stats</a>
+  <a href="#" id="nav-combined" onclick="show('combined')"><i class="bi bi-layout-split"></i> Combined/Tabbed Views</a>
+  <a href="#" id="nav-noview" onclick="show('noview')"><i class="bi bi-exclamation-triangle"></i> Missing/Stub Views</a>
+  <h5>Central</h5>
+  <a href="#" id="nav-central" onclick="show('central')"><i class="bi bi-building"></i> App Controllers</a>
+  <a href="#" id="nav-prime" onclick="show('prime')"><i class="bi bi-star"></i> Prime</a>
+  <a href="#" id="nav-globalmaster" onclick="show('globalmaster')"><i class="bi bi-globe"></i> GlobalMaster</a>
+  <a href="#" id="nav-systemconfig" onclick="show('systemconfig')"><i class="bi bi-gear"></i> SystemConfig</a>
+  <a href="#" id="nav-billing" onclick="show('billing')"><i class="bi bi-credit-card"></i> Billing</a>
+  <a href="#" id="nav-documentation" onclick="show('documentation')"><i class="bi bi-book"></i> Documentation</a>
+  <h5>Tenant — Core</h5>
+  <a href="#" id="nav-schoolsetup" onclick="show('schoolsetup')"><i class="bi bi-mortarboard"></i> SchoolSetup</a>
+  <a href="#" id="nav-studentprofile" onclick="show('studentprofile')"><i class="bi bi-person-badge"></i> StudentProfile</a>
+  <a href="#" id="nav-dashboard" onclick="show('dashboard')"><i class="bi bi-speedometer"></i> Dashboard</a>
+  <h5>Tenant — Timetable</h5>
+  <a href="#" id="nav-foundation" onclick="show('foundation')"><i class="bi bi-bricks"></i> TimetableFoundation</a>
+  <a href="#" id="nav-smarttt" onclick="show('smarttt')"><i class="bi bi-cpu"></i> SmartTimetable</a>
+  <a href="#" id="nav-standardtt" onclick="show('standardtt')"><i class="bi bi-grid-3x3"></i> StandardTimetable</a>
+  <h5>Tenant — Ops</h5>
+  <a href="#" id="nav-transport" onclick="show('transport')"><i class="bi bi-bus-front"></i> Transport</a>
+  <a href="#" id="nav-vendor" onclick="show('vendor')"><i class="bi bi-shop"></i> Vendor</a>
+  <a href="#" id="nav-complaint" onclick="show('complaint')"><i class="bi bi-chat-dots"></i> Complaint</a>
+  <a href="#" id="nav-notification" onclick="show('notification')"><i class="bi bi-bell"></i> Notification</a>
+  <a href="#" id="nav-payment" onclick="show('payment')"><i class="bi bi-wallet2"></i> Payment</a>
+  <a href="#" id="nav-scheduler" onclick="show('scheduler')"><i class="bi bi-clock-history"></i> Scheduler</a>
+  <h5>Tenant — Academic</h5>
+  <a href="#" id="nav-syllabus" onclick="show('syllabus')"><i class="bi bi-journal-text"></i> Syllabus</a>
+  <a href="#" id="nav-syllabusbooks" onclick="show('syllabusbooks')"><i class="bi bi-book-half"></i> SyllabusBooks</a>
+  <a href="#" id="nav-questionbank" onclick="show('questionbank')"><i class="bi bi-question-circle"></i> QuestionBank</a>
+  <a href="#" id="nav-hpc" onclick="show('hpc')"><i class="bi bi-card-checklist"></i> HPC</a>
+  <h5>Tenant — LMS</h5>
+  <a href="#" id="nav-lmsexam" onclick="show('lmsexam')"><i class="bi bi-file-earmark-check"></i> LmsExam</a>
+  <a href="#" id="nav-lmsquiz" onclick="show('lmsquiz')"><i class="bi bi-ui-checks"></i> LmsQuiz</a>
+  <a href="#" id="nav-lmshomework" onclick="show('lmshomework')"><i class="bi bi-pencil-square"></i> LmsHomework</a>
+  <a href="#" id="nav-lmsquests" onclick="show('lmsquests')"><i class="bi bi-trophy"></i> LmsQuests</a>
+  <h5>Tenant — Finance</h5>
+  <a href="#" id="nav-studentfee" onclick="show('studentfee')"><i class="bi bi-cash-coin"></i> StudentFee</a>
+  <a href="#" id="nav-recommendation" onclick="show('recommendation')"><i class="bi bi-lightbulb"></i> Recommendation</a>
+  <a href="#" id="nav-library" onclick="show('library')"><i class="bi bi-bookshelf"></i> Library</a>
+  <a href="#" id="nav-studentportal" onclick="show('studentportal')"><i class="bi bi-person-circle"></i> StudentPortal</a>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="main">
+
+<!-- ========== OVERVIEW ========== -->
+<div id="sec-overview" class="section active">
+  <h4 class="mb-3"><i class="bi bi-speedometer2"></i> Application Controller &amp; View Overview</h4>
+
+  <div class="row g-2 mb-3">
+    <div class="col-md-2"><div class="stat-card" style="background:linear-gradient(135deg,#667eea,#764ba2)"><div class="num">29</div><div class="lbl">Modules</div><div class="ico"><i class="bi bi-boxes"></i></div></div></div>
+    <div class="col-md-2"><div class="stat-card" style="background:linear-gradient(135deg,#f093fb,#f5576c)"><div class="num">310+</div><div class="lbl">Controllers</div><div class="ico"><i class="bi bi-file-earmark-code"></i></div></div></div>
+    <div class="col-md-2"><div class="stat-card" style="background:linear-gradient(135deg,#4facfe,#00f2fe)"><div class="num">1500+</div><div class="lbl">Public Methods</div><div class="ico"><i class="bi bi-code-slash"></i></div></div></div>
+    <div class="col-md-2"><div class="stat-card" style="background:linear-gradient(135deg,#43e97b,#38f9d7)"><div class="num">35</div><div class="lbl">Tabbed/Combined</div><div class="ico"><i class="bi bi-layout-split"></i></div></div></div>
+    <div class="col-md-2"><div class="stat-card" style="background:linear-gradient(135deg,#fa709a,#fee140)"><div class="num">40+</div><div class="lbl">Stub/No View</div><div class="ico"><i class="bi bi-exclamation-triangle"></i></div></div></div>
+    <div class="col-md-2"><div class="stat-card" style="background:linear-gradient(135deg,#a18cd1,#fbc2eb)"><div class="num">100+</div><div class="lbl">JSON/AJAX</div><div class="ico"><i class="bi bi-braces"></i></div></div></div>
+  </div>
+
+  <div class="mb-3">
+    <strong>Legend:</strong>
+    <span class="legend-box"><span class="badge-tab">Tabbed</span> Combined view with multiple tabs</span>
+    <span class="legend-box"><span class="badge-crud">CRUD</span> Standard Create/Read/Update/Delete</span>
+    <span class="legend-box"><span class="badge-json">JSON</span> Returns JSON/AJAX response</span>
+    <span class="legend-box"><span class="badge-redir">Redirect</span> Redirects to another route</span>
+    <span class="legend-box"><span class="badge-stub">Stub</span> Empty/not implemented</span>
+    <span class="legend-box"><span class="badge-pdf">PDF</span> Generates PDF download</span>
+  </div>
+
+  <!-- Module Summary Table -->
+  <div class="card">
+    <div class="card-header bg-dark text-white"><i class="bi bi-table"></i> Module Summary — Controllers, Views, Tabbed Pages</div>
+    <div class="card-body p-0">
+      <table class="table table-sm table-hover mb-0">
+        <thead class="table-dark"><tr><th>Module</th><th>Scope</th><th>Controllers</th><th>Tabbed Views</th><th>CRUD Views</th><th>JSON/AJAX</th><th>Stubs</th><th>Key Tabbed Pages</th></tr></thead>
+        <tbody>
+          <tr class="table-success"><td><strong>App (Auth/Profile)</strong></td><td><span class="badge badge-central">Central</span></td><td>12</td><td>1</td><td>8</td><td>0</td><td>1</td><td>profile.edit (3 sections)</td></tr>
+          <tr class="table-success"><td><strong>Prime</strong></td><td><span class="badge badge-central">Central</span></td><td>22</td><td>4</td><td>45+</td><td>8</td><td>3</td><td>tenant-mgmt, session-board, user-role-prm, sales-plan</td></tr>
+          <tr class="table-success"><td><strong>GlobalMaster</strong></td><td><span class="badge badge-central">Central</span></td><td>15</td><td>2</td><td>25+</td><td>12</td><td>2</td><td>location-setup (4 tabs), session-board-setup (2 tabs)</td></tr>
+          <tr class="table-success"><td><strong>SystemConfig</strong></td><td><span class="badge badge-central">Central</span></td><td>4</td><td>0</td><td>5</td><td>2</td><td>2</td><td>&mdash;</td></tr>
+          <tr class="table-success"><td><strong>Billing</strong></td><td><span class="badge badge-central">Central</span></td><td>6</td><td>1</td><td>8</td><td>30+</td><td>4</td><td>billing-management (6 tabs!)</td></tr>
+          <tr class="table-success"><td><strong>Documentation</strong></td><td><span class="badge badge-central">Central</span></td><td>3</td><td>0</td><td>12</td><td>2</td><td>0</td><td>&mdash;</td></tr>
+          <tr><td colspan="8" style="background:#e5e7eb;font-weight:700;font-size:.7rem;padding:.2rem .5rem">TENANT MODULES</td></tr>
+          <tr class="table-info"><td><strong>SchoolSetup</strong></td><td><span class="badge badge-tenant">Tenant</span></td><td>40</td><td>2</td><td>60+</td><td>15+</td><td>0</td><td>school-class.index (10 tabs!), infrasetup</td></tr>
+          <tr class="table-info"><td><strong>StudentProfile</strong></td><td><span class="badge badge-tenant">Tenant</span></td><td>5</td><td>1</td><td>8</td><td>5</td><td>1</td><td>student.show (8 tab sections)</td></tr>
+          <tr class="table-info"><td><strong>Dashboard</strong></td><td><span class="badge badge-tenant">Tenant</span></td><td>1</td><td>0</td><td>7</td><td>0</td><td>0</td><td>7 modular dashboard pages</td></tr>
+          <tr class="table-warning"><td><strong>TimetableFoundation</strong></td><td><span class="badge badge-tenant">Tenant</span></td><td>24</td><td>1</td><td>50+</td><td>10+</td><td>0</td><td>timetableConfiguration (3 sections)</td></tr>
+          <tr class="table-warning"><td><strong>SmartTimetable</strong></td><td><span class="badge badge-tenant">Tenant</span></td><td>13</td><td>8</td><td>2</td><td>25+</td><td>0</td><td>masters(10), requirement(4), constraint(5), resource(3), reports(6+), preparation(3)</td></tr>
+          <tr class="table-warning"><td><strong>StandardTimetable</strong></td><td><span class="badge badge-tenant">Tenant</span></td><td>1</td><td>0</td><td>0</td><td>0</td><td>1</td><td><span class="badge-stub">Empty</span></td></tr>
+          <tr><td><strong>Transport</strong></td><td><span class="badge badge-tenant">Tenant</span></td><td>31</td><td>5</td><td>40+</td><td>15+</td><td>0</td><td>transportmaster, staffmgmt, newtrip, stdroutefeesmgmt, vehiclemgmt</td></tr>
+          <tr><td><strong>Vendor</strong></td><td><span class="badge badge-tenant">Tenant</span></td><td>7</td><td>1</td><td>10+</td><td>4</td><td>0</td><td>vendor tab module</td></tr>
+          <tr><td><strong>Complaint</strong></td><td><span class="badge badge-tenant">Tenant</span></td><td>8</td><td>1</td><td>10+</td><td>6</td><td>1</td><td>complaint.index (multi-tab)</td></tr>
+          <tr><td><strong>Notification</strong></td><td><span class="badge badge-tenant">Tenant</span></td><td>12</td><td>1</td><td>15+</td><td>10+</td><td>0</td><td>notification-manage (3 tabs)</td></tr>
+          <tr><td><strong>Payment</strong></td><td><span class="badge badge-tenant">Tenant</span></td><td>2</td><td>0</td><td>4</td><td>3</td><td>0</td><td>&mdash; (webhook-driven)</td></tr>
+          <tr><td><strong>Scheduler</strong></td><td><span class="badge badge-tenant">Tenant</span></td><td>1</td><td>0</td><td>2</td><td>1</td><td>0</td><td>&mdash;</td></tr>
+          <tr><td><strong>Syllabus</strong></td><td><span class="badge badge-tenant">Tenant</span></td><td>15</td><td>1</td><td>8</td><td>5</td><td>0</td><td>lesson-management (partials)</td></tr>
+          <tr><td><strong>SyllabusBooks</strong></td><td><span class="badge badge-tenant">Tenant</span></td><td>4</td><td>1</td><td>6</td><td>2</td><td>0</td><td>syllabus-book.index (books+authors)</td></tr>
+          <tr><td><strong>QuestionBank</strong></td><td><span class="badge badge-tenant">Tenant</span></td><td>7</td><td>0</td><td>8</td><td>8+</td><td>0</td><td>&mdash; (complex filters)</td></tr>
+          <tr><td><strong>HPC</strong></td><td><span class="badge badge-tenant">Tenant</span></td><td>15</td><td>0</td><td>15</td><td>5+</td><td>0</td><td>&mdash; (PDF evaluation)</td></tr>
+          <tr><td><strong>LmsExam</strong></td><td><span class="badge badge-tenant">Tenant</span></td><td>11</td><td>0</td><td>15</td><td>10+</td><td>0</td><td>&mdash;</td></tr>
+          <tr><td><strong>LmsQuiz</strong></td><td><span class="badge badge-tenant">Tenant</span></td><td>5</td><td>0</td><td>5</td><td>8+</td><td>0</td><td>&mdash; (bulk operations)</td></tr>
+          <tr><td><strong>LmsHomework</strong></td><td><span class="badge badge-tenant">Tenant</span></td><td>5</td><td>1</td><td>4</td><td>6+</td><td>0</td><td>lmshomework.index (MEGA tabbed)</td></tr>
+          <tr><td><strong>LmsQuests</strong></td><td><span class="badge badge-tenant">Tenant</span></td><td>4</td><td>0</td><td>6</td><td>5+</td><td>0</td><td>&mdash;</td></tr>
+          <tr><td><strong>StudentFee</strong></td><td><span class="badge badge-tenant">Tenant</span></td><td>15</td><td>0</td><td>20+</td><td>10+</td><td>0</td><td>&mdash; (workflow+PDF)</td></tr>
+          <tr><td><strong>Recommendation</strong></td><td><span class="badge badge-tenant">Tenant</span></td><td>10</td><td>0</td><td>15</td><td>8+</td><td>0</td><td>&mdash;</td></tr>
+          <tr><td><strong>Library</strong></td><td><span class="badge badge-tenant">Tenant</span></td><td>25</td><td>1</td><td>30+</td><td>15+</td><td>0</td><td>library transactions (MASSIVE tabbed)</td></tr>
+          <tr><td><strong>StudentPortal</strong></td><td><span class="badge badge-tenant">Tenant</span></td><td>3</td><td>0</td><td>5</td><td>3+</td><td>0</td><td>&mdash; (student auth views)</td></tr>
+          <tr style="background:#f0fdf4;font-weight:700"><td>TOTAL</td><td></td><td>310+</td><td>35</td><td>450+</td><td>100+</td><td>15</td><td></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ========== COMBINED/TABBED VIEWS ========== -->
+<div id="sec-combined" class="section">
+  <h4 class="mb-3"><i class="bi bi-layout-split"></i> All Combined/Tabbed Views — Complete Inventory</h4>
+  <p class="text-muted" style="font-size:.78rem">These are the pages that load multiple data collections and display them in a tabbed/sectioned interface. This is the most important view pattern in the application.</p>
+
+  <!-- Central Combined Views -->
+  <div class="card mb-3">
+    <div class="card-header bg-success text-white"><i class="bi bi-building"></i> Central Modules — Combined Views (8)</div>
+    <div class="card-body p-0">
+      <table class="table table-sm table-hover mb-0">
+        <thead class="table-dark"><tr><th style="width:10%">Module</th><th style="width:13%">Page Name (Breadcrumb)</th><th style="width:17%">Controller &rarr; Method</th><th style="width:4%">#</th><th style="width:30%">Tab Names (as shown in UI)</th><th>Data Loaded</th></tr></thead>
+        <tbody>
+          <tr><td>App</td><td><strong>Profile</strong></td><td><code>ProfileController::edit()</code></td><td>3</td><td><span class="badge bg-secondary" style="font-size:.6rem">Update Profile Info</span> <span class="badge bg-secondary" style="font-size:.6rem">Update Password</span> <span class="badge bg-secondary" style="font-size:.6rem">Delete User</span></td><td>$user (3 card sections, not nav-tabs)</td></tr>
+          <tr><td>Prime</td><td><strong>Tenant Management</strong></td><td><code>TenantManagementController::index()</code></td><td>2</td><td><span class="badge bg-primary" style="font-size:.6rem">Tenant Group</span> <span class="badge bg-primary" style="font-size:.6rem">Tenant</span></td><td>$tenantGroups, $tenants</td></tr>
+          <tr><td>Prime</td><td><strong>Session &amp; Board Setup</strong></td><td><code>SessionBoardSetupController::index()</code></td><td>2</td><td><span class="badge bg-primary" style="font-size:.6rem">Academic Session</span> <span class="badge bg-primary" style="font-size:.6rem">Academic Board</span></td><td>$academicSessions, $boards</td></tr>
+          <tr><td>Prime</td><td><strong>User Roles &amp; Permissions</strong></td><td><code>UserRolePrmController::index()</code></td><td>2</td><td><span class="badge bg-primary" style="font-size:.6rem">User</span> <span class="badge bg-primary" style="font-size:.6rem">Role &amp; Permission Mgmt</span></td><td>$users, $roles, $permissions</td></tr>
+          <tr><td>Prime</td><td><strong>Sales Plan &amp; Module Mgmt</strong></td><td><code>SalesPlanAndModuleMgmtController::index()</code></td><td>3</td><td><span class="badge bg-primary" style="font-size:.6rem">Billing Cycle</span> <span class="badge bg-primary" style="font-size:.6rem">Modules</span> <span class="badge bg-primary" style="font-size:.6rem">Plans</span></td><td>$modules, $billingCycles, $plans</td></tr>
+          <tr><td>GlobalMaster</td><td><strong>Location Management</strong></td><td><code>GeographySetupController::index()</code></td><td>4</td><td><span class="badge bg-success" style="font-size:.6rem">Country</span> <span class="badge bg-success" style="font-size:.6rem">State</span> <span class="badge bg-success" style="font-size:.6rem">District</span> <span class="badge bg-success" style="font-size:.6rem">City</span></td><td>$countries, $states, $countriesWithStates, $countriesWithStatesAndDistricts, $districts, $cities</td></tr>
+          <tr><td>GlobalMaster</td><td><strong>Session &amp; Board Setup</strong></td><td><code>SessionBoardSetupController::index()</code></td><td>2</td><td><span class="badge bg-success" style="font-size:.6rem">Academic Session</span> <span class="badge bg-success" style="font-size:.6rem">Academic Board</span></td><td>$academicSessions, $boards (both paginated)</td></tr>
+          <tr style="background:#fff3cd"><td>Billing</td><td><strong>Billing Management</strong></td><td><code>BillingManagementController::index()</code></td><td><strong>6</strong></td><td><span class="badge bg-danger" style="font-size:.6rem">Invoicing</span> <span class="badge bg-danger" style="font-size:.6rem">Subscription</span> <span class="badge bg-danger" style="font-size:.6rem">Invoicing Payment</span> <span class="badge bg-danger" style="font-size:.6rem">Consolidated Payment</span> <span class="badge bg-danger" style="font-size:.6rem">Payment Reconcilation</span> <span class="badge bg-danger" style="font-size:.6rem">Invoicing Audit</span></td><td>$filters, $results, $resultsSub, $resultsPayment, $recordPayment, $totalPayable, $payments, $auditLogs + 4 more <strong>(12 vars!)</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Tenant Combined Views -->
+  <div class="card mb-3">
+    <div class="card-header bg-primary text-white"><i class="bi bi-mortarboard"></i> Tenant Modules — Combined Views (30+)</div>
+    <div class="card-body p-0">
+      <table class="table table-sm table-hover mb-0">
+        <thead class="table-dark"><tr><th style="width:8%">Module</th><th style="width:13%">Page Name (Breadcrumb)</th><th style="width:16%">Controller &rarr; Method</th><th style="width:3%">#</th><th style="width:33%">Tab Names (as shown in UI)</th><th>Data Loaded</th></tr></thead>
+        <tbody>
+          <!-- SchoolSetup -->
+          <tr style="background:#fef3c7"><td>SchoolSetup</td><td><strong>Class &amp; Section Management</strong></td><td><code>SchoolClassController::index()</code></td><td><strong>10</strong></td>
+            <td><span class="badge bg-warning text-dark" style="font-size:.6rem">Sections</span> <span class="badge bg-warning text-dark" style="font-size:.6rem">Class</span> <span class="badge bg-warning text-dark" style="font-size:.6rem">Class + Sections</span> <span class="badge bg-warning text-dark" style="font-size:.6rem">Subject Type</span> <span class="badge bg-warning text-dark" style="font-size:.6rem">Study Format</span> <span class="badge bg-warning text-dark" style="font-size:.6rem">Subject</span> <span class="badge bg-warning text-dark" style="font-size:.6rem">Subject + Study Format</span> <span class="badge bg-warning text-dark" style="font-size:.6rem">Class Group</span> <span class="badge bg-warning text-dark" style="font-size:.6rem">Subject Group</span> <span class="badge bg-warning text-dark" style="font-size:.6rem">Subject Group + Subject</span></td>
+            <td>16 variables <strong>(PERF-001)</strong></td></tr>
+          <tr><td>SchoolSetup</td><td><strong>Infrasetup Management</strong></td><td><code>InfrasetupController::index()</code></td><td>4</td>
+            <td><span class="badge bg-info" style="font-size:.6rem">Room Type</span> <span class="badge bg-info" style="font-size:.6rem">Room Type Rooms</span> <span class="badge bg-info" style="font-size:.6rem">Building</span> <span class="badge bg-info" style="font-size:.6rem">Room</span></td>
+            <td>buildings, rooms, roomTypes</td></tr>
+          <!-- StudentProfile -->
+          <tr><td>StudentProfile</td><td><strong>Student Management</strong></td><td><code>StudentController::show()</code></td><td>7</td>
+            <td><span class="badge bg-info" style="font-size:.6rem">Basic</span> <span class="badge bg-info" style="font-size:.6rem">Profile</span> <span class="badge bg-info" style="font-size:.6rem">Parent</span> <span class="badge bg-info" style="font-size:.6rem">Academic</span> <span class="badge bg-info" style="font-size:.6rem">Address</span> <span class="badge bg-info" style="font-size:.6rem">Medical</span> <span class="badge bg-info" style="font-size:.6rem">Documents</span></td>
+            <td>student, currentSession, isEmailVerified</td></tr>
+          <tr><td>StudentProfile</td><td><strong>Student Edit Form</strong></td><td><code>StudentController::edit() (tabs)</code></td><td>6</td>
+            <td><span class="badge bg-info" style="font-size:.6rem">Student Login</span> <span class="badge bg-info" style="font-size:.6rem">Student Details</span> <span class="badge bg-info" style="font-size:.6rem">Parents/Guardians</span> <span class="badge bg-info" style="font-size:.6rem">Academic Session</span> <span class="badge bg-info" style="font-size:.6rem">Previous Education</span> <span class="badge bg-info" style="font-size:.6rem">Health Records</span></td>
+            <td>student + completion indicators</td></tr>
+          <!-- TimetableFoundation -->
+          <tr><td>Foundation</td><td><strong>Timetable Configuration</strong></td><td><code>timetableConfiguration()</code></td><td>3</td>
+            <td><span class="badge" style="font-size:.6rem;background:#d97706;color:#fff">Timetable Config</span> <span class="badge" style="font-size:.6rem;background:#d97706;color:#fff">Academic Terms</span> <span class="badge" style="font-size:.6rem;background:#d97706;color:#fff">Generation Strategy</span></td>
+            <td>configs, academicTerms, generationStrategies</td></tr>
+          <!-- SmartTimetable -->
+          <tr style="background:#ede9fe"><td>SmartTT</td><td><strong>Timetable Masters</strong></td><td><code>timetableMasters()</code></td><td><strong>10</strong></td>
+            <td><span class="badge" style="font-size:.6rem;background:#7c3aed;color:#fff">Shifts</span> <span class="badge" style="font-size:.6rem;background:#7c3aed;color:#fff">Day Types</span> <span class="badge" style="font-size:.6rem;background:#7c3aed;color:#fff">Period Types</span> <span class="badge" style="font-size:.6rem;background:#7c3aed;color:#fff">Teacher Roles</span> <span class="badge" style="font-size:.6rem;background:#7c3aed;color:#fff">School Days</span> <span class="badge" style="font-size:.6rem;background:#7c3aed;color:#fff">Working Days</span> <span class="badge" style="font-size:.6rem;background:#7c3aed;color:#fff">Class Working Days</span> <span class="badge" style="font-size:.6rem;background:#7c3aed;color:#fff">Period Sets</span> <span class="badge" style="font-size:.6rem;background:#7c3aed;color:#fff">Timetable Types</span> <span class="badge" style="font-size:.6rem;background:#7c3aed;color:#fff">Class Timetable</span></td>
+            <td>10 data collections</td></tr>
+          <tr style="background:#ede9fe"><td>SmartTT</td><td><strong>Timetable Requirement</strong></td><td><code>timetableRequirement()</code></td><td>4</td>
+            <td><span class="badge" style="font-size:.6rem;background:#7c3aed;color:#fff">Slot Requirement</span> <span class="badge" style="font-size:.6rem;background:#7c3aed;color:#fff">Class Req. Group</span> <span class="badge" style="font-size:.6rem;background:#7c3aed;color:#fff">Class Req. Sub-Group</span> <span class="badge" style="font-size:.6rem;background:#7c3aed;color:#fff">Consolidation</span></td>
+            <td>4 data collections</td></tr>
+          <tr style="background:#ede9fe"><td>SmartTT</td><td><strong>Constraint Engine</strong></td><td><code>constraintEngine()</code></td><td><strong>6</strong></td>
+            <td><span class="badge" style="font-size:.6rem;background:#7c3aed;color:#fff">Categories</span> <span class="badge" style="font-size:.6rem;background:#7c3aed;color:#fff">Scopes</span> <span class="badge" style="font-size:.6rem;background:#7c3aed;color:#fff">Constraint Types</span> <span class="badge" style="font-size:.6rem;background:#7c3aed;color:#fff">Constraints</span> <span class="badge" style="font-size:.6rem;background:#7c3aed;color:#fff">Teacher Unavailability</span> <span class="badge" style="font-size:.6rem;background:#7c3aed;color:#fff">Room Unavailability</span></td>
+            <td>6 data collections</td></tr>
+          <tr style="background:#ede9fe"><td>SmartTT</td><td><strong>Resource Availability</strong></td><td><code>resourceAvailability()</code></td><td>3</td>
+            <td><span class="badge" style="font-size:.6rem;background:#7c3aed;color:#fff">Teachers Availability</span> <span class="badge" style="font-size:.6rem;background:#7c3aed;color:#fff">Availability Log</span> <span class="badge" style="font-size:.6rem;background:#7c3aed;color:#fff">Rooms Availability</span></td>
+            <td>3 data collections</td></tr>
+          <tr style="background:#ede9fe"><td>SmartTT</td><td><strong>Timetable Preparation</strong></td><td><code>timetablePreparation()</code></td><td>4</td>
+            <td><span class="badge" style="font-size:.6rem;background:#7c3aed;color:#fff">Activities</span> <span class="badge" style="font-size:.6rem;background:#7c3aed;color:#fff">Sub Activities</span> <span class="badge" style="font-size:.6rem;background:#7c3aed;color:#fff">Priority Config</span> <span class="badge" style="font-size:.6rem;background:#7c3aed;color:#fff">Activity Teacher Mapping</span></td>
+            <td>activities, classSubjects, requirementGroups</td></tr>
+          <tr style="background:#ede9fe"><td>SmartTT</td><td><strong>View &amp; Refinement</strong></td><td><code>viewAndRefinement()</code></td><td>4</td>
+            <td><span class="badge" style="font-size:.6rem;background:#7c3aed;color:#fff">Timetable View</span> <span class="badge" style="font-size:.6rem;background:#7c3aed;color:#fff">Manual Refinement</span> <span class="badge" style="font-size:.6rem;background:#7c3aed;color:#fff">Lock Timetable</span> <span class="badge" style="font-size:.6rem;background:#7c3aed;color:#fff">Publish Timetable</span></td>
+            <td>timetable data</td></tr>
+          <tr style="background:#ede9fe"><td>SmartTT</td><td><strong>Reports &amp; Logs</strong></td><td><code>reportsAndLogs()</code></td><td><strong>6</strong></td>
+            <td><span class="badge" style="font-size:.6rem;background:#7c3aed;color:#fff">Class wise Report</span> <span class="badge" style="font-size:.6rem;background:#7c3aed;color:#fff">Teacher wise Report</span> <span class="badge" style="font-size:.6rem;background:#7c3aed;color:#fff">Room wise Report</span> <span class="badge" style="font-size:.6rem;background:#7c3aed;color:#fff">Workload Analysis</span> <span class="badge" style="font-size:.6rem;background:#7c3aed;color:#fff">Room Utilization</span> <span class="badge" style="font-size:.6rem;background:#7c3aed;color:#fff">Requirement Analysis</span></td>
+            <td>report data collections</td></tr>
+          <tr style="background:#ede9fe"><td>SmartTT</td><td><strong>Substitute Management</strong></td><td><code>substituteManagement()</code></td><td>3</td>
+            <td><span class="badge" style="font-size:.6rem;background:#7c3aed;color:#fff">Substitute Requirement</span> <span class="badge" style="font-size:.6rem;background:#7c3aed;color:#fff">Propose &amp; Approve</span> <span class="badge" style="font-size:.6rem;background:#7c3aed;color:#fff">Notifications</span></td>
+            <td>substitution data</td></tr>
+          <tr style="background:#ede9fe"><td>SmartTT</td><td><strong>Timetable Reports &amp; Analytics</strong></td><td><code>timetableReports()</code></td><td><strong>6</strong></td>
+            <td><span class="badge" style="font-size:.6rem;background:#7c3aed;color:#fff">Timetable Summary</span> <span class="badge" style="font-size:.6rem;background:#7c3aed;color:#fff">Generation Quality</span> <span class="badge" style="font-size:.6rem;background:#7c3aed;color:#fff">Teacher Load</span> <span class="badge" style="font-size:.6rem;background:#7c3aed;color:#fff">Room Utilization</span> <span class="badge" style="font-size:.6rem;background:#7c3aed;color:#fff">Class Coverage</span> <span class="badge" style="font-size:.6rem;background:#7c3aed;color:#fff">Activity Teacher Capacity</span></td>
+            <td>11 variables (timetables, stats, loads, utilization)</td></tr>
+          <tr style="background:#ede9fe"><td>SmartTT</td><td><strong>Timetable Generation</strong></td><td><code>timetableGeneration()</code></td><td>1</td>
+            <td><span class="badge" style="font-size:.6rem;background:#7c3aed;color:#fff">Timetable</span></td>
+            <td>timetables, counts, academicTerms, types</td></tr>
+          <!-- Transport -->
+          <tr><td>Transport</td><td><strong>Transport Master</strong></td><td><code>TransportMasterController::index()</code></td><td><strong>10</strong></td>
+            <td><span class="badge bg-dark" style="font-size:.6rem">Dashboard</span> <span class="badge bg-dark" style="font-size:.6rem">Vehicle</span> <span class="badge bg-dark" style="font-size:.6rem">Staff</span> <span class="badge bg-dark" style="font-size:.6rem">Shift</span> <span class="badge bg-dark" style="font-size:.6rem">Route</span> <span class="badge bg-dark" style="font-size:.6rem">Trans. Stops</span> <span class="badge bg-dark" style="font-size:.6rem">Pickup Stops List</span> <span class="badge bg-dark" style="font-size:.6rem">Assign Stops to Route</span> <span class="badge bg-dark" style="font-size:.6rem">Device Setup</span> <span class="badge bg-dark" style="font-size:.6rem">Fine Master</span></td>
+            <td>vehicles, routes, drivers, fees, fines, shifts, pickupPoints</td></tr>
+          <tr><td>Transport</td><td><strong>Staff Management</strong></td><td><code>StaffMgmtController::index()</code></td><td>1</td>
+            <td><span class="badge bg-dark" style="font-size:.6rem">Staff Attendance</span></td>
+            <td>driverAttendance, driverHelpers</td></tr>
+          <tr><td>Transport</td><td><strong>Stop Status</strong></td><td><code>NewTripController (Stop Status)</code></td><td>2</td>
+            <td><span class="badge bg-dark" style="font-size:.6rem">Stop Status Update</span> <span class="badge bg-dark" style="font-size:.6rem">Student Attendance</span></td>
+            <td>stopDetails, drivers</td></tr>
+          <tr><td>Transport</td><td><strong>Student Route Fees Management</strong></td><td><code>StudentRouteFeesController</code></td><td><strong>5</strong></td>
+            <td><span class="badge bg-dark" style="font-size:.6rem">Std Transport</span> <span class="badge bg-dark" style="font-size:.6rem">Fee Creation (Invoicing)</span> <span class="badge bg-dark" style="font-size:.6rem">Fine Detail</span> <span class="badge bg-dark" style="font-size:.6rem">Fee Collection</span> <span class="badge bg-dark" style="font-size:.6rem">Fee Log</span></td>
+            <td>student routes, fees, fines</td></tr>
+          <tr><td>Transport</td><td><strong>Vehicle Management</strong></td><td><code>VehicleMgmtController</code></td><td><strong>7</strong></td>
+            <td><span class="badge bg-dark" style="font-size:.6rem">Driver/Vehicle Roster</span> <span class="badge bg-dark" style="font-size:.6rem">Route Scheduler</span> <span class="badge bg-dark" style="font-size:.6rem">Fuel Log</span> <span class="badge bg-dark" style="font-size:.6rem">Inspection</span> <span class="badge bg-dark" style="font-size:.6rem">Service Log</span> <span class="badge bg-dark" style="font-size:.6rem">Veh. Approval</span> <span class="badge bg-dark" style="font-size:.6rem">Veh. Maintenance</span></td>
+            <td>vehicles, fuel, inspection, maintenance</td></tr>
+          <tr><td>Transport</td><td><strong>Trip Management</strong></td><td><code>TripMgmtController</code></td><td><strong>6</strong></td>
+            <td><span class="badge bg-dark" style="font-size:.6rem">Daily Trip</span> <span class="badge bg-dark" style="font-size:.6rem">Stop Status Update</span> <span class="badge bg-dark" style="font-size:.6rem">Stop Details</span> <span class="badge bg-dark" style="font-size:.6rem">Student Bord Unbord</span> <span class="badge bg-dark" style="font-size:.6rem">Trip Incidents</span> <span class="badge bg-dark" style="font-size:.6rem">Trip Approve</span></td>
+            <td>trips, stops, students, incidents</td></tr>
+          <tr><td>Transport</td><td><strong>Transport Report</strong></td><td><code>TransportReportController</code></td><td><strong>11</strong></td>
+            <td><span class="badge bg-dark" style="font-size:.6rem">Route Performance</span> <span class="badge bg-dark" style="font-size:.6rem">St.Transport Usage</span> <span class="badge bg-dark" style="font-size:.6rem">Stop &amp; Locality</span> <span class="badge bg-dark" style="font-size:.6rem">Trip &amp; Discipline</span> <span class="badge bg-dark" style="font-size:.6rem">Driver &amp; Attendant</span> <span class="badge bg-dark" style="font-size:.6rem">Finance &amp; Leakage</span> <span class="badge bg-dark" style="font-size:.6rem">Cost-Maintenance</span> <span class="badge bg-dark" style="font-size:.6rem">Mgmt Summary</span> <span class="badge bg-dark" style="font-size:.6rem">Boarding/Unboarding</span> <span class="badge bg-dark" style="font-size:.6rem">Notifications</span> <span class="badge bg-dark" style="font-size:.6rem">Universal Transport</span></td>
+            <td>report data across all transport entities</td></tr>
+          <!-- Vendor -->
+          <tr><td>Vendor</td><td><strong>Vendor</strong></td><td><code>VendorController::index()</code></td><td><strong>7</strong></td>
+            <td><span class="badge" style="font-size:.6rem;background:#0891b2;color:#fff">Dashboard</span> <span class="badge" style="font-size:.6rem;background:#0891b2;color:#fff">Vendor</span> <span class="badge" style="font-size:.6rem;background:#0891b2;color:#fff">Vendor Item</span> <span class="badge" style="font-size:.6rem;background:#0891b2;color:#fff">Vendor Agreement</span> <span class="badge" style="font-size:.6rem;background:#0891b2;color:#fff">Vendor Invoice</span> <span class="badge" style="font-size:.6rem;background:#0891b2;color:#fff">Payment Details</span> <span class="badge" style="font-size:.6rem;background:#0891b2;color:#fff">Usage Log</span></td>
+            <td>vendors, items, agreements, invoices, payments, logs</td></tr>
+          <!-- Complaint -->
+          <tr><td>Complaint</td><td><strong>Complaint Management</strong></td><td><code>ComplaintController::index()</code></td><td><strong>7</strong></td>
+            <td><span class="badge" style="font-size:.6rem;background:#dc3545;color:#fff">Dashboard</span> <span class="badge" style="font-size:.6rem;background:#dc3545;color:#fff">Categories</span> <span class="badge" style="font-size:.6rem;background:#dc3545;color:#fff">SLA</span> <span class="badge" style="font-size:.6rem;background:#dc3545;color:#fff">Manage Complaints</span> <span class="badge" style="font-size:.6rem;background:#dc3545;color:#fff">Medical Checks/Inspection</span> <span class="badge" style="font-size:.6rem;background:#dc3545;color:#fff">Complaint Actions</span> <span class="badge" style="font-size:.6rem;background:#dc3545;color:#fff">AI Insights</span></td>
+            <td>categories, slas, medicalChecks, results, actions, insights</td></tr>
+          <tr><td>Complaint</td><td><strong>Complaint Reports Management</strong></td><td><code>ComplaintReportController</code></td><td><strong>5</strong></td>
+            <td><span class="badge" style="font-size:.6rem;background:#dc3545;color:#fff">Summary/Status</span> <span class="badge" style="font-size:.6rem;background:#dc3545;color:#fff">SLA Violation</span> <span class="badge" style="font-size:.6rem;background:#dc3545;color:#fff">Pareto</span> <span class="badge" style="font-size:.6rem;background:#dc3545;color:#fff">Cluster &amp; Hotspot</span> <span class="badge" style="font-size:.6rem;background:#dc3545;color:#fff">Risk &amp; Sentiment</span></td>
+            <td>report data</td></tr>
+          <!-- Notification -->
+          <tr><td>Notification</td><td><strong>Notifications</strong></td><td><code>NotificationManageController::tabIndex()</code></td><td>3</td>
+            <td><span class="badge" style="font-size:.6rem;background:#6f42c1;color:#fff">Notifications</span> <span class="badge" style="font-size:.6rem;background:#6f42c1;color:#fff">Templates</span> <span class="badge" style="font-size:.6rem;background:#6f42c1;color:#fff">Delivery Log</span></td>
+            <td>notifications, notificationTemplates, notificationDeliveryLog</td></tr>
+          <!-- SyllabusBooks -->
+          <tr><td>SyllabusBooks</td><td><strong>Syllabus Book Management</strong></td><td><code>SyllabusBooksController::index()</code></td><td>2</td>
+            <td><span class="badge" style="font-size:.6rem;background:#059669;color:#fff">Author</span> <span class="badge" style="font-size:.6rem;background:#059669;color:#fff">Book</span></td>
+            <td>BokBook (paginated 10), BookAuthors (paginated 10)</td></tr>
+          <!-- LmsHomework -->
+          <tr style="background:#fff3cd"><td>LmsHomework</td><td><strong>Home Work Management</strong></td><td><code>LmsHomeworkController::index()</code></td><td><strong>5</strong></td>
+            <td><span class="badge bg-danger" style="font-size:.6rem">Trigger Event</span> <span class="badge bg-danger" style="font-size:.6rem">Action Type</span> <span class="badge bg-danger" style="font-size:.6rem">Rule Engine Config</span> <span class="badge bg-danger" style="font-size:.6rem">Homework</span> <span class="badge bg-danger" style="font-size:.6rem">Homework Submission</span></td>
+            <td>12+ variables <strong>(triggerEvent, actionTypes, RuleEngineConfig, homeworks, submissions...)</strong></td></tr>
+          <!-- Library -->
+          <tr style="background:#fff3cd"><td>Library</td><td><strong>Library Management (Masters)</strong></td><td><code>LibraryController (Masters)</code></td><td><strong>11</strong></td>
+            <td><span class="badge bg-danger" style="font-size:.6rem">Categories</span> <span class="badge bg-danger" style="font-size:.6rem">Genres</span> <span class="badge bg-danger" style="font-size:.6rem">Authors</span> <span class="badge bg-danger" style="font-size:.6rem">Keywords</span> <span class="badge bg-danger" style="font-size:.6rem">Publishers</span> <span class="badge bg-danger" style="font-size:.6rem">Resource Types</span> <span class="badge bg-danger" style="font-size:.6rem">Books</span> <span class="badge bg-danger" style="font-size:.6rem">Membership Types</span> <span class="badge bg-danger" style="font-size:.6rem">Book Condition</span> <span class="badge bg-danger" style="font-size:.6rem">Members</span> <span class="badge bg-danger" style="font-size:.6rem">Fine Master</span></td>
+            <td>11 collections</td></tr>
+          <tr style="background:#fff3cd"><td>Library</td><td><strong>Library Management (Transactions)</strong></td><td><code>LibraryController (Transactions)</code></td><td><strong>6</strong></td>
+            <td><span class="badge bg-danger" style="font-size:.6rem">Shelf Location</span> <span class="badge bg-danger" style="font-size:.6rem">Book Purchase</span> <span class="badge bg-danger" style="font-size:.6rem">Digital Resources</span> <span class="badge bg-danger" style="font-size:.6rem">Transactions</span> <span class="badge bg-danger" style="font-size:.6rem">Reservations</span> <span class="badge bg-danger" style="font-size:.6rem">Fine Details</span></td>
+            <td>6 collections</td></tr>
+          <tr style="background:#fff3cd"><td>Library</td><td><strong>Library Management (Reports)</strong></td><td><code>LibraryController (Reports)</code></td><td><strong>6</strong></td>
+            <td><span class="badge bg-danger" style="font-size:.6rem">Fine Reports</span> <span class="badge bg-danger" style="font-size:.6rem">Circulation Analysis</span> <span class="badge bg-danger" style="font-size:.6rem">Overdue Reports</span> <span class="badge bg-danger" style="font-size:.6rem">Acquisition Reports</span> <span class="badge bg-danger" style="font-size:.6rem">Digital Resource Reports</span> <span class="badge bg-danger" style="font-size:.6rem">Dashboard Reports</span></td>
+            <td>report data</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Top 5 Most Complex -->
+  <div class="card">
+    <div class="card-header bg-danger text-white"><i class="bi bi-exclamation-diamond"></i> Top 5 Most Complex Views (Potential Performance Risk)</div>
+    <div class="card-body p-0">
+      <table class="table table-sm mb-0">
+        <thead><tr><th>#</th><th>View</th><th>Tabs</th><th>Variables</th><th>Risk</th><th>Recommendation</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td><code>SmartTimetableController::index()</code></td><td>12+</td><td>22+</td><td><span class="badge bg-danger">Critical</span></td><td>Already split into Foundation menu methods</td></tr>
+          <tr><td>2</td><td><code>SchoolClassController::index()</code></td><td>10</td><td>16</td><td><span class="badge bg-danger">Critical</span></td><td>15+ queries per request (PERF-001). Needs AJAX tab loading.</td></tr>
+          <tr><td>3</td><td><code>BillingManagementController::index()</code></td><td>6</td><td>12</td><td><span class="badge bg-warning text-dark">High</span></td><td>Already uses AJAX fragments for some tabs</td></tr>
+          <tr><td>4</td><td><code>LmsHomeworkController::index()</code></td><td>6+</td><td>12+</td><td><span class="badge bg-warning text-dark">High</span></td><td>Should lazy-load rule engine data</td></tr>
+          <tr><td>5</td><td><code>LibraryController::index()</code></td><td>11+</td><td>11+</td><td><span class="badge bg-warning text-dark">High</span></td><td>Should lazy-load per tab via AJAX</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ========== MISSING/STUB VIEWS ========== -->
+<div id="sec-noview" class="section">
+  <h4 class="mb-3"><i class="bi bi-exclamation-triangle"></i> Missing, Stub, or No-View Controllers</h4>
+  <p class="text-muted" style="font-size:.78rem">Controllers that either return empty stubs, have no view at all, or are not routed.</p>
+
+  <div class="card mb-3">
+    <div class="card-header bg-dark text-white">Controllers with Stub/Empty Methods</div>
+    <div class="card-body p-0">
+      <table class="table table-sm table-hover mb-0">
+        <thead class="table-dark"><tr><th>Module</th><th>Controller</th><th>Methods Affected</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>App</td><td><code>SeederController</code></td><td>All (run, seedClassGroupJnt)</td><td><span class="badge-stub">Not routed</span> — dev utility only</td></tr>
+          <tr><td>Prime</td><td><code>TenantController::show(), destroy()</code></td><td>show, destroy</td><td><span class="badge-stub">Empty body</span></td></tr>
+          <tr><td>Prime</td><td><code>TenantManagementController</code></td><td>create, store, edit, update, destroy</td><td><span class="badge-stub">Empty/stub</span> — only index() works</td></tr>
+          <tr><td>Prime</td><td><code>UserRolePrmController</code></td><td>create, store, edit, update, destroy</td><td><span class="badge-stub">Empty/stub</span> — only index() works</td></tr>
+          <tr><td>Prime</td><td><code>SalesPlanAndModuleMgmtController</code></td><td>create, store, edit, update, destroy</td><td><span class="badge-stub">Empty/stub</span> — only index() works</td></tr>
+          <tr><td>GlobalMaster</td><td><code>GlobalMasterController</code></td><td>All CRUD</td><td><span class="badge-stub">Stub views</span></td></tr>
+          <tr><td>GlobalMaster</td><td><code>OrganizationController</code></td><td>All CRUD</td><td><span class="badge-stub">Stub views</span></td></tr>
+          <tr><td>SystemConfig</td><td><code>SystemConfigController</code></td><td>All CRUD</td><td><span class="badge-stub">Stub views</span></td></tr>
+          <tr><td>Billing</td><td><code>InvoicingController</code></td><td>All CRUD</td><td><span class="badge-stub">Stub views</span></td></tr>
+          <tr><td>Billing</td><td><code>InvoicingPaymentController</code></td><td>index, show, edit, update, destroy</td><td><span class="badge-stub">Partial stub</span> — only create+store work</td></tr>
+          <tr><td>Billing</td><td><code>SubscriptionController</code></td><td>index, show, edit, update, destroy</td><td><span class="badge-stub">Partial stub</span> — only store works</td></tr>
+          <tr><td>StudentProfile</td><td><code>StudentProfileController</code></td><td>All CRUD</td><td><span class="badge-stub">Stub</span> — actual work in StudentController</td></tr>
+          <tr style="background:#fef2f2"><td>StandardTimetable</td><td><code>StandardTimetableController</code></td><td>ALL</td><td><span class="badge-stub">Completely empty</span> — Phase 7 pending</td></tr>
+          <tr><td>Complaint</td><td><code>ComplaintDashboardController</code></td><td>All CRUD</td><td><span class="badge-stub">Stub</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header bg-dark text-white">Controllers/Methods That Return No View (JSON/Redirect only)</div>
+    <div class="card-body" style="font-size:.78rem">
+      <p>These controllers <strong>intentionally</strong> have no Blade view — they return JSON, redirect, or process files:</p>
+      <div class="row g-2">
+        <div class="col-md-4">
+          <strong>JSON/AJAX Only:</strong>
+          <ul style="font-size:.73rem">
+            <li>All <code>toggleStatus()</code> methods (every module)</li>
+            <li><code>SmartTimetable\RefinementController</code> — swap, move, lock, candidates, impact</li>
+            <li><code>SmartTimetable\SubstitutionController</code> — reportAbsence, candidates, assign</li>
+            <li><code>LmsQuiz\QuizQuestionController</code> — getSections, getSubjects, bulkStore</li>
+            <li><code>Transport\StudentBoardingController</code> — boardingStore, unbordUpdate</li>
+            <li><code>Payment\PaymentController</code> — handleWebhook</li>
+            <li><code>SystemConfig\MenuSyncController</code> — sync</li>
+          </ul>
+        </div>
+        <div class="col-md-4">
+          <strong>File/PDF Downloads:</strong>
+          <ul style="font-size:.73rem">
+            <li><code>Billing\BillingManagementController::downloadPDF()</code> — ZIP of PDFs</li>
+            <li><code>Transport\FeeMasterController::downloadPdf()</code> — DomPDF</li>
+            <li><code>StudentFee\FeeInvoiceController::downloadPdf()</code> — invoice PDF</li>
+            <li><code>Billing\SubscriptionController::store()</code> — subscription ZIP</li>
+            <li><code>HPC (all PDF controllers)</code> — DomPDF templates</li>
+          </ul>
+        </div>
+        <div class="col-md-4">
+          <strong>Import/Export:</strong>
+          <ul style="font-size:.73rem">
+            <li><code>Transport\FeeMasterController::export()</code> — Excel</li>
+            <li><code>Transport\FeeCollectionController::export()</code> — Excel</li>
+            <li><code>Syllabus\LessonController</code> — import/export</li>
+            <li><code>QuestionBank\QuestionBankController</code> — bulk import/export</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== MODULE DETAIL SECTIONS ========== -->
+
+<!-- Central App Controllers -->
+<div id="sec-central" class="section">
+  <h4 class="mb-3"><i class="bi bi-building"></i> App Controllers (Central)</h4>
+  <div class="card">
+    <div class="card-header bg-dark text-white">12 Controllers — Auth, Profile, Dashboard</div>
+    <div class="card-body p-0">
+      <table class="table table-sm table-hover mb-0">
+        <thead class="table-dark"><tr><th>Controller</th><th>Method</th><th>Route</th><th>View / Response</th><th>Type</th></tr></thead>
+        <tbody>
+          <tr><td rowspan="3"><code>AuthenticatedSessionController</code></td><td>create</td><td>GET /login</td><td><code>auth.login</code></td><td><span class="badge-crud">View</span></td></tr>
+          <tr><td>store</td><td>POST /login</td><td>Redirect to dashboard (role-based)</td><td><span class="badge-redir">Redirect</span></td></tr>
+          <tr><td>destroy</td><td>POST /logout</td><td>Redirect to /</td><td><span class="badge-redir">Redirect</span></td></tr>
+          <tr><td rowspan="2"><code>RegisteredUserController</code></td><td>create</td><td>GET /register</td><td><code>auth.register</code></td><td><span class="badge-crud">View</span></td></tr>
+          <tr><td>store</td><td>POST /register</td><td>Redirect to dashboard</td><td><span class="badge-redir">Redirect</span></td></tr>
+          <tr><td rowspan="2"><code>PasswordResetLinkController</code></td><td>create</td><td>GET /forgot-password</td><td><code>auth.forgot-password</code></td><td><span class="badge-crud">View</span></td></tr>
+          <tr><td>store</td><td>POST /forgot-password</td><td>Redirect back + status</td><td><span class="badge-redir">Redirect</span></td></tr>
+          <tr><td rowspan="2"><code>NewPasswordController</code></td><td>create</td><td>GET /reset-password/{token}</td><td><code>auth.reset-password</code></td><td><span class="badge-crud">View</span></td></tr>
+          <tr><td>store</td><td>POST /reset-password</td><td>Redirect to login</td><td><span class="badge-redir">Redirect</span></td></tr>
+          <tr><td><code>EmailVerificationPromptController</code></td><td>__invoke</td><td>GET /verify-email</td><td><code>auth.verify-email</code> or redirect</td><td><span class="badge-crud">View</span></td></tr>
+          <tr><td><code>VerifyEmailController</code></td><td>__invoke</td><td>GET /verify-email/{id}/{hash}</td><td>Redirect to dashboard?verified=1</td><td><span class="badge-redir">Redirect</span></td></tr>
+          <tr><td><code>ConfirmablePasswordController</code></td><td>show</td><td>GET /confirm-password</td><td><code>auth.confirm-password</code></td><td><span class="badge-crud">View</span></td></tr>
+          <tr><td><code>PasswordController</code></td><td>update</td><td>PUT /password</td><td>Redirect back + status</td><td><span class="badge-redir">Redirect</span></td></tr>
+          <tr style="background:#e0f2fe"><td rowspan="3"><code>ProfileController</code></td><td>edit</td><td>GET /profile</td><td><code>profile.edit</code> (3 partials)</td><td><span class="badge-tab">Tabbed</span></td></tr>
+          <tr style="background:#e0f2fe"><td>update</td><td>PATCH /profile</td><td>Redirect to profile.edit</td><td><span class="badge-redir">Redirect</span></td></tr>
+          <tr style="background:#e0f2fe"><td>destroy</td><td>DELETE /profile</td><td>Redirect to /</td><td><span class="badge-redir">Redirect</span></td></tr>
+          <tr><td><code>V1/DashboardController</code></td><td>index</td><td>GET /dashboard</td><td><code>backend.v1.dashboard.index</code></td><td><span class="badge-crud">View</span> (legacy)</td></tr>
+          <tr><td><code>SeederController</code></td><td>run</td><td>N/A</td><td>Returns "OK" string</td><td><span class="badge-stub">Dev utility</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Prime Module -->
+<div id="sec-prime" class="section">
+  <h4 class="mb-3"><i class="bi bi-star"></i> Prime Module (22 Controllers)</h4>
+  <div class="card mb-2"><div class="card-header bg-dark text-white">Combined/Tabbed Views</div><div class="card-body p-0">
+    <table class="table table-sm mb-0">
+      <thead class="table-dark"><tr><th>Controller</th><th>View</th><th>Tabs</th><th>Data</th></tr></thead>
+      <tbody>
+        <tr><td><code>TenantManagementController::index()</code></td><td><code>prime::tenant-management.index</code></td><td>2</td><td>tenantGroups, tenants</td></tr>
+        <tr><td><code>SessionBoardSetupController::index()</code></td><td><code>prime::session-board-setup.index</code></td><td>2</td><td>academicSessions, boards</td></tr>
+        <tr><td><code>UserRolePrmController::index()</code></td><td><code>prime::user-role-permission.index</code></td><td>3</td><td>users, roles, permissions</td></tr>
+        <tr><td><code>SalesPlanAndModuleMgmtController::index()</code></td><td><code>prime::sales-plan-and-module-mgmt.index</code></td><td>3</td><td>modules, billingCycles, plans</td></tr>
+      </tbody>
+    </table>
+  </div></div>
+  <div class="card"><div class="card-header bg-dark text-white">Standard CRUD Controllers</div><div class="card-body" style="font-size:.75rem">
+    <div class="row g-2">
+      <div class="col-md-4"><strong>Full CRUD + Trash:</strong><br>UserController, TenantController, TenantGroupController, AcademicSessionController, BoardController, LanguageController, MenuController</div>
+      <div class="col-md-4"><strong>Full CRUD:</strong><br>RolePermissionController, SettingController, DropdownMgmtController, DropdownController, DropdownNeedController</div>
+      <div class="col-md-4"><strong>Utility:</strong><br>PrimeController (dashboard pages), PrimeAuthController (login/logout), NotificationController (test), EmailController (test email)</div>
+    </div>
+  </div></div>
+</div>
+
+<!-- GlobalMaster -->
+<div id="sec-globalmaster" class="section">
+  <h4 class="mb-3"><i class="bi bi-globe"></i> GlobalMaster Module (15 Controllers)</h4>
+  <div class="card mb-2"><div class="card-header bg-dark text-white">Combined/Tabbed Views</div><div class="card-body p-0">
+    <table class="table table-sm mb-0">
+      <thead class="table-dark"><tr><th>Controller</th><th>View</th><th>Tabs</th><th>Data</th></tr></thead>
+      <tbody>
+        <tr><td><code>GeographySetupController::index()</code></td><td><code>globalmaster::location-management.index</code></td><td>4</td><td>countries, states (with relations), districts (hierarchical), cities &mdash; all paginated + filtered + AJAX search</td></tr>
+        <tr><td><code>SessionBoardSetupController::index()</code></td><td><code>globalmaster::session-board-setup.index</code></td><td>2</td><td>academicSessions, boards (both paginated)</td></tr>
+      </tbody>
+    </table>
+  </div></div>
+  <div class="card"><div class="card-header bg-dark text-white">Standard CRUD Controllers (Full pattern: index/create/show/edit/trash/restore/forceDelete/toggle)</div><div class="card-body" style="font-size:.75rem">
+    CountryController, StateController, CityController, DistrictController, LanguageController, AcademicSessionController, DropdownController, PlanController, ModuleController, NotificationController, ActivityLogController, OrganizationController (stub)
+  </div></div>
+</div>
+
+<!-- SystemConfig -->
+<div id="sec-systemconfig" class="section">
+  <h4 class="mb-3"><i class="bi bi-gear"></i> SystemConfig Module (4 Controllers)</h4>
+  <div class="card"><div class="card-body p-0">
+    <table class="table table-sm mb-0">
+      <thead class="table-dark"><tr><th>Controller</th><th>Status</th><th>Key Methods</th></tr></thead>
+      <tbody>
+        <tr><td><code>SystemConfigController</code></td><td><span class="badge-stub">Stub</span></td><td>All methods return generic views</td></tr>
+        <tr><td><code>SettingController</code></td><td><span class="badge-crud">Working</span></td><td>index (paginated), edit, update &mdash; by key + org_id</td></tr>
+        <tr><td><code>MenuController</code></td><td><span class="badge-crud">Working</span></td><td>Hierarchical tree view with translations, AJAX drag-drop reorder</td></tr>
+        <tr><td><code>MenuSyncController</code></td><td><span class="badge-json">JSON</span></td><td>sync() &mdash; master menu definitions, orphan detection, tree building</td></tr>
+      </tbody>
+    </table>
+  </div></div>
+</div>
+
+<!-- Billing -->
+<div id="sec-billing" class="section">
+  <h4 class="mb-3"><i class="bi bi-credit-card"></i> Billing Module (6 Controllers)</h4>
+  <div class="card mb-2"><div class="card-header bg-danger text-white">Complex Combined View</div><div class="card-body">
+    <div class="tab-detail"><strong>BillingManagementController::index()</strong> &rarr; <code>billing::billing-management.index</code><br>
+    <strong>6 tabs:</strong> Billing Schedule, Subscription Data, Invoice Payment, Consolidated Payment, Payment Reconciliation, Audit Notes<br>
+    <strong>12 variables:</strong> filters, results, resultsSub, resultsPayment, recordPayment, totalPayable, payments, auditLogs, startDate, endDate, tenantData, superadminData<br>
+    <strong>AJAX methods:</strong> subscriptionDetails, invoiceDetails, moduleDetails, invoiceRemarks, AuditLog (all return HTML partials)<br>
+    <strong>Actions:</strong> printData (PDF), downloadPDF (ZIP), sendEmail (queue), scheduleEmail (delayed queue)</div>
+  </div></div>
+  <div class="card"><div class="card-header bg-dark text-white">Other Controllers</div><div class="card-body" style="font-size:.75rem">
+    BillingCycleController (full CRUD+trash), SubscriptionController (partial, store=ZIP download), InvoicingController (<span class="badge-stub">stub</span>), InvoicingPaymentController (create+store only), InvoicingAuditLogController (add note only)
+  </div></div>
+</div>
+
+<!-- Documentation -->
+<div id="sec-documentation" class="section">
+  <h4 class="mb-3"><i class="bi bi-book"></i> Documentation Module (3 Controllers)</h4>
+  <div class="card"><div class="card-body p-0">
+    <table class="table table-sm mb-0">
+      <thead class="table-dark"><tr><th>Controller</th><th>Key Views</th><th>Features</th></tr></thead>
+      <tbody>
+        <tr><td><code>DocumentationController</code></td><td>Admin: <code>documentation::index</code> (categories+articles filtered)<br>Public: <code>documentation::main-doc.index</code> (hierarchical nav)</td><td>Admin dashboard + public doc site</td></tr>
+        <tr><td><code>DocumentationCategoryController</code></td><td>Full CRUD: index, create, show, edit, trash</td><td>Spatie MediaLibrary, parent-child hierarchy</td></tr>
+        <tr><td><code>DocumentationArticleController</code></td><td>Full CRUD: index, create, show, edit, trash</td><td>Spatie MediaLibrary, many-to-many categories, Summernote image upload</td></tr>
+      </tbody>
+    </table>
+  </div></div>
+</div>
+
+<!-- SchoolSetup -->
+<div id="sec-schoolsetup" class="section">
+  <h4 class="mb-3"><i class="bi bi-mortarboard"></i> SchoolSetup Module (40 Controllers)</h4>
+  <div class="card mb-2"><div class="card-header bg-danger text-white">MEGA Combined View (10 Tabs, 16+ Variables)</div><div class="card-body">
+    <div class="tab-detail"><strong>SchoolClassController::index()</strong> &rarr; <code>schoolsetup::school-class.index</code><br>
+    <strong>10 tabs:</strong> Sections, Classes+Sections, Classes Combined, Subject Types, Study Formats, Subjects, Subject-Study Formats, Subject-Class Mapping, Subject Groups, Subject-Group-Subjects<br>
+    <strong>16 variables:</strong> sections, sectionsData, classSections, teachers, subjectTypes, StudyFormats, Subjects, classSectionList, subjectStudyFormatList, subjectTypesList, subjectGroups, roomTypes, StudyFormatsData, rooms, subjectGroupsData, classGroups, subjectGroupSubjects<br>
+    <strong>Known issue:</strong> PERF-001 &mdash; 15+ queries per request. Needs AJAX tab lazy-loading.</div>
+  </div></div>
+  <div class="card"><div class="card-header bg-dark text-white">40 Controllers Summary</div><div class="card-body" style="font-size:.75rem">
+    <div class="row g-2">
+      <div class="col-md-3"><strong>Core Entity CRUD:</strong><br>OrganizationController, SchoolClassController, SectionController, SubjectController, TeacherController, RoomController, BuildingController, RoomTypeController, DepartmentController, DesignationController</div>
+      <div class="col-md-3"><strong>Subject Management:</strong><br>SubjectGroupController, SubjectGroupSubjectController, SubjectStudyFormatController, SubjectTypeController, StudyFormatController, SubjectClassMappingController, ClassSubjectGroupController, ClassSubjectManagementController</div>
+      <div class="col-md-3"><strong>User/Role Management:</strong><br>UserController, RolePermissionController, PermissionSyncController, UserRolePrmController, EmployeeProfileController</div>
+      <div class="col-md-3"><strong>Other:</strong><br>OrganizationGroupController, OrganizationAcademicSessionController, ClassGroupController, EntityGroupController, EntityGroupMemberController, LeaveTypeController, LeaveConfigController, AttendanceTypeController, DisableReasonController, InfrasetupController</div>
+    </div>
+    <p class="mt-2 mb-0"><strong>Cross-module view:</strong> <code>TeacherController::show()</code> returns <code>smarttimetable::timetable.show</code> with timetable grid data.</p>
+  </div></div>
+</div>
+
+<!-- StudentProfile -->
+<div id="sec-studentprofile" class="section">
+  <h4 class="mb-3"><i class="bi bi-person-badge"></i> StudentProfile Module (5 Controllers)</h4>
+  <div class="card mb-2"><div class="card-header bg-dark text-white">Combined View</div><div class="card-body">
+    <div class="tab-detail"><strong>StudentController::show()</strong> &rarr; <code>studentprofile::student.show</code><br>
+    <strong>8 tab sections:</strong> Student Login, Student Details, Student Session, Parent Details, Attendance, Previous Education, Health<br>
+    <strong>Data:</strong> student, currentSession, isEmailVerified</div>
+  </div></div>
+  <div class="card"><div class="card-body" style="font-size:.75rem">
+    StudentProfileController (<span class="badge-stub">stub</span>), StudentController (full), AttendanceController (QR scan + manual), MedicalIncidentController (CRUD), StudentReportController (filtered reports)
+  </div></div>
+</div>
+
+<!-- Dashboard -->
+<div id="sec-dashboard" class="section">
+  <h4 class="mb-3"><i class="bi bi-speedometer"></i> Dashboard Module (1 Controller)</h4>
+  <div class="card"><div class="card-body">
+    <strong>DashboardController</strong> &mdash; 7 modular dashboard pages (each a separate view, NOT tabbed):<br>
+    <code>index</code>, <code>coreConfiguration</code>, <code>foundationSetup</code>, <code>admissionStudentManagement</code>, <code>schoolSetup</code>, <code>operationManagement</code>, <code>supportManagement</code>
+  </div></div>
+</div>
+
+<!-- TimetableFoundation -->
+<div id="sec-foundation" class="section">
+  <h4 class="mb-3"><i class="bi bi-bricks"></i> TimetableFoundation Module (24 Controllers)</h4>
+  <div class="card mb-2"><div class="card-header bg-dark text-white">Combined View</div><div class="card-body">
+    <div class="tab-detail"><strong>TimetableFoundationController::timetableConfiguration()</strong> &rarr; <code>timetablefoundation::pages.timetable-configuration</code><br>
+    <strong>3 sections:</strong> Timetable Config, Academic Terms, Generation Strategies<br>
+    <strong>Data:</strong> configs, academicTerms, generationStrategies</div>
+  </div></div>
+  <div class="card"><div class="card-header bg-dark text-white">24 CRUD Controllers</div><div class="card-body" style="font-size:.75rem">
+    <div class="row g-2">
+      <div class="col-md-3"><strong>Config:</strong><br>ConfigController, AcademicTermController</div>
+      <div class="col-md-3"><strong>Masters:</strong><br>TimetableTypeController, SchoolDayController, SchoolShiftController, DayTypeController, WorkingDayController, PeriodTypeController, PeriodSetController, PeriodSetPeriodController, ClassTimetableTypeController, TeacherAssignmentRoleController, TimingProfileController, SchoolTimingProfileController</div>
+      <div class="col-md-3"><strong>Requirements:</strong><br>ClassSubjectSubgroupController, RequirementConsolidationController, SlotRequirementController, ClassWorkingDayController</div>
+      <div class="col-md-3"><strong>Resources+Storage:</strong><br>TeacherAvailabilityController, TeacherAvailabilityLogController, RoomAvailabilityController, ActivityController, TimetableController, TimetableFoundationController (menu)</div>
+    </div>
+    <p class="mt-2 mb-0">All controllers redirect to Foundation menu routes after CRUD operations. AJAX endpoints: WorkingDay (ajaxStore/ajaxEdit/ajaxDestroy/ajaxInitialize), RequirementConsolidation (generateRequirements/getStats/updateRequirement/updatePeriods).</p>
+  </div></div>
+</div>
+
+<!-- SmartTimetable -->
+<div id="sec-smarttt" class="section">
+  <h4 class="mb-3"><i class="bi bi-cpu"></i> SmartTimetable Module (13 Controllers)</h4>
+  <div class="card mb-2"><div class="card-header bg-dark text-white">8 Combined/Tabbed Views (Highest Density in App)</div><div class="card-body p-0">
+    <table class="table table-sm mb-0">
+      <thead class="table-dark"><tr><th>Method</th><th>View</th><th>Tabs</th><th>Data Collections</th></tr></thead>
+      <tbody>
+        <tr style="background:#fef2f2"><td><code>index()</code></td><td><code>smart-timetable.index</code></td><td>12+</td><td>22+ variables (most complex view in app)</td></tr>
+        <tr><td><code>timetableMasters()</code></td><td><code>pages.timetable-masters</code></td><td>10</td><td>shifts, dayTypes, periodTypes, teacherRoles, schoolDays, workingDays, classWorkingDays, periodSets, timetableTypes, classTimetables</td></tr>
+        <tr><td><code>timetableRequirement()</code></td><td><code>pages.timetable-requirement</code></td><td>4</td><td>slotRequirements, requirementGroups, requirementSubgroups, requirementConsolidations</td></tr>
+        <tr><td><code>constraintEngine()</code></td><td><code>pages.constraint-engine</code></td><td>5</td><td>constraintCategories, constraintScopes, constraintTypes, constraints, teacherUnavailables, roomUnavailables</td></tr>
+        <tr><td><code>resourceAvailability()</code></td><td><code>pages.resource-availability</code></td><td>3</td><td>teacherAvailabilities, teacherAvailabilityLogs, roomAvailabilities</td></tr>
+        <tr><td><code>timetablePreparation()</code></td><td><code>pages.timetable-preparation</code></td><td>3+</td><td>activities, classSubjects, requirementGroups</td></tr>
+        <tr><td><code>timetableReports()</code></td><td><code>smart-timetable.reports</code></td><td>6+</td><td>11 variables including timetableStats, teacherLoads, roomUtilization</td></tr>
+        <tr><td><code>timetableGeneration()</code></td><td><code>smart-timetable.generation</code></td><td>2</td><td>timetables, classesCount, subjectsCount, academicTerms, timetableTypes</td></tr>
+      </tbody>
+    </table>
+  </div></div>
+  <div class="card"><div class="card-header bg-dark text-white">Other Controllers</div><div class="card-body" style="font-size:.75rem">
+    <strong>Constraint CRUD:</strong> ConstraintCategoryController, ConstraintScopeController, ConstraintTypeController, ConstraintController<br>
+    <strong>Analytics:</strong> AnalyticsController (5 report types + CSV export) &mdash; uses Foundation's AnalyticsService<br>
+    <strong>Refinement:</strong> RefinementController (swap, move, lock, candidates, impact) &mdash; all JSON<br>
+    <strong>Substitution:</strong> SubstitutionController (index+history views, reportAbsence/candidates/assign JSON)<br>
+    <strong>Resource:</strong> ParallelGroupController, RoomUnavailableController, TeacherUnavailableController, TtGenerationStrategyController
+  </div></div>
+</div>
+
+<!-- StandardTimetable -->
+<div id="sec-standardtt" class="section">
+  <h4 class="mb-3"><i class="bi bi-grid-3x3"></i> StandardTimetable Module (1 Controller)</h4>
+  <div class="card"><div class="card-body" style="text-align:center;padding:2rem">
+    <i class="bi bi-hourglass-split" style="font-size:3rem;color:#dc3545"></i>
+    <h5 class="mt-2">Phase 7 — Not Yet Implemented</h5>
+    <p class="text-muted">StandardTimetableController exists but is completely empty.<br>Will share Foundation infrastructure for manual timetable placement.</p>
+  </div></div>
+</div>
+
+<!-- Remaining Tenant Modules (Condensed) -->
+<div id="sec-transport" class="section">
+  <h4 class="mb-3"><i class="bi bi-bus-front"></i> Transport Module (31 Controllers)</h4>
+  <div class="card mb-2"><div class="card-header bg-dark text-white">5 Combined/Tabbed Views</div><div class="card-body p-0">
+    <table class="table table-sm mb-0">
+      <thead class="table-dark"><tr><th>Controller</th><th>View</th><th>Data</th></tr></thead>
+      <tbody>
+        <tr><td>TransportMasterController::index()</td><td><code>transport::tab_module.transportmaster</code></td><td>vehicles, routes, drivers, fees, fines, shifts, pickupPoints + AJAX partials</td></tr>
+        <tr><td>StaffMgmtController::index()</td><td><code>transport::tab_module.staffmgmt</code></td><td>driverAttendance, driverHelpers</td></tr>
+        <tr><td>NewTripController::index()</td><td><code>transport::tab_module.newfile</code></td><td>stopDetails, drivers</td></tr>
+        <tr><td>StudentRouteFeesController::index()</td><td><code>transport::tab_module.stdroutefeesmgmt</code></td><td>student routes, fees</td></tr>
+        <tr><td>VehicleMgmtController::index()</td><td><code>transport::tab_module.vehiclemgmt</code></td><td>vehicles, fuel, maintenance, inspections</td></tr>
+      </tbody>
+    </table>
+  </div></div>
+  <div class="card"><div class="card-body" style="font-size:.73rem">
+    <strong>31 controllers:</strong> DriverHelperController, DriverAttendanceController, DriverRouteVehicleController, FeeMasterController (PDF+Excel), FineMasterController, AttendanceDeviceController, FeeCollectionController (Excel), VehicleController (AJAX partial), ShiftController, PickupPointController, PickupPointRouteController (reorder), RouteController, RouteSchedulerController, StudentBoardingController (JSON-only), StudentAllocationController, StudentAttendanceController, LiveTripController, TripController, TptDailyVehicleInspectionController, TptVehicleFuelController, TptVehicleMaintenanceController, TransportDashboardController, TransportReportController, VehicleMgmtController, TripMgmtController, StaffMgmtController, TransportMasterController, NewTripController, StudentRouteFeesController
+  </div></div>
+</div>
+
+<div id="sec-vendor" class="section">
+  <h4 class="mb-3"><i class="bi bi-shop"></i> Vendor Module (7 Controllers)</h4>
+  <div class="card"><div class="card-body" style="font-size:.75rem">
+    <strong>Tabbed:</strong> VendorController::index() &rarr; <code>vendor::tab_module.tab</code> (aggregated vendor data)<br>
+    <strong>CRUD:</strong> VendorAgreementController, VendorInvoiceController (+ print PDF), VendorPaymentController, VndItemController, VndUsageLogController
+  </div></div>
+</div>
+
+<div id="sec-complaint" class="section">
+  <h4 class="mb-3"><i class="bi bi-chat-dots"></i> Complaint Module (8 Controllers)</h4>
+  <div class="card"><div class="card-body" style="font-size:.75rem">
+    <strong>Tabbed:</strong> ComplaintController::index() &rarr; multi-tab with categories, SLAs, medical checks, results<br>
+    <strong>CRUD:</strong> ComplaintCategoryController, DepartmentSlaController, MedicalCheckController, ComplaintActionController, AiInsightController, ComplaintReportController<br>
+    <strong>Stub:</strong> ComplaintDashboardController
+  </div></div>
+</div>
+
+<div id="sec-notification" class="section">
+  <h4 class="mb-3"><i class="bi bi-bell"></i> Notification Module (12 Controllers)</h4>
+  <div class="card"><div class="card-body" style="font-size:.75rem">
+    <strong>Tabbed:</strong> NotificationManageController::tabIndex() &rarr; 3 tabs (notifications, templates, delivery logs)<br>
+    <strong>CRUD:</strong> ChannelMasterController, ProviderMasterController, NotificationTemplateController, TargetGroupController, NotificationTargetController, NotificationThreadController, NotificationThreadMemberController, UserPreferenceController, ResolvedRecipientController, DeliveryQueueController
+  </div></div>
+</div>
+
+<div id="sec-payment" class="section">
+  <h4 class="mb-3"><i class="bi bi-wallet2"></i> Payment Module (2 Controllers)</h4>
+  <div class="card"><div class="card-body" style="font-size:.75rem">
+    PaymentGatewayController (CRUD + toggle), PaymentController (paymentManagement view, makePayment flow, webhook handling for Razorpay/Stripe)
+  </div></div>
+</div>
+
+<div id="sec-scheduler" class="section">
+  <h4 class="mb-3"><i class="bi bi-clock-history"></i> Scheduler Module (1 Controller)</h4>
+  <div class="card"><div class="card-body" style="font-size:.75rem">
+    SchedulerController: index (schedules list), create (jobs dropdown), show/edit (stub)
+  </div></div>
+</div>
+
+<div id="sec-syllabus" class="section">
+  <h4 class="mb-3"><i class="bi bi-journal-text"></i> Syllabus Module (15 Controllers)</h4>
+  <div class="card"><div class="card-body" style="font-size:.75rem">
+    <strong>Main:</strong> LessonController (complex CRUD with import/export, hierarchical topics, book data)<br>
+    <strong>Stub:</strong> SyllabusController<br>
+    <strong>Hierarchical:</strong> TopicController (nested 5 levels max)<br>
+    <strong>Partials (lesson-management):</strong> BloomTaxonomyController, CognitiveSkillController, ComplexityLevelController, GradeDivisionController, CompetencyTypeController, CompetencieController, QuestionTypeController, TopicCompetencyController, TopicLevelTypeController, QuestionTypeSpecificityController, PerformanceCategoryController, SyllabusScheduleController
+  </div></div>
+</div>
+
+<div id="sec-syllabusbooks" class="section">
+  <h4 class="mb-3"><i class="bi bi-book-half"></i> SyllabusBooks Module (4 Controllers)</h4>
+  <div class="card"><div class="card-body" style="font-size:.75rem">
+    <strong>Tabbed:</strong> SyllabusBooksController::index() &rarr; books + authors tabs (both paginated 10)<br>
+    <strong>CRUD:</strong> BookController, BookTopicMappingController, AuthorController
+  </div></div>
+</div>
+
+<div id="sec-questionbank" class="section">
+  <h4 class="mb-3"><i class="bi bi-question-circle"></i> QuestionBank Module (7 Controllers)</h4>
+  <div class="card"><div class="card-body" style="font-size:.75rem">
+    <strong>Complex:</strong> QuestionBankController (nested filters: class&rarr;subject&rarr;topic&rarr;lesson&rarr;competency&rarr;bloom&rarr;complexity&rarr;cognitive, bulk import/export, media)<br>
+    <strong>Supporting:</strong> QuestionMediaStoreController, QuestionVersionController, QuestionUsageTypeController, QuestionTagController, QuestionStatisticController, AIQuestionGeneratorController
+  </div></div>
+</div>
+
+<div id="sec-hpc" class="section">
+  <h4 class="mb-3"><i class="bi bi-card-checklist"></i> HPC Module (15 Controllers)</h4>
+  <div class="card"><div class="card-body" style="font-size:.75rem">
+    <strong>Main:</strong> HpcController (student evaluation with grade/section filters)<br>
+    <strong>Template System:</strong> HpcTemplatesController, HpcTemplateSectionsController, HpcTemplatePartsController, HpcTemplateRubricsController<br>
+    <strong>Evaluation:</strong> StudentHpcEvaluationController, LearningOutcomesController, LearningActivitiesController, HpcParametersController, HpcPerformanceDescriptorController, CircularGoalsController<br>
+    <strong>Knowledge:</strong> KnowledgeGraphValidationController, QuestionMappingController, SyllabusCoverageSnapshotController, TopicEquivalencyController<br>
+    <strong>PDF:</strong> All templates use DomPDF with inline styles (Decision D13)
+  </div></div>
+</div>
+
+<div id="sec-lmsexam" class="section">
+  <h4 class="mb-3"><i class="bi bi-file-earmark-check"></i> LmsExam Module (11 Controllers)</h4>
+  <div class="card"><div class="card-body" style="font-size:.75rem">
+    ExamTypeController (CRUD+toggle), ExamAllocationController (complex search), ExamBlueprintController, ExamPaperController, ExamPaperSetController, PaperSetQuestionController, ExamStudentGroupController, ExamStudentGroupMemberController, ExamScopeController, ExamStatusEventController
+  </div></div>
+</div>
+
+<div id="sec-lmsquiz" class="section">
+  <h4 class="mb-3"><i class="bi bi-ui-checks"></i> LmsQuiz Module (5 Controllers)</h4>
+  <div class="card"><div class="card-body" style="font-size:.75rem">
+    <strong>Complex:</strong> QuizQuestionController (cascading selects, bulk store/destroy, ordinal/marks AJAX)<br>
+    <strong>CRUD:</strong> AssessmentTypeController, DifficultyDistributionConfigController, LmsQuizController, QuizAllocationController
+  </div></div>
+</div>
+
+<div id="sec-lmshomework" class="section">
+  <h4 class="mb-3"><i class="bi bi-pencil-square"></i> LmsHomework Module (5 Controllers)</h4>
+  <div class="card mb-2"><div class="card-header bg-warning text-dark">MEGA Tabbed View</div><div class="card-body">
+    <div class="tab-detail"><strong>LmsHomeworkController::index()</strong> &rarr; <code>lmshomework::lmshome-work.index</code><br>
+    <strong>6+ tabs:</strong> Homeworks, Submissions, Rule Engine Config, Trigger Events, Action Types + filters<br>
+    <strong>12+ variables:</strong> triggerEvent, actionTypes, RuleEngineConfig, triggerEventsList, actionTypesList, homeworks, academicSessions, classes, subjectData, topicData, submissions, studentData</div>
+  </div></div>
+  <div class="card"><div class="card-body" style="font-size:.75rem">
+    Supporting: HomeworkSubmissionController, RuleEngineConfigController, TriggerEventController, ActionTypeController
+  </div></div>
+</div>
+
+<div id="sec-lmsquests" class="section">
+  <h4 class="mb-3"><i class="bi bi-trophy"></i> LmsQuests Module (4 Controllers)</h4>
+  <div class="card"><div class="card-body" style="font-size:.75rem">
+    QuestAllocationController (polymorphic target: class/section/group/student), LmsQuestController, QuestQuestionController, QuestScopeController
+  </div></div>
+</div>
+
+<div id="sec-studentfee" class="section">
+  <h4 class="mb-3"><i class="bi bi-cash-coin"></i> StudentFee Module (15 Controllers)</h4>
+  <div class="card"><div class="card-body" style="font-size:.75rem">
+    <strong>Workflow:</strong> FeeInvoiceController (create&rarr;send&rarr;pay&rarr;receipt, PDF generation, email/WhatsApp notifications)<br>
+    <strong>Masters:</strong> FeeStructureMasterController, FeeHeadMasterController, FeeGroupMasterController, FeeInstallmentController, FeeConcessionTypeController<br>
+    <strong>Assignment:</strong> FeeStudentAssignmentController, FeeStudentConcessionController<br>
+    <strong>Scholarship:</strong> FeeScholarshipController, FeeScholarshipApplicationController<br>
+    <strong>Fines:</strong> FeeFineRuleController, FeeFineTransactionController<br>
+    <strong>Transactions:</strong> FeeTransactionController<br>
+    <strong>Management:</strong> StudentFeeManagementController
+  </div></div>
+</div>
+
+<div id="sec-recommendation" class="section">
+  <h4 class="mb-3"><i class="bi bi-lightbulb"></i> Recommendation Module (10 Controllers)</h4>
+  <div class="card"><div class="card-body" style="font-size:.75rem">
+    RecommendationModeController, DynamicMaterialTypeController, RecommendationController, MaterialBundleController, RecommendationMaterialController, RecAssessmentTypeController, DynamicPurposeController, RecTriggerEventController, StudentRecommendationController, RecommendationRuleController
+  </div></div>
+</div>
+
+<div id="sec-library" class="section">
+  <h4 class="mb-3"><i class="bi bi-bookshelf"></i> Library Module (25 Controllers)</h4>
+  <div class="card mb-2"><div class="card-header bg-warning text-dark">MASSIVE Tabbed View</div><div class="card-body">
+    <div class="tab-detail"><strong>LibraryController::index()</strong> &rarr; <code>library::transactions</code><br>
+    <strong>11+ tabs:</strong> Books, Genres, Keywords, Publishers, Resource Types, Authors, Membership Types, Shelf Locations, Categories, Book Copies, Digital Resources<br>
+    <strong>11+ collections</strong> with status filtering + search across all types</div>
+  </div></div>
+  <div class="card"><div class="card-body" style="font-size:.73rem">
+    <strong>25 controllers:</strong> LibBookMasterController, LibAuthorController, LibCategoryController, LibGenreController, LibKeywordController, LibPublisherController, LibResourceTypeController, LibShelfLocationController, LibMembershipTypeController, LibMemberController, LibFineController, LibBookCopyController, LibDigitalResourceController, LibDigitalResourceTagController, LibTransactionController, LibReservationController, LibInventoryAuditController, LibInventoryAuditDetailController, LibFineSlabConfigController, LibFineSlabDetailController, LibFineReportController, LibCirculationReportController, LibBookConditionController, MasterDashboardController, LibReportPrintController
+  </div></div>
+</div>
+
+<div id="sec-studentportal" class="section">
+  <h4 class="mb-3"><i class="bi bi-person-circle"></i> StudentPortal Module (3 Controllers)</h4>
+  <div class="card"><div class="card-body" style="font-size:.75rem">
+    <strong>StudentPortalController:</strong> login, dashboard (notifications), account, academicInformation (classes/subjects/fees/timetable), viewInvoice, payDueAmount, proceedPayment (Razorpay flow)<br>
+    <strong>StudentPortalComplaintController:</strong> student complaint filing<br>
+    <strong>NotificationController:</strong> index + markRead (JSON)
+  </div></div>
+</div>
+
+</div><!-- .main -->
+
+<script>
+function show(id){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.sidebar a').forEach(a=>a.classList.remove('active'));
+  document.getElementById('sec-'+id)?.classList.add('active');
+  document.getElementById('nav-'+id)?.classList.add('active');
+}
+function toggleModule(el){
+  el.nextElementSibling.classList.toggle('open');
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,1797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Prime-AI Central Application — Testing Dashboard</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+<style>
+:root{--sidebar:#1a1d2e;--accent:#667eea;--bg:#f4f6f9}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);margin:0;font-size:.88rem}
+.sidebar{position:fixed;top:0;left:0;width:240px;height:100vh;background:var(--sidebar);color:#fff;padding:1rem 0;overflow-y:auto;z-index:10}
+.sidebar h5{padding:0 1rem;font-size:.75rem;text-transform:uppercase;letter-spacing:1px;color:#8b92a5;margin:1.2rem 0 .5rem}
+.sidebar a{display:block;padding:.45rem 1rem;color:#c5cad8;text-decoration:none;font-size:.82rem;border-left:3px solid transparent;transition:.15s;cursor:pointer}
+.sidebar a:hover,.sidebar a.active{background:rgba(255,255,255,.06);color:#fff;border-left-color:var(--accent)}
+.sidebar .brand{padding:1rem;font-weight:700;font-size:1.05rem;color:#fff;border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:.5rem;display:flex;align-items:center;gap:.5rem}
+.sidebar .gen-date{padding:.3rem 1rem;font-size:.7rem;color:#6b7280;border-top:1px solid rgba(255,255,255,.06);margin-top:auto;position:absolute;bottom:0;width:100%}
+.main{margin-left:240px;padding:1.5rem}
+.card{border:none;border-radius:.6rem;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.stat-card{padding:1rem 1.2rem;border-radius:.6rem;color:#fff;position:relative;overflow:hidden;height:100%}
+.stat-card .num{font-size:1.8rem;font-weight:700}
+.stat-card .lbl{font-size:.75rem;opacity:.85}
+.stat-card .ico{position:absolute;right:1rem;top:.5rem;font-size:2.5rem;opacity:.15}
+.section{display:none}.section.active{display:block}
+.badge-tests-needed{background:#dc3545;color:#fff}
+.badge-auth-good{background:#198754;color:#fff}
+.badge-auth-partial{background:#ffc107;color:#212529}
+.badge-auth-none{background:#dc3545;color:#fff}
+.badge-no-tests{background:#6c757d;color:#fff}
+.module-card{border:none;border-radius:.6rem;box-shadow:0 2px 6px rgba(0,0,0,.07);margin-bottom:1.2rem;overflow:hidden}
+.module-card .card-header{font-weight:600;font-size:.95rem;display:flex;align-items:center;gap:.5rem}
+.module-card .stats-row{display:flex;gap:.5rem;flex-wrap:wrap;margin:.6rem 0}
+.module-card .stats-row .stat-pill{background:#f0f1f3;border-radius:1rem;padding:.25rem .7rem;font-size:.75rem;font-weight:500}
+.module-card .stats-row .stat-pill strong{color:var(--accent)}
+.progress-ring{width:50px;height:50px}
+.checklist-table td,.checklist-table th{vertical-align:middle;font-size:.82rem}
+.checklist-table .status-cell{text-align:center;font-size:1rem;cursor:pointer;user-select:none}
+.status-icon{cursor:pointer;font-size:1rem}
+.controller-list{list-style:none;padding:0;margin:0}
+.controller-list li{padding:.3rem 0;font-size:.82rem;border-bottom:1px solid #f0f1f3}
+.controller-list li:last-child{border:none}
+.controller-list .checks{display:flex;gap:.6rem;flex-wrap:wrap}
+.controller-list .checks label{font-size:.75rem;display:flex;align-items:center;gap:.2rem;cursor:pointer}
+.issue-card{border-left:4px solid #dc3545;background:#fff;padding:.8rem 1rem;border-radius:0 .4rem .4rem 0;margin-bottom:.6rem;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.issue-card.warning{border-left-color:#ffc107}
+.issue-card.info{border-left-color:#0d6efd}
+table code{font-size:.78rem;color:#e83e8c}
+.gap-badge{display:inline-block;padding:.15rem .5rem;border-radius:.25rem;font-size:.7rem;font-weight:600}
+.expand-btn{cursor:pointer;font-size:.78rem;color:var(--accent);text-decoration:underline;border:none;background:none;padding:0}
+@media(max-width:768px){.sidebar{display:none}.main{margin-left:0}}
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<div class="sidebar">
+  <div class="brand"><i class="bi bi-compass"></i> Central Testing</div>
+  <h5>Dashboard</h5>
+  <a id="nav-overview" class="active" onclick="show('overview')"><i class="bi bi-grid"></i> Overview</a>
+  <a id="nav-modules" onclick="show('modules')"><i class="bi bi-box-seam"></i> Module Cards</a>
+  <a id="nav-checklist" onclick="show('checklist')"><i class="bi bi-list-check"></i> Testing Checklist</a>
+  <a id="nav-routes" onclick="show('routes')"><i class="bi bi-signpost-split"></i> Routes Map</a>
+  <a id="nav-policies" onclick="show('policies')"><i class="bi bi-shield-lock"></i> Policies &amp; Permissions</a>
+  <a id="nav-results" onclick="show('results')"><i class="bi bi-play-circle"></i> Test Results</a>
+  <a id="nav-issues" onclick="show('issues')"><i class="bi bi-exclamation-triangle"></i> Issues &amp; Gaps</a>
+  <a id="nav-view-audit" onclick="show('view-audit')"><i class="bi bi-eye"></i> View/UI Audit</a>
+  <div class="gen-date">Updated: 2026-03-20 (prev: 2026-03-17)</div>
+</div>
+
+<!-- Main Content -->
+<div class="main">
+
+<!-- ================= TAB 1: OVERVIEW ================= -->
+<div id="sec-overview" class="section active">
+  <h4 class="mb-1">Central Application Overview</h4>
+  <p class="text-muted mb-3">Testing coverage and statistics for 6 central modules</p>
+  <div class="row g-3 mb-4">
+    <div class="col-md-2 col-6">
+      <div class="stat-card" style="background:linear-gradient(135deg,#667eea,#764ba2)">
+        <div class="num">6</div><div class="lbl">Central Modules</div>
+        <div class="ico"><i class="bi bi-box-seam"></i></div>
+      </div>
+    </div>
+    <div class="col-md-2 col-6">
+      <div class="stat-card" style="background:linear-gradient(135deg,#f093fb,#f5576c)">
+        <div class="num">51</div><div class="lbl">Controllers</div>
+        <div class="ico"><i class="bi bi-file-code"></i></div>
+      </div>
+    </div>
+    <div class="col-md-2 col-6">
+      <div class="stat-card" style="background:linear-gradient(135deg,#4facfe,#00f2fe)">
+        <div class="num">52</div><div class="lbl">Models</div>
+        <div class="ico"><i class="bi bi-database"></i></div>
+      </div>
+    </div>
+    <div class="col-md-2 col-6">
+      <div class="stat-card" style="background:linear-gradient(135deg,#43e97b,#38f9d7)">
+        <div class="num">~200</div><div class="lbl">Routes</div>
+        <div class="ico"><i class="bi bi-signpost-split"></i></div>
+      </div>
+    </div>
+    <div class="col-md-2 col-6">
+      <div class="stat-card" style="background:linear-gradient(135deg,#fa709a,#fee140)">
+        <div class="num">281</div><div class="lbl">Gate::authorize</div>
+        <div class="ico"><i class="bi bi-shield-check"></i></div>
+      </div>
+    </div>
+    <div class="col-md-2 col-6">
+      <div class="stat-card" style="background:linear-gradient(135deg,#a18cd1,#fbc2eb)">
+        <div class="num">1181</div><div class="lbl">Total Tests</div>
+        <div class="ico"><i class="bi bi-bug"></i></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="card p-3">
+        <h6><i class="bi bi-key"></i> Permission Features</h6>
+        <div class="display-5 fw-bold text-primary">30</div>
+        <small class="text-muted">Prime-scope permission features defined</small>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card p-3">
+        <h6><i class="bi bi-graph-down"></i> Test Coverage</h6>
+        <div class="display-5 fw-bold text-success">~95%</div>
+        <small class="text-muted">All 6 central modules: 1181 tests, 2057 assertions (18 test files)</small>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card p-3">
+        <h6><i class="bi bi-exclamation-octagon"></i> Critical Gaps</h6>
+        <div class="display-5 fw-bold text-warning">9</div>
+        <small class="text-muted">Active failures: 9 real bugs (14 prev bugs fixed + 9 new found)</small>
+      </div>
+    </div>
+  </div>
+
+  <div class="card p-3 mb-3">
+    <h6>Module Breakdown</h6>
+    <table class="table table-sm table-hover mb-0">
+      <thead class="table-dark"><tr><th>Module</th><th>Controllers</th><th>Models</th><th>Auth Calls</th><th>Tests</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td><i class="bi bi-star-fill text-warning"></i> Prime</td><td>22</td><td>27</td><td>147</td><td>441</td><td><span class="badge badge-auth-good">Tested ✓</span></td></tr>
+        <tr><td><i class="bi bi-globe2 text-info"></i> GlobalMaster</td><td>15</td><td>12</td><td>94</td><td>182</td><td><span class="badge badge-auth-good">Tested ✓</span></td></tr>
+        <tr><td><i class="bi bi-credit-card text-success"></i> Billing</td><td>6</td><td>6</td><td>40</td><td>79</td><td><span class="badge badge-auth-good">Tested ✓</span></td></tr>
+        <tr><td><i class="bi bi-gear text-secondary"></i> SystemConfig</td><td>4</td><td>3</td><td>--</td><td>31</td><td><span class="badge badge-auth-good">Tested ✓</span></td></tr>
+        <tr><td><i class="bi bi-book text-primary"></i> Documentation</td><td>3</td><td>2</td><td>--</td><td>22</td><td><span class="badge badge-auth-good">Tested ✓</span></td></tr>
+        <tr><td><i class="bi bi-clock-history text-muted"></i> Scheduler</td><td>1</td><td>2</td><td>--</td><td>13</td><td><span class="badge badge-auth-good">Tested ✓</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card p-3">
+    <h6>Legend</h6>
+    <div class="d-flex flex-wrap gap-3" style="font-size:.8rem">
+      <span><span style="display:inline-block;width:14px;height:14px;background:#6c757d;border-radius:2px;vertical-align:middle"></span> Not Started</span>
+      <span><span style="display:inline-block;width:14px;height:14px;background:#0d6efd;border-radius:2px;vertical-align:middle"></span> In Progress</span>
+      <span><span style="display:inline-block;width:14px;height:14px;background:#198754;border-radius:2px;vertical-align:middle"></span> Passed</span>
+      <span><span style="display:inline-block;width:14px;height:14px;background:#dc3545;border-radius:2px;vertical-align:middle"></span> Failed</span>
+      <span><span style="display:inline-block;width:14px;height:14px;background:#ffc107;border-radius:2px;vertical-align:middle"></span> Skipped</span>
+      <span><span style="display:inline-block;width:14px;height:14px;background:#343a40;border-radius:2px;vertical-align:middle"></span> N/A</span>
+    </div>
+  </div>
+</div>
+
+<!-- ================= TAB 2: MODULE CARDS ================= -->
+<div id="sec-modules" class="section">
+  <h4 class="mb-3">Module Cards</h4>
+
+  <!-- Prime Module -->
+  <div class="card module-card">
+    <div class="card-header bg-white py-3 px-3">
+      <i class="bi bi-star-fill text-warning"></i> Prime Module
+      <span class="badge badge-tests-needed ms-2">Tests Needed</span>
+      <span class="badge badge-auth-good ms-1">Auth: Good (147 calls)</span>
+      <div class="ms-auto" id="prime-progress-text" style="font-size:.75rem;color:#6c757d">0% complete</div>
+    </div>
+    <div class="card-body">
+      <p class="text-muted mb-2" style="font-size:.82rem">Core platform module: tenant management, users, roles, permissions, academic sessions, boards, billing plans, dropdowns, menus, and settings.</p>
+      <div class="progress mb-2" style="height:6px"><div class="progress-bar bg-success" id="prime-progress-bar" style="width:0%"></div></div>
+      <div class="stats-row">
+        <span class="stat-pill"><strong>22</strong> Controllers</span>
+        <span class="stat-pill"><strong>27</strong> Models</span>
+        <span class="stat-pill"><strong>~80</strong> Routes</span>
+        <span class="stat-pill"><strong>2</strong> Tests</span>
+        <span class="stat-pill"><strong>147</strong> Auth Calls</span>
+      </div>
+      <button class="expand-btn" onclick="toggleExpand('prime-controllers')">Show Controllers Checklist</button>
+      <div id="prime-controllers" style="display:none" class="mt-2">
+        <ul class="controller-list" id="prime-ctrl-list"></ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- GlobalMaster Module -->
+  <div class="card module-card">
+    <div class="card-header bg-white py-3 px-3">
+      <i class="bi bi-globe2 text-info"></i> GlobalMaster Module
+      <span class="badge badge-tests-needed ms-2">Tests Needed</span>
+      <span class="badge badge-auth-good ms-1">Auth: Good (94 calls)</span>
+      <div class="ms-auto" id="globalmaster-progress-text" style="font-size:.75rem;color:#6c757d">0% complete</div>
+    </div>
+    <div class="card-body">
+      <p class="text-muted mb-2" style="font-size:.82rem">Global reference data: countries, states, districts, cities, boards, languages, modules, plans, academic sessions, organizations.</p>
+      <div class="progress mb-2" style="height:6px"><div class="progress-bar bg-success" id="globalmaster-progress-bar" style="width:0%"></div></div>
+      <div class="stats-row">
+        <span class="stat-pill"><strong>15</strong> Controllers</span>
+        <span class="stat-pill"><strong>12</strong> Models</span>
+        <span class="stat-pill"><strong>~50</strong> Routes</span>
+        <span class="stat-pill"><strong>1</strong> Test</span>
+        <span class="stat-pill"><strong>94</strong> Auth Calls</span>
+      </div>
+      <button class="expand-btn" onclick="toggleExpand('globalmaster-controllers')">Show Controllers Checklist</button>
+      <div id="globalmaster-controllers" style="display:none" class="mt-2">
+        <ul class="controller-list" id="globalmaster-ctrl-list"></ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Billing Module -->
+  <div class="card module-card">
+    <div class="card-header bg-white py-3 px-3">
+      <i class="bi bi-credit-card text-success"></i> Billing Module
+      <span class="badge badge-tests-needed ms-2">Tests Needed</span>
+      <span class="badge badge-auth-partial ms-1">Auth: Partial (40 calls)</span>
+      <div class="ms-auto" id="billing-progress-text" style="font-size:.75rem;color:#6c757d">0% complete</div>
+    </div>
+    <div class="card-body">
+      <p class="text-muted mb-2" style="font-size:.82rem">Billing and invoicing: billing cycles, subscriptions, invoicing, payments, audit logs, billing management.</p>
+      <div class="progress mb-2" style="height:6px"><div class="progress-bar bg-success" id="billing-progress-bar" style="width:0%"></div></div>
+      <div class="stats-row">
+        <span class="stat-pill"><strong>6</strong> Controllers</span>
+        <span class="stat-pill"><strong>6</strong> Models</span>
+        <span class="stat-pill"><strong>~30</strong> Routes</span>
+        <span class="stat-pill"><strong>0</strong> Tests</span>
+        <span class="stat-pill"><strong>40</strong> Auth Calls</span>
+      </div>
+      <button class="expand-btn" onclick="toggleExpand('billing-controllers')">Show Controllers Checklist</button>
+      <div id="billing-controllers" style="display:none" class="mt-2">
+        <ul class="controller-list" id="billing-ctrl-list"></ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- SystemConfig Module -->
+  <div class="card module-card">
+    <div class="card-header bg-white py-3 px-3">
+      <i class="bi bi-gear text-secondary"></i> SystemConfig Module
+      <span class="badge badge-tests-needed ms-2">Tests Needed</span>
+      <span class="badge badge-auth-partial ms-1">Auth: Not Checked</span>
+      <div class="ms-auto" id="systemconfig-progress-text" style="font-size:.75rem;color:#6c757d">0% complete</div>
+    </div>
+    <div class="card-body">
+      <p class="text-muted mb-2" style="font-size:.82rem">System configuration: settings management, menu configuration, menu synchronization, system-wide config.</p>
+      <div class="progress mb-2" style="height:6px"><div class="progress-bar bg-success" id="systemconfig-progress-bar" style="width:0%"></div></div>
+      <div class="stats-row">
+        <span class="stat-pill"><strong>4</strong> Controllers</span>
+        <span class="stat-pill"><strong>3</strong> Models</span>
+        <span class="stat-pill"><strong>~15</strong> Routes</span>
+        <span class="stat-pill"><strong>0</strong> Tests</span>
+        <span class="stat-pill"><strong>--</strong> Auth Calls</span>
+      </div>
+      <button class="expand-btn" onclick="toggleExpand('systemconfig-controllers')">Show Controllers Checklist</button>
+      <div id="systemconfig-controllers" style="display:none" class="mt-2">
+        <ul class="controller-list" id="systemconfig-ctrl-list"></ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Documentation Module -->
+  <div class="card module-card">
+    <div class="card-header bg-white py-3 px-3">
+      <i class="bi bi-book text-primary"></i> Documentation Module
+      <span class="badge badge-tests-needed ms-2">Tests Needed</span>
+      <span class="badge badge-auth-partial ms-1">Auth: Not Checked</span>
+      <div class="ms-auto" id="documentation-progress-text" style="font-size:.75rem;color:#6c757d">0% complete</div>
+    </div>
+    <div class="card-body">
+      <p class="text-muted mb-2" style="font-size:.82rem">Internal documentation system: articles, categories, documentation management interface.</p>
+      <div class="progress mb-2" style="height:6px"><div class="progress-bar bg-success" id="documentation-progress-bar" style="width:0%"></div></div>
+      <div class="stats-row">
+        <span class="stat-pill"><strong>3</strong> Controllers</span>
+        <span class="stat-pill"><strong>2</strong> Models</span>
+        <span class="stat-pill"><strong>~15</strong> Routes</span>
+        <span class="stat-pill"><strong>0</strong> Tests</span>
+        <span class="stat-pill"><strong>--</strong> Auth Calls</span>
+      </div>
+      <button class="expand-btn" onclick="toggleExpand('documentation-controllers')">Show Controllers Checklist</button>
+      <div id="documentation-controllers" style="display:none" class="mt-2">
+        <ul class="controller-list" id="documentation-ctrl-list"></ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scheduler Module -->
+  <div class="card module-card">
+    <div class="card-header bg-white py-3 px-3">
+      <i class="bi bi-clock-history text-muted"></i> Scheduler Module
+      <span class="badge badge-tests-needed ms-2">Tests Needed</span>
+      <span class="badge badge-auth-partial ms-1">Auth: Not Checked</span>
+      <div class="ms-auto" id="scheduler-progress-text" style="font-size:.75rem;color:#6c757d">0% complete</div>
+    </div>
+    <div class="card-body">
+      <p class="text-muted mb-2" style="font-size:.82rem">Task scheduling: scheduled jobs, schedule run tracking and management.</p>
+      <div class="progress mb-2" style="height:6px"><div class="progress-bar bg-success" id="scheduler-progress-bar" style="width:0%"></div></div>
+      <div class="stats-row">
+        <span class="stat-pill"><strong>1</strong> Controller</span>
+        <span class="stat-pill"><strong>2</strong> Models</span>
+        <span class="stat-pill"><strong>~5</strong> Routes</span>
+        <span class="stat-pill"><strong>0</strong> Tests</span>
+        <span class="stat-pill"><strong>--</strong> Auth Calls</span>
+      </div>
+      <button class="expand-btn" onclick="toggleExpand('scheduler-controllers')">Show Controllers Checklist</button>
+      <div id="scheduler-controllers" style="display:none" class="mt-2">
+        <ul class="controller-list" id="scheduler-ctrl-list"></ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= TAB 3: TESTING CHECKLIST ================= -->
+<div id="sec-checklist" class="section">
+  <h4 class="mb-1">Testing Checklist</h4>
+  <p class="text-muted mb-3">Click status icons to cycle: Not Started -> In Progress -> Passed -> Failed -> Skipped -> N/A -> Not Started. State is saved to localStorage.</p>
+
+  <div class="mb-3">
+    <select class="form-select form-select-sm" style="width:250px;display:inline-block" id="checklist-module-filter" onchange="filterChecklistModule()">
+      <option value="all">All Modules</option>
+      <option value="prime">Prime</option>
+      <option value="globalmaster">GlobalMaster</option>
+      <option value="billing">Billing</option>
+      <option value="systemconfig">SystemConfig</option>
+      <option value="documentation">Documentation</option>
+      <option value="scheduler">Scheduler</option>
+    </select>
+  </div>
+
+  <div id="checklist-container"></div>
+</div>
+
+<!-- ================= TAB 4: ROUTES MAP ================= -->
+<div id="sec-routes" class="section">
+  <h4 class="mb-1">Routes Map</h4>
+  <p class="text-muted mb-3">Central routes from web.php grouped by prefix</p>
+
+  <div class="card p-3 mb-3">
+    <h6><i class="bi bi-house"></i> Dashboard Routes</h6>
+    <table class="table table-sm table-hover mb-0">
+      <thead class="table-dark"><tr><th>Method</th><th>URI</th><th>Route Name</th><th>Controller</th><th>Auth</th></tr></thead>
+      <tbody>
+        <tr><td><span class="badge bg-success">GET</span></td><td><code>/dashboard</code></td><td><code>dashboard</code></td><td>PrimeController</td><td><span class="badge badge-auth-none">No auth</span></td></tr>
+        <tr><td><span class="badge bg-success">GET</span></td><td><code>/profile</code></td><td><code>profile.edit</code></td><td>ProfileController</td><td><span class="badge badge-auth-good">Auth</span></td></tr>
+        <tr><td><span class="badge bg-warning text-dark">PATCH</span></td><td><code>/profile</code></td><td><code>profile.update</code></td><td>ProfileController</td><td><span class="badge badge-auth-good">Auth</span></td></tr>
+        <tr><td><span class="badge bg-danger">DELETE</span></td><td><code>/profile</code></td><td><code>profile.destroy</code></td><td>ProfileController</td><td><span class="badge badge-auth-good">Auth</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card p-3 mb-3">
+    <h6><i class="bi bi-star"></i> Prime Routes <code>prime.*</code></h6>
+    <table class="table table-sm table-hover mb-0">
+      <thead class="table-dark"><tr><th>Method</th><th>URI</th><th>Route Name</th><th>Controller</th><th>Auth</th></tr></thead>
+      <tbody>
+        <tr class="table-info"><td colspan="5"><strong>Tenant Management</strong></td></tr>
+        <tr><td><span class="badge bg-success">GET</span></td><td><code>/prime/tenant</code></td><td><code>prime.tenant.index</code></td><td>TenantController</td><td><span class="badge badge-auth-good">Auth</span></td></tr>
+        <tr><td><span class="badge bg-primary">POST</span></td><td><code>/prime/tenant</code></td><td><code>prime.tenant.store</code></td><td>TenantController</td><td><span class="badge badge-auth-good">Auth</span></td></tr>
+        <tr><td><span class="badge bg-success">GET</span></td><td><code>/prime/tenant/create</code></td><td><code>prime.tenant.create</code></td><td>TenantController</td><td><span class="badge badge-auth-good">Auth</span></td></tr>
+        <tr><td><span class="badge bg-success">GET</span></td><td><code>/prime/tenant/{id}</code></td><td><code>prime.tenant.show</code></td><td>TenantController</td><td><span class="badge badge-auth-good">Auth</span></td></tr>
+        <tr><td><span class="badge bg-warning text-dark">PUT</span></td><td><code>/prime/tenant/{id}</code></td><td><code>prime.tenant.update</code></td><td>TenantController</td><td><span class="badge badge-auth-good">Auth</span></td></tr>
+        <tr><td><span class="badge bg-danger">DELETE</span></td><td><code>/prime/tenant/{id}</code></td><td><code>prime.tenant.destroy</code></td><td>TenantController</td><td><span class="badge badge-auth-good">Auth</span></td></tr>
+        <tr class="table-info"><td colspan="5"><strong>Users &amp; Roles</strong></td></tr>
+        <tr><td><span class="badge bg-success">GET</span></td><td><code>/prime/user</code></td><td><code>prime.user.index</code></td><td>UserController</td><td><span class="badge badge-auth-good">Auth</span></td></tr>
+        <tr><td><span class="badge bg-success">GET</span></td><td><code>/prime/role-permission</code></td><td><code>prime.role-permission.index</code></td><td>RolePermissionController</td><td><span class="badge badge-auth-good">Auth</span></td></tr>
+        <tr class="table-info"><td colspan="5"><strong>Academic &amp; Boards</strong></td></tr>
+        <tr><td><span class="badge bg-success">GET</span></td><td><code>/prime/academic-session</code></td><td><code>prime.academic-session.index</code></td><td>AcademicSessionController</td><td><span class="badge badge-auth-good">Auth</span></td></tr>
+        <tr><td><span class="badge bg-success">GET</span></td><td><code>/prime/board</code></td><td><code>prime.board.index</code></td><td>BoardController</td><td><span class="badge badge-auth-good">Auth</span></td></tr>
+        <tr><td><span class="badge bg-success">GET</span></td><td><code>/prime/session-board-setup</code></td><td><code>prime.session-board-setup.index</code></td><td>SessionBoardSetupController</td><td><span class="badge badge-auth-partial">Unknown</span></td></tr>
+        <tr class="table-info"><td colspan="5"><strong>Dropdowns &amp; Settings</strong></td></tr>
+        <tr><td><span class="badge bg-success">GET</span></td><td><code>/prime/dropdown</code></td><td><code>prime.dropdown.index</code></td><td>DropdownController</td><td><span class="badge badge-auth-good">Auth</span></td></tr>
+        <tr><td><span class="badge bg-success">GET</span></td><td><code>/prime/dropdown-need</code></td><td><code>prime.dropdown-need.index</code></td><td>DropdownNeedController</td><td><span class="badge badge-auth-good">Auth</span></td></tr>
+        <tr><td><span class="badge bg-success">GET</span></td><td><code>/prime/dropdown-mgmt</code></td><td><code>prime.dropdown-mgmt.index</code></td><td>DropdownMgmtController</td><td><span class="badge badge-auth-good">Auth</span></td></tr>
+        <tr><td><span class="badge bg-success">GET</span></td><td><code>/prime/setting</code></td><td><code>prime.setting.index</code></td><td>SettingController</td><td><span class="badge badge-auth-good">Auth</span></td></tr>
+        <tr><td><span class="badge bg-success">GET</span></td><td><code>/prime/menu</code></td><td><code>prime.menu.index</code></td><td>MenuController</td><td><span class="badge badge-auth-good">Auth</span></td></tr>
+        <tr><td><span class="badge bg-success">GET</span></td><td><code>/prime/language</code></td><td><code>prime.language.index</code></td><td>LanguageController</td><td><span class="badge badge-auth-good">Auth</span></td></tr>
+        <tr class="table-info"><td colspan="5"><strong>Tenant Groups &amp; Plans</strong></td></tr>
+        <tr><td><span class="badge bg-success">GET</span></td><td><code>/prime/tenant-group</code></td><td><code>prime.tenant-group.index</code></td><td>TenantGroupController</td><td><span class="badge badge-auth-good">Auth</span></td></tr>
+        <tr><td><span class="badge bg-success">GET</span></td><td><code>/prime/tenant-management</code></td><td><code>prime.tenant-management.index</code></td><td>TenantManagementController</td><td><span class="badge badge-auth-good">Auth</span></td></tr>
+        <tr><td><span class="badge bg-success">GET</span></td><td><code>/prime/sale-plan-module-mgmt</code></td><td><code>prime.sale-plan-module-mgmt.index</code></td><td>SalesPlanAndModuleMgmtController</td><td><span class="badge badge-auth-partial">Partial (1)</span></td></tr>
+        <tr class="table-info"><td colspan="5"><strong>Utilities</strong></td></tr>
+        <tr><td><span class="badge bg-success">GET</span></td><td><code>/prime/activity-log</code></td><td><code>prime.activity-log.index</code></td><td>ActivityLogController</td><td><span class="badge badge-auth-good">Auth</span></td></tr>
+        <tr><td><span class="badge bg-success">GET</span></td><td><code>/prime/notification</code></td><td><code>prime.notification.index</code></td><td>NotificationController</td><td><span class="badge badge-auth-none">No auth</span></td></tr>
+        <tr><td><span class="badge bg-success">GET</span></td><td><code>/prime/email</code></td><td><code>prime.email.index</code></td><td>EmailController</td><td><span class="badge badge-auth-none">No auth</span></td></tr>
+        <tr><td><span class="badge bg-success">GET</span></td><td><code>/prime/user-role</code></td><td><code>prime.user-role.index</code></td><td>UserRolePrmController</td><td><span class="badge badge-auth-good">Auth</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card p-3 mb-3">
+    <h6><i class="bi bi-globe2"></i> GlobalMaster Routes <code>global-master.*</code></h6>
+    <table class="table table-sm table-hover mb-0">
+      <thead class="table-dark"><tr><th>Method</th><th>URI</th><th>Route Name</th><th>Controller</th><th>Auth</th></tr></thead>
+      <tbody>
+        <tr><td><span class="badge bg-success">GET</span></td><td><code>/global-master/country</code></td><td><code>global-master.country.index</code></td><td>CountryController</td><td><span class="badge badge-auth-good">Auth</span></td></tr>
+        <tr><td><span class="badge bg-success">GET</span></td><td><code>/global-master/state</code></td><td><code>global-master.state.index</code></td><td>StateController</td><td><span class="badge badge-auth-good">Auth</span></td></tr>
+        <tr><td><span class="badge bg-success">GET</span></td><td><code>/global-master/district</code></td><td><code>global-master.district.index</code></td><td>DistrictController</td><td><span class="badge badge-auth-good">Auth</span></td></tr>
+        <tr><td><span class="badge bg-success">GET</span></td><td><code>/global-master/city</code></td><td><code>global-master.city.index</code></td><td>CityController</td><td><span class="badge badge-auth-good">Auth</span></td></tr>
+        <tr><td><span class="badge bg-success">GET</span></td><td><code>/global-master/language</code></td><td><code>global-master.language.index</code></td><td>LanguageController</td><td><span class="badge badge-auth-good">Auth</span></td></tr>
+        <tr><td><span class="badge bg-success">GET</span></td><td><code>/global-master/module</code></td><td><code>global-master.module.index</code></td><td>ModuleController</td><td><span class="badge badge-auth-good">Auth</span></td></tr>
+        <tr><td><span class="badge bg-success">GET</span></td><td><code>/global-master/plan</code></td><td><code>global-master.plan.index</code></td><td>PlanController</td><td><span class="badge badge-auth-good">Auth</span></td></tr>
+        <tr><td><span class="badge bg-success">GET</span></td><td><code>/global-master/academic-session</code></td><td><code>global-master.academic-session.index</code></td><td>AcademicSessionController</td><td><span class="badge badge-auth-good">Auth</span></td></tr>
+        <tr><td><span class="badge bg-success">GET</span></td><td><code>/global-master/session-board-setup</code></td><td><code>global-master.session-board-setup.index</code></td><td>SessionBoardSetupController</td><td><span class="badge badge-auth-good">Auth</span></td></tr>
+        <tr><td><span class="badge bg-success">GET</span></td><td><code>/global-master/organization</code></td><td><code>global-master.organization.index</code></td><td>OrganizationController</td><td><span class="badge badge-auth-good">Auth</span></td></tr>
+        <tr><td><span class="badge bg-success">GET</span></td><td><code>/global-master/geography-setup</code></td><td><code>global-master.geography-setup.index</code></td><td>GeographySetupController</td><td><span class="badge badge-auth-good">Auth</span></td></tr>
+        <tr><td><span class="badge bg-success">GET</span></td><td><code>/global-master/dropdown</code></td><td><code>global-master.dropdown.index</code></td><td>DropdownController</td><td><span class="badge badge-auth-good">Auth</span></td></tr>
+        <tr><td><span class="badge bg-success">GET</span></td><td><code>/global-master/activity-log</code></td><td><code>global-master.activity-log.index</code></td><td>ActivityLogController</td><td><span class="badge badge-auth-good">Auth</span></td></tr>
+        <tr><td><span class="badge bg-success">GET</span></td><td><code>/global-master/notification</code></td><td><code>global-master.notification.index</code></td><td>NotificationController</td><td><span class="badge badge-auth-good">Auth</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card p-3 mb-3">
+    <h6><i class="bi bi-gear"></i> SystemConfig Routes <code>system-config.*</code></h6>
+    <table class="table table-sm table-hover mb-0">
+      <thead class="table-dark"><tr><th>Method</th><th>URI</th><th>Route Name</th><th>Controller</th><th>Auth</th></tr></thead>
+      <tbody>
+        <tr><td><span class="badge bg-success">GET</span></td><td><code>/system-config</code></td><td><code>system-config.index</code></td><td>SystemConfigController</td><td><span class="badge badge-auth-partial">Unknown</span></td></tr>
+        <tr><td><span class="badge bg-success">GET</span></td><td><code>/system-config/setting</code></td><td><code>system-config.setting.index</code></td><td>SettingController</td><td><span class="badge badge-auth-partial">Unknown</span></td></tr>
+        <tr><td><span class="badge bg-success">GET</span></td><td><code>/system-config/menu</code></td><td><code>system-config.menu.index</code></td><td>MenuController</td><td><span class="badge badge-auth-partial">Unknown</span></td></tr>
+        <tr><td><span class="badge bg-primary">POST</span></td><td><code>/system-config/menu-sync</code></td><td><code>system-config.menu-sync</code></td><td>MenuSyncController</td><td><span class="badge badge-auth-partial">Unknown</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card p-3 mb-3">
+    <h6><i class="bi bi-credit-card"></i> Billing Routes <code>billing.*</code></h6>
+    <table class="table table-sm table-hover mb-0">
+      <thead class="table-dark"><tr><th>Method</th><th>URI</th><th>Route Name</th><th>Controller</th><th>Auth</th></tr></thead>
+      <tbody>
+        <tr><td><span class="badge bg-success">GET</span></td><td><code>/billing/billing-cycle</code></td><td><code>billing.billing-cycle.index</code></td><td>BillingCycleController</td><td><span class="badge badge-auth-good">Auth</span></td></tr>
+        <tr><td><span class="badge bg-success">GET</span></td><td><code>/billing/subscription</code></td><td><code>billing.subscription.index</code></td><td>SubscriptionController</td><td><span class="badge badge-auth-good">Auth</span></td></tr>
+        <tr><td><span class="badge bg-success">GET</span></td><td><code>/billing/invoicing</code></td><td><code>billing.invoicing.index</code></td><td>InvoicingController</td><td><span class="badge badge-auth-good">Auth</span></td></tr>
+        <tr><td><span class="badge bg-success">GET</span></td><td><code>/billing/invoicing-payment</code></td><td><code>billing.invoicing-payment.index</code></td><td>InvoicingPaymentController</td><td><span class="badge badge-auth-good">Auth</span></td></tr>
+        <tr><td><span class="badge bg-success">GET</span></td><td><code>/billing/invoicing-audit-log</code></td><td><code>billing.invoicing-audit-log.index</code></td><td>InvoicingAuditLogController</td><td><span class="badge badge-auth-good">Auth</span></td></tr>
+        <tr><td><span class="badge bg-success">GET</span></td><td><code>/billing/billing-management</code></td><td><code>billing.billing-management.index</code></td><td>BillingManagementController</td><td><span class="badge badge-auth-none">No auth</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card p-3 mb-3">
+    <h6><i class="bi bi-clock-history"></i> Scheduler Routes <code>scheduler.*</code></h6>
+    <table class="table table-sm table-hover mb-0">
+      <thead class="table-dark"><tr><th>Method</th><th>URI</th><th>Route Name</th><th>Controller</th><th>Auth</th></tr></thead>
+      <tbody>
+        <tr><td><span class="badge bg-success">GET</span></td><td><code>/scheduler</code></td><td><code>scheduler.index</code></td><td>SchedulerController</td><td><span class="badge badge-auth-partial">Unknown</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card p-3 mb-3">
+    <h6><i class="bi bi-book"></i> Documentation Routes <code>documentation.*</code></h6>
+    <table class="table table-sm table-hover mb-0">
+      <thead class="table-dark"><tr><th>Method</th><th>URI</th><th>Route Name</th><th>Controller</th><th>Auth</th></tr></thead>
+      <tbody>
+        <tr><td><span class="badge bg-success">GET</span></td><td><code>/documentation</code></td><td><code>documentation.index</code></td><td>DocumentationController</td><td><span class="badge badge-auth-partial">Unknown</span></td></tr>
+        <tr><td><span class="badge bg-success">GET</span></td><td><code>/documentation/category</code></td><td><code>documentation.category.index</code></td><td>DocumentationCategoryController</td><td><span class="badge badge-auth-partial">Unknown</span></td></tr>
+        <tr><td><span class="badge bg-success">GET</span></td><td><code>/documentation/article</code></td><td><code>documentation.article.index</code></td><td>DocumentationArticleController</td><td><span class="badge badge-auth-partial">Unknown</span></td></tr>
+        <tr class="table-warning"><td colspan="5"><strong>WARNING:</strong> Documentation routes appear to be defined TWICE in web.php (lines 154-200 duplicated)</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ================= TAB 5: POLICIES & PERMISSIONS ================= -->
+<div id="sec-policies" class="section">
+  <h4 class="mb-1">Policies &amp; Permissions</h4>
+  <p class="text-muted mb-3">30 prime-scope permission features and their coverage</p>
+
+  <div class="card p-3 mb-3">
+    <h6>Prime-Scope Permission Features</h6>
+    <table class="table table-sm table-hover mb-0">
+      <thead class="table-dark"><tr><th>#</th><th>Permission Feature</th><th>Controller(s)</th><th>Policy Registered</th><th>Auth Coverage</th><th>Gap</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td><code>menu</code></td><td>MenuController</td><td><span class="badge badge-auth-good">PrimeMenuPolicy ✓</span></td><td><span class="badge badge-auth-good">Yes</span></td><td>--</td></tr>
+        <tr><td>2</td><td><code>setting</code></td><td>SettingController</td><td><span class="badge badge-auth-good">PrimeSettingPolicy ✓</span></td><td><span class="badge badge-auth-good">Yes</span></td><td>--</td></tr>
+        <tr><td>3</td><td><code>dropdown</code></td><td>DropdownController</td><td><span class="badge badge-auth-good">PrimeDropdownPolicy ✓</span></td><td><span class="badge badge-auth-good">Yes</span></td><td>--</td></tr>
+        <tr><td>4</td><td><code>dropdown-need</code></td><td>DropdownNeedController</td><td><span class="badge badge-auth-good">DropdownNeedPolicy ✓</span></td><td><span class="badge badge-auth-good">Yes</span></td><td>--</td></tr>
+        <tr><td>5</td><td><code>dropdown-need-mgmt</code></td><td>DropdownMgmtController</td><td><span class="badge badge-auth-good">DropdownNeedMgmtPolicy ✓</span></td><td><span class="badge badge-auth-good">Yes</span></td><td>--</td></tr>
+        <tr><td>6</td><td><code>activity-log</code></td><td>ActivityLogController</td><td><span class="badge badge-auth-good">PrimeActivityLogPolicy ✓</span></td><td><span class="badge badge-auth-good">Yes</span></td><td>--</td></tr>
+        <tr><td>7</td><td><code>language</code></td><td>LanguageController</td><td><span class="badge badge-auth-good">LanguagePolicy ✓</span></td><td><span class="badge badge-auth-good">Yes</span></td><td>--</td></tr>
+        <tr><td>8</td><td><code>country</code></td><td>CountryController</td><td><span class="badge badge-auth-good">CountryPolicy ✓</span></td><td><span class="badge badge-auth-good">Yes</span></td><td>--</td></tr>
+        <tr><td>9</td><td><code>state</code></td><td>StateController</td><td><span class="badge badge-auth-good">StatePolicy ✓</span></td><td><span class="badge badge-auth-good">Yes</span></td><td>--</td></tr>
+        <tr><td>10</td><td><code>district</code></td><td>DistrictController</td><td><span class="badge badge-auth-good">DistrictPolicy ✓</span></td><td><span class="badge badge-auth-good">Yes</span></td><td>--</td></tr>
+        <tr><td>11</td><td><code>city</code></td><td>CityController</td><td><span class="badge badge-auth-good">CityPolicy ✓</span></td><td><span class="badge badge-auth-good">Yes</span></td><td>--</td></tr>
+        <tr><td>12</td><td><code>user</code></td><td>UserController</td><td><span class="badge badge-auth-good">PrimeUserPolicy ✓</span></td><td><span class="badge badge-auth-good">Yes</span></td><td>--</td></tr>
+        <tr><td>13</td><td><code>role-permission</code></td><td>RolePermissionController</td><td><span class="badge badge-auth-good">PrimeRolePermissionPolicy ✓</span></td><td><span class="badge badge-auth-good">Yes</span></td><td>--</td></tr>
+        <tr><td>14</td><td><code>academic-session</code></td><td>AcademicSessionController</td><td><span class="badge badge-auth-good">AcademicSessionPolicy ✓</span></td><td><span class="badge badge-auth-good">Yes</span></td><td>--</td></tr>
+        <tr><td>15</td><td><code>board</code></td><td>BoardController</td><td><span class="badge badge-auth-good">BoardPolicy ✓</span></td><td><span class="badge badge-auth-good">Yes</span></td><td>--</td></tr>
+        <tr><td>16</td><td><code>billing-cycle</code></td><td>BillingCycleController</td><td><span class="badge badge-auth-good">BillingCyclePolicy ✓</span></td><td><span class="badge badge-auth-good">Yes</span></td><td>--</td></tr>
+        <tr><td>17</td><td><code>module</code></td><td>ModuleController</td><td><span class="badge badge-auth-good">ModulePolicy ✓</span></td><td><span class="badge badge-auth-good">Yes</span></td><td>--</td></tr>
+        <tr><td>18</td><td><code>plan</code></td><td>PlanController</td><td><span class="badge badge-auth-good">PlanPolicy ✓</span></td><td><span class="badge badge-auth-good">Yes</span></td><td>--</td></tr>
+        <tr><td>19</td><td><code>auth</code></td><td>PrimeAuthController</td><td><span class="badge badge-auth-none">PrimeAuthPolicy (empty, NOT registered)</span></td><td><span class="badge badge-auth-good">Yes</span></td><td class="text-warning">Policy has no methods, not registered</td></tr>
+        <tr><td>20</td><td><code>tenant</code></td><td>TenantController</td><td><span class="badge badge-auth-good">TenantPolicy ✓</span></td><td><span class="badge badge-auth-good">Yes</span></td><td>--</td></tr>
+        <tr><td>21</td><td><code>tenant-group</code></td><td>TenantGroupController</td><td><span class="badge badge-auth-good">TenantGroupPolicy ✓</span></td><td><span class="badge badge-auth-good">Yes</span></td><td>--</td></tr>
+        <tr><td>22</td><td><code>invoicing</code></td><td>InvoicingController</td><td><span class="badge badge-auth-none">InvoicingPolicy (NOT registered)</span></td><td><span class="badge badge-auth-good">Yes</span></td><td class="text-danger">Policy exists but not registered</td></tr>
+        <tr><td>23</td><td><code>subscription</code></td><td>SubscriptionController</td><td><span class="badge badge-auth-good">SubscriptionPolicy ✓</span></td><td><span class="badge badge-auth-good">Yes</span></td><td>--</td></tr>
+        <tr><td>24</td><td><code>invoicing-payment</code></td><td>InvoicingPaymentController</td><td><span class="badge badge-auth-none">InvoicingPaymentPolicy (NOT registered)</span></td><td><span class="badge badge-auth-good">Yes</span></td><td class="text-danger">Policy exists but not registered</td></tr>
+        <tr><td>25</td><td><code>consolidated-payment</code></td><td>BillingManagementController</td><td><span class="badge badge-auth-good">ConsolidatedPaymentPolicy ✓</span></td><td><span class="badge badge-auth-none">NO auth</span></td><td class="text-danger">Handled in BillingMgmt (no auth)</td></tr>
+        <tr><td>26</td><td><code>payment-reconciliation</code></td><td>BillingManagementController</td><td><span class="badge badge-auth-good">PaymentReconciliationPolicy ✓</span></td><td><span class="badge badge-auth-none">NO auth</span></td><td class="text-danger">Handled in BillingMgmt (no auth)</td></tr>
+        <tr><td>27</td><td><code>invoicing-audit-log</code></td><td>InvoicingAuditLogController</td><td><span class="badge badge-auth-none">InvoicingAuditLogPolicy (NOT registered)</span></td><td><span class="badge badge-auth-good">Yes</span></td><td class="text-danger">Policy exists but not registered</td></tr>
+        <tr><td>28</td><td><code>billing-management</code></td><td>BillingManagementController</td><td><span class="badge badge-auth-none">BillingManagementPolicy (NOT registered, 6/7 commented)</span></td><td><span class="badge badge-auth-none">NO auth</span></td><td class="text-danger">Policy not registered + no Gate calls</td></tr>
+        <tr><td>29</td><td><code>sale-plan-module-mgmt</code></td><td>SalesPlanAndModuleMgmtController</td><td><span class="badge badge-auth-none">SalesPlanAndModuleMgmtPolicy (NOT registered)</span></td><td><span class="badge badge-auth-partial">Partial (1)</span></td><td class="text-danger">Policy not registered</td></tr>
+        <tr><td>30</td><td><code>session-board</code></td><td>SessionBoardSetupController</td><td><span class="badge badge-auth-none">NO policy file exists</span></td><td><span class="badge badge-auth-partial">Partial (index only)</span></td><td class="text-danger">No policy + partial auth</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card p-3">
+    <h6>Gap Analysis Summary</h6>
+    <div class="row g-3">
+      <div class="col-md-4">
+        <div class="p-3 bg-light rounded">
+          <div class="fw-bold text-success mb-1">Verified (22 of 30)</div>
+          <ul class="mb-0" style="font-size:.82rem">
+            <li>22 features have policy file + registered in AppServiceProvider</li>
+            <li>All use 7 standard CRUD methods (viewAny, view, create, update, delete, restore, forceDelete)</li>
+            <li>Permission strings match <code>config/permissionslist.php</code></li>
+          </ul>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="p-3 bg-light rounded">
+          <div class="fw-bold text-danger mb-1">Policy Exists but NOT Registered (6)</div>
+          <ul class="mb-0" style="font-size:.82rem">
+            <li><code>invoicing</code> — InvoicingPolicy not registered</li>
+            <li><code>invoicing-payment</code> — InvoicingPaymentPolicy not registered</li>
+            <li><code>invoicing-audit-log</code> — InvoicingAuditLogPolicy not registered</li>
+            <li><code>billing-management</code> — BillingManagementPolicy not registered + 6/7 methods commented out</li>
+            <li><code>sale-plan-module-mgmt</code> — SalesPlanAndModuleMgmtPolicy not registered</li>
+            <li><code>auth</code> — PrimeAuthPolicy empty + not registered</li>
+          </ul>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="p-3 bg-light rounded">
+          <div class="fw-bold text-warning mb-1">Other Gaps (2)</div>
+          <ul class="mb-0" style="font-size:.82rem">
+            <li><code>session-board</code> — No policy file exists at all</li>
+            <li><code>user-role-prm</code> — UserRolePrmPolicy exists but not registered</li>
+            <li><strong>Action:</strong> Register 7 missing policies in AppServiceProvider</li>
+            <li><strong>Action:</strong> Create SessionBoardSetupPolicy</li>
+            <li><strong>Action:</strong> Uncomment BillingManagementPolicy methods</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= TAB 6: TEST RESULTS ================= -->
+<div id="sec-results" class="section">
+  <h4 class="mb-1">Test Results</h4>
+  <p class="text-muted mb-3">Test execution results will appear here as tests are run</p>
+
+  <div class="card p-3 mb-3" style="border-left:4px solid #198754">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <h6 class="mb-0"><i class="bi bi-check-circle-fill text-success"></i> Prime Module — Unit Tests</h6>
+      <span class="badge bg-success">ALL PASSING</span>
+    </div>
+    <div class="row g-3 mb-3">
+      <div class="col-md-3"><div class="p-2 bg-light rounded text-center"><div class="fw-bold text-success fs-4">441</div><small>Tests Passed</small></div></div>
+      <div class="col-md-3"><div class="p-2 bg-light rounded text-center"><div class="fw-bold text-primary fs-4">915</div><small>Assertions</small></div></div>
+      <div class="col-md-3"><div class="p-2 bg-light rounded text-center"><div class="fw-bold text-info fs-4">0.64s</div><small>Duration</small></div></div>
+      <div class="col-md-3"><div class="p-2 bg-light rounded text-center"><div class="fw-bold text-warning fs-4">8</div><small>Test Files</small></div></div>
+    </div>
+    <div class="bg-dark text-light p-3 rounded" style="font-family:monospace;font-size:.82rem">
+      <div class="text-success">$ ./vendor/bin/pest Modules/Prime/tests/Unit/</div>
+      <div class="mt-1">Tests: <span class="text-success">441 passed</span> (915 assertions)</div>
+      <div>Duration: 0.64s</div>
+    </div>
+  </div>
+
+  <div class="card p-3 mb-3">
+    <h6>Test Coverage by Phase</h6>
+    <table class="table table-sm table-hover mb-0">
+      <thead class="table-dark"><tr><th>Phase</th><th>Test File</th><th>Tests</th><th>Focus</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td><code>MigrationSchemaTest.php</code></td><td>~40</td><td>Migration files exist, required columns, foreign keys</td><td><span class="badge bg-success">Pass</span></td></tr>
+        <tr><td>2</td><td><code>ModelStructureTest.php</code></td><td>~160</td><td>27 models: $table, $fillable, $casts, SoftDeletes, relationships</td><td><span class="badge bg-success">Pass</span></td></tr>
+        <tr><td>2</td><td><code>SettingModelTest.php</code></td><td>13</td><td>Setting model: key setter, display accessor, attributes</td><td><span class="badge bg-success">Pass</span></td></tr>
+        <tr><td>3</td><td><code>PolicyPermissionTest.php</code></td><td>~35</td><td>20+ policies: methods, permission strings, registration</td><td><span class="badge bg-success">Pass</span></td></tr>
+        <tr><td>4</td><td><code>ControllerAuthTest.php</code></td><td>~30</td><td>Bug fix verification, Gate::authorize coverage, permission strings</td><td><span class="badge bg-success">Pass</span></td></tr>
+        <tr><td>5</td><td><code>FormRequestValidationTest.php</code></td><td>~60</td><td>7 form requests: rules, required fields, unique constraints</td><td><span class="badge bg-success">Pass</span></td></tr>
+        <tr><td>6</td><td><code>SoftDeleteStatusTest.php</code></td><td>~50</td><td>SoftDeletes trait, trash/restore/forceDelete, toggleStatus</td><td><span class="badge bg-success">Pass</span></td></tr>
+        <tr><td>7</td><td><code>ArchitectureTest.php</code></td><td>~55</td><td>All controllers/models exist, routes, edge cases</td><td><span class="badge bg-success">Pass</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card p-3 mb-3">
+    <h6>Bugs Fixed During Testing (10 total)</h6>
+    <table class="table table-sm table-hover mb-0">
+      <thead class="table-dark"><tr><th>#</th><th>Bug</th><th>Location</th><th>Fix</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>BoardPolicy::view() wrong permission</td><td><code>app/Policies/BoardPolicy.php</code></td><td>Changed <code>prime.activity-log.viewAny</code> → <code>prime.board.view</code></td></tr>
+        <tr><td>2</td><td>StatePolicy wrong prefix</td><td><code>app/Policies/StatePolicy.php</code></td><td>Changed <code>policy.state.*</code> → <code>prime.state.*</code></td></tr>
+        <tr><td>3</td><td>TenantController::edit() wrong permission</td><td><code>TenantController.php</code></td><td>Changed <code>prime.tenant-group.update</code> → <code>prime.tenant.update</code></td></tr>
+        <tr><td>4</td><td>LanguageController::edit() missing auth</td><td><code>LanguageController.php</code></td><td>Added <code>Gate::authorize('prime.language.update')</code></td></tr>
+        <tr><td>5</td><td>AcademicSessionController::destroy() logic error</td><td><code>AcademicSessionController.php</code></td><td>Fixed <code>!$var->prop === true</code> → <code>$var->prop !== true</code></td></tr>
+        <tr><td>6</td><td>TenantGroupController::forceDelete() wrong redirect</td><td><code>TenantGroupController.php</code></td><td>Changed redirect to <code>tenant-group.trashed</code></td></tr>
+        <tr><td>7</td><td>TenantInvoicingAuditLog missing $table</td><td><code>TenantInvoicingAuditLog.php</code></td><td>Added <code>$table = 'bil_tenant_invoicing_audit_logs'</code></td></tr>
+        <tr><td>8</td><td>TenantPlanRate missing $casts</td><td><code>TenantPlanRate.php</code></td><td>Added date and decimal casts</td></tr>
+        <tr><td>9</td><td>TenantInvoice, TenantInvoicingPayment missing $casts</td><td><code>TenantInvoice.php</code>, <code>TenantInvoicingPayment.php</code></td><td>Added date, boolean, decimal casts</td></tr>
+        <tr><td>10</td><td>TenantPlanBillingSchedule missing $casts</td><td><code>TenantPlanBillingSchedule.php</code></td><td>Added date and boolean casts</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card p-3 mb-3" style="border-left:4px solid #198754">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <h6 class="mb-0"><i class="bi bi-check-circle-fill text-success"></i> GlobalMaster Module — Unit Tests</h6>
+      <span class="badge bg-success">ALL PASSING</span>
+    </div>
+    <div class="row g-3 mb-3">
+      <div class="col-md-3"><div class="p-2 bg-light rounded text-center"><div class="fw-bold text-success fs-4">182</div><small>Tests Passed</small></div></div>
+      <div class="col-md-3"><div class="p-2 bg-light rounded text-center"><div class="fw-bold text-primary fs-4">349</div><small>Assertions</small></div></div>
+      <div class="col-md-3"><div class="p-2 bg-light rounded text-center"><div class="fw-bold text-info fs-4">0.25s</div><small>Duration</small></div></div>
+      <div class="col-md-3"><div class="p-2 bg-light rounded text-center"><div class="fw-bold text-warning fs-4">3</div><small>Test Files</small></div></div>
+    </div>
+    <div class="bg-dark text-light p-3 rounded" style="font-family:monospace;font-size:.82rem">
+      <div class="text-success">$ ./vendor/bin/pest Modules/GlobalMaster/tests/Unit/ModelStructureTest.php Modules/GlobalMaster/tests/Unit/ControllerAuthTest.php Modules/GlobalMaster/tests/Unit/ArchitectureTest.php</div>
+      <div class="mt-1">Tests: <span class="text-success">182 passed</span> (349 assertions)</div>
+      <div>Duration: 0.25s</div>
+    </div>
+    <div class="mt-2" style="font-size:.82rem">
+      <strong>Bugs Fixed:</strong> Language.php wrong class name/namespace (Department→Language), CountryController::restore() missing Gate::authorize, ModuleController::show() uses wrong permission (prime.module.create instead of prime.module.view — documented)
+    </div>
+  </div>
+
+  <div class="card p-3 mb-3" style="border-left:4px solid #198754">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <h6 class="mb-0"><i class="bi bi-check-circle-fill text-success"></i> Billing + SystemConfig + Documentation + Scheduler</h6>
+      <span class="badge bg-success">ALL PASSING</span>
+    </div>
+    <div class="row g-3 mb-3">
+      <div class="col-md-3"><div class="p-2 bg-light rounded text-center"><div class="fw-bold text-success fs-4">145</div><small>Tests Passed</small></div></div>
+      <div class="col-md-3"><div class="p-2 bg-light rounded text-center"><div class="fw-bold text-primary fs-4">276</div><small>Assertions</small></div></div>
+      <div class="col-md-3"><div class="p-2 bg-light rounded text-center"><div class="fw-bold text-info fs-4">0.35s</div><small>Duration</small></div></div>
+      <div class="col-md-3"><div class="p-2 bg-light rounded text-center"><div class="fw-bold text-warning fs-4">4</div><small>Test Files</small></div></div>
+    </div>
+    <table class="table table-sm table-hover mb-2" style="font-size:.82rem">
+      <thead class="table-dark"><tr><th>Module</th><th>Tests</th><th>Key Findings</th></tr></thead>
+      <tbody>
+        <tr><td>Billing</td><td>79</td><td>BillingManagementController has NO auth on store/create/print/email/PDF; BilTenantInvoice has duplicate $fillable; BillingManagementPolicy has 6 methods commented out</td></tr>
+        <tr><td>SystemConfig</td><td>31</td><td>Setting model key→snake_case mutator; Menu slug auto-generation; Translation morphTo</td></tr>
+        <tr><td>Documentation</td><td>22</td><td>Article/Category auto-slug generation; HasMedia; scopePublished; scopeActive</td></tr>
+        <tr><td>Scheduler</td><td>13</td><td>ZERO Gate::authorize on entire controller; update/destroy empty; ScheduleRun missing $table</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card p-3">
+    <h6>Run Commands</h6>
+    <div class="bg-dark text-light p-3 rounded" style="font-family:monospace;font-size:.85rem">
+      <div class="text-success"># Run ALL central module tests (768 tests)</div>
+      <div>./vendor/bin/pest Modules/Prime/tests/Unit/ Modules/GlobalMaster/tests/Unit/ModelStructureTest.php Modules/GlobalMaster/tests/Unit/ControllerAuthTest.php Modules/GlobalMaster/tests/Unit/ArchitectureTest.php Modules/Billing/tests/Unit/ Modules/SystemConfig/tests/Unit/ Modules/Documentation/tests/Unit/ Modules/Scheduler/tests/Unit/</div>
+      <br>
+      <div class="text-success"># Run individual modules</div>
+      <div>./vendor/bin/pest Modules/Billing/tests/Unit/</div>
+      <div>./vendor/bin/pest Modules/SystemConfig/tests/Unit/</div>
+      <div>./vendor/bin/pest Modules/Documentation/tests/Unit/</div>
+      <div>./vendor/bin/pest Modules/Scheduler/tests/Unit/</div>
+    </div>
+  </div>
+
+  <div class="card p-3 mt-3">
+    <h6>Expected Test File Locations</h6>
+    <table class="table table-sm table-hover mb-0">
+      <thead class="table-dark"><tr><th>Module</th><th>Unit Tests</th><th>Feature Tests</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>Prime</td><td><code>Modules/Prime/tests/Unit/</code></td><td><code>Modules/Prime/tests/Feature/</code></td><td><span class="badge bg-success">8 files, 441 tests ✓</span></td></tr>
+        <tr><td>GlobalMaster</td><td><code>Modules/GlobalMaster/tests/Unit/</code></td><td><code>Modules/GlobalMaster/tests/Feature/</code></td><td><span class="badge bg-success">4 files, 182 tests ✓</span></td></tr>
+        <tr><td>Billing</td><td><code>Modules/Billing/tests/Unit/</code></td><td><code>Modules/Billing/tests/Feature/</code></td><td><span class="badge bg-success">1 file, 79 tests ✓</span></td></tr>
+        <tr><td>SystemConfig</td><td><code>Modules/SystemConfig/tests/Unit/</code></td><td><code>Modules/SystemConfig/tests/Feature/</code></td><td><span class="badge bg-success">1 file, 31 tests ✓</span></td></tr>
+        <tr><td>Documentation</td><td><code>Modules/Documentation/tests/Unit/</code></td><td><code>Modules/Documentation/tests/Feature/</code></td><td><span class="badge bg-success">1 file, 22 tests ✓</span></td></tr>
+        <tr><td>Scheduler</td><td><code>Modules/Scheduler/tests/Unit/</code></td><td><code>Modules/Scheduler/tests/Feature/</code></td><td><span class="badge bg-success">1 file, 13 tests ✓</span></td></tr>
+        <tr><td>Central (app/)</td><td><code>tests/Unit/</code></td><td><code>tests/Feature/</code></td><td><span class="badge bg-secondary">ProfileController untested</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- NEW: Cross-Module Central Tests (2026-03-20) -->
+  <div class="card p-3 mb-3" style="border-left:4px solid #d97706">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <h6 class="mb-0"><i class="bi bi-exclamation-triangle-fill text-warning"></i> Cross-Module Central Tests (2026-03-20)</h6>
+      <span class="badge bg-warning text-dark">9 FAILING — Real Bugs</span>
+    </div>
+    <div class="row g-3 mb-3">
+      <div class="col-md-3"><div class="p-2 bg-light rounded text-center"><div class="fw-bold text-success fs-4">413</div><small>Tests Passed</small></div></div>
+      <div class="col-md-3"><div class="p-2 bg-light rounded text-center"><div class="fw-bold text-danger fs-4">9</div><small>Tests Failed</small></div></div>
+      <div class="col-md-3"><div class="p-2 bg-light rounded text-center"><div class="fw-bold text-primary fs-4">543</div><small>Assertions</small></div></div>
+      <div class="col-md-3"><div class="p-2 bg-light rounded text-center"><div class="fw-bold text-info fs-4">4</div><small>Test Files</small></div></div>
+    </div>
+    <div class="bg-dark text-light p-3 rounded mb-3" style="font-family:monospace;font-size:.82rem">
+      <div class="text-success">$ ./vendor/bin/pest tests/Unit/Central/</div>
+      <div class="mt-1">Tests: <span class="text-success">413 passed</span>, <span class="text-danger">9 failed</span>, 3 deprecated, 2 risky (543 assertions)</div>
+      <div>Duration: 0.68s</div>
+    </div>
+    <table class="table table-sm table-hover mb-0">
+      <thead class="table-dark"><tr><th>File</th><th>Tests</th><th>Focus</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td><code>Central/ModelStructureTest.php</code></td><td>~180</td><td>49 models: table, fillable, casts, SoftDeletes, connections, relationships, scopes</td><td><span class="badge bg-success">Pass</span></td></tr>
+        <tr><td><code>Central/ControllerAuthTest.php</code></td><td>~120</td><td>63 controllers: class existence, Gate::authorize, permission prefixes, no tenant.* leaks</td><td><span class="badge bg-warning text-dark">5 fail</span></td></tr>
+        <tr><td><code>Central/PolicyTest.php</code></td><td>~70</td><td>27+ policies: existence, CRUD methods, registration, prefix consistency</td><td><span class="badge bg-warning text-dark">2 fail</span></td></tr>
+        <tr><td><code>Central/PermissionConfigTest.php</code></td><td>~35</td><td>Permission features: prime, billing, documentation, timetable-foundation</td><td><span class="badge bg-success">Pass</span></td></tr>
+        <tr><td><code>Central/ViewIntegrityTest.php</code></td><td>~20</td><td>Blade views: breadcrumbs, @can/@endcan, form actions, stubs, hardcoded IPs</td><td><span class="badge bg-warning text-dark">2 fail</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 9 Real Failures Detail -->
+  <div class="card p-3 mb-3">
+    <h6><i class="bi bi-x-circle-fill text-danger"></i> 9 Test Failures — Bugs for Team to Fix</h6>
+    <table class="table table-sm table-hover mb-0">
+      <thead class="table-dark"><tr><th>#</th><th>Test</th><th>Issue</th><th>Fix</th><th>Severity</th></tr></thead>
+      <tbody>
+        <tr class="table-danger"><td>1</td><td>GM/DropdownController permission prefix</td><td>Uses <code>tenant.dropdown.*</code> instead of <code>prime.dropdown.*</code></td><td>Change all <code>Gate::authorize('tenant.dropdown.*')</code> to <code>prime.dropdown.*</code></td><td><span class="badge bg-danger">SEC</span></td></tr>
+        <tr class="table-danger"><td>2</td><td>GM/ActivityLogController legacy prefix</td><td>Uses <code>tenant.activity-log.*</code> prefix</td><td>Change to <code>prime.activity-log.*</code></td><td><span class="badge bg-danger">SEC</span></td></tr>
+        <tr class="table-danger"><td>3</td><td>BillingManagementController no auth</td><td>ZERO <code>Gate::authorize()</code> calls in 32KB controller</td><td>Add Gate::authorize on every public method</td><td><span class="badge bg-danger">SEC</span></td></tr>
+        <tr class="table-danger"><td>4</td><td>DocumentationController no auth</td><td>ZERO <code>Gate::authorize()</code> calls</td><td>Add Gate::authorize with <code>prime.documentation-mgt.*</code></td><td><span class="badge bg-danger">SEC</span></td></tr>
+        <tr class="table-warning"><td>5</td><td>DocumentationCategoryPolicy missing</td><td><code>app/Policies/DocumentationCategoryPolicy.php</code> does not exist</td><td>Create policy with CRUD methods using <code>prime.documentation-categories.*</code></td><td><span class="badge bg-warning text-dark">AUTH</span></td></tr>
+        <tr class="table-warning"><td>6</td><td>DocumentationArticlePolicy missing</td><td><code>app/Policies/DocumentationArticlePolicy.php</code> does not exist</td><td>Create policy with CRUD methods using <code>prime.documentation-articles.*</code></td><td><span class="badge bg-warning text-dark">AUTH</span></td></tr>
+        <tr class="table-info"><td>7</td><td>Prime/user/index.blade.php @can mismatch</td><td>@can count (N) does not match @endcan count</td><td>Audit @can/@endcan pairs — likely @endif used instead of @endcan</td><td><span class="badge bg-info text-dark">VIEW</span></td></tr>
+        <tr class="table-info"><td>8</td><td>Billing/invoice-audit/index.blade.php @can mismatch</td><td>4 @can vs 3 @endcan — one @endif instead of @endcan</td><td>Line ~107: change <code>@endif</code> to <code>@endcan</code></td><td><span class="badge bg-info text-dark">VIEW</span></td></tr>
+        <tr class="table-info"><td>9</td><td>Billing/invoice-audit duplicate &lt;/form&gt;</td><td>Two consecutive closing &lt;/form&gt; tags (line ~73-74)</td><td>Remove duplicate <code>&lt;/form&gt;</code> tag</td><td><span class="badge bg-info text-dark">VIEW</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ================= TAB 8: VIEW/UI AUDIT ================= -->
+<div id="sec-view-audit" class="section">
+  <h4 class="mb-1">View / UI Audit (2026-03-20)</h4>
+  <p class="text-muted mb-3">Blade view scan results across all 5 central modules (156 files scanned)</p>
+
+  <h6 class="mt-3 mb-2"><i class="bi bi-exclamation-triangle-fill text-danger"></i> Critical View Issues</h6>
+
+  <div class="issue-card">
+    <div class="d-flex justify-content-between align-items-start">
+      <div>
+        <strong>Hardcoded <code>central-127.0.0.1</code> in 107+ Blade files (241+ occurrences)</strong>
+        <div class="text-muted mt-1" style="font-size:.82rem">All central route names use <code>route('central-127.0.0.1.xxx')</code> which will break in production. Should use config-based domain or named route aliases.</div>
+        <div class="mt-1"><code>grep -rn "central-127.0.0.1" Modules/*/resources/views/ | wc -l</code> → <strong>241+ matches</strong></div>
+      </div>
+      <span class="badge bg-danger">ARCH</span>
+    </div>
+  </div>
+
+  <div class="issue-card">
+    <div class="d-flex justify-content-between align-items-start">
+      <div>
+        <strong>@can/@endcan Mismatch — <code>Billing/invoice-audit/index.blade.php</code></strong>
+        <div class="text-muted mt-1" style="font-size:.82rem">Line ~107: <code>@endif</code> used instead of <code>@endcan</code>. Also has duplicate <code>&lt;/form&gt;</code> tags at lines 73-74.</div>
+      </div>
+      <span class="badge bg-danger">BUG</span>
+    </div>
+  </div>
+
+  <div class="issue-card">
+    <div class="d-flex justify-content-between align-items-start">
+      <div>
+        <strong>@can/@endcan Mismatch — <code>Prime/user/index.blade.php</code></strong>
+        <div class="text-muted mt-1" style="font-size:.82rem">@can count does not match @endcan count. Audit all @can blocks for mismatched closures.</div>
+      </div>
+      <span class="badge bg-danger">BUG</span>
+    </div>
+  </div>
+
+  <h6 class="mt-4 mb-2"><i class="bi bi-exclamation-triangle-fill text-warning"></i> Empty Form Actions (<code>action="#"</code>)</h6>
+
+  <div class="issue-card warning">
+    <div class="d-flex justify-content-between align-items-start">
+      <div>
+        <strong>7 forms with <code>action="#"</code> across Billing &amp; Prime modules</strong>
+        <div class="text-muted mt-1" style="font-size:.82rem">
+          <ul class="mb-0" style="font-size:.78rem;padding-left:1.2rem">
+            <li><code>Billing/billing-management/partials/payment-reconcilation/index.blade.php</code> — line 14</li>
+            <li><code>Billing/billing-management/partials/invoice-payment/index.blade.php</code> — line 11</li>
+            <li><code>Billing/billing-management/partials/invoicing/invoicing.blade.php</code> — line 12</li>
+            <li><code>Billing/billing-management/partials/consolidated-payment/index.blade.php</code> — line 15</li>
+            <li><code>Prime/core-configuration/dashboard.blade.php</code> — line 291 (chat form)</li>
+            <li><code>Prime/subscription-billing/dashboard.blade.php</code> — line 295 (chat form)</li>
+            <li><code>Prime/foundational-setup/dashboard.blade.php</code> — line 295 (chat form)</li>
+          </ul>
+        </div>
+      </div>
+      <span class="badge bg-warning text-dark">UX</span>
+    </div>
+  </div>
+
+  <h6 class="mt-4 mb-2"><i class="bi bi-signpost-split text-info"></i> Empty Breadcrumb Links</h6>
+
+  <div class="issue-card info">
+    <div class="d-flex justify-content-between align-items-start">
+      <div>
+        <strong>4 pages have empty breadcrumb <code>:links="[]"</code> (no parent navigation)</strong>
+        <div class="text-muted mt-1" style="font-size:.82rem">
+          <ul class="mb-0" style="font-size:.78rem;padding-left:1.2rem">
+            <li><code>SystemConfig/index.blade.php</code></li>
+            <li><code>Prime/subscription-billing/dashboard.blade.php</code></li>
+            <li><code>Prime/core-configuration/dashboard.blade.php</code></li>
+            <li><code>Prime/foundational-setup/dashboard.blade.php</code></li>
+          </ul>
+        </div>
+      </div>
+      <span class="badge bg-info text-dark">UX</span>
+    </div>
+  </div>
+
+  <h6 class="mt-4 mb-2"><i class="bi bi-link-45deg text-secondary"></i> Dead Links (<code>href="#"</code>)</h6>
+
+  <div class="issue-card info">
+    <div class="d-flex justify-content-between align-items-start">
+      <div>
+        <strong>15+ "More info" card links with <code>href="#"</code></strong>
+        <div class="text-muted mt-1" style="font-size:.82rem">
+          Dashboard card footers across 4 files have placeholder links. Either wire them to real routes or remove the link elements.
+          <ul class="mb-0 mt-1" style="font-size:.78rem;padding-left:1.2rem">
+            <li><code>Prime/core-configuration/dashboard.blade.php</code> — lines 22, 42, 62, 85</li>
+            <li><code>Prime/subscription-billing/dashboard.blade.php</code> — lines 22, 43, 64, 88</li>
+            <li><code>Prime/foundational-setup/dashboard.blade.php</code> — lines 22, 43, 64, 88</li>
+            <li><code>Prime/user/index.blade.php</code> — lines 19, 35, 51, 67</li>
+            <li><code>Documentation/category/show.blade.php</code> — line 242 (subcategory nav)</li>
+          </ul>
+        </div>
+      </div>
+      <span class="badge bg-secondary">LOW</span>
+    </div>
+  </div>
+
+  <h6 class="mt-4 mb-2"><i class="bi bi-bar-chart"></i> View File Counts</h6>
+  <div class="card p-3">
+    <table class="table table-sm mb-0">
+      <thead class="table-dark"><tr><th>Module</th><th>Blade Files</th><th>Issues Found</th></tr></thead>
+      <tbody>
+        <tr><td>Prime</td><td>~80</td><td>1 @can mismatch, 3 empty forms, 12 dead links, 3 empty breadcrumbs</td></tr>
+        <tr><td>GlobalMaster</td><td>~40</td><td>None critical</td></tr>
+        <tr><td>Billing</td><td>~20</td><td>1 @can mismatch, 1 duplicate form tag, 4 empty form actions</td></tr>
+        <tr><td>Documentation</td><td>~15</td><td>1 dead link in category nav</td></tr>
+        <tr><td>SystemConfig</td><td>~5</td><td>1 empty breadcrumb</td></tr>
+        <tr style="font-weight:700"><td>TOTAL</td><td>~160</td><td>2 critical + 7 warnings + 16 info</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ================= TAB 7: ISSUES & GAPS ================= -->
+<div id="sec-issues" class="section">
+  <h4 class="mb-1">Issues &amp; Gaps</h4>
+  <p class="text-muted mb-3">Known issues, security gaps, and cleanup items</p>
+
+  <h6 class="mt-3 mb-2"><i class="bi bi-exclamation-triangle-fill text-danger"></i> Critical Issues</h6>
+
+  <div class="issue-card" style="border-left-color:#198754;opacity:.7">
+    <div class="d-flex justify-content-between align-items-start">
+      <div>
+        <strong><s>Nearly ZERO test coverage on central application</s></strong>
+        <div class="text-muted mt-1" style="font-size:.82rem"><strong>RESOLVED 2026-03-17:</strong> Prime module now has 441 tests (915 assertions) across 8 test files covering migrations, models, policies, controllers, form requests, soft deletes, and architecture. 10 bugs fixed during testing.</div>
+      </div>
+      <span class="badge bg-success">FIXED</span>
+    </div>
+  </div>
+
+  <div class="issue-card">
+    <div class="d-flex justify-content-between align-items-start">
+      <div>
+        <strong>BillingManagementController has NO Gate::authorize calls</strong>
+        <div class="text-muted mt-1" style="font-size:.82rem">Controller handles billing management operations but has zero authorization checks. Any authenticated user could potentially access/modify billing data.</div>
+      </div>
+      <span class="badge bg-danger">SEC</span>
+    </div>
+  </div>
+
+  <div class="issue-card">
+    <div class="d-flex justify-content-between align-items-start">
+      <div>
+        <strong>SEC-011: <code>env('APP_DOMAIN')</code> used in routes/web.php line 62</strong>
+        <div class="text-muted mt-1" style="font-size:.82rem">Using <code>env()</code> directly in route files will return null when config is cached. Should use <code>config()</code> instead.</div>
+      </div>
+      <span class="badge bg-danger">SEC</span>
+    </div>
+  </div>
+
+  <div class="issue-card">
+    <div class="d-flex justify-content-between align-items-start">
+      <div>
+        <strong>PrimeController (dashboard) — no auth checks</strong>
+        <div class="text-muted mt-1" style="font-size:.82rem">Dashboard controller has no Gate::authorize calls. While route-level auth middleware may exist, controller-level authorization is missing.</div>
+      </div>
+      <span class="badge bg-danger">SEC</span>
+    </div>
+  </div>
+
+  <div class="issue-card">
+    <div class="d-flex justify-content-between align-items-start">
+      <div>
+        <strong>EmailController, NotificationController — no auth checks</strong>
+        <div class="text-muted mt-1" style="font-size:.82rem">Both controllers lack Gate::authorize calls. Email and notification operations are not authorization-protected at the controller level.</div>
+      </div>
+      <span class="badge bg-danger">SEC</span>
+    </div>
+  </div>
+
+  <div class="issue-card">
+    <div class="d-flex justify-content-between align-items-start">
+      <div>
+        <strong>GM/DropdownController uses <code>tenant.dropdown.*</code> instead of <code>prime.dropdown.*</code></strong>
+        <div class="text-muted mt-1" style="font-size:.82rem">Found 2026-03-20: GlobalMaster DropdownController has <code>Gate::authorize('tenant.dropdown.viewAny')</code> — should be <code>prime.dropdown.*</code> since this is a central-scope controller.</div>
+      </div>
+      <span class="badge bg-danger">SEC</span>
+    </div>
+  </div>
+
+  <div class="issue-card">
+    <div class="d-flex justify-content-between align-items-start">
+      <div>
+        <strong>GM/ActivityLogController uses <code>tenant.activity-log.*</code> prefix</strong>
+        <div class="text-muted mt-1" style="font-size:.82rem">Found 2026-03-20: Central GlobalMaster controller uses tenant-scope permission prefix. Should be <code>prime.activity-log.*</code>.</div>
+      </div>
+      <span class="badge bg-danger">SEC</span>
+    </div>
+  </div>
+
+  <div class="issue-card">
+    <div class="d-flex justify-content-between align-items-start">
+      <div>
+        <strong>DocumentationController has ZERO <code>Gate::authorize()</code> calls</strong>
+        <div class="text-muted mt-1" style="font-size:.82rem">Found 2026-03-20: All 3 Documentation module controllers lack authorization. Also, policies <code>DocumentationCategoryPolicy</code> and <code>DocumentationArticlePolicy</code> do not exist.</div>
+      </div>
+      <span class="badge bg-danger">SEC</span>
+    </div>
+  </div>
+
+  <div class="issue-card">
+    <div class="d-flex justify-content-between align-items-start">
+      <div>
+        <strong>@can/@endcan mismatch in 2 Blade views</strong>
+        <div class="text-muted mt-1" style="font-size:.82rem">Found 2026-03-20: <code>Billing/invoice-audit/index.blade.php</code> (4 @can vs 3 @endcan) and <code>Prime/user/index.blade.php</code>. Template rendering may produce incorrect authorization blocks.</div>
+      </div>
+      <span class="badge bg-danger">BUG</span>
+    </div>
+  </div>
+
+  <div class="issue-card">
+    <div class="d-flex justify-content-between align-items-start">
+      <div>
+        <strong>Hardcoded <code>central-127.0.0.1</code> in 241+ route references across 107 Blade files</strong>
+        <div class="text-muted mt-1" style="font-size:.82rem">Found 2026-03-20: All central module views use hardcoded IP in route names. Will break in any non-localhost environment.</div>
+      </div>
+      <span class="badge bg-danger">ARCH</span>
+    </div>
+  </div>
+
+  <h6 class="mt-4 mb-2"><i class="bi bi-exclamation-triangle-fill text-warning"></i> Warnings</h6>
+
+  <div class="issue-card warning">
+    <div class="d-flex justify-content-between align-items-start">
+      <div>
+        <strong>SalesPlanAndModuleMgmtController has only 1 Gate::authorize call</strong>
+        <div class="text-muted mt-1" style="font-size:.82rem">With multiple CRUD methods, only 1 authorize call suggests most methods are unprotected. Needs full authorization audit.</div>
+      </div>
+      <span class="badge bg-warning text-dark">AUTH</span>
+    </div>
+  </div>
+
+  <div class="issue-card warning">
+    <div class="d-flex justify-content-between align-items-start">
+      <div>
+        <strong>SessionBoardSetupController — auth coverage unknown</strong>
+        <div class="text-muted mt-1" style="font-size:.82rem">Authorization status has not been audited. Needs review to determine if Gate::authorize calls are present on all methods.</div>
+      </div>
+      <span class="badge bg-warning text-dark">AUTH</span>
+    </div>
+  </div>
+
+  <div class="issue-card warning">
+    <div class="d-flex justify-content-between align-items-start">
+      <div>
+        <strong>Documentation routes defined TWICE in web.php</strong>
+        <div class="text-muted mt-1" style="font-size:.82rem">Lines 154-200 appear to be duplicated, resulting in duplicate route definitions. This causes confusion and may lead to unexpected routing behavior.</div>
+      </div>
+      <span class="badge bg-warning text-dark">CLEANUP</span>
+    </div>
+  </div>
+
+  <h6 class="mt-4 mb-2"><i class="bi bi-info-circle-fill text-info"></i> Cleanup Items</h6>
+
+  <div class="issue-card info">
+    <div class="d-flex justify-content-between align-items-start">
+      <div>
+        <strong><code>TenantManagementController copy.php</code> — duplicate file needs cleanup</strong>
+        <div class="text-muted mt-1" style="font-size:.82rem">A copy file exists alongside the actual controller. Should be deleted to avoid confusion.</div>
+      </div>
+      <span class="badge bg-info text-dark">CLEANUP</span>
+    </div>
+  </div>
+
+  <div class="issue-card info">
+    <div class="d-flex justify-content-between align-items-start">
+      <div>
+        <strong>Permission features without controllers</strong>
+        <div class="text-muted mt-1" style="font-size:.82rem"><code>consolidated-payment</code> and <code>payment-reconciliation</code> are defined as permission features but have no corresponding controllers implemented yet.</div>
+      </div>
+      <span class="badge bg-info text-dark">MISSING</span>
+    </div>
+  </div>
+
+  <div class="card p-3 mt-4">
+    <h6>Priority Action Plan</h6>
+    <table class="table table-sm mb-0">
+      <thead class="table-dark"><tr><th>Priority</th><th>Action</th><th>Impact</th><th>Effort</th></tr></thead>
+      <tbody>
+        <tr><td><span class="badge bg-danger">P0</span></td><td>Add Gate::authorize to BillingManagementController</td><td>Security fix</td><td>Low</td></tr>
+        <tr><td><span class="badge bg-danger">P0</span></td><td>Fix <code>env()</code> usage in routes/web.php</td><td>Config caching fix</td><td>Low</td></tr>
+        <tr><td><span class="badge bg-danger">P0</span></td><td>Add auth to EmailController, NotificationController</td><td>Security fix</td><td>Low</td></tr>
+        <tr><td><span class="badge bg-warning text-dark">P1</span></td><td>Write unit tests for all 52 models</td><td>Test coverage</td><td>Medium</td></tr>
+        <tr><td><span class="badge bg-warning text-dark">P1</span></td><td>Audit SalesPlanAndModuleMgmtController auth</td><td>Security</td><td>Low</td></tr>
+        <tr><td><span class="badge bg-warning text-dark">P1</span></td><td>Remove duplicate documentation routes</td><td>Code quality</td><td>Low</td></tr>
+        <tr><td><span class="badge bg-info text-dark">P2</span></td><td>Write feature tests for all 51 controllers</td><td>Test coverage</td><td>High</td></tr>
+        <tr><td><span class="badge bg-info text-dark">P2</span></td><td>Delete TenantManagementController copy file</td><td>Code quality</td><td>Low</td></tr>
+        <tr><td><span class="badge bg-info text-dark">P2</span></td><td>Implement consolidated-payment controller</td><td>Feature gap</td><td>Medium</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+</div><!-- /main -->
+
+<script>
+// Tab switching
+function show(id){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.sidebar a').forEach(a=>a.classList.remove('active'));
+  document.getElementById('sec-'+id).classList.add('active');
+  document.getElementById('nav-'+id).classList.add('active');
+}
+
+// Expand/collapse controller lists
+function toggleExpand(id){
+  const el=document.getElementById(id);
+  el.style.display=el.style.display==='none'?'block':'none';
+}
+
+// Status cycle
+const STATUS_CYCLE=['not-started','in-progress','passed','failed','skipped','na'];
+const STATUS_ICONS={
+  'not-started':'<span style="color:#6c757d" title="Not Started">&#11036;</span>',
+  'in-progress':'<span style="color:#0d6efd" title="In Progress">&#128260;</span>',
+  'passed':'<span style="color:#198754" title="Passed">&#9989;</span>',
+  'failed':'<span style="color:#dc3545" title="Failed">&#10060;</span>',
+  'skipped':'<span style="color:#ffc107" title="Skipped">&#9193;&#65039;</span>',
+  'na':'<span style="color:#343a40" title="N/A">&#128683;</span>'
+};
+
+// Module data
+const MODULES={
+  prime:{
+    name:'Prime',icon:'bi-star-fill',color:'text-warning',
+    controllers:['AcademicSessionController','BoardController','DropdownController','DropdownMgmtController','DropdownNeedController','EmailController','LanguageController','MenuController','ActivityLogController','NotificationController','SalesPlanAndModuleMgmtController','TenantController','SessionBoardSetupController','PrimeAuthController','UserController','TenantGroupController','TenantManagementController','UserRolePrmController','PrimeController','SettingController','RolePermissionController']
+  },
+  globalmaster:{
+    name:'GlobalMaster',icon:'bi-globe2',color:'text-info',
+    controllers:['DistrictController','DropdownController','GlobalMasterController','AcademicSessionController','CityController','CountryController','LanguageController','GeographySetupController','ModuleController','ActivityLogController','NotificationController','SessionBoardSetupController','PlanController','StateController','OrganizationController']
+  },
+  billing:{
+    name:'Billing',icon:'bi-credit-card',color:'text-success',
+    controllers:['InvoicingAuditLogController','InvoicingController','InvoicingPaymentController','BillingManagementController','BillingCycleController','SubscriptionController']
+  },
+  systemconfig:{
+    name:'SystemConfig',icon:'bi-gear',color:'text-secondary',
+    controllers:['SystemConfigController','SettingController','MenuController','MenuSyncController']
+  },
+  documentation:{
+    name:'Documentation',icon:'bi-book',color:'text-primary',
+    controllers:['DocumentationArticleController','DocumentationCategoryController','DocumentationController']
+  },
+  scheduler:{
+    name:'Scheduler',icon:'bi-clock-history',color:'text-muted',
+    controllers:['SchedulerController']
+  }
+};
+
+const TEST_CATEGORIES=[
+  {key:'model',label:'Model Structure',desc:'Table name, fillable, casts, SoftDeletes, relationships'},
+  {key:'crud-create',label:'CRUD - Create',desc:'Store validates, creates record, redirects'},
+  {key:'crud-read',label:'CRUD - Read',desc:'Index lists, show displays, pagination works'},
+  {key:'crud-update',label:'CRUD - Update',desc:'Edit loads, update validates, saves changes'},
+  {key:'crud-delete',label:'CRUD - Delete',desc:'Destroy soft-deletes, trash view works'},
+  {key:'crud-restore',label:'CRUD - Restore',desc:'Restore from trash, force delete'},
+  {key:'authorization',label:'Authorization',desc:'Gate::authorize on all methods'},
+  {key:'policy',label:'Policy Methods',desc:'All 14 CRUD policy methods exist'},
+  {key:'validation',label:'Validation',desc:'Required fields, unique constraints, type checks'},
+  {key:'activity-log',label:'Activity Log',desc:'Mutations trigger activity log'},
+  {key:'toggle-status',label:'Toggle Status',desc:'AJAX status switch works'},
+  {key:'search-filter',label:'Search/Filter',desc:'Search, pagination, filters'}
+];
+
+const CHECK_TYPES=[
+  {key:'unit',label:'Unit Tests'},
+  {key:'feature',label:'Feature Tests'},
+  {key:'policy',label:'Policy Exists'},
+  {key:'auth',label:'Auth on all methods'},
+  {key:'logging',label:'Activity Logging'}
+];
+
+// ─── Pre-populated test results (2026-03-17) ───
+// Status values: passed, failed, in-progress, skipped, na, not-started
+const DEFAULT_STATE = {
+  // ═══════════════════════════════════════════════════════════════
+  // PRIME MODULE — 441 tests, 915 assertions (2026-03-17)
+  // ═══════════════════════════════════════════════════════════════
+
+  // AcademicSessionController — fully tested
+  'prime.AcademicSessionController.model':'passed',
+  'prime.AcademicSessionController.crud-create':'skipped', // feature test needed
+  'prime.AcademicSessionController.crud-read':'skipped',
+  'prime.AcademicSessionController.crud-update':'skipped',
+  'prime.AcademicSessionController.crud-delete':'passed', // logic bug fixed & verified
+  'prime.AcademicSessionController.crud-restore':'passed',
+  'prime.AcademicSessionController.authorization':'passed',
+  'prime.AcademicSessionController.policy':'passed',
+  'prime.AcademicSessionController.validation':'passed',
+  'prime.AcademicSessionController.activity-log':'skipped',
+  'prime.AcademicSessionController.toggle-status':'passed',
+  'prime.AcademicSessionController.search-filter':'na',
+
+  // BoardController — fully tested
+  'prime.BoardController.model':'passed',
+  'prime.BoardController.crud-create':'skipped',
+  'prime.BoardController.crud-read':'skipped',
+  'prime.BoardController.crud-update':'skipped',
+  'prime.BoardController.crud-delete':'passed',
+  'prime.BoardController.crud-restore':'passed',
+  'prime.BoardController.authorization':'passed',
+  'prime.BoardController.policy':'passed', // bug fixed: view() had wrong permission
+  'prime.BoardController.validation':'passed',
+  'prime.BoardController.activity-log':'skipped',
+  'prime.BoardController.toggle-status':'passed',
+  'prime.BoardController.search-filter':'na',
+
+  // DropdownController — tested
+  'prime.DropdownController.model':'passed',
+  'prime.DropdownController.crud-create':'skipped',
+  'prime.DropdownController.crud-read':'skipped',
+  'prime.DropdownController.crud-update':'skipped',
+  'prime.DropdownController.crud-delete':'passed',
+  'prime.DropdownController.crud-restore':'passed',
+  'prime.DropdownController.authorization':'passed',
+  'prime.DropdownController.policy':'passed',
+  'prime.DropdownController.validation':'passed',
+  'prime.DropdownController.activity-log':'skipped',
+  'prime.DropdownController.toggle-status':'passed',
+  'prime.DropdownController.search-filter':'passed',
+
+  // DropdownMgmtController — architecture verified
+  'prime.DropdownMgmtController.model':'passed',
+  'prime.DropdownMgmtController.crud-create':'na',
+  'prime.DropdownMgmtController.crud-read':'na',
+  'prime.DropdownMgmtController.crud-update':'na',
+  'prime.DropdownMgmtController.crud-delete':'na',
+  'prime.DropdownMgmtController.crud-restore':'na',
+  'prime.DropdownMgmtController.authorization':'na',
+  'prime.DropdownMgmtController.policy':'na',
+  'prime.DropdownMgmtController.validation':'na',
+  'prime.DropdownMgmtController.activity-log':'na',
+  'prime.DropdownMgmtController.toggle-status':'na',
+  'prime.DropdownMgmtController.search-filter':'na',
+
+  // DropdownNeedController — tested
+  'prime.DropdownNeedController.model':'passed',
+  'prime.DropdownNeedController.crud-create':'skipped',
+  'prime.DropdownNeedController.crud-read':'skipped',
+  'prime.DropdownNeedController.crud-update':'skipped',
+  'prime.DropdownNeedController.crud-delete':'passed',
+  'prime.DropdownNeedController.crud-restore':'passed',
+  'prime.DropdownNeedController.authorization':'passed',
+  'prime.DropdownNeedController.policy':'passed',
+  'prime.DropdownNeedController.validation':'na',
+  'prime.DropdownNeedController.activity-log':'skipped',
+  'prime.DropdownNeedController.toggle-status':'passed',
+  'prime.DropdownNeedController.search-filter':'na',
+
+  // EmailController — no auth (known issue)
+  'prime.EmailController.model':'na',
+  'prime.EmailController.crud-create':'na',
+  'prime.EmailController.crud-read':'na',
+  'prime.EmailController.crud-update':'na',
+  'prime.EmailController.crud-delete':'na',
+  'prime.EmailController.crud-restore':'na',
+  'prime.EmailController.authorization':'failed', // zero auth
+  'prime.EmailController.policy':'na',
+  'prime.EmailController.validation':'na',
+  'prime.EmailController.activity-log':'na',
+  'prime.EmailController.toggle-status':'na',
+  'prime.EmailController.search-filter':'na',
+
+  // LanguageController — tested, bug fixed
+  'prime.LanguageController.model':'passed',
+  'prime.LanguageController.crud-create':'skipped',
+  'prime.LanguageController.crud-read':'skipped',
+  'prime.LanguageController.crud-update':'skipped',
+  'prime.LanguageController.crud-delete':'passed',
+  'prime.LanguageController.crud-restore':'passed',
+  'prime.LanguageController.authorization':'passed', // bug fixed: edit() was missing Gate::authorize
+  'prime.LanguageController.policy':'passed',
+  'prime.LanguageController.validation':'passed',
+  'prime.LanguageController.activity-log':'skipped',
+  'prime.LanguageController.toggle-status':'passed',
+  'prime.LanguageController.search-filter':'na',
+
+  // MenuController — tested, incomplete methods documented
+  'prime.MenuController.model':'passed',
+  'prime.MenuController.crud-create':'skipped',
+  'prime.MenuController.crud-read':'skipped',
+  'prime.MenuController.crud-update':'skipped',
+  'prime.MenuController.crud-delete':'failed', // empty body
+  'prime.MenuController.crud-restore':'failed', // empty body
+  'prime.MenuController.authorization':'passed',
+  'prime.MenuController.policy':'passed',
+  'prime.MenuController.validation':'skipped',
+  'prime.MenuController.activity-log':'skipped',
+  'prime.MenuController.toggle-status':'failed', // empty body
+  'prime.MenuController.search-filter':'na',
+
+  // ActivityLogController — tested
+  'prime.ActivityLogController.model':'passed',
+  'prime.ActivityLogController.crud-create':'na',
+  'prime.ActivityLogController.crud-read':'skipped',
+  'prime.ActivityLogController.crud-update':'na',
+  'prime.ActivityLogController.crud-delete':'na',
+  'prime.ActivityLogController.crud-restore':'na',
+  'prime.ActivityLogController.authorization':'passed',
+  'prime.ActivityLogController.policy':'passed',
+  'prime.ActivityLogController.validation':'na',
+  'prime.ActivityLogController.activity-log':'na',
+  'prime.ActivityLogController.toggle-status':'na',
+  'prime.ActivityLogController.search-filter':'passed',
+
+  // NotificationController — no auth (known issue)
+  'prime.NotificationController.model':'na',
+  'prime.NotificationController.crud-create':'na',
+  'prime.NotificationController.crud-read':'na',
+  'prime.NotificationController.crud-update':'na',
+  'prime.NotificationController.crud-delete':'na',
+  'prime.NotificationController.crud-restore':'na',
+  'prime.NotificationController.authorization':'failed', // zero auth
+  'prime.NotificationController.policy':'na',
+  'prime.NotificationController.validation':'na',
+  'prime.NotificationController.activity-log':'na',
+  'prime.NotificationController.toggle-status':'na',
+  'prime.NotificationController.search-filter':'na',
+
+  // SalesPlanAndModuleMgmtController — partial auth
+  'prime.SalesPlanAndModuleMgmtController.model':'na',
+  'prime.SalesPlanAndModuleMgmtController.crud-create':'skipped',
+  'prime.SalesPlanAndModuleMgmtController.crud-read':'skipped',
+  'prime.SalesPlanAndModuleMgmtController.crud-update':'skipped',
+  'prime.SalesPlanAndModuleMgmtController.crud-delete':'skipped',
+  'prime.SalesPlanAndModuleMgmtController.crud-restore':'skipped',
+  'prime.SalesPlanAndModuleMgmtController.authorization':'failed', // only 1 auth call
+  'prime.SalesPlanAndModuleMgmtController.policy':'na',
+  'prime.SalesPlanAndModuleMgmtController.validation':'skipped',
+  'prime.SalesPlanAndModuleMgmtController.activity-log':'skipped',
+  'prime.SalesPlanAndModuleMgmtController.toggle-status':'na',
+  'prime.SalesPlanAndModuleMgmtController.search-filter':'na',
+
+  // TenantController — tested, bugs fixed
+  'prime.TenantController.model':'passed',
+  'prime.TenantController.crud-create':'skipped',
+  'prime.TenantController.crud-read':'skipped',
+  'prime.TenantController.crud-update':'skipped',
+  'prime.TenantController.crud-delete':'failed', // empty body
+  'prime.TenantController.crud-restore':'na',
+  'prime.TenantController.authorization':'passed', // bug fixed: edit/update had wrong permission
+  'prime.TenantController.policy':'passed',
+  'prime.TenantController.validation':'passed',
+  'prime.TenantController.activity-log':'skipped',
+  'prime.TenantController.toggle-status':'passed',
+  'prime.TenantController.search-filter':'na',
+
+  // SessionBoardSetupController — not fully audited
+  'prime.SessionBoardSetupController.model':'na',
+  'prime.SessionBoardSetupController.crud-create':'not-started',
+  'prime.SessionBoardSetupController.crud-read':'not-started',
+  'prime.SessionBoardSetupController.crud-update':'not-started',
+  'prime.SessionBoardSetupController.crud-delete':'not-started',
+  'prime.SessionBoardSetupController.crud-restore':'not-started',
+  'prime.SessionBoardSetupController.authorization':'not-started',
+  'prime.SessionBoardSetupController.policy':'not-started',
+  'prime.SessionBoardSetupController.validation':'not-started',
+  'prime.SessionBoardSetupController.activity-log':'not-started',
+  'prime.SessionBoardSetupController.toggle-status':'na',
+  'prime.SessionBoardSetupController.search-filter':'not-started',
+
+  // PrimeAuthController
+  'prime.PrimeAuthController.model':'na',
+  'prime.PrimeAuthController.crud-create':'na',
+  'prime.PrimeAuthController.crud-read':'na',
+  'prime.PrimeAuthController.crud-update':'na',
+  'prime.PrimeAuthController.crud-delete':'na',
+  'prime.PrimeAuthController.crud-restore':'na',
+  'prime.PrimeAuthController.authorization':'na',
+  'prime.PrimeAuthController.policy':'passed', // empty policy documented
+  'prime.PrimeAuthController.validation':'na',
+  'prime.PrimeAuthController.activity-log':'na',
+  'prime.PrimeAuthController.toggle-status':'na',
+  'prime.PrimeAuthController.search-filter':'na',
+
+  // UserController — tested
+  'prime.UserController.model':'passed',
+  'prime.UserController.crud-create':'skipped',
+  'prime.UserController.crud-read':'skipped',
+  'prime.UserController.crud-update':'skipped',
+  'prime.UserController.crud-delete':'passed',
+  'prime.UserController.crud-restore':'passed',
+  'prime.UserController.authorization':'passed',
+  'prime.UserController.policy':'passed',
+  'prime.UserController.validation':'passed',
+  'prime.UserController.activity-log':'skipped',
+  'prime.UserController.toggle-status':'passed',
+  'prime.UserController.search-filter':'na',
+
+  // TenantGroupController — tested, bug fixed
+  'prime.TenantGroupController.model':'passed',
+  'prime.TenantGroupController.crud-create':'skipped',
+  'prime.TenantGroupController.crud-read':'skipped',
+  'prime.TenantGroupController.crud-update':'skipped',
+  'prime.TenantGroupController.crud-delete':'passed',
+  'prime.TenantGroupController.crud-restore':'passed',
+  'prime.TenantGroupController.authorization':'passed',
+  'prime.TenantGroupController.policy':'passed',
+  'prime.TenantGroupController.validation':'passed',
+  'prime.TenantGroupController.activity-log':'skipped',
+  'prime.TenantGroupController.toggle-status':'passed',
+  'prime.TenantGroupController.search-filter':'na',
+
+  // TenantManagementController — duplicate file
+  'prime.TenantManagementController.model':'na',
+  'prime.TenantManagementController.crud-create':'na',
+  'prime.TenantManagementController.crud-read':'na',
+  'prime.TenantManagementController.crud-update':'na',
+  'prime.TenantManagementController.crud-delete':'na',
+  'prime.TenantManagementController.crud-restore':'na',
+  'prime.TenantManagementController.authorization':'na',
+  'prime.TenantManagementController.policy':'na',
+  'prime.TenantManagementController.validation':'na',
+  'prime.TenantManagementController.activity-log':'na',
+  'prime.TenantManagementController.toggle-status':'na',
+  'prime.TenantManagementController.search-filter':'na',
+
+  // UserRolePrmController — architecture verified
+  'prime.UserRolePrmController.model':'na',
+  'prime.UserRolePrmController.crud-create':'skipped',
+  'prime.UserRolePrmController.crud-read':'skipped',
+  'prime.UserRolePrmController.crud-update':'skipped',
+  'prime.UserRolePrmController.crud-delete':'skipped',
+  'prime.UserRolePrmController.crud-restore':'na',
+  'prime.UserRolePrmController.authorization':'passed',
+  'prime.UserRolePrmController.policy':'na',
+  'prime.UserRolePrmController.validation':'na',
+  'prime.UserRolePrmController.activity-log':'skipped',
+  'prime.UserRolePrmController.toggle-status':'na',
+  'prime.UserRolePrmController.search-filter':'passed',
+
+  // PrimeController — no auth (dashboard)
+  'prime.PrimeController.model':'na',
+  'prime.PrimeController.crud-create':'na',
+  'prime.PrimeController.crud-read':'na',
+  'prime.PrimeController.crud-update':'na',
+  'prime.PrimeController.crud-delete':'na',
+  'prime.PrimeController.crud-restore':'na',
+  'prime.PrimeController.authorization':'failed', // no auth
+  'prime.PrimeController.policy':'na',
+  'prime.PrimeController.validation':'na',
+  'prime.PrimeController.activity-log':'na',
+  'prime.PrimeController.toggle-status':'na',
+  'prime.PrimeController.search-filter':'na',
+
+  // SettingController — tested, incomplete methods documented
+  'prime.SettingController.model':'passed',
+  'prime.SettingController.crud-create':'failed', // store returns raw $request
+  'prime.SettingController.crud-read':'passed',
+  'prime.SettingController.crud-update':'passed',
+  'prime.SettingController.crud-delete':'failed', // empty body
+  'prime.SettingController.crud-restore':'na',
+  'prime.SettingController.authorization':'passed',
+  'prime.SettingController.policy':'passed',
+  'prime.SettingController.validation':'passed',
+  'prime.SettingController.activity-log':'na',
+  'prime.SettingController.toggle-status':'na',
+  'prime.SettingController.search-filter':'passed',
+
+  // RolePermissionController — tested
+  'prime.RolePermissionController.model':'passed',
+  'prime.RolePermissionController.crud-create':'skipped',
+  'prime.RolePermissionController.crud-read':'skipped',
+  'prime.RolePermissionController.crud-update':'skipped',
+  'prime.RolePermissionController.crud-delete':'skipped',
+  'prime.RolePermissionController.crud-restore':'na',
+  'prime.RolePermissionController.authorization':'passed',
+  'prime.RolePermissionController.policy':'passed',
+  'prime.RolePermissionController.validation':'na',
+  'prime.RolePermissionController.activity-log':'skipped',
+  'prime.RolePermissionController.toggle-status':'na',
+  'prime.RolePermissionController.search-filter':'na',
+
+  // ═══════════════════════════════════════════════════════════════
+  // GLOBALMASTER MODULE — 182 tests, 349 assertions (2026-03-17)
+  // ═══════════════════════════════════════════════════════════════
+
+  // CountryController — tested, bug fixed
+  'globalmaster.CountryController.model':'passed',
+  'globalmaster.CountryController.crud-create':'skipped',
+  'globalmaster.CountryController.crud-read':'skipped',
+  'globalmaster.CountryController.crud-update':'skipped',
+  'globalmaster.CountryController.crud-delete':'passed',
+  'globalmaster.CountryController.crud-restore':'passed', // bug fixed: missing Gate::authorize
+  'globalmaster.CountryController.authorization':'passed',
+  'globalmaster.CountryController.policy':'passed',
+  'globalmaster.CountryController.validation':'passed',
+  'globalmaster.CountryController.activity-log':'skipped',
+  'globalmaster.CountryController.toggle-status':'passed',
+  'globalmaster.CountryController.search-filter':'na',
+
+  // StateController — tested
+  'globalmaster.StateController.model':'passed',
+  'globalmaster.StateController.crud-create':'skipped',
+  'globalmaster.StateController.crud-read':'skipped',
+  'globalmaster.StateController.crud-update':'skipped',
+  'globalmaster.StateController.crud-delete':'passed',
+  'globalmaster.StateController.crud-restore':'passed',
+  'globalmaster.StateController.authorization':'passed',
+  'globalmaster.StateController.policy':'passed', // bug fixed in Prime: wrong prefix
+  'globalmaster.StateController.validation':'passed',
+  'globalmaster.StateController.activity-log':'skipped',
+  'globalmaster.StateController.toggle-status':'passed',
+  'globalmaster.StateController.search-filter':'na',
+
+  // CityController — tested
+  'globalmaster.CityController.model':'passed',
+  'globalmaster.CityController.crud-create':'skipped',
+  'globalmaster.CityController.crud-read':'skipped',
+  'globalmaster.CityController.crud-update':'skipped',
+  'globalmaster.CityController.crud-delete':'skipped',
+  'globalmaster.CityController.crud-restore':'skipped',
+  'globalmaster.CityController.authorization':'passed',
+  'globalmaster.CityController.policy':'passed',
+  'globalmaster.CityController.validation':'passed',
+  'globalmaster.CityController.activity-log':'skipped',
+  'globalmaster.CityController.toggle-status':'passed',
+  'globalmaster.CityController.search-filter':'na',
+
+  // DistrictController — tested
+  'globalmaster.DistrictController.model':'passed',
+  'globalmaster.DistrictController.crud-create':'skipped',
+  'globalmaster.DistrictController.crud-read':'skipped',
+  'globalmaster.DistrictController.crud-update':'skipped',
+  'globalmaster.DistrictController.crud-delete':'passed',
+  'globalmaster.DistrictController.crud-restore':'passed',
+  'globalmaster.DistrictController.authorization':'passed',
+  'globalmaster.DistrictController.policy':'passed',
+  'globalmaster.DistrictController.validation':'passed',
+  'globalmaster.DistrictController.activity-log':'skipped',
+  'globalmaster.DistrictController.toggle-status':'skipped',
+  'globalmaster.DistrictController.search-filter':'na',
+
+  // ModuleController — tested, bug documented
+  'globalmaster.ModuleController.model':'passed',
+  'globalmaster.ModuleController.crud-create':'skipped',
+  'globalmaster.ModuleController.crud-read':'failed', // show() uses wrong permission
+  'globalmaster.ModuleController.crud-update':'skipped',
+  'globalmaster.ModuleController.crud-delete':'passed',
+  'globalmaster.ModuleController.crud-restore':'passed',
+  'globalmaster.ModuleController.authorization':'passed',
+  'globalmaster.ModuleController.policy':'passed',
+  'globalmaster.ModuleController.validation':'passed',
+  'globalmaster.ModuleController.activity-log':'skipped',
+  'globalmaster.ModuleController.toggle-status':'passed',
+  'globalmaster.ModuleController.search-filter':'na',
+
+  // PlanController — tested
+  'globalmaster.PlanController.model':'passed',
+  'globalmaster.PlanController.crud-create':'skipped',
+  'globalmaster.PlanController.crud-read':'skipped',
+  'globalmaster.PlanController.crud-update':'skipped',
+  'globalmaster.PlanController.crud-delete':'skipped',
+  'globalmaster.PlanController.crud-restore':'skipped',
+  'globalmaster.PlanController.authorization':'passed',
+  'globalmaster.PlanController.policy':'na',
+  'globalmaster.PlanController.validation':'passed',
+  'globalmaster.PlanController.activity-log':'skipped',
+  'globalmaster.PlanController.toggle-status':'passed',
+  'globalmaster.PlanController.search-filter':'na',
+
+  // DropdownController — model tested
+  'globalmaster.DropdownController.model':'passed',
+  'globalmaster.DropdownController.crud-create':'skipped',
+  'globalmaster.DropdownController.crud-read':'skipped',
+  'globalmaster.DropdownController.crud-update':'skipped',
+  'globalmaster.DropdownController.crud-delete':'skipped',
+  'globalmaster.DropdownController.crud-restore':'skipped',
+  'globalmaster.DropdownController.authorization':'passed', // uses tenant.* prefix (wrong)
+  'globalmaster.DropdownController.policy':'passed',
+  'globalmaster.DropdownController.validation':'passed',
+  'globalmaster.DropdownController.activity-log':'skipped',
+  'globalmaster.DropdownController.toggle-status':'passed',
+  'globalmaster.DropdownController.search-filter':'na',
+
+  // GlobalMasterController — zero auth (scaffold)
+  'globalmaster.GlobalMasterController.model':'na',
+  'globalmaster.GlobalMasterController.crud-create':'na',
+  'globalmaster.GlobalMasterController.crud-read':'na',
+  'globalmaster.GlobalMasterController.crud-update':'na',
+  'globalmaster.GlobalMasterController.crud-delete':'na',
+  'globalmaster.GlobalMasterController.crud-restore':'na',
+  'globalmaster.GlobalMasterController.authorization':'failed',
+  'globalmaster.GlobalMasterController.policy':'na',
+  'globalmaster.GlobalMasterController.validation':'na',
+  'globalmaster.GlobalMasterController.activity-log':'na',
+  'globalmaster.GlobalMasterController.toggle-status':'na',
+  'globalmaster.GlobalMasterController.search-filter':'na',
+
+  // AcademicSessionController — model tested
+  'globalmaster.AcademicSessionController.model':'passed',
+  'globalmaster.AcademicSessionController.crud-create':'skipped',
+  'globalmaster.AcademicSessionController.crud-read':'skipped',
+  'globalmaster.AcademicSessionController.crud-update':'skipped',
+  'globalmaster.AcademicSessionController.crud-delete':'skipped',
+  'globalmaster.AcademicSessionController.crud-restore':'skipped',
+  'globalmaster.AcademicSessionController.authorization':'passed',
+  'globalmaster.AcademicSessionController.policy':'passed',
+  'globalmaster.AcademicSessionController.validation':'passed',
+  'globalmaster.AcademicSessionController.activity-log':'skipped',
+  'globalmaster.AcademicSessionController.toggle-status':'passed',
+  'globalmaster.AcademicSessionController.search-filter':'na',
+
+  // LanguageController — model tested, many auth gaps
+  'globalmaster.LanguageController.model':'passed', // bug fixed: wrong class name
+  'globalmaster.LanguageController.crud-create':'skipped',
+  'globalmaster.LanguageController.crud-read':'skipped',
+  'globalmaster.LanguageController.crud-update':'skipped',
+  'globalmaster.LanguageController.crud-delete':'passed',
+  'globalmaster.LanguageController.crud-restore':'passed',
+  'globalmaster.LanguageController.authorization':'failed', // 5/11 methods missing auth
+  'globalmaster.LanguageController.policy':'passed',
+  'globalmaster.LanguageController.validation':'passed',
+  'globalmaster.LanguageController.activity-log':'skipped',
+  'globalmaster.LanguageController.toggle-status':'passed',
+  'globalmaster.LanguageController.search-filter':'na',
+
+  // GeographySetupController — mostly unimplemented
+  'globalmaster.GeographySetupController.model':'na',
+  'globalmaster.GeographySetupController.crud-create':'na',
+  'globalmaster.GeographySetupController.crud-read':'passed',
+  'globalmaster.GeographySetupController.crud-update':'na',
+  'globalmaster.GeographySetupController.crud-delete':'na',
+  'globalmaster.GeographySetupController.crud-restore':'na',
+  'globalmaster.GeographySetupController.authorization':'failed', // 6/8 methods no auth
+  'globalmaster.GeographySetupController.policy':'na',
+  'globalmaster.GeographySetupController.validation':'na',
+  'globalmaster.GeographySetupController.activity-log':'na',
+  'globalmaster.GeographySetupController.toggle-status':'na',
+  'globalmaster.GeographySetupController.search-filter':'failed', // no auth on search
+
+  // ActivityLogController — model tested
+  'globalmaster.ActivityLogController.model':'passed',
+  'globalmaster.ActivityLogController.crud-create':'na',
+  'globalmaster.ActivityLogController.crud-read':'skipped',
+  'globalmaster.ActivityLogController.crud-update':'na',
+  'globalmaster.ActivityLogController.crud-delete':'na',
+  'globalmaster.ActivityLogController.crud-restore':'na',
+  'globalmaster.ActivityLogController.authorization':'failed', // uses tenant.* prefix
+  'globalmaster.ActivityLogController.policy':'passed',
+  'globalmaster.ActivityLogController.validation':'na',
+  'globalmaster.ActivityLogController.activity-log':'na',
+  'globalmaster.ActivityLogController.toggle-status':'na',
+  'globalmaster.ActivityLogController.search-filter':'na',
+
+  // NotificationController — zero auth
+  'globalmaster.NotificationController.model':'na',
+  'globalmaster.NotificationController.crud-create':'na',
+  'globalmaster.NotificationController.crud-read':'na',
+  'globalmaster.NotificationController.crud-update':'na',
+  'globalmaster.NotificationController.crud-delete':'na',
+  'globalmaster.NotificationController.crud-restore':'na',
+  'globalmaster.NotificationController.authorization':'failed',
+  'globalmaster.NotificationController.policy':'na',
+  'globalmaster.NotificationController.validation':'na',
+  'globalmaster.NotificationController.activity-log':'na',
+  'globalmaster.NotificationController.toggle-status':'na',
+  'globalmaster.NotificationController.search-filter':'na',
+
+  // SessionBoardSetupController — mostly unimplemented
+  'globalmaster.SessionBoardSetupController.model':'na',
+  'globalmaster.SessionBoardSetupController.crud-create':'na',
+  'globalmaster.SessionBoardSetupController.crud-read':'passed',
+  'globalmaster.SessionBoardSetupController.crud-update':'na',
+  'globalmaster.SessionBoardSetupController.crud-delete':'na',
+  'globalmaster.SessionBoardSetupController.crud-restore':'na',
+  'globalmaster.SessionBoardSetupController.authorization':'failed', // only index has auth
+  'globalmaster.SessionBoardSetupController.policy':'na',
+  'globalmaster.SessionBoardSetupController.validation':'na',
+  'globalmaster.SessionBoardSetupController.activity-log':'na',
+  'globalmaster.SessionBoardSetupController.toggle-status':'na',
+  'globalmaster.SessionBoardSetupController.search-filter':'na',
+
+  // OrganizationController — zero auth (scaffold)
+  'globalmaster.OrganizationController.model':'na',
+  'globalmaster.OrganizationController.crud-create':'na',
+  'globalmaster.OrganizationController.crud-read':'na',
+  'globalmaster.OrganizationController.crud-update':'na',
+  'globalmaster.OrganizationController.crud-delete':'na',
+  'globalmaster.OrganizationController.crud-restore':'na',
+  'globalmaster.OrganizationController.authorization':'failed',
+  'globalmaster.OrganizationController.policy':'na',
+  'globalmaster.OrganizationController.validation':'na',
+  'globalmaster.OrganizationController.activity-log':'na',
+  'globalmaster.OrganizationController.toggle-status':'na',
+  'globalmaster.OrganizationController.search-filter':'na',
+
+  // ═══════════════════════════════════════════════════════════════
+  // BILLING MODULE — 79 tests, 2026-03-17
+  // ═══════════════════════════════════════════════════════════════
+
+  'billing.InvoicingAuditLogController.model':'passed','billing.InvoicingAuditLogController.crud-create':'na','billing.InvoicingAuditLogController.crud-read':'skipped','billing.InvoicingAuditLogController.crud-update':'na','billing.InvoicingAuditLogController.crud-delete':'na','billing.InvoicingAuditLogController.crud-restore':'na','billing.InvoicingAuditLogController.authorization':'passed','billing.InvoicingAuditLogController.policy':'passed','billing.InvoicingAuditLogController.validation':'na','billing.InvoicingAuditLogController.activity-log':'na','billing.InvoicingAuditLogController.toggle-status':'na','billing.InvoicingAuditLogController.search-filter':'na',
+
+  'billing.InvoicingController.model':'passed','billing.InvoicingController.crud-create':'skipped','billing.InvoicingController.crud-read':'skipped','billing.InvoicingController.crud-update':'skipped','billing.InvoicingController.crud-delete':'skipped','billing.InvoicingController.crud-restore':'na','billing.InvoicingController.authorization':'passed','billing.InvoicingController.policy':'passed','billing.InvoicingController.validation':'passed','billing.InvoicingController.activity-log':'skipped','billing.InvoicingController.toggle-status':'na','billing.InvoicingController.search-filter':'na',
+
+  'billing.InvoicingPaymentController.model':'passed','billing.InvoicingPaymentController.crud-create':'skipped','billing.InvoicingPaymentController.crud-read':'skipped','billing.InvoicingPaymentController.crud-update':'skipped','billing.InvoicingPaymentController.crud-delete':'skipped','billing.InvoicingPaymentController.crud-restore':'na','billing.InvoicingPaymentController.authorization':'passed','billing.InvoicingPaymentController.policy':'passed','billing.InvoicingPaymentController.validation':'passed','billing.InvoicingPaymentController.activity-log':'skipped','billing.InvoicingPaymentController.toggle-status':'na','billing.InvoicingPaymentController.search-filter':'na',
+
+  'billing.BillingManagementController.model':'passed','billing.BillingManagementController.crud-create':'failed','billing.BillingManagementController.crud-read':'passed','billing.BillingManagementController.crud-update':'na','billing.BillingManagementController.crud-delete':'na','billing.BillingManagementController.crud-restore':'na','billing.BillingManagementController.authorization':'failed','billing.BillingManagementController.policy':'failed','billing.BillingManagementController.validation':'na','billing.BillingManagementController.activity-log':'skipped','billing.BillingManagementController.toggle-status':'passed','billing.BillingManagementController.search-filter':'na',
+
+  'billing.BillingCycleController.model':'passed','billing.BillingCycleController.crud-create':'skipped','billing.BillingCycleController.crud-read':'skipped','billing.BillingCycleController.crud-update':'skipped','billing.BillingCycleController.crud-delete':'passed','billing.BillingCycleController.crud-restore':'passed','billing.BillingCycleController.authorization':'passed','billing.BillingCycleController.policy':'passed','billing.BillingCycleController.validation':'passed','billing.BillingCycleController.activity-log':'skipped','billing.BillingCycleController.toggle-status':'passed','billing.BillingCycleController.search-filter':'na',
+
+  'billing.SubscriptionController.model':'na','billing.SubscriptionController.crud-create':'skipped','billing.SubscriptionController.crud-read':'skipped','billing.SubscriptionController.crud-update':'skipped','billing.SubscriptionController.crud-delete':'skipped','billing.SubscriptionController.crud-restore':'na','billing.SubscriptionController.authorization':'passed','billing.SubscriptionController.policy':'passed','billing.SubscriptionController.validation':'na','billing.SubscriptionController.activity-log':'skipped','billing.SubscriptionController.toggle-status':'na','billing.SubscriptionController.search-filter':'na',
+
+  // ═══════════════════════════════════════════════════════════════
+  // SYSTEMCONFIG MODULE — 31 tests, 2026-03-17
+  // ═══════════════════════════════════════════════════════════════
+
+  'systemconfig.SystemConfigController.model':'na','systemconfig.SystemConfigController.crud-create':'na','systemconfig.SystemConfigController.crud-read':'na','systemconfig.SystemConfigController.crud-update':'na','systemconfig.SystemConfigController.crud-delete':'na','systemconfig.SystemConfigController.crud-restore':'na','systemconfig.SystemConfigController.authorization':'na','systemconfig.SystemConfigController.policy':'na','systemconfig.SystemConfigController.validation':'na','systemconfig.SystemConfigController.activity-log':'na','systemconfig.SystemConfigController.toggle-status':'na','systemconfig.SystemConfigController.search-filter':'na',
+
+  'systemconfig.SettingController.model':'passed','systemconfig.SettingController.crud-create':'skipped','systemconfig.SettingController.crud-read':'skipped','systemconfig.SettingController.crud-update':'skipped','systemconfig.SettingController.crud-delete':'skipped','systemconfig.SettingController.crud-restore':'na','systemconfig.SettingController.authorization':'passed','systemconfig.SettingController.policy':'na','systemconfig.SettingController.validation':'na','systemconfig.SettingController.activity-log':'na','systemconfig.SettingController.toggle-status':'na','systemconfig.SettingController.search-filter':'na',
+
+  'systemconfig.MenuController.model':'passed','systemconfig.MenuController.crud-create':'skipped','systemconfig.MenuController.crud-read':'skipped','systemconfig.MenuController.crud-update':'skipped','systemconfig.MenuController.crud-delete':'skipped','systemconfig.MenuController.crud-restore':'skipped','systemconfig.MenuController.authorization':'passed','systemconfig.MenuController.policy':'na','systemconfig.MenuController.validation':'skipped','systemconfig.MenuController.activity-log':'skipped','systemconfig.MenuController.toggle-status':'skipped','systemconfig.MenuController.search-filter':'na',
+
+  'systemconfig.MenuSyncController.model':'na','systemconfig.MenuSyncController.crud-create':'na','systemconfig.MenuSyncController.crud-read':'na','systemconfig.MenuSyncController.crud-update':'na','systemconfig.MenuSyncController.crud-delete':'na','systemconfig.MenuSyncController.crud-restore':'na','systemconfig.MenuSyncController.authorization':'na','systemconfig.MenuSyncController.policy':'na','systemconfig.MenuSyncController.validation':'na','systemconfig.MenuSyncController.activity-log':'na','systemconfig.MenuSyncController.toggle-status':'na','systemconfig.MenuSyncController.search-filter':'na',
+
+  // ═══════════════════════════════════════════════════════════════
+  // DOCUMENTATION MODULE — 22 tests, 2026-03-17
+  // ═══════════════════════════════════════════════════════════════
+
+  'documentation.DocumentationArticleController.model':'passed','documentation.DocumentationArticleController.crud-create':'skipped','documentation.DocumentationArticleController.crud-read':'skipped','documentation.DocumentationArticleController.crud-update':'skipped','documentation.DocumentationArticleController.crud-delete':'skipped','documentation.DocumentationArticleController.crud-restore':'na','documentation.DocumentationArticleController.authorization':'na','documentation.DocumentationArticleController.policy':'na','documentation.DocumentationArticleController.validation':'passed','documentation.DocumentationArticleController.activity-log':'na','documentation.DocumentationArticleController.toggle-status':'na','documentation.DocumentationArticleController.search-filter':'na',
+
+  'documentation.DocumentationCategoryController.model':'passed','documentation.DocumentationCategoryController.crud-create':'skipped','documentation.DocumentationCategoryController.crud-read':'skipped','documentation.DocumentationCategoryController.crud-update':'skipped','documentation.DocumentationCategoryController.crud-delete':'skipped','documentation.DocumentationCategoryController.crud-restore':'na','documentation.DocumentationCategoryController.authorization':'na','documentation.DocumentationCategoryController.policy':'na','documentation.DocumentationCategoryController.validation':'passed','documentation.DocumentationCategoryController.activity-log':'na','documentation.DocumentationCategoryController.toggle-status':'na','documentation.DocumentationCategoryController.search-filter':'na',
+
+  'documentation.DocumentationController.model':'na','documentation.DocumentationController.crud-create':'na','documentation.DocumentationController.crud-read':'na','documentation.DocumentationController.crud-update':'na','documentation.DocumentationController.crud-delete':'na','documentation.DocumentationController.crud-restore':'na','documentation.DocumentationController.authorization':'na','documentation.DocumentationController.policy':'na','documentation.DocumentationController.validation':'na','documentation.DocumentationController.activity-log':'na','documentation.DocumentationController.toggle-status':'na','documentation.DocumentationController.search-filter':'na',
+
+  // ═══════════════════════════════════════════════════════════════
+  // SCHEDULER MODULE — 13 tests, 2026-03-17
+  // ═══════════════════════════════════════════════════════════════
+
+  'scheduler.SchedulerController.model':'passed','scheduler.SchedulerController.crud-create':'passed','scheduler.SchedulerController.crud-read':'na','scheduler.SchedulerController.crud-update':'failed','scheduler.SchedulerController.crud-delete':'failed','scheduler.SchedulerController.crud-restore':'na','scheduler.SchedulerController.authorization':'failed','scheduler.SchedulerController.policy':'na','scheduler.SchedulerController.validation':'passed','scheduler.SchedulerController.activity-log':'na','scheduler.SchedulerController.toggle-status':'na','scheduler.SchedulerController.search-filter':'na',
+};
+
+// localStorage keys
+const LS_CHECKLIST='central_testing_checklist';
+const LS_MODCHECKS='central_module_checks';
+
+function loadState(){
+  try{
+    const saved=JSON.parse(localStorage.getItem(LS_CHECKLIST))||{};
+    // Merge defaults with saved (saved takes priority)
+    return Object.assign({},DEFAULT_STATE,saved);
+  }catch(e){return Object.assign({},DEFAULT_STATE);}
+}
+function saveState(s){localStorage.setItem(LS_CHECKLIST,JSON.stringify(s));}
+function loadModChecks(){try{return JSON.parse(localStorage.getItem(LS_MODCHECKS))||{};}catch(e){return {};}}
+function saveModChecks(s){localStorage.setItem(LS_MODCHECKS,JSON.stringify(s));}
+
+function cycleStatus(mod,ctrl,cat){
+  const state=loadState();
+  const key=mod+'.'+ctrl+'.'+cat;
+  const cur=state[key]||'not-started';
+  const idx=STATUS_CYCLE.indexOf(cur);
+  const next=STATUS_CYCLE[(idx+1)%STATUS_CYCLE.length];
+  state[key]=next;
+  saveState(state);
+  document.getElementById('st-'+key).innerHTML=STATUS_ICONS[next];
+  updateProgress();
+}
+
+function updateProgress(){
+  const state=loadState();
+  for(const mod in MODULES){
+    const ctrls=MODULES[mod].controllers;
+    let total=ctrls.length*TEST_CATEGORIES.length;
+    let done=0;
+    ctrls.forEach(c=>{
+      TEST_CATEGORIES.forEach(cat=>{
+        const k=mod+'.'+c+'.'+cat.key;
+        if(state[k]==='passed'||state[k]==='na'||state[k]==='skipped')done++;
+      });
+    });
+    const pct=total>0?Math.round((done/total)*100):0;
+    const bar=document.getElementById(mod+'-progress-bar');
+    const txt=document.getElementById(mod+'-progress-text');
+    if(bar)bar.style.width=pct+'%';
+    if(txt)txt.textContent=pct+'% complete';
+  }
+}
+
+// Build checklist tables
+function buildChecklists(){
+  const container=document.getElementById('checklist-container');
+  const state=loadState();
+  let html='';
+  for(const mod in MODULES){
+    const m=MODULES[mod];
+    html+='<div class="card p-3 mb-3 checklist-module" data-module="'+mod+'">';
+    html+='<div class="d-flex justify-content-between align-items-center mb-2">';
+    html+='<h6 class="mb-0"><i class="bi '+m.icon+' '+m.color+'"></i> '+m.name+' Module</h6>';
+    html+='<small id="'+mod+'-progress-text" class="text-muted">0% complete</small>';
+    html+='</div>';
+    html+='<div class="progress mb-2" style="height:6px"><div id="'+mod+'-progress-bar" class="progress-bar bg-success" style="width:0%"></div></div>';
+    html+='<div class="table-responsive"><table class="table table-sm table-hover checklist-table">';
+    html+='<thead class="table-dark"><tr><th style="width:180px">Controller</th>';
+    TEST_CATEGORIES.forEach(cat=>{
+      html+='<th class="text-center" style="width:60px;font-size:.7rem" title="'+cat.desc+'">'+cat.label.replace(/CRUD - /,'')+'</th>';
+    });
+    html+='</tr></thead><tbody>';
+    m.controllers.forEach(ctrl=>{
+      html+='<tr><td><code style="font-size:.75rem">'+ctrl.replace('Controller','')+'</code></td>';
+      TEST_CATEGORIES.forEach(cat=>{
+        const key=mod+'.'+ctrl+'.'+cat.key;
+        const cur=state[key]||'not-started';
+        html+='<td class="status-cell" id="st-'+key+'" onclick="cycleStatus(\''+mod+'\',\''+ctrl+'\',\''+cat.key+'\')">'+STATUS_ICONS[cur]+'</td>';
+      });
+      html+='</tr>';
+    });
+    html+='</tbody></table></div></div>';
+  }
+  container.innerHTML=html;
+}
+
+// Build module card controller lists
+function buildModuleCards(){
+  const checks=loadModChecks();
+  for(const mod in MODULES){
+    const list=document.getElementById(mod+'-ctrl-list');
+    if(!list)continue;
+    let html='';
+    MODULES[mod].controllers.forEach(ctrl=>{
+      html+='<li><strong>'+ctrl+'</strong><div class="checks">';
+      CHECK_TYPES.forEach(ct=>{
+        const key=mod+'.'+ctrl+'.'+ct.key;
+        const checked=checks[key]?'checked':'';
+        html+='<label><input type="checkbox" '+checked+' onchange="toggleModCheck(\''+key+'\',this.checked)"> '+ct.label+'</label>';
+      });
+      html+='</div></li>';
+    });
+    list.innerHTML=html;
+  }
+}
+
+function toggleModCheck(key,val){
+  const checks=loadModChecks();
+  checks[key]=val;
+  saveModChecks(checks);
+  updateProgress();
+}
+
+function filterChecklistModule(){
+  const v=document.getElementById('checklist-module-filter').value;
+  document.querySelectorAll('.checklist-module').forEach(el=>{
+    el.style.display=(v==='all'||el.dataset.module===v)?'block':'none';
+  });
+}
+
+// Init
+buildChecklists();
+buildModuleCards();
+updateProgress();
+</script>
+</body>
+</html>

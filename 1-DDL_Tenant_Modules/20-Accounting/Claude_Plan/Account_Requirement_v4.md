@@ -1,11 +1,11 @@
-# Account Module — Detailed Requirement Document v3
+# Account Module — Detailed Requirement Document v4
 
 **Module:** Accounting | **Laravel Module:** `Modules/Accounting/` | **Prefix:** `acc_`
 **Database:** tenant_db (dedicated per tenant — no tenant_id needed)
 **Route:** `/accounting/*` | **RBS Module:** K — Finance & Accounting (70 sub-tasks)
-**Inspired by:** Tally Prime | **Date:** 2026-03-19 | **Version:** 3.0
+**Inspired by:** Tally Prime | **Date:** 2026-03-20 | **Version:** 4.0
 
-**Changes from v2:** 3 separate modules, Transport integration added, Tally ledger mapping mechanism, sch_employees reuse (not acc_employees), no tenant_id, updated prefixes
+**Changes from v3:** Completely independent file — all "Same as v2" removed. All SQL DDL converted to markdown table format. Fixed FK references in asset/expense/tally tables (old `journal_entries` → new `acc_vouchers`). Fixed `acc_bank_statement_entries` stray FK. Fixed section numbering. Added missing `created_by`/`deleted_at` columns. Old `Account_ddl_v1.sql` is unused and can be replaced entirely.
 
 ---
 
@@ -207,7 +207,56 @@ The Accounting module implements a **Tally-Prime inspired double-entry bookkeepi
 
 ---
 
-## 4. Entity List (Tables & Columns)
+## 4. Entity List — VERIFIED against `tenant_db_v2.sql`
+
+### Existing Tables REUSED (verified as present in DDL)
+
+| Table | Line # | Used For | Changes Needed |
+|-------|--------|----------|----------------|
+| `sch_employees` | 955 | Employee ledger auto-creation, expense claims | **ALTER TABLE** — add payroll columns (see Section 14) |
+| `sch_department` | 476 | Cost center mapping (**SINGULAR name**) | None |
+| `sch_designation` | 486 | Employee title (**SINGULAR name**) | None |
+| `sch_categories` | 584 | Staff grouping (used by `sch_leave_config`) | None |
+| `std_students` | 4618 | Student debtor ledger auto-creation | None |
+| `vnd_vendors` | 1810 | Vendor creditor ledger auto-creation | None |
+| `sys_users` | 87 | created_by, approved_by | None |
+
+> **CRITICAL:** `sch_teachers` does NOT exist as a separate table. Use `sch_employees` where `is_teacher = 1` + `sch_teacher_profile` for teacher-specific data. The `acc_ledgers.employee_id` FK points to `sch_employees.id`.
+
+### Old acc_* Tables in tenant_db_v2.sql — REPLACED by Voucher-Based Schema
+
+The current DDL (lines 9631-10258) contains 31 `acc_*` tables using a journal-entry model. Our new Tally-inspired design **replaces** these with 21 voucher-based tables:
+
+**Tables REMOVED (old model):**
+- `acc_journal_entries`, `acc_journal_entry_lines` → replaced by `acc_vouchers` + `acc_voucher_items`
+- `acc_sales_invoices`, `acc_purchase_invoices` → handled via voucher type=SALES/PURCHASE
+- `acc_invoice_tax_lines`, `acc_invoice_lines` → voucher items with ledger references
+- `acc_payment_transactions`, `acc_receipts` → voucher type=RECEIPT/PAYMENT
+- `acc_fee_heads`, `acc_fee_structures`, `acc_fee_structure_lines`, `acc_discount_types`, `acc_student_fee_concessions` → **EXCLUDED** (fee managed by StudentFee `fin_*`)
+- `acc_recurring_journal_templates` + lines → renamed to `acc_recurring_templates` + lines
+- `acc_reconciliation_matches` → restructured as `acc_bank_statement_entries`
+
+**Tables KEPT (restructured for voucher model):**
+- `acc_account_groups` — enhanced with `alias`, `affects_gross_profit`, `is_system`, `is_subledger`, `sequence`
+- `acc_ledgers` — enhanced with bank fields, `student_id`, `employee_id`, `vendor_id`
+- `acc_tax_rates` — enhanced with `hsn_sac_code`
+- `acc_ledger_mappings` — expanded `source_module` enum
+- `acc_cost_centers` — enhanced with `parent_id`, `category`
+- `acc_budgets` — kept
+- `acc_expense_claims` + lines — kept (employee_id → `sch_employees`)
+- `acc_bank_reconciliations` — restructured
+- `acc_asset_categories`, `acc_fixed_assets`, `acc_depreciation_entries` — kept
+- `acc_tally_export_logs` — kept
+
+**Tables ADDED (new):**
+- `acc_financial_years` — FY config with locking
+- `acc_voucher_types` — Payment, Receipt, Contra, Journal, Sales, Purchase, etc.
+- `acc_vouchers` — THE heart of double-entry
+- `acc_voucher_items` — Dr/Cr line items
+- `acc_bank_statement_entries` — imported bank transactions
+- `acc_tally_ledger_mappings` — our ledgers ↔ Tally names
+
+### New Accounting Tables (21 total)
 
 ### 4.1 acc_financial_years
 | Column | Type | Description |
@@ -359,22 +408,158 @@ The Accounting module implements a **Tally-Prime inspired double-entry bookkeepi
 | is_active, created_by, created_at, updated_at, deleted_at | Standard | Standard columns |
 | UNIQUE | (ledger_id, source_module, source_type, source_id) | One mapping per combination |
 
-### 4.11 acc_recurring_templates + 4.12 acc_recurring_template_lines
-*(Same as v2 — no changes)*
+### 4.11 acc_recurring_templates
+| Column | Type | Description |
+|--------|------|-------------|
+| id | BIGINT UNSIGNED PK | Primary key |
+| name | VARCHAR(150) | Template name |
+| voucher_type_id | BIGINT UNSIGNED FK | FK → acc_voucher_types |
+| frequency | ENUM('Daily','Weekly','Monthly','Quarterly','Yearly') | Recurrence |
+| start_date | DATE | Start posting from |
+| end_date | DATE NULL | Stop posting after |
+| day_of_month | TINYINT NULL | Day to post (for monthly) |
+| narration | TEXT NULL | Default narration |
+| total_amount | DECIMAL(15,2) | Template total |
+| last_posted_date | DATE NULL | Last auto-post date |
+| is_active, created_by, created_at, updated_at, deleted_at | Standard | Standard columns |
 
-### 4.13 acc_bank_reconciliations + 4.14 acc_bank_statement_entries
-*(Same as v2 — no changes)*
+### 4.12 acc_recurring_template_lines
+| Column | Type | Description |
+|--------|------|-------------|
+| id | BIGINT UNSIGNED PK | Primary key |
+| recurring_template_id | BIGINT UNSIGNED FK | FK → acc_recurring_templates (CASCADE) |
+| ledger_id | BIGINT UNSIGNED FK | FK → acc_ledgers |
+| type | ENUM('debit','credit') | Dr or Cr |
+| amount | DECIMAL(15,2) | Line amount |
+| narration | VARCHAR(500) NULL | Per-line narration |
+| is_active, created_by, created_at, updated_at, deleted_at | Standard | Standard columns |
 
-### 4.15 acc_asset_categories + 4.16 acc_fixed_assets + 4.17 acc_depreciation_entries
-*(Same as v2 — no changes)*
+### 4.13 acc_bank_reconciliations
+| Column | Type | Description |
+|--------|------|-------------|
+| id | BIGINT UNSIGNED PK | Primary key |
+| ledger_id | BIGINT UNSIGNED FK | FK → acc_ledgers (bank account ledger) |
+| statement_date | DATE | Bank statement date |
+| closing_balance | DECIMAL(15,2) | Closing balance per bank statement |
+| statement_path | VARCHAR(255) NULL | Uploaded statement file path |
+| status | ENUM('In Progress','Completed') DEFAULT 'In Progress' | Reconciliation status |
+| is_active | TINYINT(1) DEFAULT 1 | Active flag |
+| created_by | BIGINT UNSIGNED NULL | FK → sys_users |
+| created_at, updated_at, deleted_at | TIMESTAMP | Standard columns |
 
-### 4.18 acc_expense_claims + 4.19 acc_expense_claim_lines
-*(Same as v2 — no changes, but `employee_id` FK → `sch_employees` not acc_employees)*
+### 4.14 acc_bank_statement_entries
+| Column | Type | Description |
+|--------|------|-------------|
+| id | BIGINT UNSIGNED PK | Primary key |
+| reconciliation_id | BIGINT UNSIGNED FK | FK → acc_bank_reconciliations (CASCADE) |
+| transaction_date | DATE | Bank transaction date |
+| description | VARCHAR(500) NULL | Transaction description from bank |
+| reference | VARCHAR(255) NULL | Bank reference number |
+| debit | DECIMAL(15,2) DEFAULT 0.00 | Debit amount (withdrawal) |
+| credit | DECIMAL(15,2) DEFAULT 0.00 | Credit amount (deposit) |
+| balance | DECIMAL(15,2) NULL | Running balance per statement |
+| is_matched | TINYINT(1) DEFAULT 0 | Whether matched to a voucher item |
+| matched_voucher_item_id | BIGINT UNSIGNED NULL FK | FK → acc_voucher_items (matched entry) |
+| matched_at | TIMESTAMP NULL | When the match was made |
+| matched_by | BIGINT UNSIGNED NULL | FK → sys_users (who matched) |
+| is_active | TINYINT(1) DEFAULT 1 | Active flag |
+| created_by | BIGINT UNSIGNED NULL | FK → sys_users |
+| created_at, updated_at, deleted_at | TIMESTAMP | Standard columns |
+
+### 4.15 acc_asset_categories
+| Column | Type | Description |
+|--------|------|-------------|
+| id | BIGINT UNSIGNED PK | Primary key |
+| name | VARCHAR(100) | Category name (e.g., "Furniture", "IT Equipment") |
+| code | VARCHAR(20) UNIQUE | Category code |
+| depreciation_method | ENUM('SLM','WDV') | Straight Line / Written Down Value |
+| depreciation_rate | DECIMAL(5,2) | Annual depreciation rate % |
+| useful_life_years | INT NULL | Useful life in years |
+| is_active | TINYINT(1) DEFAULT 1 | Active flag |
+| created_by | BIGINT UNSIGNED NULL | FK → sys_users |
+| created_at, updated_at, deleted_at | TIMESTAMP | Standard columns |
+
+### 4.16 acc_fixed_assets
+| Column | Type | Description |
+|--------|------|-------------|
+| id | BIGINT UNSIGNED PK | Primary key |
+| name | VARCHAR(150) | Asset name |
+| asset_code | VARCHAR(50) UNIQUE | Asset identification code |
+| asset_category_id | BIGINT UNSIGNED FK | FK → acc_asset_categories |
+| purchase_date | DATE | Date of purchase |
+| purchase_cost | DECIMAL(15,2) | Original purchase cost |
+| salvage_value | DECIMAL(15,2) DEFAULT 0.00 | Estimated residual value |
+| current_value | DECIMAL(15,2) | Current book value |
+| accumulated_depreciation | DECIMAL(15,2) DEFAULT 0.00 | Total depreciation to date |
+| location | VARCHAR(100) NULL | Physical location of asset |
+| vendor_id | BIGINT UNSIGNED NULL FK | FK → vnd_vendors (supplier) |
+| voucher_id | BIGINT UNSIGNED NULL FK | FK → **acc_vouchers** (purchase voucher) |
+| is_active | TINYINT(1) DEFAULT 1 | Active flag |
+| created_by | BIGINT UNSIGNED NULL | FK → sys_users |
+| created_at, updated_at, deleted_at | TIMESTAMP | Standard columns |
+
+### 4.17 acc_depreciation_entries
+| Column | Type | Description |
+|--------|------|-------------|
+| id | BIGINT UNSIGNED PK | Primary key |
+| fixed_asset_id | BIGINT UNSIGNED FK | FK → acc_fixed_assets (CASCADE) |
+| financial_year_id | BIGINT UNSIGNED FK | FK → **acc_financial_years** |
+| depreciation_date | DATE | Date of depreciation entry |
+| depreciation_amount | DECIMAL(15,2) | Depreciation amount for this period |
+| voucher_id | BIGINT UNSIGNED NULL FK | FK → **acc_vouchers** (depreciation journal voucher) |
+| is_active | TINYINT(1) DEFAULT 1 | Active flag |
+| created_by | BIGINT UNSIGNED NULL | FK → sys_users |
+| created_at, updated_at, deleted_at | TIMESTAMP | Standard columns |
+
+### 4.18 acc_expense_claims
+| Column | Type | Description |
+|--------|------|-------------|
+| id | BIGINT UNSIGNED PK | Primary key |
+| claim_number | VARCHAR(50) UNIQUE | Auto-generated claim number |
+| employee_id | BIGINT UNSIGNED FK | FK → **sch_employees** (existing, not acc_employees) |
+| claim_date | DATE | Date of claim submission |
+| total_amount | DECIMAL(15,2) | Total claim amount |
+| status | ENUM('Draft','Submitted','Approved','Rejected','Paid') | Claim workflow status |
+| approved_by | BIGINT UNSIGNED NULL | FK → sys_users |
+| approved_at | TIMESTAMP NULL | Approval timestamp |
+| voucher_id | BIGINT UNSIGNED NULL FK | FK → **acc_vouchers** (payment voucher on approval) |
+| is_active | TINYINT(1) DEFAULT 1 | Active flag |
+| created_by | BIGINT UNSIGNED NULL | FK → sys_users |
+| created_at, updated_at, deleted_at | TIMESTAMP | Standard columns |
+
+### 4.19 acc_expense_claim_lines
+| Column | Type | Description |
+|--------|------|-------------|
+| id | BIGINT UNSIGNED PK | Primary key |
+| expense_claim_id | BIGINT UNSIGNED FK | FK → acc_expense_claims (CASCADE) |
+| expense_date | DATE | Date of expense |
+| ledger_id | BIGINT UNSIGNED FK | FK → **acc_ledgers** (expense category ledger) |
+| description | VARCHAR(255) | Expense description |
+| amount | DECIMAL(15,2) | Expense amount |
+| tax_amount | DECIMAL(15,2) DEFAULT 0.00 | Tax on expense |
+| receipt_path | VARCHAR(255) NULL | Uploaded receipt file path |
+| is_active | TINYINT(1) DEFAULT 1 | Active flag |
+| created_by | BIGINT UNSIGNED NULL | FK → sys_users |
+| created_at, updated_at, deleted_at | TIMESTAMP | Standard columns |
 
 ### 4.20 acc_tally_export_logs
-*(Same as v2 — no changes)*
+| Column | Type | Description |
+|--------|------|-------------|
+| id | BIGINT UNSIGNED PK | Primary key |
+| export_type | ENUM('Ledgers','Vouchers','Inventory') | What was exported |
+| export_date | DATETIME | When export was run |
+| file_name | VARCHAR(255) | Generated file name |
+| exported_by | BIGINT UNSIGNED FK | FK → sys_users |
+| start_date | DATE NULL | Export date range start |
+| end_date | DATE NULL | Export date range end |
+| record_count | INT NULL | Number of records exported |
+| status | ENUM('Success','Failed','Partial') | Export result |
+| error_log | TEXT NULL | Error details if failed |
+| is_active | TINYINT(1) DEFAULT 1 | Active flag |
+| created_by | BIGINT UNSIGNED NULL | FK → sys_users |
+| created_at, updated_at, deleted_at | TIMESTAMP | Standard columns |
 
-### 4.21 acc_tally_ledger_mappings (NEW)
+### 4.21 acc_tally_ledger_mappings
 | Column | Type | Description |
 |--------|------|-------------|
 | id | BIGINT UNSIGNED PK | Primary key |
@@ -388,12 +573,18 @@ The Accounting module implements a **Tally-Prime inspired double-entry bookkeepi
 | is_active, created_by, created_at, updated_at, deleted_at | Standard | Standard columns |
 | UNIQUE | (ledger_id) | One Tally mapping per ledger |
 
-**How Tally Mapping Works:**
-1. **Seed:** During tenant provisioning, auto-create mappings for 28 standard Tally groups + default ledgers (mapping_type='auto')
-2. **Configure:** School accountant maps custom ledgers via Settings → Tally Integration screen
-3. **Export:** `TallyExportService` reads `acc_tally_ledger_mappings` to use correct Tally names in XML output
-4. **Import (future):** Parse Tally XML and match to our ledgers via tally_ledger_name
-5. **UI:** Two-column mapping screen: Our Ledger (dropdown) ↔ Tally Ledger Name (text input)
+---
+
+**Key correction in acc_ledgers:**
+- `employee_id` → FK to **`sch_employees`** (not `acc_employees` — that table doesn't exist)
+- `vendor_id` → FK to **`vnd_vendors`**
+- `student_id` → FK to **`std_students`**
+
+**Key correction in acc_ledger_mappings:**
+- `source_module` ENUM includes: `'Fees','Library','Transport','HR','Vendor','Inventory','Payroll'`
+
+**Key correction in acc_expense_claims:**
+- `employee_id` → FK to **`sch_employees`** (not `acc_employees`)
 
 ---
 
@@ -402,39 +593,32 @@ The Accounting module implements a **Tally-Prime inspired double-entry bookkeepi
 ```
 acc_account_groups (self-ref parent_id)
     │
-    ├── acc_ledgers ────────────── acc_tally_ledger_mappings (1:1 Tally name mapping)
+    ├── acc_ledgers ──── acc_tally_ledger_mappings (1:1 Tally name)
     │       │
-    │       ├── std_students (student_id FK — auto-ledger for student debtors)
-    │       ├── sch_employees (employee_id FK — auto-ledger for salary payable)
-    │       ├── vnd_vendors (vendor_id FK — auto-ledger for vendor creditors)
+    │       ├── std_students (student_id FK — student debtor auto-ledger)
+    │       ├── sch_employees (employee_id FK — salary payable auto-ledger)
+    │       ├── vnd_vendors (vendor_id FK — vendor creditor auto-ledger)
     │       │
     │       ├── acc_voucher_items ──── acc_vouchers ──── acc_voucher_types
     │       │                              │
     │       │                              ├── acc_financial_years
-    │       │                              ├── source_module (StudentFee|Payroll|Inventory|Transport|Manual)
-    │       │                              └── source_type + source_id (polymorphic)
+    │       │                              └── source_module + source_type + source_id (polymorphic)
     │       │
     │       ├── acc_budgets ──── acc_financial_years + acc_cost_centers
-    │       │
-    │       ├── acc_ledger_mappings (→ Fees, HR, Vendor, Inventory, Transport, Payroll)
-    │       │
+    │       ├── acc_ledger_mappings (→ Fees, Vendor, Transport, Inventory, Payroll)
     │       ├── acc_bank_reconciliations → acc_bank_statement_entries
-    │       │
     │       └── acc_recurring_templates → acc_recurring_template_lines
     │
     └── acc_cost_centers (self-ref parent_id)
 
 acc_asset_categories → acc_fixed_assets → acc_depreciation_entries → acc_vouchers
+acc_expense_claims (employee_id → sch_employees) → acc_expense_claim_lines → acc_ledgers
 
-acc_expense_claims → acc_expense_claim_lines → acc_ledgers
-   (employee_id → sch_employees)
-   └── → acc_vouchers (on approval)
-
-External Module References:
-  StudentFee (fin_*)  ──event──→ Accounting (Receipt Voucher)
-  Transport  (tpt_*)  ──event──→ Accounting (Receipt/Journal Voucher)
-  Payroll    (prl_*)  ──event──→ Accounting (Payroll Journal Voucher)
-  Inventory  (inv_*)  ──event──→ Accounting (Purchase/Stock Journal Voucher)
+External References:
+  StudentFee (fin_*) ──event──→ Receipt/Sales Voucher
+  Transport (tpt_*)  ──event──→ Receipt/Sales/Journal Voucher
+  Payroll (prl_*)    ──event──→ Payroll Journal Voucher
+  Inventory (inv_*)  ──event──→ Purchase/Stock Journal Voucher
 ```
 
 ---
@@ -476,19 +660,25 @@ Draft → Posted → Approved → [Cancelled]
   │                            │
   └── (can edit)               └── (reason required, soft-delete)
 ```
+- **Draft:** Created but not finalized. Can edit freely.
+- **Posted:** Finalized, affects ledger balances. Requires unlock to edit.
+- **Approved:** Verified by authorized user. Read-only.
+- **Cancelled:** Soft-deleted with reason. Balances reversed.
 
 ### Expense Claim Workflow
 ```
 Draft → Submitted → Approved → Paid
                   → Rejected
 ```
+- **Approved:** Creates Payment Voucher (Dr Expense Ledger, Cr Bank/Cash)
+- **Paid:** Payment voucher posted and approved
 
 ### Financial Year Workflow
 ```
 Active (is_locked=false) → Locked (is_locked=true)
 ```
-
-*(Details same as v2)*
+- Locking is one-way by default (unlocking requires Super Admin)
+- On lock: Auto-calculate closing balances, carry forward to next FY
 
 ---
 
@@ -503,53 +693,24 @@ Active (is_locked=false) → Locked (is_locked=true)
 | **Transport** | TransportFeeCharged | Sales Voucher (Dr Student Debtor, Cr Transport Fee Income) | SALES |
 | **Transport** | TransportFeeCollected | Receipt Voucher (Dr Bank/Cash, Cr Student Debtor) | RECEIPT |
 | **Transport** | TransportFineCharged | Journal Voucher (Dr Student Debtor, Cr Fine Income) | JOURNAL |
-| **Payroll** | PayrollApproved | Payroll Journal (Dr Salary Expense, Cr PF/ESI/TDS/PT/Net Payable) | PAYROLL |
+| **Payroll** | PayrollApproved | Payroll Journal (Dr Salary Expense, Cr PF/ESI/TDS/PT/Net) | PAYROLL |
 | **Inventory** | GrnAccepted | Purchase Voucher (Dr Stock-in-Hand, Cr Vendor Creditor) | PURCHASE |
 | **Inventory** | StockIssued | Stock Journal (Dr Dept Consumption, Cr Stock-in-Hand) | STOCK_JOURNAL |
 | **Inventory** | StockAdjustment | Journal (Dr/Cr Stock-in-Hand, Cr/Dr Adjustment A/c) | JOURNAL |
-
-### Transport Module Integration Detail
-```
-When a student registers for transport from a specific stoppage:
-
-1. Transport module creates transport fee assignment (tpt_fee_master → tpt_fee_collection)
-2. Fires TransportFeeCharged event with:
-   - student_id, route_id, stoppage_id, amount, academic_session
-3. Accounting listener creates Sales Voucher:
-   Dr  Student Debtor Ledger (auto-created under Sundry Debtors)  ₹Amount
-   Cr  Transport Fee Income Ledger (mapped via acc_ledger_mappings, source_module='Transport')  ₹Amount
-
-When transport fee is collected:
-4. Fires TransportFeeCollected event
-5. Creates Receipt Voucher:
-   Dr  Bank/Cash A/c         ₹Amount
-   Cr  Student Debtor Ledger  ₹Amount
-
-When transport fine is charged:
-6. Fires TransportFineCharged event
-7. Creates Journal Voucher:
-   Dr  Student Debtor Ledger  ₹Fine
-   Cr  Fine Income Ledger     ₹Fine
-
-Ledger Mapping:
-   acc_ledger_mappings: source_module='Transport', source_type='Route', source_id=<route_id>
-   acc_ledger_mappings: source_module='Transport', source_type='FineType', source_id=<fine_type_id>
-```
 
 ### Outbound (Accounting → Other Modules)
 
 | Target Module | Data Provided |
 |--------------|---------------|
-| Dashboard | Financial KPIs (Revenue MTD, Expenses MTD, Bank Balance, Outstanding) |
-| StudentFee | Ledger balance for student (outstanding amount) |
-| Vendor | Ledger balance for vendor (payable amount) |
-| Transport | Student transport fee outstanding (from ledger) |
-| Payroll | Employee salary payable balance (from ledger) |
+| Dashboard | Financial KPIs |
+| StudentFee | Student outstanding (ledger balance) |
+| Vendor | Vendor payable (ledger balance) |
+| Transport | Transport fee outstanding (ledger balance) |
+| Payroll | Employee salary payable (ledger balance) |
 
 ---
 
 ## 9. User Roles & Permissions
-
 | Role | Permissions |
 |------|------------|
 | School Admin | Full access: all accounting features |
@@ -629,30 +790,23 @@ Auto-mapped during seed: 28 Tally groups → our account groups + 11 default led
 
 ---
 
-## 12. Dependencies
+## 12. Dependencies — VERIFIED
 
-| This Module Needs | From Module | Entities |
-|-------------------|------------|----------|
-| Students | StudentProfile | `std_students` (for auto-ledger creation) |
-| Employees | SchoolSetup | `sch_employees` (for employee ledger, expense claims) |
-| Teachers | SchoolSetup | `sch_teachers` (for payroll linkage via sch_employees) |
-| Departments | SchoolSetup | `sch_departments` (for cost center mapping) |
-| Fee Events | StudentFee | `FeePaymentReceived`, `FeeInvoiceGenerated` events |
-| Transport Events | Transport | `TransportFeeCharged`, `TransportFeeCollected`, `TransportFineCharged` events |
-| Vendors | Vendor | `vnd_vendors` (for vendor ledger linking) |
-| Users | System | `sys_users` (created_by, approved_by) |
+| This Module Needs | From Module | Correct Table Name | Verified |
+|-------------------|------------|-------------------|----------|
+| Students | StudentProfile | `std_students` | Line 4618 |
+| Employees | SchoolSetup | `sch_employees` (enhanced) | Line 955 |
+| Departments | SchoolSetup | **`sch_department`** (SINGULAR) | Line 476 |
+| Fee Events | StudentFee | Events (no table dependency) | N/A |
+| Transport Events | Transport | Events (no table dependency) | N/A |
+| Vendors | Vendor | `vnd_vendors` | Line 1810 |
+| Users | System | `sys_users` | Line 87 |
 
-| Other Modules Need | From This Module | Use Case |
-|--------------------|-----------------|----------|
-| Payroll | VoucherServiceInterface | Post payroll journal voucher |
-| Inventory | VoucherServiceInterface | Post purchase/stock journal vouchers |
-| StudentFee | Ledger balance query | Student outstanding amount |
-| Transport | Ledger balance query | Transport fee outstanding |
-| Dashboard | KPI data | Financial widgets |
+> **Does NOT depend on:** `sch_teachers` (doesn't exist), `sch_employee_groups` (doesn't exist), `sch_employee_attendance` (doesn't exist)
 
 ---
 
-## 13. Controllers & Services Summary
+## 13. Controllers & Services
 
 ### Controllers (18)
 AccountGroupController, LedgerController, LedgerMappingController, FinancialYearController, VoucherTypeController, VoucherController, CostCenterController, BudgetController, TaxRateController, RecurringTemplateController, BankReconciliationController, AssetCategoryController, FixedAssetController, ExpenseClaimController, TallyExportController, TallyLedgerMappingController, AccReportController, AccDashboardController
@@ -668,23 +822,65 @@ Store/Update for: AccountGroup, Ledger, Voucher, CostCenter, Budget, TaxRate, Re
 
 ---
 
-## 14. sch_employees Enhancement (for Payroll Integration)
+## 14. sch_employees Enhancement
 
-The existing `sch_employees` table needs these additional columns for payroll support. These are added via an ALTER TABLE migration — the table is NOT recreated.
+The **only** existing table being enhanced. Migration uses `Schema::hasColumn()` guard.
 
-### Suggested New Columns on `sch_employees`
-| Column | Type | Description |
-|--------|------|-------------|
-| ledger_id | BIGINT UNSIGNED NULL FK | FK → acc_ledgers (auto-created salary payable ledger) |
-| salary_structure_id | BIGINT UNSIGNED NULL FK | FK → prl_salary_structures |
-| bank_name | VARCHAR(100) NULL | Salary disbursement bank |
-| bank_account_number | VARCHAR(50) NULL | Bank account number |
+| New Column | Type | Description |
+|------------|------|-------------|
+| is_active | TINYINT(1) DEFAULT 1 | Missing from current DDL |
+| created_by | BIGINT UNSIGNED NULL | Missing from current DDL |
+| staff_category_id | INT UNSIGNED NULL FK | FK → `sch_categories` (for payroll grouping) |
+| ledger_id | BIGINT UNSIGNED NULL FK | FK → `acc_ledgers` (salary payable auto-ledger) |
+| salary_structure_id | BIGINT UNSIGNED NULL FK | FK → `prl_salary_structures` |
+| bank_name | VARCHAR(100) NULL | Salary bank |
+| bank_account_number | VARCHAR(50) NULL | Bank account |
 | bank_ifsc | VARCHAR(20) NULL | IFSC code |
 | pf_number | VARCHAR(30) NULL | PF account number |
 | esi_number | VARCHAR(30) NULL | ESI number |
 | uan | VARCHAR(20) NULL | Universal Account Number |
-| pan | VARCHAR(15) NULL | PAN card number |
-| ctc_monthly | DECIMAL(15,2) NULL | Monthly CTC amount |
+| pan | VARCHAR(15) NULL | PAN number |
+| ctc_monthly | DECIMAL(15,2) NULL | Monthly CTC |
 | date_of_leaving | DATE NULL | Relieving date |
 
-> **Note:** These columns may already partially exist. The migration must check before adding (use `Schema::hasColumn()` guard).
+---
+
+## 15. Duplication Check — CLEAN
+
+| Check | Result |
+|-------|--------|
+| Any new `acc_` table duplicates existing `acc_` in DDL? | No — old acc_* tables REPLACED (different schema model) |
+| Any new `acc_` table duplicates `fin_*` tables? | No — fee management excluded |
+| Any new `acc_` table duplicates `prl_*` or `inv_*`? | No — each module has distinct prefix |
+| `acc_expense_claims` duplicates anything? | No — unique to accounting |
+| `acc_tally_ledger_mappings` duplicates `acc_ledger_mappings`? | No — different purpose (Tally names vs module bridges) |
+
+---
+
+## 16. Table Summary
+
+| # | Table | Type | Status |
+|---|-------|------|--------|
+| 1 | acc_financial_years | Core | New |
+| 2 | acc_account_groups | Core | New (replaces old) |
+| 3 | acc_ledgers | Core | New (replaces old) |
+| 4 | acc_voucher_types | Core | New |
+| 5 | acc_vouchers | Core | New (replaces acc_journal_entries) |
+| 6 | acc_voucher_items | Core | New (replaces acc_journal_entry_lines) |
+| 7 | acc_cost_centers | Core | New (replaces old) |
+| 8 | acc_budgets | Core | New (replaces old) |
+| 9 | acc_tax_rates | Core | New (replaces old) |
+| 10 | acc_ledger_mappings | Core | New (replaces old) |
+| 11 | acc_recurring_templates | Core | New (replaces acc_recurring_journal_templates) |
+| 12 | acc_recurring_template_lines | Core | New (replaces acc_recurring_journal_template_lines) |
+| 13 | acc_bank_reconciliations | Banking | New (replaces old) |
+| 14 | acc_bank_statement_entries | Banking | New (replaces acc_reconciliation_matches) |
+| 15 | acc_asset_categories | Assets | New (replaces old) |
+| 16 | acc_fixed_assets | Assets | New (replaces old) |
+| 17 | acc_depreciation_entries | Assets | New (replaces old) |
+| 18 | acc_expense_claims | Expense | New (replaces old) |
+| 19 | acc_expense_claim_lines | Expense | New (replaces old) |
+| 20 | acc_tally_export_logs | Export | New (replaces old) |
+| 21 | acc_tally_ledger_mappings | Tally | New |
+| — | sch_employees | SchoolSetup | Existing — ALTER TABLE (14 cols) |
+| **Total** | **21 new acc_ tables** | | **Old DDL is UNUSED — replace entirely** |

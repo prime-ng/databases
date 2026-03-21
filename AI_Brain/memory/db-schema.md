@@ -61,7 +61,9 @@ CREATE VIEW glb_states    AS SELECT * FROM global_master.glb_states;
 | `lms_` | ~26 | LMS (Exam/Quiz/Homework/Quests) | tenant_db |
 | `doc_` | ~3 | Documentation | tenant_db |
 | `lib_` | ~20 | Library (pending) | tenant_db |
-| `acc_` | ~25 | Accounting (reserved) | tenant_db |
+| `acc_` | 21 (planned) | Accounting — new voucher-based schema replacing old 31-table journal-based draft | tenant_db |
+| `prl_` | 19 (planned) | Payroll — pay heads, salary structures, payroll runs, leave, attendance, appraisals, training | tenant_db |
+| `inv_` | 19 (planned) | Inventory — stock groups, items, godowns, procurement (PR/PO/GRN), issue requests | tenant_db |
 | `beh_` | — | Behaviour (reserved) | tenant_db |
 | `hos_` | — | Hostel (reserved) | tenant_db |
 | `mes_` | — | Mess (reserved) | tenant_db |

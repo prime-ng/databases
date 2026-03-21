@@ -10121,10 +10121,8 @@
     PRIMARY KEY (`id`),
     KEY `expense_claim_lines_claim_id_foreign` (`expense_claim_id`),
     KEY `expense_claim_lines_ledger_id_foreign` (`ledger_id`),
-    CONSTRAINT `expense_claim_lines_claim_id_foreign` 
-        FOREIGN KEY (`expense_claim_id`) REFERENCES `expense_claims` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `expense_claim_lines_ledger_id_foreign` 
-        FOREIGN KEY (`ledger_id`) REFERENCES `ledgers` (`id`)
+    CONSTRAINT `expense_claim_lines_claim_id_foreign` FOREIGN KEY (`expense_claim_id`) REFERENCES `expense_claims` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `expense_claim_lines_ledger_id_foreign` FOREIGN KEY (`ledger_id`) REFERENCES `ledgers` (`id`)
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 	-- =====================================================
@@ -10144,8 +10142,7 @@
     `updated_at` timestamp NULL DEFAULT NULL,
     PRIMARY KEY (`id`),
     KEY `bank_reconciliations_ledger_id_foreign` (`ledger_id`),
-    CONSTRAINT `bank_reconciliations_ledger_id_foreign` 
-        FOREIGN KEY (`ledger_id`) REFERENCES `ledgers` (`id`)
+    CONSTRAINT `bank_reconciliations_ledger_id_foreign` FOREIGN KEY (`ledger_id`) REFERENCES `ledgers` (`id`)
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 	-- 6.2 Bank Transaction Matches
@@ -10160,10 +10157,8 @@
     PRIMARY KEY (`id`),
     UNIQUE KEY `reconciliation_matches_unique` (`bank_reconciliation_id`, `journal_entry_line_id`),
     KEY `reconciliation_matches_line_id_foreign` (`journal_entry_line_id`),
-    CONSTRAINT `reconciliation_matches_bank_reconciliation_id_foreign` 
-        FOREIGN KEY (`bank_reconciliation_id`) REFERENCES `bank_reconciliations` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `reconciliation_matches_line_id_foreign` 
-        FOREIGN KEY (`journal_entry_line_id`) REFERENCES `journal_entry_lines` (`id`)
+    CONSTRAINT `reconciliation_matches_bank_reconciliation_id_foreign` FOREIGN KEY (`bank_reconciliation_id`) REFERENCES `bank_reconciliations` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `reconciliation_matches_line_id_foreign` FOREIGN KEY (`journal_entry_line_id`) REFERENCES `journal_entry_lines` (`id`)
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 	-- =====================================================
@@ -10208,10 +10203,8 @@
     KEY `fixed_assets_asset_category_id_foreign` (`asset_category_id`),
     KEY `fixed_assets_vendor_id_foreign` (`vendor_id`),
     KEY `fixed_assets_journal_entry_id_foreign` (`journal_entry_id`),
-    CONSTRAINT `fixed_assets_asset_category_id_foreign` 
-        FOREIGN KEY (`asset_category_id`) REFERENCES `asset_categories` (`id`),
-    CONSTRAINT `fixed_assets_journal_entry_id_foreign` 
-        FOREIGN KEY (`journal_entry_id`) REFERENCES `journal_entries` (`id`)
+    CONSTRAINT `fixed_assets_asset_category_id_foreign` FOREIGN KEY (`asset_category_id`) REFERENCES `asset_categories` (`id`),
+    CONSTRAINT `fixed_assets_journal_entry_id_foreign` FOREIGN KEY (`journal_entry_id`) REFERENCES `journal_entries` (`id`)
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 	-- 7.3 Depreciation Entries
@@ -10228,12 +10221,9 @@
     KEY `depreciation_entries_asset_id_foreign` (`fixed_asset_id`),
     KEY `depreciation_entries_fiscal_year_id_foreign` (`fiscal_year_id`),
     KEY `depreciation_entries_journal_entry_id_foreign` (`journal_entry_id`),
-    CONSTRAINT `depreciation_entries_asset_id_foreign` 
-        FOREIGN KEY (`fixed_asset_id`) REFERENCES `fixed_assets` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `depreciation_entries_fiscal_year_id_foreign` 
-        FOREIGN KEY (`fiscal_year_id`) REFERENCES `fiscal_years` (`id`),
-    CONSTRAINT `depreciation_entries_journal_entry_id_foreign` 
-        FOREIGN KEY (`journal_entry_id`) REFERENCES `journal_entries` (`id`)
+    CONSTRAINT `depreciation_entries_asset_id_foreign` FOREIGN KEY (`fixed_asset_id`) REFERENCES `fixed_assets` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `depreciation_entries_fiscal_year_id_foreign` FOREIGN KEY (`fiscal_year_id`) REFERENCES `fiscal_years` (`id`),
+    CONSTRAINT `depreciation_entries_journal_entry_id_foreign` FOREIGN KEY (`journal_entry_id`) REFERENCES `journal_entries` (`id`)
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 	-- =====================================================

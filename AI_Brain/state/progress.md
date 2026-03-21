@@ -68,14 +68,17 @@
 
 ---
 
+## Requirements Complete — Development Pending
+
+- [ ] **Accounting** (0% code) — Requirements v4 complete (2026-03-20). Tally-inspired voucher engine, 21 new `acc_` tables, 18 controllers, 9 services. Old DDL is unused draft — replace entirely. Shares VoucherServiceInterface with Payroll & Inventory. Plan: `1-DDL_Tenant_Modules/20-Account/Claude_Plan/Initial_Plan_v4.md`
+- [ ] **Payroll** (0% code) — Requirements v4 complete (2026-03-20). 19 new `prl_` tables + `sch_employees` ALTER TABLE (14 cols). Reuses sch_categories/leave_types/leave_config. prl_category_statutory_config extends sch_categories for PF/ESI/PT. 11 controllers, 6 services.
+- [ ] **Inventory** (0% code) — Requirements v4 complete (2026-03-20). 19 new `inv_` tables. Full PR→PO→GRN→Stock→Issue cycle. Links to Vendor, Accounting, SchoolSetup. 14 controllers, 6 services.
+
 ## Pending Modules
 
 - [ ] **Behavioral Assessment** — Student behavior tracking and analysis
 - [ ] **Analytical Reports** — Cross-module analytics and reporting
 - [ ] **Student/Parent Portal** — Student and parent facing portal
-- [ ] **Accounting** — Double-entry bookkeeping, financial reports
-- [ ] **HR & Payroll** — Staff payroll, leave management
-- [ ] **Inventory Management** — School inventory tracking
 - [ ] **Hostel Management** — Hostel rooms, allocation, fees
 - [ ] **Mess/Canteen** — Meal planning, attendance, billing
 - [ ] **Admission Enquiry** — Online admission process

@@ -148,12 +148,26 @@ Modules/ModuleName/
 | Library (~45%) | 26 controllers, 35 models, 9 services, 19 requests, 140 views, 36 migrations — book catalog, members, transactions, fines, reservations, digital resources, reports, audits | **NOT wired into tenant.php** (zero tenancy middleware); 7 controllers with zero authorization (LibraryController, LibFineController, 5 report/dashboard controllers); 5 stub methods on only registered resource route; `$request->all()` in 5 controllers bypassing Form Requests; `Modules\Prime\Models\Setting` cross-layer import; N+1 in LibReservationController::create(); User::all() unbounded in 10+ index methods; 20+ duplicate queries per page load (God-controller pattern) |
 | StudentPortal (~25%) | Dashboard, complaints, notifications controllers wired (3 refs in tenant.php) | Academic transcript, timetable view, homework submission, quiz taking, grade reports, parent portal, fee view |
 
+### Planned Modules (Requirements Complete, Development Pending)
+| Prefix | Module | Laravel Module | Tables | Status | Requirement Doc |
+|--------|--------|---------------|--------|--------|-----------------|
+| `acc_` | **Accounting** | `Modules/Accounting/` | 21 new (voucher-based) | Requirements v4 done. Old acc_* DDL in tenant_db is UNUSED draft — will be replaced entirely with new Tally-inspired voucher schema. 18 controllers, 9 services planned. | `1-DDL_Tenant_Modules/20-Account/Claude_Plan/Account_Requirement_v4.md` |
+| `prl_` | **Payroll** | `Modules/Payroll/` | 19 new + sch_employees ALTER | Requirements v4 done. Reuses sch_employees (enhanced with 14 payroll columns), sch_categories, sch_leave_types, sch_leave_config. Uses prl_category_statutory_config instead of non-existent sch_employee_groups. 11 controllers, 6 services planned. | `1-DDL_Tenant_Modules/21-Payroll/Claude_Plan/Payroll_Requirement_v4.md` |
+| `inv_` | **Inventory** | `Modules/Inventory/` | 19 new | Requirements v4 done. Full procurement cycle: PR→PO→GRN→Stock→Issue. Links to Vendor (vnd_vendors), Accounting (acc_vouchers via VoucherServiceInterface), SchoolSetup (sch_employees, sch_department). 14 controllers, 6 services planned. | `1-DDL_Tenant_Modules/22-Inventory/Claude_Plan/Inventory_Requirement_v4.md` |
+
+### Key Architecture: Voucher Engine (shared by all 3 modules)
+- Accounting owns `acc_vouchers` + `acc_voucher_items` (double-entry Dr/Cr)
+- Payroll fires `PayrollApproved` event → Accounting creates Payroll Journal Voucher
+- Inventory fires `GrnAccepted`/`StockIssued` events → Accounting creates Purchase/Stock Journal Vouchers
+- StudentFee fires `FeePaymentReceived` → Accounting creates Receipt Voucher
+- Transport fires `TransportFeeCharged` → Accounting creates Sales Voucher
+- Shared contract: `VoucherServiceInterface` in Accounting module
+
 ### Missing Modules (Reserved Prefixes)
 | Prefix | Module | Status |
 |--------|--------|--------|
 | `hos_` | Hostel Management | Not started |
 | `mes_` | Canteen/Mess Management | Not started |
-| `acc_` | Accounting | DB tables exist, no module |
 | `beh_` | Behaviour Tracking | Not started |
 
 ### API Endpoints

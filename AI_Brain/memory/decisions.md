@@ -99,9 +99,16 @@
 - Need to decide: Same Laravel app with role-based views vs separate SPA
 - Options: Blade views vs Vue.js/React SPA
 
-### Pending: Accounting Module
-- Need to decide: Build custom vs integrate with existing accounting software
-- Double-entry bookkeeping requirements
+### D21: Accounting — Tally-Inspired Voucher Engine (3 Separate Modules)
+- **Decision (2026-03-20):** Build custom Tally-Prime-inspired double-entry system. Three SEPARATE Laravel modules: `Modules/Accounting/` (acc_), `Modules/Payroll/` (prl_), `Modules/Inventory/` (inv_).
+- **Why:** Schools use Tally Prime for CA filing. Voucher-based model (not journal-entry) mirrors Tally concepts. Separate modules enable independent deployment.
+- **Key architecture:** Accounting owns `acc_vouchers` + `acc_voucher_items`. Payroll & Inventory consume via `VoucherServiceInterface`. Every transaction = Dr + Cr entries.
+- **Old DDL:** 31 acc_* tables in tenant_db_v2.sql are UNUSED initial drafts with zero development — replaced entirely by new 21-table voucher schema.
+- **sch_employees reuse:** Enhanced via ALTER TABLE (14 payroll columns) — NOT duplicated as acc_employees.
+- **sch_categories = employee groups:** Existing table used for staff grouping. Payroll extends via `prl_category_statutory_config` (PF/ESI/PT flags) instead of creating duplicate sch_employee_groups.
+- **Tally mapping:** `acc_tally_ledger_mappings` table maps our ledgers to Tally names for XML export/import.
+- **Transport integration:** Transport fee charges/collections flow through voucher engine same as StudentFee.
+- **Reference:** `1-DDL_Tenant_Modules/20-Account/Claude_Plan/Initial_Plan_v4.md`
 
 ### Pending: Redis Migration
 - When to move queue, cache, and session drivers from database to Redis
