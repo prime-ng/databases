@@ -51,11 +51,11 @@
 
 | What You're Doing | Files to Read |
 |-------------------|--------------|
-| **Starting any new feature** | `project_docs/10-new-feature-checklist.md` — Prime vs Tenant step-by-step |
-| **Creating controllers** | `project_docs/06-controller-guide.md` — CRUD template with Gate + validation |
-| **Creating views** | `project_docs/07-blade-views-guide.md` — Index + Create/Edit patterns |
-| **Creating migrations** | `project_docs/04-migration-guide.md` — Central vs Tenant paths |
-| **Routing** | `project_docs/08-routes-guide.md` — web.php vs tenant.php |
+| **Starting any new feature** | `{PROJECT_DOCS}/10-new-feature-checklist.md` — Prime vs Tenant step-by-step |
+| **Creating controllers** | `{PROJECT_DOCS}/06-controller-guide.md` — CRUD template with Gate + validation |
+| **Creating views** | `{PROJECT_DOCS}/07-blade-views-guide.md` — Index + Create/Edit patterns |
+| **Creating migrations** | `{PROJECT_DOCS}/04-migration-guide.md` — Central vs Tenant paths |
+| **Routing** | `{PROJECT_DOCS}/08-routes-guide.md` — web.php vs tenant.php |
 | Any tenant-scoped work | `tenancy-map.md` + `AI_Brain/rules/tenancy-rules.md` |
 | Adding a new module | `modules-map.md` + `AI_Brain/rules/module-rules.md` |
 | DB schema / migrations | `db-schema.md` |
@@ -63,7 +63,7 @@
 | Authorization / policies | `project-context.md` (Authorization Architecture) |
 | SmartTimetable work | `AI_Brain/lessons/known-issues.md` (FET solver sections) |
 | Payment/webhook work | `AI_Brain/lessons/known-issues.md` (SEC-PAY-* section) |
-| Module reference (all names) | `project_docs/11-all-modules-controllers-models.md` |
+| Module reference (all names) | `{PROJECT_DOCS}/11-all-modules-controllers-models.md` |
 
 ---
 
@@ -88,7 +88,7 @@
 
 ## Project Planning Documents
 
-> **Location:** `{PROJECT_PLAN}/` (also `2-Project_Planning/`)
+> **Location:** `{PROJECT_PLAN}/`
 
 | Folder | Contents |
 |--------|----------|

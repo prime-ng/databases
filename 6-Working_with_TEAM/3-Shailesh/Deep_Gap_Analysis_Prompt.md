@@ -10,17 +10,15 @@
 # ═══════════════════════════════════════════════════════════════════
 
 ---
-Read "/Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases/AI_Brain/config/paths.md" to get all Path.
-
-## ▶ VARIABLES — CHANGE ONLY BELOW 3 LINES
+## ▶ VARIABLES:
 
 ```
-MODULE_NAME  = Hpc
-APP_BRANCH   = Shailesh_HPC_14_03_2026
+MODULE_NAME  = SystemConfig
+APP_REPO     = prime_ai_tarun
+APP_BRANCH   = Brijesh_Main
 DATE         = 2026-03-21
 ```
-## CONFIGURATION (FIXED)
-DB_REPO              = /Users/bkwork/WorkFolder/2-New_Primedb/pgdatabase
+---
 
 Here is the complete list with `MODULE_NAME = ` added before each module:
 <!-- 
@@ -70,48 +68,6 @@ MODULE_NAME = LmsQuiz
 MODULE_NAME = Recommendation
 MODULE_NAME = StudentPortal
 -->
----
-
-## ▶ STEP 0 — PATHS AUTO-DERIVE (Claude: ye step sabse pehle karo)
-
-**Koi bhi path hardcoded nahi hai. Sab kuch in 3 steps me derive karo:**
-
-### Step 0-A — DB_REPO dhundho
-
-Yeh prompt file khud `pgdatabase` repo ke andar hai:
-```
-{DB_REPO}/8-Team_Work/Shailesh/Comman Prompt Use/MODULE_Deep_Gap_Analysis_Prompt.md
-```
-
-### Step 0-B — paths.md read karo
-
-`DB_REPO` milne ke baad ye file read karo:
-```
-{DB_REPO}/AI_Brain/config/paths.md
-```
-
-Wahan se ye variables lo:
-- `DB_REPO`      → already known (Step 0-A se)
-- `AI_BRAIN`     → `{DB_REPO}/AI_Brain`
-- `LARAVEL_REPO` → Laravel application ka root path
-- `TENANT_DDL`   → tenant DB DDL file ka full path
-
-### Step 0-C — baaki sab MODULE_NAME se build karo
-
-```
-MODULE_PATH   = {LARAVEL_REPO}/Modules/{MODULE_NAME}
-BROWSER_TESTS = {LARAVEL_REPO}/tests/Browser/Modules/{MODULE_NAME}
-MODULE_TESTS  = {LARAVEL_REPO}/Modules/{MODULE_NAME}/tests
-ROUTES_FILE   = {LARAVEL_REPO}/routes/tenant.php
-POLICIES_DIR  = {LARAVEL_REPO}/app/Policies
-APP_PROVIDERS = {LARAVEL_REPO}/app/Providers/AppServiceProvider.php
-TENANT_MIGS   = {LARAVEL_REPO}/database/migrations/tenant
-ACTIVITY_LOG  = {LARAVEL_REPO}/app/Helpers/activityLog.php
-OUTPUT_DIR    = {DB_REPO}/8-Team_Work/Shailesh/Bug And Missing Module
-```
-
-> **Ye approach kisi bhi machine par kaam karta hai — Windows, Mac, Linux.**
-> **Kisi ko koi path change nahi karna — sirf MODULE_NAME badlo.**
 
 ---
 
@@ -120,7 +76,7 @@ OUTPUT_DIR    = {DB_REPO}/8-Team_Work/Shailesh/Bug And Missing Module
 You are a **Senior Laravel Architect** performing a production-readiness audit of
 the **`{MODULE_NAME}`** module in the Prime-AI platform.
 
-**Your job:** Read every line of code, every DB table, every route, every test —
+**Your job:** Read every line of code, every DB table, every route, every test & every tasks from RBS —
 then produce an **exhaustive gap analysis** that tells the development team:
 - What is MISSING (features not built)
 - What is BROKEN (bugs, crashes, wrong logic)
@@ -133,10 +89,48 @@ then produce an **exhaustive gap analysis** that tells the development team:
 
 ---
 
+## ═══ STEP 0 — LOAD DEFAULT PATHS & CONFIGURATION ═══
+
+### DEFAULT PATHS
+Read "/Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases/AI_Brain/config/paths.md"
+
+### Rules
+- If any Path is missing in `paths.md` then find that in `CONFIGURATION` section below.
+- If any variable exists at both place, in `paths.md` & in `CONFIGURATION` section also, then consider `CONFIGURATION` section Variable.
+
+---
+
+### CONFIGURATION
+```
+DB_REPO         = /Users/bkwork/WorkFolder/2-New_Primedb/pgdatabase
+OLD_REPO        = /Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases
+AI_BRAIN        = {OLD_REPO}/AI_Brain
+RBS_FILE        = {OLD_REPO}/3-Project_Planning/1-RBS/PrimeAI_RBS_Menu_Mapping_v2.0.md
+MODULE_PATH     = {LARAVEL_REPO}/Modules/{MODULE_NAME}
+BROWSER_TESTS   = {LARAVEL_REPO}/tests/Browser/Modules/{MODULE_NAME}
+FEATURE_TESTS   = {LARAVEL_REPO}/tests/Feature/{MODULE_NAME}
+UNIT_TESTS      = {LARAVEL_REPO}/tests/Unit/{MODULE_NAME}
+MODULE_TESTS    = {LARAVEL_REPO}/Modules/{MODULE_NAME}/tests
+ROUTES_FILE     = {LARAVEL_REPO}/routes/tenant.php
+POLICIES_DIR    = {LARAVEL_REPO}/app/Policies
+APP_PROVIDERS   = {LARAVEL_REPO}/app/Providers/AppServiceProvider.php
+TENANT_MIGS     = {LARAVEL_REPO}/database/migrations/tenant
+ACTIVITY_LOG    = {LARAVEL_REPO}/app/Helpers/activityLog.php
+
+OUTPUT_REPO     = {OLD_REPO}
+OUTPUT_DIR      = {OUTPUT_REPO}/8-Temp_Output
+OUTPUT_DIR_A    = {OUTPUT_DIR}/Bugs_Missing_Modules
+OUTPUT_DIR_B    = {OUTPUT_DIR}/1-DDL_Tenant_Modules/21-Payroll/DDL
+OUTPUT_DIR_C    = {OUTPUT_DIR}/1-DDL_Tenant_Modules/21-Payroll/DDL
+OUTPUT_DIR_D    = {OUTPUT_DIR}/1-DDL_Tenant_Modules/21-Payroll/DDL
+```
+
+---
+
 ## ═══ STEP 1 — LOAD AI BRAIN CONTEXT ═══
 
-> `config/paths.md` Step 0 me already read ho chuka hai.
-> Ab neeche ke baaki 14 files read karo. Ye rules define karte hain.
+> `config/paths.md` already read in Step 0.
+> Now read below files. These files define rules.
 
 ### 1A — Core Memory Files
 | # | File | Why Read |
@@ -198,6 +192,18 @@ Open `{DATABASE_FILE}` and find ALL tables with the module's prefix:
 | LmsQuests | `qst_*` |
 | Library | `bok_*` |
 | Payment | `pay_*` |
+
+| Billing
+
+MODULE_NAME = Billing
+MODULE_NAME = Dashboard
+MODULE_NAME = Documentation
+MODULE_NAME = GlobalMaster
+MODULE_NAME = Prime
+MODULE_NAME = Scheduler
+MODULE_NAME = SyllabusBooks
+MODULE_NAME = SystemConfig
+MODULE_NAME = TimetableFoundation
 
 ### 2B — For Each Table, Record:
 - Complete column list with data types, NULL/NOT NULL, DEFAULT values

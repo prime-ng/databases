@@ -73,5 +73,5 @@ php artisan module:make-policy EntityPolicy ModuleName
 - [ ] Routes registered with `['auth', 'verified']` middleware
 - [ ] Form Requests validate all user input
 - [ ] Service handles business logic with transactions
-- [ ] Added to `.ai/memory/modules-map.md`
-- [ ] Added to `.ai/memory/progress.md`
+- [ ] Added to `AI_Brain/memory/modules-map.md`
+- [ ] Added to `AI_Brain/state/progress.md`

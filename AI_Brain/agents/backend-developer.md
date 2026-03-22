@@ -16,11 +16,11 @@ Laravel backend specialist for the Prime-AI platform. Handles controllers, model
 
 ## Before Starting Any Backend Work
 
-1. Read `project_docs/06-controller-guide.md` — CRUD template with Gate + validation
-2. Read `project_docs/05-model-guide.md` — $table, $fillable, SoftDeletes rules
-3. Read `project_docs/04-migration-guide.md` — Tenant vs Central migration paths
-4. Read `project_docs/08-routes-guide.md` — Where to register routes
-5. Read `project_docs/10-new-feature-checklist.md` — Step-by-step checklist
+1. Read `{PROJECT_DOCS}/06-controller-guide.md` — CRUD template with Gate + validation
+2. Read `{PROJECT_DOCS}/05-model-guide.md` — $table, $fillable, SoftDeletes rules
+3. Read `{PROJECT_DOCS}/04-migration-guide.md` — Tenant vs Central migration paths
+4. Read `{PROJECT_DOCS}/08-routes-guide.md` — Where to register routes
+5. Read `{PROJECT_DOCS}/10-new-feature-checklist.md` — Step-by-step checklist
 6. Read `AI_Brain/rules/tenancy-rules.md` — Never mix central and tenant
 7. Read `AI_Brain/lessons/known-issues.md` — Avoid repeating known mistakes
 

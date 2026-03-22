@@ -4,7 +4,7 @@
 > **Codebases:** `prime_ai_tarun` (Tarun — SmartTimetable), `prime_ai_shailesh` (Shailesh — HPC)
 > **Global stats:** 27 modules | 2715 lines in tenant.php | 1328 Route:: calls | 312 tenant migrations
 > **Security note:** Only 1 `EnsureTenantHasModule` usage across entire tenant.php. Library has 0 refs in tenant.php.
-> **RBS baseline:** 1112 sub-tasks across 27 RBS modules. ~350 completed (~31%). See `2-Project_Planning/` for Gap Analysis + Work Status + Estimation.
+> **RBS baseline:** 1112 sub-tasks across 27 RBS modules. ~350 completed (~31%). See `{PROJECT_PLAN}/` for Gap Analysis + Work Status + Estimation.
 
 ## Modules Previously Marked 100% — Deep-Audited 2026-03-15
 
@@ -95,11 +95,11 @@
 
 ### Infrastructure (done)
 - [x] `phpunit.xml` — updated with all 16 module test suites
-- [x] `.ai/memory/testing-strategy.md` — full testing strategy documented
-- [x] `.ai/agents/test-agent.md` — Pest 4.x patterns and cheatsheet
-- [x] `.ai/templates/test-unit.md` — unit test boilerplate
-- [x] `.ai/templates/test-feature-central.md` — central feature test boilerplate
-- [x] `.ai/templates/test-feature-tenant.md` — tenant feature test boilerplate
+- [x] `AI_Brain/memory/testing-strategy.md` — full testing strategy documented
+- [x] `AI_Brain/agents/test-agent.md` — Pest 4.x patterns and cheatsheet
+- [x] `AI_Brain/templates/test-unit.md` — unit test boilerplate
+- [x] `AI_Brain/templates/test-feature-central.md` — central feature test boilerplate
+- [x] `AI_Brain/templates/test-feature-tenant.md` — tenant feature test boilerplate
 
 ### Tests Written
 
@@ -250,10 +250,10 @@
   - `tests/Browser/Modules/StudentProfile/Testcases/MedicalIncidentTest.php` — 27 tests, full CRUD + toggles + soft-delete/restore/force-delete
 - [x] AI Brain — Full documentation ingestion & memory rebuild (2026-03-12)
   - Read 23 docs: `Project_Documentation/` (10 files) + `Requir_Enhancements/` (13 files)
-  - Created `.ai/memory/db-schema.md` — canonical v2 DDL paths, all table prefixes, CHANGELOG summary
-  - Created `.ai/memory/architecture.md` — request flow, module dependency graph, service layer state, patterns
-  - Created `.ai/memory/known-bugs-and-roadmap.md` — 8 bugs, 12 security issues, 13 N+1s, 4-phase roadmap
-  - Created `.ai/memory/MEMORY.md` — full index of all brain files + critical bug quick-reference
+  - Created `AI_Brain/memory/db-schema.md` — canonical v2 DDL paths, all table prefixes, CHANGELOG summary
+  - Created `AI_Brain/memory/architecture.md` — request flow, module dependency graph, service layer state, patterns
+  - Created `AI_Brain/memory/known-bugs-and-roadmap.md` — 8 bugs, 12 security issues, 13 N+1s, 4-phase roadmap
+  - Created `AI_Brain/memory/MEMORY.md` — full index of all brain files + critical bug quick-reference
   - Updated `project-context.md`, `modules-map.md`, `tenancy-map.md`, `known-issues.md`
   - Updated cross-session memory: DB schema now points to v2 files, critical bugs listed
   - DB Schema canonical files: `global_db_v2.sql`, `prime_db_v2.sql`, `tenant_db_v2.sql` in `{DDL_DIR}/`

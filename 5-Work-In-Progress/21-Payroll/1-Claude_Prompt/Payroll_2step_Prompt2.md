@@ -1,8 +1,17 @@
 # PRL — Payroll Module Development Lifecycle Prompt
 
-**Purpose:** This is a single consolidated prompt to build the "Feature Specification", "Complete Development Plan" & "Database Schema Design" for Payroll module for Prime-AI. Execute this file in Claude and work through each phase sequentially. Claude will stop after each phase for your review and confirmation.
+**Purpose:** This is a single consolidated prompt to build the "Feature Specification", "Complete Development Plan" & "Database Schema Design" for Payroll module. Execute this file in Claude and work through each phase sequentially. Claude will stop after each phase for your review and confirmation.
 
 **Developer:** Brijesh | **Branch:** Brijesh_Finance
+
+---
+
+## DEFAULT PATHS :
+Read "/Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases/AI_Brain/config/paths.md"
+
+## Rules
+- If any Path is missing in `paths.md` then find that in `CONFIGURATION` section below.
+- If any variable exists at both place, in `paths.md` & in `CONFIGURATION` section also, then consider `CONFIGURATION` section Variable.
 
 ---
 
@@ -14,17 +23,22 @@ MODULE            = Payroll
 MODULE_DIR        = Modules/Payroll/
 APP_REPO          = prime_ai_tarun
 BRANCH            = Brijesh_Finance
-DEVELOPER         = Brijesh
 RBS_MODULE_CODE   = P
 DB_TABLE_PREFIX   = prl_
 DATABASE_NAME     = tenant_db
-DDL_OUTPUT_DIR    = databases/1-DDL_Tenant_Modules/21-Payroll/DDL
-OTHER_OUTPUT_DIR  = databases/5-Work-In-Progress/21-Payroll/2-Claude_Plan
+
+OUTPUT_REPO       = /Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases
+OUTPUT_DIR_A      = {OUTPUT_REPO}/1-DDL_Tenant_Modules/41-Payroll/DDL
+OUTPUT_DIR_B      = {OUTPUT_REPO}/1-DDL_Tenant_Modules/21-Payroll/DDL
+OUTPUT_DIR_C      = {OUTPUT_REPO}/1-DDL_Tenant_Modules/21-Payroll/DDL
+OUTPUT_DIR_D      = {OUTPUT_REPO}/1-DDL_Tenant_Modules/21-Payroll/DDL
+
+OTHER_OUTPUT_DIR  = {OUTPUT_REPO}/5-Work-In-Progress/21-Payroll/2-Claude_Plan
 MIGRATION_DIR     = prime_ai_tarun/database/migrations/tenant
-REQUIREMENT_FILE  = databases/1-DDL_Tenant_Modules/21-Payroll/Claude_Plan/Payroll_Requirement_v4.md
-PLAN_FILE         = databases/1-DDL_Tenant_Modules/20-Account/Claude_Plan/Initial_Plan_v4.md
+REQUIREMENT_FILE  = {OUTPUT_REPO}/1-DDL_Tenant_Modules/21-Payroll/Claude_Plan/Payroll_Requirement_v4.md
+PLAN_FILE         = {OUTPUT_REPO}/1-DDL_Tenant_Modules/20-Account/Claude_Plan/Initial_Plan_v4.md
 RBS_FILE          = 3-Project_Planning/1-RBS/PrimeAI_RBS_Menu_Mapping_v2.0.md
-DDL_DIR           = databases/1-DDL_Tenant_Modules/21-Payroll/DDL
+DDL_DIR           = {OUTPUT_REPO}/1-DDL_Tenant_Modules/21-Payroll/DDL
 PERMISSION_GATE   = payroll.resource.action
 FEATURE_FILE      = PRL_FeatureSpec.md
 DEV_PLAN_FILE     = PRL_Dev_Plan.md

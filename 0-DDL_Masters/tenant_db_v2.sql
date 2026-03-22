@@ -5728,7 +5728,7 @@
 
 
 -- ===========================================================================
--- 12-Syllabus_Books (rec)
+-- 12-Syllabus_Books (slb)
 -- ===========================================================================
   -- Authors table (Many-to-Many with Books)
   CREATE TABLE IF NOT EXISTS `slb_book_authors` (

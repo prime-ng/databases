@@ -94,11 +94,11 @@ PRIMARY KEY (`id`)
 - Hard delete only via `forceDelete()`
 
 ## Schema Documentation
-- Document every schema decision in `.ai/memory/decisions.md`
+- Document every schema decision in `AI_Brain/memory/decisions.md`
 - Update the consolidated DDL schema files in the databases repo after significant changes:
-  - `{DDL_DIR}/tenant_db.sql`
-  - `{DDL_DIR}/prime_db.sql`
-  - `{DDL_DIR}/global_db.sql`
+  - `{TENANT_DDL}`
+  - `{PRIME_DDL}`
+  - `{GLOBAL_DDL}`
 
 ## Existing Schema Stats
 - `global_db`: 12 tables

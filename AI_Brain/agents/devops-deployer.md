@@ -18,8 +18,8 @@ Infrastructure, CI/CD, and deployment specialist for the Prime-AI multi-tenant S
 
 ## Before Starting Any DevOps Work
 
-1. Read `project_docs/01-project-overview.md` — Tech stack, 3-layer DB architecture
-2. Read `project_docs/04-migration-guide.md` — Central vs tenant migration commands
+1. Read `{PROJECT_DOCS}/01-project-overview.md` — Tech stack, 3-layer DB architecture
+2. Read `{PROJECT_DOCS}/04-migration-guide.md` — Central vs tenant migration commands
 3. Read `AI_Brain/memory/tenancy-map.md` — stancl/tenancy config, bootstrappers
 4. Read `AI_Brain/memory/project-context.md` — External services (Razorpay, DomPDF, etc.)
 

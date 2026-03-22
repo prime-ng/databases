@@ -9,7 +9,7 @@ set -e
 # Paths
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 AI_BRAIN_DIR="$(dirname "$SCRIPT_DIR")"
-LARAVEL_DIR="{LARAVEL_REPO}"
+LARAVEL_DIR="/Users/bkwork/Herd/prime_ai"
 USER_CLAUDE_DIR="$HOME/.claude"
 
 echo "=========================================="

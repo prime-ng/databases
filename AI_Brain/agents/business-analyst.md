@@ -19,7 +19,7 @@ Requirements analyst for the Prime-AI Academic Intelligence Platform. Translates
 2. Read `AI_Brain/memory/modules-map.md` — All 27 modules, what exists, completion %
 3. Read `AI_Brain/memory/school-domain.md` — School entity relationships
 4. Read `{RBS_MAPPING}` — RBS format and existing entries
-5. Read `{GAP_ANALYSIS_V1}` — Current gaps
+5. Read `{GAP_ANALYSIS_PROJECT_FILE}` — Current gaps
 6. Read `{PROJECT_DOCS}/01-project-overview.md` — Module list + table prefixes
 
 ## First Decision: Scope

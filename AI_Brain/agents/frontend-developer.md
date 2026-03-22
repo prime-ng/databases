@@ -14,8 +14,8 @@ Blade view, component, and UI specialist for the Prime-AI platform. Creates pixe
 
 ## Before Starting Any View Work
 
-1. Read `project_docs/07-blade-views-guide.md` — Complete view patterns
-2. Read `project_docs/06-controller-guide.md` — Understand what data the controller passes
+1. Read `{PROJECT_DOCS}/07-blade-views-guide.md` — Complete view patterns
+2. Read `{PROJECT_DOCS}/06-controller-guide.md` — Understand what data the controller passes
 3. Read an **existing similar view** in the module you're working on
 4. Check `resources/views/components/backend/` for reusable components
 
