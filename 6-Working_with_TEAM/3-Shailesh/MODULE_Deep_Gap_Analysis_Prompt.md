@@ -10,6 +10,7 @@
 # ═══════════════════════════════════════════════════════════════════
 
 ---
+Read "/Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases/AI_Brain/config/paths.md" to get all Path.
 
 ## ▶ VARIABLES — CHANGE ONLY BELOW 3 LINES
 
