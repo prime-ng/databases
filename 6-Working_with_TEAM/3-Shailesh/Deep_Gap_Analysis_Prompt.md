@@ -193,19 +193,24 @@ Open `{DATABASE_FILE}` and find ALL tables with the module's prefix:
 | Library | `bok_*` |
 | Payment | `pay_*` |
 
-| Billing
+### 2B — Extract Module Tables from DDL
 
-MODULE_NAME = Billing
+Open `{DATABASE_FILE}` and find ALL tables with the module's prefix:
+
+| Billing | `bil_*` |
+| Prime | `prm_*` |
+| SystemConfig | `sys_*` |
+| TimetableFoundation | `tt_*` |
+| GlobalMaster | `glb_*` |
+| SyllabusBooks | `slb_*` |
+
+
 MODULE_NAME = Dashboard
 MODULE_NAME = Documentation
-MODULE_NAME = GlobalMaster
-MODULE_NAME = Prime
 MODULE_NAME = Scheduler
-MODULE_NAME = SyllabusBooks
-MODULE_NAME = SystemConfig
-MODULE_NAME = TimetableFoundation
 
-### 2B — For Each Table, Record:
+
+### 2C — For Each Table, Record:
 - Complete column list with data types, NULL/NOT NULL, DEFAULT values
 - All PRIMARY KEY, UNIQUE KEY, INDEX, FOREIGN KEY definitions
 - ENUM columns and their allowed values
@@ -214,7 +219,7 @@ MODULE_NAME = TimetableFoundation
 - Soft-delete column (`deleted_at`)
 - Audit columns (`created_by`, `created_at`, `updated_at`)
 
-### 2C — DB Integrity Checks
+### 2D — DB Integrity Checks
 - [ ] Every table has: `id`, `is_active`, `created_by`, `created_at`, `updated_at`, `deleted_at`
 - [ ] Every FK column has a corresponding INDEX
 - [ ] Junction tables end with `_jnt`
@@ -224,7 +229,7 @@ MODULE_NAME = TimetableFoundation
 - [ ] No orphaned FK references (pointing to non-existent tables)
 - [ ] ENUM values are consistent across related tables
 
-### 2D — Cross-Reference with Tenant Migrations
+### 2E — Cross-Reference with Tenant Migrations
 Check `{TENANT_MIGS}/` for migrations belonging to this module:
 - [ ] Does a migration exist for every table in the DDL?
 - [ ] Do migrations have `down()` methods that properly reverse `up()`?
