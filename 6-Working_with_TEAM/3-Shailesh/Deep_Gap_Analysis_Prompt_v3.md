@@ -1,73 +1,100 @@
-# ╔══════════════════════════════════════════════════════════════════╗
-# ║      MODULE DEEP GAP ANALYSIS — REUSABLE PROMPT TEMPLATE         ║
-# ║      Prime-AI Academic Intelligence Platform                     ║
-# ╚══════════════════════════════════════════════════════════════════╝
+# ╔════════════════════════════════════════════════════════════════════════╗
+# ║      MODULE DEEP GAP ANALYSIS — BATCH EXECUTION PROMPT                 ║
+# ║      Prime-AI Academic Intelligence Platform                           ║
+# ╚════════════════════════════════════════════════════════════════════════╝
 #
 # HOW TO USE:
-#   1. Change only below 3 lines : MODULE_NAME, APP_BRANCH, DATE
-#   2. Need not to change any Path — Everything will derive automatic
+#   1. Change only below 2 lines : APP_BRANCH, DATE
+#   2. No need to change any Path — Everything will derive automatically
 #   3. Copy entire file → Paste it into Claude Code
-# ═══════════════════════════════════════════════════════════════════
+#   4. Claude will iterate through ALL modules in the list below,
+#      run the full Deep Gap Analysis for each, and write a separate
+#      output file per module into {OUTPUT_DIR_A}.
+# ═════════════════════════════════════════════════════════════════════════
 
 ---
-## ▶ VARIABLES:
+## List of Modules
 
-```
-MODULE_NAME  = SystemConfig
-APP_REPO     = prime_ai_tarun
-APP_BRANCH   = Brijesh_Main
-DATE         = 2026-03-21
-```
+Below is the complete module inventory with their MODULE_TYPE.
+Claude will process **every module** in this list, one by one, top to bottom.
+
+| # | MODULE_NAME | MODULE_TYPE | DATABASE_FILE (auto-resolved) |
+|---|-------------|-------------|-------------------------------|
+| 1 | Billing | Prime | {PRIME_DDL} |
+| 2 | Complaint | Tenant | {TENANT_DDL} |
+| 3 | Dashboard | Other | — (No DDL) |
+| 4 | Documentation | Other | — (No DDL) |
+| 5 | GlobalMaster | Global | {GLOBAL_DDL} |
+| 6 | Hpc | Tenant | {TENANT_DDL} |
+| 7 | Library | Tenant | {TENANT_DDL} |
+| 8 | LmsExam | Tenant | {TENANT_DDL} |
+| 9 | LmsHomework | Tenant | {TENANT_DDL} |
+| 10 | LmsQuests | Tenant | {TENANT_DDL} |
+| 11 | LmsQuiz | Tenant | {TENANT_DDL} |
+| 12 | Notification | Tenant | {TENANT_DDL} |
+| 13 | Payment | Tenant | {TENANT_DDL} |
+| 14 | Prime | Prime | {PRIME_DDL} |
+| 15 | QuestionBank | Tenant | {TENANT_DDL} |
+| 16 | Recommendation | Tenant | {TENANT_DDL} |
+| 17 | Scheduler | Other | — (No DDL) |
+| 18 | SchoolSetup | Tenant | {TENANT_DDL} |
+| 19 | SmartTimetable | Tenant | {TENANT_DDL} |
+| 20 | StandardTimetable | Tenant | {TENANT_DDL} |
+| 21 | StudentFee | Tenant | {TENANT_DDL} |
+| 22 | StudentPortal | Tenant | {TENANT_DDL} |
+| 23 | StudentProfile | Tenant | {TENANT_DDL} |
+| 24 | Syllabus | Tenant | {TENANT_DDL} |
+| 25 | SyllabusBooks | Prime | {PRIME_DDL} |
+| 26 | SystemConfig | Prime | {PRIME_DDL} |
+| 27 | TimetableFoundation | Prime | {PRIME_DDL} |
+| 28 | Transport | Tenant | {TENANT_DDL} |
+| 29 | Vendor | Tenant | {TENANT_DDL} |
+
 ---
 
-Here is the complete list with `MODULE_NAME = ` added before each module:
-<!-- 
-```text
-MODULE_NAME = Billing
-MODULE_NAME = Complaint
-MODULE_NAME = Dashboard
-MODULE_NAME = Documentation
-MODULE_NAME = GlobalMaster
-MODULE_NAME = Hpc
-MODULE_NAME = Library
-MODULE_NAME = LmsExam
-MODULE_NAME = LmsHomework
-MODULE_NAME = LmsQuests
-MODULE_NAME = LmsQuiz
-MODULE_NAME = Notification
-MODULE_NAME = Payment
-MODULE_NAME = Prime
-MODULE_NAME = QuestionBank
-MODULE_NAME = Recommendation
-MODULE_NAME = Scheduler
-MODULE_NAME = SchoolSetup
-MODULE_NAME = SmartTimetable
-MODULE_NAME = StandardTimetable
-MODULE_NAME = StudentFee
-MODULE_NAME = StudentPortal
-MODULE_NAME = StudentProfile
-MODULE_NAME = Syllabus
-MODULE_NAME = SyllabusBooks
-MODULE_NAME = SystemConfig
-MODULE_NAME = TimetableFoundation
-MODULE_NAME = Transport
-MODULE_NAME = Vendor
-``` -->
+## ▶ GLOBAL VARIABLES (set once, apply to all modules):
 
-<!-- 
-MODULE_NAME = SystemConfig
-MODULE_NAME = SchoolSetup
-MODULE_NAME = StudentProfile
-MODULE_NAME = Syllabus
-MODULE_NAME = SyllabusBooks
-MODULE_NAME = QuestionBank
-MODULE_NAME = LmsExam
-MODULE_NAME = LmsHomework
-MODULE_NAME = LmsQuests
-MODULE_NAME = LmsQuiz
-MODULE_NAME = Recommendation
-MODULE_NAME = StudentPortal
--->
+```
+APP_REPO       = prime_ai_tarun
+APP_BRANCH     = Brijesh_Main
+DATE           = 2026-03-22
+```
+
+---
+
+## ▶ BATCH EXECUTION INSTRUCTIONS
+
+For **each module** in the "List of Modules" table above, do the following:
+
+1. Set the current module's variables:
+   ```
+   MODULE_NAME   = {current module from the list}
+   MODULE_TYPE   = {corresponding MODULE_TYPE from the list}
+   DATABASE_FILE = {resolved based on MODULE_TYPE — see CONFIGURATION section}
+   ```
+
+2. Execute the **FULL analysis** (Steps 0 through 9 + OUTPUT) described below for this module.
+
+3. Write the output report to a **separate file**:
+   ```
+   {OUTPUT_DIR_A}/{MODULE_NAME}_Deep_Gap_Analysis_{DATE}.md
+   ```
+   For example: `{OUTPUT_DIR_A}/Billing_Deep_Gap_Analysis_2026-03-22.md`
+
+4. After writing the file, print a one-line status:
+   ```
+   ✅ [{current #}/{total}] {MODULE_NAME} — Analysis complete → {output file path}
+   ```
+
+5. Move to the **next module** in the list and repeat from step 1.
+
+6. After ALL modules are done, write a **Summary Index** file:
+   ```
+   {OUTPUT_DIR_A}/_Module_Analysis_Summary_{DATE}.md
+   ```
+   This summary file should contain:
+   - A table listing every module with: Overall Score, Production Ready status, Total Issues count, and link to the detailed report file.
+   - Aggregate counts across all modules.
 
 ---
 
@@ -76,7 +103,7 @@ MODULE_NAME = StudentPortal
 You are a **Senior Laravel Architect** performing a production-readiness audit of
 the **`{MODULE_NAME}`** module in the Prime-AI platform.
 
-**Your job:** Read every line of code, every DB table, every route, every test & every tasks from RBS —
+**Your job:** Read every line of code, every DB table, every route, every test & every task from RBS —
 then produce an **exhaustive gap analysis** that tells the development team:
 - What is MISSING (features not built)
 - What is BROKEN (bugs, crashes, wrong logic)
@@ -125,12 +152,21 @@ OUTPUT_DIR_C    = {OUTPUT_DIR}/1-DDL_Tenant_Modules/21-Payroll/DDL
 OUTPUT_DIR_D    = {OUTPUT_DIR}/1-DDL_Tenant_Modules/21-Payroll/DDL
 ```
 
+### DATABASE_FILE Resolution (based on MODULE_TYPE)
+```
+If MODULE_TYPE = "Tenant"  → DATABASE_FILE = {TENANT_DDL}
+If MODULE_TYPE = "Prime"   → DATABASE_FILE = {PRIME_DDL}
+If MODULE_TYPE = "Global"  → DATABASE_FILE = {GLOBAL_DDL}
+If MODULE_TYPE = "Other"   → DATABASE_FILE = NONE (skip DDL-related checks)
+```
+
 ---
 
 ## ═══ STEP 1 — LOAD AI BRAIN CONTEXT ═══
 
 > `config/paths.md` already read in Step 0.
 > Now read below files. These files define rules.
+> **Note:** You only need to read the AI Brain files ONCE for the first module. Retain this context for all subsequent modules.
 
 ### 1A — Core Memory Files
 | # | File | Why Read |
@@ -168,9 +204,9 @@ OUTPUT_DIR_D    = {OUTPUT_DIR}/1-DDL_Tenant_Modules/21-Payroll/DDL
 
 ## ═══ STEP 2 — DATABASE SCHEMA DEEP ANALYSIS ═══
 
-### 2A — Extract Module Tables from DDL
+### 2A — Extract Tenant Module Tables from {TENANT_DDL}
 
-Open `{DATABASE_FILE}` and find ALL tables with the module's prefix:
+Read {TENANT_DDL} if {MODULE_TYPE} = `Tenant` and find ALL tables prefixed with the `Table Prefix` from below list where `Module` = {MODULE_NAME} in below list:
 
 | Module | Table Prefix |
 |--------|-------------|
@@ -192,25 +228,41 @@ Open `{DATABASE_FILE}` and find ALL tables with the module's prefix:
 | LmsQuests | `qst_*` |
 | Library | `bok_*` |
 | Payment | `pay_*` |
+| StandardTimetable | `tt_*` |
+| StudentPortal | `std_*` |
 
-### 2B — Extract Module Tables from DDL
+### 2B — Extract Prime Module Tables from {PRIME_DDL}
 
-Open `{DATABASE_FILE}` and find ALL tables with the module's prefix:
+Read {PRIME_DDL} if {MODULE_TYPE} = `Prime` and find ALL tables prefixed with the `Table Prefix` from below list where `Module` = {MODULE_NAME} in below list:
 
+| Module | Table Prefix |
+|--------|-------------|
 | Billing | `bil_*` |
 | Prime | `prm_*` |
 | SystemConfig | `sys_*` |
 | TimetableFoundation | `tt_*` |
-| GlobalMaster | `glb_*` |
 | SyllabusBooks | `slb_*` |
 
+### 2C — Extract Global Module Tables from {GLOBAL_DDL}
 
-MODULE_NAME = Dashboard
-MODULE_NAME = Documentation
-MODULE_NAME = Scheduler
+Read all the tables from {GLOBAL_DDL} if {MODULE_TYPE} is `Global`.
+
+| Module | Table Prefix |
+|--------|-------------|
+| GlobalMaster | `glb_*` |
 
 
-### 2C — For Each Table, Record:
+### 2D — NO DDL Modules
+
+If {MODULE_TYPE} = `Other` and {MODULE_NAME} is any of the modules listed below, then NO tables belong to the Module and you should skip all DDL Schema-related checks for these Modules:
+
+| Module |
+|--------|
+| Dashboard |
+| Documentation |
+| Scheduler |
+
+### 2E — For Each Table (excluding Modules belonging to `2D - NO DDL Modules` section), Record:
 - Complete column list with data types, NULL/NOT NULL, DEFAULT values
 - All PRIMARY KEY, UNIQUE KEY, INDEX, FOREIGN KEY definitions
 - ENUM columns and their allowed values
@@ -219,7 +271,7 @@ MODULE_NAME = Scheduler
 - Soft-delete column (`deleted_at`)
 - Audit columns (`created_by`, `created_at`, `updated_at`)
 
-### 2D — DB Integrity Checks
+### 2F — DB Integrity Checks
 - [ ] Every table has: `id`, `is_active`, `created_by`, `created_at`, `updated_at`, `deleted_at`
 - [ ] Every FK column has a corresponding INDEX
 - [ ] Junction tables end with `_jnt`
@@ -229,7 +281,7 @@ MODULE_NAME = Scheduler
 - [ ] No orphaned FK references (pointing to non-existent tables)
 - [ ] ENUM values are consistent across related tables
 
-### 2E — Cross-Reference with Tenant Migrations
+### 2G — Cross-Reference with Tenant Migrations
 Check `{TENANT_MIGS}/` for migrations belonging to this module:
 - [ ] Does a migration exist for every table in the DDL?
 - [ ] Do migrations have `down()` methods that properly reverse `up()`?
@@ -541,6 +593,15 @@ Check `{MODULE_TESTS}/`:
 - Read all Unit and Feature test files
 - For each: list test names and coverage area
 
+Check `{FEATURE_TESTS}/`:
+- Read ALL test files found
+- For each: list test names and coverage area
+
+Check `{UNIT_TESTS}/`:
+- Read ALL test files found
+- For each: list test names and coverage area
+
+
 ### 5C — Coverage Gap Matrix
 Build a matrix: for each Controller@Method, does a test exist?
 
@@ -563,8 +624,7 @@ Build a matrix: for each Controller@Method, does a test exist?
 
 ## ═══ STEP 6 — BUSINESS LOGIC COMPLETENESS ═══
 
-Based on DB tables (Step 2) and existing code (Step 4), check if the full business
-workflow is implemented:
+Based on DB tables (Step 2) and existing code (Step 4), check if the full business workflow is implemented:
 
 ### 6A — CRUD Completeness
 For each DB table in this module:
@@ -717,7 +777,8 @@ Check that these standard files exist:
 
 ## ═══ OUTPUT — FULL GAP ANALYSIS REPORT ═══
 
-After completing ALL 9 steps above, produce this report:
+After completing ALL 9 steps above for the current module, produce this report and write it to:
+**`{OUTPUT_DIR_A}/{MODULE_NAME}_Deep_Gap_Analysis_{DATE}.md`**
 
 ---
 
@@ -726,6 +787,7 @@ After completing ALL 9 steps above, produce this report:
 **Date:** {DATE}  |  **Branch:** {APP_BRANCH}  |  **Auditor:** Claude Code (Deep Audit)
 **Module Path:** {MODULE_PATH}
 
+{GAP_ANALYSIS}
 ---
 
 ## EXECUTIVE SUMMARY
@@ -1071,23 +1133,39 @@ List features that are fully implemented, tested, and production-ready:
 ## ▶ START NOW — EXECUTION ORDER
 
 ```
-Step 0-A → Is prompt file ka path dekho → DB_REPO derive karo
-Step 0-B → {DB_REPO}/AI_Brain/config/paths.md read karo
-           → LARAVEL_REPO, TENANT_DDL, AI_BRAIN sab wahan se lo
-Step 0-C → MODULE_NAME se baaki sab paths build karo
+Step 0-A → Read this prompt file → Derive DB_REPO from the path
+Step 0-B → Read {DB_REPO}/AI_Brain/config/paths.md
+           → Get LARAVEL_REPO, TENANT_DDL, PRIME_DDL, GLOBAL_DDL, AI_BRAIN from there
+Step 0-C → Build all derived paths from MODULE_NAME and the configuration above
 
-Step 1   → AI Brain read karo (14 files — memory + rules + lessons)
-Step 2   → TENANT_DDL se module tables extract karo + migrations cross-check
-Step 3   → ROUTES_FILE se saare module routes map karo
-Step 4   → MODULE_PATH ke har PHP file ko read karo
-           Controllers → Models → Services → Requests →
-           Policies → Views → Jobs → Events → Providers → Seeders
-Step 5   → Tests read karo (BROWSER_TESTS + MODULE_TESTS)
-Step 6   → Business logic completeness check
-Step 7   → Security audit (18 checks)
-Step 8   → Performance audit (30+ checks)
-Step 9   → Architecture audit
-OUTPUT   → Full gap analysis report likho
+Step 1   → Read AI Brain (15 files — memory + rules + lessons)
+           → This only needs to be done ONCE. Retain context for all modules.
+
+─── BEGIN MODULE LOOP (for each module in the List of Modules table) ───
+
+  Set MODULE_NAME and MODULE_TYPE from the current row in the list.
+  Resolve DATABASE_FILE based on MODULE_TYPE.
+
+  Step 2   → Extract module tables from the appropriate DDL file + cross-check migrations
+             (Skip if MODULE_TYPE = "Other")
+  Step 3   → Map all module routes from ROUTES_FILE
+  Step 4   → Read every PHP file inside MODULE_PATH
+             Controllers → Models → Services → Requests →
+             Policies → Views → Jobs → Events → Providers → Seeders
+  Step 5   → Read tests (BROWSER_TESTS + MODULE_TESTS + FEATURE_TESTS + UNIT_TESTS)
+  Step 6   → Business logic completeness check
+  Step 7   → Security audit (18 checks)
+  Step 8   → Performance audit (30+ checks)
+  Step 9   → Architecture audit
+  OUTPUT   → Write full gap analysis report to:
+             {OUTPUT_DIR_A}/{MODULE_NAME}_Deep_Gap_Analysis_{DATE}.md
+  STATUS   → Print: ✅ [X/29] {MODULE_NAME} — Analysis complete
+
+─── END MODULE LOOP ───
+
+FINAL    → Write Summary Index to:
+           {OUTPUT_DIR_A}/_Module_Analysis_Summary_{DATE}.md
+           (Table of all modules with scores, issue counts, and file links)
 ```
 
-**Step 0-A se shuru karo. Koi step skip mat karo. Sab files read karne ke baad hi output likho.**
+**Start from Step 0-A. Do not skip any step. Read all files before writing any output. Process every module in the list sequentially.**
