@@ -400,6 +400,33 @@
 - Role-based section locking: owner_role ENUM on rubric items
 - Student, Parent, Peer data collection portals
 
+### HPC Incremental Update (2026-03-21)
+
+**Developer changes since 2026-03-17 (~30 commits):**
+
+**Architecture change — SendHpcReportEmail Job rewritten:**
+- **Before:** Job generated PDF via HpcReportService::buildPdf(), attached PDF to email, 300s timeout
+- **After:** Job sends signed URL link (Crypt::encryptString for student_id), no PDF generation in Job, 120s timeout
+- **Impact:** HpcReportService::buildPdf/minifyHtml no longer called from Job. The P2_26 refactor (Job→Service) was superseded by this developer rewrite.
+- **Note:** `route('hpc.hpc-form.view')` used for the link — verify this route exists and accepts encrypted student_id param
+
+**PDF blade pages redesigned (all 4 templates):**
+- first_pdf page 1: already had clean layout; page 2: hybrid background image approach
+- second_pdf page 1: redesigned to formal layout matching PDF; page 2: hybrid background image
+- third_pdf page 1: redesigned to formal layout; page 2: redesigned with 4-section layout
+- fourth_pdf page 1: redesigned + all subsequent pages had significant DomPDF fixes (~4661 line changes)
+
+**Seeder fixes (HPCTemplateSeeder):**
+- seedPage1Second, seedPage1Third, seedPage1Fourth: all 6 rubric grouping fixes applied (UDISE+Teacher combined, Student Name split, Mother/Father split, Rural/Urban split)
+- Grade checkboxes now explicit ri() calls (not foreach loop) for templates 2/3/4
+
+**Student-list view changes:**
+- "Generate Report" button now triggers bulk email (not PDF generation)
+- Individual download button removed
+- Button icon changed from PDF to envelope
+
+**No new issues introduced.** All auth/validation checks remain intact.
+
 ## Recommendation Specific (deep-audited 2026-03-14)
 
 ### SEC-REC-001: Wrong Gate Permission on 8/9 StudentRecommendation Write Routes

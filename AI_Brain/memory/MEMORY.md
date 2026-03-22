@@ -2,13 +2,23 @@
 
 > This file is the index of all memory files in `AI_Brain/memory/`.
 > **Start every session by reading `AI_Brain/README.md` first.**
-> Last Updated: 2026-03-16
+> Last Updated: 2026-03-21
 
 ---
 
 ## Path Configuration (READ FIRST)
 
 - [../config/paths.md](../config/paths.md) — **Single source of truth** for all file/folder locations. All `{VARIABLE}` references in AI_Brain files resolve from here. Change paths here, then propagate.
+
+---
+
+## LMS Modules (Dedicated)
+
+- [lms-modules.md](lms-modules.md) — **LMS 6 modules deep knowledge** (2026-03-21): Syllabus, LmsQuiz, LmsQuests, LmsExam, LmsHomework, QuestionBank — tables, key fields, confirmed schema facts, model relationships, critical bugs, cross-module dependencies
+
+## Student & Parent Portal
+
+- [student-parent-portal.md](student-parent-portal.md) — **Portal architecture reference** (2026-03-21): Student Portal 27 screens (S1-S27), Parent Portal 23 screens (P1-P23), 5-layer security, multi-child context, 16 new tables needed, dependencies on LMS/Fee/Transport/Notification modules
 
 ---
 

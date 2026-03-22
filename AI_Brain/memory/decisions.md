@@ -77,6 +77,13 @@
 - **Pre-flight checks:** Controller validates student exists, template resolves, guardian emails exist BEFORE dispatching. Returns JSON with guardian count.
 - **Trade-off:** `buildPdf()` and `minifyHtml()` changed from `private` to `public` on HpcController so Job can call them. Cleaner alternative (future): extract to `HpcReportService`.
 
+### D22: HPC Email — Link-Based Instead of PDF Attachment (2026-03-21, Developer Change)
+- **Why:** PDF generation in the Job was slow (5-30s per student), consumed 512MB memory, and produced large email attachments that some providers rejected.
+- **New pattern:** Job now sends a signed URL link (`Crypt::encryptString` for student_id) to guardians. Guardian clicks link → views report in browser. No PDF generated in Job.
+- **Supersedes D19:** Job no longer calls `HpcReportService::buildPdf()`. Timeout reduced from 300s to 120s. All Storage/View/HpcReport imports removed from Job.
+- **Trade-off:** Guardian must have internet access to view report (can't view offline from email). PDF still available via on-demand browser generation.
+- **Verify:** `route('hpc.hpc-form.view')` must accept encrypted student_id parameter.
+
 ### D20: HPC Gap Analysis Findings — Revised Completion Model (2026-03-16)
 - **Why:** Previous estimates (73%) only counted template structure + CRUD completion. Comprehensive gap analysis against official NEP 2020 PDFs (138 pages, 4 templates) and implementation blueprint (20 screens) revealed that multi-actor data collection (student/parent/peer), approval workflows, and 12 of 20 screens are NOT STARTED.
 - **Finding:** Template structure is 100% complete (all 138 pages seeded with correct html_object_names). Web form and PDF generation are 90%. But data can only be entered by teachers — 64 of 138 pages (46%) should be filled by students, parents, or peers.

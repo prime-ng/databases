@@ -133,3 +133,18 @@ DATE           = 2026-03-17
 
 
 Provide me Prompt to Generate a Detailed Requirement for any Module. I will provide Highlevel requirement of the Module in {SOURCE_DIR}. 
+
+
+-----------------------------------------------------------------------------------------------------------------------------
+One of my team member has done some work on `Student Portal` & `Parent Portal`. He has updated his AI_Brain. The copy of his AI_Brain is in the folder "9-Support/BrainBackup/AI_Brain". When i check mainly he has updated 2 below File in AI_Brain:
+- 9-Support/BrainBackup/AI_Brain/memory/MEMORY.md
+- 9-Support/BrainBackup/AI_Brain/state/progress.md
+
+Update the AI_Brain in my System (/Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases/AI_Brain) from these File if anything is missing, as Now I am going to work on these Modules (`Student Portal` & `Parent Portal`)
+
+Read files from below Folders and update AI_Brain.
+- "/Users/bkwork/WorkFolder/2-New_Primedb/pgdatabase/8-Team_Work/Shailesh/Student Parent Portal"
+- "/Users/bkwork/WorkFolder/2-New_Primedb/pgdatabase/7-Work_on_Modules/StudentParentPortal"
+- "/Users/bkwork/WorkFolder/2-New_Primedb/pgdatabase/7-Work_on_Modules/LMS"
+
+I have created a prompt for 

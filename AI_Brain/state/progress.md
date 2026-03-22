@@ -30,9 +30,9 @@
 - [x] **Scheduler** — Job scheduling (minimal)
 
 ### Academic & Curriculum (revised from 100%)
-- [ ] **Syllabus** (~78%) — CompetencieController + TopicController zero auth on all methods; SyllabusController fully empty stub; $request->all() mass assignment; TopicController::destroy() uses forceDelete
+- [ ] **Syllabus** (~100% CRUD, updated 2026-03-20) — Entities: Lesson, Topic (hierarchy levels 0–9 via `slb_topic_level_types`), BloomTaxonomy, CognitiveSkill, QueTypeSpecificity, CompetencyType, ComplexityLevel, QuestionType, PerformanceCategory, GradeDivision, SyllabusSchedule. CRITICAL SCHEMA FACTS: `slb_topics.release_quiz_on_completion` + `release_quest_on_completion` exist; `release_exam_on_completion` DOES NOT EXIST; `slb_lessons` has NO `start_date`/`end_date` columns (only `scheduled_year_week` YYYYWW). BUGS: Lesson.php ~71 `SchAcademicSession` undefined; SyllabusSchedulePolicy.php misnamed. See `AI_Brain/memory/lms-modules.md`
 - [ ] **SyllabusBooks** (~65%) — SyllabusBooksController fully empty stub; BookTopicMappingController zero auth all 9 methods; undefined variable crash; central AcademicSession cross-layer
-- [ ] **QuestionBank** (~75%) — **API KEYS HARDCODED (OpenAI + Gemini)** — REVOKE NOW; AIQuestionGeneratorController zero auth; generateQuestions() always returns demo data (dead code)
+- [ ] **QuestionBank** (~85%, updated 2026-03-20) — Questions with bloom_id, cognitive_skill_id, complexity_level_id, ques_type_specificity_id, question_type_id. Search filters: 9 criteria including difficulty. Statuses: DRAFT/PENDING_REVIEW/APPROVED/REJECTED. Availability: GLOBAL/SCHOOL_ONLY/CLASS_ONLY. CRITICAL BUGS: (1) **OpenAI + Gemini API keys hardcoded** — REVOKE NOW, (2) AIQuestionGeneratorController zero auth, (3) generateQuestions() always returns demo data. See `AI_Brain/memory/lms-modules.md`
 
 ### Timetable
 - [ ] **SmartTimetable** (~72%, audited 2026-03-17, branch `Brijesh_SmartTimetable`)
@@ -49,20 +49,21 @@
 
 ## Partially Complete (45–72%) — Deep-audited 2026-03-14
 
-- [ ] **LmsQuiz** (~72%) — Admin CRUD works; auth gap (Gate commented out in index); student attempt/tracking absent
-- [ ] **LmsQuests** (~68%) — Auth gap (Gate commented out in index); student progress tracking and adaptive path absent
+- [ ] **LmsQuiz** (~90%, updated 2026-03-20) — Full CRUD: Quiz, QuizAllocation, QuizQuestion, AssessmentType, DifficultyDistributionConfig/Detail. Difficulty engine active (`ignore_difficulty_config` flag + 5-step validation). Route prefix typo: `/lms-quize/`. Gaps: `QuizAllocationPolicy` missing, Gate commented in index(), student attempt tracking absent, no EnsureTenantHasModule. See `AI_Brain/memory/lms-modules.md`
+- [ ] **LmsQuests** (~85%, updated 2026-03-20) — Full CRUD: Quest, QuestScope, QuestQuestion, QuestAllocation. `canPublish()` guards: questions > 0, count === total_questions, validateSettings() empty, all 4 FKs set. Gaps: no difficulty config, Gate commented in index(), student progress tracking absent, no EnsureTenantHasModule. See `AI_Brain/memory/lms-modules.md`
 - [ ] **Recommendation** (~65%) — 3 empty stubs on RecommendationController; wrong permissions on 8/9 StudentRecommendation routes; broken `exists:users` validation; no Form Requests; no EnsureTenantHasModule
-- [ ] **LmsExam** (~65%) — `dd($e)` in prod store(); 2 controllers (Blueprint, Scope) have all Gate calls commented out; no EnsureTenantHasModule; answer submission & grading absent
+- [ ] **LmsExam** (~90%, updated 2026-03-20) — Full flow: Blueprint → PaperSet → PaperSetQuestion → ExamAllocation. Imports DifficultyConfig from LmsQuiz. GradeDivision from Syllabus. Gaps: ExamBlueprintController + ExamScopeController ALL Gate calls commented out, no EnsureTenantHasModule, student grading absent. See `AI_Brain/memory/lms-modules.md`
 - [ ] **StudentFee** (~60%) — Missing `FeeConcessionController` (imported but doesn't exist); exposed seeder route with no auth; permission prefix mismatch (`student-fee.*` vs `studentfee.*`) on 3 controllers; no Form Requests; N+1 in bulk invoice/assignment generation; no EnsureTenantHasModule
-- [ ] **LmsHomework** (~60%) — Fatal crash: `HoemworkData()` missing `$request` param; `review()` has no auth or validation; no EnsureTenantHasModule
-- [ ] **Hpc** (~75%) — Holistic Progress Card. Revised from 40% to 75% after completing all 37 gap analysis tasks (2026-03-17). 22 controllers, 32 models, 10 services, 14 FormRequests, 1 Trait, 55 tests. All P0 security fixes done, all P1 bugs fixed, all P2 workflows implemented, all P3 features built. Sub-breakdown: Template 100%, Form 90%, PDF 90%, Auth 95%, Role-locking 100%, Workflow 100%, Student Portal 100%, Parent Portal 100%, Peer Workflow 100%, LMS Feed 90%, Credits 100%, Attendance 90%, Tests 80%. Remaining: god controller refactor (partial), 8 blueprint screens, full MOOC integration.
+- [ ] **LmsHomework** (~80%, updated 2026-03-20) — CRUD: Homework, HomeworkSubmission, TriggerEvent, ActionType, RuleEngineConfig. `isEditable()` = DRAFT status; `isDeletable()` = 0 submissions. CRITICAL BUGS: (1) `Homework.php` line ~71 `SchAcademicSession::class` undefined → PHP fatal, (2) NO HomeworkPolicy → zero auth on all homework CRUD, (3) `review()` no Gate/validation. No EnsureTenantHasModule. See `AI_Brain/memory/lms-modules.md`
+- [ ] **Hpc** (~78%) — Holistic Progress Card (updated 2026-03-21). 22 controllers, 32 models, 10 services, 14 FormRequests, 1 Trait, 55 tests. Since 2026-03-17: PDF blade page 1+2 redesigned for all 4 templates (matched to official NEP PDFs), seeder page1 fixed for templates 2/3/4 (6 rubric grouping fixes each), SendHpcReportEmail rewritten to link-based (no PDF attachment), student-list view updated (email-first UX), hybrid background image approach for decorative pages (T1-pg2, T2-pg2). Sub-breakdown: Template 100%, Form 90%, PDF 95% (was 90%), Auth 95%, Seeder 100% (was partial). Remaining: god controller refactor, 8 blueprint screens, pixel-position fine-tuning on hybrid pages.
 - [ ] **Library** (~45%) — NOT wired into tenant.php at all; 7 controllers with zero authorization; 5 stub methods on only registered route; N+1 in ReservationController; Prime\Setting cross-layer import; permission namespace mismatch in LibTransactionController
 
 ---
 
 ## In Progress / Partial
 
-- [ ] **StudentPortal** (~25%) — Dashboard, complaints, notifications wired; missing: academic transcript, timetable view, homework, quiz taking, fee view, parent portal
+- [ ] **StudentPortal** (~28%, architecture done 2026-03-21) — 27 screens designed (S1-S27): Login, Dashboard, Profile, Academic Info, Attendance, Timetable, Lesson Content, Homework, Assignments, Quiz, Question Bank, Exam Timetable, Exam Modes, Results, Gradebook, Course LMS, Certificates, Quests, Fee Payment, Complaints, Notifications, Document Vault, Events, Transport, AI Insights, Health Records, Mentorship. Currently wired: Dashboard, Complaints, Notifications only (3/27). Full architecture packs in `{DB_REPO}/7-Work_on_Modules/StudentParentPortal/v2/`. See `AI_Brain/memory/student-parent-portal.md`
+- [ ] **ParentPortal** (~5%, architecture done 2026-03-21) — 23 screens designed (P1-P23): Login, Dashboard, Profile, Multi-Child Switcher, Attendance, Academics, Timetable, Homework Monitor, Results, Fee Payment, PTM Booking, Complaints, Notices, Transport, Events, AI Insights + more. Currently: no dedicated module. Full architecture packs in `{DB_REPO}/7-Work_on_Modules/StudentParentPortal/v2/`. See `AI_Brain/memory/student-parent-portal.md`
 - [ ] **Standard Timetable** (~70%) — Standard views and scheduling
 - [ ] **Event Engine** (~20%) — Cross-module event system
 

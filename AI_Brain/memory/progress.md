@@ -40,16 +40,20 @@
 
 ## Near Complete (60-95%)
 
-- [ ] **Hpc** (~75%) — Holistic Progress Card. Revised from 40% to 75% after completing all 37 gap analysis tasks (2026-03-17). 22 controllers, 32 models, 10 services, 14 FormRequests, 1 Trait, 55 tests. All P0 security fixes done, all P1 bugs fixed, all P2 workflows implemented, all P3 features built. Sub-breakdown: Template 100%, Form 90%, PDF 90%, Auth 95%, Role-locking 100%, Workflow 100%, Student Portal 100%, Parent Portal 100%, Peer Workflow 100%, LMS Feed 90%, Credits 100%, Attendance 90%, Tests 80%. Remaining: god controller refactor (partial), 8 blueprint screens, full MOOC integration.
-- [ ] **LmsExam** (~80%) — Examination system
-- [ ] **LmsQuiz** (~80%) — Quiz/assessment system
-- [ ] **LmsHomework** (~80%) — Homework assignment & submission
-- [ ] **LmsQuests** (~80%) — Learning paths
-- [ ] **StudentFee** (~80%) — Fee management (invoices, receipts, concessions)
-- [ ] **Recommendation** (~90%) — AI recommendations, trigger events
+- [ ] **Hpc** (~78%) — Holistic Progress Card (updated 2026-03-21). 22 controllers, 32 models, 10 services, 14 FormRequests, 1 Trait, 55 tests. PDF blade pages 1+2 redesigned for all 4 templates. Seeder page1 fixed for T2/T3/T4. SendHpcReportEmail rewritten (link-based, no PDF attachment). Hybrid bg-image for decorative pages. PDF: 95% (was 90%). Seeder: 100%. Remaining: god controller refactor, 8 blueprint screens, hybrid page pixel fine-tuning.
+- [ ] **LmsExam** (~90%, updated 2026-03-20) — Full flow: Blueprint → PaperSet → PaperSetQuestion → ExamAllocation. Student grading absent.
+- [ ] **LmsQuiz** (~90%, updated 2026-03-20) — Full CRUD with difficulty engine. Student attempt tracking absent.
+- [ ] **LmsHomework** (~80%, updated 2026-03-20) — CRUD done. Critical: no HomeworkPolicy, `review()` no auth.
+- [ ] **LmsQuests** (~85%, updated 2026-03-20) — Full CRUD with `canPublish()` guards. Student progress tracking absent.
+- [ ] **Syllabus** (~100% CRUD, updated 2026-03-20) — Full entity set. Critical schema facts documented.
+- [ ] **QuestionBank** (~85%, updated 2026-03-20) — Full CRUD. API keys hardcoded — REVOKE NOW.
+- [ ] **StudentFee** (~60%) — Fee management (missing controller, exposed seeder, permission mismatch)
+- [ ] **Recommendation** (~65%) — Wrong permissions, empty stubs, broken validation
 
 ## In Progress
 
+- [ ] **StudentPortal** (~28%) — 27 screens designed (S1-S27), 3 wired. Full architecture in `student-parent-portal.md`
+- [ ] **ParentPortal** (~5%) — 23 screens designed (P1-P23), none wired yet. Architecture in `student-parent-portal.md`
 - [ ] **Standard Timetable** (~70%) — Standard views and scheduling
 - [ ] **Event Engine** (~20%) — Cross-module event system
 
