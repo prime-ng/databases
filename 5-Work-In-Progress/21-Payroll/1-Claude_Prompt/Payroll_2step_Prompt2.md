@@ -1,8 +1,8 @@
 # PRL — Payroll Module Development Lifecycle Prompt
 
-**Purpose:** This is a single consolidated prompt to build the "Feature Specification", "Complete Development Plan" & "Database Schema Design" for Payroll module. Execute this file in Claude and work through each phase sequentially. Claude will stop after each phase for your review and confirmation.
+**Purpose:** This is a single consolidated prompt to build the `Feature Specification`, `Database Schema Design` & `Complete Development Plan` for **Payroll** module. Execute this file in Claude and work through each phase sequentially. Claude will stop after each phase for your review and confirmation.
 
-**Developer:** Brijesh | **Branch:** Brijesh_Finance
+**Developer:** Brijesh
 
 ---
 
@@ -11,9 +11,19 @@ Read "/Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases/AI
 
 ## Rules
 - If any Path is missing in `paths.md` then find that in `CONFIGURATION` section below.
-- If any variable exists at both place, in `paths.md` & in `CONFIGURATION` section also, then consider `CONFIGURATION` section Variable.
+- If any variable exists at both place, in `paths.md` & in `CONFIGURATION` section also, then consider value from `CONFIGURATION` section Variable.
 
 ---
+
+## Repositories
+
+```
+DB_REPO        = /Users/bkwork/WorkFolder/2-New_Primedb/pgdatabase
+OLD_REPO       = /Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases
+AI_BRAIN       = {OLD_REPO}/AI_Brain
+LARAVEL_REPO   = /Users/bkwork/Herd/prime_ai
+LARAVEL_CLAUDE = {LARAVEL_REPO}/.claude/rules
+```
 
 ## CONFIGURATION :
 
@@ -27,18 +37,17 @@ RBS_MODULE_CODE   = P
 DB_TABLE_PREFIX   = prl_
 DATABASE_NAME     = tenant_db
 
-OUTPUT_REPO       = /Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases
-OUTPUT_DIR_A      = {OUTPUT_REPO}/1-DDL_Tenant_Modules/41-Payroll/DDL
-OUTPUT_DIR_B      = {OUTPUT_REPO}/1-DDL_Tenant_Modules/21-Payroll/DDL
-OUTPUT_DIR_C      = {OUTPUT_REPO}/1-DDL_Tenant_Modules/21-Payroll/DDL
-OUTPUT_DIR_D      = {OUTPUT_REPO}/1-DDL_Tenant_Modules/21-Payroll/DDL
+OUTPUT_DIR_A      = {OLD_REPO}/1-DDL_Tenant_Modules/41-Payroll/DDL
+OUTPUT_DIR_B      = {OUOLD_REPOTPUT_REPO}/5-Work-In-Progress/21-Payroll/2-Claude_Plan
+OUTPUT_DIR_C      = {OLD_REPO}
+OUTPUT_DIR_D      = {OLD_REPO}
 
-OTHER_OUTPUT_DIR  = {OUTPUT_REPO}/5-Work-In-Progress/21-Payroll/2-Claude_Plan
-MIGRATION_DIR     = prime_ai_tarun/database/migrations/tenant
-REQUIREMENT_FILE  = {OUTPUT_REPO}/1-DDL_Tenant_Modules/21-Payroll/Claude_Plan/Payroll_Requirement_v4.md
-PLAN_FILE         = {OUTPUT_REPO}/1-DDL_Tenant_Modules/20-Account/Claude_Plan/Initial_Plan_v4.md
+INPUT_DIR         = {OUTPUT_DIR_B}
+MIGRATION_DIR     = {APP_REPO}/database/migrations/tenant
+REQUIREMENT_FILE  = {OLD_REPO}/1-DDL_Tenant_Modules/21-Payroll/Claude_Plan/Payroll_Requirement_v4.md
+PLAN_FILE         = {OLD_REPO}/1-DDL_Tenant_Modules/20-Account/Claude_Plan/Initial_Plan_v4.md
 RBS_FILE          = 3-Project_Planning/1-RBS/PrimeAI_RBS_Menu_Mapping_v2.0.md
-DDL_DIR           = {OUTPUT_REPO}/1-DDL_Tenant_Modules/21-Payroll/DDL
+DDL_DIR           = {OLD_REPO}/1-DDL_Tenant_Modules/21-Payroll/DDL
 PERMISSION_GATE   = payroll.resource.action
 FEATURE_FILE      = PRL_FeatureSpec.md
 DEV_PLAN_FILE     = PRL_Dev_Plan.md
@@ -168,8 +177,8 @@ Do NOT generate screen layouts yet — that comes in Phase 3.
 ### Phase 1 Output Files
 | File | Location |
 |------|----------|
-| `PRL_FeatureSpec.md` | `{OTHER_OUTPUT_DIR}/PRL_FeatureSpec.md` |
-| `PRL_Dev_Plan.md` | `{OTHER_OUTPUT_DIR}/PRL_Dev_Plan.md` |
+| `PRL_FeatureSpec.md` | `{OUTPUT_DIR_B}/PRL_FeatureSpec.md` |
+| `PRL_Dev_Plan.md` | `{OUTPUT_DIR_B}/PRL_Dev_Plan.md` |
 
 ### Phase 1 Quality Gate
 - [ ] Every RBS sub-task (P1-P7, 46 total) maps to at least one entity/column
@@ -191,7 +200,7 @@ Do NOT generate screen layouts yet — that comes in Phase 3.
 ## PHASE 2 — Database Schema Design (DDL + Seeders)
 
 ### Phase 2 Input Files
-1. `{OTHER_OUTPUT_DIR}/PRL_FeatureSpec.md` — Feature spec from Phase 1
+1. `{OUTPUT_DIR_B}/PRL_FeatureSpec.md` — Feature spec from Phase 1
 2. `{REQUIREMENT_FILE}` — Required table schemas (Section 4 has all 19 table definitions)
 3. `AI_Brain/agents/db-architect.md` — DB Architect agent instructions
 4. `databases/0-DDL_Masters/tenant_db_v2.sql` — Existing schema (verify sch_ tables, check for duplicates)

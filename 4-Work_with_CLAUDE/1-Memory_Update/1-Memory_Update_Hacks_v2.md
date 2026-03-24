@@ -333,7 +333,7 @@ AI_BRAIN = /Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databas
 I need you to audit the entire codebase and update the AI Brain with accurate information about all merged modules.
 
 **AI Brain location:** {{AI_BRAIN}}
-**Code location:** /Users/bkwork/Herd/prime_ai_shailesh/
+**Code location:** /Users/bkwork/Herd/prime_ai_main/
 
 Read these AI Brain files first to understand current state:
 - `AI_Brain/memory/modules-map.md`

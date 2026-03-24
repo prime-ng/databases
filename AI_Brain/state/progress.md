@@ -1,85 +1,82 @@
 # Development Progress Tracker
 
-> **Last full audit:** 2026-03-15 against `prime_ai_shailesh` (branch `Brijesh_HPC`)
-> **Codebases:** `prime_ai_tarun` (Tarun — SmartTimetable), `prime_ai_shailesh` (Shailesh — HPC)
-> **Global stats:** 27 modules | 2715 lines in tenant.php | 1328 Route:: calls | 312 tenant migrations
-> **Security note:** Only 1 `EnsureTenantHasModule` usage across entire tenant.php. Library has 0 refs in tenant.php.
-> **RBS baseline:** 1112 sub-tasks across 27 RBS modules. ~350 completed (~31%). See `{PROJECT_PLAN}/` for Gap Analysis + Work Status + Estimation.
-
-## Modules Previously Marked 100% — Deep-Audited 2026-03-15
-
-> **NONE are truly 100%.** Every module has security gaps (missing Gate auth, $request->all()),
-> stub controllers, and/or missing EnsureTenantHasModule. See `known-issues.md` for full details.
-
-### Core Platform (revised from 100%)
-- [ ] **Prime** (~80%) — 8 controllers with stub methods; `is_super_admin` mass-assignable; `$request->all()` in 5 controllers; `RolePermissionController::destroy()` doesn't delete; wrong permission on TenantController
-- [ ] **GlobalMaster** (~82%) — `$request->all()` in 4 controllers; `GlobalMasterController` zero auth on 7 stubs; wrong permission on ModuleController::show()
-- [ ] **SystemConfig** (~75%) — MenuController: 5 methods zero auth; create() empty stub
-- [ ] **Billing** (~70%) — store() no auth on invoice generation; toggleStatus() no auth on reconciliation; 4 controllers with stubs; `Tenancy::initialize()` without try/finally; printData crash on `isNotEmpty()` on float
-- [x] **Dashboard** — Admin dashboards (minimal, likely fine)
-- [x] **Documentation** — Knowledge base, help docs (minimal, likely fine)
-
-### School Administration (revised from 100%)
-- [ ] **SchoolSetup** (~80%) — 5 stub controllers; `is_super_admin` settable via UserController; PHP concat crash in SectionController; assignSubjects route → non-existent method; 15+ unprotected methods; inconsistent permission naming
-- [ ] **StudentProfile** (~80%) — `is_super_admin` writable from student login form; AttendanceController zero auth; StudentProfileController empty stub; StudentController.bk backup with dd()
-- [ ] **Transport** (~82%) — 5 controllers zero auth (FeeMaster, FeeCollection, StudentFine, StudentBoarding, StudentAttendance); `tested.*` typo in AttendanceDevice (all Gates broken); undefined `$request` crash; double-delete race; 5 stub controllers
-- [ ] **Vendor** (~60%) — 6 of 7 controllers NOT registered in routes; VendorInvoiceController zero auth on 14 financial methods; index() auth commented out
-- [ ] **Complaint** (~70%) — dd() in production store() catch + filter(); 3 stub controllers; show/edit/store/update no auth; ComplaintReportController zero auth
-- [ ] **Notification** (~55%) — ALL routes commented out in web.php (module inaccessible); stub target types; 7 controllers duplicate same index queries
-- [ ] **Payment** (~45%) — Razorpay keys hardcoded; PaymentController copy.php with class collision; 2 stub controllers; webhook behind auth (always 401); webhook stores before verification
-- [x] **Scheduler** — Job scheduling (minimal)
-
-### Academic & Curriculum (revised from 100%)
-- [ ] **Syllabus** (~100% CRUD, updated 2026-03-20) — Entities: Lesson, Topic (hierarchy levels 0–9 via `slb_topic_level_types`), BloomTaxonomy, CognitiveSkill, QueTypeSpecificity, CompetencyType, ComplexityLevel, QuestionType, PerformanceCategory, GradeDivision, SyllabusSchedule. CRITICAL SCHEMA FACTS: `slb_topics.release_quiz_on_completion` + `release_quest_on_completion` exist; `release_exam_on_completion` DOES NOT EXIST; `slb_lessons` has NO `start_date`/`end_date` columns (only `scheduled_year_week` YYYYWW). BUGS: Lesson.php ~71 `SchAcademicSession` undefined; SyllabusSchedulePolicy.php misnamed. See `AI_Brain/memory/lms-modules.md`
-- [ ] **SyllabusBooks** (~65%) — SyllabusBooksController fully empty stub; BookTopicMappingController zero auth all 9 methods; undefined variable crash; central AcademicSession cross-layer
-- [ ] **QuestionBank** (~85%, updated 2026-03-20) — Questions with bloom_id, cognitive_skill_id, complexity_level_id, ques_type_specificity_id, question_type_id. Search filters: 9 criteria including difficulty. Statuses: DRAFT/PENDING_REVIEW/APPROVED/REJECTED. Availability: GLOBAL/SCHOOL_ONLY/CLASS_ONLY. CRITICAL BUGS: (1) **OpenAI + Gemini API keys hardcoded** — REVOKE NOW, (2) AIQuestionGeneratorController zero auth, (3) generateQuestions() always returns demo data. See `AI_Brain/memory/lms-modules.md`
-
-### Timetable
-- [ ] **SmartTimetable** (~72%, audited 2026-03-17, branch `Brijesh_SmartTimetable`)
-  - **Branch state:** 31 controllers, 86+ models (40+ now have SoftDeletes), 25 services, 12 FormRequests, SmartTimetableController ~2732 lines (was 3037 — 305 lines debug code removed)
-  - **Done (structure present):** Schema & Foundation, Seeders, Validation, Activity & Generation, Constraint CRUD (6-tab), Parallel Periods, Constraint Architecture (Registry+Evaluator+Context+Factory), 22 Hard + 55+ Soft constraint classes, 212 seeded ConstraintTypes, AnalyticsController+Service (5 views), RefinementController+Service (1 view), SubstitutionController+Service (2 views), TimetableApiController (6 REST endpoints), GenerateTimetableJob, SmartTimetableServiceProvider, RoomChangeTrackingService, api.php routes
-  - **All 21 prompts (P01–P21) executed** by Tarun in 15 commits since 2026-03-15
-  - **Critical open (NEW — 2026-03-17):** BUG-TT-001 (API zero auth), BUG-TT-002 (Bridge bare context — constraints silently pass), BUG-TT-003 (gap/span period_id vs index mismatch), BUG-TT-004 (SubstitutionService `now()->parse()` crash), BUG-TT-005 (no timetable_id scope), BUG-TT-006 (Job no tenant context), BUG-TT-007 (stale cache), BUG-TT-008 (static/instance call mismatch), BUG-TT-009 (inter-activity checks silently pass), BUG-TT-010–012 (stub/scoping/scoring bugs)
-  - **Security:** SEC-TT-001 (no EnsureTenantHasModule), SEC-TT-002 (cross-tenant API leakage), SEC-TT-003 (stub POST routes)
-  - **Performance:** PERF-TT-001 (Teacher::all + N+1), PERF-TT-002 (uncached analytics), PERF-TT-003 (N+1 teachers.user)
-  - **Assessment:** Structure is ~90% complete but runtime correctness has significant gaps. FETConstraintBridge doesn't pass proper context, gap calculations are wrong, inter-activity checks silently pass, SubstitutionService will crash. Need bug-fix pass before any feature is production-ready.
-  - **Full issue list:** See `known-issues.md` section "SmartTimetable — Post-P01–P21 Audit (2026-03-17)"
+> **Last full audit:** 2026-03-22 against `prime_ai_tarun` (branch `Brijesh_SmartTimetable`)
+> **Global stats:** 30 modules | 3176 lines in tenant.php | 1613 Route:: calls | 319 tenant migrations | 230 policies | 464 models | 339 controllers | 137 services | 2036 views | 190 FormRequests | 134 test files
+> **Security note:** Only 1 `EnsureTenantHasModule` usage across entire tenant.php. Library has 0 refs in tenant.php. Notification routes ALL commented out.
+> **Deep Gap Analysis:** Full 29-module gap analysis completed 2026-03-22. Reports in `{GAP_ANALYSIS_MODULE_WISE}/2026Mar22/`. Summary: ~950+ issues, ~140 P0 critical.
 
 ---
 
-## Partially Complete (45–72%) — Deep-audited 2026-03-14
+## Module Completion Summary (audited 2026-03-22)
 
-- [ ] **LmsQuiz** (~90%, updated 2026-03-20) — Full CRUD: Quiz, QuizAllocation, QuizQuestion, AssessmentType, DifficultyDistributionConfig/Detail. Difficulty engine active (`ignore_difficulty_config` flag + 5-step validation). Route prefix typo: `/lms-quize/`. Gaps: `QuizAllocationPolicy` missing, Gate commented in index(), student attempt tracking absent, no EnsureTenantHasModule. See `AI_Brain/memory/lms-modules.md`
-- [ ] **LmsQuests** (~85%, updated 2026-03-20) — Full CRUD: Quest, QuestScope, QuestQuestion, QuestAllocation. `canPublish()` guards: questions > 0, count === total_questions, validateSettings() empty, all 4 FKs set. Gaps: no difficulty config, Gate commented in index(), student progress tracking absent, no EnsureTenantHasModule. See `AI_Brain/memory/lms-modules.md`
-- [ ] **Recommendation** (~65%) — 3 empty stubs on RecommendationController; wrong permissions on 8/9 StudentRecommendation routes; broken `exists:users` validation; no Form Requests; no EnsureTenantHasModule
-- [ ] **LmsExam** (~90%, updated 2026-03-20) — Full flow: Blueprint → PaperSet → PaperSetQuestion → ExamAllocation. Imports DifficultyConfig from LmsQuiz. GradeDivision from Syllabus. Gaps: ExamBlueprintController + ExamScopeController ALL Gate calls commented out, no EnsureTenantHasModule, student grading absent. See `AI_Brain/memory/lms-modules.md`
-- [ ] **StudentFee** (~60%) — Missing `FeeConcessionController` (imported but doesn't exist); exposed seeder route with no auth; permission prefix mismatch (`student-fee.*` vs `studentfee.*`) on 3 controllers; no Form Requests; N+1 in bulk invoice/assignment generation; no EnsureTenantHasModule
-- [ ] **LmsHomework** (~80%, updated 2026-03-20) — CRUD: Homework, HomeworkSubmission, TriggerEvent, ActionType, RuleEngineConfig. `isEditable()` = DRAFT status; `isDeletable()` = 0 submissions. CRITICAL BUGS: (1) `Homework.php` line ~71 `SchAcademicSession::class` undefined → PHP fatal, (2) NO HomeworkPolicy → zero auth on all homework CRUD, (3) `review()` no Gate/validation. No EnsureTenantHasModule. See `AI_Brain/memory/lms-modules.md`
-- [ ] **Hpc** (~78%) — Holistic Progress Card (updated 2026-03-21). 22 controllers, 32 models, 10 services, 14 FormRequests, 1 Trait, 55 tests. Since 2026-03-17: PDF blade page 1+2 redesigned for all 4 templates (matched to official NEP PDFs), seeder page1 fixed for templates 2/3/4 (6 rubric grouping fixes each), SendHpcReportEmail rewritten to link-based (no PDF attachment), student-list view updated (email-first UX), hybrid background image approach for decorative pages (T1-pg2, T2-pg2). Sub-breakdown: Template 100%, Form 90%, PDF 95% (was 90%), Auth 95%, Seeder 100% (was partial). Remaining: god controller refactor, 8 blueprint screens, pixel-position fine-tuning on hybrid pages.
-- [ ] **Library** (~45%) — NOT wired into tenant.php at all; 7 controllers with zero authorization; 5 stub methods on only registered route; N+1 in ReservationController; Prime\Setting cross-layer import; permission namespace mismatch in LibTransactionController
+> Completion % based ONLY on what routes, models, controllers, services, and tests actually exist in code.
+> Does NOT count as "complete" if controllers exist but have zero auth, empty stubs, or critical bugs.
 
----
+### Central-Scoped Modules
 
-## In Progress / Partial
+| Module | Code Exists | Completion | Key Gaps |
+|--------|------------|------------|----------|
+| **Prime** | 21 ctrl, 27 mdl, 1 svc, 7 req | **~70%** | `db_password` plaintext in Domain model; 8 controllers with stub methods; `is_super_admin` mass-assignable; `$request->all()` in 5 controllers |
+| **GlobalMaster** | 15 ctrl, 12 mdl, 0 svc, 10 req | **~55%** | `$request->all()` in 12 places; GlobalMasterController zero auth on 7 stubs; wrong permission on ModuleController::show(); no services |
+| **SystemConfig** | 4 ctrl, 3 mdl, 0 svc, 1 req | **~50%** | ZERO auth on all 7 methods in SystemConfigController; MenuController `$request->all()`; create() empty stub |
+| **Billing** | 6 ctrl, 6 mdl, 0 svc, 3 req, 1 job | **~55%** | Duplicate policies; FK column mismatch; no try/catch on payment processing; 4 stubs |
+| **Documentation** | 3 ctrl, 2 mdl, 0 svc, 2 req | **~65%** | Gate permission mismatch (singular vs plural); XSS risk on Summernote content; oversized file uploads |
 
-- [ ] **StudentPortal** (~28%, architecture done 2026-03-21) — 27 screens designed (S1-S27): Login, Dashboard, Profile, Academic Info, Attendance, Timetable, Lesson Content, Homework, Assignments, Quiz, Question Bank, Exam Timetable, Exam Modes, Results, Gradebook, Course LMS, Certificates, Quests, Fee Payment, Complaints, Notifications, Document Vault, Events, Transport, AI Insights, Health Records, Mentorship. Currently wired: Dashboard, Complaints, Notifications only (3/27). Full architecture packs in `{DB_REPO}/7-Work_on_Modules/StudentParentPortal/v2/`. See `AI_Brain/memory/student-parent-portal.md`
-- [ ] **ParentPortal** (~5%, architecture done 2026-03-21) — 23 screens designed (P1-P23): Login, Dashboard, Profile, Multi-Child Switcher, Attendance, Academics, Timetable, Homework Monitor, Results, Fee Payment, PTM Booking, Complaints, Notices, Transport, Events, AI Insights + more. Currently: no dedicated module. Full architecture packs in `{DB_REPO}/7-Work_on_Modules/StudentParentPortal/v2/`. See `AI_Brain/memory/student-parent-portal.md`
-- [ ] **Standard Timetable** (~70%) — Standard views and scheduling
-- [ ] **Event Engine** (~20%) — Cross-module event system
+### Tenant-Scoped Modules — School Administration
+
+| Module | Code Exists | Completion | Key Gaps |
+|--------|------------|------------|----------|
+| **SchoolSetup** | 40 ctrl, 42 mdl, 0 svc, 27 req | **~55%** | `is_super_admin` settable via UserController; 5+ stub controllers; PHP concat crash; 15+ unprotected methods; zero services for 40 controllers |
+| **StudentProfile** | 5 ctrl, 14 mdl, 0 svc, 0 req | **~50%** | `is_super_admin` writable from student login; AttendanceController zero auth; 0 FormRequests; StudentProfileController empty stub |
+| **Transport** | 31 ctrl, 36 mdl, 0 svc, 18 req | **~55%** | 5 controllers zero auth; AttendanceDevice `tested.*` typo breaks all Gates; PII unencrypted (Aadhaar, PAN); zero services for 31 controllers |
+| **Vendor** | 7 ctrl, 8 mdl, 0 svc, 3 req, 1 job | **~53%** | 6/7 controllers NOT registered in routes; VendorInvoiceController zero auth on 14 methods; financial data unencrypted |
+| **Complaint** | 8 ctrl, 6 mdl, 2 svc, 0 req | **~40%** | `dd()` in production store/filter; 3 stub controllers; zero FormRequests; hardcoded dropdown IDs |
+| **Notification** | 12 ctrl, 14 mdl, 2 svc, 10 req | **~50%** | ALL routes COMMENTED OUT (module inaccessible); template send is stub; Gate prefix `prime.*` instead of `tenant.*` |
+| **Payment** | 2 ctrl, 5 mdl, 2 svc, 1 req | **~45%** | NO DDL schema for `ptm_*` tables; webhook behind auth middleware (always 401); Payment model is stub; gateway credentials unencrypted |
+| **Dashboard** | 1 ctrl, 0 mdl, 0 svc, 0 req | **~35%** | ZERO authorization in entire module; returns non-module view path; zero dynamic data |
+| **Scheduler** | 1 ctrl, 2 mdl, 2 svc, 1 req | **~40%** | Zero auth on entire controller; empty update/destroy methods; Schedule model missing SoftDeletes |
+| **StudentPortal** | 3 ctrl, 0 mdl, 0 svc, 0 req | **~25%** | IDOR vulnerability on invoice/payment; zero Gate in entire module; only 3 of 27 designed screens built |
+
+### Tenant-Scoped Modules — Academic & Curriculum
+
+| Module | Code Exists | Completion | Key Gaps |
+|--------|------------|------------|----------|
+| **Syllabus** | 15 ctrl, 22 mdl, 0 svc, 14 req | **~55%** | CompetencieController ZERO auth + `$request->all()`; Competencie model missing SoftDeletes; TopicController hard deletes |
+| **SyllabusBooks** | 4 ctrl, 6 mdl, 0 svc, 3 req | **~55%** | SyllabusBooksController empty stub; BookTopicMappingController zero auth; central AcademicSession cross-layer |
+| **QuestionBank** | 7 ctrl, 17 mdl, 0 svc, 6 req | **~45%** | **HARDCODED API KEYS (OpenAI + Gemini) — ROTATE IMMEDIATELY**; AIQuestionGenerator zero auth; generateQuestions() returns demo data only |
+| **LmsExam** | 11 ctrl, 11 mdl, 0 svc, 11 req | **~65%** | `dd($e)` in store(); 2 controllers Gate disabled; no EnsureTenantHasModule; student grading absent |
+| **LmsQuiz** | 5 ctrl, 6 mdl, 0 svc, 5 req | **~70%** | Gate commented out in index(); route prefix typo `lms-quize`; student attempt tracking absent |
+| **LmsHomework** | 5 ctrl, 5 mdl, 0 svc, 5 req | **~60%** | **FATAL: `HoemworkData()` missing `$request` parameter**; review() zero auth/validation; no EnsureTenantHasModule |
+| **LmsQuests** | 4 ctrl, 4 mdl, 0 svc, 4 req | **~60%** | Gate commented in index(); student-facing functionality completely absent; no EnsureTenantHasModule |
+| **Recommendation** | 10 ctrl, 11 mdl, 0 svc, 0 req | **~39%** | Gate::any() not enforcing auth; 4 different permission naming patterns; zero FormRequests; 3 empty stubs |
+
+### Tenant-Scoped Modules — Timetable & HPC
+
+| Module | Code Exists | Completion | Key Gaps |
+|--------|------------|------------|----------|
+| **SmartTimetable** | 12 ctrl, 62 mdl, 106 svc, 7 req | **~48%** | God controller (3,245 lines); constraint engine structure built but FETConstraintBridge context broken; 12 bugs (BUG-TT-001–012); no EnsureTenantHasModule; API zero auth |
+| **TimetableFoundation** | 24 ctrl, 32 mdl, 3 svc, 4 req | **~68%** | EnsureTenantHasModule missing on 100+ routes; largest route file (262 lines) |
+| **StandardTimetable** | 1 ctrl, 0 mdl, 0 svc, 0 req | **~5%** | Module skeleton — 1 controller with 1 method, zero models/services/views |
+| **Hpc** | 22 ctrl, 32 mdl, 10 svc, 14 req | **~59%** | God controller (2,610 lines); no EnsureTenantHasModule; public PDF route; 9 missing FormRequests |
+| **Library** | 26 ctrl, 35 mdl, 9 svc, 19 req | **~45%** | NOT wired into tenant.php at all; 7 controllers zero auth; `$request->all()` in 5 controllers; cross-layer import |
+
+### New Module
+
+| Module | Code Exists | Completion | Key Gaps |
+|--------|------------|------------|----------|
+| **Accounting** | 18 ctrl, 21 mdl, 0 svc, 15 req | **~30%** | NEW — Tally-inspired voucher engine. Controllers and models scaffolded. 21 tenant migrations. 14 test files. Zero services yet. Needs integration with Payroll/Inventory via VoucherServiceInterface. |
 
 ---
 
 ## Requirements Complete — Development Pending
 
-- [ ] **Accounting** (0% code) — Requirements v4 complete (2026-03-20). Tally-inspired voucher engine, 21 new `acc_` tables, 18 controllers, 9 services. Old DDL is unused draft — replace entirely. Shares VoucherServiceInterface with Payroll & Inventory. Plan: `1-DDL_Tenant_Modules/20-Account/Claude_Plan/Initial_Plan_v4.md`
-- [ ] **Payroll** (0% code) — Requirements v4 complete (2026-03-20). 19 new `prl_` tables + `sch_employees` ALTER TABLE (14 cols). Reuses sch_categories/leave_types/leave_config. prl_category_statutory_config extends sch_categories for PF/ESI/PT. 11 controllers, 6 services.
-- [ ] **Inventory** (0% code) — Requirements v4 complete (2026-03-20). 19 new `inv_` tables. Full PR→PO→GRN→Stock→Issue cycle. Links to Vendor, Accounting, SchoolSetup. 14 controllers, 6 services.
+- [ ] **Payroll** (0% code, module not created) — Requirements v4 complete. 19 new `prl_` tables. 11 controllers, 6 services planned.
+- [ ] **Inventory** (0% code, module not created) — Requirements v4 complete. 19 new `inv_` tables. 14 controllers, 6 services planned.
 
 ## Pending Modules
 
 - [ ] **Behavioral Assessment** — Student behavior tracking and analysis
 - [ ] **Analytical Reports** — Cross-module analytics and reporting
-- [ ] **Student/Parent Portal** — Student and parent facing portal
 - [ ] **Hostel Management** — Hostel rooms, allocation, fees
 - [ ] **Mess/Canteen** — Meal planning, attendance, billing
 - [ ] **Admission Enquiry** — Online admission process
@@ -87,186 +84,54 @@
 - [ ] **FrontDesk** — Reception management
 - [ ] **Template & Certificate** — Dynamic certificate generation
 - [ ] **Help Desk** — Support ticket system
-- [ ] **Library** — Book circulation, fines (module exists, features pending)
 
 ---
 
 ## Testing Progress
 
 ### Infrastructure (done)
-- [x] `phpunit.xml` — updated with all 16 module test suites
+- [x] `phpunit.xml` — updated with all module test suites
 - [x] `AI_Brain/memory/testing-strategy.md` — full testing strategy documented
 - [x] `AI_Brain/agents/test-agent.md` — Pest 4.x patterns and cheatsheet
 - [x] `AI_Brain/templates/test-unit.md` — unit test boilerplate
 - [x] `AI_Brain/templates/test-feature-central.md` — central feature test boilerplate
 - [x] `AI_Brain/templates/test-feature-tenant.md` — tenant feature test boilerplate
 
-### Tests Written
+### Test File Inventory (audited 2026-03-22)
 
-| Model / Area | Module | Unit Tests | DB Tests | HTTP Tests | Total |
-|-------------|--------|-----------|----------|------------|-------|
-| `Student` | StudentProfile | 4 ✅ | — | — | 4 |
-| `Setting` (Prime) | Prime | 16 ✅ | 14 ✅ | ❌ no routes | 30 |
-| `TimetableSolution::isPlaced()` | SmartTimetable | 4 ✅ | — | — | 4 |
-| Parallel group backtrack + rescue | SmartTimetable | 5 ✅ | — | — | 5 |
+| Location | Module | Files | What It Covers |
+|----------|--------|-------|----------------|
+| `tests/Unit/Central/` | Prime | 5 | Setting model (16 unit + 14 DB tests) |
+| `tests/Unit/SmartTimetable/` | SmartTimetable | 6 | TimetableSolution::isPlaced, parallel group backtrack |
+| `tests/Unit/Hpc/` | Hpc | 6 | HpcWorkflow, SectionRole, Report, Attendance, Credit, DataMapping services |
+| `tests/Unit/StudentProfile/` | StudentProfile | 1 | Student model |
+| `tests/Feature/SmartTimetable/` | SmartTimetable | 1 | ConstraintManager feature test |
+| `tests/Feature/Hpc/` | Hpc | 1 | HPC authorization test |
+| `tests/Browser/Modules/Class&SubjectMgmt/` | SchoolSetup | 9 | Browser CRUD tests |
+| `tests/Browser/Modules/Complaint/` | Complaint | 4 | Browser CRUD tests |
+| `tests/Browser/Modules/HPC/` | Hpc | 1 | HPC parameters CRUD |
+| `tests/Browser/Modules/Library/` | Library | 15 | Browser CRUD tests |
+| `tests/Browser/Modules/StudentProfile/` | StudentProfile | 5 | Browser CRUD tests |
+| `Modules/Accounting/tests/` | Accounting | 14 | Module-level tests |
+| `Modules/StudentFee/tests/` | StudentFee | 24 | Module-level tests |
+| `Modules/Prime/tests/` | Prime | 9 | Module-level tests |
+| `Modules/TimetableFoundation/tests/` | TimetableFoundation | 7 | Module-level tests |
+| `Modules/Payment/tests/` | Payment | 8 | Module-level tests |
+| `Modules/StudentPortal/tests/` | StudentPortal | 7 | Module-level tests |
+| `Modules/GlobalMaster/tests/` | GlobalMaster | 4 | Module-level tests |
+| **Other module tests/** | Various | 1 each | Billing, Documentation, Scheduler, SystemConfig (minimal) |
 
-### Tests Pending
-- All other models (to be added as we go)
-- HTTP Feature tests for Setting (routes not defined in SystemConfig/routes/web.php)
-- TenantTestCase base class (needed for tenant-scoped HTTP tests)
+**Total: 134 test files across the project.**
+**Modules with 0 test files:** SchoolSetup, Transport, Syllabus, QuestionBank, LmsExam, LmsQuiz, LmsHomework, LmsQuests, Notification, Vendor, Recommendation, SyllabusBooks, SmartTimetable (module-level), Hpc (module-level), StandardTimetable, Dashboard.
 
-## Current Work
-- [x] HPC Module deep audit complete (2026-03-14) — 18 issues logged (4 critical security, 12 bugs, 2 perf)
-- [x] HPC fourth_pdf.blade.php DomPDF compatibility fix (2026-03-14) — all display:flex/grid/box-shadow/emoji/overflow-x:auto/transform:rotate converted to table-based layouts
-- [x] HPC first_pdf.blade.php — Round 1: 6 issues fixed (2026-03-14):
-  - Fix 1: Icon table overflow — assess_content width:100%, inner icon tables width=100%, cells width=33%, icon sizes 28px→22px (self/peer/resource)
-  - Fix 2: Teacher Feedback page-break split — single section_container replaced with 3 blocks (Block A: header+circle+notes, Block B: self+peer keep-together, Block C: parents+comments keep-together)
-  - Fix 3: Circle label % positions → px (sky left:120px, mountain left:130px, stream left:110px, levels top:96px); letterPos feedback left:78px→left:104px
-  - Fix 4: Page 15 summary circles 230px→190px (summary_circle_container); page-break-before:always wrapper added
-  - Fix 5: Blank trailing page — removed window.print() script block (DomPDF-incompatible)
-  - Fix 6: ZIP download URL — replaced tenant_asset() with route('hpc.download.zip'); added downloadZip() controller method; added route in web.php
-- [x] HPC first_pdf.blade.php — Round 2: 8 issues fixed (2026-03-15, v3_05 prompt):
-  - Fix 1+2: Self/Peer Assessment — dynamic icon column width via $iconColPct; table-layout:fixed; 'needed' icons 22px→18px
-  - Fix 3: Block B+C page-break-inside:avoid removed from tall wrappers; circle container 230px→180px; border-only circles
-  - Fix 5: Circle badge positions recalculated for 180px (feedback left:77px, summary left:82px)
-  - Fix 6: $pdfImg moved to global scope; $favIconMap + $favBullet for My Favorites icons
-  - Fix 7: Separate summary_circle_* CSS keys for 190px container (distinct from 180px feedback circles)
-  - Fix 8: Credits section — removed page-break-inside:avoid via str_replace
-- [x] HPC fourth_pdf.blade.php — 10 issues fixed (2026-03-14):
-  - Fix 1 (CRASH): </div> → </td> at line 525 in goals section — "Parent table not found" error eliminated
-  - Fix 2 (STRUCTURAL): Added </div>{{-- close page-container --}} before @endforeach at line 5407 — every loop iteration's page-container div now properly closed
-  - Fix 3 (STRUCTURAL): Deleted duplicate @if($part->page_no == 16) block (125 lines) — page 16 now renders once
-  - Fix 4: Added width="100%" to: 2 inner checkbox tables (668,1281); future plan table (1213); rating circles table (1430); all CSS-only width tables (15 occurrences with style="width:100%;border-collapse:collapse;")
-  - Fix 5: photo_box $css key overflow:hidden removed
-  - Fix 6: Student photo getFirstMediaUrl() → base64 data URI with getFirstMedia()->getPath() + file_exists() guard
-  - Fix 7: Replaced 4 <ol>/<ul> instances with table-based/div numbered lists — career aspirations (463), support grid (574), teacher instructions (2916), learner instructions (3000), peer instructions (~2970), pfSectionData notes (~4469)
-  - Fix 8: Removed display:inline-block from all 20 <div> elements using perl regex (left <span> elements unchanged)
-  - Fix 9: Removed page-break-inside:avoid from 5+ tall section-block divs (16px: 4 occurrences; 15px: triple-feedback pages)
-  - Fix 10: window.print() <script> block after </html> removed
-- [x] HPC third_pdf.blade.php — 13 issues fixed (2026-03-14):
-  - Fix 1 (CRASH): display:inline on performance card table → removed, added width=100% and width:33% on each td
-  - Fix 2 (CRASH): 3 credit tables missing HTML width attribute → added width="100%" to all <table style="{{ $css['c_table'] }}">
-  - Fix 3 (CRASH): 2 inner emoji option tables CSS-only width → changed to HTML width="100%" attribute
-  - Fix 4 (CRASH): 4 inner checkbox tables (lines 727,876,906,936) missing width → added width="100%" to all
-  - Fix 5 (CRASH): Approach "Other" table missing width → added width="100%"
-  - Fix 6: overflow:hidden removed from 6 locations (goals/competencies/approach divs, activity/assessment tds, observations div)
-  - Fix 7: overflow:hidden removed from 2 emoji circle containers (self-reflection + peer feedback)
-  - Fix 8: photo_box $css key overflow:hidden removed
-  - Fix 9: Student photo getFirstMediaUrl() → getFirstMedia()->getPath() + base64_encode with file_exists() guard
-  - Fix 10: page-break-inside:avoid removed from 3 outer domain wrappers (line 855 inline, lines 1119+1352 concatenation, line 1723 str_replace)
-  - Fix 11: Assessment rubric <th> explicit widths added (40%/20%/20%/20%) in both @if and @else branches
-  - Fix 12: page-break-inside:avoid wrappers added around questions table and progress grid in self-reflection AND peer feedback sections
-  - Fix 13: window.print() <script> block after </html> removed
-- [x] HPC second_pdf.blade.php — Round 1: 10 issues fixed (2026-03-14):
-  - Fix 1 (CRASH): Undefined $emojiUrls — defined with base64 data URIs for 5 icons (family/star/balloon/rocket/books) using file_exists() guard + asset() fallback
-  - Fix 2 (CRASH): display:inline-flex in curricular goals + competencies loops — replaced with display:inline-table <table> layouts (18px×18px checkbox cell + label td)
-  - Fix 3: overflow:hidden on subject-page containers (pages 8,11,14,17,20,23) — removed (DomPDF ignores, breaks border-radius)
-  - Fix 4: !important on self-assessment cell borders — removed; padding 20px→12px/8px; font-size 14px→13px on question td
-  - Fix 5: Family photo via tenant_asset() HTTP URL — replaced with storage_path() + base64_encode + file_exists() + try/catch(Throwable) guard
-  - Fix 6: Emoji 42px→32px in $emojiImgMap; dynamic option cell width via intval(100/max(1,count($displayOptions)))%; added selection border styling
-  - Fix 7: Page 2 page-break splits — removed page-break-inside:avoid from outer div + 2-col table; changed 3-col cellspacing 8→6; moved avoid to each column <td>
-  - Fix 8: Teacher Feedback page-break — removed outer avoid; added page-break-inside:avoid wrappers around Observational Notes @foreach and Challenges/Solutions div
-  - Fix 9: min-height reduction — activity/assessment textareas 100px→60px (replace_all); rubric cells 70px→40px
-  - Fix 10: Blank trailing page — removed window.print() script block
-- [x] HPC second_pdf.blade.php — Round 2: 10 issues fixed (2026-03-14, v3_06 prompt):
-  - Fix 7A: $css['page'] contradictory → removed page-break-inside:avoid and height:0
-  - Fix 7A/7D: $css['section_container'] → removed page-break-inside:avoid; $css['display_value'/'disp_chk'/'photo_box'/'res_check'/'res_check_sel'] → removed display:inline-block, overflow:hidden, line-height from circles
-  - Fix 2: $emojiUrls fallback → replaced asset() HTTP fallback with emoji/ folder base64 fallback (no HTTP URLs)
-  - Fix 7B: style block .page-break → removed !important from page-break-after and page-break-inside
-  - Fix 7D: Removed page-break-inside:avoid from family photo div (441), About Me+My Family wrappers (461+501), 3-column tds (527+545+563), observational notes+challenges wrappers (1720+1736)
-  - Fix 5+6: Removed inline page-break-inside:avoid from outer wrappers on pages 4,5,6 (lines 684+770+867)
-  - Fix 4: ALL 5 emoji circle divs (lines 648,734,820,957,1112) → replaced overflow:hidden div with border-radius:50% table (DomPDF-safe)
-  - Fix 7D: Checkbox flex divs (lines 1140+1149) → replaced display:flex with table-based layout
-  - Fix 8A+8B+8C+8D: Performance pages 26-28 — flex descriptor row→table, subject block+page-break-inside:avoid, flex notes→table, checkmark asset()→$checkImg base64
-  - Fix 9: page-break-before:always wrapper on performance section; Fix 7C: @loop->last page break guard; Fix 10: page-break-before:always on page 30, separator between Grade4/Grade5, explicit col widths (8%/40%/28%/24%), removed !important from inline borders
+---
 
-## Recently Completed (2026-03-14, Parallel Periods Steps 4–9)
-- [x] SmartTimetable — Parallel Periods full implementation complete
-  - **Step 4 (Constraint Engine):** `ParallelPeriodConstraint.php` created; `ConstraintFactory` mapped `PARALLEL_PERIODS`; `ConstraintTypeSeeder` entry added
-  - **Step 5 (Pre-Gen Validation):** `SmartTimetableController::generateWithFET()` validates anchor count, duration consistency, teacher conflicts before solving
-  - **Step 6 (Post-Gen Verification):** Post-gen pass checks all parallel group members landed on same day+period; `$parallelViolations[]` built and stored in session
-  - **Next Prompt 1 (Soft Constraints):** `evaluateSoftConstraints()` wired into `scoreSlotForActivity()` in `FETSolver` with 0.5× weight multiplier + verbose logging
-  - **Bug Fix:** `TimetableSolution::remove()` used wrong key (`$activity->id`) — fixed to use `$activity->instance_id ?? $activity->id`, matching `place()`
-  - **Step 9 (Tests):** 2 Pest 4.x unit test files, 9 tests, 23 assertions — all passing
-    - `tests/Unit/SmartTimetable/TimetableSolutionIsPlacedTest.php` — 4 tests for `isPlaced()` lifecycle
-    - `tests/Unit/SmartTimetable/ParallelGroupBacktrackTest.php` — 5 tests for anchor/sibling + rescue pass
+## Platform-Wide P0 Security Issues (from Gap Analysis 2026-03-22)
 
-## Recently Completed (2026-03-12, Phase 3 — Constraint CRUD)
-- [x] SmartTimetable — Constraint Management Full CRUD (Phase 3)
-  - **3A:** `constraintManagement()` — real Eloquent queries, 6 paginated vars (teacherConstraints, classConstraints, roomConstraints, dbConstraints, globalConstraints, interActivityConstraints) + activityConstraintSummary
-  - **3B:** `ConstraintController::createByCategory()` + `editByCategory()` — category-specific entity loading + view resolution via `match($categoryCode)`
-  - **3C:** 2 new routes before `Route::resource`: `constraint.createByCategory`, `constraint.editByCategory`
-  - **3D:** All 7 list partials replaced — removed static `$sampleRows`, wired Eloquent `@forelse` loops + pagination + real route links:
-    - `teacher-constraints/_list.blade.php` → `$teacherConstraints`
-    - `class-constraints/_list.blade.php` → `$classConstraints`
-    - `room-constraints/_list.blade.php` → `$roomConstraints`
-    - `db-constraints/_list.blade.php` → `$dbConstraints` (PHP Class badge via `parameter_schema`)
-    - `global-policies/_list.blade.php` → `$globalConstraints`
-    - `inter-activity/_list.blade.php` → `$interActivityConstraints`
-    - `activity-constraints/_list.blade.php` → `$activityConstraintSummary` (Activity records, read-only)
-  - **3E+:** 12 new create/edit views under `constraint-management/`:
-    - `teacher/create.blade.php` + `teacher/edit.blade.php`
-    - `class/create.blade.php` + `class/edit.blade.php`
-    - `room/create.blade.php` + `room/edit.blade.php`
-    - `global/create.blade.php` + `global/edit.blade.php`
-    - `inter-activity/create.blade.php` + `inter-activity/edit.blade.php`
-    - `db/create.blade.php` + `db/edit.blade.php` (generic fallback with explicit target_type select)
-  - **3F:** `ConstraintController::store()` + `update()` — full business rules (GLOBAL target_id check, hard weight check, params_json normalization, inter-activity target_activity_id merge, category anchor redirect)
-  - **3G:** `StoreConstraintRequest` + `UpdateConstraintRequest` — full validation rules + JSON withValidator
-  - **Model fixes:** Added `TARGET_TYPES` constant to `Constraint`; removed `'target_type' => 'integer'` cast
-
-## Recently Completed
-- [x] SmartTimetable — Constraint Management Backend Wiring (2026-03-12)
-  - Route: `GET smart-timetable/constraint-management` added to `routes/tenant.php` at line 1756, named `smart-timetable-management.constraint-management`
-  - `constraintManagement()` updated with real DB queries: `Constraint`, `ConstraintType`, `ConstraintCategory`, `ConstraintScope`, `TeacherUnavailable`, `RoomUnavailable`, `ConstraintTargetType`
-  - Added 3 use imports to SmartTimetableController: `ConstraintCategory`, `ConstraintScope`, `ConstraintTargetType`
-  - **Model fixes:**
-    - `ConstraintCategory` — table fixed to `tt_constraint_category_scope`, global scope `where type=CATEGORY`, `$attributes=['type'=>'CATEGORY']`, creating hook, removed `is_system`/`ordinal` was kept (added via mig3), added SoftDeletes
-    - `ConstraintScope` — table fixed to `tt_constraint_category_scope`, global scope `where type=SCOPE`, removed `target_type_required`/`target_id_required`/`is_system`, added SoftDeletes
-    - `Constraint` — all Mismatch C column names fixed: `academic_term_id`→`academic_session_id`, `effective_from_date`→`effective_from`, `effective_to_date`→`effective_to`, `applicable_days_json`→`applies_to_days_json`, `target_type_id`→`target_type`; added `targetType()` BelongsTo; updated `scopeForTerm`, `scopeForTarget`, `appliesOnDate()`; added `status` to fillable
-    - `ConstraintType` — no changes needed (fillable already correct for post-migration state)
-  - **Migrations (additive, no drops):**
-    - `2026_03_12_100001_fix_constraint_types_column_names.php` — adds `is_hard_capable`, `is_soft_capable`, `parameter_schema`, `applicable_target_types`, `constraint_level` to `tt_constraint_types`
-    - `2026_03_12_100002_fix_constraints_column_names.php` — adds alias columns `academic_term_id`, `effective_from_date`, `effective_to_date`, `applicable_days_json`, `target_type_id` to `tt_constraints`
-    - `2026_03_12_100003_add_missing_columns_to_constraint_category_scope.php` — adds `ordinal`, `icon` to `tt_constraint_category_scope`
-- [x] SmartTimetable — Constraint Management View (2026-03-12)
-  - Route: `GET smart-timetable/constraints` → `SmartTimetableController@constraintManagement` (named `smart-timetable.constraint-management.index`) [SUPERSEDED — see above for correct route]
-  - Controller method: `constraintManagement()` — passes 8 empty `collect()` vars to view [SUPERSEDED — now loads real data]
-  - Index blade: `constraint-management/index.blade.php` — 8-tab nav-tab layout, `@include`s each partial
-  - 8 partial `_list.blade.php` files under `constraint-management/partials/{slug}/`:
-    - `engine-rules` — 5 sample rows (A1–A5), read-only (no Action col, no Add/Trash btns), info alert, filter by FETSolver/RoomAllocationPass
-    - `teacher-constraints` — 5 sample rows (B1.1–B1.7), filter by scope (INDIVIDUAL/GLOBAL) + Hard/Soft
-    - `class-constraints` — 5 sample rows (C1.1–C1.17), filter by scope (PER_CLASS/GLOBAL) + Hard/Soft
-    - `activity-constraints` — 5 sample rows (D1–D17), read-only, filter by input_type
-    - `room-constraints` — 5 sample rows (E1.1–E3.1), filter by category (ROOM_AVAILABILITY/TEACHER_ROOM/STUDENT_ROOM/SUBJECT_ROOM) + Hard/Soft
-    - `db-constraints` — 5 sample rows (F1–F20), PHP Class column badge: `Registered` (blue) if wired, `Not wired` (yellow) if not; filter by category + wired status
-    - `global-policies` — 5 sample rows (G1–G8), Constraint column has name + desc subtitle, filter by Hard/Soft
-    - `inter-activity` — 5 sample rows (H1–H15), columns: Code | Constraint | Hard/Soft | Params, filter by Hard/Soft
-- [x] StudentProfile Dusk Browser Tests — 5 test files (2026-03-12)
-  - `tests/Browser/Modules/StudentProfile/Testcases/StudentCreateTest.php` — 16 tests, full 6-tab create flow
-  - `tests/Browser/Modules/StudentProfile/Testcases/StudentEditTest.php` — 13 tests, edit/update coverage
-  - `tests/Browser/Modules/StudentProfile/Testcases/BulkAttendanceTest.php` — 9 tests, bulk/individual attendance
-  - `tests/Browser/Modules/StudentProfile/Testcases/StudentCompleteProfileTest.php` — 10 tests, `getNextIncompleteTabForCreate()` logic
-  - `tests/Browser/Modules/StudentProfile/Testcases/MedicalIncidentTest.php` — 27 tests, full CRUD + toggles + soft-delete/restore/force-delete
-- [x] AI Brain — Full documentation ingestion & memory rebuild (2026-03-12)
-  - Read 23 docs: `Project_Documentation/` (10 files) + `Requir_Enhancements/` (13 files)
-  - Created `AI_Brain/memory/db-schema.md` — canonical v2 DDL paths, all table prefixes, CHANGELOG summary
-  - Created `AI_Brain/memory/architecture.md` — request flow, module dependency graph, service layer state, patterns
-  - Created `AI_Brain/memory/known-bugs-and-roadmap.md` — 8 bugs, 12 security issues, 13 N+1s, 4-phase roadmap
-  - Created `AI_Brain/memory/MEMORY.md` — full index of all brain files + critical bug quick-reference
-  - Updated `project-context.md`, `modules-map.md`, `tenancy-map.md`, `known-issues.md`
-  - Updated cross-session memory: DB schema now points to v2 files, critical bugs listed
-  - DB Schema canonical files: `global_db_v2.sql`, `prime_db_v2.sql`, `tenant_db_v2.sql` in `{DDL_DIR}/`
-- [x] SmartTimetable Parallel Period Configuration — Steps 1-3 (2026-03-12)
-  - Migrations: `tt_parallel_group`, `tt_parallel_group_activity`
-  - Models: `ParallelGroup`, `ParallelGroupActivity`; updated `Activity` model with `parallelGroups()`, `isInParallelGroup()`
-  - Controller: `ParallelGroupController` (CRUD + addActivities, removeActivity, setAnchor, autoDetect)
-  - Views: index, create, edit, show (with AJAX)
-  - Routes: 11 routes in `routes/web.php`
-  - Solver: `FETSolver` parallel group maps, anchor/sibling placement in backtrack + greedy
-  - `SmartTimetableController::generateWithFET()` loads and passes parallel groups to solver
-  - Task plan: `{TT_PARALLEL_TASKS}`
-- [x] Testing framework setup and brain documentation (2026-03-11)
-- [x] Setting model unit + DB tests — 30 tests, 44 assertions, 100% pass (2026-03-11)
-- [x] DB Schema validation & enhancement (2026-03-12) — static MySQL analysis on all 3 DDL files; created global_db_v2.sql, prime_db_v2.sql, tenant_db_v2.sql, tenant_db_corrected.sql in `{DDL_DIR}/`; created CHANGELOG.md documenting all changes
-- [x] HPC third_pdf.blade.php (2026-03-12) — created `Modules/Hpc/resources/views/hpc_form/pdf/third_pdf.blade.php` merging all 46 thred_form partials; all Blade components inlined; DomPDF-compatible; covers Grades 6-8
+1. **ROTATE** QuestionBank API keys (OpenAI `sk-proj-...` + Gemini `AIzaSyD-...`) — exposed in source
+2. Remove `is_super_admin` from User `$fillable` (SchoolSetup UserController, StudentProfile StudentController)
+3. Remove `dd()` from Complaint and LmsExam production code
+4. Fix Payment webhook — move route outside `auth` middleware
+5. Remove StudentFee seeder route (`GET /student-fee/seeder`)
+6. Add `EnsureTenantHasModule` to all 30 module route groups (currently only 1 usage)
+7. Fix StudentPortal IDOR on invoice/payment endpoints

@@ -65,46 +65,66 @@ Modules/ModuleName/
 └── vite.config.js
 ```
 
-## All Modules (27)
-> **Audited:** 2026-03-15 (re-audited against `prime_ai_shailesh` / branch `Brijesh_HPC`).
-> Previous audit: 2026-03-14 against `prime_ai_tarun` / branch `Tarun_SmartTimetable`.
-> Controllers exclude backup files (`*_YYYY*.php`, `*_backup*.php`) and misplaced non-PHP files.
-> Services count = unique .php files under `app/Services/` (deduplicated).
+## All Modules (30)
+> **Audited:** 2026-03-22 against `prime_ai_tarun` / branch `Brijesh_SmartTimetable`.
+> Controllers exclude backup files (`*_backup*.php`, `*.bk`, `*copy*`).
+> Services count = unique .php files under `app/Services/` (recursive).
+
+### Global Statistics
+| Metric | Count |
+|--------|-------|
+| Total Modules | 30 (5 central + 25 tenant) |
+| Total Models | 464 |
+| Total Controllers | 339 |
+| Total Services | 137 (SmartTimetable: 106, Hpc: 10, Library: 9, TimetableFoundation: 3, others) |
+| Total Views | 2,036 blade files |
+| Total FormRequests | 190 |
+| Total Policies | 230 (in `app/Policies/`) |
+| Tenant Migrations | 319 files in `database/migrations/tenant/` |
+| Tenant Route Lines | 3,176 (1,613 Route:: calls) |
+| Central Route Lines | 954 (404 Route:: calls) |
+| Total Test Files | 134 |
+| EnsureTenantHasModule usage | 1 (across entire tenant.php) |
 
 ### Central-Scoped Modules (run on central domain, access prime_db/global_db)
-| Module | Controllers | Models | Services | Requests | Route refs (web.php) | Description |
-|--------|-------------|--------|----------|----------|----------------------|-------------|
-| **Prime** | 22 | 27 | 1 | 7 | 20 (central) | Tenant CRUD, plans, billing, users, roles, modules, menus, geography |
-| **GlobalMaster** | 15 | 12 | 0 | 10 | 8 (central) | Countries, states, cities, boards, languages, plans, dropdowns |
-| **SystemConfig** | 3 | 3 | 0 | 1 | 0 (via Prime) | Settings, menus, translations |
-| **Billing** | 6 | 6 | 0 | 3 | 5 (central) | Invoice generation, payment tracking, billing cycles |
-| **Documentation** | 3 | 2 | 0 | 2 | 3 (central) | Knowledge base, help docs |
+| Module | Controllers | Models | Services | Requests | Views | Seeders | Route Lines | Tests | Description |
+|--------|-------------|--------|----------|----------|-------|---------|-------------|-------|-------------|
+| **Prime** | 21 | 27 | 1 | 7 | 84 | 2 | 244 | 9 | Tenant CRUD, plans, billing, users, roles, modules, menus, geography |
+| **GlobalMaster** | 15 | 12 | 0 | 10 | 48 | 3 | 27 | 4 | Countries, states, cities, boards, languages, plans, dropdowns |
+| **SystemConfig** | 4 | 3 | 0 | 1 | 8 | 2 | 16 | 1 | Settings, menus, translations |
+| **Billing** | 6 | 6 | 0 | 3 | 40 | 1 | 18 | 1 | Invoice generation, payment tracking, billing cycles |
+| **Documentation** | 3 | 2 | 0 | 2 | 15 | 3 | 16 | 1 | Knowledge base, help docs |
 
 ### Tenant-Scoped Modules (run on tenant domain, access tenant_db)
-| Module | Controllers | Models | Services | Requests | Tenant route refs | Status | Description |
-|--------|-------------|--------|----------|----------|-------------------|--------|-------------|
-| **SchoolSetup** | 34 | 42 | 0 | 27 | 46 | **~80%** | 5 stub controllers; is_super_admin settable; PHP concat crash; assignSubjects route broken; 15+ unprotected methods; inconsistent permission naming (19 SEC, 13 BUG) |
-| **SmartTimetable** | 31 | 86 | 25 | 12 | 42+ | **~72%** | AI timetable: FET solver, full constraint architecture (22 Hard + 55+ Soft classes, 212 seeded types, Registry+Evaluator+Context). New: AnalyticsController+Service, RefinementController+Service, SubstitutionController+Service, TimetableApiController (6 REST), GenerateTimetableJob, SmartTimetableServiceProvider, RoomChangeTrackingService. 40+ models now have SoftDeletes. All 21 prompts (P01–P21) done. **But:** 12 new bugs found (BUG-TT-001–012), 3 security issues (SEC-TT-001–003), 3 perf issues. FETConstraintBridge context broken, gap calcs wrong, SubstitutionService crashes, inter-activity silently passes. Structure ~90% but runtime correctness needs bug-fix pass. |
-| **Transport** | 31 | 36 | 0 | 18 | 36 | **~82%** | 5 controllers zero auth; AttendanceDevice `tested.*` typo; undefined $request crash; double-delete race; 5 stub controllers (22 SEC, 10 BUG) |
-| **StudentProfile** | 5 | 14 | 0 | 0 | 45 | **~80%** | is_super_admin writable from student login; AttendanceController zero auth; StudentProfileController empty stub |
-| **Syllabus** | 15 | 22 | 0 | 14 | 41 | **~78%** | CompetencieController + TopicController zero auth; SyllabusController empty stub; $request->all() mass assignment |
-| **SyllabusBooks** | 4 | 6 | 0 | 3 | 4 | **~65%** | SyllabusBooksController empty stub; BookTopicMappingController zero auth; undefined var crash; central AcademicSession cross-layer |
-| **QuestionBank** | 7 | 17 | 0 | 6 | 17 | **~75%** | **API KEYS HARDCODED**; AIQuestionGenerator zero auth; generateQuestions() always returns demo data |
-| **Notification** | 12 | 14 | 2 | 10 | 63 | **~55%** | ALL routes commented out (inaccessible); stub target types; 7 controllers duplicate index queries |
-| **Complaint** | 8 | 6 | 2 | 0 | 58 | **~70%** | dd() in store catch + filter; 3 stub controllers; show/edit/store/update no auth |
-| **Vendor** | 7 | 8 | 0 | 3 | 58 | **~60%** | 6/7 controllers NOT registered in routes; VendorInvoiceController zero auth on 14 financial methods |
-| **Payment** | 4 | 5 | 2 | 0 | 26 | **~45%** | Razorpay keys hardcoded; 2 stub controllers; webhook behind auth; PaymentController copy.php collision |
-| **Dashboard** | 1 | 0 | 0 | 0 | 1 | 100% | Admin dashboards |
-| **Scheduler** | 1 | 2 | 2 | 1 | 0* | 100% | Job scheduling (*uses module-level routing, not tenant.php) |
-| **LmsQuiz** | 5 | 6 | 0 | 5 | 23 | **~72%** | Quiz CRUD works; Gate commented out in index; student attempt tracking absent |
-| **LmsQuests** | 4 | 4 | 0 | 4 | 4 | **~68%** | Quest CRUD works; Gate commented out in index; progress tracking absent |
-| **Recommendation** | 10 | 11 | 0 | 0 | 40 | **~65%** | 3 empty stubs; wrong perms 8/9 routes; broken validation; no FormRequests |
-| **LmsExam** | 11 | 11 | 0 | 11 | 59 | **~65%** | dd($e) in prod; 2 controllers Gate disabled; no EnsureTenantHasModule |
-| **StudentFee** | 15 | 23 | 0 | 0 | 29 | **~60%** | Missing controller; seeder route exposed; perm prefix mismatch; no FormRequests |
-| **LmsHomework** | 5 | 5 | 0 | 5 | 16 | **~60%** | Fatal crash missing $request param; review() no auth; no EnsureTenantHasModule |
-| **Hpc** | 22 | 32 | 10 | 14 | 133 | **~75%** | HpcController ~2483 lines. 4 PDF templates (138 pages total) + ZIP + queued email. 10 CRUD resource controllers + 6 new feature controllers (Student/Parent/Peer portals, Attendance, ActivityAssessment, CreditConfig, Goals). 1 Trait (HpcIndexDataTrait). Template structure 100%, web form 90%, PDF gen 90%, CRUD admin 85%, Email/ZIP 95%, Auth 95%, Role-based locking done, Approval workflow done, Student portal done, Parent portal done, Peer workflow done, Credit calculator done, Tests 55. **Remaining:** God controller still 2483 lines (partial refactor done), 12/20 blueprint screens done (was 4/20). |
-| **Library** | 26 | 35 | 9 | 19 | 0† | **~45%** | NOT in tenant.php; 7 controllers zero auth; 5 stubs; cross-layer import (†see below) |
-| **StudentPortal** | 3 | 0 | 0 | 0 | 3 | ~25% | Student-facing interface (dashboard, complaints, notifications only) |
+| Module | Controllers | Models | Services | Requests | Views | Jobs | Events | Listeners | Seeders | Route Lines | Tests | Description |
+|--------|-------------|--------|----------|----------|-------|------|--------|-----------|---------|-------------|-------|-------------|
+| **SchoolSetup** | 40 | 42 | 0 | 27 | 220 | 0 | 1 | 0 | 7 | 523 | 0 | School structure, classes, sections, subjects, teachers, rooms, buildings |
+| **SmartTimetable** | 12 | 62 | 106 | 7 | 218 | 1 | 0 | 0 | 14 | 41 | 7† | AI timetable: FET solver, 22 Hard + 55+ Soft constraint classes, analytics, refinement, substitution |
+| **TimetableFoundation** | 24 | 32 | 3 | 4 | 148 | 0 | 0 | 0 | 1 | 262 | 7 | Shared timetable config: period sets, day types, configurations, academic terms |
+| **Transport** | 31 | 36 | 0 | 18 | 151 | 0 | 0 | 0 | 1 | 32 | 0 | Vehicles, routes, trips, drivers, pickup points, student allocation, inspections |
+| **Hpc** | 22 | 32 | 10 | 14 | 242 | 1 | 0 | 0 | 0 | 8 | 8† | Holistic Progress Card: 4 PDF templates, approval workflow, student/parent/peer portals |
+| **Library** | 26 | 35 | 9 | 19 | 140 | 0 | 0 | 0 | 1 | 35 | 15† | Book catalog, members, transactions, fines, reservations, digital resources, reports |
+| **StudentProfile** | 5 | 14 | 0 | 0 | 45 | 0 | 0 | 0 | 1 | 16 | 6† | Student CRUD, guardians, attendance, medical incidents |
+| **StudentFee** | 15 | 23 | 0 | 0 | 88 | 0 | 0 | 0 | 1 | 16 | 24 | Fee heads, invoices, receipts, concessions, scholarships, fines, assignments |
+| **Syllabus** | 15 | 22 | 0 | 14 | 78 | 0 | 0 | 0 | 1 | 16 | 0 | Lessons, topics, competencies, bloom taxonomy, cognitive skills, schedules |
+| **QuestionBank** | 7 | 17 | 0 | 6 | 38 | 0 | 0 | 0 | 1 | 16 | 0 | Questions with bloom/cognitive/complexity tagging, AI generation, search |
+| **LmsExam** | 11 | 11 | 0 | 11 | 58 | 0 | 0 | 0 | 1 | 17 | 0 | Exam blueprints, paper sets, allocations, scopes, student groups |
+| **LmsQuiz** | 5 | 6 | 0 | 5 | 29 | 0 | 0 | 0 | 1 | 16 | 0 | Quizzes, questions, allocations, assessment types, difficulty distribution |
+| **LmsHomework** | 5 | 5 | 0 | 5 | 28 | 0 | 0 | 0 | 1 | 16 | 0 | Homework, submissions, action types, trigger events, rule engine |
+| **LmsQuests** | 4 | 4 | 0 | 4 | 23 | 0 | 0 | 0 | 1 | 16 | 0 | Quests, questions, scopes, allocations |
+| **Notification** | 12 | 14 | 2 | 10 | 64 | 0 | 1 | 1 | 1 | 16 | 0 | Channels, templates, targets, delivery; routes currently COMMENTED OUT |
+| **Complaint** | 8 | 6 | 2 | 0 | 34 | 0 | 1 | 1 | 1 | 16 | 4† | Complaints, categories, actions, SLA, AI insights, dashboard |
+| **Vendor** | 7 | 8 | 0 | 3 | 35 | 1 | 0 | 0 | 1 | 16 | 0 | Vendors, agreements, invoices, payments, inspections |
+| **Payment** | 2 | 5 | 2 | 1 | 9 | 0 | 2 | 0 | 1 | 16 | 8 | Payment gateway (Razorpay), processing, callbacks |
+| **Recommendation** | 10 | 11 | 0 | 0 | 53 | 0 | 0 | 0 | 1 | 16 | 0 | Rules, materials, student recommendations |
+| **SyllabusBooks** | 4 | 6 | 0 | 3 | 17 | 0 | 0 | 0 | 1 | 16 | 0 | Books, book-topic mapping, authors |
+| **Accounting** | 18 | 21 | 0 | 15 | 79 | 0 | 0 | 0 | 2 | 152 | 14 | **NEW** — Tally-inspired voucher engine, chart of accounts, ledgers, journal entries |
+| **StandardTimetable** | 1 | 0 | 0 | 0 | 3 | 0 | 0 | 0 | 1 | 30 | 0 | Standard timetable views (skeleton) |
+| **StudentPortal** | 3 | 0 | 0 | 0 | 27 | 0 | 0 | 0 | 1 | 16 | 7 | Student-facing interface: dashboard, complaints, notifications |
+| **Dashboard** | 1 | 0 | 0 | 0 | 8 | 0 | 0 | 0 | 1 | 16 | 0 | Admin dashboards |
+| **Scheduler** | 1 | 2 | 2 | 1 | 6 | 0 | 0 | 0 | 1 | 16 | 1 | Job scheduling (uses module-level routing) |
+
+> † Test locations: SmartTimetable tests in `tests/Feature/SmartTimetable/` (1) + `tests/Unit/SmartTimetable/` (6). Hpc in `tests/Feature/Hpc/` (1) + `tests/Unit/Hpc/` (6) + `tests/Browser/Modules/HPC/` (1). Library in `tests/Browser/Modules/Library/` (15). StudentProfile in `tests/Browser/Modules/StudentProfile/` (5) + `tests/Unit/StudentProfile/` (1). Complaint in `tests/Browser/Modules/Complaint/` (4). Also: `tests/Browser/Modules/Class&SubjectMgmt/` (9 files — SchoolSetup related).
 
 ### Key Module Routes
 
@@ -113,8 +133,10 @@ Modules/ModuleName/
 | Prime (Central) | `/prime/*` | tenants, users, roles, billing, boards, academic-sessions, dropdowns |
 | GlobalMaster (Central) | `/global-master/*` | countries, states, cities, boards, languages, modules, plans |
 | Billing (Central) | `/billing/*` | billing-management, subscription, invoicing-payment, billing-cycle |
+| Accounting | `/accounting/*` | chart-of-accounts, ledgers, vouchers, journal-entries, reports |
 | SchoolSetup | `/school-setup/*` | organization, class, section, subject, teacher, room, building, department, designation |
 | SmartTimetable | `/smart-timetable/*` | timetable, activity, period-set, constraint, teacher-availability, school-day, tt-config |
+| TimetableFoundation | `/timetable-foundation/*` | period-sets, day-types, configurations, academic-terms, generation-strategies |
 | StudentProfile | `/student/*` | students, attendance, medical-incident, reports |
 | StudentFee | `/student-fee/*` | fee-head-master, fee-invoice, fee-receipt, concession, scholarship, fine |
 | Transport | `/transport/*` | vehicle, route, trip, driver-helper, pickup-point, student-allocation, vehicle-inspection |
@@ -124,7 +146,7 @@ Modules/ModuleName/
 | LmsQuiz | `/quiz/*` | quizzes, questions, allocations |
 | LmsHomework | `/homework/*` | homework, submissions, rules |
 | LmsQuests | `/quests/*` | quests, questions, scopes |
-| HPC | `/hpc/*` | hpc (index), templates, hpc-form, form/store, generate-report, hpc-view, hpc-single, circular-goals, learning-outcomes, question-mapping, knowledge-graph-validation, topic-equivalency, syllabus-coverage-snapshot, hpc-parameters, hpc-performance-descriptor, student-hpc-evaluation, learning-activities, hpc-templates*, hpc-template-parts*, hpc-template-sections*, hpc-template-rubrics* (*broken — missing imports) |
+| HPC | `/hpc/*` | hpc, templates, hpc-form, generate-report, circular-goals, learning-outcomes, hpc-parameters, student-hpc-evaluation, learning-activities |
 | Complaint | `/complaint/*` | complaints, categories, actions, sla, dashboard |
 | Notification | `/notification/*` | channels, templates, targets, delivery |
 | Vendor | `/vendor/*` | vendors, agreements, invoices, payments |
@@ -133,29 +155,13 @@ Modules/ModuleName/
 | StudentPortal | `/student-portal/*` | dashboard, academic-info, payments |
 | SystemConfig | `/system-config/*` | settings, menus |
 
-### Module Completion Detail (re-audited 2026-03-15 against `prime_ai_shailesh` branch `Brijesh_HPC`)
-
-| Module | What's Complete | What's Missing / Broken |
-|--------|----------------|------------------------|
-| SmartTimetable (~72%) | 31 controllers, 86+ models (40+ with SoftDeletes), 25 services. All P01–P21 prompts executed. FET solver with backtracking+greedy+rescue; full constraint architecture (Registry, Evaluator, Context, Factory, 22 Hard + 55+ Soft constraint classes, 212 seeded types); Constraint CRUD (6-tab); Parallel Periods (anchor/sibling+9 tests); AnalyticsController+Service (5 views, CSV); RefinementController+Service (swap/move/lock); SubstitutionController+Service (absence/find/assign); TimetableApiController (6 REST); GenerateTimetableJob; SmartTimetableServiceProvider; RoomChangeTrackingService; API routes with auth:sanctum | **12 new bugs (BUG-TT-001–012):** API zero auth; FETConstraintBridge bare context (all constraints silently pass); gap/span period_id vs index mismatch; SubstitutionService `now()->parse()` crash; no timetable_id scope; Job no tenant context; stale cache; static/instance mismatch; inter-activity checks silently pass; stub/scoping/scoring bugs. **3 security:** no EnsureTenantHasModule; cross-tenant API; stub POST routes. **3 perf:** Teacher::all+N+1; uncached analytics; N+1 teachers.user. **Structure ~90% but runtime correctness needs bug-fix pass.** |
-| LmsQuiz (~72%) | CRUD for quizzes, questions, allocations, assessment types, difficulty distribution; Form Requests exist | Gate commented out in index(); student attempt tracking absent; auto-grading absent; no EnsureTenantHasModule |
-| LmsQuests (~68%) | CRUD for quests, questions, allocations, scopes; Form Requests exist | Gate commented out in index(); student progress tracking absent; completion awards absent; no EnsureTenantHasModule |
-| Recommendation (~65%) | 8 of 10 controllers fully working CRUD with activity logging | RecommendationController has 3 empty stubs + 3 non-functional read methods; wrong Gate permission on 8/9 StudentRecommendation write routes (`create` used for all); broken `exists:users` validation (should be `sys_users`); inconsistent permission namespace (`recommendation.*` vs `tenant.*`); no Form Requests (0 in module); no EnsureTenantHasModule; `complexity_level` table name mismatch between store/update |
-| LmsExam (~65%) | Exam CRUD, types, blueprints, papers, student groups, scopes, allocations; Form Requests exist | **`dd($e)` in LmsExamController::store()** exposes stack traces; ExamBlueprintController + ExamScopeController have ALL Gate calls commented out; ExamStudentGroupMemberController::store() uses raw $request without validation; no EnsureTenantHasModule; student answer submission & grading absent |
-| StudentFee (~60%) | Invoice create/edit/cancel/pay, fine rules, scholarships, concessions, assignment workflows | **FeeConcessionController imported but doesn't exist** (fatal on route:cache); **GET /student-fee/seeder exposed in prod** with no auth (creates fake data); permission prefix mismatch on 3 controllers (`student-fee.*` vs `studentfee.*`); StudentFeeManagementController has zero auth on all 8 view methods + 3 empty stubs; `update()` trusts frontend `total_fee_amount`; no Form Requests (0 in module); N+1 in bulk invoice gen + assignment gen; non-tenant-scoped invoice PDF storage; no EnsureTenantHasModule |
-| LmsHomework (~60%) | Homework CRUD, submissions, action types; Form Requests exist | **Fatal crash: `HoemworkData()` missing `$request` parameter** — all filter logic is dead code; `HomeworkSubmissionController::review()` has no Gate check or validation — any user can overwrite grades; `HomeworkSubmissionController::show()` no Gate check; no EnsureTenantHasModule; grading workflow incomplete |
-| Hpc (~75%) | 22 controllers (was 15), 32 models (was 26), 10 services (was 2: HpcReportService, HpcPdfDataService → now +HpcSectionRoleService, HpcWorkflowService, HpcDataMappingService, HpcAttendanceService, HpcLmsIntegrationService, StudentHpcFormService, ParentHpcFormService, PeerAssignmentService, HpcCreditCalculatorService), 14 FormRequests (all with Gate::allows), 1 Trait (HpcIndexDataTrait), 242 views, 1 Job (SendHpcReportEmail), 1 Mailable (HpcReportMail), 55 tests. Template structure: 100%. Web form: 90%. PDF: 90%. Auth: 95% (all 22 controllers gated). EnsureTenantHasModule: ✅. Role-based section locking: ✅. Approval workflow (6-state): ✅. Student self-service portal: ✅. Parent token-based portal: ✅. Peer assessment workflow: ✅. LMS auto-feed: ✅. Credit calculator (NCrF): ✅. Attendance manager: ✅. Activity assessment 4-panel: ✅. Student goals wizard (T4): ✅. | **Remaining gaps:** HpcController still 2483 lines (god controller — partial refactor: utility methods moved to service, constructor injection, but form/PDF methods still inline). No full HpcFormService extraction yet. 8/20 blueprint screens not started. Student answer submission/grading (LMS dependency). 0% complete: MOOC integration, full parent account system. Tests: 55 written but not yet run against DB (need RefreshDatabase tenant setup). |
-| Library (~45%) | 26 controllers, 35 models, 9 services, 19 requests, 140 views, 36 migrations — book catalog, members, transactions, fines, reservations, digital resources, reports, audits | **NOT wired into tenant.php** (zero tenancy middleware); 7 controllers with zero authorization (LibraryController, LibFineController, 5 report/dashboard controllers); 5 stub methods on only registered resource route; `$request->all()` in 5 controllers bypassing Form Requests; `Modules\Prime\Models\Setting` cross-layer import; N+1 in LibReservationController::create(); User::all() unbounded in 10+ index methods; 20+ duplicate queries per page load (God-controller pattern) |
-| StudentPortal (~25%) | Dashboard, complaints, notifications controllers wired (3 refs in tenant.php) | Academic transcript, timetable view, homework submission, quiz taking, grade reports, parent portal, fee view |
-
 ### Planned Modules (Requirements Complete, Development Pending)
 | Prefix | Module | Laravel Module | Tables | Status | Requirement Doc |
 |--------|--------|---------------|--------|--------|-----------------|
-| `acc_` | **Accounting** | `Modules/Accounting/` | 21 new (voucher-based) | Requirements v4 done. Old acc_* DDL in tenant_db is UNUSED draft — will be replaced entirely with new Tally-inspired voucher schema. 18 controllers, 9 services planned. | `1-DDL_Tenant_Modules/20-Account/Claude_Plan/Account_Requirement_v4.md` |
-| `prl_` | **Payroll** | `Modules/Payroll/` | 19 new + sch_employees ALTER | Requirements v4 done. Reuses sch_employees (enhanced with 14 payroll columns), sch_categories, sch_leave_types, sch_leave_config. Uses prl_category_statutory_config instead of non-existent sch_employee_groups. 11 controllers, 6 services planned. | `1-DDL_Tenant_Modules/21-Payroll/Claude_Plan/Payroll_Requirement_v4.md` |
-| `inv_` | **Inventory** | `Modules/Inventory/` | 19 new | Requirements v4 done. Full procurement cycle: PR→PO→GRN→Stock→Issue. Links to Vendor (vnd_vendors), Accounting (acc_vouchers via VoucherServiceInterface), SchoolSetup (sch_employees, sch_department). 14 controllers, 6 services planned. | `1-DDL_Tenant_Modules/22-Inventory/Claude_Plan/Inventory_Requirement_v4.md` |
+| `prl_` | **Payroll** | `Modules/Payroll/` (not yet created) | 19 new + sch_employees ALTER | Requirements v4 done. 11 controllers, 6 services planned. | `1-DDL_Tenant_Modules/21-Payroll/Claude_Plan/Payroll_Requirement_v4.md` |
+| `inv_` | **Inventory** | `Modules/Inventory/` (not yet created) | 19 new | Requirements v4 done. 14 controllers, 6 services planned. | `1-DDL_Tenant_Modules/22-Inventory/Claude_Plan/Inventory_Requirement_v4.md` |
 
-### Key Architecture: Voucher Engine (shared by all 3 modules)
+### Key Architecture: Voucher Engine (shared by Accounting, Payroll, Inventory)
 - Accounting owns `acc_vouchers` + `acc_voucher_items` (double-entry Dr/Cr)
 - Payroll fires `PayrollApproved` event → Accounting creates Payroll Journal Voucher
 - Inventory fires `GrnAccepted`/`StockIssued` events → Accounting creates Purchase/Stock Journal Vouchers
