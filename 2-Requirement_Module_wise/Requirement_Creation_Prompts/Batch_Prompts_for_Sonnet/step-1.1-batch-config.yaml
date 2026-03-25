@@ -1,0 +1,267 @@
+# ============================================================================
+# PRIME-AI DEVELOPMENT PIPELINE — STEP 1.1 BATCH CONFIGURATION
+# ============================================================================
+# Add / merge this block into your existing pipeline.config.yaml
+# under the `steps:` key.
+#
+# This replaces the original single-shot step-1.1 definition.
+# ============================================================================
+
+steps:
+
+  "1.1":
+    name: "Software Requirements Specification"
+    dir: "phases/phase-1_requirements-architecture/step-1.1_srs"
+    model: "claude-sonnet-4-6"           # Sonnet — runs each batch comfortably
+    mode: "batched"                       # NEW: orchestrator uses batch logic
+    batch_by: "module_group"             # Split the module registry by group
+    batch_size: 4                        # Max modules per Sonnet call
+    merge_outputs: true                  # Merge srs-batch-N.md → srs.md after all batches
+    merge_strategy: "concatenate_with_toc"  # Rebuild unified ToC on merge
+
+    # ── Batch definitions ──────────────────────────────────────────────────
+    # Define exactly which modules go in each batch.
+    # Keep batches thematically related — it improves cross-reference quality.
+    # Each batch must have ≤ batch_size modules.
+    # -----------------------------------------------------------------------
+    batches:
+
+      batch-1:
+        number: 1
+        label: "Core Foundation"
+        next_description: "Batch 2 — Financial & Scheduling"
+        modules:
+          - code: "TNT"
+            name: "Tenant & Auth Core"
+            slug: "tenant-auth"
+            table_prefix: "tnt_"
+            description: "Multi-tenant provisioning, super-admin, Sanctum auth, Spatie RBAC"
+            depends_on: "none"
+
+          - code: "CFG"
+            name: "Academic Configuration"
+            slug: "academic-config"
+            table_prefix: "cfg_"
+            description: "Academic sessions, classes, sections, subjects, shifts, departments"
+            depends_on: "TNT"
+
+          - code: "STF"
+            name: "Staff Management"
+            slug: "staff"
+            table_prefix: "stf_"
+            description: "Staff profiles, employment, payroll config, documents, leave"
+            depends_on: "TNT, CFG"
+
+          - code: "STU"
+            name: "Student Management"
+            slug: "student"
+            table_prefix: "stu_"
+            description: "Admissions, enrollment, profiles, documents, parent linking, HPC seed"
+            depends_on: "TNT, CFG"
+
+      batch-2:
+        number: 2
+        label: "Financial & Scheduling"
+        next_description: "Batch 3 — Operations & Infrastructure"
+        modules:
+          - code: "FEE"
+            name: "Fee Management"
+            slug: "fees"
+            table_prefix: "fee_"
+            description: "Fee heads, installments, concessions, collections, receipts, GST"
+            depends_on: "TNT, CFG, STU"
+
+          - code: "ATT"
+            name: "Attendance Management"
+            slug: "attendance"
+            table_prefix: "att_"
+            description: "Daily, period-wise, biometric, leave, reports"
+            depends_on: "TNT, CFG, STF, STU"
+
+          - code: "TTB"
+            name: "Timetable & Scheduling"
+            slug: "timetable"
+            table_prefix: "ttb_"
+            description: "Auto-scheduling (FET-level), drag-drop manual edit, substitution, resource allocation"
+            depends_on: "TNT, CFG, STF"
+
+          - code: "TRN"
+            name: "Transport Management"
+            slug: "transport"
+            table_prefix: "trn_"
+            description: "Routes, stops, vehicles, drivers, GPS, fee integration"
+            depends_on: "TNT, CFG, STU"
+
+      batch-3:
+        number: 3
+        label: "Operations & Infrastructure"
+        next_description: "Batch 4 — LMS Core"
+        modules:
+          - code: "HOS"
+            name: "Hostel Management"
+            slug: "hostel"
+            table_prefix: "hos_"
+            description: "Blocks, rooms, allotments, meal plans, warden management"
+            depends_on: "TNT, CFG, STU"
+
+          - code: "LIB"
+            name: "Library Management"
+            slug: "library"
+            table_prefix: "lib_"
+            description: "Books, catalogue, OPAC, issue/return, fines, RFID"
+            depends_on: "TNT, CFG, STF, STU"
+
+          - code: "INV"
+            name: "Inventory & Assets"
+            slug: "inventory"
+            table_prefix: "inv_"
+            description: "Stock, purchase orders, vendors, asset register, AMC"
+            depends_on: "TNT, CFG"
+
+          - code: "COM"
+            name: "Communication & Notices"
+            slug: "communication"
+            table_prefix: "com_"
+            description: "Announcements, SMS/email/push, parent portal messages, circulars"
+            depends_on: "TNT, CFG, STF, STU"
+
+      batch-4:
+        number: 4
+        label: "LMS Core"
+        next_description: "Batch 5 — Assessment & LXP"
+        modules:
+          - code: "SYL"
+            name: "Syllabus Management"
+            slug: "syllabus"
+            table_prefix: "syl_"
+            description: "Curriculum mapping, topic trees, Bloom's taxonomy tagging, NEP alignment"
+            depends_on: "TNT, CFG"
+
+          - code: "HWK"
+            name: "Homework & Assignments"
+            slug: "homework"
+            table_prefix: "hwk_"
+            description: "Assignment creation, submission, marking, feedback, plagiarism flag"
+            depends_on: "TNT, CFG, STF, STU, SYL"
+
+          - code: "QBK"
+            name: "Question Bank"
+            slug: "question-bank"
+            table_prefix: "qbk_"
+            description: "Questions (MCQ, subjective, case-based), Bloom's tagging, difficulty, SCORM"
+            depends_on: "TNT, CFG, SYL"
+
+          - code: "EXM"
+            name: "Examination Management"
+            slug: "exams"
+            table_prefix: "exm_"
+            description: "Exam scheduling, hall tickets, seating, marking, grade computation, result publishing"
+            depends_on: "TNT, CFG, STF, STU, SYL, QBK"
+
+      batch-5:
+        number: 5
+        label: "Assessment & LXP"
+        next_description: "Batch 6 — AI, Analytics & Platform"
+        modules:
+          - code: "LXP"
+            name: "Learning Experience Platform"
+            slug: "lxp"
+            table_prefix: "lxp_"
+            description: "Personalised learning paths, AI recommendations, SCORM player, content library"
+            depends_on: "TNT, CFG, STU, SYL, QBK"
+
+          - code: "HPC"
+            name: "Holistic Progress Card"
+            slug: "hpc"
+            table_prefix: "hpc_"
+            description: "360° student assessment — academic + co-curricular + values + health + AI insights"
+            depends_on: "TNT, CFG, STU, ATT, EXM, LXP"
+
+          - code: "RPT"
+            name: "Reports & Dashboards"
+            slug: "reports"
+            table_prefix: "rpt_"
+            description: "Role-based dashboards, KPI widgets, downloadable reports (PDF/Excel)"
+            depends_on: "TNT, CFG, STF, STU, FEE, ATT, EXM, HPC"
+
+          - code: "CMP"
+            name: "Complaints & Grievance"
+            slug: "complaints"
+            table_prefix: "cmp_"
+            description: "Complaint registration, routing, escalation, resolution tracking, SLA"
+            depends_on: "TNT, CFG, STF, STU"
+
+      batch-6:
+        number: 6
+        label: "AI, Analytics & Platform Support"
+        next_description: "All batches complete — run merge step"
+        modules:
+          - code: "ANL"
+            name: "AI Analytics Engine"
+            slug: "analytics"
+            table_prefix: "anl_"
+            description: "ML models — dropout prediction, learning gap, fee default, performance forecast"
+            depends_on: "TNT, CFG, STU, ATT, FEE, EXM, HPC, LXP"
+
+          - code: "VIS"
+            name: "Visitor & Reception Management"
+            slug: "visitor"
+            table_prefix: "vis_"
+            description: "Visitor log, gate pass, appointment, ID badge printing"
+            depends_on: "TNT, CFG"
+
+          - code: "VND"
+            name: "Vendor & Procurement"
+            slug: "vendor"
+            table_prefix: "vnd_"
+            description: "Vendor registry, RFQ, PO, GRN, invoice matching, payment"
+            depends_on: "TNT, CFG, INV"
+
+          - code: "SUP"
+            name: "Super Admin & Platform Config"
+            slug: "super-admin"
+            table_prefix: "sup_"
+            description: "Platform-wide settings, tenant lifecycle, plan management, audit logs"
+            depends_on: "TNT"
+
+    # ── Inputs ─────────────────────────────────────────────────────────────
+    inputs:
+      rbs_file: "{{config.paths.inputs_dir}}/rbs.md"    # Your RBS — full file, orchestrator extracts per-batch sections
+      rbs_format: "markdown"                              # or "excel" — orchestrator converts before injecting
+
+    # ── Outputs ────────────────────────────────────────────────────────────
+    outputs:
+      batch_file_pattern: "output/srs-batch-{n}.md"     # Individual batch output
+      final_merged_file: "output/srs.md"                 # Final merged SRS — input for steps 1.2, 1.3, 1.4
+
+    # ── Validation (per batch) ─────────────────────────────────────────────
+    validation:
+      per_batch:
+        - check: "file_exists"
+          target: "srs-batch-{n}.md"
+        - check: "contains_pattern"
+          pattern: "FR-"
+          description: "Must contain functional requirement IDs"
+        - check: "contains_pattern"
+          pattern: "## Batch Summary"
+          description: "Must contain Batch Summary section"
+        - check: "min_length"
+          chars: 8000
+          description: "Minimum 8000 chars per batch — catches truncated output"
+      post_merge:
+        - check: "file_exists"
+          target: "srs.md"
+        - check: "contains_all_patterns"
+          patterns: ["FR-TNT-", "FR-STU-", "FR-FEE-", "FR-EXM-", "FR-HPC-", "FR-ANL-"]
+          description: "Merged SRS must contain requirement IDs from all 6 batches"
+        - check: "min_length"
+          chars: 80000
+          description: "Merged SRS sanity check — must be substantial"
+
+    # ── Volume Assumptions (injected as {{config.volumes.*}}) ──────────────
+    volumes:
+      tenants_launch: 50
+      tenants_scale: 2000
+      students_per_tenant: "500–5000"
+      staff_per_tenant: "50–500"
+      concurrent_users_peak: 200

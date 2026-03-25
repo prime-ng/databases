@@ -92,7 +92,7 @@ SET FOREIGN_KEY_CHECKS = 0;
     -- Materialized Path columns
     `path` VARCHAR(500) NOT NULL,                   -- e.g., '/1/5/23/' (ancestor path) e.g. "/1/5/23/145/" (ancestor IDs separated by /)
     `path_names` VARCHAR(2000) DEFAULT NULL,        -- e.g., 'Algebra > Linear Equations > Solving Methods'
-    `level` TINYINT UNSIGNED NOT NULL DEFAULT 0,    -- Depth in hierarchy (0=root)
+    `level_id` INT UNSIGNED NOT NULL DEFAULT 0,     -- FK-slb_topic_level_types.id (0=Topic, 1=Sub-topic, 2=Mini Topic, 3=Sub-Mini Topic, 4=Micro Topic, 5=Sub-Micro Topic, 6=Nano Topic, 7=Ultra Topic)
     -- Core topic information (Use slb_topic_level_types to Generate code)
     `code` VARCHAR(60) NOT NULL,                    -- e.g., '9TH_SCI_L01_TOP01_SUB02_MIN01_SMT02_MIC01_SMT02_NAN01_ULT02'
     `name` VARCHAR(150) NOT NULL,                   -- e.g., 'Topic 1: Linear Equations'
@@ -128,6 +128,7 @@ SET FOREIGN_KEY_CHECKS = 0;
     CONSTRAINT `fk_topic_lesson` FOREIGN KEY (`lesson_id`) REFERENCES `slb_lessons` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_topic_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_topic_subject` FOREIGN KEY (`subject_id`) REFERENCES `sch_subjects` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_topic_level` FOREIGN KEY (`level_id`) REFERENCES `slb_topic_level_types` (`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_topic_base_topic` FOREIGN KEY (`base_topic_id`) REFERENCES `slb_topics` (`id`) ON DELETE SET NULL
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -400,7 +401,9 @@ SET FOREIGN_KEY_CHECKS = 0;
     `class_id` INT UNSIGNED NOT NULL,           -- FK to sch_classes.id. NULL = applies to all classes
     `section_id` INT UNSIGNED DEFAULT NULL,       -- FK to sch_sections.id. NULL = applies to all sections
     `subject_id` INT UNSIGNED NOT NULL,       -- FK to sch_subjects.id
+    `lesson_id` INT UNSIGNED NOT NULL,        -- FK to slb_lessons.id
     `topic_id` INT UNSIGNED NOT NULL,         -- FK to slb_topics.id (It can be Topic, Sub-Topic, Mini-Topic, Micro-Topic etc.)
+    `topic_level_type_id` INT UNSIGNED NOT NULL,  -- FK to slb_topic_level_types.id
     `scheduled_start_date` DATE NOT NULL,
     `scheduled_end_date` DATE NOT NULL,
     `assigned_teacher_id` INT UNSIGNED DEFAULT NULL,   -- FK to sch_teachers.id (who assigned to teach this topic)
@@ -521,4 +524,4 @@ SET FOREIGN_KEY_CHECKS = 0;
   -- -------------------------------------------------------------------------------------------------------------
   --Correction :
   -- Table slb_lesson Added 1 New Fields (`bok_books_id` INT UNSIGNED NOT NULL, -- FK to bok_books.id)
-
+  -- Change Field Name in slb_topics Table : `level` → `level_id` and added FK to slb_topic_level_types.id

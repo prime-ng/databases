@@ -1,0 +1,109 @@
+# ============================================================
+# Step 1.1 — SRS Generation — Validation Rules
+# ============================================================
+# The orchestrator reads these rules to auto-validate each
+# batch output before marking the batch as complete.
+# ============================================================
+
+per_batch:
+
+  - check: "file_exists"
+    target: "srs-batch-{n}.md"
+    error_level: "fatal"
+    message: "Batch output file not found"
+
+  - check: "contains_pattern"
+    pattern: "FR-"
+    error_level: "fatal"
+    description: "Output must contain functional requirement IDs (FR-XXX-NNN)"
+
+  - check: "contains_pattern"
+    pattern: "NFR-"
+    error_level: "warning"
+    description: "Output must contain non-functional requirement IDs"
+
+  - check: "contains_pattern"
+    pattern: "BR-"
+    error_level: "warning"
+    description: "Output must contain business rule IDs"
+
+  - check: "contains_pattern"
+    pattern: "US-"
+    error_level: "warning"
+    description: "Output must contain user story IDs"
+
+  - check: "contains_pattern"
+    pattern: "## Batch Summary"
+    error_level: "warning"
+    description: "Batch Summary section must be present at end of output"
+
+  - check: "contains_pattern"
+    pattern: "Given"
+    error_level: "warning"
+    description: "Must contain Given/When/Then acceptance criteria"
+
+  - check: "contains_pattern"
+    pattern: "Role-Permission Matrix"
+    error_level: "warning"
+    description: "B2 Role-Permission Matrix section must be present"
+
+  - check: "contains_pattern"
+    pattern: "Traceability Matrix"
+    error_level: "warning"
+    description: "B3 Traceability Matrix section must be present"
+
+  - check: "min_length"
+    chars: 8000
+    error_level: "fatal"
+    description: >
+      Batch output must be at least 8000 characters. Shorter output indicates
+      Claude truncated the response. Re-run the batch with --force.
+
+  - check: "all_modules_have_fr"
+    error_level: "fatal"
+    description: >
+      Every module in the batch must have at least one FR-{CODE}- entry.
+      Missing FRs for a module means that module was skipped or Claude
+      did not process it. Re-run the batch.
+
+post_merge:
+
+  - check: "file_exists"
+    target: "srs.md"
+    error_level: "fatal"
+
+  - check: "contains_all_patterns"
+    patterns:
+      - "FR-TNT-"
+      - "FR-CFG-"
+      - "FR-STF-"
+      - "FR-STU-"
+      - "FR-FEE-"
+      - "FR-ATT-"
+      - "FR-TTB-"
+      - "FR-TRN-"
+      - "FR-HOS-"
+      - "FR-LIB-"
+      - "FR-INV-"
+      - "FR-COM-"
+      - "FR-SYL-"
+      - "FR-HWK-"
+      - "FR-QBK-"
+      - "FR-EXM-"
+      - "FR-LXP-"
+      - "FR-HPC-"
+      - "FR-RPT-"
+      - "FR-CMP-"
+      - "FR-ANL-"
+      - "FR-VIS-"
+      - "FR-VND-"
+      - "FR-SUP-"
+    error_level: "fatal"
+    description: "Merged SRS must contain FR IDs for all 24 modules"
+
+  - check: "min_length"
+    chars: 80000
+    error_level: "warning"
+    description: >
+      Merged SRS should be at least 80KB. If smaller, some batches may
+      have produced incomplete output. Run --validate-only to check.

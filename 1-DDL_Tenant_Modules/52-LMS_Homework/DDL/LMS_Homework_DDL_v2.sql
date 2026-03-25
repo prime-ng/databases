@@ -26,7 +26,8 @@
 		`allow_late_submission` TINYINT(1) DEFAULT 0,         -- 1 = Allow Late Submission, 0 = Not Allow Late Submission
 		`auto_publish_score` TINYINT(1) DEFAULT 0,            -- 1 = Auto Publish Score, 0 = Not Auto Publish Score
 		-- Auto-Release Logic
-		`release_condition_id` INT UNSIGNED DEFAULT NULL,  -- FK to sys_dropdown.id (IMMEDIATE, ON_TOPIC_COMPLETE)    
+		`realease_condition` ENUM('IMMEDIATE', 'ON_TOPIC_COMPLETE', 'ON_SCHEDULED_DATE') DEFAULT 'ON_TOPIC_COMPLETE', -- Redundant but added for easier querying and indexing
+		`release_scheduled_date` DATETIME DEFAULT NULL,              -- Used if realease_condition = 'ON_SCHEDULED_DATE'
 		`status_id` INT UNSIGNED NOT NULL,                 -- FK to sys_dropdown.id (DRAFT, PUBLISHED, ARCHIVED)
 		`is_active` TINYINT(1) DEFAULT 1,
 		`created_by` INT UNSIGNED NOT NULL,
@@ -42,7 +43,6 @@
 		CONSTRAINT `fk_hw_sub_topic` FOREIGN KEY (`sub_topic_id`) REFERENCES `slb_sub_topics` (`id`),
 		CONSTRAINT `fk_hw_submission_type` FOREIGN KEY (`submission_type_id`) REFERENCES `sys_dropdown_table` (`id`),
 		CONSTRAINT `fk_hw_difficulty_level` FOREIGN KEY (`difficulty_level_id`) REFERENCES `slb_complexity_level` (`id`),
-		CONSTRAINT `fk_hw_release_condition` FOREIGN KEY (`release_condition_id`) REFERENCES `sys_dropdown_table` (`id`),
 		CONSTRAINT `fk_hw_status` FOREIGN KEY (`status_id`) REFERENCES `sys_dropdown_table` (`id`),
 		CONSTRAINT `fk_hw_created_by` FOREIGN KEY (`created_by`) REFERENCES `sys_users` (`id`),
 		CONSTRAINT `fk_hw_updated_by` FOREIGN KEY (`updated_by`) REFERENCES `sys_users` (`id`)

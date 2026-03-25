@@ -4687,7 +4687,6 @@
     CONSTRAINT `fk_sas_status` FOREIGN KEY (`session_status_id`) REFERENCES `sys_dropdown_table` (`id`) ON DELETE RESTRICT
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-
 -- =========================================================================
 -- 9-SYLLABUS MODULE (slb)
 -- =========================================================================
@@ -4770,7 +4769,7 @@
     -- Materialized Path columns
     `path` VARCHAR(500) NOT NULL,                   -- e.g., '/1/5/23/' (ancestor path) e.g. "/1/5/23/145/" (ancestor IDs separated by /)
     `path_names` VARCHAR(2000) DEFAULT NULL,        -- e.g., 'Algebra > Linear Equations > Solving Methods'
-    `level` TINYINT UNSIGNED NOT NULL DEFAULT 0,    -- Depth in hierarchy (0=root)
+    `level_id` INT UNSIGNED NOT NULL DEFAULT 0,     -- FK-slb_topic_level_types.id (0=Topic, 1=Sub-topic, 2=Mini Topic, 3=Sub-Mini Topic, 4=Micro Topic, 5=Sub-Micro Topic, 6=Nano Topic, 7=Ultra Topic)
     -- Core topic information (Use slb_topic_level_types to Generate code)
     `code` VARCHAR(60) NOT NULL,                    -- e.g., '9TH_SCI_L01_TOP01_SUB02_MIN01_SMT02_MIC01_SMT02_NAN01_ULT02'
     `name` VARCHAR(150) NOT NULL,                   -- e.g., 'Topic 1: Linear Equations'
@@ -4806,8 +4805,10 @@
     CONSTRAINT `fk_topic_lesson` FOREIGN KEY (`lesson_id`) REFERENCES `slb_lessons` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_topic_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_topic_subject` FOREIGN KEY (`subject_id`) REFERENCES `sch_subjects` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_topic_level` FOREIGN KEY (`level_id`) REFERENCES `slb_topic_level_types` (`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_topic_base_topic` FOREIGN KEY (`base_topic_id`) REFERENCES `slb_topics` (`id`) ON DELETE SET NULL
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 
   -- COMPETENCY FRAMEWORK (NEP 2020 ALIGNMENT)
   -- -------------------------------------------------------------------------
@@ -5056,15 +5057,6 @@
     --    Classes 9–12 → Topper / Excellent / Good / Average / Below Average / Need Improvement / Poor
 
 
-
-
-
-
-
-
-
-
-
   -- -------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
   -- -------------------------------------------------------------------------
@@ -5078,7 +5070,9 @@
     `class_id` INT UNSIGNED NOT NULL,           -- FK to sch_classes.id. NULL = applies to all classes
     `section_id` INT UNSIGNED DEFAULT NULL,       -- FK to sch_sections.id. NULL = applies to all sections
     `subject_id` INT UNSIGNED NOT NULL,       -- FK to sch_subjects.id
+    `lesson_id` INT UNSIGNED NOT NULL,        -- FK to slb_lessons.id
     `topic_id` INT UNSIGNED NOT NULL,         -- FK to slb_topics.id (It can be Topic, Sub-Topic, Mini-Topic, Micro-Topic etc.)
+    `topic_level_type_id` INT UNSIGNED NOT NULL,  -- FK to slb_topic_level_types.id
     `scheduled_start_date` DATE NOT NULL,
     `scheduled_end_date` DATE NOT NULL,
     `assigned_teacher_id` INT UNSIGNED DEFAULT NULL,   -- FK to sch_teachers.id (who assigned to teach this topic)
@@ -5199,8 +5193,6 @@
   -- -------------------------------------------------------------------------------------------------------------
   --Correction :
   -- Table slb_lesson Added 1 New Fields (`bok_books_id` INT UNSIGNED NOT NULL, -- FK to bok_books.id)
-
-
 
 -- ===========================================================================
 -- 10-Question Bank Module (qns)
@@ -5503,7 +5495,6 @@
   ('ONLINE_EXAM','Online Exam', 'Online Exam'),
   ('OFFLINE_EXAM','Offline Exam', 'Offline Exam');
 
-
 -- ===========================================================================
 -- 11-Recommendation (rec)
 -- ===========================================================================
@@ -5726,7 +5717,6 @@
     CONSTRAINT `fk_recStud_teacher` FOREIGN KEY (`manual_assigned_by`) REFERENCES `sch_teachers` (`id`) ON DELETE SET NULL
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-
 -- ===========================================================================
 -- 12-Syllabus_Books (slb)
 -- ===========================================================================
@@ -5820,7 +5810,6 @@
     CONSTRAINT `fk_bcs_subject` FOREIGN KEY (`subject_id`) REFERENCES `sch_subjects` (`id`),
     CONSTRAINT `fk_bcs_session` FOREIGN KEY (`academic_session_id`) REFERENCES `sch_org_academic_sessions_jnt` (`id`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 
 -- ===========================================================================
 -- 13-Student Profile (std)
@@ -6180,7 +6169,6 @@
     CONSTRAINT `fk_att_corr_reqBy` FOREIGN KEY (`requested_by`) REFERENCES `sys_users` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_att_corr_actBy` FOREIGN KEY (`action_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 
 -- ===========================================================================
 -- 14-HPC (hpc)
@@ -6760,9 +6748,8 @@
   -- END OF NEP 2020 + HPC EXTENSION SCHEMA
   -- =====================================================================
 
-
 -- ===========================================================================
--- 15-FRONTDESK MGMT. (fdm)
+-- 15-FRONTOFFICE MGMT. (fom)
 -- ===========================================================================
 
 
@@ -8976,7 +8963,7 @@
 
 
 -- ===========================================================================
--- 19-STUDENT FEES (lms)
+-- 19-STUDENT FEES (fee)
 -- ===========================================================================
   -- ----------------------------------------------------------------
   -- Table 1: fee_head_master
@@ -9627,637 +9614,523 @@
 -- 20-ACCOUNTING (ACT)
 -- ===========================================================================
 
-	-- 1.1 Account Groups (Hierarchical Chart of Accounts)
-	CREATE TABLE `acc_account_groups` (
-    `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
-    `name` varchar(100) NOT NULL,
-    `code` varchar(20) NOT NULL,
-    `parent_id` bigint UNSIGNED DEFAULT NULL,
-    `group_type` enum('Assets','Liabilities','Income','Expense') NOT NULL,
-    `nature` enum('Debit','Credit') NOT NULL,
-    `is_active` tinyint(1) NOT NULL DEFAULT '1',
-    `created_at` timestamp NULL DEFAULT NULL,
-    `updated_at` timestamp NULL DEFAULT NULL,
-    `deleted_at` timestamp NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `account_groups_code_unique` (`code`),
-    KEY `account_groups_parent_id_foreign` (`parent_id`),
-    CONSTRAINT `account_groups_parent_id_foreign` 
-        FOREIGN KEY (`parent_id`) REFERENCES `account_groups` (`id`) ON DELETE CASCADE
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-	-- 1.2 Ledgers (Individual Accounts)
-	CREATE TABLE `acc_ledgers` (
-    `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
-    `name` varchar(150) NOT NULL,
-    `code` varchar(20) NOT NULL,
-    `account_group_id` bigint UNSIGNED NOT NULL,
-    `opening_balance` decimal(15,2) NOT NULL DEFAULT '0.00',
-    `balance_type` enum('Debit','Credit') NOT NULL,
-    `as_of_date` date NOT NULL,
-    `allow_reconciliation` tinyint(1) NOT NULL DEFAULT '0',
-    `has_gst` tinyint(1) NOT NULL DEFAULT '0',
-    `gst_number` varchar(50) DEFAULT NULL,
-    `is_active` tinyint(1) NOT NULL DEFAULT '1',
-    `created_at` timestamp NULL DEFAULT NULL,
-    `updated_at` timestamp NULL DEFAULT NULL,
-    `deleted_at` timestamp NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `ledgers_code_unique` (`code`),
-    KEY `ledgers_account_group_id_foreign` (`account_group_id`),
-    CONSTRAINT `ledgers_account_group_id_foreign` 
-        FOREIGN KEY (`account_group_id`) REFERENCES `account_groups` (`id`)
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-	-- 1.3 Ledger Mappings (Links to other modules)
-	CREATE TABLE `acc_ledger_mappings` (
-    `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
-    `ledger_id` bigint UNSIGNED NOT NULL,
-    `source_module` enum('Fees','Library','Transport','HR','Vendor') NOT NULL,
-    `source_id` bigint UNSIGNED NOT NULL,
-    `is_active` tinyint(1) NOT NULL DEFAULT '1',
-    `created_at` timestamp NULL DEFAULT NULL,
-    `updated_at` timestamp NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `ledger_mappings_ledger_source_unique` (`ledger_id`, `source_module`, `source_id`),
-    KEY `ledger_mappings_source_index` (`source_module`, `source_id`),
-    CONSTRAINT `ledger_mappings_ledger_id_foreign` 
-        FOREIGN KEY (`ledger_id`) REFERENCES `ledgers` (`id`)
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-	-- 1.4 Fiscal Years
-	CREATE TABLE `acc_fiscal_years` (
-    `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
-    `name` varchar(100) NOT NULL,
-    `start_date` date NOT NULL,
-    `end_date` date NOT NULL,
-    `is_closed` tinyint(1) NOT NULL DEFAULT '0',
-    `is_active` tinyint(1) NOT NULL DEFAULT '1',
-    `created_at` timestamp NULL DEFAULT NULL,
-    `updated_at` timestamp NULL DEFAULT NULL,
-    `deleted_at` timestamp NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `fiscal_years_name_unique` (`name`),
-    KEY `fiscal_years_dates_index` (`start_date`, `end_date`)
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-	-- 1.5 Journal Entries (Master)
-	CREATE TABLE `acc_journal_entries` (
-    `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
-    `entry_number` varchar(50) NOT NULL,
-    `entry_date` date NOT NULL,
-    `fiscal_year_id` bigint UNSIGNED NOT NULL,
-    `reference` varchar(100) DEFAULT NULL,
-    `entry_type` enum('Manual','Sales','Purchase','Receipt','Payment','Contra','Journal') NOT NULL,
-    `narration` text,
-    `total_debit` decimal(15,2) NOT NULL DEFAULT '0.00',
-    `total_credit` decimal(15,2) NOT NULL DEFAULT '0.00',
-    `approval_status` enum('Draft','Pending','Approved','Rejected') NOT NULL DEFAULT 'Draft',
-    `approved_by` bigint UNSIGNED DEFAULT NULL,
-    `approved_at` timestamp NULL DEFAULT NULL,
-    `is_active` tinyint(1) NOT NULL DEFAULT '1',
-    `created_at` timestamp NULL DEFAULT NULL,
-    `updated_at` timestamp NULL DEFAULT NULL,
-    `deleted_at` timestamp NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `journal_entries_entry_number_unique` (`entry_number`),
-    KEY `journal_entries_fiscal_year_id_foreign` (`fiscal_year_id`),
-    KEY `journal_entries_approval_status_index` (`approval_status`),
-    KEY `journal_entries_entry_date_index` (`entry_date`),
-    CONSTRAINT `journal_entries_fiscal_year_id_foreign` 
-        FOREIGN KEY (`fiscal_year_id`) REFERENCES `fiscal_years` (`id`)
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-	-- 1.6 Journal Entry Lines (Details)
-	CREATE TABLE `acc_journal_entry_lines` (
-    `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
-    `journal_entry_id` bigint UNSIGNED NOT NULL,
-    `ledger_id` bigint UNSIGNED NOT NULL,
-    `debit` decimal(15,2) NOT NULL DEFAULT '0.00',
-    `credit` decimal(15,2) NOT NULL DEFAULT '0.00',
-    `narration` text,
-    `reconciliation_date` date DEFAULT NULL,
-    `is_active` tinyint(1) NOT NULL DEFAULT '1',
-    `created_at` timestamp NULL DEFAULT NULL,
-    `updated_at` timestamp NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    KEY `journal_entry_lines_journal_entry_id_foreign` (`journal_entry_id`),
-    KEY `journal_entry_lines_ledger_id_foreign` (`ledger_id`),
-    CONSTRAINT `journal_entry_lines_journal_entry_id_foreign` 
-        FOREIGN KEY (`journal_entry_id`) REFERENCES `journal_entries` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `journal_entry_lines_ledger_id_foreign` 
-        FOREIGN KEY (`ledger_id`) REFERENCES `ledgers` (`id`)
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-	-- 1.7 Recurring Journal Templates
-	CREATE TABLE `acc_recurring_journal_templates` (
-    `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
-    `name` varchar(150) NOT NULL,
-    `start_date` date NOT NULL,
-    `end_date` date DEFAULT NULL,
-    `frequency` enum('Daily','Weekly','Monthly','Quarterly','Yearly') NOT NULL,
-    `day_of_month` tinyint DEFAULT NULL,
-    `narration` text,
-    `total_debit` decimal(15,2) NOT NULL,
-    `total_credit` decimal(15,2) NOT NULL,
-    `is_active` tinyint(1) NOT NULL DEFAULT '1',
-    `created_at` timestamp NULL DEFAULT NULL,
-    `updated_at` timestamp NULL DEFAULT NULL,
-    PRIMARY KEY (`id`)
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-	-- 1.8 Recurring Journal Template Lines
-	CREATE TABLE `acc_recurring_journal_template_lines` (
-    `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
-    `recurring_journal_template_id` bigint UNSIGNED NOT NULL,
-    `ledger_id` bigint UNSIGNED NOT NULL,
-    `debit` decimal(15,2) NOT NULL DEFAULT '0.00',
-    `credit` decimal(15,2) NOT NULL DEFAULT '0.00',
-    `narration` text,
-    PRIMARY KEY (`id`),
-    KEY `recurring_template_lines_template_id_foreign` (`recurring_journal_template_id`),
-    KEY `recurring_template_lines_ledger_id_foreign` (`ledger_id`),
-    CONSTRAINT `recurring_template_lines_template_id_foreign` 
-        FOREIGN KEY (`recurring_journal_template_id`) REFERENCES `recurring_journal_templates` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `recurring_template_lines_ledger_id_foreign` 
-        FOREIGN KEY (`ledger_id`) REFERENCES `ledgers` (`id`)
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-	-- =====================================================
-	-- PART 2: FEE MANAGEMENT MODULE
-	-- =====================================================
-
-	-- 2.1 Fee Heads (Master)
-	CREATE TABLE `acc_fee_heads` (
-    `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
-    `name` varchar(100) NOT NULL,
-    `code` varchar(20) NOT NULL,
-    `description` text,
-    `is_refundable` tinyint(1) NOT NULL DEFAULT '0',
-    `is_optional` tinyint(1) NOT NULL DEFAULT '0',
-    `income_ledger_id` bigint UNSIGNED NOT NULL,
-    `tax_rate_id` bigint UNSIGNED DEFAULT NULL,
-    `is_active` tinyint(1) NOT NULL DEFAULT '1',
-    `created_at` timestamp NULL DEFAULT NULL,
-    `updated_at` timestamp NULL DEFAULT NULL,
-    `deleted_at` timestamp NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `fee_heads_code_unique` (`code`),
-    KEY `fee_heads_income_ledger_id_foreign` (`income_ledger_id`),
-    CONSTRAINT `fee_heads_income_ledger_id_foreign` 
-        FOREIGN KEY (`income_ledger_id`) REFERENCES `ledgers` (`id`)
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-	-- 2.2 Fee Structures (Templates)
-	CREATE TABLE `acc_fee_structures` (
-    `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
-    `name` varchar(150) NOT NULL,
-    `code` varchar(20) NOT NULL,
-    `academic_session_id` bigint UNSIGNED NOT NULL,
-    `class_id` bigint UNSIGNED NOT NULL,
-    `student_category_id` bigint UNSIGNED DEFAULT NULL,
-    `valid_from` date NOT NULL,
-    `valid_to` date DEFAULT NULL,
-    `total_amount` decimal(15,2) NOT NULL DEFAULT '0.00',
-    `is_active` tinyint(1) NOT NULL DEFAULT '1',
-    `created_at` timestamp NULL DEFAULT NULL,
-    `updated_at` timestamp NULL DEFAULT NULL,
-    `deleted_at` timestamp NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `fee_structures_code_unique` (`code`),
-    KEY `fee_structures_academic_session_id_foreign` (`academic_session_id`),
-    KEY `fee_structures_class_id_foreign` (`class_id`),
-    KEY `fee_structures_category_id_foreign` (`student_category_id`)
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-	-- 2.3 Fee Structure Lines
-	CREATE TABLE `acc_fee_structure_lines` (
-    `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
-    `fee_structure_id` bigint UNSIGNED NOT NULL,
-    `fee_head_id` bigint UNSIGNED NOT NULL,
-    `amount` decimal(15,2) NOT NULL,
-    `due_date` date NOT NULL,
-    `is_optional` tinyint(1) NOT NULL DEFAULT '0',
-    `created_at` timestamp NULL DEFAULT NULL,
-    `updated_at` timestamp NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `fee_structure_lines_unique` (`fee_structure_id`, `fee_head_id`),
-    KEY `fee_structure_lines_fee_head_id_foreign` (`fee_head_id`),
-    CONSTRAINT `fee_structure_lines_fee_structure_id_foreign` 
-        FOREIGN KEY (`fee_structure_id`) REFERENCES `fee_structures` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fee_structure_lines_fee_head_id_foreign` 
-        FOREIGN KEY (`fee_head_id`) REFERENCES `fee_heads` (`id`)
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-	-- 2.4 Discount/Scholarship Types
-	CREATE TABLE `acc_discount_types` (
-    `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
-    `name` varchar(100) NOT NULL,
-    `code` varchar(20) NOT NULL,
-    `type` enum('Fixed','Percentage') NOT NULL,
-    `value` decimal(10,2) NOT NULL,
-    `is_active` tinyint(1) NOT NULL DEFAULT '1',
-    `created_at` timestamp NULL DEFAULT NULL,
-    `updated_at` timestamp NULL DEFAULT NULL,
-    `deleted_at` timestamp NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `discount_types_code_unique` (`code`)
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-	-- 2.5 Student Fee Concessions
-	CREATE TABLE `acc_student_fee_concessions` (
-    `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
-    `student_id` bigint UNSIGNED NOT NULL,
-    `fee_structure_line_id` bigint UNSIGNED NOT NULL,
-    `discount_type_id` bigint UNSIGNED NOT NULL,
-    `amount` decimal(15,2) NOT NULL,
-    `reason` text,
-    `approved_by` bigint UNSIGNED NOT NULL,
-    `approved_at` timestamp NOT NULL,
-    `valid_from` date NOT NULL,
-    `valid_to` date DEFAULT NULL,
-    `is_active` tinyint(1) NOT NULL DEFAULT '1',
-    `created_at` timestamp NULL DEFAULT NULL,
-    `updated_at` timestamp NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    KEY `student_concessions_student_id_foreign` (`student_id`),
-    KEY `student_concessions_line_id_foreign` (`fee_structure_line_id`),
-    KEY `student_concessions_discount_id_foreign` (`discount_type_id`),
-    CONSTRAINT `student_concessions_discount_id_foreign` 
-        FOREIGN KEY (`discount_type_id`) REFERENCES `discount_types` (`id`),
-    CONSTRAINT `student_concessions_line_id_foreign` 
-        FOREIGN KEY (`fee_structure_line_id`) REFERENCES `fee_structure_lines` (`id`)
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-	-- =====================================================
-	-- PART 3: INVOICES & TRANSACTIONS
-	-- =====================================================
-
-	-- 3.1 Tax Rates
-	CREATE TABLE `acc_tax_rates` (
-    `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
-    `name` varchar(100) NOT NULL,
-    `rate` decimal(5,2) NOT NULL,
-    `type` enum('CGST','SGST','IGST','Cess') NOT NULL,
-    `is_interstate` tinyint(1) NOT NULL DEFAULT '0',
-    `is_active` tinyint(1) NOT NULL DEFAULT '1',
-    `created_at` timestamp NULL DEFAULT NULL,
-    `updated_at` timestamp NULL DEFAULT NULL,
-    PRIMARY KEY (`id`)
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-	-- 3.2 Sales Invoices (Student Fees)
-	CREATE TABLE `acc_sales_invoices` (
-    `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
-    `invoice_number` varchar(50) NOT NULL,
-    `student_id` bigint UNSIGNED NOT NULL,
-    `academic_session_id` bigint UNSIGNED NOT NULL,
-    `invoice_date` date NOT NULL,
-    `due_date` date NOT NULL,
-    `total_amount` decimal(15,2) NOT NULL,
-    `discount_amount` decimal(15,2) NOT NULL DEFAULT '0.00',
-    `taxable_amount` decimal(15,2) NOT NULL DEFAULT '0.00',
-    `total_tax` decimal(15,2) NOT NULL DEFAULT '0.00',
-    `net_payable` decimal(15,2) NOT NULL,
-    `status` enum('Draft','Posted','Partially Paid','Paid','Cancelled') NOT NULL,
-    `journal_entry_id` bigint UNSIGNED DEFAULT NULL,
-    `created_at` timestamp NULL DEFAULT NULL,
-    `updated_at` timestamp NULL DEFAULT NULL,
-    `deleted_at` timestamp NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `sales_invoices_invoice_number_unique` (`invoice_number`),
-    KEY `sales_invoices_student_id_foreign` (`student_id`),
-    KEY `sales_invoices_academic_session_id_foreign` (`academic_session_id`),
-    KEY `sales_invoices_journal_entry_id_foreign` (`journal_entry_id`),
-    KEY `sales_invoices_status_index` (`status`),
-    CONSTRAINT `sales_invoices_journal_entry_id_foreign` 
-        FOREIGN KEY (`journal_entry_id`) REFERENCES `journal_entries` (`id`)
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-	-- 3.3 Purchase Invoices (Vendor Bills)
-	CREATE TABLE `acc_purchase_invoices` (
-    `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
-    `invoice_number` varchar(50) NOT NULL,
-    `vendor_id` bigint UNSIGNED NOT NULL,
-    `invoice_date` date NOT NULL,
-    `due_date` date NOT NULL,
-    `total_amount` decimal(15,2) NOT NULL,
-    `taxable_amount` decimal(15,2) NOT NULL DEFAULT '0.00',
-    `total_tax` decimal(15,2) NOT NULL DEFAULT '0.00',
-    `net_payable` decimal(15,2) NOT NULL,
-    `status` enum('Draft','Posted','Partially Paid','Paid','Cancelled') NOT NULL,
-    `journal_entry_id` bigint UNSIGNED DEFAULT NULL,
-    `created_at` timestamp NULL DEFAULT NULL,
-    `updated_at` timestamp NULL DEFAULT NULL,
-    `deleted_at` timestamp NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `purchase_invoices_invoice_number_unique` (`invoice_number`),
-    KEY `purchase_invoices_vendor_id_foreign` (`vendor_id`),
-    KEY `purchase_invoices_journal_entry_id_foreign` (`journal_entry_id`),
-    CONSTRAINT `purchase_invoices_journal_entry_id_foreign` 
-        FOREIGN KEY (`journal_entry_id`) REFERENCES `journal_entries` (`id`)
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-	-- 3.4 Invoice Tax Lines
-	CREATE TABLE `acc_invoice_tax_lines` (
-    `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
-    `source_invoice_type` enum('Sales','Purchase') NOT NULL,
-    `source_invoice_id` bigint UNSIGNED NOT NULL,
-    `tax_rate_id` bigint UNSIGNED NOT NULL,
-    `tax_amount` decimal(15,2) NOT NULL,
-    `created_at` timestamp NULL DEFAULT NULL,
-    `updated_at` timestamp NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    KEY `invoice_tax_lines_source_index` (`source_invoice_type`, `source_invoice_id`),
-    KEY `invoice_tax_lines_tax_rate_id_foreign` (`tax_rate_id`),
-    CONSTRAINT `invoice_tax_lines_tax_rate_id_foreign` 
-        FOREIGN KEY (`tax_rate_id`) REFERENCES `tax_rates` (`id`)
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-	-- 3.5 Invoice Items/Lines
-	CREATE TABLE `acc_invoice_lines` (
-    `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
-    `source_invoice_type` enum('Sales','Purchase') NOT NULL,
-    `source_invoice_id` bigint UNSIGNED NOT NULL,
-    `fee_head_id` bigint UNSIGNED DEFAULT NULL,
-    `description` varchar(255) NOT NULL,
-    `quantity` int NOT NULL DEFAULT '1',
-    `unit_price` decimal(15,2) NOT NULL,
-    `discount_percent` decimal(5,2) DEFAULT '0.00',
-    `discount_amount` decimal(15,2) DEFAULT '0.00',
-    `taxable_amount` decimal(15,2) NOT NULL,
-    `total_amount` decimal(15,2) NOT NULL,
-    `created_at` timestamp NULL DEFAULT NULL,
-    `updated_at` timestamp NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    KEY `invoice_lines_source_index` (`source_invoice_type`, `source_invoice_id`),
-    KEY `invoice_lines_fee_head_id_foreign` (`fee_head_id`),
-    CONSTRAINT `invoice_lines_fee_head_id_foreign` 
-        FOREIGN KEY (`fee_head_id`) REFERENCES `fee_heads` (`id`)
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-	-- 3.6 Payment Transactions (Gateway Logs)
-	CREATE TABLE `acc_payment_transactions` (
-    `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
-    `student_id` bigint UNSIGNED NOT NULL,
-    `invoice_id` bigint UNSIGNED NOT NULL,
-    `transaction_id` varchar(100) NOT NULL,
-    `gateway` varchar(50) NOT NULL,
-    `gateway_reference_id` varchar(100) DEFAULT NULL,
-    `amount` decimal(15,2) NOT NULL,
-    `payment_mode` enum('Online','Cash','Cheque','DD') NOT NULL,
-    `status` enum('Initiated','Success','Failed','Refunded') NOT NULL,
-    `request_payload` json DEFAULT NULL,
-    `response_payload` json DEFAULT NULL,
-    `created_at` timestamp NULL DEFAULT NULL,
-    `updated_at` timestamp NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `payment_transactions_transaction_id_unique` (`transaction_id`),
-    KEY `payment_transactions_student_id_foreign` (`student_id`),
-    KEY `payment_transactions_invoice_id_foreign` (`invoice_id`),
-    CONSTRAINT `payment_transactions_invoice_id_foreign` 
-        FOREIGN KEY (`invoice_id`) REFERENCES `sales_invoices` (`id`),
-    CONSTRAINT `payment_transactions_student_id_foreign` 
-        FOREIGN KEY (`student_id`) REFERENCES `students` (`id`)
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-	-- 3.7 Receipts
-	CREATE TABLE `acc_receipts` (
-    `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
-    `receipt_number` varchar(50) NOT NULL,
-    `journal_entry_id` bigint UNSIGNED NOT NULL,
-    `student_id` bigint UNSIGNED NOT NULL,
-    `receipt_date` date NOT NULL,
-    `amount` decimal(15,2) NOT NULL,
-    `payment_mode` enum('Cash','Cheque','DD','Online') NOT NULL,
-    `reference_number` varchar(50) DEFAULT NULL,
-    `bank_name` varchar(100) DEFAULT NULL,
-    `remarks` text,
-    `created_at` timestamp NULL DEFAULT NULL,
-    `updated_at` timestamp NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `receipts_receipt_number_unique` (`receipt_number`),
-    KEY `receipts_journal_entry_id_foreign` (`journal_entry_id`),
-    KEY `receipts_student_id_foreign` (`student_id`),
-    CONSTRAINT `receipts_journal_entry_id_foreign` 
-        FOREIGN KEY (`journal_entry_id`) REFERENCES `journal_entries` (`id`),
-    CONSTRAINT `receipts_student_id_foreign` 
-        FOREIGN KEY (`student_id`) REFERENCES `students` (`id`)
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-	-- =====================================================
-	-- PART 4: BUDGETING & COST CENTERS
-	-- =====================================================
-
-	-- 4.1 Cost Centers
-	CREATE TABLE `acc_cost_centers` (
-    `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
-    `name` varchar(100) NOT NULL,
-    `code` varchar(20) NOT NULL,
-    `is_active` tinyint(1) NOT NULL DEFAULT '1',
-    `created_at` timestamp NULL DEFAULT NULL,
-    `updated_at` timestamp NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `cost_centers_code_unique` (`code`)
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-	-- 4.2 Budgets
-	CREATE TABLE `acc_budgets` (
-    `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
-    `fiscal_year_id` bigint UNSIGNED NOT NULL,
-    `cost_center_id` bigint UNSIGNED NOT NULL,
-    `ledger_id` bigint UNSIGNED NOT NULL,
-    `amount` decimal(15,2) NOT NULL,
-    `created_at` timestamp NULL DEFAULT NULL,
-    `updated_at` timestamp NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `budgets_unique` (`fiscal_year_id`, `cost_center_id`, `ledger_id`),
-    KEY `budgets_cost_center_id_foreign` (`cost_center_id`),
-    KEY `budgets_ledger_id_foreign` (`ledger_id`),
-    CONSTRAINT `budgets_cost_center_id_foreign` 
-        FOREIGN KEY (`cost_center_id`) REFERENCES `cost_centers` (`id`),
-    CONSTRAINT `budgets_ledger_id_foreign` 
-        FOREIGN KEY (`ledger_id`) REFERENCES `ledgers` (`id`)
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-	-- =====================================================
-	-- PART 5: EXPENSE CLAIM MANAGEMENT
-	-- =====================================================
-
-	-- 5.1 Expense Claims
-	CREATE TABLE `acc_expense_claims` (
-    `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
-    `claim_number` varchar(50) NOT NULL,
-    `employee_id` bigint UNSIGNED NOT NULL,
-    `claim_date` date NOT NULL,
-    `total_amount` decimal(15,2) NOT NULL,
-    `status` enum('Draft','Submitted','Approved','Rejected','Paid') NOT NULL,
-    `approved_by` bigint UNSIGNED DEFAULT NULL,
-    `approved_at` timestamp NULL DEFAULT NULL,
-    `journal_entry_id` bigint UNSIGNED DEFAULT NULL,
-    `created_at` timestamp NULL DEFAULT NULL,
-    `updated_at` timestamp NULL DEFAULT NULL,
-    `deleted_at` timestamp NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `expense_claims_claim_number_unique` (`claim_number`),
-    KEY `expense_claims_employee_id_foreign` (`employee_id`),
-    KEY `expense_claims_journal_entry_id_foreign` (`journal_entry_id`),
-    CONSTRAINT `expense_claims_journal_entry_id_foreign` 
-        FOREIGN KEY (`journal_entry_id`) REFERENCES `journal_entries` (`id`)
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-	-- 5.2 Expense Claim Lines
-	CREATE TABLE `acc_expense_claim_lines` (
-    `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
-    `expense_claim_id` bigint UNSIGNED NOT NULL,
-    `expense_date` date NOT NULL,
-    `ledger_id` bigint UNSIGNED NOT NULL,
-    `description` varchar(255) NOT NULL,
-    `amount` decimal(15,2) NOT NULL,
-    `tax_amount` decimal(15,2) DEFAULT '0.00',
-    `receipt_path` varchar(255) DEFAULT NULL,
-    `created_at` timestamp NULL DEFAULT NULL,
-    `updated_at` timestamp NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    KEY `expense_claim_lines_claim_id_foreign` (`expense_claim_id`),
-    KEY `expense_claim_lines_ledger_id_foreign` (`ledger_id`),
-    CONSTRAINT `expense_claim_lines_claim_id_foreign` FOREIGN KEY (`expense_claim_id`) REFERENCES `expense_claims` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `expense_claim_lines_ledger_id_foreign` FOREIGN KEY (`ledger_id`) REFERENCES `ledgers` (`id`)
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-	-- =====================================================
-	-- PART 6: BANK RECONCILIATION
-	-- =====================================================
-
-	-- 6.1 Bank Reconciliation Statements
-	CREATE TABLE `acc_bank_reconciliations` (
-    `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
-    `ledger_id` bigint UNSIGNED NOT NULL,
-    `statement_date` date NOT NULL,
-    `closing_balance` decimal(15,2) NOT NULL,
-    `statement_path` varchar(255) DEFAULT NULL,
-    `status` enum('In Progress','Completed') NOT NULL DEFAULT 'In Progress',
-    `created_by` bigint UNSIGNED NOT NULL,
-    `created_at` timestamp NULL DEFAULT NULL,
-    `updated_at` timestamp NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    KEY `bank_reconciliations_ledger_id_foreign` (`ledger_id`),
-    CONSTRAINT `bank_reconciliations_ledger_id_foreign` FOREIGN KEY (`ledger_id`) REFERENCES `ledgers` (`id`)
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-	-- 6.2 Bank Transaction Matches
-	CREATE TABLE `acc_reconciliation_matches` (
-    `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
-    `bank_reconciliation_id` bigint UNSIGNED NOT NULL,
-    `journal_entry_line_id` bigint UNSIGNED NOT NULL,
-    `matched_date` date NOT NULL,
-    `matched_by` bigint UNSIGNED NOT NULL,
-    `created_at` timestamp NULL DEFAULT NULL,
-    `updated_at` timestamp NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `reconciliation_matches_unique` (`bank_reconciliation_id`, `journal_entry_line_id`),
-    KEY `reconciliation_matches_line_id_foreign` (`journal_entry_line_id`),
-    CONSTRAINT `reconciliation_matches_bank_reconciliation_id_foreign` FOREIGN KEY (`bank_reconciliation_id`) REFERENCES `bank_reconciliations` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `reconciliation_matches_line_id_foreign` FOREIGN KEY (`journal_entry_line_id`) REFERENCES `journal_entry_lines` (`id`)
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-	-- =====================================================
-	-- PART 7: FIXED ASSETS MANAGEMENT
-	-- =====================================================
-
-	-- 7.1 Asset Categories
-	CREATE TABLE `acc_asset_categories` (
-    `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
-    `name` varchar(100) NOT NULL,
-    `code` varchar(20) NOT NULL,
-    `depreciation_method` enum('SLM','WDV') NOT NULL,
-    `depreciation_rate` decimal(5,2) NOT NULL,
-    `useful_life_years` int DEFAULT NULL,
-    `is_active` tinyint(1) NOT NULL DEFAULT '1',
-    `created_at` timestamp NULL DEFAULT NULL,
-    `updated_at` timestamp NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `asset_categories_code_unique` (`code`)
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-	-- 7.2 Fixed Assets
-	CREATE TABLE `acc_fixed_assets` (
-    `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
-    `name` varchar(150) NOT NULL,
-    `asset_code` varchar(50) NOT NULL,
-    `asset_category_id` bigint UNSIGNED NOT NULL,
-    `purchase_date` date NOT NULL,
-    `purchase_cost` decimal(15,2) NOT NULL,
-    `salvage_value` decimal(15,2) DEFAULT '0.00',
-    `current_value` decimal(15,2) NOT NULL,
-    `accumulated_depreciation` decimal(15,2) NOT NULL DEFAULT '0.00',
-    `location` varchar(100) DEFAULT NULL,
-    `vendor_id` bigint UNSIGNED DEFAULT NULL,
-    `journal_entry_id` bigint UNSIGNED DEFAULT NULL,
-    `is_active` tinyint(1) NOT NULL DEFAULT '1',
-    `created_at` timestamp NULL DEFAULT NULL,
-    `updated_at` timestamp NULL DEFAULT NULL,
-    `deleted_at` timestamp NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `fixed_assets_asset_code_unique` (`asset_code`),
-    KEY `fixed_assets_asset_category_id_foreign` (`asset_category_id`),
-    KEY `fixed_assets_vendor_id_foreign` (`vendor_id`),
-    KEY `fixed_assets_journal_entry_id_foreign` (`journal_entry_id`),
-    CONSTRAINT `fixed_assets_asset_category_id_foreign` FOREIGN KEY (`asset_category_id`) REFERENCES `asset_categories` (`id`),
-    CONSTRAINT `fixed_assets_journal_entry_id_foreign` FOREIGN KEY (`journal_entry_id`) REFERENCES `journal_entries` (`id`)
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-	-- 7.3 Depreciation Entries
-	CREATE TABLE `acc_depreciation_entries` (
-    `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
-    `fixed_asset_id` bigint UNSIGNED NOT NULL,
-    `fiscal_year_id` bigint UNSIGNED NOT NULL,
-    `depreciation_date` date NOT NULL,
-    `depreciation_amount` decimal(15,2) NOT NULL,
-    `journal_entry_id` bigint UNSIGNED DEFAULT NULL,
-    `created_at` timestamp NULL DEFAULT NULL,
-    `updated_at` timestamp NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    KEY `depreciation_entries_asset_id_foreign` (`fixed_asset_id`),
-    KEY `depreciation_entries_fiscal_year_id_foreign` (`fiscal_year_id`),
-    KEY `depreciation_entries_journal_entry_id_foreign` (`journal_entry_id`),
-    CONSTRAINT `depreciation_entries_asset_id_foreign` FOREIGN KEY (`fixed_asset_id`) REFERENCES `fixed_assets` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `depreciation_entries_fiscal_year_id_foreign` FOREIGN KEY (`fiscal_year_id`) REFERENCES `fiscal_years` (`id`),
-    CONSTRAINT `depreciation_entries_journal_entry_id_foreign` FOREIGN KEY (`journal_entry_id`) REFERENCES `journal_entries` (`id`)
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-	-- =====================================================
-	-- PART 8: DATA EXPORT (TALLY)
-	-- =====================================================
-
-	-- 8.1 Tally Export Logs
-	CREATE TABLE `acc_tally_export_logs` (
-    `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
-    `export_type` enum('Ledgers','Journal_Vouchers','Inventory') NOT NULL,
-    `export_date` datetime NOT NULL,
-    `file_name` varchar(255) NOT NULL,
-    `exported_by` bigint UNSIGNED NOT NULL,
-    `start_date` date DEFAULT NULL,
-    `end_date` date DEFAULT NULL,
-    `status` enum('Success','Failed','Partial') NOT NULL,
-    `error_log` text,
-    `created_at` timestamp NULL DEFAULT NULL,
-    `updated_at` timestamp NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    KEY `tally_export_logs_exported_by_foreign` (`exported_by`)
+  -- ---------------------------------------------------------
+  -- DOMAIN 1: CORE ACCOUNTING (12 tables)
+  -- ---------------------------------------------------------
+  -- 1. Financial Years
+  CREATE TABLE IF NOT EXISTS `acc_financial_years` (
+      `id`            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `name`          VARCHAR(50) NOT NULL COMMENT 'e.g., 2025-26',
+      `start_date`    DATE NOT NULL COMMENT 'Financial year start (April 1)',
+      `end_date`      DATE NOT NULL COMMENT 'Financial year end (March 31)',
+      `is_locked`     TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Prevents edits when locked',
+      `is_active`     TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Soft active flag',
+      `created_by`    BIGINT UNSIGNED NULL COMMENT 'FK → sys_users',
+      `created_at`    TIMESTAMP NULL DEFAULT NULL,
+      `updated_at`    TIMESTAMP NULL DEFAULT NULL,
+      `deleted_at`    TIMESTAMP NULL DEFAULT NULL,
+      PRIMARY KEY (`id`),
+      INDEX `idx_acc_fy_active` (`is_active`),
+      INDEX `idx_acc_fy_dates` (`start_date`, `end_date`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-  -- =====================================================
-  -- INDEXES FOR PERFORMANCE
-  -- =====================================================
+  -- 2. Account Groups (Tally's 28 predefined + custom)
+  CREATE TABLE IF NOT EXISTS `acc_account_groups` (
+      `id`                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `name`                  VARCHAR(100) NOT NULL COMMENT 'Group name',
+      `code`                  VARCHAR(20) NOT NULL COMMENT 'Unique group code e.g., A01, L02',
+      `alias`                 VARCHAR(100) NULL COMMENT 'Alternative display name',
+      `parent_id`             BIGINT UNSIGNED NULL COMMENT 'Self-referencing for hierarchy',
+      `nature`                ENUM('asset','liability','income','expense') NOT NULL COMMENT 'Account nature',
+      `affects_gross_profit`  TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Direct vs Indirect classification',
+      `is_system`             TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'true = seeded, cannot delete',
+      `is_subledger`          TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Behaves as sub-ledger',
+      `sequence`              INT NOT NULL DEFAULT 0 COMMENT 'Display order in reports',
+      `is_active`             TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Soft active flag',
+      `created_by`            BIGINT UNSIGNED NULL COMMENT 'FK → sys_users',
+      `created_at`            TIMESTAMP NULL DEFAULT NULL,
+      `updated_at`            TIMESTAMP NULL DEFAULT NULL,
+      `deleted_at`            TIMESTAMP NULL DEFAULT NULL,
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `uq_acc_ag_code` (`code`, `deleted_at`),
+      INDEX `idx_acc_ag_parent` (`parent_id`),
+      INDEX `idx_acc_ag_nature` (`nature`),
+      INDEX `idx_acc_ag_system` (`is_system`),
+      CONSTRAINT `fk_acc_ag_parent` FOREIGN KEY (`parent_id`) REFERENCES `acc_account_groups` (`id`) ON DELETE SET NULL
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  -- Conditions:
+  -- If `is_system` = 1, then that ledger cannot be deleted. This is for critical groups like Current Assets, Direct Expenses, etc. that are essential for system integrity.
 
-  -- Additional indexes for better query performance
-  CREATE INDEX idx_journal_entries_composite ON journal_entries(entry_date, fiscal_year_id, approval_status);
-  CREATE INDEX idx_journal_lines_ledger_date ON journal_entry_lines(ledger_id, created_at);
-  CREATE INDEX idx_sales_invoices_student_status ON sales_invoices(student_id, status);
-  CREATE INDEX idx_sales_invoices_due_date ON sales_invoices(due_date) WHERE status IN ('Posted', 'Partially Paid');
-  CREATE INDEX idx_payment_transactions_status ON payment_transactions(status, created_at);
-  CREATE INDEX idx_receipts_date ON receipts(receipt_date);
+  -- 3. Ledgers (Individual accounts)
+  CREATE TABLE IF NOT EXISTS `acc_ledgers` (
+      `id`                        BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `name`                      VARCHAR(150) NOT NULL COMMENT 'Ledger name',
+      `code`                      VARCHAR(20) NULL COMMENT 'Unique ledger code',
+      `alias`                     VARCHAR(150) NULL COMMENT 'Alternative name',
+      `account_group_id`          BIGINT UNSIGNED NOT NULL COMMENT 'FK → acc_account_groups',
+      `opening_balance`           DECIMAL(15,2) NOT NULL DEFAULT 0.00 COMMENT 'Opening balance amount',
+      `opening_balance_type`      ENUM('Dr','Cr') NULL COMMENT 'Debit or Credit opening',
+      `is_bank_account`           TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Bank account flag',
+      `bank_name`                 VARCHAR(100) NULL COMMENT 'Bank name if bank account',
+      `bank_account_number`       VARCHAR(50) NULL COMMENT 'Bank account number',
+      `ifsc_code`                 VARCHAR(20) NULL COMMENT 'Bank IFSC code',
+      `is_cash_account`           TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Cash account flag',
+      `allow_reconciliation`      TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Enable bank reconciliation',
+      `is_system`                 TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'P&L A/c, Cash A/c etc. — cannot delete',
+      `student_id`                BIGINT UNSIGNED NULL COMMENT 'FK → std_students (auto-ledger for student debtors)',
+      `employee_id`               BIGINT UNSIGNED NULL COMMENT 'FK → sch_employees (auto-ledger for salary payable)',
+      `vendor_id`                 BIGINT UNSIGNED NULL COMMENT 'FK → vnd_vendors (auto-ledger for vendor creditors)',
+      `gst_registration_type`     VARCHAR(30) NULL COMMENT 'Regular, Composition, etc.',
+      `gstin`                     VARCHAR(20) NULL COMMENT 'GST number',
+      `pan`                       VARCHAR(15) NULL COMMENT 'PAN number',
+      `address`                   TEXT NULL COMMENT 'Ledger address',
+      `is_active`                 TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Soft active flag',
+      `created_by`                BIGINT UNSIGNED NULL COMMENT 'FK → sys_users',
+      `created_at`                TIMESTAMP NULL DEFAULT NULL,
+      `updated_at`                TIMESTAMP NULL DEFAULT NULL,
+      `deleted_at`                TIMESTAMP NULL DEFAULT NULL,
+      PRIMARY KEY (`id`),
+      INDEX `idx_acc_ledger_group` (`account_group_id`),
+      INDEX `idx_acc_ledger_student` (`student_id`),
+      INDEX `idx_acc_ledger_employee` (`employee_id`),
+      INDEX `idx_acc_ledger_vendor` (`vendor_id`),
+      INDEX `idx_acc_ledger_bank` (`is_bank_account`),
+      INDEX `idx_acc_ledger_active` (`is_active`),
+      CONSTRAINT `fk_acc_ledger_group` FOREIGN KEY (`account_group_id`) REFERENCES `acc_account_groups` (`id`) ON DELETE RESTRICT
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  -- Conditions:
+  -- If `is_system` = 1, then that ledger cannot be deleted. This is for critical ledgers like Cash Account, Profit & Loss Account, etc. that are essential for system integrity.
+
+  -- 4. Voucher Types
+  CREATE TABLE IF NOT EXISTS `acc_voucher_types` (
+      `id`                BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `name`              VARCHAR(80) NOT NULL COMMENT 'e.g., Payment Voucher',
+      `code`              VARCHAR(20) NOT NULL COMMENT 'PAYMENT, RECEIPT, CONTRA, JOURNAL, etc.',
+      `category`          ENUM('accounting','inventory','payroll','order') NOT NULL COMMENT 'Domain category',
+      `prefix`            VARCHAR(20) NULL COMMENT 'Voucher number prefix e.g., PAY-, RCV-',
+      `auto_numbering`    TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Auto-increment enabled',
+      `last_number`       INT NOT NULL DEFAULT 0 COMMENT 'Current voucher counter',
+      `is_system`         TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Cannot delete seeded types',
+      `is_active`         TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Soft active flag',
+      `created_by`        BIGINT UNSIGNED NULL COMMENT 'FK → sys_users',
+      `created_at`        TIMESTAMP NULL DEFAULT NULL,
+      `updated_at`        TIMESTAMP NULL DEFAULT NULL,
+      `deleted_at`        TIMESTAMP NULL DEFAULT NULL,
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `uq_acc_vt_code` (`code`, `deleted_at`),
+      INDEX `idx_acc_vt_category` (`category`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  -- Conditions:
+  -- If `is_system` = 1, then that voucher type cannot be deleted.
+
+  -- 5. Vouchers (THE HEART — every transaction is a voucher)
+  CREATE TABLE IF NOT EXISTS `acc_vouchers` (
+      `id`                BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `voucher_number`    VARCHAR(50) NOT NULL COMMENT 'Auto-generated, unique per FY',
+      `voucher_type_id`   BIGINT UNSIGNED NOT NULL COMMENT 'FK → acc_voucher_types',
+      `financial_year_id` BIGINT UNSIGNED NOT NULL COMMENT 'FK → acc_financial_years',
+      `date`              DATE NOT NULL COMMENT 'Transaction date',
+      `reference_number`  VARCHAR(100) NULL COMMENT 'Cheque no, receipt no, etc.',
+      `reference_date`    DATE NULL COMMENT 'Cheque date, etc.',
+      `narration`         TEXT NULL COMMENT 'Transaction description',
+      `total_amount`      DECIMAL(15,2) NOT NULL COMMENT 'Total voucher amount',
+      `is_post_dated`     TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Post-dated cheque flag',
+      `is_optional`       TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Memorandum voucher',
+      `is_cancelled`      TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Cancelled flag',
+      `cancelled_reason`  TEXT NULL COMMENT 'Cancellation reason',
+      `cost_center_id`    BIGINT UNSIGNED NULL COMMENT 'FK → acc_cost_centers (header-level)',
+      `source_module`     ENUM('Fees','Library','Transport','HR','Vendor','Inventory','Payroll','Manual') NULL COMMENT 'Source module for integration',
+      `source_type`       VARCHAR(100) NULL COMMENT 'Polymorphic model: PayrollRun, FeeTransaction, GRN, etc.',
+      `source_id`         BIGINT UNSIGNED NULL COMMENT 'Polymorphic source ID',
+      `status`            ENUM('draft','posted','approved','cancelled') NOT NULL DEFAULT 'draft' COMMENT 'Voucher workflow status',
+      `approved_by`       BIGINT UNSIGNED NULL COMMENT 'FK → sys_users (approver)',
+      `is_active`         TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Soft active flag',
+      `created_by`        BIGINT UNSIGNED NULL COMMENT 'FK → sys_users',
+      `created_at`        TIMESTAMP NULL DEFAULT NULL,
+      `updated_at`        TIMESTAMP NULL DEFAULT NULL,
+      `deleted_at`        TIMESTAMP NULL DEFAULT NULL,
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `uq_acc_voucher_number_fy` (`voucher_number`, `financial_year_id`, `deleted_at`),
+      INDEX `idx_acc_voucher_type` (`voucher_type_id`),
+      INDEX `idx_acc_voucher_fy` (`financial_year_id`),
+      INDEX `idx_acc_voucher_date` (`date`),
+      INDEX `idx_acc_voucher_status` (`status`),
+      INDEX `idx_acc_voucher_source` (`source_module`, `source_type`, `source_id`),
+      INDEX `idx_acc_voucher_cost` (`cost_center_id`),
+      CONSTRAINT `fk_acc_voucher_type` FOREIGN KEY (`voucher_type_id`) REFERENCES `acc_voucher_types` (`id`) ON DELETE RESTRICT,
+      CONSTRAINT `fk_acc_voucher_fy` FOREIGN KEY (`financial_year_id`) REFERENCES `acc_financial_years` (`id`) ON DELETE RESTRICT,
+      CONSTRAINT `fk_acc_voucher_cost` FOREIGN KEY (`cost_center_id`) REFERENCES `acc_cost_centers` (`id`) ON DELETE SET NULL
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  -- Conditions:
+  -- If `is_optional` = 1, then that transaction should be consider in financial reports but should not be posted to ledgers until explicitly approved and marked as non-optional. 
+  -- This allows creating draft vouchers for future transactions or estimates without affecting current financials.
+
+  -- 6. Voucher Items (Dr/Cr line items)
+  CREATE TABLE IF NOT EXISTS `acc_voucher_items` (
+      `id`                BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `voucher_id`        BIGINT UNSIGNED NOT NULL COMMENT 'FK → acc_vouchers',
+      `ledger_id`         BIGINT UNSIGNED NOT NULL COMMENT 'FK → acc_ledgers',
+      `type`              ENUM('debit','credit') NOT NULL COMMENT 'Dr or Cr entry',
+      `amount`            DECIMAL(15,2) NOT NULL COMMENT 'Line item amount',
+      `narration`         VARCHAR(500) NULL COMMENT 'Per-ledger narration',
+      `cost_center_id`    BIGINT UNSIGNED NULL COMMENT 'FK → acc_cost_centers (line-level override)',
+      `bill_reference`    VARCHAR(100) NULL COMMENT 'Against invoice/bill reference',
+      `is_active`         TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Soft active flag',
+      `created_by`        BIGINT UNSIGNED NULL COMMENT 'FK → sys_users',
+      `created_at`        TIMESTAMP NULL DEFAULT NULL,
+      `updated_at`        TIMESTAMP NULL DEFAULT NULL,
+      `deleted_at`        TIMESTAMP NULL DEFAULT NULL,
+      PRIMARY KEY (`id`),
+      INDEX `idx_acc_vi_voucher` (`voucher_id`),
+      INDEX `idx_acc_vi_ledger` (`ledger_id`),
+      INDEX `idx_acc_vi_type` (`type`),
+      INDEX `idx_acc_vi_cost` (`cost_center_id`),
+      CONSTRAINT `fk_acc_vi_voucher` FOREIGN KEY (`voucher_id`) REFERENCES `acc_vouchers` (`id`) ON DELETE CASCADE,
+      CONSTRAINT `fk_acc_vi_ledger` FOREIGN KEY (`ledger_id`) REFERENCES `acc_ledgers` (`id`) ON DELETE RESTRICT,
+      CONSTRAINT `fk_acc_vi_cost` FOREIGN KEY (`cost_center_id`) REFERENCES `acc_cost_centers` (`id`) ON DELETE SET NULL
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+  -- 7. Cost Centers (Department/Wing/Activity)
+  CREATE TABLE IF NOT EXISTS `acc_cost_centers` (
+      `id`            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `name`          VARCHAR(100) NOT NULL COMMENT 'e.g., Primary Wing, Transport',
+      `code`          VARCHAR(20) NULL COMMENT 'Cost center code',
+      `parent_id`     BIGINT UNSIGNED NULL COMMENT 'Self-referencing hierarchy',
+      `category`      VARCHAR(50) NULL COMMENT 'Department, Activity, Project',
+      `is_active`     TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Soft active flag',
+      `created_by`    BIGINT UNSIGNED NULL COMMENT 'FK → sys_users',
+      `created_at`    TIMESTAMP NULL DEFAULT NULL,
+      `updated_at`    TIMESTAMP NULL DEFAULT NULL,
+      `deleted_at`    TIMESTAMP NULL DEFAULT NULL,
+      PRIMARY KEY (`id`),
+      INDEX `idx_acc_cc_parent` (`parent_id`),
+      CONSTRAINT `fk_acc_cc_parent` FOREIGN KEY (`parent_id`) REFERENCES `acc_cost_centers` (`id`) ON DELETE SET NULL
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+  -- 8. Budgets
+  CREATE TABLE IF NOT EXISTS `acc_budgets` (
+      `id`                BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `financial_year_id` BIGINT UNSIGNED NOT NULL COMMENT 'FK → acc_financial_years',
+      `cost_center_id`    BIGINT UNSIGNED NOT NULL COMMENT 'FK → acc_cost_centers',
+      `ledger_id`         BIGINT UNSIGNED NOT NULL COMMENT 'FK → acc_ledgers',
+      `budgeted_amount`   DECIMAL(15,2) NOT NULL DEFAULT 0.00 COMMENT 'Allocated budget amount',
+      `is_active`         TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Soft active flag',
+      `created_by`        BIGINT UNSIGNED NULL COMMENT 'FK → sys_users',
+      `created_at`        TIMESTAMP NULL DEFAULT NULL,
+      `updated_at`        TIMESTAMP NULL DEFAULT NULL,
+      `deleted_at`        TIMESTAMP NULL DEFAULT NULL,
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `uq_acc_budget` (`financial_year_id`, `cost_center_id`, `ledger_id`),
+      INDEX `idx_acc_budget_cc` (`cost_center_id`),
+      INDEX `idx_acc_budget_ledger` (`ledger_id`),
+      CONSTRAINT `fk_acc_budget_fy` FOREIGN KEY (`financial_year_id`) REFERENCES `acc_financial_years` (`id`) ON DELETE RESTRICT,
+      CONSTRAINT `fk_acc_budget_cc` FOREIGN KEY (`cost_center_id`) REFERENCES `acc_cost_centers` (`id`) ON DELETE RESTRICT,
+      CONSTRAINT `fk_acc_budget_ledger` FOREIGN KEY (`ledger_id`) REFERENCES `acc_ledgers` (`id`) ON DELETE RESTRICT
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+  -- 9. Tax Rates
+  CREATE TABLE IF NOT EXISTS `acc_tax_rates` (
+      `id`            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `name`          VARCHAR(100) NOT NULL COMMENT 'e.g., CGST 9%',
+      `rate`          DECIMAL(5,2) NOT NULL COMMENT 'Tax rate percentage',
+      `type`          ENUM('CGST','SGST','IGST','Cess') NOT NULL COMMENT 'Tax type',
+      `hsn_sac_code`  VARCHAR(20) NULL COMMENT 'HSN/SAC code',
+      `is_interstate` TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Interstate supply flag',
+      `is_active`     TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Soft active flag',
+      `created_by`    BIGINT UNSIGNED NULL COMMENT 'FK → sys_users',
+      `created_at`    TIMESTAMP NULL DEFAULT NULL,
+      `updated_at`    TIMESTAMP NULL DEFAULT NULL,
+      `deleted_at`    TIMESTAMP NULL DEFAULT NULL,
+      PRIMARY KEY (`id`),
+      INDEX `idx_acc_tax_type` (`type`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+  -- 10. Ledger Mappings (Cross-module)
+  CREATE TABLE IF NOT EXISTS `acc_ledger_mappings` (
+      `id`            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `ledger_id`     BIGINT UNSIGNED NOT NULL COMMENT 'FK → acc_ledgers',
+      `source_module` ENUM('Fees','Library','Transport','HR','Vendor','Inventory','Payroll') NOT NULL COMMENT 'Source module',
+      `source_type`   VARCHAR(100) NULL COMMENT 'e.g., FeeHead, PayHead, Route, Stoppage',
+      `source_id`     BIGINT UNSIGNED NOT NULL COMMENT 'Source entity ID',
+      `description`   VARCHAR(255) NULL COMMENT 'Human-readable mapping description',
+      `is_active`     TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Soft active flag',
+      `created_by`    BIGINT UNSIGNED NULL COMMENT 'FK → sys_users',
+      `created_at`    TIMESTAMP NULL DEFAULT NULL,
+      `updated_at`    TIMESTAMP NULL DEFAULT NULL,
+      `deleted_at`    TIMESTAMP NULL DEFAULT NULL,
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `uq_acc_lm_combo` (`ledger_id`, `source_module`, `source_type`, `source_id`),
+      INDEX `idx_acc_lm_source` (`source_module`, `source_type`, `source_id`),
+      CONSTRAINT `fk_acc_lm_ledger` FOREIGN KEY (`ledger_id`) REFERENCES `acc_ledgers` (`id`) ON DELETE RESTRICT
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+  -- 11. Recurring Templates
+  CREATE TABLE IF NOT EXISTS `acc_recurring_templates` (
+      `id`                BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `name`              VARCHAR(150) NOT NULL COMMENT 'Template name',
+      `voucher_type_id`   BIGINT UNSIGNED NOT NULL COMMENT 'FK → acc_voucher_types',
+      `frequency`         ENUM('Daily','Weekly','Monthly','Quarterly','Yearly') NOT NULL COMMENT 'Recurrence frequency',
+      `start_date`        DATE NOT NULL COMMENT 'Start posting from',
+      `end_date`          DATE NULL COMMENT 'Stop posting after (NULL = indefinite)',
+      `day_of_month`      TINYINT NULL COMMENT 'Day to post for monthly frequency',
+      `narration`         TEXT NULL COMMENT 'Default narration for generated vouchers',
+      `total_amount`      DECIMAL(15,2) NOT NULL COMMENT 'Template total (must balance Dr=Cr)',
+      `last_posted_date`  DATE NULL COMMENT 'Last auto-post date',
+      `is_active`         TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Soft active flag',
+      `created_by`        BIGINT UNSIGNED NULL COMMENT 'FK → sys_users',
+      `created_at`        TIMESTAMP NULL DEFAULT NULL,
+      `updated_at`        TIMESTAMP NULL DEFAULT NULL,
+      `deleted_at`        TIMESTAMP NULL DEFAULT NULL,
+      PRIMARY KEY (`id`),
+      INDEX `idx_acc_rt_type` (`voucher_type_id`),
+      CONSTRAINT `fk_acc_rt_type` FOREIGN KEY (`voucher_type_id`) REFERENCES `acc_voucher_types` (`id`) ON DELETE RESTRICT
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+  -- 12. Recurring Template Lines
+  CREATE TABLE IF NOT EXISTS `acc_recurring_template_lines` (
+      `id`                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `recurring_template_id` BIGINT UNSIGNED NOT NULL COMMENT 'FK → acc_recurring_templates',
+      `ledger_id`             BIGINT UNSIGNED NOT NULL COMMENT 'FK → acc_ledgers',
+      `type`                  ENUM('debit','credit') NOT NULL COMMENT 'Dr or Cr',
+      `amount`                DECIMAL(15,2) NOT NULL COMMENT 'Line amount',
+      `narration`             VARCHAR(500) NULL COMMENT 'Per-line narration',
+      `is_active`             TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Soft active flag',
+      `created_by`            BIGINT UNSIGNED NULL COMMENT 'FK → sys_users',
+      `created_at`            TIMESTAMP NULL DEFAULT NULL,
+      `updated_at`            TIMESTAMP NULL DEFAULT NULL,
+      `deleted_at`            TIMESTAMP NULL DEFAULT NULL,
+      PRIMARY KEY (`id`),
+      INDEX `idx_acc_rtl_template` (`recurring_template_id`),
+      INDEX `idx_acc_rtl_ledger` (`ledger_id`),
+      CONSTRAINT `fk_acc_rtl_template` FOREIGN KEY (`recurring_template_id`) REFERENCES `acc_recurring_templates` (`id`) ON DELETE CASCADE,
+      CONSTRAINT `fk_acc_rtl_ledger` FOREIGN KEY (`ledger_id`) REFERENCES `acc_ledgers` (`id`) ON DELETE RESTRICT
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+  -- ---------------------------------------------------------
+  -- DOMAIN 2: BANKING (2 tables)
+  -- ---------------------------------------------------------
+
+  -- 13. Bank Reconciliations
+  CREATE TABLE IF NOT EXISTS `acc_bank_reconciliations` (
+      `id`                BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `ledger_id`         BIGINT UNSIGNED NOT NULL COMMENT 'FK → acc_ledgers (bank account)',
+      `statement_date`    DATE NOT NULL COMMENT 'Bank statement date',
+      `closing_balance`   DECIMAL(15,2) NOT NULL COMMENT 'Closing balance per bank statement',
+      `statement_path`    VARCHAR(255) NULL COMMENT 'Uploaded statement file path',
+      `status`            ENUM('In Progress','Completed') NOT NULL DEFAULT 'In Progress' COMMENT 'Reconciliation status',
+      `is_active`         TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Soft active flag',
+      `created_by`        BIGINT UNSIGNED NULL COMMENT 'FK → sys_users',
+      `created_at`        TIMESTAMP NULL DEFAULT NULL,
+      `updated_at`        TIMESTAMP NULL DEFAULT NULL,
+      `deleted_at`        TIMESTAMP NULL DEFAULT NULL,
+      PRIMARY KEY (`id`),
+      INDEX `idx_acc_br_ledger` (`ledger_id`),
+      INDEX `idx_acc_br_date` (`statement_date`),
+      CONSTRAINT `fk_acc_br_ledger` FOREIGN KEY (`ledger_id`) REFERENCES `acc_ledgers` (`id`) ON DELETE RESTRICT
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+  -- 14. Bank Statement Entries
+  CREATE TABLE IF NOT EXISTS `acc_bank_statement_entries` (
+      `id`                        BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `reconciliation_id`         BIGINT UNSIGNED NOT NULL COMMENT 'FK → acc_bank_reconciliations',
+      `transaction_date`          DATE NOT NULL COMMENT 'Bank transaction date',
+      `description`               VARCHAR(500) NULL COMMENT 'Transaction description from bank',
+      `reference`                 VARCHAR(255) NULL COMMENT 'Bank reference number',
+      `debit`                     DECIMAL(15,2) NOT NULL DEFAULT 0.00 COMMENT 'Debit amount (withdrawal)',
+      `credit`                    DECIMAL(15,2) NOT NULL DEFAULT 0.00 COMMENT 'Credit amount (deposit)',
+      `balance`                   DECIMAL(15,2) NULL COMMENT 'Running balance per statement',
+      `is_matched`                TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Whether matched to a voucher item',
+      `matched_voucher_item_id`   BIGINT UNSIGNED NULL COMMENT 'FK → acc_voucher_items (matched entry)',
+      `matched_at`                TIMESTAMP NULL COMMENT 'When the match was made',
+      `matched_by`                BIGINT UNSIGNED NULL COMMENT 'FK → sys_users (who matched)',
+      `is_active`                 TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Soft active flag',
+      `created_by`                BIGINT UNSIGNED NULL COMMENT 'FK → sys_users',
+      `created_at`                TIMESTAMP NULL DEFAULT NULL,
+      `updated_at`                TIMESTAMP NULL DEFAULT NULL,
+      `deleted_at`                TIMESTAMP NULL DEFAULT NULL,
+      PRIMARY KEY (`id`),
+      INDEX `idx_acc_bse_recon` (`reconciliation_id`),
+      INDEX `idx_acc_bse_matched` (`is_matched`),
+      INDEX `idx_acc_bse_vi` (`matched_voucher_item_id`),
+      INDEX `idx_acc_bse_date` (`transaction_date`),
+      CONSTRAINT `fk_acc_bse_recon` FOREIGN KEY (`reconciliation_id`) REFERENCES `acc_bank_reconciliations` (`id`) ON DELETE CASCADE,
+      CONSTRAINT `fk_acc_bse_vi` FOREIGN KEY (`matched_voucher_item_id`) REFERENCES `acc_voucher_items` (`id`) ON DELETE SET NULL
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+  -- ---------------------------------------------------------
+  -- DOMAIN 3: FIXED ASSETS (3 tables)
+  -- ---------------------------------------------------------
+
+  -- 15. Asset Categories
+  CREATE TABLE IF NOT EXISTS `acc_asset_categories` (
+      `id`                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `name`                  VARCHAR(100) NOT NULL COMMENT 'Category name e.g., Furniture',
+      `code`                  VARCHAR(20) NOT NULL COMMENT 'Category code',
+      `depreciation_method`   ENUM('SLM','WDV') NOT NULL COMMENT 'Straight Line / Written Down Value',
+      `depreciation_rate`     DECIMAL(5,2) NOT NULL COMMENT 'Annual depreciation rate %',
+      `useful_life_years`     INT NULL COMMENT 'Useful life in years',
+      `is_active`             TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Soft active flag',
+      `created_by`            BIGINT UNSIGNED NULL COMMENT 'FK → sys_users',
+      `created_at`            TIMESTAMP NULL DEFAULT NULL,
+      `updated_at`            TIMESTAMP NULL DEFAULT NULL,
+      `deleted_at`            TIMESTAMP NULL DEFAULT NULL,
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `uq_acc_assetcat_code` (`code`, `deleted_at`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+  -- 16. Fixed Assets
+  CREATE TABLE IF NOT EXISTS `acc_fixed_assets` (
+      `id`                        BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `name`                      VARCHAR(150) NOT NULL COMMENT 'Asset name',
+      `asset_code`                VARCHAR(50) NOT NULL COMMENT 'Asset identification code',
+      `asset_category_id`         BIGINT UNSIGNED NOT NULL COMMENT 'FK → acc_asset_categories',
+      `purchase_date`             DATE NOT NULL COMMENT 'Date of purchase',
+      `purchase_cost`             DECIMAL(15,2) NOT NULL COMMENT 'Original purchase cost',
+      `salvage_value`             DECIMAL(15,2) NOT NULL DEFAULT 0.00 COMMENT 'Estimated residual value',
+      `current_value`             DECIMAL(15,2) NOT NULL COMMENT 'Current book value',
+      `accumulated_depreciation`  DECIMAL(15,2) NOT NULL DEFAULT 0.00 COMMENT 'Total depreciation to date',
+      `location`                  VARCHAR(100) NULL COMMENT 'Physical location of asset',
+      `vendor_id`                 BIGINT UNSIGNED NULL COMMENT 'FK → vnd_vendors (supplier)',
+      `voucher_id`                BIGINT UNSIGNED NULL COMMENT 'FK → acc_vouchers (purchase voucher)',
+      `is_active`                 TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Soft active flag',
+      `created_by`                BIGINT UNSIGNED NULL COMMENT 'FK → sys_users',
+      `created_at`                TIMESTAMP NULL DEFAULT NULL,
+      `updated_at`                TIMESTAMP NULL DEFAULT NULL,
+      `deleted_at`                TIMESTAMP NULL DEFAULT NULL,
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `uq_acc_fa_code` (`asset_code`, `deleted_at`),
+      INDEX `idx_acc_fa_category` (`asset_category_id`),
+      INDEX `idx_acc_fa_vendor` (`vendor_id`),
+      INDEX `idx_acc_fa_voucher` (`voucher_id`),
+      CONSTRAINT `fk_acc_fa_category` FOREIGN KEY (`asset_category_id`) REFERENCES `acc_asset_categories` (`id`) ON DELETE RESTRICT,
+      CONSTRAINT `fk_acc_fa_voucher` FOREIGN KEY (`voucher_id`) REFERENCES `acc_vouchers` (`id`) ON DELETE SET NULL
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+  -- 17. Depreciation Entries
+  CREATE TABLE IF NOT EXISTS `acc_depreciation_entries` (
+      `id`                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `fixed_asset_id`        BIGINT UNSIGNED NOT NULL COMMENT 'FK → acc_fixed_assets',
+      `financial_year_id`     BIGINT UNSIGNED NOT NULL COMMENT 'FK → acc_financial_years',
+      `depreciation_date`     DATE NOT NULL COMMENT 'Date of depreciation entry',
+      `depreciation_amount`   DECIMAL(15,2) NOT NULL COMMENT 'Depreciation amount for this period',
+      `voucher_id`            BIGINT UNSIGNED NULL COMMENT 'FK → acc_vouchers (depreciation journal)',
+      `is_active`             TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Soft active flag',
+      `created_by`            BIGINT UNSIGNED NULL COMMENT 'FK → sys_users',
+      `created_at`            TIMESTAMP NULL DEFAULT NULL,
+      `updated_at`            TIMESTAMP NULL DEFAULT NULL,
+      `deleted_at`            TIMESTAMP NULL DEFAULT NULL,
+      PRIMARY KEY (`id`),
+      INDEX `idx_acc_de_asset` (`fixed_asset_id`),
+      INDEX `idx_acc_de_fy` (`financial_year_id`),
+      INDEX `idx_acc_de_voucher` (`voucher_id`),
+      CONSTRAINT `fk_acc_de_asset` FOREIGN KEY (`fixed_asset_id`) REFERENCES `acc_fixed_assets` (`id`) ON DELETE CASCADE,
+      CONSTRAINT `fk_acc_de_fy` FOREIGN KEY (`financial_year_id`) REFERENCES `acc_financial_years` (`id`) ON DELETE RESTRICT,
+      CONSTRAINT `fk_acc_de_voucher` FOREIGN KEY (`voucher_id`) REFERENCES `acc_vouchers` (`id`) ON DELETE SET NULL
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+  -- ---------------------------------------------------------
+  -- DOMAIN 4: EXPENSE CLAIMS (2 tables)
+  -- ---------------------------------------------------------
+
+  -- 18. Expense Claims
+  CREATE TABLE IF NOT EXISTS `acc_expense_claims` (
+      `id`            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `claim_number`  VARCHAR(50) NOT NULL COMMENT 'Auto-generated claim number',
+      `employee_id`   BIGINT UNSIGNED NOT NULL COMMENT 'FK → sch_employees (existing table)',
+      `claim_date`    DATE NOT NULL COMMENT 'Date of claim submission',
+      `total_amount`  DECIMAL(15,2) NOT NULL COMMENT 'Total claim amount',
+      `status`        ENUM('Draft','Submitted','Approved','Rejected','Paid') NOT NULL DEFAULT 'Draft' COMMENT 'Claim workflow status',
+      `approved_by`   BIGINT UNSIGNED NULL COMMENT 'FK → sys_users',
+      `approved_at`   TIMESTAMP NULL COMMENT 'Approval timestamp',
+      `voucher_id`    BIGINT UNSIGNED NULL COMMENT 'FK → acc_vouchers (payment voucher on approval)',
+      `is_active`     TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Soft active flag',
+      `created_by`    BIGINT UNSIGNED NULL COMMENT 'FK → sys_users',
+      `created_at`    TIMESTAMP NULL DEFAULT NULL,
+      `updated_at`    TIMESTAMP NULL DEFAULT NULL,
+      `deleted_at`    TIMESTAMP NULL DEFAULT NULL,
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `uq_acc_ec_number` (`claim_number`, `deleted_at`),
+      INDEX `idx_acc_ec_employee` (`employee_id`),
+      INDEX `idx_acc_ec_status` (`status`),
+      INDEX `idx_acc_ec_voucher` (`voucher_id`),
+      CONSTRAINT `fk_acc_ec_voucher` FOREIGN KEY (`voucher_id`) REFERENCES `acc_vouchers` (`id`) ON DELETE SET NULL
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+  -- 19. Expense Claim Lines
+  CREATE TABLE IF NOT EXISTS `acc_expense_claim_lines` (
+      `id`                BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `expense_claim_id`  BIGINT UNSIGNED NOT NULL COMMENT 'FK → acc_expense_claims',
+      `expense_date`      DATE NOT NULL COMMENT 'Date of expense',
+      `ledger_id`         BIGINT UNSIGNED NOT NULL COMMENT 'FK → acc_ledgers (expense category)',
+      `description`       VARCHAR(255) NOT NULL COMMENT 'Expense description',
+      `amount`            DECIMAL(15,2) NOT NULL COMMENT 'Expense amount',
+      `tax_amount`        DECIMAL(15,2) NOT NULL DEFAULT 0.00 COMMENT 'Tax on expense',
+      `receipt_path`      VARCHAR(255) NULL COMMENT 'Uploaded receipt file path',
+      `is_active`         TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Soft active flag',
+      `created_by`        BIGINT UNSIGNED NULL COMMENT 'FK → sys_users',
+      `created_at`        TIMESTAMP NULL DEFAULT NULL,
+      `updated_at`        TIMESTAMP NULL DEFAULT NULL,
+      `deleted_at`        TIMESTAMP NULL DEFAULT NULL,
+      PRIMARY KEY (`id`),
+      INDEX `idx_acc_ecl_claim` (`expense_claim_id`),
+      INDEX `idx_acc_ecl_ledger` (`ledger_id`),
+      CONSTRAINT `fk_acc_ecl_claim` FOREIGN KEY (`expense_claim_id`) REFERENCES `acc_expense_claims` (`id`) ON DELETE CASCADE,
+      CONSTRAINT `fk_acc_ecl_ledger` FOREIGN KEY (`ledger_id`) REFERENCES `acc_ledgers` (`id`) ON DELETE RESTRICT
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+  -- ---------------------------------------------------------
+  -- DOMAIN 5: TALLY INTEGRATION (2 tables)
+  -- ---------------------------------------------------------
+
+  -- 20. Tally Export Logs
+  CREATE TABLE IF NOT EXISTS `acc_tally_export_logs` (
+      `id`            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `export_type`   ENUM('Ledgers','Vouchers','Inventory') NOT NULL COMMENT 'What was exported',
+      `export_date`   DATETIME NOT NULL COMMENT 'When export was run',
+      `file_name`     VARCHAR(255) NOT NULL COMMENT 'Generated file name',
+      `exported_by`   BIGINT UNSIGNED NOT NULL COMMENT 'FK → sys_users',
+      `start_date`    DATE NULL COMMENT 'Export date range start',
+      `end_date`      DATE NULL COMMENT 'Export date range end',
+      `record_count`  INT NULL COMMENT 'Number of records exported',
+      `status`        ENUM('Success','Failed','Partial') NOT NULL COMMENT 'Export result',
+      `error_log`     TEXT NULL COMMENT 'Error details if failed',
+      `is_active`     TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Soft active flag',
+      `created_by`    BIGINT UNSIGNED NULL COMMENT 'FK → sys_users',
+      `created_at`    TIMESTAMP NULL DEFAULT NULL,
+      `updated_at`    TIMESTAMP NULL DEFAULT NULL,
+      `deleted_at`    TIMESTAMP NULL DEFAULT NULL,
+      PRIMARY KEY (`id`),
+      INDEX `idx_acc_tel_type` (`export_type`),
+      INDEX `idx_acc_tel_date` (`export_date`),
+      INDEX `idx_acc_tel_by` (`exported_by`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+  -- 21. Tally Ledger Mappings
+  CREATE TABLE IF NOT EXISTS `acc_tally_ledger_mappings` (
+      `id`                BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `ledger_id`         BIGINT UNSIGNED NOT NULL COMMENT 'FK → acc_ledgers (our application ledger)',
+      `tally_ledger_name` VARCHAR(200) NOT NULL COMMENT 'Exact Tally ledger name for export/import',
+      `tally_group_name`  VARCHAR(200) NULL COMMENT 'Tally parent group name',
+      `tally_alias`       VARCHAR(200) NULL COMMENT 'Tally alias if any',
+      `mapping_type`      ENUM('auto','manual') NOT NULL DEFAULT 'auto' COMMENT 'Auto=seeded, manual=user-configured',
+      `sync_direction`    ENUM('export_only','import_only','bidirectional') NOT NULL DEFAULT 'export_only' COMMENT 'Sync direction',
+      `last_synced_at`    TIMESTAMP NULL COMMENT 'Last successful sync timestamp',
+      `is_active`         TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Soft active flag',
+      `created_by`        BIGINT UNSIGNED NULL COMMENT 'FK → sys_users',
+      `created_at`        TIMESTAMP NULL DEFAULT NULL,
+      `updated_at`        TIMESTAMP NULL DEFAULT NULL,
+      `deleted_at`        TIMESTAMP NULL DEFAULT NULL,
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `uq_acc_tlm_ledger` (`ledger_id`, `deleted_at`),
+      CONSTRAINT `fk_acc_tlm_ledger` FOREIGN KEY (`ledger_id`) REFERENCES `acc_ledgers` (`id`) ON DELETE CASCADE
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+  -- ---------------------------------------------------------
+  -- PERFORMANCE INDEXES
+  -- ---------------------------------------------------------
+  CREATE INDEX idx_acc_voucher_composite ON `acc_vouchers` (`date`, `financial_year_id`, `status`);
+  CREATE INDEX idx_acc_vi_ledger_date ON `acc_voucher_items` (`ledger_id`, `created_at`);
+  CREATE INDEX idx_acc_bse_recon_matched ON `acc_bank_statement_entries` (`reconciliation_id`, `is_matched`);
 
 
 -- =====================================================================================================================
