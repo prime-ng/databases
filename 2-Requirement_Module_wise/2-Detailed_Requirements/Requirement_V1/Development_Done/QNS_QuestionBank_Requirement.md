@@ -30,8 +30,8 @@ The QuestionBank module (QNS) is the central repository for all educational asse
 // Lines 54-57
 
 private $apiKeys = [
-    'chatgpt' => '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',
-    'gemini' => 'AIzaSyD-UVS7sEjn79TuvA3sxeFlGTjD_xaUhKY'
+    'chatgpt' => 'Replace chatgpt key here',
+    'gemini' => 'Replace Gemini key here'
 ];
 ```
 
