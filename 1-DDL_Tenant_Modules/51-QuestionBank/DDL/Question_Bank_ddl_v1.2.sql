@@ -277,10 +277,10 @@
       CONSTRAINT `fk_q_review_question` FOREIGN KEY (`question_id`) REFERENCES `qns_questions_bank` (`id`) ON DELETE CASCADE,
       CONSTRAINT `fk_q_review_reviewer` FOREIGN KEY (`reviewer_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
       CONSTRAINT `fk_q_review_status` FOREIGN KEY (`review_status_id`) REFERENCES `sys_dropdowns` (`id`) ON DELETE CASCADE
-  );
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   -- Question Usage Type (Quiz / Quest / Exam)
-  CREATE TABLE `qns_question_usage_type` (
+  CREATE TABLE IF NOT EXISTS `qns_question_usage_type` (
       `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       `code` VARCHAR(50) NOT NULL,  -- e.g. 'QUIZ','QUEST','ONLINE_EXAM','OFFLINE_EXAM'
       `name` VARCHAR(100) NOT NULL, -- e.g. 'Quiz','Quest','Online Exam','Offline Exam'
