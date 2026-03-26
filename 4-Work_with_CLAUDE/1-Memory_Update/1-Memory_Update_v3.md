@@ -386,28 +386,30 @@ When: DB schema was significantly changed (new tables, renamed columns, added in
 
 
 =====================================================================================================================
-## Tier 5 — Requirements & Planning Docs Update                   Model: claude-sonnet-4-6 | ~5-8 min
+## Tier 5 — Requirements & Planning Docs Update                   Model: claude-sonnet-4-6 | ~8-12 min
 =====================================================================================================================
-When: Requirements, gap analysis, or planning docs were updated.
-      AI Brain's project-context.md or known-bugs-and-roadmap.md is out of date.
+When: Requirement docs were created/updated, gap analysis was done, planning docs changed,
+      or a new module's full spec was written. AI Brain's project-context.md is out of date.
 
 ---
 
 ### CONFIGURATION
-  MODULE         = ALL           # or ALL
-  FOCUS          = GAP_ANALYSIS  # GAP_ANALYSIS | RBS | DESIGN | PLANNING | ALL
+  MODULE         = ALL           # specific module code (e.g. HRS) or ALL
+  FOCUS          = ALL           # REQUIREMENT | GAP_ANALYSIS | RBS | DESIGN | PLANNING | ALL
 
-  AI_BRAIN       = /Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases/AI_Brain
-  PROJECT_PLAN   = /Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases/3-Project_Planning
-  DESIGN_ARCH    = /Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases/3-Design_Architecture
-  RBS_DIR                   = {PROJECT_PLAN}/1-RBS
-  REQUIREMENT_HIGH_level    = {OLD_REPO}/2-Requirement_Module_wise/1-HighLevel_Requirements
-  REQUIRE_DETAIL_DEV_DONE   = {OLD_REPO}/2-Requirement_Module_wise/2-Detailed_Requirements/V1/Dev_Done
-  REQUIRE_DETAIL_DEV_PEND   = {OLD_REPO}/2-Requirement_Module_wise/2-Detailed_Requirements/V1/Dev_Pending
-  REQUIREMENT_CONDITIONS    = {OLD_REPO}/2-Requirement_Module_wise/3-Requirement_Conditions
-  GAP_ANALYSIS   = /Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases/3-Project_Planning/2-Gap_Analysis
-  WORK_STATUS    = /Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases/3-Project_Planning/9-Work_Status
-  WORK_IN_PROG   = /Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases/5-Work-In-Progress
+  AI_BRAIN                  = /Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases/AI_Brain
+  PROJECT_PLAN              = /Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases/3-Project_Planning
+  DESIGN_ARCH               = /Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases/3-Design_Architecture
+  RBS_DIR                   = /Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases/3-Project_Planning/1-RBS
+  GAP_ANALYSIS              = /Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases/3-Project_Planning/2-Gap_Analysis
+  WORK_STATUS               = /Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases/3-Project_Planning/9-Work_Status
+  WORK_IN_PROG              = /Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases/5-Work-In-Progress
+  REQUIREMENT_HIGH_LEVEL    = /Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases/2-Requirement_Module_wise/1-HighLevel_Requirements
+  REQUIREMENT_INDEX         = /Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases/2-Requirement_Module_wise/2-Detailed_Requirements/V1
+  REQUIRE_DETAIL_DEV_DONE   = /Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases/2-Requirement_Module_wise/2-Detailed_Requirements/V1/Dev_Done
+  REQUIRE_DETAIL_DEV_PEND   = /Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases/2-Requirement_Module_wise/2-Detailed_Requirements/V1/Dev_Pending
+  REQUIRE_DETAIL_V2         = /Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases/2-Requirement_Module_wise/2-Detailed_Requirements/V2
+  REQUIREMENT_CONDITIONS    = /Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases/2-Requirement_Module_wise/3-Requirement_Conditions
 
 ---
 
@@ -415,57 +417,118 @@ When: Requirements, gap analysis, or planning docs were updated.
 
   AI Brain: {{AI_BRAIN}}
 
-### Step 1 — Read current AI Brain project knowledge
-  1. AI_Brain/memory/project-context.md
-  2. AI_Brain/memory/known-bugs-and-roadmap.md
-  3. AI_Brain/state/progress.md            ← current status per module
-  4. AI_Brain/state/decisions.md           ← design decisions already recorded
+### Step 1 — Read current AI Brain project knowledge (always do this first)
+  1. AI_Brain/memory/project-context.md        ← what brain currently knows about requirements
+  2. AI_Brain/memory/modules-map.md            ← current FR count per module
+  3. AI_Brain/state/progress.md                ← current status per module
+  4. AI_Brain/state/decisions.md               ← design decisions already recorded
 
-### Step 2 — Scan planning/requirements docs for {{MODULE}}
+### Step 2 — Scan requirements docs (based on FOCUS value)
 
-  If FOCUS = GAP_ANALYSIS or ALL:
-    Read: {{GAP_ANALYSIS}}/  — scan for {{MODULE}} gap analysis files
-    Extract: features listed as gaps/missing, severity ratings
+  ── If FOCUS = REQUIREMENT or ALL ──────────────────────────────────────────────────────────
 
-  If FOCUS = RBS or ALL:
-    Read: {{RBS_DIR}}/  — scan for {{MODULE}} RBS file
-    Extract: scope items, requirement IDs
+  A. Read master index files (always read these first — they give the full FR inventory):
+       {{REQUIREMENT_INDEX}}/_00_Master_Requirement_Index_*.md    ← complete FR list for all modules
+       {{REQUIREMENT_INDEX}}/_01_Cross_Module_Dependencies_*.md   ← inter-module FK/data dependencies
+       {{REQUIREMENT_INDEX}}/_02_RBS_Coverage_Report_*.md         ← which RBS items have FR coverage
 
-  If FOCUS = REQUIREMENT or ALL:
-    Read: {{REQUIREMENT_HIGH_level}}/  — scan for {{MODULE}} RBS file
-    Extract: scope items, requirement IDs
+  B. Read high-level requirements (quick scope summary per module):
+       {{REQUIREMENT_HIGH_LEVEL}}/    ← scan all .md files
+       If MODULE is specific: read only the file matching {{MODULE}}
 
-  If FOCUS = DESIGN or ALL:
-    Read: {{DESIGN_ARCH}}/  — scan for {{MODULE}} design/architecture docs
-    Extract: architectural decisions, data flow, integration points
+  C. Read detailed requirements — Dev Done (completed modules, V1):
+       {{REQUIRE_DETAIL_DEV_DONE}}/   ← scan all .md files
+       If MODULE is specific: read only the file matching {{MODULE}}_*.md
+       For each file, extract:
+         - FR IDs and status (implemented / partial / pending)
+         - Table prefixes and DDL table count
+         - Business rules (BR-XXX-NNN)
+         - Out-of-scope items (important — avoid building excluded features)
+         - Open questions (design decisions still pending)
+         - Module dependencies (cross-module FKs, shared services)
 
-  If FOCUS = PLANNING or ALL:
-    Read: {{WORK_STATUS}}/  — scan for {{MODULE}} work status
-    Read: {{WORK_IN_PROG}}/  — scan for {{MODULE}} Claude context files
-    Extract: in-progress items, blockers, context notes
+  D. Read detailed requirements — Dev Pending (upcoming modules, V1):
+       {{REQUIRE_DETAIL_DEV_PEND}}/   ← scan all .md files
+       If MODULE is specific: read only the file matching {{MODULE}}_*.md
+       Same extraction as Dev Done above.
 
-### Step 3 — Update AI Brain
+  E. Read updated requirements — V2 (supersedes V1 where both exist):
+       {{REQUIRE_DETAIL_V2}}/         ← scan all .md files (newer, more complete specs)
+       NOTE: If a module has a V2 file, it overrides the V1 version.
+       If MODULE is specific: read only the file matching {{MODULE}}_*.md
+       Pay attention to:
+         - New FRs added vs V1
+         - Scope changes (items moved in/out of scope)
+         - Updated table structures
+         - Changed business rules
+
+  F. Read requirement conditions (cross-cutting rules, if folder exists):
+       {{REQUIREMENT_CONDITIONS}}/    ← scan all .md files if present
+       Extract: constraints, compliance rules, global conditions that apply across modules
+
+  ── If FOCUS = GAP_ANALYSIS or ALL ────────────────────────────────────────────────────────
+
+  G. Read: {{GAP_ANALYSIS}}/         ← scan for {{MODULE}} gap analysis files
+     Extract: features listed as missing/gaps, severity ratings, linked FR IDs
+
+  ── If FOCUS = RBS or ALL ──────────────────────────────────────────────────────────────────
+
+  H. Read: {{RBS_DIR}}/              ← scan for RBS spec files
+     Extract: scope items, module codes, planned vs actual coverage
+
+  ── If FOCUS = DESIGN or ALL ───────────────────────────────────────────────────────────────
+
+  I. Read: {{DESIGN_ARCH}}/          ← scan for design/architecture docs for {{MODULE}}
+     Extract: architectural decisions, data flow diagrams, integration points
+
+  ── If FOCUS = PLANNING or ALL ─────────────────────────────────────────────────────────────
+
+  J. Read: {{WORK_STATUS}}/          ← scan for module work status files
+     Read: {{WORK_IN_PROG}}/         ← scan for Claude context files
+     Extract: in-progress items, blockers, context notes, resume points
+
+### Step 3 — Compare: Requirements vs AI Brain (critical step)
+  For each module scanned:
+  1. Check FR count in requirement docs vs what's in AI_Brain/memory/modules-map.md
+     → If different: update modules-map.md with correct FR count
+  2. Check open questions in requirement docs vs AI_Brain/state/decisions.md
+     → If unresolved in docs and not in decisions.md: add as open items
+  3. Check out-of-scope items in requirement docs vs AI Brain knowledge
+     → Flag if AI Brain thinks something is in-scope that the req doc marks out-of-scope
+  4. Check business rules not yet reflected in AI_Brain/rules/
+     → If module has unique rules not in brain: consider adding to relevant rules file
+
+### Step 4 — Update AI Brain
   A. AI_Brain/memory/project-context.md
-     → Update {{MODULE}} section with any new scope items or requirement changes
-     → Update overall project status if changed
+     → Update each module's FR count, scope summary, V1/V2 requirement version
+     → Update overall project status if any pending/done status changed
 
-  B. AI_Brain/memory/known-bugs-and-roadmap.md
+  B. AI_Brain/memory/modules-map.md
+     → Update FR count per module (from Step 3 comparison)
+     → Add "V2 spec" flag for modules that have updated requirements
+     → Note any out-of-scope items that previously might have been assumed in-scope
+
+  C. AI_Brain/memory/known-bugs-and-roadmap.md
      → Add new gaps discovered from gap analysis docs
      → Mark resolved gaps if corresponding code was already built
 
-  C. AI_Brain/state/progress.md
+  D. AI_Brain/state/progress.md
      → Adjust {{MODULE}} completion % if new requirements reveal work was missing
      → Add newly discovered tasks to the pending list
+     → Note which modules have open questions blocking further development
 
-  D. AI_Brain/state/decisions.md
+  E. AI_Brain/state/decisions.md
      → Log any design decisions found in architecture docs that aren't yet recorded
+     → Add unresolved open questions from requirement docs (mark as OPEN)
 
-### Step 4 — Report
+### Step 5 — Report
   Output:
-  - New requirements/gaps found (not in AI Brain before)
-  - Resolved items now confirmed complete
-  - Revised completion % if changed
-  - Any decisions now formally recorded
+  - New requirements/gaps found (not in AI Brain before) — list FR IDs
+  - Modules with V2 specs that supersede V1 (list them)
+  - Out-of-scope items that need to be removed from AI Brain scope
+  - Open questions added to decisions.md
+  - Revised completion % for any module where new FRs were discovered
+  - Any cross-module dependencies newly found
 
 ---
 
@@ -677,8 +740,9 @@ When: AI Brain is severely out of date, after major restructuring, or starting f
 | Tier 4 | DB schema changed significantly          | db-schema.md,      | Sonnet        | ~5-10 min      |
 |        | (new tables, renamed columns)            | modules-map.md     |               |                |
 +--------+------------------------------------------+--------------------+---------------+----------------+
-| Tier 5 | Requirements / gap analysis / planning   | project-context,   | Sonnet        | ~5-8 min       |
-|        | docs were updated                        | roadmap, progress, |               |                |
+| Tier 5 | Requirements / gap analysis / planning   | project-context,   | Sonnet        | ~8-12 min      |
+|        | docs updated — covers all 4 req folders  | modules-map, road- |               |                |
+|        | (HighLevel, Dev_Done, Dev_Pend, V2)      | map, progress,     |               |                |
 |        |                                          | decisions          |               |                |
 +--------+------------------------------------------+--------------------+---------------+----------------+
 | Tier 6 | Brain stale across many modules          | ALL brain files    | Sonnet (Ph1)  | ~20-30 min     |

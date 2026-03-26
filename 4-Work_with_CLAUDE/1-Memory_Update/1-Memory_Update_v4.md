@@ -27,8 +27,8 @@
 # ─────────────────────────────────────────────────────────────────────────────────────────────
 
 ### CONFIGURATION  ← edit these 4 values only
-  MODULE         = HPC                       # e.g. HPC, Timetable, QuestionBank
-  TASK_DONE      = [what was just completed — 1 line]
+  MODULE         = HRS                       # e.g. HPC, Timetable, QuestionBank
+  TASK_DONE      = [Generted Feature Specification, DDL & Development Plan for "HR & Payroll" Module]
   BUG_RESOLVED   = NONE                      # BUG-XXX-00N  or  NONE
   DECISION_MADE  = NONE                      # one-line architectural decision  or  NONE
 
@@ -66,7 +66,7 @@ No report needed. Confirm which lines changed.
 # ─────────────────────────────────────────────────────────────────────────────────────────────
 
 ### CONFIGURATION  ← edit these 5 values only
-  MODULE         = HPC
+  MODULE         = HRS & PRL
   MODULE_DIR     = Hpc                       # Laravel path: Modules/Hpc/
   DEVELOPER      = Shailesh
   TASK_SUMMARY   = [1-2 sentence description of what was built/fixed]

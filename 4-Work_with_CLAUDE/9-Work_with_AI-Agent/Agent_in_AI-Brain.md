@@ -1,5 +1,12 @@
-AI Brain Agents (11 total)
+# AI Brain Agents (11 total)
+=============================
 
+To activate or switch an agent:   
+  - Say `act as Enterprise Architect` (or any agent from the CLAUDE.md table)
+  - Or `run /agent enterprise-architect`
+
+=====================================================================================
+```
   ┌─────────────────────────────┬────────────────────────────────────┬──────────────────────────────────────────────────────────────────────────┐
   │            Agent            │                Role                │                               When to Use                                │
   ├─────────────────────────────┼────────────────────────────────────┼──────────────────────────────────────────────────────────────────────────┤
@@ -25,7 +32,7 @@ AI Brain Agents (11 total)
   ├─────────────────────────────┼────────────────────────────────────┼──────────────────────────────────────────────────────────────────────────┤
   │ test-agent.md               │ Pest 4.x testing                   │ Unit tests, feature tests                                                │
   └─────────────────────────────┴────────────────────────────────────┴──────────────────────────────────────────────────────────────────────────┘
-
+```
   Business Analyst highlights:
 
   - Indian K-12 domain knowledge (CBSE/ICSE, fee structures, transport, HPC)
@@ -68,18 +75,18 @@ AI Brain Agents (11 total)
 
 ⏺ Searched for 1 pattern (ctrl+o to expand)  
 
-⏺ Created devops-deployer.md (14.8KB — the most comprehensive agent). Here's what it covers:                                                                                                              
-                                                                                          
+⏺ Created devops-deployer.md (14.8KB — the most comprehensive agent). Here's what it covers:
+
   DevOps & Deployment Agent — Contents
-                                                                                                                                                                                                          
+```
   ┌────────────────────────────────┬─────────────────────────────────────────────────────────────────────────────────┐
-  │            Section             │                                What It Provides                                 │                                                                                    
-  ├────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────┤                                                                                  
-  │ Wildcard DNS + SSL             │ Certbot commands for *.primeai.in, Cloudflare alternative                       │                                                                                    
+  │            Section             │                                What It Provides                                 │
+  ├────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────┤                                                                
+  │ Wildcard DNS + SSL             │ Certbot commands for *.primeai.in, Cloudflare alternative                       │
   ├────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────┤
-  │ Nginx Config                   │ Full multi-tenant config with wildcard server_name, PHP-FPM, file upload limits │                                                                                    
-  ├────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────┤                                                                                    
-  │ Environment Variables          │ Complete .env template for production (DB, Redis, Mail, Razorpay, S3)           │                                                                                    
+  │ Nginx Config                   │ Full multi-tenant config with wildcard server_name, PHP-FPM, file upload limits │
+  ├────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────┤                                                                
+  │ Environment Variables          │ Complete .env template for production (DB, Redis, Mail, Razorpay, S3)           │
   ├────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────┤
   │ GitHub Actions CI/CD           │ Full pipeline: test → deploy staging → deploy production with SSH               │
   ├────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────┤
@@ -101,9 +108,10 @@ AI Brain Agents (11 total)
   ├────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────┤
   │ Production Readiness Checklist │ 16-item checklist before going live                                             │
   └────────────────────────────────┴─────────────────────────────────────────────────────────────────────────────────┘
+```
 
-  All 12 Agents Now
-
+All 12 Agents Now
+```
   agents/
   ├── api-builder.md           (2.7KB)  — REST API development
   ├── backend-developer.md     (8.4KB)  — Controllers, models, security
@@ -117,53 +125,51 @@ AI Brain Agents (11 total)
   ├── school-agent.md          (3.8KB)  — Indian K-12 domain knowledge
   ├── tenancy-agent.md         (3.6KB)  — stancl/tenancy specialist
   └── test-agent.md            (4.5KB)  — Pest 4.x testing
-
+```
   ------------------------------------------------------------------------------------------------------------------------------
 
-❯ Can I create some other type of Agents also which are not directly to the software developmet but they will be capable to perform Business Related tasks like :                                         
- - Creating Business Strategy to sale my Application to the School                                                                                                                                        
- - Creating Sales Materials Like Presentation contents etc.                                                                                                                                               
- - Market Assessment, what is in demand etc.                                                                                                                                                              
- - Product Costing and Sales Price Calculation                                                                                                                                                            
- - Application Running Cost                                                                                                                                                                               
- - Cost Analysis                                                                                                                                                                                          
-                                                                                                                                                                            -------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+## Can I create some other type of Agents also which are not directly to the software developmet but they will be capable to perform Business Related tasks like :
+ - Creating Business Strategy to sale my Application to the School
+ - Creating Sales Materials Like Presentation contents etc.
+ - Market Assessment, what is in demand etc.
+ - Product Costing and Sales Price Calculation
+ - Application Running Cost
+ - Cost Analysis             
+
  ## Do not start creating the Agent, first just answer my question whether I can create such Agents or not. If yes then Provide me the list of Agent which can be created and what wil be there. Do not created them just Answer the Question and provide the Detail.
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-⏺ Yes, absolutely. AI Brain agents are just instruction files — they can be for any role, not just software development. The agent system works the same way: define the role, context, deliverables, and
-  templates. Claude reads the agent file and follows its instructions.
+Yes, absolutely. AI Brain agents are just instruction files — they can be for any role, not just software development. The agent system works the same way: define the role, context, deliverables, and templates. Claude reads the agent file and follows its instructions.
 
-  The difference: business agents work with market data, financials, and strategy documents instead of code files. They'll reference your project_docs for product understanding but produce business
-  deliverables (presentations, spreadsheets, proposals).
+The difference: business agents work with market data, financials, and strategy documents instead of code files. They'll reference your project_docs for product understanding but produce business deliverables (presentations, spreadsheets, proposals).
 
-  ---
-  Business Agents You Can Create
-
-  ┌─────┬──────────────────┬──────────────────────────────────────────────────────────────────────────────────────────────────────────────┬──────────────────────────────────────────────────────────┐
-  │  #  │    Agent Name    │                                                 What It Does                                                 │                     Key Deliverables                     │
-  ├─────┼──────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────┤
-  │ 1   │ Sales Strategist │ Go-to-market strategy for Indian K-12 school ERP market. School segmentation, pricing tiers, sales funnel    │ GTM plan, school targeting criteria, sales playbook,     │
-  │     │                  │ design, channel strategy (direct sales, partners, digital)                                                   │ competitive positioning                                  │
-  ├─────┼──────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────┤
-  │ 2   │ Sales Content    │ Creates all sales collateral — pitch decks, brochures, email sequences, demo scripts, case studies, feature  │ PPT content (slide-by-slide), email templates,           │
-  │     │ Creator          │ comparison sheets                                                                                            │ one-pagers, WhatsApp pitch scripts                       │
-  ├─────┼──────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────┤
-  │ 3   │ Market Analyst   │ Indian EdTech/School ERP market research — demand analysis, competitor mapping (Fedena, Entab, MyClassboard, │ Market report, competitor matrix, SWOT analysis, market  │
-  │     │                  │  Teachmint), trend identification, TAM/SAM/SOM calculation                                                   │ size estimates                                           │
-  ├─────┼──────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────┤
-  │ 4   │ Financial        │ Product costing (infra + dev + support), pricing model design (per-student, per-module, flat), unit          │ Cost breakdown sheet, pricing calculator, P&L            │
-  │     │ Analyst          │ economics, break-even analysis, revenue projections                                                          │ projection, break-even model                             │
-  ├─────┼──────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────┤
-  │ 5   │ Cloud Cost       │ Specifically for AWS/DO/hosting cost estimation — server sizing per tenant count, storage projections,       │ Monthly cost calculator by tenant count (10/50/100/500   │
-  │     │ Optimizer        │ bandwidth estimates, cost-per-school calculation                                                             │ schools), scaling roadmap                                │
-  ├─────┼──────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────┤
-  │ 6   │ Proposal Writer  │ Creates school-specific proposals and RFP responses — takes school name + requirements and generates         │ School proposal document, implementation plan, SLA       │
-  │     │                  │ tailored proposal with pricing, implementation timeline, SLA                                                 │ terms, contract template                                 │
-  └─────┴──────────────────┴──────────────────────────────────────────────────────────────────────────────────────────────────────────────┴──────────────────────────────────────────────────────────┘
-
-  ---
-  What Each Agent Would Contain
+---
+### Business Agents You Can Create
+```
+  ┌─────┬───────────────┬──────────────────────────────────────────────────────────────────────────────────────────────┬──────────────────────────────────────────────────────────┐
+  │  #  │ Agent Name    │                                                 What It Does                                 │                     Key Deliverables                     │
+  ├─────┼───────────────┼──────────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────┤
+  │ 1   │ Sales         │ Go-to-market strategy for Indian K-12 school ERP market. School segmentation, pricing tiers, │ GTM plan, school targeting criteria, sales playbook,     │
+  │     │ Strategist    │ sales funnel design, channel strategy (direct sales, partners, digital)                      │ competitive positioning                                  │
+  ├─────┼───────────────┼──────────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────┤
+  │ 2   │ Sales Content │ Creates all sales collateral — pitch decks, brochures, email sequences, demo scripts,        │ PPT content (slide-by-slide), email templates,           │
+  │     │ Creator       │ case studies, feature comparison sheets                                                      │ one-pagers, WhatsApp pitch scripts                       │
+  ├─────┼───────────────┼──────────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────┤
+  │ 3   │ Market        │ Indian EdTech/School ERP market research — demand analysis, competitor mapping (Fedena,      │ Market report, competitor matrix, SWOT analysis, market  │
+  │     │ Analyst       │ Entab, MyClassboard, Teachmint), trend identification, TAM/SAM/SOM calculation               │ size estimates                                           │
+  ├─────┼───────────────┼──────────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────┤
+  │ 4   │ Financial     │ Product costing (infra + dev + support), pricing model design (per-student, per-module,      │ Cost breakdown sheet, pricing calculator, P&L            │
+  │     │ Analyst       │ flat), unit economics, break-even analysis, revenue projections                              │ projection, break-even model                             │
+  ├─────┼───────────────┼──────────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────┤
+  │ 5   │ Cloud Cost    │ Specifically for AWS/DO/hosting cost estimation — server sizing per tenant count,            │ Monthly cost calculator by tenant count (10/50/100/500   │
+  │     │ Optimizer     │ storage projections, bandwidth estimates, cost-per-school calculation                        │ schools), scaling roadmap                                │
+  ├─────┼───────────────┼──────────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────┤
+  │ 6   │ Proposal      │ Creates school-specific proposals and RFP responses — takes school name + requirements       │ School proposal document, implementation plan, SLA       │
+  │     │ Writer        │ and generates tailored proposal with pricing, implementation timeline, SLA                   │ terms, contract template                                 │
+  └─────┴───────────────┴──────────────────────────────────────────────────────────────────────────────────────────────┴──────────────────────────────────────────────────────────┘
+```
+---
+### What Each Agent Would Contain
 
   1. Sales Strategist
 
@@ -216,8 +222,8 @@ AI Brain Agents (11 total)
   - Pricing presentation format that works for Indian school management committees
   - References to specific modules from your RBS that match school pain points
 
-  ---
-  My Recommendation
+---
+### My Recommendation
 
   Create these 3 first (highest immediate value):
 
@@ -229,17 +235,19 @@ AI Brain Agents (11 total)
 
   Want me to create any or all of them?
 
+
+
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------
   ## Write Now I dont want you to create those Agents but let me know what will be data I should provide you to build the best Agent for those skills? 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 Here's exactly what data you need to prepare for each agent:
 
-  ---
+---
   1. Financial Analyst Agent — Data Needed
 
   Infrastructure Costs (Monthly)
-
+```
   ┌──────────────────┬───────────────────────────────────────────────────────────────┐
   │       Item       │                        What to Provide                        │
   ├──────────────────┼───────────────────────────────────────────────────────────────┤
@@ -263,9 +271,9 @@ Here's exactly what data you need to prepare for each agent:
   ├──────────────────┼───────────────────────────────────────────────────────────────┤
   │ Monitoring tools │ Sentry, UptimeRobot — free or paid?                           │
   └──────────────────┴───────────────────────────────────────────────────────────────┘
-
-  Development Costs
-
+```
+### Development Costs
+```
   ┌──────────────────────────────────┬─────────────────────────────────────────────────────────────────────┐
   │               Item               │                           What to Provide                           │
   ├──────────────────────────────────┼─────────────────────────────────────────────────────────────────────┤
@@ -281,9 +289,10 @@ Here's exactly what data you need to prepare for each agent:
   ├──────────────────────────────────┼─────────────────────────────────────────────────────────────────────┤
   │ How many more months to complete │ Your estimate (we calculated ~13 months)                            │
   └──────────────────────────────────┴─────────────────────────────────────────────────────────────────────┘
+```
 
-  Support & Operations Costs (Projected)
-
+### Support & Operations Costs (Projected)
+```
   ┌──────────────────────────┬─────────────────────────────────────────────────────┐
   │           Item           │                   What to Provide                   │
   ├──────────────────────────┼─────────────────────────────────────────────────────┤
@@ -295,9 +304,10 @@ Here's exactly what data you need to prepare for each agent:
   ├──────────────────────────┼─────────────────────────────────────────────────────┤
   │ Data migration effort    │ How many hours to migrate a school's existing data? │
   └──────────────────────────┴─────────────────────────────────────────────────────┘
+```
 
-  Revenue Goals
-
+### Revenue Goals
+```
   ┌─────────────────────────────────────────────────────────────────┬─────────────────────────────┐
   │                              Item                               │       What to Provide       │
   ├─────────────────────────────────────────────────────────────────┼─────────────────────────────┤
@@ -311,12 +321,13 @@ Here's exactly what data you need to prepare for each agent:
   ├─────────────────────────────────────────────────────────────────┼─────────────────────────────┤
   │ Are you targeting small private, CBSE chains, or international? │ School type affects pricing │
   └─────────────────────────────────────────────────────────────────┴─────────────────────────────┘
+```
 
   ---
   2. Sales Content Creator Agent — Data Needed
 
   Company Information
-
+```
   ┌──────────────────────────────┬─────────────────────────────────────────────────────────────┐
   │             Item             │                       What to Provide                       │
   ├──────────────────────────────┼─────────────────────────────────────────────────────────────┤
@@ -336,9 +347,9 @@ Here's exactly what data you need to prepare for each agent:
   ├──────────────────────────────┼─────────────────────────────────────────────────────────────┤
   │ Contact details              │ Phone, email for sales                                      │
   └──────────────────────────────┴─────────────────────────────────────────────────────────────┘
-
+```
   Product Positioning
-
+```
   ┌──────────────────────────────────────┬──────────────────────────────────────────────────────────────────┐
   │                 Item                 │                         What to Provide                          │
   ├──────────────────────────────────────┼──────────────────────────────────────────────────────────────────┤
@@ -352,9 +363,9 @@ Here's exactly what data you need to prepare for each agent:
   ├──────────────────────────────────────┼──────────────────────────────────────────────────────────────────┤
   │ Which modules are your strongest?    │ What would you show first in a demo?                             │
   └──────────────────────────────────────┴──────────────────────────────────────────────────────────────────┘
-
+```
   Target Audience
-
+```
   ┌───────────────────────────────────┬──────────────────────────────────────────────────────────┐
   │               Item                │                     What to Provide                      │
   ├───────────────────────────────────┼──────────────────────────────────────────────────────────┤
@@ -368,9 +379,9 @@ Here's exactly what data you need to prepare for each agent:
   ├───────────────────────────────────┼──────────────────────────────────────────────────────────┤
   │ Preferred communication channel   │ Email? WhatsApp? In-person meeting?                      │
   └───────────────────────────────────┴──────────────────────────────────────────────────────────┘
-
+```
   Competitor Knowledge
-
+```
   ┌──────────────────────────────┬────────────────────────────────────────────────────┐
   │             Item             │                  What to Provide                   │
   ├──────────────────────────────┼────────────────────────────────────────────────────┤
@@ -380,12 +391,12 @@ Here's exactly what data you need to prepare for each agent:
   ├──────────────────────────────┼────────────────────────────────────────────────────┤
   │ What you do better than them │ Your unique advantages (AI, HPC, timetable solver) │
   └──────────────────────────────┴────────────────────────────────────────────────────┘
-
+```
   ---
   3. Market Analyst Agent — Data Needed
 
   Your Market Definition
-
+```
   ┌─────────────────────┬──────────────────────────────────────────────────────────┐
   │        Item         │                     What to Provide                      │
   ├─────────────────────┼──────────────────────────────────────────────────────────┤
@@ -397,9 +408,9 @@ Here's exactly what data you need to prepare for each agent:
   ├─────────────────────┼──────────────────────────────────────────────────────────┤
   │ Fee-paying capacity │ Schools charging ₹X+ annual fees (indicates tech budget) │
   └─────────────────────┴──────────────────────────────────────────────────────────┘
-
+```
   Existing Market Knowledge
-
+```
   ┌─────────────────────────────────────┬───────────────────────────────────────────────────┐
   │                Item                 │                  What to Provide                  │
   ├─────────────────────────────────────┼───────────────────────────────────────────────────┤
@@ -413,9 +424,9 @@ Here's exactly what data you need to prepare for each agent:
   ├─────────────────────────────────────┼───────────────────────────────────────────────────┤
   │ Any market reports you've read      │ Share links or key numbers you remember           │
   └─────────────────────────────────────┴───────────────────────────────────────────────────┘
-
+```
   Your Pricing Hypothesis
-
+```
   ┌──────────────────────────────────┬───────────────────────────────────────────────────────────┐
   │               Item               │                      What to Provide                      │
   ├──────────────────────────────────┼───────────────────────────────────────────────────────────┤
@@ -425,10 +436,10 @@ Here's exactly what data you need to prepare for each agent:
   ├──────────────────────────────────┼───────────────────────────────────────────────────────────┤
   │ Module-wise pricing or bundled?  │ Do you want to sell all modules together or individually? │
   └──────────────────────────────────┴───────────────────────────────────────────────────────────┘
-
+```
   ---
   4. Sales Strategist Agent — Data Needed
-
+```
   ┌───────────────────────────┬──────────────────────────────────────────────────────────────────┐
   │           Item            │                         What to Provide                          │
   ├───────────────────────────┼──────────────────────────────────────────────────────────────────┤
@@ -444,10 +455,10 @@ Here's exactly what data you need to prepare for each agent:
   ├───────────────────────────┼──────────────────────────────────────────────────────────────────┤
   │ Preferred sales model     │ Direct sales? Channel partners? Online self-signup?              │
   └───────────────────────────┴──────────────────────────────────────────────────────────────────┘
-
+```
   ---
   5. Cloud Cost Optimizer Agent — Data Needed
-
+```
   ┌────────────────────────────────┬─────────────────────────────────────────────────────────────┐
   │              Item              │                       What to Provide                       │
   ├────────────────────────────────┼─────────────────────────────────────────────────────────────┤
@@ -467,10 +478,10 @@ Here's exactly what data you need to prepare for each agent:
   ├────────────────────────────────┼─────────────────────────────────────────────────────────────┤
   │ Budget ceiling for infra       │ Max you'd spend monthly                                     │
   └────────────────────────────────┴─────────────────────────────────────────────────────────────┘
-
+```
   ---
   6. Proposal Writer Agent — Data Needed
-
+```
   ┌──────────────────────────┬─────────────────────────────────────────────────┐
   │           Item           │                 What to Provide                 │
   ├──────────────────────────┼─────────────────────────────────────────────────┤
@@ -490,7 +501,7 @@ Here's exactly what data you need to prepare for each agent:
   ├──────────────────────────┼─────────────────────────────────────────────────┤
   │ Customization policy     │ Do you customize per school? Extra charge?      │
   └──────────────────────────┴─────────────────────────────────────────────────┘
-
+```
   ---
   How to Provide This Data
 

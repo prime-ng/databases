@@ -63,6 +63,7 @@ RBS_DIR                   = {PROJECT_PLAN}/1-RBS
 REQUIREMENT_HIGH_level    = {OLD_REPO}/2-Requirement_Module_wise/1-HighLevel_Requirements
 REQUIRE_DETAIL_DEV_DONE   = {OLD_REPO}/2-Requirement_Module_wise/2-Detailed_Requirements/V1/Dev_Done
 REQUIRE_DETAIL_DEV_PEND   = {OLD_REPO}/2-Requirement_Module_wise/2-Detailed_Requirements/V1/Dev_Pending
+REQUIRE_DETAIL_V2         = {OLD_REPO}/2-Requirement_Module_wise/2-Detailed_Requirements/V2
 REQUIREMENT_CONDITIONS    = {OLD_REPO}/2-Requirement_Module_wise/3-Requirement_Conditions
 GAP_ANALYSIS              = {PROJECT_PLAN}/2-Gap_Analysis
 WORK_STATUS               = {PROJECT_PLAN}/9-Work_Status

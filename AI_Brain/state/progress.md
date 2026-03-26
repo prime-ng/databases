@@ -5,6 +5,30 @@
 > **Security note:** Only 1 `EnsureTenantHasModule` usage across entire tenant.php. Library has 0 refs in tenant.php. Notification routes ALL commented out.
 > **Deep Gap Analysis:** Full 29-module gap analysis completed 2026-03-22. Reports in `{GAP_ANALYSIS_MODULE_WISE}/2026Mar22/`. Summary: ~950+ issues, ~140 P0 critical.
 
+## V2 Requirement Documents — 2026-03-26
+
+> **Completed:** All 46 modules + 3 summary files written to `{OLD_REPO}/2-Requirement_Module_wise/2-Detailed_Requirements/V2/`
+> **Batch tracking:** `V2/_batch_progress.md` — 49 files, all 10 batches ✅ Done
+> **Modes:** 24 modules FULL (read V1 + gap analysis + DDL + code) | 22 modules RBS_ONLY (greenfield)
+
+### Key new findings from V2 generation (not in prior gap analysis)
+
+| Module | Finding | Severity |
+|--------|---------|----------|
+| QNS | **Hardcoded OpenAI `sk-proj-*` + Gemini `AIzaSyD-*` API keys in source** — ROTATE IMMEDIATELY | P0 |
+| PAY | Three different broken prefixes: `ptm_`, `pmt_`, and no prefix — zero DDL in tenant_db_v2.sql | P0 |
+| STP | Completion revised 25%→63%; `proceedPayment` IDOR still unpatched; hard-coded dropdown ID 104 | P0 |
+| HMW | `lms_homework_assignment` table missing from DDL — `publish()` crashes; `release_condition` vs `release_condition_id` mismatch | P1 |
+| SLK | `bok_book_topic_mapping` table missing from DDL; `BookAuthors::index()` queries books not authors; cross-layer `Modules\Prime\Models\AcademicSession` | P1 |
+| TTS | Completion revised 5%→15-20%; BUG-TTS-001: `whereIn('id')` should be `whereIn('teacher_id')` in conflict check | P1 |
+| DOC | Two XSS paths: `{!! content !!}` render + JS `innerHTML` after `atob()` decode; `doc_articles` missing `sort_order` column | P1 |
+| LIB | 22 controllers import `Modules\Vendor\Models\Vendor` (cross-layer); module IS in tenant.php (V1 wrong) | P1 |
+| SCH | `RolePermissionController::destroy()` calls `$role->save()` not `$role->delete()` — roles never deleted | P1 |
+| EXM | `dd($e)` at `LmsExamController.php:565`; 10 Gate calls commented in ExamBlueprintController; 10 in ExamScopeController | P1 |
+| CMP | DDL FK: TINYINT→INT on `is_medical_check_required`; index references non-existent `status` column | P2 |
+| NTF | Gate prefix `prime.*` used instead of `tenant.*` on all notification routes | P1 |
+| HPC | 5 DDL tables missing (`hpc_credit_config` etc.); FK points to `slb_circular_goals` instead of `hpc_circular_goals` | P2 |
+
 ---
 
 ## Module Completion Summary (audited 2026-03-22)
@@ -35,7 +59,7 @@
 | **Payment** | 2 ctrl, 5 mdl, 2 svc, 1 req | **~45%** | NO DDL schema for `ptm_*` tables; webhook behind auth middleware (always 401); Payment model is stub; gateway credentials unencrypted |
 | **Dashboard** | 1 ctrl, 0 mdl, 0 svc, 0 req | **~35%** | ZERO authorization in entire module; returns non-module view path; zero dynamic data |
 | **Scheduler** | 1 ctrl, 2 mdl, 2 svc, 1 req | **~40%** | Zero auth on entire controller; empty update/destroy methods; Schedule model missing SoftDeletes |
-| **StudentPortal** | 3 ctrl, 0 mdl, 0 svc, 0 req | **~25%** | IDOR vulnerability on invoice/payment; zero Gate in entire module; only 3 of 27 designed screens built |
+| **StudentPortal** | 7 ctrl, 0 mdl, 0 svc, 0 req | **~55%** (V2 audit) | P0 IDOR in proceedPayment (payable_id unverified); zero Gate::authorize() calls; 0 FormRequests; 0 services; 0 policies; hard-coded dropdown ID 104; PaymentGateway::all() not filtered; currentFeeAssignemnt typo; 22 of 35 screens ✅ built; 8 🟡 partial; 5 ❌ stubs. **Completion prompt ready:** `5-Work-In-Progress/StudentPortal/1-Claude_Prompt/STP_2step_Prompt1.md` |
 
 ### Tenant-Scoped Modules — Academic & Curriculum
 
@@ -70,18 +94,23 @@
 
 ## Requirements Complete — Development Pending
 
-- [ ] **Payroll** (0% code, module not created) — Requirements v4 complete. 19 new `prl_` tables. 11 controllers, 6 services planned.
-- [ ] **Inventory** (0% code, module not created) — Requirements v4 complete. 19 new `inv_` tables. 14 controllers, 6 services planned.
+- [x] **HRS — HR & Payroll** (0% code, module not created) — Planning complete 2026-03-26. `Modules\HrStaff`. Dual prefix: `hrs_*` (23 tables) + `pay_*` (10 tables). Payroll merged into HrStaff (v2 decision). Outputs: `HRS_FeatureSpec.md`, `HRS_DDL_v1.sql` + migration + 7 seeders, `HRS_Dev_Plan.md`. 20 controllers, 15 services, 30 FormRequests, ~110 views, 102 routes, 6 implementation phases (Sprint 1–12), 22 feature tests + 7 unit test files planned.
+- [x] **Inventory** (0% code, module not created) — Prompt ready 2026-03-26. `Modules\Inventory`. Prefix: `inv_*` (28 tables). 18 controllers, 7 services, 13 FormRequests, ~65 views, ~65 routes, 4 seeders + runner, 10 implementation layers. Prompt: `5-Work-In-Progress/22-Inventory/1-Claude_Prompt/INV_2step_Prompt1.md`.
+- [x] **FrontOffice / FOF** (0% code, module not created) — Prompt ready 2026-03-26. `Modules\FrontOffice`. Prefix: `fof_*` (22 tables). 16 controllers, 5 services (VisitorService, GatePassService, CircularService, CertificateIssuanceService, EarlyDepartureService), ~75 web routes, ~12 API routes. Key: DomPDF certificates, ATT sync (EarlyDepartureAttSyncJob — 3 retries), public feedback token URL (no auth), fof:flag-overstay Artisan daily. Prompt: `5-Work-In-Progress/FrontOffice/1-Claude_Prompt/FOF_2step_Prompt1.md`.
+- [x] **AdmissionMgmt / ADM** (0% code, module not created) — Prompt ready 2026-03-26. `Modules\Admission`. Prefix: `adm_*` (20 tables). 14 controllers, 6 services (AdmissionPipelineService, MeritListService, EnrollmentService, TransferCertificateService, PromotionService, AdmissionAnalyticsService), ~65 web routes, ~20 API routes. Key: atomic enrollment DB::transaction (sys_users + std_students + std_student_academic_sessions), payment webhook outside auth middleware (signature-verified only, idempotent), NEP 2020 entrance test compliance, QR-code TC. Prompt: `5-Work-In-Progress/FrontOffice/1-Claude_Prompt/ADM_2step_Prompt1.md`.
+- [x] **Hostel / HST** (0% code, module not created) — Prompt ready 2026-03-26. `Modules\Hostel`. Prefix: `hst_*` (21 tables — spec says 20, DDL has 21). 20 controllers, 7 services (AllotmentService, LeavePassService, HstAttendanceService, IncidentService, HostelFeeService, HstComplaintService, SickBayService), ~65 routes. Key: dual generated-column UNIQUE on hst_allotments (active-bed + active-student), leave approval in DB::transaction (3 ops atomic), WardenScopeMiddleware, hst_sick_bay_log.hpc_record_id soft FK (no constraint), HostelFeeService service-to-service only (no FK to fin_*), DomPDF (leave pass PDF + warning letter). Prompt: `5-Work-In-Progress/Hostel/1-Claude_Prompt/HST_2step_Prompt1.md`.
+- [x] **StudentPortal / STP** (~55% code, existing module) — Completion prompt ready 2026-03-26. `Modules\StudentPortal`. Prefix: stp_* (ZERO owned tables — reads 30+ tables from 15 modules). 7 existing controllers (1,317 lines), 57 views, 35 screens, 55+ routes, 0 services/FormRequests/policies. P0: IDOR in proceedPayment + EnsureTenantHasModule missing + zero Gate calls. P1: hard-coded dropdown ID 104, PaymentGateway::all(), currentFeeAssignemnt typo, mark-read GET→POST. Phase 2 of prompt = Security & Architecture (FormRequests + Policy + Service) NOT DDL. ~15 person-days to complete. Prompt: `5-Work-In-Progress/StudentPortal/1-Claude_Prompt/STP_2step_Prompt1.md`.
+- [x] **Cafeteria / CAF** (0% code, module not created) — Prompt ready 2026-03-26. `Modules\Cafeteria`. Prefix: `caf_*` (21 tables). 16 controllers, 6 services (MenuService, OrderService, MealCardService, PosService, StockService, ReportService), ~77 routes (62 web + 15 API), 16 FormRequests, 14 policies, ~50 views. Key: ALL caf_* PKs INT UNSIGNED (not BIGINT); atomic balance deduction via SELECT...FOR UPDATE; Razorpay webhook idempotent (razorpay_payment_id UNIQUE, outside auth); HST bridge (auto mess enrollment on hostel admission); INV bridge (optional PR on stock reorder); SimpleSoftwareIO/simple-qrcode; DomPDF (kitchen sheet, card statement, FSSAI audit). Prompt: `5-Work-In-Progress/Cafeteria/1-Claude_Prompt/CAF_2step_Prompt1.md`.
 
 ## Pending Modules
 
 - [ ] **Behavioral Assessment** — Student behavior tracking and analysis
 - [ ] **Analytical Reports** — Cross-module analytics and reporting
-- [ ] **Hostel Management** — Hostel rooms, allocation, fees
-- [ ] **Mess/Canteen** — Meal planning, attendance, billing
-- [ ] **Admission Enquiry** — Online admission process
-- [ ] **Visitor Management** — Visitor registration, tracking
-- [ ] **FrontDesk** — Reception management
+- [x] **Hostel Management (HST)** — Prompt ready. See "Requirements Complete" above.
+- [x] **Mess/Canteen (CAF)** — Prompt ready. See "Requirements Complete" above.
+- [x] **Admission Enquiry (ADM)** — Prompt ready. See "Requirements Complete" above.
+- [ ] **Visitor Management** — Visitor registration, tracking (see also VSM module)
+- [x] **FrontDesk (FOF)** — Prompt ready. See "Requirements Complete" above.
 - [ ] **Template & Certificate** — Dynamic certificate generation
 - [ ] **Help Desk** — Support ticket system
 

@@ -1,8 +1,48 @@
 # Known Bugs, Security Issues, Performance Issues & Roadmap
 
-> **Last Updated:** 2026-03-12
-> **Source:** `04_Bug_Report.md`, `05_Performance_Bottlenecks.md`, `06_Security_Audit.md`, `10_N_Plus_One_Query_Report.md`, `13_Master_Improvement_Roadmap.md`
-> **Total Issues: 127** (25 critical, 41 high, 41 medium, 20 low)
+> **Last Updated:** 2026-03-26
+> **Source:** `04_Bug_Report.md`, gap analysis 2026-03-22, V2 requirement generation 2026-03-26
+> **Total Issues: 140+** (27 critical, 45+ high, 41 medium, 20 low)
+
+---
+
+## NEW CRITICAL FINDINGS — 2026-03-26 (from V2 requirement generation)
+
+### SEC-NEW-001: Hardcoded API Keys in QuestionBank Source Code
+- **File:** `Modules/QuestionBank/app/Http/Controllers/AIQuestionGeneratorController.php`
+- **Problem:** OpenAI key (`sk-proj-...`) and Gemini key (`AIzaSyD-...`) hardcoded directly in source. Committed to git history.
+- **Action:** **ROTATE BOTH KEYS IMMEDIATELY.** Move to `config/services.php` + `.env`. Add `.env` to `.gitignore` audit.
+- **OWASP:** A02 — Cryptographic Failures
+
+### SEC-NEW-002: Student Portal IDOR on Payment Endpoints (unpatched)
+- **File:** `Modules/StudentPortal/app/Http/Controllers/` — `proceedPayment` method
+- **Problem:** `payable_id` accepted from client without verifying it belongs to the authenticated student. Any student can view/pay another student's invoice by changing the ID.
+- **OWASP:** A01 — Broken Access Control
+
+### BUG-NEW-001: PAY Module — Zero DDL + Three Broken Table Prefixes
+- **Files:** `Modules/Payment/app/Models/`
+- **Problem:** Payment model uses `ptm_payments`, PaymentWebhook uses `pmt_payment_webhooks`, PaymentRefund uses `payment_refunds` — all different. None exist in `tenant_db_v2.sql`. Module has no migration foundation.
+- **Fix:** Standardize all to `pay_*` prefix; write DDL and migrations.
+
+### BUG-NEW-002: NTF — All Routes Commented Out (Module Inaccessible)
+- **File:** `routes/tenant.php` — Notification route group
+- **Problem:** Entire notification route block is commented out. Module is deployed but unreachable. Gate prefix also uses `prime.*` instead of `tenant.*`.
+- **Fix:** Uncomment routes; fix Gate prefix.
+
+### BUG-NEW-003: SLK — `bok_book_topic_mapping` Table Missing from DDL
+- **File:** `Modules/SyllabusBooks/database/migrations/` — migration exists as `.bk` (inactive)
+- **Problem:** `BookTopicMappingController` and `BookTopicMapping` model reference a table that doesn't exist. Also `AuthorController::index()` queries `BokBook` instead of `BookAuthors` — copy-paste error.
+
+### BUG-NEW-004: HMW — `lms_homework_assignment` Table Missing from DDL
+- **Problem:** `HomeworkAssignment` model and `publish()` method reference this table; it does not exist in `tenant_db_v2.sql`. Any call to `publish()` will crash with "Table doesn't exist".
+
+### BUG-NEW-005: SCH — `RolePermissionController::destroy()` Calls `save()` Not `delete()`
+- **File:** `Modules/SchoolSetup/app/Http/Controllers/RolePermissionController.php`
+- **Problem:** Destroy method calls `$role->save()` instead of `$role->delete()` — roles are never actually deleted.
+
+### BUG-NEW-006: TTS — Wrong Column in Conflict Check
+- **File:** `Modules/StandardTimetable/app/Http/Controllers/StandardTimetableController.php` line ~349
+- **Problem:** `->whereIn('id', $teacherIds)` should be `->whereIn('teacher_id', $teacherIds)`. Conflict check always returns wrong teacher names.
 
 ---
 
@@ -315,19 +355,29 @@
 
 ## Missing Features (Not in Codebase)
 
-| Feature | Priority | Notes |
-|---------|----------|-------|
-| Student Portal (full UI) | HIGH | 3 controllers exist but no views |
-| Result/Report Card Generation | HIGH | Exam papers exist but no result compilation |
-| Fee Payment End-to-End | HIGH | SEC-004 breaks all Razorpay webhooks currently |
-| SMS Notifications | HIGH | Channel defined but stubbed |
-| LMS Grading (auto-grading, grade book) | MEDIUM | Quizzes/exams created but no grading |
-| Parent Portal | MEDIUM | Parent role exists but no dedicated views |
-| Formal Admission Workflow | MEDIUM | No inquiry→application→test→selection pipeline |
-| Library Management | MEDIUM | DB tables exist, stub controller only |
-| Push Notifications | LOW | Channel defined but stubbed |
-| Hostel/Canteen Modules | LOW | Prefixes reserved, no modules |
-| Analytics Dashboards | LOW | No personalized learning analytics |
-| Academic Calendar | LOW | Sessions exist, no event calendar |
-| Certificate/TC Generation | LOW | Documents exist, no template generator |
-| Online Classroom (Zoom/Meet) | LOW | No integration |
+> V2 requirement documents exist for all items below — see `{REQUIRE_DETAIL_V2}/`
+
+| Feature | Module | Priority | V2 Doc | Notes |
+|---------|--------|----------|--------|-------|
+| Student Portal (full UI) | STP | HIGH | ✅ | Completion revised to ~63%; IDOR on payment still unpatched |
+| Result/Report Card Generation | EXA | HIGH | ✅ | Full offline exam module specified |
+| Fee Payment End-to-End | PAY | HIGH | ✅ | SEC-004 + zero DDL must be fixed first |
+| SMS Notifications | NTF | HIGH | ✅ | All routes commented out; DLT compliance required |
+| LMS Grading (auto-grading, grade book) | EXM/QUZ | MEDIUM | ✅ | Student attempt pipeline specified in V2 |
+| Parent Portal | PPT | MEDIUM | ✅ | Full 18-FR spec with OTP login, PWA push |
+| Formal Admission Workflow | ADM | MEDIUM | ✅ | Full enquiry→application→enrollment funnel |
+| Attendance (dedicated module) | ATT | MEDIUM | ✅ | Supersedes zero-auth STD AttendanceController |
+| Academics Hub | ACD | MEDIUM | ✅ | Lesson plans, teaching diary, alert engine |
+| HR & Payroll | HRS | MEDIUM | ✅ | PF/ESI/TDS, leave FSM, payroll journal |
+| Finance & Accounting | FAC | MEDIUM | ✅ | Tally voucher engine — partial code exists as Accounting module |
+| Inventory | INV | MEDIUM | ✅ | 28 tables, D21 event contracts |
+| Hostel | HST | LOW | ✅ | Building→Floor→Room→Bed hierarchy |
+| Cafeteria/Mess | CAF | LOW | ✅ | POS, FSSAI, QR meal scan |
+| LXP (Learning Experience) | LXP | LOW | ✅ | Personalized paths, gamification |
+| Predictive Analytics | PAN | LOW | ✅ | Dropout/fee prediction, PAN→REC pipeline |
+| Certificate/TC Generation | CRT | LOW | ✅ | QR verify, DigiLocker stub |
+| Visitor Security | VSM | LOW | ✅ | Gate management, lockdown mode |
+| Maintenance | MNT | LOW | ✅ | AMC, QR asset scan, SLA escalation |
+| Front Office | FOF | LOW | ✅ | Reception, postal register, circulars |
+| Push Notifications | NTF | LOW | ✅ | FCM integration specified |
+| Communication (messaging) | COM | LOW | ✅ | 14 tables, 7-state delivery FSM |

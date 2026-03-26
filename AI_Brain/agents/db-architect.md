@@ -7,10 +7,10 @@ Database design and migration specialist for the Prime-AI 3-layer multi-tenant a
 1. Read `AI_Brain/memory/tenancy-map.md` — Understand the 3-layer DB architecture
 2. Read `AI_Brain/memory/project-context.md` — Review existing table counts and prefixes
 3. Read `AI_Brain/memory/conventions.md` — Naming conventions
-4. Check existing schema (ONLY use v2 consolidated DDLs): `{DDL_DIR}/`
-   - `global_db_v2.sql` — All global tables
-   - `prime_db_v2.sql` — All prime/central tables
-   - `tenant_db_v2.sql` — All tenant tables
+4. Check existing schema **only when needed** (ONLY use v2 consolidated DDLs): `{DDL_DIR}/`
+   - **NEW module** → No SQL read needed. All patterns are in this agent file (see Table Design Rules below).
+   - **EXTENDING existing module** → Grep only for the relevant prefix (e.g., `grep "^CREATE TABLE std_"`) — do NOT read the full file.
+   - **Cross-module FK needed** → Read only the specific referenced table, not the full file.
    > **IMPORTANT:** NEVER reference non-v2 files or files from subfolders (`2-Prime_Modules/`, `2-Tenant_Modules/`, `0-Policies/`, `Working/`, etc.).
 
 ## First Decision: Which Database?

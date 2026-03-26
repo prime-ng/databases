@@ -120,7 +120,7 @@ Modules/ModuleName/
 | **SyllabusBooks** | 4 | 6 | 0 | 3 | 17 | 0 | 0 | 0 | 1 | 16 | 0 | Books, book-topic mapping, authors |
 | **Accounting** | 18 | 21 | 0 | 15 | 79 | 0 | 0 | 0 | 2 | 152 | 14 | **NEW** — Tally-inspired voucher engine, chart of accounts, ledgers, journal entries |
 | **StandardTimetable** | 1 | 0 | 0 | 0 | 3 | 0 | 0 | 0 | 1 | 30 | 0 | Standard timetable views (skeleton) |
-| **StudentPortal** | 3 | 0 | 0 | 0 | 27 | 0 | 0 | 0 | 1 | 16 | 7 | Student-facing interface: dashboard, complaints, notifications |
+| **StudentPortal** | 7 | 0 | 0 | 0 | 57 | 0 | 0 | 0 | 1 | 55+ | 7 | Student-facing interface: ~55% complete. ZERO services/FormRequests/policies. P0 IDOR in proceedPayment. 7 ctrl, 57 views, 35 screens. **Prompt ready:** `5-Work-In-Progress/StudentPortal/1-Claude_Prompt/STP_2step_Prompt1.md` |
 | **Dashboard** | 1 | 0 | 0 | 0 | 8 | 0 | 0 | 0 | 1 | 16 | 0 | Admin dashboards |
 | **Scheduler** | 1 | 2 | 2 | 1 | 6 | 0 | 0 | 0 | 1 | 16 | 1 | Job scheduling (uses module-level routing) |
 
@@ -156,10 +156,25 @@ Modules/ModuleName/
 | SystemConfig | `/system-config/*` | settings, menus |
 
 ### Planned Modules (Requirements Complete, Development Pending)
-| Prefix | Module | Laravel Module | Tables | Status | Requirement Doc |
-|--------|--------|---------------|--------|--------|-----------------|
-| `prl_` | **Payroll** | `Modules/Payroll/` (not yet created) | 19 new + sch_employees ALTER | Requirements v4 done. 11 controllers, 6 services planned. | `1-DDL_Tenant_Modules/21-Payroll/Claude_Plan/Payroll_Requirement_v4.md` |
-| `inv_` | **Inventory** | `Modules/Inventory/` (not yet created) | 19 new | Requirements v4 done. 14 controllers, 6 services planned. | `1-DDL_Tenant_Modules/22-Inventory/Claude_Plan/Inventory_Requirement_v4.md` |
+| Prefix | Module | Code | V2 Req Doc | Tables | Notes |
+|--------|--------|------|-----------|--------|-------|
+| `acc_` | **FinanceAccounting** | `Modules/Accounting/` (partial — 18 ctrl, 21 mdl, ~30%) | `V2/FAC_FinanceAccounting_Requirement.md` | 21 acc_* + 3 proposed | Tally-inspired voucher engine. Code uses `acc_*` prefix not `fac_*`. |
+| `hrs_` | **HrStaff** | Not created | `V2/HRS_HrStaff_Requirement.md` | 15 hrs_* | PF/ESI/TDS compliance, leave FSM, payroll integration |
+| `inv_` | **Inventory** | Not created | `V2/INV_Inventory_Requirement.md` | 28 inv_* | 65 routes, 5 FSMs, D21 event contracts. **Prompt ready:** `5-Work-In-Progress/22-Inventory/1-Claude_Prompt/INV_2step_Prompt1.md` |
+| `hst_` | **Hostel** | Not created | `V2/HST_Hostel_Requirement.md` | 21 hst_* (spec says 20; DDL Section 5 has 21 incl. hst_room_inventory) | Building→Floor→Room→Bed hierarchy, warden rotation, 7 services, dual active-allotment UNIQUE constraints, leave-pass approval in DB::transaction. **Prompt ready:** `5-Work-In-Progress/Hostel/1-Claude_Prompt/HST_2step_Prompt1.md` |
+| `com_` | **Communication** | Not created | `V2/COM_Communication_Requirement.md` | 14 com_* | DLT-compliant SMS, 7-state delivery FSM |
+| `lxp_` | **LearningExperience** | Not created | `V2/LXP_Lxp_Requirement.md` | 19 lxp_* | Personalized paths, gamification, mentorship |
+| `pan_` | **PredictiveAnalytics** | Not created | `V2/PAN_PredictiveAnalytics_Requirement.md` | 12 pan_* | Dropout/fee/attendance prediction, PAN→REC pipeline |
+| `crt_` | **Certificate** | Not created | `V2/CRT_Certificate_Requirement.md` | 10 crt_* | QR verification, DigiLocker stub, bulk async gen |
+| `ppt_` | **ParentPortal** | Not created | `V2/PPT_ParentPortal_Requirement.md` | 6 ppt_* | OTP login, PTM scheduling, PWA push |
+| `caf_` | **Cafeteria** | Not created | `V2/CAF_Cafeteria_Requirement.md` | 21 caf_* | POS counter, FSSAI compliance, QR meal scan. All caf_* PKs INT UNSIGNED (not BIGINT). Atomic balance deduction SELECT...FOR UPDATE. Razorpay webhook idempotent (razorpay_payment_id UNIQUE). HST bridge (auto mess enrollment). INV bridge (PR on reorder). SimpleSoftwareIO/simple-qrcode for QR. **Prompt ready:** `5-Work-In-Progress/Cafeteria/1-Claude_Prompt/CAF_2step_Prompt1.md` |
+| `vsm_` | **VisitorSecurity** | Not created | `V2/VSM_VisitorSecurity_Requirement.md` | 13 vsm_* | Gate security, contractor access, lockdown mode |
+| `mnt_` | **Maintenance** | Not created | `V2/MNT_Maintenance_Requirement.md` | 11 mnt_* | AMC, QR asset scan, SLA escalation, depreciation |
+| `adm_` | **Admission** | Not created | `V2/ADM_Admission_Requirement.md` | 20 adm_* | Enquiry→application→shortlist→enroll funnel. Atomic enrollment via DB::transaction (sys_users + std_students + std_student_academic_sessions). Payment webhook idempotent (Razorpay/PayU). **Prompt ready:** `5-Work-In-Progress/FrontOffice/1-Claude_Prompt/ADM_2step_Prompt1.md` |
+| `att_` | **Attendance** | Not created (basic in STD) | `V2/ATT_Attendance_Requirement.md` | 14 att_* | Supersedes STD's zero-auth AttendanceController |
+| `acd_` | **Academics** | Not created | `V2/ACD_Academics_Requirement.md` | 31 acd_* | Lesson plans, teaching diary, academic alerts |
+| `exa_` | **Examination** | Not created | `V2/EXA_Examination_Requirement.md` | 22 exa_* | Offline exams, mark entry, report cards (distinct from EXM) |
+| `fof_` | **FrontOffice** | Not created | `V2/FOF_FrontOffice_Requirement.md` | 22 fof_* | Reception, postal register, circulars, certificates (DomPDF), early departure ATT sync, public feedback token URL. **Prompt ready:** `5-Work-In-Progress/FrontOffice/1-Claude_Prompt/FOF_2step_Prompt1.md` |
 
 ### Key Architecture: Voucher Engine (shared by Accounting, Payroll, Inventory)
 - Accounting owns `acc_vouchers` + `acc_voucher_items` (double-entry Dr/Cr)
@@ -169,12 +184,10 @@ Modules/ModuleName/
 - Transport fires `TransportFeeCharged` → Accounting creates Sales Voucher
 - Shared contract: `VoucherServiceInterface` in Accounting module
 
-### Missing Modules (Reserved Prefixes)
-| Prefix | Module | Status |
-|--------|--------|--------|
-| `hos_` | Hostel Management | Not started |
-| `mes_` | Canteen/Mess Management | Not started |
-| `beh_` | Behaviour Tracking | Not started |
+> **V2 Requirement Library:** All 46 modules have V2 requirement documents in `{REQUIRE_DETAIL_V2}/`.
+> See `{REQUIRE_DETAIL_V2}/_00_Master_Requirement_Index_2026-03-26.md` for full index.
+> See `{REQUIRE_DETAIL_V2}/_01_Cross_Module_Dependencies_2026-03-26.md` for dependency map.
+> See `{REQUIRE_DETAIL_V2}/_02_RBS_Coverage_Report_2026-03-26.md` for RBS coverage analysis.
 
 ### API Endpoints
 All module APIs follow: `auth:sanctum` + `/v1/{module_plural}` + standard apiResource CRUD (index, store, show, update, destroy)
