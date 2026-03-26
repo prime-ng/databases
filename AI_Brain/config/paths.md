@@ -57,19 +57,23 @@ OLD_TENANT_DDL_DIR    = {DB_REPO}/1-DDL_Tenant_Modules
 
 ## Key Locations — OLD_REPO (working repo / Claude output, continued)
 ```
-PROJECT_PLAN          = {OLD_REPO}/3-Project_Planning
-PROJECT_DOCS          = {PROJECT_PLAN}/Project_Docs
-RBS_DIR               = {PROJECT_PLAN}/1-RBS
-GAP_ANALYSIS          = {PROJECT_PLAN}/2-Gap_Analysis
-WORK_STATUS           = {PROJECT_PLAN}/9-Work_Status
-DESIGN_ARCH           = {OLD_REPO}/3-Design_Architecture
-WORK_IN_PROGRESS      = {OLD_REPO}/5-Work-In-Progress
-HPC_CONTEXT           = {WORK_IN_PROGRESS}/14-HPC/Claude_Context
-TT_CONTEXT            = {WORK_IN_PROGRESS}/8-Smart_Timetable/Claude_Context
-TEAM_PROMPTS          = {OLD_REPO}/6-Working_with_Team
-CLAUDE_PROMPTS        = {WORK_IN_PROGRESS}/14-HPC/Claude_Prompts
-CLAUDE_LOG            = {OLD_REPO}/9-CLAUDE_Logs
-TEMP_OUTPUT_DIR       = {OLD_REPO}/8-Temp_Output
+PROJECT_PLAN              = {OLD_REPO}/3-Project_Planning
+PROJECT_DOCS              = {PROJECT_PLAN}/Project_Docs
+RBS_DIR                   = {PROJECT_PLAN}/1-RBS
+REQUIREMENT_HIGH_level    = {OLD_REPO}/2-Requirement_Module_wise/1-HighLevel_Requirements
+REQUIRE_DETAIL_DEV_DONE   = {OLD_REPO}/2-Requirement_Module_wise/2-Detailed_Requirements/V1/Dev_Done
+REQUIRE_DETAIL_DEV_PEND   = {OLD_REPO}/2-Requirement_Module_wise/2-Detailed_Requirements/V1/Dev_Pending
+REQUIREMENT_CONDITIONS    = {OLD_REPO}/2-Requirement_Module_wise/3-Requirement_Conditions
+GAP_ANALYSIS              = {PROJECT_PLAN}/2-Gap_Analysis
+WORK_STATUS               = {PROJECT_PLAN}/9-Work_Status
+DESIGN_ARCH               = {OLD_REPO}/3-Design_Architecture
+WORK_IN_PROGRESS          = {OLD_REPO}/5-Work-In-Progress
+HPC_CONTEXT               = {WORK_IN_PROGRESS}/14-HPC/Claude_Context
+TT_CONTEXT                = {WORK_IN_PROGRESS}/8-Smart_Timetable/Claude_Context
+TEAM_PROMPTS              = {OLD_REPO}/6-Working_with_Team
+CLAUDE_PROMPTS            = {WORK_IN_PROGRESS}/14-HPC/Claude_Prompts
+CLAUDE_LOG                = {OLD_REPO}/9-CLAUDE_Logs
+TEMP_OUTPUT_DIR           = {OLD_REPO}/8-Temp_Output
 ```
 
 ## Key Files
