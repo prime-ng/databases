@@ -8,3 +8,73 @@ Now I have created an enhanced RBS file "3-Project_Planning/1-RBS/PrimeAI_RBS_Me
 
 In HRS (HrStaff) Module File "2-Requirement_Module_wise/2-Detailed_Requirements/V2/HRS_HrStaff_Requirement.md", you have mentioned All items related to Payroll (prl_) Out of Scope But I wanted to keep a single Module for HR & Payroll Both. So update that file (HRS_HrStaff_Requirement.md) as `HRS_HrStaff_Requirement_v2.md` and incude all Payroll Related Task mentioned in the lates RBS "3-Project_Planning/1-RBS/PrimeAI_Complete_Spec_v2.md". Also consider additional steps (if anything left in latest RBS) to make it complete `HR & Payroll` Module with all possible requirement of a school to manage HR & Payrol Department.
 
+
+
+--------------------------------------------------------------------------------------------
+
+OLD_REPO     = /Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases
+OLD_MODULE   = StudentPortal
+OLD_MOD_FILE = {OLD_REPO}/5-Work-In-Progress/StudentPortal/1-Claude_Prompt/STP_2step_Prompt1.md
+NEW_MODULE   = ParentPortal
+NEW_REQ_FILE = {OLD_REPO}/2-Requirement_Module_wise/2-Detailed_Requirements/V2/PPT_ParentPortal_Requirement.md
+OUTPUT_DIR   = {OLD_REPO}/5-Work-In-Progress/ParentPortal/1-Claude_Prompt
+
+Create aN EXACTLY SAME prompt for `{NEW_MODULE}` Module as you have created for `{OLD_MODULE}` Module in File `{OLD_MOD_FILE}`. The Requirement File for `{NEW_MODULE}` Module is `{NEW_REQ_FILE}`. Store the final prompt for `{NEW_MODULE}` Module in Folder `{OUTPUT_DIR}`
+
+---------------------------------------------------------------------------------------------
+
+
+
+--------------------------------------------------------------------------------------------
+
+OLD_REPO     = /Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases
+OLD_MODULE   = Inventory
+OLD_MOD_FILE = {OLD_REPO}/5-Work-In-Progress/22-Inventory/1-Claude_Prompt/INV_2step_Prompt1.md
+NEW_MODULE   = Maintenance
+NEW_REQ_FILE = {OLD_REPO}/2-Requirement_Module_wise/2-Detailed_Requirements/V2/MNT_Maintenance_Requirement.md
+OUTPUT_DIR   = {OLD_REPO}/5-Work-In-Progress/Maintenance/1-Claude_Prompt
+
+Create aN EXACTLY SAME prompt for `{NEW_MODULE}` Module as you have created for `{OLD_MODULE}` Module in File `{OLD_MOD_FILE}`. The Requirement File for `{NEW_MODULE}` Module is `{NEW_REQ_FILE}`. Store the final prompt for `{NEW_MODULE}` Module in Folder `{OUTPUT_DIR}`
+
+---------------------------------------------------------------------------------------------
+
+## Created
+----------
+Payroll
+Inventory
+FrontOffice
+AdmissionMgmt
+Hostel
+Cafeteria
+StudentPortal
+ParentPortal
+VisitorSecurity
+Certificate
+Maintenance
+
+
+
+## Pending
+----------
+LXP
+PredictiveAnalytics
+
+
+Communication
+
+Notification
+
+
+## Check
+--------
+Academics
+Attendance
+Recommendation
+JOB_Scheduler
+
+--------------------------------------------------------------
+## Run The Prompt
+-----------------
+
+
+
