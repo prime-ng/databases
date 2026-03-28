@@ -51,6 +51,7 @@ CREATE TABLE IF NOT EXISTS `lms_homework` (
     -- Homework Details
     `title`               VARCHAR(255) NOT NULL,
     `description`         LONGTEXT NOT NULL,           -- Supports HTML / Markdown
+    `hw_attachments_json`     JSON DEFAULT NULL,          -- Array of sys_media IDs for uploaded files e.g. [{"media_id": 12, "file_name": "hw1.pdf"}, ...]
     `submission_type_id`  INT UNSIGNED NOT NULL,       -- FK to sys_dropdown_table.id (TEXT | FILE | HYBRID | OFFLINE_CHECK)
     -- Grading Settings
     `is_gradable`         TINYINT(1) NOT NULL DEFAULT 1,    -- 1 = Gradable, 0 = Not Gradable
