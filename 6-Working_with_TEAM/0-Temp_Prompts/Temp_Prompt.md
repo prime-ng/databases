@@ -75,5 +75,9 @@ JOB_Scheduler
 ## Run The Prompt
 -----------------
 
+Many Time I have seen below sentence from Claude, what does it mean. Do I need to do anything ?
+- "Tip: Open the Command Palette (Cmd+Shift+P) and run "Shell Command: Install 'code' command in PATH" to enable IDE integration"
+
+
 
 

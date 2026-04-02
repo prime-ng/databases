@@ -78,7 +78,7 @@
 
 | Module | Code Exists | Completion | Key Gaps |
 |--------|------------|------------|----------|
-| **SmartTimetable** | 12 ctrl, 62 mdl, 106 svc, 7 req | **~48%** | God controller (3,245 lines); constraint engine structure built but FETConstraintBridge context broken; 12 bugs (BUG-TT-001–012); no EnsureTenantHasModule; API zero auth |
+| **SmartTimetable** | 20 ctrl, 63 mdl, 108 svc, 7 req, 176 views, 14 seeders | **~60%** | Full reverse-engineering documentation completed 2026-03-31 (4,621 lines, 31 sections). FETSolver 2,830 lines; 24 hard + 60 soft constraint classes; parallel periods done; God controller ~3,378 lines; 17/20 controllers lack auth (SEC-009); ~30/155 constraints implemented in solver; Phases 6-8 (Analytics/Publish/Substitution) mostly unstarted; 0 module-level tests; no EnsureTenantHasModule. **Full doc:** `5-Work-In-Progress/2-In-Progress/SmartTimetable/SmartTimetable_Module_Documentation.md` |
 | **TimetableFoundation** | 24 ctrl, 32 mdl, 3 svc, 4 req | **~68%** | EnsureTenantHasModule missing on 100+ routes; largest route file (262 lines) |
 | **StandardTimetable** | 1 ctrl, 0 mdl, 0 svc, 0 req | **~5%** | Module skeleton — 1 controller with 1 method, zero models/services/views |
 | **Hpc** | 22 ctrl, 32 mdl, 10 svc, 14 req | **~59%** | God controller (2,610 lines); no EnsureTenantHasModule; public PDF route; 9 missing FormRequests |

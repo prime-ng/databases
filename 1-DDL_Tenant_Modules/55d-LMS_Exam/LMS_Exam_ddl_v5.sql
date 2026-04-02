@@ -167,7 +167,7 @@
     `show_result_type` ENUM('IMMEDIATE','SCHEDULED','MANUAL') NOT NULL DEFAULT 'MANUAL',
     `scheduled_result_at` DATETIME DEFAULT NULL,
     -- Offline Specific Config
-    `offline_entry_mode` ENUM('BULK_TOTAL','QUESTION_WISE') DEFAULT 'BULK_TOTAL', -- How marks will be entered
+    `offline_entry_mode` ENUM('BULK_TOTAL','QUESTION_WISE') DEFAULT 'QUESTION_WISE', -- How marks will be entered
     -- Audit
     `status_id` INT UNSIGNED NOT NULL DEFAULT 0,    -- FK to lms_exam_status_events.id (Status of the exam) 'DRAFT','PUBLISHED','CONCLUDED','ARCHIVED')
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
@@ -257,6 +257,7 @@
     `paper_set_id` INT UNSIGNED NOT NULL,        -- FK to lms_exam_paper_sets.id
     `question_id` INT UNSIGNED NOT NULL,         -- FK to qns_questions_bank.id
     `section_name` VARCHAR(50) DEFAULT 'Section A', -- Logical grouping within paper to showcase MCQ, Long Answer, Short Answer etc.
+    `exam_blueprint_id` INT UNSIGNED DEFAULT NULL, -- FK to lms_exam_blueprints.id (Optional, if we want to link question to specific blueprint section)
     `ordinal` INT UNSIGNED NOT NULL DEFAULT 0,      -- Sequence order
     `override_marks` DECIMAL(5,2) NOT NULL,         -- Override marks from Question Bank
     `negative_marks` DECIMAL(5,2) DEFAULT 0.00,     -- Negative marks (if any)
@@ -268,7 +269,8 @@
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_set_question` (`paper_set_id`, `question_id`),
     CONSTRAINT `fk_sq_set` FOREIGN KEY (`paper_set_id`) REFERENCES `lms_exam_paper_sets` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_sq_question` FOREIGN KEY (`question_id`) REFERENCES `qns_questions_bank` (`id`)
+    CONSTRAINT `fk_sq_question` FOREIGN KEY (`question_id`) REFERENCES `qns_questions_bank` (`id`),
+    CONSTRAINT `fk_sq_blueprint` FOREIGN KEY (`exam_blueprint_id`) REFERENCES `lms_exam_blueprints` (`id`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
