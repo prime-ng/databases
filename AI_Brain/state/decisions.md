@@ -137,6 +137,12 @@
   - `RoomChangeTrackingService` — room/building change violation detection
 - **Known issues:** SubstitutionService crashes (BUG-TT-004/005), Job missing tenant context (BUG-TT-006), API zero auth (BUG-TT-001).
 
+### D21: SmartTimetable — Comprehensive Reverse-Engineering Documentation (2026-03-31)
+- **Why:** Module had grown to 449 files across 20 controllers, 63 models, 108 services, and 176 views with no centralized documentation. New developers and AI agents needed a complete reference to understand the module without reading source code.
+- **Output:** `5-Work-In-Progress/2-In-Progress/SmartTimetable/SmartTimetable_Module_Documentation.md` — 4,621 lines, 31 sections covering: terminology (30+ terms), design intent (from 19 design docs), file inventory, routes (60+ web + 11 API), user workflow (11 phases), screen walkthroughs (15 screens), database schema (43+ tables with column details), data flows (24 operations), FET algorithm (complete pseudocode), constraint engine (24 hard + 60 soft classes), conflict detection, refinement, substitution, gap analysis.
+- **Key findings:** Module at ~60% completion. 125/155 designed constraints not yet implemented. 17/20 controllers lack authorization. Phases 6-8 (Analytics/Publish/Substitution) mostly unstarted. 0 module-level tests.
+- **Reference:** Generated from DDL v7.6 + 19 design documents + full code read of all 449 module files.
+
 ---
 
 ## Future Decisions (Pending)
