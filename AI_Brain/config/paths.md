@@ -14,7 +14,7 @@
 
 ```
 DB_REPO        = /Users/bkwork/WorkFolder/2-New_Primedb/pgdatabase
-OLD_REPO       = /Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases
+OLD_REPO       = /Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db
 AI_BRAIN       = {OLD_REPO}/AI_Brain
 LARAVEL_REPO   = /Users/bkwork/Herd/prime_ai
 LARAVEL_CLAUDE = {LARAVEL_REPO}/.claude/rules

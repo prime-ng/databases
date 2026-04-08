@@ -1,8 +1,8 @@
 {
 	"folders": [
 		{
-			"name": "databases",
-			"path": "/Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases"
+			"name": "old_db",
+			"path": "/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db"
 		}
 		{
 			"name": "pgdatabase",
