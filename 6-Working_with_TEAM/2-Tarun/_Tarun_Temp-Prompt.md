@@ -179,5 +179,83 @@ Using this Document i want to create Automated Development System, whom I need t
 
 
 ---------------------------------------------------------------------------------------------------------------------------------------------------
+I want to create a MS Excel File to create a Menu List for my App but Many Work Tasks which have been developed are not allign on the menu. So I want you read all required files from App Repo. 
+
+## Create a Excel file with below Information :
+   - S.No. (Serila Number)
+   - Module Name (Modules are having separate Folders in '/Users/bkwork/Herd/prime_ai/Modules')
+   - Screen Title (View File)
+   - Tab Name (Many Screens are having multipal Tabs)
+   - Category name (My Menu Hirarchy is having 3 Categorisation Category, Main Menu & Sub-Menu)
+   - Main Menu name (My Menu Hirarchy is having 3 Categorisation Category, Main Menu & Sub-Menu)
+   - Sub-Menu name (My Menu Hirarchy is having 3 Categorisation Category, Main Menu & Sub-Menu)
+   - Route Name
+   - View File (Name with Complete Path)
+   - Note (If something is missing or required)
+- Above all Information should be in separate Columns.
+- Every Tabs in each Screen should have a Separate Row in the Excel. If some screen file in View is not having multipal Tabs in it then Screen will have single Row in the Excel and mention N/A in Tab Column
+- Cover Every Tab in each Screen, even if it is not completly developed then also.
+
+## Reading Workflow :
+
+- First Read AI_Brain to get all the Path.
+- Read exeisting Prompt "/Users/bkwork/WorkFolder/3-Local_Workspace/2-Menu_Items/Prompts/MODULE_TAB_ROUTE_DOCS_PROMPT.md"
+- Convert above prompt into a Prompt file which will select all the Modules one by one and create final "Module_Tabs_Routes_2026-04-07.xlsx" in folder "databases/2-Menu_Items"
+- Read required files from '/Users/bkwork/Herd/prime_ai'
+
+Generate a new prompt to achive above and Save the prompt into "/Users/bkwork/WorkFolder/3-Local_Workspace/2-Menu_Items/Prompts".
 
 
+---------------------
+I want you to design Screens for Report for LMS Module. I have created an initial version of nalytical Report Designing for LMS Module in file "/Users/bkwork/WorkFolder/3-Local_Workspace/9-Analytical_Reports/LMS/Report-Design_v2_3.md". This file has been created by Claude Website from the Source file "/Users/bkwork/WorkFolder/3-Local_Workspace/9-Analytical_Reports/LMS/Report-Design_v2.3.xlsx". The Format created by Claude is not appropriate. I want you to use file "/Users/bkwork/WorkFolder/3-Local_Workspace/9-Analytical_Reports/Screen_Design_Template.md" as a Template File to understand what type of Output I am looking for and create a New File "/Users/bkwork/WorkFolder/3-Local_Workspace/9-Analytical_Reports/LMS/Report-Design_v2.4.md"
+
+---
+I want you to add more similer Analytical Reports in same Format as you created in "/Users/bkwork/WorkFolder/3-Local_Workspace/9-Analytical_Reports/LMS/Report-Design_v2.4.md". To get all Path, you need to read "/Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases/AI_Brain/config/paths.md".To understand what we have built in LMS Module you can read all LMS Modules from below folders in {LARAVEL_REPO} -
+LMS Homework - Modules/LmsHomework
+LMS Quiz - Modules/LmsQuiz
+LMS Quest - Modules/LmsQuests
+LMS Exam - Modules/LmsExam
+Student Attempt - Modules/StudentPortal
+
+Also use AI_Brainunderstanding what has been built. 
+
+Create a New Report Design File as "/Users/bkwork/WorkFolder/3-Local_Workspace/9-Analytical_Reports/LMS/Report-Design_v2.5.md", including all new Reports.
+
+-------------------------
+There are some Conditions when Other Module make etries into Accounting Module like :
+- In Library Module - If any Student Retun a Book after due date is passed, there is a provision that he need to pay Late charges for that. 
+- In Library Module - If a Student Lost the Book or Book is Damaged when Returned then he need to pay Fine for that.
+- In Library Module - School May charge Membership for Library
+- In Transport Module - If Student register for Transport facility, who was not registered preiously.
+- In Transport Module - If Student change Pickup / Drop Point
+- In Transport Module - If Student change Mode Both way Transport (Pickup & Drop) to Oneway Transport OR Vice Versa
+
+Same way Other Module also can make entries in Accounting Module if required.
+
+In above scenario Library & Transport Module need to make an entry into Accounting Module. To make this happen we need to have a mapping machanizm were we can map Which Accounting Ledger should be Debit/Credit in a particuler Event in different Modules. Mapping is already there in Accounting Module but I feel enhancement is required to make this a generic machanizm, which can be applicable into any Module. Below are the Related files location to understand the DDL Schema of all those Modules :
+- Accouting Module Schema - "1-DDL_Tenant_Modules/40-Accounting/DDL/ACC_DDL_v2.sql"
+- Library Module Schema - "databases/1-DDL_Tenant_Modules/64-Library/DDL/Library_ddl_v1.sql"
+- Transport Module Schema - "1-DDL_Tenant_Modules/61-Transport/DDL/tpt_transport_v2.2.sql"
+
+ I want you to create a new DDL to meet this Requirement. DO NOT change any existing DDL but create a new DDL file as "/Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases/1-DDL_Tenant_Modules/40-Accounting/DDL/ACC_Enhancement_ddl.sql"
+
+----------------------
+
+Read AI_Brain to understand what I have already developed in `Studentprofile` & `StudentPortal` Modules. I need to have a Table to for StudentProfile Module to capture below functionality:
+- Student Need to Apply Leaves
+- Leave Application wil be Visibal to the Class Teacher and then She Appove or Reject the leave
+- He may need to Submit some support document (e.g. Medical Certificate etc.) along with Leave Application
+- Class Teacher can Ask additional Information or may ask to provide some support Document to approve the Leave.
+
+DO NOT Change exeisting DDL "1-DDL_Tenant_Modules/33-StudentProfile/DDL/StudentProfile_ddl_v1.4.sql" but create a New File name "1-DDL_Tenant_Modules/33-StudentProfile/DDL/StudentProfile_ddl_v1.5.sql". New File should have all Existing DDL Schema with new Schema proposed by you.
+
+---
+
+Similar to the Student Leave Mgmt.
+Read AI_Brain to understand what I have already developed in `Studentprofile` & `StudentPortal` Modules. I need to have a Table to for StudentProfile Module to capture below functionality:
+- Student Need to Apply Leaves
+- Leave Application wil be Visibal to the Class Teacher and then She Appove or Reject the leave
+- He may need to Submit some support document (e.g. Medical Certificate etc.) along with Leave Application
+- Class Teacher can Ask additional Information or may ask to provide some support Document to approve the Leave.
+
+DO NOT Change exeisting DDL "1-DDL_Tenant_Modules/33-StudentProfile/DDL/StudentProfile_ddl_v1.4.sql" but create a New File name "1-DDL_Tenant_Modules/33-StudentProfile/DDL/StudentProfile_ddl_v1.5.sql". New File should have all Existing DDL Schema with new Schema proposed by you.

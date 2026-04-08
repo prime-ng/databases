@@ -1,0 +1,1255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SmartTimetable — Full Pipeline (Prerequisites + Generation)</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#f0f2f5;color:#24292f;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;overflow:hidden;height:100vh}
+#topbar{position:fixed;top:0;left:0;right:0;z-index:1000;height:50px;background:#fff;border-bottom:2px solid #d0d7de;display:flex;align-items:center;padding:0 16px;gap:10px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+#topbar h1{font-size:13px;font-weight:700;color:#0550ae;white-space:nowrap}
+.sep{color:#d0d7de;font-size:18px}
+.leg{display:flex;align-items:center;gap:4px;font-size:10px;color:#57606a;white-space:nowrap}
+.ld{width:9px;height:9px;border-radius:2px}
+.cbtn{background:#f6f8fa;border:1px solid #d0d7de;color:#57606a;padding:3px 9px;border-radius:5px;cursor:pointer;font-size:11px}
+.cbtn:hover{background:#e8ecf0;color:#24292f}
+#zl{font-size:11px;color:#57606a;margin-left:auto;display:flex;align-items:center;gap:6px}
+#viewport{position:fixed;top:50px;left:0;right:0;bottom:0;overflow:hidden;cursor:grab}
+#viewport.drag{cursor:grabbing}
+#canvas{position:absolute;width:4400px;height:7300px;transform-origin:0 0}
+#asvg{position:absolute;top:0;left:0;width:4400px;height:7300px;pointer-events:none}
+
+/* NODES */
+.nd{position:absolute;border-radius:10px;border:2px solid;font-size:11px;box-shadow:0 2px 8px rgba(0,0,0,.09)}
+.nh{padding:8px 12px;border-radius:8px 8px 0 0;font-weight:700;font-size:11px;display:flex;align-items:center;gap:6px}
+.nb{padding:10px 12px;background:#fff}
+.nb ul{margin-left:14px}.nb li{margin-bottom:3px;color:#57606a}.nb li b{color:#24292f}
+.nb .row{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:5px}
+.hr{border:none;border-top:1px solid #e8ecf0;margin:6px 0}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:3px 12px;font-size:10px;color:#57606a}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px 10px;font-size:10px;color:#57606a}
+.g2v{display:grid;grid-template-columns:auto 1fr;gap:3px 8px;font-size:10px;color:#57606a}
+.mono{font-family:'SF Mono',Consolas,monospace;color:#0550ae;font-size:10px}
+.em{color:#9a6700;font-weight:600}.muted{color:#57606a}.ok{color:#1a7f37}.er{color:#cf222e}
+
+/* light node color variants */
+.nc{border-color:#0969da}.nc .nh{background:#ddf4ff;color:#0969da}.nc .nb{background:#f8fcff}
+.nb-ctrl{border-color:#0550ae}.nb-ctrl .nh{background:#dce8ff;color:#0550ae}.nb-ctrl .nb{background:#f5f8ff}
+.nb-svc{border-color:#8250df}.nb-svc .nh{background:#f0dcff;color:#8250df}.nb-svc .nb{background:#fdf8ff}
+.nb-solv{border-color:#1a7f37}.nb-solv .nh{background:#dcffe4;color:#1a7f37}.nb-solv .nb{background:#f5fff8}
+.nb-ph{border-color:#bc4c00}.nb-ph .nh{background:#fff0e5;color:#bc4c00}.nb-ph .nb{background:#fffcf8}
+.nb-fb{border-color:#9a6700}.nb-fb .nh{background:#fdf5d0;color:#9a6700}.nb-fb .nb{background:#fffef5}
+.nb-rc{border-color:#cf222e}.nb-rc .nh{background:#ffe9e9;color:#cf222e}.nb-rc .nb{background:#fff8f8}
+.nb-st{border-color:#1a7f37}.nb-st .nh{background:#dcffe4;color:#1a7f37}.nb-st .nb{background:#f5fff8}
+.nb-out{border-color:#1a7f37}.nb-out .nh{background:#dcffe4;color:#1a7f37}.nb-out .nb{background:#f5fff8}
+.nb-hlp{border-color:#d0d7de}.nb-hlp .nh{background:#f6f8fa;color:#57606a}.nb-hlp .nb{background:#fff}
+.nb-gap{border-color:#cf222e}.nb-gap .nh{background:#ffe9e9;color:#cf222e}.nb-gap .nb{background:#fff8f8}
+/* prereq variants */
+.nb-p0{border-color:#0969da}.nb-p0 .nh{background:#ddf4ff;color:#0969da}.nb-p0 .nb{background:#f8fcff}
+.nb-p1{border-color:#0550ae}.nb-p1 .nh{background:#dce8ff;color:#0550ae}.nb-p1 .nb{background:#f5f8ff}
+.nb-p2{border-color:#8250df}.nb-p2 .nh{background:#f0dcff;color:#8250df}.nb-p2 .nb{background:#fdf8ff}
+.nb-p3{border-color:#bc4c00}.nb-p3 .nh{background:#fff0e5;color:#bc4c00}.nb-p3 .nb{background:#fffcf8}
+.nb-p4a{border-color:#1a7f37}.nb-p4a .nh{background:#dcffe4;color:#1a7f37}.nb-p4a .nb{background:#f5fff8}
+.nb-p4b{border-color:#0969da}.nb-p4b .nh{background:#ddf4ff;color:#0969da}.nb-p4b .nb{background:#f8fcff}
+.nb-p5{border-color:#8250df}.nb-p5 .nh{background:#f0dcff;color:#8250df}.nb-p5 .nb{background:#fdf8ff}
+.nb-bridge{border-color:#1a7f37}.nb-bridge .nh{background:#dcffe4;color:#1a7f37}.nb-bridge .nb{background:#f5fff8}
+
+/* tags */
+.t{display:inline-block;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:600;margin:1px}
+.tc{background:#ffe9e9;color:#cf222e;border:1px solid #cf222e}
+.th{background:#fff0e5;color:#bc4c00;border:1px solid #bc4c00}
+.tm{background:#fdf5d0;color:#9a6700;border:1px solid #9a6700}
+.tl{background:#dce8ff;color:#0550ae;border:1px solid #0550ae}
+.tok{background:#dcffe4;color:#1a7f37;border:1px solid #1a7f37}
+.ti{background:#ddf4ff;color:#0969da;border:1px solid #0969da}
+.tp{background:#f0dcff;color:#8250df;border:1px solid #8250df}
+
+/* section dividers */
+.sec-div{position:absolute;left:0;right:0;height:38px;display:flex;align-items:center;padding:0 20px;gap:14px;font-size:12px;font-weight:700;letter-spacing:0.4px;border-top:2px solid;border-bottom:2px solid}
+.sec-div.prereq{border-color:#0550ae;background:rgba(220,232,255,0.55);color:#0550ae}
+.sec-div.gen{border-color:#1a7f37;background:rgba(220,255,228,0.55);color:#1a7f37}
+.sec-hdr{position:absolute;font-size:12px;font-weight:700;letter-spacing:0.4px;display:flex;align-items:center;gap:8px}
+
+/* decision diamond */
+.dia-box{position:absolute;transform:rotate(45deg)}
+</style>
+</head>
+<body>
+<div id="topbar">
+  <h1>⬡ SmartTimetable — Full Pipeline</h1>
+  <span class="sep">|</span>
+  <div class="leg"><div class="ld" style="background:#0550ae"></div>Prereq Steps</div>
+  <div class="leg"><div class="ld" style="background:#1a7f37"></div>Solver/CSP/Storage</div>
+  <div class="leg"><div class="ld" style="background:#8250df"></div>Services</div>
+  <div class="leg"><div class="ld" style="background:#bc4c00"></div>Phase/Fallback</div>
+  <div class="leg"><div class="ld" style="background:#cf222e"></div>Rescue/Gap</div>
+  <div class="leg"><div class="ld" style="background:#d0d7de"></div>Helper/Satellite</div>
+  <div id="zl">
+    <span id="zp">22%</span>
+    <button class="cbtn" onclick="resetView()">⟲ Reset</button>
+    <button class="cbtn" onclick="zoomIn()">＋</button>
+    <button class="cbtn" onclick="zoomOut()">－</button>
+    <button class="cbtn" onclick="fitAll()">Fit All</button>
+  </div>
+</div>
+
+<div id="viewport">
+<div id="canvas">
+<svg id="asvg" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <marker id="a0" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3z" fill="#57606a"/></marker>
+  <marker id="a1" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3z" fill="#0969da"/></marker>
+  <marker id="a2" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3z" fill="#0550ae"/></marker>
+  <marker id="a3" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3z" fill="#8250df"/></marker>
+  <marker id="a4" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3z" fill="#1a7f37"/></marker>
+  <marker id="a5" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3z" fill="#bc4c00"/></marker>
+  <marker id="a6" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3z" fill="#9a6700"/></marker>
+  <marker id="a7" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3z" fill="#cf222e"/></marker>
+  <marker id="a8" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3z" fill="#1a7f37"/></marker>
+</defs>
+</svg>
+
+<!-- ══════════════════════════════════════════════════════
+     SECTION DIVIDER — PREREQUISITES
+══════════════════════════════════════════════════════ -->
+<div class="sec-div prereq" style="top:0;width:4400px">
+  ◈ PHASE 0 — PREREQUISITES &amp; DATA PREPARATION &nbsp;|&nbsp; TimetableFoundation Module &nbsp;|&nbsp; /timetable-foundation/timetable-requirement
+  <span style="font-size:10px;font-weight:400;color:#57606a;margin-left:10px">Run these 6 steps in order before triggering timetable generation</span>
+</div>
+
+<!-- ── P0: SchoolSetup Sources ─────────────────────── -->
+<div class="nd nb-p0" style="left:1380px;top:60px;width:760px">
+  <div class="nh">⬡ SchoolSetup &amp; Config — Source Data (Must Exist Before Any Step)</div>
+  <div class="nb" style="font-size:10px">
+    <div class="g3">
+      <div><span class="mono">sch_classes</span> + sections</div>
+      <div><span class="mono">sch_class_section_jnt</span></div>
+      <div><span class="mono">sch_class_groups_jnt</span></div>
+      <div><span class="mono">sch_subjects</span></div>
+      <div><span class="mono">sch_subject_study_formats</span></div>
+      <div><span class="mono">sch_subject_types</span></div>
+      <div><span class="mono">sch_teacher_capabilities</span></div>
+      <div><span class="mono">sch_org_academic_sessions_jnt</span></div>
+      <div><span class="mono">sch_academic_term</span></div>
+    </div>
+    <div class="hr"></div>
+    <div class="g3">
+      <div><span class="mono">tt_timetable_type</span></div>
+      <div><span class="mono">tt_period_set</span></div>
+      <div><span class="mono">tt_class_timetable_type_jnt</span></div>
+      <div><span class="mono">tt_shift</span></div>
+      <div><span class="mono">tt_rooms</span> + types</div>
+      <div><span class="mono">tt_config</span> (13 keys)</div>
+    </div>
+    <div class="hr"></div>
+    <div class="row">
+      <span class="t ti">is_compulsory on sch_class_groups_jnt → Groups vs Subgroups</span>
+      <span class="t ti">actual_total_student from sch_class_section_jnt used for room capacity sizing</span>
+    </div>
+  </div>
+</div>
+
+<!-- P0 left satellite -->
+<div class="nd nb-hlp" style="left:80px;top:60px;width:460px">
+  <div class="nh">⬡ tt_config — Key Settings (13 keys)</div>
+  <div class="nb" style="font-size:10px">
+    <div class="g2v">
+      <div class="em">key 1</div><div>total_periods_per_day</div>
+      <div class="em">key 2</div><div>school_open_days_per_week</div>
+      <div class="em">key 7</div><div>periods_before_lunch</div>
+      <div class="em">key 8</div><div>periods_after_lunch</div>
+      <div class="em">key 9</div><div>min_students_per_subgroup</div>
+      <div class="em">key 10</div><div>max_students_per_subgroup</div>
+      <div class="em">key 11</div><div>max_weekly_periods_per_teacher</div>
+      <div class="em">key 12</div><div>min_weekly_periods_per_teacher</div>
+      <div class="em">key 13</div><div>week_start_day (e.g. MONDAY)</div>
+    </div>
+    <div class="hr"></div>
+    <div class="muted" style="font-size:9px">sys_setting: Subj_Group_will_be_used_for_all_sections, section_of_a_class_has_home_room, teacher_has_home_room</div>
+  </div>
+</div>
+
+<!-- P0 right satellite -->
+<div class="nd nb-hlp" style="left:2840px;top:60px;width:460px">
+  <div class="nh">⬡ sch_class_groups_jnt — Key Fields</div>
+  <div class="nb" style="font-size:10px">
+    <div class="g2v">
+      <div class="em">class_id</div><div>FK → sch_classes</div>
+      <div class="em">section_id</div><div>nullable FK → sch_sections</div>
+      <div class="em">subject_study_format_id</div><div>subject + format combo</div>
+      <div class="em">subject_type_id</div><div>theory / practical etc.</div>
+      <div class="em">is_compulsory</div><div>BOOL → GROUP or SUBGROUP</div>
+      <div class="em">required_weekly_periods</div><div>e.g. 5, 6, 8</div>
+      <div class="em">min/max_periods_per_week</div><div>solver bounds</div>
+      <div class="em">min/max_periods_per_day</div><div>daily bounds</div>
+      <div class="em">allow_consecutive_periods</div><div>BOOL</div>
+      <div class="em">priority_score</div><div>1–100 (default 50)</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── P1: Class Subject Requirements ────────────────── -->
+<div class="nd nb-p1" style="left:1310px;top:360px;width:880px">
+  <div class="nh">① STEP 1 — Class Subject Requirements &nbsp;·&nbsp; generateClassGroups()</div>
+  <div class="nb" style="font-size:10px">
+    <div class="row"><span class="mono" style="font-size:9px">TimetableFoundationController::generateClassGroups() &nbsp;·&nbsp; POST /class-subject-group/generate-class-groups</span></div>
+    <div class="hr"></div>
+    <div class="g2">
+      <div>
+        <div class="em" style="margin-bottom:3px">Generation Logic:</div>
+        <div class="muted" style="line-height:1.85">
+          ① Load active <span class="mono">sch_class_groups_jnt</span><br>
+          &nbsp;&nbsp;&nbsp;with subject_study_format + subject_type<br>
+          ② Fetch <span class="mono">actual_total_student</span> per section<br>
+          ③ if <span class="em">is_compulsory = true</span>:<br>
+          &nbsp;&nbsp;&nbsp;→ Create <span class="mono">tt_class_subject_groups</span><br>
+          ④ if <span class="em">is_compulsory = false</span>:<br>
+          &nbsp;&nbsp;&nbsp;→ Create <span class="mono">tt_class_subject_subgroups</span><br>
+          ⑤ <span class="mono">updateOrCreate()</span> for deduplication<br>
+          ⑥ Code: <span class="mono">SUB-C{classId}-S{sectionId}-TYPE-FMT</span>
+        </div>
+      </div>
+      <div>
+        <div class="em" style="margin-bottom:3px">Output Fields Created:</div>
+        <div class="muted" style="line-height:1.85">
+          <span class="mono">code</span> — unique identifier<br>
+          <span class="mono">class_id, section_id</span><br>
+          <span class="mono">subject_id, study_format_id</span><br>
+          <span class="mono">subject_study_format_id</span><br>
+          <span class="mono">subject_type_id</span><br>
+          <span class="mono">required_weekly_periods</span><br>
+          <span class="mono">min/max_periods_per_week</span><br>
+          <span class="mono">min/max_periods_per_day</span><br>
+          <span class="mono">allow_consecutive_periods</span><br>
+          <span class="mono">priority_score</span> (1–100)
+        </div>
+      </div>
+    </div>
+    <div class="hr"></div>
+    <div class="row">
+      <span class="t tl">Reads SchoolSetup data only — no writes to sch_* tables</span>
+      <span class="t ti">updateOrCreate deduplication</span>
+      <span class="t tok">Output: tt_class_subject_groups + tt_class_subject_subgroups</span>
+    </div>
+  </div>
+</div>
+
+<!-- P1 left satellite -->
+<div class="nd nb-hlp" style="left:80px;top:360px;width:460px">
+  <div class="nh">⬡ tt_class_subject_groups schema</div>
+  <div class="nb" style="font-size:10px">
+    <div class="muted" style="line-height:1.85">
+      <span class="mono">id</span> PK BIGINT UNSIGNED<br>
+      <span class="mono">code</span> VARCHAR UNIQUE<br>
+      <span class="mono">name</span> display name<br>
+      <span class="mono">class_id</span> FK → sch_classes<br>
+      <span class="mono">section_id</span> FK → sch_sections<br>
+      <span class="mono">subject_study_format_id</span><br>
+      <span class="mono">subject_type_id</span><br>
+      <span class="mono">timetable_type_id</span><br>
+      <span class="mono">academic_term_id</span><br>
+      <span class="mono">required_weekly_periods</span> TINYINT<br>
+      <span class="mono">priority_score</span> TINYINT (1–100)<br>
+      <span class="mono">is_active, deleted_at</span>
+    </div>
+  </div>
+</div>
+
+<!-- P1 right satellite -->
+<div class="nd nb-hlp" style="left:2840px;top:360px;width:460px">
+  <div class="nh">⬡ Routes — Class Subject Requirement</div>
+  <div class="nb" style="font-size:10px">
+    <div class="g2v">
+      <div><span class="t ti">POST</span></div><div><span class="mono">/class-subject-subgroup</span> — store</div>
+      <div><span class="t tl">GET</span></div><div><span class="mono">/{id}/edit</span> — edit form</div>
+      <div><span class="t th">PUT</span></div><div><span class="mono">/{id}</span> — update</div>
+      <div><span class="t tc">DELETE</span></div><div><span class="mono">/{id}</span> — soft delete</div>
+      <div><span class="t tok">POST</span></div><div><span class="mono">/{id}/toggle-status</span></div>
+      <div><span class="t ti">GET</span></div><div><span class="mono">/{class}/get/sections</span> — AJAX</div>
+      <div><span class="t ti">POST</span></div><div><span class="mono">/toggle-sharing/{id}</span> — AJAX</div>
+    </div>
+    <div class="hr"></div>
+    <div class="muted"><b>Generate:</b> <span class="mono">POST /class-subject-group/generate-class-groups</span></div>
+    <div class="muted"><b>Update sharing:</b> <span class="mono">POST /update-sharing</span></div>
+  </div>
+</div>
+
+<!-- ── P2: Group & Subgroup Logic ─────────────────────── -->
+<div class="nd nb-p2" style="left:1310px;top:690px;width:880px">
+  <div class="nh">② STEP 2 — Group &amp; Subgroup Logic (Sharing Flags)</div>
+  <div class="nb" style="font-size:10px">
+    <div class="g2">
+      <div>
+        <div class="em" style="margin-bottom:3px">CLASS SUBJECT GROUP (Compulsory):</div>
+        <div class="muted" style="line-height:1.85">
+          Source: <span class="mono">is_compulsory = true</span><br>
+          Table: <span class="mono">tt_class_subject_groups</span><br>
+          Meaning: <b>All students</b> in class+section take this subject<br>
+          Each class+section → own independent Activity<br>
+          One dedicated teacher per class+section+subject<br>
+          No sharing across sections or classes<br>
+          <span class="mono">is_shared_across_sections = false</span><br>
+          <span class="mono">is_shared_across_classes = false</span>
+        </div>
+      </div>
+      <div>
+        <div class="em" style="margin-bottom:3px">CLASS SUBJECT SUBGROUP (Optional/Shared):</div>
+        <div class="muted" style="line-height:1.85">
+          Source: <span class="mono">is_compulsory = false</span><br>
+          Table: <span class="mono">tt_class_subject_subgroups</span><br>
+          Meaning: <b>Subset of students</b> (elective, lab, etc.)<br>
+          <b>Sharing Flags</b> (toggled via AJAX):<br>
+          <span class="em">is_shared_across_sections</span>:<br>
+          &nbsp;&nbsp;Sections of SAME class taught together<br>
+          <span class="em">is_shared_across_classes</span>:<br>
+          &nbsp;&nbsp;Different classes taught together<br>
+          Both can be true simultaneously<br>
+          Route: <span class="mono">POST /toggle-sharing/{id}</span>
+        </div>
+      </div>
+    </div>
+    <div class="hr"></div>
+    <div class="row">
+      <span class="t tp">Groups = always compulsory, no sharing</span>
+      <span class="t tl">Subgroups = optional, sharing configurable</span>
+      <span class="t ti">Sharing flags drive Step 3 consolidation logic</span>
+    </div>
+  </div>
+</div>
+
+<!-- P2 left satellite -->
+<div class="nd nb-hlp" style="left:80px;top:690px;width:460px">
+  <div class="nh">⬡ tt_class_subject_subgroups schema</div>
+  <div class="nb" style="font-size:10px">
+    <div class="muted" style="line-height:1.85">
+      <span class="mono">id</span> PK BIGINT<br>
+      <span class="mono">code</span> VARCHAR UNIQUE<br>
+      <span class="mono">class_id, section_id</span><br>
+      <span class="mono">subject_study_format_id</span><br>
+      <span class="mono">subject_type_id</span><br>
+      <span class="mono">student_count</span> INT actual<br>
+      <span class="em">is_shared_across_sections</span> BOOL<br>
+      <span class="em">is_shared_across_classes</span> BOOL<br>
+      <span class="mono">required_weekly_periods</span><br>
+      <span class="mono">min/max_periods_per_week</span><br>
+      <span class="mono">min/max_periods_per_day</span><br>
+      <span class="mono">required_room_type_id</span> nullable<br>
+      <span class="mono">priority_score</span> (1–100)
+    </div>
+  </div>
+</div>
+
+<!-- P2 right satellite -->
+<div class="nd nb-hlp" style="left:2840px;top:690px;width:460px">
+  <div class="nh">⬡ Sharing Flag — Downstream Impact</div>
+  <div class="nb" style="font-size:10px">
+    <div class="em" style="margin-bottom:3px">is_shared_across_sections = true:</div>
+    <div class="muted" style="margin-bottom:8px;line-height:1.75">
+      • Step 3 Consolidation Rule 2 fires<br>
+      • Groups by (class_id, subject_id, study_format_id)<br>
+      • Checks combined student count vs room capacity<br>
+      • 1 Activity + N SubActivities if fits in 1 room<br>
+      • N separate Activities if exceeds capacity
+    </div>
+    <div class="hr"></div>
+    <div class="em" style="margin-bottom:3px">is_shared_across_classes = true:</div>
+    <div class="muted" style="line-height:1.75">
+      • Step 3 Consolidation Rule 1 fires (higher priority)<br>
+      • Groups by (subject_id, study_format_id, subject_type_id)<br>
+      • Cross-class student count summed<br>
+      • Same room capacity decision logic<br>
+      • Code prefix: <span class="mono">ACT-SAC-*</span>
+    </div>
+    <div class="hr"></div>
+    <div class="muted" style="font-size:9px">If both=true: Rule 1 runs first; Rule 2 deduplicates via handledSubgroups set</div>
+  </div>
+</div>
+
+<!-- ── P3: Requirement Consolidation ──────────────────── -->
+<div class="nd nb-p3" style="left:1310px;top:1030px;width:880px">
+  <div class="nh">③ STEP 3 — Requirement Consolidation &nbsp;·&nbsp; generateRequirements()</div>
+  <div class="nb" style="font-size:10px">
+    <div class="row"><span class="mono" style="font-size:9px">RequirementConsolidationController::generateRequirements() &nbsp;·&nbsp; POST /requirement-consolidation/generate-requirements/generate</span></div>
+    <div class="hr"></div>
+    <div class="g2">
+      <div>
+        <div class="em" style="margin-bottom:3px">processClassSubjectGroups() — compulsory:</div>
+        <div class="muted" style="line-height:1.85">
+          ① Load active <span class="mono">tt_class_subject_groups</span><br>
+          ② → <span class="mono">mapGroupToRequirement(group, schGroup, termId, typeId)</span><br>
+          ③ Sets <span class="mono">class_requirement_group_id = group.id</span><br>
+          &nbsp;&nbsp;&nbsp;Sets <span class="mono">class_requirement_subgroup_id = NULL</span><br>
+          ④ <span class="em">is_compulsory = true</span> always<br>
+          ⑤ Batch upsert via unique key
+        </div>
+      </div>
+      <div>
+        <div class="em" style="margin-bottom:3px">processClassSubjectSubgroups() — optional:</div>
+        <div class="muted" style="line-height:1.85">
+          ① Load active <span class="mono">tt_class_subject_subgroups</span><br>
+          ② → <span class="mono">mapSubgroupToRequirement(subgroup, termId, typeId)</span><br>
+          ③ Sets <span class="mono">class_requirement_group_id = NULL</span><br>
+          &nbsp;&nbsp;&nbsp;Sets <span class="mono">class_requirement_subgroup_id = sub.id</span><br>
+          ④ <span class="em">is_compulsory = false</span> always<br>
+          ⑤ Copies sharing flags from subgroup
+        </div>
+      </div>
+    </div>
+    <div class="hr"></div>
+    <div class="row">
+      <span class="t tc">CHECK constraint: exactly ONE of group_id OR subgroup_id — never both, never neither</span>
+      <span class="t ti">Unique: (group_id, subgroup_id, term_id, type_id)</span>
+    </div>
+  </div>
+</div>
+
+<!-- P3 left satellite -->
+<div class="nd nb-hlp" style="left:80px;top:1030px;width:460px">
+  <div class="nh">⬡ mapGroupToRequirement() — Field Map</div>
+  <div class="nb" style="font-size:10px">
+    <div class="g2v">
+      <div class="em">required_weekly_periods</div><div>from schClassGroup</div>
+      <div class="em">min/max_periods_per_week</div><div>from schClassGroup</div>
+      <div class="em">min/max_periods_per_day</div><div>from schClassGroup</div>
+      <div class="em">allow_consecutive_periods</div><div>from schClassGroup</div>
+      <div class="em">max_consecutive_periods</div><div>from schClassGroup ?? 1</div>
+      <div class="em">spread_evenly</div><div>true (default)</div>
+      <div class="em">priority_score</div><div>from schClassGroup ?? 50</div>
+      <div class="em">is_compulsory</div><div>true (always for groups)</div>
+      <div class="em">required_room_type_id</div><div>nullable FK</div>
+      <div class="em">required_room_id</div><div>nullable (specific room)</div>
+    </div>
+    <div class="hr"></div>
+    <div class="muted" style="font-size:9px">If allow_consecutive=false → force max_consecutive=1</div>
+  </div>
+</div>
+
+<!-- P3 right satellite -->
+<div class="nd nb-hlp" style="left:2840px;top:1030px;width:460px">
+  <div class="nh">⬡ Consolidation Validation Rules</div>
+  <div class="nb" style="font-size:10px">
+    <div class="em" style="margin-bottom:3px">updateRequirement() validation:</div>
+    <div class="muted" style="line-height:1.75">
+      • required_weekly_periods: min:0<br>
+      • min_periods_per_week ≤ max_periods_per_week<br>
+      • min_periods_per_day ≤ max_periods_per_day<br>
+      • spread_evenly: boolean<br>
+      • shared_scope: 'none' | 'section' | 'class'<br>
+      • allow_consecutive: boolean<br>
+      • class_priority_score: 1–100<br>
+      • preferred_periods_json: valid JSON array<br>
+      • avoid_periods_json: valid JSON array
+    </div>
+    <div class="hr"></div>
+    <div class="em" style="margin-bottom:3px">AJAX inline update routes:</div>
+    <div class="muted" style="font-size:9px">
+      <span class="mono">POST /requirement-consolidation/ajax/inline-update/{id}</span><br>
+      <span class="mono">POST /class-subject-requirement/update</span><br>
+      <span class="mono">POST /class-subject-requirement/update-periods</span><br>
+      <span class="mono">GET /requirement-consolidations/stats</span>
+    </div>
+  </div>
+</div>
+
+<!-- ── P4a: Teacher Availability ──────────────────────── -->
+<div class="nd nb-p4a" style="left:980px;top:1400px;width:720px">
+  <div class="nh">④ STEP 4 — Teacher Availability Generation</div>
+  <div class="nb" style="font-size:10px">
+    <div class="row"><span class="mono" style="font-size:9px">TeacherAvailabilityController::generateTeacherAvailability() &nbsp;·&nbsp; POST /teacher-availability/generate</span></div>
+    <div class="hr"></div>
+    <ul>
+      <li>① <b>Truncate</b> all <span class="mono">tt_teacher_availabilities</span>, begin transaction</li>
+      <li>② Load active <span class="mono">RequirementConsolidation</span> for term</li>
+      <li>③ For each requirement → query <span class="mono">TeacherCapability</span>:<br>
+        &nbsp;&nbsp;Filter: <span class="mono">class_id</span> + <span class="mono">subject_study_format_id</span> + is_active<br>
+        &nbsp;&nbsp;Date: <span class="em">effective_from ≤ today ≤ effective_to</span> (NULLs = open)</li>
+      <li>④ <span class="mono">updateOrCreate</span> by <span class="em">(teacher_profile_id, class_id, section_id, subject_study_format_id)</span></li>
+      <li>⑤ Copy: proficiency_pct, experience_months, is_primary_subject, priority_weight, allocation_strictness</li>
+      <li>⑥ Resolve preferred_shift from teacher profile</li>
+      <li>⑦ Create <span class="mono">TeacherAssignmentRole</span>: PRIMARY (workload_factor=1.00) or ASSISTANT (0.50, allows_overlap=true)</li>
+    </ul>
+    <div class="hr"></div>
+    <div class="em" style="margin-bottom:3px">Scarcity Index (grouped by class+subject):</div>
+    <div style="display:grid;grid-template-columns:60px 1fr;gap:2px 8px;color:#57606a">
+      <div><span class="t tok">index = 1</span></div><div>5+ teachers — abundant</div>
+      <div><span class="t tm">index = 4</span></div><div>3–4 teachers — plentiful</div>
+      <div><span class="t th">index = 7</span></div><div>2 teachers — scarce</div>
+      <div><span class="t tc">index = 10</span></div><div>&lt;2 teachers — very scarce</div>
+    </div>
+    <div class="hr"></div>
+    <div class="row">
+      <span class="t tc">Truncates before regeneration</span>
+      <span class="t ti">preference_score = f(proficiency, experience, is_primary, priority, scarcity)</span>
+    </div>
+  </div>
+</div>
+
+<!-- ── P4b: Slot Requirements ─────────────────────────── -->
+<div class="nd nb-p4b" style="left:1960px;top:1400px;width:700px">
+  <div class="nh">⑤ STEP 5 — Slot Requirement Generation</div>
+  <div class="nb" style="font-size:10px">
+    <div class="row"><span class="mono" style="font-size:9px">SlotRequirementController::generateSlotRequirement() &nbsp;·&nbsp; POST /slot-requirement/generate</span></div>
+    <div class="hr"></div>
+    <ul>
+      <li>① <b>Delete</b> existing slots for (academic_term_id, timetable_type_id)</li>
+      <li>② <b>STEP A — Section-specific</b> (<span class="em">applies_to_all_sections = 0</span>):<br>
+        &nbsp;&nbsp;→ Query <span class="mono">tt_class_timetable_type_jnt</span> directly<br>
+        &nbsp;&nbsp;→ Insert one row per (class_id, section_id)<br>
+        &nbsp;&nbsp;→ Add to <span class="em">handledSections</span> tracker (prevents Step B overlap)</li>
+      <li>③ <b>STEP B — Class-level expansion</b> (<span class="em">applies_to_all_sections = 1</span>):<br>
+        &nbsp;&nbsp;→ Load all sections from <span class="mono">sch_class_section_jnt</span><br>
+        &nbsp;&nbsp;→ Skip sections already in handledSections<br>
+        &nbsp;&nbsp;→ Step A (section-specific) always takes priority</li>
+      <li>④ Slot total: <span class="em">weekly_total = teaching + exam + free</span></li>
+    </ul>
+    <div class="hr"></div>
+    <div class="em" style="margin-bottom:3px">Source fields from tt_class_timetable_type_jnt:</div>
+    <div class="g2v">
+      <div><span class="mono">weekly_teaching_period_count</span></div><div>→ weekly_teaching_slots</div>
+      <div><span class="mono">weekly_exam_period_count</span></div><div>→ weekly_exam_slots</div>
+      <div><span class="mono">weekly_free_period_count</span></div><div>→ weekly_free_slots</div>
+    </div>
+    <div class="hr"></div>
+    <div class="row">
+      <span class="t ti">STEP A precedence (section-specific wins)</span>
+      <span class="t tok">Output: tt_slot_requirements</span>
+    </div>
+  </div>
+</div>
+
+<!-- ── P5: Activity Generation ───────────────────────── -->
+<div class="nd nb-p5" style="left:1240px;top:1820px;width:1020px">
+  <div class="nh">⑥ STEP 6 — Activity Generation &nbsp;·&nbsp; generateActivities()</div>
+  <div class="nb" style="font-size:10px">
+    <div class="row"><span class="mono" style="font-size:9px">ActivityController::generateActivities() &nbsp;·&nbsp; POST /requirements/generate-activities/all</span></div>
+    <div class="hr"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px 16px">
+      <div>
+        <div class="em" style="margin-bottom:3px">Pre-step: TRUNCATE</div>
+        <div class="muted" style="line-height:1.8">
+          SET FK_CHECKS=0<br>
+          Truncate <span class="mono">tt_activities</span><br>
+          Truncate <span class="mono">tt_sub_activities</span><br>
+          Truncate <span class="mono">tt_activity_teachers</span><br>
+          SET FK_CHECKS=1
+        </div>
+      </div>
+      <div>
+        <div class="em" style="margin-bottom:3px">STEP 1 — Class Group Activities</div>
+        <div class="muted" style="line-height:1.8">
+          For each <span class="mono">tt_class_subject_groups</span>:<br>
+          → Calc <span class="em">difficulty_score_calculated</span><br>
+          → Code: <span class="mono">ACT-CG-{code}-T{termId}-TT{typeId}</span><br>
+          → <span class="mono">Activity::withTrashed()->updateOrCreate()</span><br>
+          → Assign primary teacher via capability matrix<br>
+          → Fallback: SubjectMapping lookup
+        </div>
+      </div>
+      <div>
+        <div class="em" style="margin-bottom:3px">STEP 1.5 — Shared Across Classes</div>
+        <div class="muted" style="line-height:1.8">
+          <span class="em">is_shared_across_classes=true</span><br>
+          Group by (subject_id, study_format_id, subject_type_id)<br>
+          groupsNeeded = ⌈combined_students / room_capacity⌉<br>
+          If 1: 1 Activity + N SubActivities<br>
+          If &gt;1: N Activities with suffix -G1, -G2…<br>
+          Code: <span class="mono">ACT-SAC-{sfId}-T{termId}</span>
+        </div>
+      </div>
+      <div>
+        <div class="em" style="margin-bottom:3px">STEP 2 — Shared Across Sections</div>
+        <div class="muted" style="line-height:1.8">
+          <span class="em">is_shared_across_sections=true</span><br>
+          Skip if already in STEP 1.5<br>
+          Group by (class_id, subject_id, study_format_id)<br>
+          Same room capacity decision<br>
+          Code: <span class="mono">ACT-SAS-{...}</span>
+        </div>
+      </div>
+      <div>
+        <div class="em" style="margin-bottom:3px">STEP 3 — Non-Shared Subgroups</div>
+        <div class="muted" style="line-height:1.8">
+          Remaining (not shared at all)<br>
+          Individual activity per subgroup<br>
+          No SubActivity created<br>
+          Code: <span class="mono">ACT-SG-{...}</span><br>
+          Teacher assigned same way
+        </div>
+      </div>
+      <div>
+        <div class="em" style="margin-bottom:3px">assignTeacherToActivity()</div>
+        <div class="muted" style="line-height:1.8">
+          Query TeacherCapability:<br>
+          (class_id, subject_study_format_id)<br>
+          Order: priority_order DESC,<br>
+          proficiency_pct DESC<br>
+          Creates <span class="mono">tt_activity_teachers</span><br>
+          is_primary=true, ordinal=1
+        </div>
+      </div>
+    </div>
+    <div class="hr"></div>
+    <div class="row">
+      <span class="t tc">Truncates before regeneration</span>
+      <span class="t tok">Output: tt_activities + tt_sub_activities + tt_activity_teachers</span>
+      <span class="t ti">Room capacity default: 50 students</span>
+    </div>
+  </div>
+</div>
+
+<!-- P5 left satellite -->
+<div class="nd nb-hlp" style="left:80px;top:1820px;width:460px">
+  <div class="nh">⬡ Activity Difficulty Score Formula</div>
+  <div class="nb" style="font-size:10px">
+    <div class="em" style="margin-bottom:5px">difficulty_score_calculated =</div>
+    <div style="display:grid;grid-template-columns:40px 1fr;gap:3px 10px;color:#57606a">
+      <div class="em">40%</div><div>(100 – priority_score) — low priority = harder</div>
+      <div class="em">30%</div><div>(100 – teacher_availability_score)</div>
+      <div class="em">20%</div><div>(100 – room_availability_score)</div>
+      <div class="em">10%</div><div>min(constraint_count × 5, 100)</div>
+    </div>
+    <div class="hr"></div>
+    <div class="em" style="margin-bottom:3px">Subscores:</div>
+    <div class="g2v">
+      <div>teacher_availability_score</div><div>= min(100, teacher_count × 20)</div>
+      <div>room_availability_score</div><div>= min(100, room_count × 25)</div>
+    </div>
+    <div class="hr"></div>
+    <div class="muted">FETSolver sorts by <span class="em">difficulty_score_calculated DESC</span> — hardest placed first (fail-early CSP heuristic)</div>
+  </div>
+</div>
+
+<!-- P5 right satellite -->
+<div class="nd nb-hlp" style="left:2840px;top:1820px;width:460px">
+  <div class="nh">⬡ Activity Code Patterns + Room Sizing</div>
+  <div class="nb" style="font-size:10px">
+    <div class="em" style="margin-bottom:4px">Activity code patterns:</div>
+    <div class="g2v">
+      <div><span class="t tl">ACT-CG-*</span></div><div>Class Group — compulsory per section</div>
+      <div><span class="t tp">ACT-SAC-*</span></div><div>Shared Across Classes</div>
+      <div><span class="t ti">ACT-SAS-*</span></div><div>Shared Across Sections</div>
+      <div><span class="t tok">ACT-SG-*</span></div><div>Subgroup — non-shared optional</div>
+    </div>
+    <div class="hr"></div>
+    <div class="em" style="margin-bottom:3px">Room Capacity Logic:</div>
+    <div class="muted" style="line-height:1.75">
+      <b>getRoomCapacity(classId, roomTypeId):</b><br>
+      If class_id given: sum capacity of all rooms<br>
+      of required_room_type for that class<br>
+      Default fallback: <span class="em">50 students per room</span><br><br>
+      <b>calculateGroupsNeeded(students, capacity):</b><br>
+      groupsNeeded = ⌈total_students / capacity⌉<br>
+      If 1 → single Activity + N SubActivities<br>
+      If &gt;1 → N separate Activities (-G1, -G2, …)
+    </div>
+  </div>
+</div>
+
+<!-- ── Bridge ─────────────────────────────────────────── -->
+<div class="nd nb-bridge" style="left:1390px;top:2140px;width:720px">
+  <div class="nh">⬡ Prerequisites Complete — All Tables Ready for Generator</div>
+  <div class="nb" style="font-size:10px">
+    <div class="g3">
+      <div><div class="em" style="margin-bottom:2px">tt_activities</div><div class="muted">Activities with difficulty scores, teacher assignments, weekly periods, constraints config</div></div>
+      <div><div class="em" style="margin-bottom:2px">tt_teacher_availabilities</div><div class="muted">Eligible teachers per class+subject with proficiency, scarcity, preference scores</div></div>
+      <div><div class="em" style="margin-bottom:2px">tt_slot_requirements</div><div class="muted">Weekly teaching / exam / free slot counts per class+section</div></div>
+    </div>
+    <div class="hr"></div>
+    <div class="row">
+      <span class="t tok">tt_constraints</span>
+      <span class="t tok">tt_parallel_group_activity</span>
+      <span class="t tok">tt_rooms</span>
+      <span class="t tok">tt_working_days</span>
+      <span class="t tok">tt_periods</span>
+      <span class="t tok">sch_academic_term</span>
+    </div>
+    <div style="margin-top:6px;color:#57606a;font-size:10px">↓ User triggers generation via HTTP POST — all above loaded by TimetableGenerationService at runtime</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     SECTION DIVIDER — GENERATION PIPELINE
+══════════════════════════════════════════════════════ -->
+<div class="sec-div gen" style="top:2390px;width:4400px">
+  ⬢ PHASE 1 — TIMETABLE GENERATION PIPELINE &nbsp;|&nbsp; SmartTimetable Module &nbsp;|&nbsp; POST /smart-timetable/generate
+  <span style="font-size:10px;font-weight:400;color:#57606a;margin-left:10px">Triggered after prerequisites are complete</span>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     MAIN GENERATION PIPELINE  (original y + 2450)
+══════════════════════════════════════════════════════ -->
+
+<!-- N0: HTTP REQUEST -->
+<div class="nd nc" style="left:1500px;top:2460px;width:500px">
+  <div class="nh">⬡ HTTP REQUEST — Entry Point</div>
+  <div class="nb" style="font-size:10px">
+    <div class="row"><span class="t ti">POST</span><span class="mono">/smart-timetable/generate</span></div>
+    <div class="hr"></div>
+    <div class="g2">
+      <div><span class="muted">academic_session_id</span></div><div><span class="muted">period_set_id</span></div>
+      <div><span class="muted">generation_name</span></div><div><span class="muted">algorithm <span class="em">= backtracking</span></span></div>
+      <div><span class="muted">max_iterations <span class="em">= 50000</span></span></div><div><span class="muted">max_backtracks <span class="em">= 50000</span></span></div>
+      <div><span class="muted">time_limit_seconds <span class="em">= 25</span></span></div><div><span class="muted">class_ids[] (optional)</span></div>
+      <div><span class="muted">enable_room_alloc <span class="em">= true</span></span></div><div><span class="muted">force_new <span class="em">= false</span></span></div>
+      <div><span class="muted">debug_mode <span class="em">= false</span></span></div><div><span class="muted">seed (optional RNG)</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- N1: CONTROLLER -->
+<div class="nd nb-ctrl" style="left:1430px;top:2680px;width:640px">
+  <div class="nh">◈ SmartTimetableController::generate()</div>
+  <div class="nb" style="font-size:10px">
+    <div class="row"><span class="mono" style="font-size:9px">SmartTimetableController.php (2,958 lines)</span></div>
+    <div class="hr"></div>
+    <ul>
+      <li>⚠ <span class="t tc">SEC-009</span> <b>ZERO authorization checks</b> — GAP-TT-001</li>
+      <li>Validates request, resolves <span class="mono">AcademicSession</span></li>
+      <li>Calls <span class="mono">TimetableGenerationService::generate()</span></li>
+      <li>Returns JSON or error; sets run → FAILED on exception</li>
+    </ul>
+  </div>
+</div>
+
+<!-- N2: GENERATION SERVICE -->
+<div class="nd nb-svc" style="left:1370px;top:2910px;width:760px">
+  <div class="nh">⬡ TimetableGenerationService::generate()</div>
+  <div class="nb" style="font-size:10px">
+    <div class="hr"></div>
+    <div class="g2">
+      <div>① Create <span class="mono">GenerationRun</span> → QUEUED→RUNNING</div>
+      <div>② Load all DB data (8 sources from prereqs)</div>
+      <div>③ Expand activities → instances in memory</div>
+      <div>④ Instantiate <span class="mono">FETSolver</span></div>
+      <div>⑤ Call <span class="mono">FETSolver::solve()</span></div>
+      <div>⑥ Run <span class="mono">RoomAllocationPass::run()</span></div>
+      <div>⑦ Call <span class="mono">TimetableStorageService::store()</span></div>
+      <div>⑧ Update <span class="mono">GenerationRun</span> → COMPLETED</div>
+    </div>
+  </div>
+</div>
+
+<!-- LEFT: DB Data Sources -->
+<div class="nd nb-hlp" style="left:80px;top:3170px;width:460px">
+  <div class="nh">⬡ DB Data Sources — Runtime Load</div>
+  <div class="nb" style="font-size:10px">
+    <div class="g2">
+      <div><span class="mono">tt_activities</span></div><div><span class="mono">tt_period_set_days</span></div>
+      <div><span class="mono">tt_periods</span></div><div><span class="mono">tt_working_days</span></div>
+      <div><span class="mono">tt_constraints</span></div><div><span class="mono">tt_constraint_types</span></div>
+      <div><span class="mono">tt_parallel_group_activity</span></div><div><span class="mono">tt_rooms</span></div>
+    </div>
+    <div class="hr"></div>
+    <div class="muted" style="font-size:9px">All populated by PHASE 0 prerequisites. Eager-loaded with relationships.</div>
+  </div>
+</div>
+
+<!-- RIGHT: GenerationRun -->
+<div class="nd nb-hlp" style="left:3060px;top:3170px;width:460px">
+  <div class="nh">⬡ GenerationRun — Lifecycle</div>
+  <div class="nb" style="font-size:10px">
+    <div class="row"><span class="t tm">QUEUED</span>→<span class="t th">RUNNING</span>→<span class="t tok">COMPLETED</span>/<span class="t tc">FAILED</span></div>
+    <div class="hr"></div>
+    <div class="g2">
+      <div>generation_name</div><div>academic_session_id</div>
+      <div>algorithm</div><div>config_json</div>
+      <div>stats_json (14 keys)</div><div>coverage_percentage</div>
+      <div>backtracks_performed</div><div>time_taken_seconds</div>
+    </div>
+    <div class="hr"></div>
+    <div class="muted">Table: <span class="mono">tt_generation_runs</span></div>
+  </div>
+</div>
+
+<!-- N3: ACTIVITY EXPANSION -->
+<div class="nd nb-svc" style="left:1480px;top:3240px;width:540px">
+  <div class="nh">⬡ Activity Expansion — In-Memory</div>
+  <div class="nb" style="font-size:10px">
+    <ul>
+      <li>Each <span class="mono">tt_activity</span> with <span class="em">required_weekly_periods=N</span> → <b>N instances</b></li>
+      <li><span class="mono">instance_id = "{activity_id}-{n}"</span></li>
+      <li>Parallel anchor instances created first</li>
+      <li>22 config fields carried into instance</li>
+    </ul>
+    <div class="hr"></div>
+    <div class="row"><span class="t ti">teachers[]</span><span class="t ti">preferred_time_slots_json</span><span class="t ti">avoid_time_slots_json</span></div>
+  </div>
+</div>
+
+<!-- N4: FETSolver -->
+<div class="nd nb-solv" style="left:1350px;top:3530px;width:800px">
+  <div class="nh">⬢ FETSolver::solve() — Main Orchestrator</div>
+  <div class="nb" style="font-size:10px">
+    <div class="row"><span class="mono" style="font-size:9px">FETSolver.php (2,830 lines)</span></div>
+    <div class="hr"></div>
+    <div class="g2">
+      <div>① Sort activities by difficulty_score_calculated DESC</div>
+      <div>② Initialize <span class="mono">TimetableSolution</span> 3D grid</div>
+      <div>③ Load <span class="mono">ConstraintManager</span></div>
+      <div>④ Phase 1: CSP Backtracking (25s / 50K)</div>
+      <div>⑤ Check coverage ≥ threshold</div>
+      <div>⑥ Phase 2: Greedy Fallback if needed</div>
+      <div>⑦ Phase 3: Rescue Pass if still unplaced</div>
+      <div>⑧ Return <span class="mono">GenerationResult</span></div>
+    </div>
+    <div class="hr"></div>
+    <div class="row"><span class="t tok">FET-inspired CSP</span><span class="t ti">3-phase cascade</span><span class="t ti">25s timeout</span><span class="t ti">50K iter / 50K backtrack</span></div>
+  </div>
+</div>
+
+<!-- LEFT: TimetableSolution -->
+<div class="nd nb-hlp" style="left:80px;top:3550px;width:460px">
+  <div class="nh">⬡ TimetableSolution — 3D Grid</div>
+  <div class="nb" style="font-size:10px">
+    <div style="font-family:monospace;color:#0550ae;margin-bottom:5px;font-size:10px;line-height:1.75">
+      $occupied[classKey][day_id][period_id]<br>
+      $teacherOccupied[teacher_id][day_id][period_id]
+    </div>
+    <div class="hr"></div>
+    <div class="g2">
+      <div class="ok">place(instance, slot)</div><div class="ok">unplace(instance)</div>
+      <div>isOccupied(classKey,day,period)</div><div>isTeacherBusy(teacher,day,period)</div>
+      <div>getPlacedInstances()</div><div>getUnplacedInstances()</div>
+    </div>
+    <div class="hr"></div>
+    <div class="muted">classKey = <span class="mono">"{class_id}_{section_id}"</span></div>
+  </div>
+</div>
+
+<!-- RIGHT: ConstraintManager -->
+<div class="nd nb-hlp" style="left:3060px;top:3530px;width:460px">
+  <div class="nh">⬡ ConstraintManager</div>
+  <div class="nb" style="font-size:10px">
+    <div class="em" style="margin-bottom:3px">Hard (BLOCK placement):</div>
+    <div class="muted" style="line-height:1.7">Teacher unavailable · Class unavailable · Min/Max consecutive · Forbidden period type · Room capacity · Break conflict · Split violation · Max daily load</div>
+    <div class="hr"></div>
+    <div class="em" style="margin-bottom:3px">Soft (SCORE adjustment):</div>
+    <div style="display:grid;grid-template-columns:40px 1fr;gap:2px 6px;color:#57606a;font-size:10px">
+      <div class="ok">+40</div><div>preferred_time_slots match</div>
+      <div class="ok">+20</div><div>preferred_periods match</div>
+      <div class="ok">+15</div><div>teacher preferred days</div>
+      <div class="ok">+10</div><div>spread evenly (days ≤ avg)</div>
+      <div class="er">−100</div><div>split_allowed=false violated</div>
+      <div class="er">−50</div><div>avoid_time_slots match</div>
+      <div class="er">−30</div><div>avoid_periods match</div>
+      <div class="er">−15</div><div>overloaded day</div>
+    </div>
+  </div>
+</div>
+
+<!-- N5: CSP BACKTRACKING -->
+<div class="nd nb-ph" style="left:1260px;top:3880px;width:980px">
+  <div class="nh">⬡ Phase 1 — CSP Backtracking (FETSolver::backtrack())</div>
+  <div class="nb" style="font-size:10px">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px 18px">
+      <div>
+        <div class="em" style="margin-bottom:3px">getPossibleSlots() — 5 steps:</div>
+        <div class="muted" style="line-height:1.85">① All days × periods matrix<br>② Filter: isBasicSlotAvailable()<br>③ Filter: hard constraints<br>④ Score each slot<br>⑤ Sort DESC by score</div>
+      </div>
+      <div>
+        <div class="em" style="margin-bottom:3px">isBasicSlotAvailable() — 8 checks:</div>
+        <div class="muted" style="line-height:1.85">① Class not occupied<br>② Teacher not busy<br>③ Room not occupied<br>④ Day is working day<br>⑤ Period within bounds<br>⑥ Teacher availability slot<br>⑦ Not a break period<br>⑧ Not a locked cell</div>
+      </div>
+      <div>
+        <div class="em" style="margin-bottom:3px">Parallel Group Logic:</div>
+        <div class="muted" style="line-height:1.85">Anchors placed first normally<br>Siblings skipped if anchor not yet placed<br>Anchor placed → siblings forced to same slot<br>Sibling classKey from sibling activity (not anchor)<br>is_anchor from tt_parallel_group_activity</div>
+      </div>
+    </div>
+    <div class="hr"></div>
+    <div class="row"><span class="t ti">50K iterations</span><span class="t ti">50K backtracks</span><span class="t ti">25s wall-clock</span><span class="t tok">place → recurse</span><span class="t th">no slots → unplace → backtrack</span></div>
+  </div>
+</div>
+
+<!-- LEFT: Score Weights -->
+<div class="nd nb-hlp" style="left:80px;top:3900px;width:460px">
+  <div class="nh">⬡ Slot Scoring Weights</div>
+  <div class="nb" style="font-size:10px">
+    <div class="em" style="margin-bottom:4px">Bonuses:</div>
+    <div style="display:grid;grid-template-columns:40px 1fr;gap:2px 8px;color:#57606a">
+      <div class="ok" style="font-weight:700">+40</div><div>preferred_time_slots_json match</div>
+      <div class="ok" style="font-weight:700">+20</div><div>preferred_periods_json match</div>
+      <div class="ok" style="font-weight:700">+15</div><div>teacher preferred days</div>
+      <div class="ok" style="font-weight:700">+10</div><div>spread evenly</div>
+      <div class="ok" style="font-weight:700">+5</div><div>preferred room type</div>
+    </div>
+    <div class="hr"></div>
+    <div class="em" style="margin-bottom:4px">Penalties:</div>
+    <div style="display:grid;grid-template-columns:40px 1fr;gap:2px 8px;color:#57606a">
+      <div class="er" style="font-weight:700">−100</div><div>split_allowed=false violated</div>
+      <div class="er" style="font-weight:700">−50</div><div>avoid_time_slots_json match</div>
+      <div class="er" style="font-weight:700">−30</div><div>avoid_periods_json match</div>
+      <div class="er" style="font-weight:700">−15</div><div>overloaded day</div>
+    </div>
+  </div>
+</div>
+
+<!-- RIGHT: Parallel Groups -->
+<div class="nd nb-hlp" style="left:3060px;top:3880px;width:460px">
+  <div class="nh">⬡ Parallel Group Types</div>
+  <div class="nb" style="font-size:10px">
+    <div style="display:grid;grid-template-columns:50px 1fr;gap:4px 8px;color:#57606a">
+      <div><span class="t tok">✓ DONE</span></div><div>SAME_TIME — anchor+siblings</div>
+      <div><span class="t tc">✗ GAP</span></div><div>CONSECUTIVE — not implemented</div>
+      <div><span class="t tc">✗ GAP</span></div><div>ORDERED — not implemented</div>
+      <div><span class="t tc">✗ GAP</span></div><div>SAME_DAY — not implemented</div>
+      <div><span class="t tc">✗ GAP</span></div><div>NOT_SAME_DAY — not implemented</div>
+    </div>
+    <div class="hr"></div>
+    <div class="muted">Unimplemented types silently ignored → <span class="t tc">GAP-TT-002</span></div>
+  </div>
+</div>
+
+<!-- DECISION DIAMOND 1 -->
+<div style="position:absolute;left:1610px;top:4290px;width:280px;height:120px;display:flex;align-items:center;justify-content:center">
+  <div style="width:160px;height:80px;background:#f0dcff;border:2px solid #8250df;transform:rotate(45deg);position:absolute;border-radius:4px"></div>
+  <div style="position:relative;z-index:1;text-align:center;color:#8250df;font-size:10px;font-weight:700;line-height:1.5">Phase 1<br>Coverage OK?</div>
+</div>
+<div style="position:absolute;left:1912px;top:4328px;font-size:10px;color:#1a7f37;font-weight:700">YES ⟶</div>
+<div style="position:absolute;left:1745px;top:4420px;font-size:10px;color:#cf222e;font-weight:700">↓ NO</div>
+
+<!-- N6: PHASE 2 GREEDY -->
+<div class="nd nb-fb" style="left:1160px;top:4490px;width:640px">
+  <div class="nh">⬡ Phase 2 — Greedy Fallback</div>
+  <div class="nb" style="font-size:10px">
+    <ul>
+      <li>Processes only <b>unplaced instances</b> from Phase 1</li>
+      <li>Sequential scan: all days × all periods</li>
+      <li>Skips soft scoring — takes <b>first valid slot</b></li>
+      <li>Teacher substitution from pool (random — GAP-TT-005)</li>
+      <li>No backtracking — single forward pass only</li>
+    </ul>
+    <div class="hr"></div>
+    <div class="row"><span class="t th">No backtracking</span><span class="t tm">Teacher substitution allowed</span></div>
+  </div>
+</div>
+
+<!-- DECISION DIAMOND 2 -->
+<div style="position:absolute;left:1330px;top:4820px;width:280px;height:120px;display:flex;align-items:center;justify-content:center">
+  <div style="width:160px;height:80px;background:#f0dcff;border:2px solid #8250df;transform:rotate(45deg);position:absolute;border-radius:4px"></div>
+  <div style="position:relative;z-index:1;text-align:center;color:#8250df;font-size:10px;font-weight:700;line-height:1.5">Phase 2<br>All Placed?</div>
+</div>
+<div style="position:absolute;left:1632px;top:4858px;font-size:10px;color:#1a7f37;font-weight:700">YES ⟶</div>
+<div style="position:absolute;left:1460px;top:4950px;font-size:10px;color:#cf222e;font-weight:700">↓ NO</div>
+
+<!-- N7: PHASE 3 RESCUE -->
+<div class="nd nb-rc" style="left:1160px;top:5020px;width:640px">
+  <div class="nh">⬡ Phase 3 — Rescue Pass (Force Placement)</div>
+  <div class="nb" style="font-size:10px">
+    <ul>
+      <li>Still-unplaced after Phase 2</li>
+      <li>Relaxes all secondary soft constraints</li>
+      <li>Force-places with <span class="mono">has_conflict = true</span></li>
+      <li>Records reason in <span class="mono">conflict_reason</span></li>
+      <li>⚠ <span class="t tc">GAP-TT-006</span> Conflicts NOT escalated</li>
+    </ul>
+    <div class="hr"></div>
+    <div class="row"><span class="t tc">Force placement</span><span class="t th">Conflict flagged in DB</span></div>
+  </div>
+</div>
+
+<!-- N8: ROOM ALLOCATION -->
+<div class="nd nb-svc" style="left:1330px;top:5370px;width:840px">
+  <div class="nh">⬡ RoomAllocationPass::run() — Post-Scheduling Pass</div>
+  <div class="nb" style="font-size:10px">
+    <div class="g3">
+      <div><span style="color:#cf222e;font-weight:700">H1</span> <span class="muted">Specific room assigned to activity</span></div>
+      <div><span style="color:#bc4c00;font-weight:700">H2</span> <span class="muted">Compulsory room type required</span></div>
+      <div><span style="color:#9a6700;font-weight:700">S3</span> <span class="muted">Preferred rooms list match</span></div>
+      <div><span style="color:#0969da;font-weight:700">S4</span> <span class="muted">Preferred room type match</span></div>
+      <div><span style="color:#0550ae;font-weight:700">S5</span> <span class="muted">Any room of required type</span></div>
+      <div><span style="color:#57606a;font-weight:700">S6</span> <span class="muted">Any available room (last resort)</span></div>
+    </div>
+    <div class="hr"></div>
+    <div class="muted">Runs as post-scheduling pass. Skipped if <span class="em">enable_room_alloc=false</span>.</div>
+  </div>
+</div>
+
+<!-- N9: STORAGE -->
+<div class="nd nb-st" style="left:1380px;top:5660px;width:740px">
+  <div class="nh">⬡ TimetableStorageService::store() — Atomic Write</div>
+  <div class="nb" style="font-size:10px">
+    <div class="g2">
+      <div>① <span class="mono">DB::beginTransaction()</span></div>
+      <div>② Delete existing cells for run_id</div>
+      <div>③ Bulk insert <span class="mono">tt_timetable_cells</span> (500/chunk)</div>
+      <div>④ Update <span class="mono">tt_generation_runs.stats_json</span></div>
+      <div>⑤ Set run <span class="mono">is_active = true</span></div>
+      <div>⑥ Deactivate previous runs, <span class="mono">DB::commit()</span></div>
+    </div>
+    <div class="hr"></div>
+    <div class="row"><span class="t tok">Atomic transaction</span><span class="t ti">Bulk insert 500/chunk</span></div>
+  </div>
+</div>
+
+<!-- N10a: GENERATION RESULT -->
+<div class="nd nb-out" style="left:820px;top:5970px;width:560px">
+  <div class="nh">⬡ GenerationResult — Output Object</div>
+  <div class="nb" style="font-size:10px">
+    <div class="g2">
+      <div><span class="mono">success</span> bool</div><div><span class="mono">generation_run_id</span></div>
+      <div><span class="mono">coverage_percentage</span></div><div><span class="mono">total_activities</span></div>
+      <div><span class="mono">placed_count</span></div><div><span class="mono">unplaced_count</span></div>
+      <div><span class="mono">conflict_count</span></div><div><span class="mono">backtracks_performed</span></div>
+      <div><span class="mono">iterations_used</span></div><div><span class="mono">time_taken_seconds</span></div>
+      <div><span class="mono">phase_used</span> (1/2/3)</div><div><span class="mono">stats</span> (14 keys)</div>
+      <div><span class="mono">entries[]</span></div><div><span class="mono">error_message</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- N10b: DB WRITES -->
+<div class="nd nb-out" style="left:2120px;top:5970px;width:580px">
+  <div class="nh">⬡ DB Writes — tt_timetable_cells</div>
+  <div class="nb" style="font-size:10px">
+    <div class="g2">
+      <div><span class="mono">generation_run_id</span></div><div><span class="mono">activity_id</span></div>
+      <div><span class="mono">sub_activity_id</span></div><div><span class="mono">class_id / section_id</span></div>
+      <div><span class="mono">teacher_id</span></div><div><span class="mono">room_id</span></div>
+      <div><span class="mono">day_id / period_id</span></div><div><span class="mono">instance_id</span></div>
+      <div><span class="mono">has_conflict</span> BOOL</div><div><span class="mono">conflict_reason</span></div>
+      <div><span class="mono">is_locked</span> BOOL</div><div><span class="mono">academic_session_id</span></div>
+    </div>
+    <div class="hr"></div>
+    <div class="muted">Also: stats_json (14 keys) → tt_generation_runs</div>
+  </div>
+</div>
+
+<!-- N11: HTTP RESPONSE -->
+<div class="nd nc" style="left:1530px;top:6280px;width:440px">
+  <div class="nh">⬡ HTTP JSON Response</div>
+  <div class="nb" style="font-size:10px">
+    <div class="row"><span class="t tok">200 OK</span><span class="t tc">422 validation</span><span class="t tc">500 crash</span></div>
+    <div class="hr"></div>
+    <div class="mono">{ success, run_id, coverage_pct, stats{}, entries[] }</div>
+    <div class="hr"></div>
+    <div>⚠ <span class="t tc">GAP-TT-004</span> <span class="muted">Synchronous — blocks HTTP thread up to 300s</span></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     GAP ANALYSIS
+══════════════════════════════════════════════════════ -->
+<div class="sec-hdr" style="left:80px;top:6490px;color:#cf222e">⚠ GAP ANALYSIS — 12 Issues</div>
+
+<div class="nd nb-gap" style="left:80px;top:6535px;width:370px">
+  <div class="nh"><span class="t tc">CRITICAL</span> GAP-TT-001</div>
+  <div class="nb" style="font-size:10px"><div class="em">Zero Authorization</div><div class="muted">SmartTimetableController has NO policy checks. Any authenticated user can trigger or overwrite generation.</div></div>
+</div>
+<div class="nd nb-gap" style="left:480px;top:6535px;width:370px">
+  <div class="nh"><span class="t tc">CRITICAL</span> GAP-TT-004</div>
+  <div class="nb" style="font-size:10px"><div class="em">Sync HTTP Block</div><div class="muted">Runs synchronously on HTTP thread. Up to 300s. Must be queued job with polling endpoint.</div></div>
+</div>
+<div class="nd nb-gap" style="left:880px;top:6535px;width:370px">
+  <div class="nh"><span class="t th">HIGH</span> GAP-TT-002</div>
+  <div class="nb" style="font-size:10px"><div class="em">Parallel Types Missing</div><div class="muted">Only SAME_TIME implemented. CONSECUTIVE, ORDERED, SAME_DAY silently ignored — no error thrown.</div></div>
+</div>
+<div class="nd nb-gap" style="left:1280px;top:6535px;width:370px">
+  <div class="nh"><span class="t th">HIGH</span> GAP-TT-003</div>
+  <div class="nb" style="font-size:10px"><div class="em">Silent Exceptions</div><div class="muted">Soft constraint exceptions swallowed. Returns score 0, silently skewing all placement decisions.</div></div>
+</div>
+<div class="nd nb-gap" style="left:1680px;top:6535px;width:370px">
+  <div class="nh"><span class="t th">HIGH</span> GAP-TT-005</div>
+  <div class="nb" style="font-size:10px"><div class="em">Random Teacher Selection</div><div class="muted">Phase 2 uses array_rand — no workload balancing. Creates heavily uneven teacher loads.</div></div>
+</div>
+<div class="nd nb-gap" style="left:2080px;top:6535px;width:370px">
+  <div class="nh"><span class="t th">HIGH</span> GAP-TT-006</div>
+  <div class="nb" style="font-size:10px"><div class="em">Silent Conflicts</div><div class="muted">Phase 3 force-placements: has_conflict=true in DB but NO admin notification or dashboard alert.</div></div>
+</div>
+<div class="nd nb-gap" style="left:80px;top:6820px;width:370px">
+  <div class="nh"><span class="t tm">MEDIUM</span> GAP-TT-007</div>
+  <div class="nb" style="font-size:10px"><div class="em">Weak Diagnostics</div><div class="muted">Per-activity failure reason not recorded. Admins can't tell WHY an activity couldn't be placed.</div></div>
+</div>
+<div class="nd nb-gap" style="left:480px;top:6820px;width:370px">
+  <div class="nh"><span class="t tm">MEDIUM</span> GAP-TT-008</div>
+  <div class="nb" style="font-size:10px"><div class="em">No Partial Regen</div><div class="muted">is_locked flag in tt_timetable_cells NOT honored — all locked cells overwritten each run.</div></div>
+</div>
+<div class="nd nb-gap" style="left:880px;top:6820px;width:370px">
+  <div class="nh"><span class="t tm">MEDIUM</span> GAP-TT-009</div>
+  <div class="nb" style="font-size:10px"><div class="em">N+1 Risk</div><div class="muted">Teacher name cache built per-run. If not eagerly loaded, each miss triggers individual DB query.</div></div>
+</div>
+<div class="nd nb-gap" style="left:1280px;top:6820px;width:370px">
+  <div class="nh"><span class="t tm">MEDIUM</span> GAP-TT-010</div>
+  <div class="nb" style="font-size:10px"><div class="em">No Live Progress</div><div class="muted">No SSE/polling endpoint. User sees no feedback during 25–300s generation run.</div></div>
+</div>
+<div class="nd nb-gap" style="left:1680px;top:6820px;width:370px">
+  <div class="nh"><span class="t tl">LOW</span> GAP-TT-011</div>
+  <div class="nb" style="font-size:10px"><div class="em">God Controller (2,958 lines)</div><div class="muted">Should split into: GenerationController, ConstraintController, ActivityController, ViewerController.</div></div>
+</div>
+<div class="nd nb-gap" style="left:2080px;top:6820px;width:370px">
+  <div class="nh"><span class="t tl">LOW</span> GAP-TT-012</div>
+  <div class="nb" style="font-size:10px"><div class="em">Verbose Logging Lost</div><div class="muted">FETSolver log() calls only write to stdout in debug_mode. No Log::debug() — lost in production.</div></div>
+</div>
+
+<!-- DB Tables -->
+<div class="sec-hdr" style="left:2580px;top:6820px;color:#0550ae">⬡ All DB Tables</div>
+<div class="nd nb-hlp" style="left:2580px;top:6865px;width:760px">
+  <div class="nh">⬡ 15 Tables — Prereqs (Write) + Generator (R/W)</div>
+  <div class="nb" style="font-size:10px">
+    <div class="g3">
+      <div><span class="t tp">W</span> <span class="mono">tt_class_subject_groups</span></div>
+      <div><span class="t tp">W</span> <span class="mono">tt_class_subject_subgroups</span></div>
+      <div><span class="t tp">W</span> <span class="mono">tt_requirement_consolidations</span></div>
+      <div><span class="t tp">W</span> <span class="mono">tt_teacher_availabilities</span></div>
+      <div><span class="t tp">W</span> <span class="mono">tt_slot_requirements</span></div>
+      <div><span class="t tp">W</span> <span class="mono">tt_activities</span></div>
+      <div><span class="t tp">W</span> <span class="mono">tt_sub_activities</span></div>
+      <div><span class="t tp">W</span> <span class="mono">tt_activity_teachers</span></div>
+      <div><span class="t tok">R</span> <span class="mono">tt_constraints</span></div>
+      <div><span class="t tok">R</span> <span class="mono">tt_parallel_group_activity</span></div>
+      <div><span class="t tok">R</span> <span class="mono">tt_rooms</span></div>
+      <div><span class="t tok">R</span> <span class="mono">tt_working_days + tt_periods</span></div>
+      <div><span class="t th">RW</span> <span class="mono">tt_generation_runs</span></div>
+      <div><span class="t th">W</span> <span class="mono">tt_timetable_cells</span></div>
+      <div><span class="t tok">R</span> <span class="mono">sch_academic_term + sys_users</span></div>
+    </div>
+  </div>
+</div>
+
+</div><!-- end canvas -->
+</div><!-- end viewport -->
+
+<script>
+const vp=document.getElementById('viewport'),cv=document.getElementById('canvas');
+let sc=0.22,tx=20,ty=20,drag=false,lx,ly;
+function applyT(){cv.style.transform=`translate(${tx}px,${ty}px) scale(${sc})`;document.getElementById('zp').textContent=Math.round(sc*100)+'%';}
+vp.addEventListener('mousedown',e=>{if(e.button!==0)return;drag=true;lx=e.clientX;ly=e.clientY;vp.classList.add('drag');});
+document.addEventListener('mousemove',e=>{if(!drag)return;tx+=e.clientX-lx;ty+=e.clientY-ly;lx=e.clientX;ly=e.clientY;applyT();});
+document.addEventListener('mouseup',()=>{drag=false;vp.classList.remove('drag');});
+vp.addEventListener('wheel',e=>{e.preventDefault();const r=vp.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top,d=e.deltaY>0?0.9:1.1,ns=Math.max(0.06,Math.min(3,sc*d));tx=mx-(mx-tx)*(ns/sc);ty=my-(my-ty)*(ns/sc);sc=ns;applyT();},{passive:false});
+function resetView(){sc=0.22;tx=20;ty=20;applyT();}
+function zoomIn(){sc=Math.min(3,sc*1.2);applyT();}
+function zoomOut(){sc=Math.max(0.06,sc*0.8);applyT();}
+function fitAll(){const vw=vp.clientWidth,vh=vp.clientHeight;sc=Math.min(vw/4400,vh/7300)*0.95;tx=(vw-4400*sc)/2;ty=8;applyT();}
+
+const svg=document.getElementById('asvg');
+const clrs=['#57606a','#0969da','#0550ae','#8250df','#1a7f37','#bc4c00','#9a6700','#cf222e','#1a7f37'];
+function arrow(pts,m,lbl){
+  const g=document.createElementNS('http://www.w3.org/2000/svg','g');
+  let d=`M${pts[0][0]},${pts[0][1]}`;
+  for(let i=1;i<pts.length;i++) d+=` L${pts[i][0]},${pts[i][1]}`;
+  const path=document.createElementNS('http://www.w3.org/2000/svg','path');
+  path.setAttribute('d',d);path.setAttribute('stroke',clrs[m]);
+  path.setAttribute('stroke-width','2');path.setAttribute('fill','none');
+  path.setAttribute('marker-end',`url(#a${m})`);g.appendChild(path);
+  if(lbl){
+    const n=Math.floor(pts.length/2),lx2=(pts[n-1][0]+pts[n][0])/2,ly2=(pts[n-1][1]+pts[n][1])/2;
+    const rect=document.createElementNS('http://www.w3.org/2000/svg','rect');
+    rect.setAttribute('x',lx2-28);rect.setAttribute('y',ly2-9);rect.setAttribute('width',56);rect.setAttribute('height',16);
+    rect.setAttribute('fill','#ffffff');rect.setAttribute('rx','3');rect.setAttribute('stroke',clrs[m]);rect.setAttribute('stroke-width','1');
+    g.appendChild(rect);
+    const txt=document.createElementNS('http://www.w3.org/2000/svg','text');
+    txt.setAttribute('x',lx2);txt.setAttribute('y',ly2+3);txt.setAttribute('text-anchor','middle');
+    txt.setAttribute('fill',clrs[m]);txt.setAttribute('font-size','9');txt.setAttribute('font-family','monospace');
+    txt.textContent=lbl;g.appendChild(txt);
+  }
+  svg.appendChild(g);
+}
+
+// ═══════ PREREQ ARROWS ═══════
+// P0 bottom → P1 top
+arrow([[1750,260],[1750,360]], 2);
+// P0-left right → P0 left
+arrow([[540,160],[1380,160]], 0);
+// P0 right → P0-right left
+arrow([[2140,160],[2840,160]], 0);
+
+// P1 bottom → P2 top
+arrow([[1750,620],[1750,690]], 3);
+// P1-left → P1 left
+arrow([[540,460],[1310,460]], 0);
+// P1 right → P1-right left
+arrow([[2190,460],[2840,460]], 0);
+
+// P2 bottom → P3 top
+arrow([[1750,950],[1750,1030]], 5);
+// P2-left → P2 left
+arrow([[540,790],[1310,790]], 0);
+// P2 right → P2-right left
+arrow([[2190,790],[2840,790]], 0);
+
+// P3 bottom split → P4a, P4b
+arrow([[1590,1280],[1590,1340],[1340,1340],[1340,1400]], 4);
+arrow([[1910,1280],[1910,1340],[2310,1340],[2310,1400]], 1);
+// P3-left → P3 left
+arrow([[540,1130],[1310,1130]], 0);
+// P3 right → P3-right left
+arrow([[2190,1130],[2840,1130]], 0);
+
+// P4a bottom → P5 top
+arrow([[1340,1720],[1340,1770],[1690,1770],[1690,1820]], 4);
+// P4b bottom → P5 top
+arrow([[2310,1700],[2310,1770],[1900,1770],[1900,1820]], 1);
+
+// P5 bottom → Bridge top
+arrow([[1750,2100],[1750,2140]], 8);
+// P5-left → P5 left
+arrow([[540,1920],[1240,1920]], 0);
+// P5 right → P5-right left
+arrow([[2260,1920],[2840,1920]], 0);
+
+// Bridge bottom → HTTP REQUEST (trigger arrow)
+arrow([[1750,2300],[1750,2390],[1750,2460]], 8, 'triggers');
+
+// ═══════ MAIN PIPELINE ARROWS (original + 2450 offset) ═══════
+// HTTP REQ → CONTROLLER
+arrow([[1750,2620],[1750,2680]], 1);
+// CONTROLLER → GEN SERVICE
+arrow([[1750,2840],[1750,2910]], 2);
+// GEN SERVICE → ACTIVITY EXP
+arrow([[1750,3090],[1750,3240]], 3);
+// ACTIVITY EXP → FETSOLVER
+arrow([[1750,3420],[1750,3530]], 3);
+// FETSOLVER → CSP
+arrow([[1750,3730],[1750,3880]], 4);
+// CSP → DECISION 1
+arrow([[1750,4150],[1750,4290]], 5);
+
+// D1 YES → Room Alloc
+arrow([[1892,4350],[2300,4350],[2300,5370],[2170,5370]], 4,'YES');
+// D1 NO → Phase 2
+arrow([[1750,4410],[1750,4460],[1480,4460],[1480,4490]], 7,'NO');
+// Phase 2 → D2
+arrow([[1480,4690],[1480,4820]], 6);
+// D2 YES → Room Alloc
+arrow([[1612,4880],[2200,4880],[2200,5390],[2170,5390]], 4,'YES');
+// D2 NO → Phase 3
+arrow([[1480,4940],[1480,5020]], 7,'NO');
+// Phase 3 → Room Alloc
+arrow([[1480,5220],[1480,5320],[1750,5320],[1750,5370]], 7);
+
+// Room Alloc → Storage
+arrow([[1750,5570],[1750,5660]], 8);
+// Storage → Result
+arrow([[1600,5860],[1600,5910],[1100,5910],[1100,5970]], 4);
+// Storage → DB Writes
+arrow([[1860,5860],[1860,5910],[2410,5910],[2410,5970]], 4);
+// Result → HTTP Resp
+arrow([[1100,6170],[1100,6240],[1750,6240],[1750,6280]], 1);
+// DB Writes → HTTP Resp
+arrow([[2410,6170],[2410,6240],[1970,6240],[1970,6280]], 1);
+
+// GEN SERVICE left → DB Sources
+arrow([[1370,3010],[900,3010],[900,3270],[540,3270]], 0,'load');
+// DB Sources → FETSolver
+arrow([[540,3300],[900,3300],[900,3630],[1350,3630]], 0);
+// GEN SERVICE right → GenRun
+arrow([[2130,3010],[2700,3010],[2700,3270],[3060,3270]], 0,'create');
+// GenRun → Storage (update)
+arrow([[3290,3460],[3400,3460],[3400,5760],[2120,5760]], 0,'update');
+
+// FETSolver ↔ TimetableSolution
+arrow([[1350,3710],[900,3710],[900,3750],[540,3750]], 0);
+arrow([[540,3790],[900,3790],[900,3750],[1350,3750]], 4);
+// FETSolver ↔ ConstraintMgr
+arrow([[2150,3710],[2700,3710],[2700,3750],[3060,3750]], 0);
+arrow([[3060,3810],[2700,3810],[2700,3750],[2150,3750]], 3);
+
+// Score → CSP
+arrow([[540,4060],[1260,4060]], 0);
+// Parallel → CSP
+arrow([[3060,4060],[2240,4060]], 0);
+
+applyT();
+</script>
+</body>
+</html>

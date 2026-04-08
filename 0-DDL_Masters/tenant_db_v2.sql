@@ -288,109 +288,109 @@
   -- EVENT TYPES
   -- ------------------------------------------------------------------
   -- Need to Verify
-  CREATE TABLE IF NOT EXISTS sys_event_type (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    code VARCHAR(50) NOT NULL UNIQUE,  
-    name VARCHAR(100) NOT NULL,
-    description TEXT NULL,
-    is_active TINYINT(1) NOT NULL DEFAULT 1,
-    created_at TIMESTAMP NULL DEFAULT NULL,
-    updated_at TIMESTAMP NULL DEFAULT NULL,
-    deleted_at TIMESTAMP NULL DEFAULT NULL
+  CREATE TABLE IF NOT EXISTS `sys_event_type` (
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `code` VARCHAR(50) NOT NULL UNIQUE,  
+    `name` VARCHAR(100) NOT NULL,
+    `description` TEXT NULL,
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+    `created_at` TIMESTAMP NULL DEFAULT NULL,
+    `updated_at` TIMESTAMP NULL DEFAULT NULL,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
   -- ------------------------------------------------------------------
   -- TRIGGER EVENTS
   -- ------------------------------------------------------------------
-  CREATE TABLE IF NOT EXISTS sys_trigger_event (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    code VARCHAR(50) NOT NULL UNIQUE,
-    name VARCHAR(100) NOT NULL,
-    description TEXT NULL,
-    event_logic JSON NOT NULL,
-    is_active TINYINT(1) NOT NULL DEFAULT 1,
-    created_at TIMESTAMP NULL DEFAULT NULL,
-    updated_at TIMESTAMP NULL DEFAULT NULL,
-    deleted_at TIMESTAMP NULL DEFAULT NULL
+  CREATE TABLE IF NOT EXISTS `sys_trigger_event` (
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `code` VARCHAR(50) NOT NULL UNIQUE,
+    `name` VARCHAR(100) NOT NULL,
+    `description` TEXT NULL,
+    `event_logic` JSON NOT NULL,
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+    `created_at` TIMESTAMP NULL DEFAULT NULL,
+    `updated_at` TIMESTAMP NULL DEFAULT NULL,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
   -- ------------------------------------------------------------------
   -- ACTION TYPES (WHAT SYSTEM CAN DO)
   -- ------------------------------------------------------------------
-  CREATE TABLE IF NOT EXISTS sys_action_type (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    code VARCHAR(50) NOT NULL UNIQUE,
-    name VARCHAR(100) NOT NULL,
-    description TEXT NULL,
-    action_logic JSON NOT NULL,
-    required_parameters JSON NULL,
-    is_active TINYINT(1) NOT NULL DEFAULT 1,
-    created_at TIMESTAMP NULL DEFAULT NULL,
-    updated_at TIMESTAMP NULL DEFAULT NULL,
-    deleted_at TIMESTAMP NULL DEFAULT NULL
+  CREATE TABLE IF NOT EXISTS `sys_action_type` (
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `code` VARCHAR(50) NOT NULL UNIQUE,
+    `name` VARCHAR(100) NOT NULL,
+    `description` TEXT NULL,
+    `action_logic` JSON NOT NULL,
+    `required_parameters` JSON NULL,
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+    `created_at` TIMESTAMP NULL DEFAULT NULL,
+    `updated_at` TIMESTAMP NULL DEFAULT NULL,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
   -- ------------------------------------------------------------------
   -- RULE ENGINE CONFIG (CORE RULE DEFINITION)
   -- ------------------------------------------------------------------
-  CREATE TABLE IF NOT EXISTS sys_rule_engine_config (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    rule_code VARCHAR(50) NOT NULL UNIQUE,
-    rule_name VARCHAR(100) NOT NULL,
-    description TEXT NULL,
-    trigger_event_id INT UNSIGNED NOT NULL,
-    applicable_class_group_id INT UNSIGNED NULL,
-    logic_config JSON NOT NULL,
-    priority INT NOT NULL DEFAULT 100,
-    stop_further_execution TINYINT(1) NOT NULL DEFAULT 0,
-    ai_enabled TINYINT(1) NOT NULL DEFAULT 0,
-    ai_confidence_score DECIMAL(5,2) NULL,
-    is_active TINYINT(1) NOT NULL DEFAULT 1,
-    created_at TIMESTAMP NULL DEFAULT NULL,
-    updated_at TIMESTAMP NULL DEFAULT NULL,
-    deleted_at TIMESTAMP NULL DEFAULT NULL,
-    CONSTRAINT fk_rule_trigger FOREIGN KEY (trigger_event_id) REFERENCES lms_trigger_event(id),
-    CONSTRAINT fk_rule_class_group FOREIGN KEY (applicable_class_group_id) REFERENCES sch_class_groups_jnt(id)
+  CREATE TABLE IF NOT EXISTS `sys_rule_engine_config` (
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `rule_code` VARCHAR(50) NOT NULL UNIQUE,
+    `rule_name` VARCHAR(100) NOT NULL,
+    `description` TEXT NULL,
+    `trigger_event_id` INT UNSIGNED NOT NULL,
+    `applicable_class_group_id` INT UNSIGNED NULL,
+    `logic_config` JSON NOT NULL,
+    `priority` INT NOT NULL DEFAULT 100,
+    `stop_further_execution` TINYINT(1) NOT NULL DEFAULT 0,
+    `ai_enabled` TINYINT(1) NOT NULL DEFAULT 0,
+    `ai_confidence_score` DECIMAL(5,2) NULL,
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+    `created_at` TIMESTAMP NULL DEFAULT NULL,
+    `updated_at` TIMESTAMP NULL DEFAULT NULL,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    CONSTRAINT fk_rule_trigger FOREIGN KEY (trigger_event_id) REFERENCES `lms_trigger_event`(`id`),
+    CONSTRAINT fk_rule_class_group FOREIGN KEY (applicable_class_group_id) REFERENCES `sch_class_groups_jnt`(`id`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   -- ------------------------------------------------------------------
   -- RULE → ACTION MAPPING (MULTIPLE ACTIONS PER RULE)
   -- ------------------------------------------------------------------
-  CREATE TABLE IF NOT EXISTS sys_rule_action_map (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    rule_id INT UNSIGNED NOT NULL,
-    action_type_id INT UNSIGNED NOT NULL,
-    execution_order INT NOT NULL DEFAULT 1,
-    is_active TINYINT(1) NOT NULL DEFAULT 1,
-    created_at TIMESTAMP NULL DEFAULT NULL,
-    updated_at TIMESTAMP NULL DEFAULT NULL,
-    CONSTRAINT fk_rule_action_rule FOREIGN KEY (rule_id) REFERENCES lms_rule_engine_config(id),
-    CONSTRAINT fk_rule_action_action FOREIGN KEY (action_type_id) REFERENCES lms_action_type(id)
+  CREATE TABLE IF NOT EXISTS `sys_rule_action_map` (
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `rule_id` INT UNSIGNED NOT NULL,
+    `action_type_id` INT UNSIGNED NOT NULL,
+    `execution_order` INT NOT NULL DEFAULT 1,
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+    `created_at` TIMESTAMP NULL DEFAULT NULL,
+    `updated_at` TIMESTAMP NULL DEFAULT NULL,
+    CONSTRAINT fk_rule_action_rule FOREIGN KEY (rule_id) REFERENCES `lms_rule_engine_config`(`id`),
+    CONSTRAINT fk_rule_action_action FOREIGN KEY (action_type_id) REFERENCES `lms_action_type`(`id`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   -- ------------------------------------------------------------------
   -- RULE EXECUTION LOG (AUDIT + DEBUG + AI DATA)
   -- ------------------------------------------------------------------
-  CREATE TABLE IF NOT EXISTS sys_rule_execution_log (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    rule_id INT UNSIGNED NOT NULL,
-    trigger_event_id INT UNSIGNED NOT NULL,
-    action_type_id INT UNSIGNED NOT NULL,
-    entity_type VARCHAR(50) NOT NULL,
-    entity_id INT UNSIGNED NOT NULL,
-    execution_context JSON NOT NULL,
-    execution_result ENUM('SUCCESS','FAILED','SKIPPED') NOT NULL,
-    error_message TEXT NULL,
-    executed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CREATE TABLE IF NOT EXISTS `sys_rule_execution_log` (
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `rule_id` INT UNSIGNED NOT NULL,
+    `trigger_event_id` INT UNSIGNED NOT NULL,
+    `action_type_id` INT UNSIGNED NOT NULL,
+    `entity_type` VARCHAR(50) NOT NULL,
+    `entity_id` INT UNSIGNED NOT NULL,
+    `execution_context` JSON NOT NULL,
+    `execution_result` ENUM('SUCCESS','FAILED','SKIPPED') NOT NULL,
+    `error_message` TEXT NULL,
+    `executed_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_rule (rule_id),
     INDEX idx_trigger (trigger_event_id),
     INDEX idx_entity (entity_type, entity_id),
-    CONSTRAINT fk_log_rule FOREIGN KEY (rule_id) REFERENCES lms_rule_engine_config(id),
-    CONSTRAINT fk_log_trigger FOREIGN KEY (trigger_event_id) REFERENCES lms_trigger_event(id),
-    CONSTRAINT fk_log_action FOREIGN KEY (action_type_id) REFERENCES lms_action_type(id)
+    CONSTRAINT fk_log_rule FOREIGN KEY (rule_id) REFERENCES `lms_rule_engine_config`(`id`),
+    CONSTRAINT fk_log_trigger FOREIGN KEY (trigger_event_id) REFERENCES `lms_trigger_event`(`id`),
+    CONSTRAINT fk_log_action FOREIGN KEY (action_type_id) REFERENCES `lms_action_type`(`id`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ===========================================================================
@@ -472,6 +472,35 @@
     CONSTRAINT `fk_boardOrg_boardId` FOREIGN KEY (`board_id`) REFERENCES `glb_boards` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_boardOrg_academicSessionId` FOREIGN KEY (`academic_sessions_id`) REFERENCES `sch_org_academic_sessions_jnt` (`id`) ON DELETE CASCADE
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+  -- Here we are setting all the configurations that will be used for the All Modules of the Application. This will be a Master Table to control the configurations for all modules.
+  -- Only Edit Functionality will be available for Tenant. No one can Add or Delete any record and in Edit also "key" can not be edited. In Edit "key" will not be even displayed.
+  CREATE TABLE IF NOT EXISTS `sch_config` (
+    `id` SMALLINT unsigned NOT NULL AUTO_INCREMENT,
+    `module_id` INT unsigned NOT NULL,                     -- FK to glb_modules.id to identify which module this config belongs to (e.g. Student Mgmt., Teacher Mgmt., Class Mgmt.)
+    `ordinal` int unsigned NOT NULL DEFAULT '1',
+    `key` varchar(150) NOT NULL,                           -- Can not changed by user (He can edit other fields only but not KEY)
+    `key_name` varchar(150) NOT NULL,                      -- Can be Changed by user
+    `value` varchar(512) NOT NULL,                         -- Can be Changed by user
+    `value_type` ENUM('STRING', 'NUMBER', 'BOOLEAN', 'DATE', 'TIME', 'DATETIME', 'JSON') NOT NULL,
+    `description` varchar(255) NOT NULL,
+    `additional_info` JSON DEFAULT NULL,
+    `tenant_can_modify` tinyint(1) NOT NULL DEFAULT '0',
+    `mandatory` tinyint(1) NOT NULL DEFAULT '1',
+    `used_by_app` tinyint(1) NOT NULL DEFAULT '1',
+    `is_active` tinyint(1) NOT NULL DEFAULT '1',
+    `deleted_at` timestamp NULL DEFAULT NULL,
+    `created_at` timestamp NULL DEFAULT NULL,
+    `updated_at` timestamp NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_settings_ordinal` (`ordinal`),
+    UNIQUE KEY `uq_settings_key` (`key`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+  -- Data Seed for sch_config
+    -- INSERT INTO `sch_config` (`module_id`,`ordinal`,`key`,`key_name`,`value`,`value_type`,`description`,`additional_info`,`tenant_can_modify`,`mandatory`,`used_by_app`,`is_active`,`deleted_at`,`created_at`,`updated_at`) VALUES
+    -- (`LMS`,1,'performance_percentage_threshold_to_reassign_quiz', 'Performance Percentage Threshold to Reassign Quiz to a Student', '35', 'NUMBER', 'If Student Performance falls below this threshold, system will generate a new Quiz and will reassign it to the student', NULL, 1, 1, 1, 1, NULL, NULL, NULL),
+    -- 
 
   CREATE TABLE IF NOT EXISTS `sch_department` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,

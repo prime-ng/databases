@@ -1,0 +1,1571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Prime-AI LMS — Full Gap Analysis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* ─── DESIGN TOKENS ─── */
+:root{
+  --bg:#f0f4f8;
+  --white:#ffffff;
+  --slate-50:#f8fafc;
+  --slate-100:#f1f5f9;
+  --slate-200:#e2e8f0;
+  --slate-300:#cbd5e1;
+  --slate-400:#94a3b8;
+  --slate-500:#64748b;
+  --slate-600:#475569;
+  --slate-700:#334155;
+  --slate-800:#1e293b;
+  --navy-900:#0f172a;
+  --navy-800:#1e3a5f;
+  --blue:#1d4ed8;
+  --blue-light:#3b82f6;
+  --blue-pale:#dbeafe;
+  --green:#16a34a;
+  --green-pale:#dcfce7;
+  --green-mid:#22c55e;
+  --amber:#d97706;
+  --amber-pale:#fef3c7;
+  --red:#dc2626;
+  --red-pale:#fee2e2;
+  --purple:#7c3aed;
+  --shadow-xs:0 1px 2px rgba(0,0,0,.06);
+  --shadow-sm:0 1px 3px rgba(0,0,0,.1),0 1px 2px rgba(0,0,0,.06);
+  --shadow:0 4px 12px rgba(0,0,0,.08),0 1px 4px rgba(0,0,0,.04);
+  --shadow-lg:0 10px 28px rgba(0,0,0,.1),0 4px 12px rgba(0,0,0,.05);
+  --radius:12px;
+  --radius-sm:8px;
+  --radius-xs:6px;
+}
+
+/* ─── RESET ─── */
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Inter','Segoe UI',system-ui,sans-serif;
+  background:var(--bg);
+  color:var(--slate-800);
+  font-size:13px;
+  line-height:1.5;
+  min-width:1000px;
+}
+
+/* ═══ HEADER ═══ */
+.hdr{
+  background:linear-gradient(135deg,var(--navy-900) 0%,var(--navy-800) 45%,#1a3a8f 100%);
+  color:#fff;
+  padding:32px 40px 28px;
+  position:relative;
+  overflow:hidden;
+}
+.hdr::before{
+  content:'';position:absolute;top:-40%;right:-2%;
+  width:420px;height:420px;
+  background:radial-gradient(circle,rgba(59,130,246,.2) 0%,transparent 68%);
+  pointer-events:none;
+}
+.hdr::after{
+  content:'';position:absolute;bottom:-35%;left:25%;
+  width:340px;height:340px;
+  background:radial-gradient(circle,rgba(99,102,241,.13) 0%,transparent 68%);
+  pointer-events:none;
+}
+.hdr-inner{position:relative;z-index:1}
+.hdr-pill{
+  display:inline-flex;align-items:center;gap:7px;
+  background:rgba(255,255,255,.1);
+  border:1px solid rgba(255,255,255,.18);
+  color:#bfdbfe;
+  font-size:10.5px;font-weight:700;letter-spacing:.6px;
+  padding:5px 14px;border-radius:20px;margin-bottom:14px;
+  text-transform:uppercase;
+}
+.hdr h1{
+  font-size:28px;font-weight:800;letter-spacing:-.4px;line-height:1.2;margin-bottom:12px;
+}
+.hdr h1 .accent{color:#60a5fa}
+.hdr-meta{
+  display:flex;flex-wrap:wrap;gap:6px 20px;
+  font-size:11.5px;color:#94a3b8;
+}
+.hdr-meta-item{display:flex;align-items:center;gap:5px}
+.hdr-meta-item span{color:#bfdbfe;font-weight:600}
+.hdr-dot{width:3px;height:3px;background:#475569;border-radius:50%;flex-shrink:0}
+
+/* ═══ MODULE RIBBON ═══ */
+.ribbon{
+  display:grid;grid-template-columns:repeat(7,1fr);
+  background:var(--navy-900);
+  border-bottom:1px solid rgba(255,255,255,.06);
+}
+.ribbon-item{
+  padding:16px 12px 14px;text-align:center;
+  border-right:1px solid rgba(255,255,255,.06);
+  cursor:default;transition:background .15s;
+}
+.ribbon-item:last-child{border-right:none;background:rgba(255,255,255,.03)}
+.ribbon-item:hover{background:rgba(255,255,255,.06)}
+.ri-name{
+  font-size:9px;text-transform:uppercase;letter-spacing:1.1px;
+  color:var(--slate-500);font-weight:700;margin-bottom:7px;
+}
+.ri-pct{
+  font-size:26px;font-weight:900;color:#fff;line-height:1;
+  margin-bottom:5px;letter-spacing:-1px;
+}
+.ri-sub{font-size:9.5px;color:var(--slate-500);line-height:1.4;margin-bottom:9px}
+.ri-bar{height:3px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden}
+.ri-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,#34d399,#10b981)}
+.ribbon-item:last-child .ri-fill{background:linear-gradient(90deg,#fbbf24,#f59e0b)}
+
+/* ═══ STATS ═══ */
+.stats-row{
+  display:grid;grid-template-columns:repeat(5,1fr);
+  gap:16px;padding:16px 40px;
+  background:var(--navy-900);
+  border-bottom:3px solid var(--blue);
+}
+.stat{
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:var(--radius-sm);
+  padding:14px 16px;text-align:center;
+}
+.stat .v{
+  font-size:32px;font-weight:900;line-height:1;
+  letter-spacing:-1px;margin-bottom:5px;
+}
+.stat .l{
+  font-size:9.5px;text-transform:uppercase;
+  letter-spacing:.9px;color:var(--slate-500);font-weight:700;
+}
+.sd .v{color:#34d399}.sp .v{color:#fbbf24}.sk .v{color:#f87171}
+.st .v{color:#60a5fa}.so .v{color:#a78bfa}
+
+/* ═══ PROGRESS ═══ */
+.prog-wrap{
+  background:var(--white);padding:18px 40px;
+  border-bottom:1px solid var(--slate-200);
+  box-shadow:var(--shadow-xs);
+}
+.prog-label{
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:12px;font-weight:600;color:var(--slate-700);margin-bottom:10px;
+}
+.prog-legend{display:flex;gap:16px}
+.prog-legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--slate-600)}
+.leg-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.prog-bar{
+  height:18px;background:var(--slate-100);border-radius:9px;
+  overflow:hidden;display:flex;
+  box-shadow:inset 0 1px 3px rgba(0,0,0,.08);
+}
+.prog-done{
+  background:linear-gradient(90deg,var(--green-mid),var(--green));
+  height:100%;display:flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:800;color:#fff;
+}
+.prog-part{
+  background:linear-gradient(90deg,#fbbf24,#f59e0b);
+  height:100%;display:flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:800;color:#fff;
+}
+
+/* ═══ TOOLBAR ═══ */
+.toolbar{
+  background:var(--white);
+  border-bottom:2px solid var(--slate-200);
+  padding:11px 40px;
+  display:flex;gap:10px;flex-wrap:wrap;align-items:center;
+  position:sticky;top:0;z-index:100;
+  box-shadow:0 2px 8px rgba(0,0,0,.07);
+}
+.tb-group{display:flex;align-items:center;gap:6px}
+.tb-div{width:1px;height:24px;background:var(--slate-200);flex-shrink:0;margin:0 2px}
+.toolbar label{
+  font-size:10.5px;font-weight:700;
+  color:var(--slate-500);text-transform:uppercase;letter-spacing:.4px;
+  white-space:nowrap;
+}
+select,input[type=text]{
+  padding:7px 11px;
+  border:1.5px solid var(--slate-200);
+  border-radius:var(--radius-sm);
+  font-size:12px;font-family:inherit;
+  background:var(--slate-50);color:var(--slate-700);
+  outline:none;transition:border-color .15s,box-shadow .15s;
+}
+select:focus,input[type=text]:focus{
+  border-color:var(--blue-light);
+  box-shadow:0 0 0 3px rgba(59,130,246,.12);
+}
+input[type=text]{width:195px}
+.btn{
+  padding:7px 16px;border:none;border-radius:var(--radius-sm);
+  font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;
+  transition:all .15s;
+}
+.btn-blue{background:var(--blue);color:#fff;box-shadow:0 1px 3px rgba(29,78,216,.25)}
+.btn-blue:hover{background:#1a42c4;transform:translateY(-1px)}
+.btn-gray{
+  background:var(--slate-100);color:var(--slate-700);
+  border:1.5px solid var(--slate-200);
+}
+.btn-gray:hover{background:var(--slate-200)}
+#fcnt{
+  font-size:11px;font-weight:600;
+  background:var(--blue-pale);color:var(--blue);
+  padding:4px 12px;border-radius:20px;
+  border:1px solid #bfdbfe;
+}
+
+/* ═══ SECTION ═══ */
+.sec{margin:20px 40px 0}
+.sec-hdr{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:13px 20px;border-radius:var(--radius) var(--radius) 0 0;
+  color:#fff;user-select:none;cursor:pointer;
+  transition:filter .15s;
+}
+.sec-hdr:hover{filter:brightness(1.08)}
+.sec-hdr h2{font-size:13.5px;font-weight:800;display:flex;align-items:center;gap:10px}
+.sec-num{
+  background:rgba(255,255,255,.18);
+  width:24px;height:24px;border-radius:6px;
+  display:inline-flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:900;flex-shrink:0;
+}
+.sec-sub{font-size:10.5px;opacity:.65;font-weight:400}
+.sec-info{display:flex;align-items:center;gap:14px;font-size:11px}
+.sec-counts{
+  background:rgba(0,0,0,.2);padding:3px 10px;
+  border-radius:20px;font-size:10px;font-weight:600;
+}
+.mini-bar{width:76px;height:6px;background:rgba(255,255,255,.18);border-radius:3px;overflow:hidden}
+.mini-fill{height:100%;background:rgba(255,255,255,.88);border-radius:3px}
+.sec-pct{font-size:15px;font-weight:900;min-width:40px;text-align:right}
+.arr{transition:transform .25s;display:inline-block;font-size:9px;opacity:.75}
+
+/* ═══ TABLE ═══ */
+.tbl-scroll{overflow-x:auto}
+table{
+  width:100%;border-collapse:collapse;background:var(--white);
+  border-radius:0 0 var(--radius) var(--radius);
+  box-shadow:var(--shadow);font-size:12px;
+}
+thead tr{background:var(--slate-50)}
+th{
+  padding:10px 12px;font-size:10px;text-transform:uppercase;
+  letter-spacing:.7px;color:var(--slate-400);font-weight:700;
+  border-bottom:2px solid var(--slate-200);
+  text-align:left;white-space:nowrap;
+}
+td{
+  padding:11px 12px;border-bottom:1px solid var(--slate-100);
+  vertical-align:top;line-height:1.55;
+}
+tr:last-child td{border-bottom:none}
+tr[data-s]:hover td{background:#f5f9ff}
+tr[data-s="Done"] td:first-child{border-left:3px solid var(--green)}
+tr[data-s="Partial"] td:first-child{border-left:3px solid var(--amber)}
+tr[data-s="Pending"] td:first-child{border-left:3px solid var(--red)}
+.td-idx{color:var(--slate-400);font-weight:700;font-size:11px;text-align:center;width:32px}
+.td-fn{color:#1e3a5f;font-weight:700}
+.td-task{color:var(--slate-800);font-weight:600}
+.td-desc{color:var(--slate-600)}
+.td-mod{
+  font-family:'JetBrains Mono','Fira Code',monospace;
+  font-size:10.5px;background:#eff6ff;color:var(--blue);
+  padding:3px 8px;border-radius:5px;white-space:nowrap;
+  display:inline-block;font-weight:600;
+  border:1px solid #bfdbfe;
+}
+.td-files{font-size:11px;color:var(--slate-700);line-height:1.8}
+.td-files code{
+  background:#faf5ff;color:var(--purple);
+  padding:1px 5px;border-radius:4px;font-size:10.5px;
+  font-family:'JetBrains Mono','Fira Code',monospace;
+  border:1px solid #e9d5ff;
+}
+.td-miss{font-size:11px;color:#991b1b;line-height:1.65}
+.td-miss code{
+  background:#fff1f2;color:#e11d48;
+  padding:1px 4px;border-radius:3px;
+  font-size:10px;font-family:monospace;
+}
+.td-new{font-size:11px;color:#14532d;line-height:1.65}
+
+/* ═══ BADGES ═══ */
+.b{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:4px 10px;border-radius:20px;
+  font-size:10px;font-weight:700;letter-spacing:.2px;white-space:nowrap;
+}
+.done{background:var(--green-pale);color:#14532d;border:1px solid #bbf7d0}
+.done::before{content:'✓ '}
+.partial{background:var(--amber-pale);color:#78350f;border:1px solid #fde68a}
+.partial::before{content:'◐ '}
+.pending{background:var(--red-pale);color:#7f1d1d;border:1px solid #fecaca}
+.pending::before{content:'○ '}
+.new{background:var(--blue-pale);color:#1e40af;border:1px solid #bfdbfe}
+.new::before{content:'★ '}
+
+/* ═══ SECTION COLORS (gradient) ═══ */
+.c1{background:linear-gradient(135deg,#1565c0,#1976d2)}
+.c2{background:linear-gradient(135deg,#5b21b6,#7c3aed)}
+.c3{background:linear-gradient(135deg,#0369a1,#0284c7)}
+.c4{background:linear-gradient(135deg,#0e7490,#0891b2)}
+.c5{background:linear-gradient(135deg,#166534,#15803d)}
+.c6{background:linear-gradient(135deg,#6d28d9,#7c3aed)}
+.c7{background:linear-gradient(135deg,#115e59,#0f766e)}
+.c8{background:linear-gradient(135deg,#92400e,#b45309)}
+.c9{background:linear-gradient(135deg,#6b21a8,#7e22ce)}
+.c10{background:linear-gradient(135deg,#134e4a,#0d9488)}
+.c11{background:linear-gradient(135deg,#991b1b,#dc2626)}
+.c12{background:linear-gradient(135deg,#1e40af,#1d4ed8)}
+
+/* ═══ SUMMARY ═══ */
+.sum-wrap{padding:28px 40px 52px}
+.sum-title{font-size:18px;font-weight:800;color:var(--slate-800);margin-bottom:4px}
+.sum-subtitle{font-size:12px;color:var(--slate-500);margin-bottom:20px}
+.sum-table{
+  width:100%;max-width:960px;border-collapse:collapse;
+  background:var(--white);border-radius:var(--radius);
+  overflow:hidden;box-shadow:var(--shadow-lg);
+}
+.sum-table th{
+  padding:12px 16px;font-size:10px;text-transform:uppercase;
+  letter-spacing:.7px;color:var(--slate-400);font-weight:700;
+  border-bottom:2px solid var(--slate-200);
+  text-align:left;background:var(--slate-50);
+}
+.sum-table td{padding:11px 16px;border-bottom:1px solid var(--slate-100);font-size:12px}
+.sum-table tr:last-child td{border-bottom:none;background:var(--navy-900);color:#fff;font-weight:800}
+.chip-done{color:var(--green);font-weight:800}
+.chip-part{color:var(--amber);font-weight:800}
+.chip-pend{color:var(--red);font-weight:800}
+
+/* ═══ NEW FEATURES ═══ */
+.new-sec{margin:20px 40px 0}
+.new-sec-hdr{
+  display:flex;align-items:center;padding:14px 20px;
+  border-radius:var(--radius) var(--radius) 0 0;
+  background:linear-gradient(135deg,#1e3a5f,var(--blue));
+  color:#fff;font-size:13.5px;font-weight:800;gap:10px;
+}
+.new-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));
+  gap:0;background:var(--white);
+  border-radius:0 0 var(--radius) var(--radius);
+  box-shadow:var(--shadow);
+}
+.new-card{padding:18px 20px;border-right:1px solid var(--slate-100);border-bottom:1px solid var(--slate-100)}
+.new-card:last-child{border-right:none}
+.new-card h3{
+  font-size:12px;font-weight:800;color:var(--blue);
+  margin-bottom:10px;display:flex;align-items:center;gap:6px;
+}
+.new-card ul{list-style:none;padding:0}
+.new-card ul li{
+  font-size:11px;color:var(--slate-600);
+  padding:4px 0;border-bottom:1px solid var(--slate-100);
+  display:flex;align-items:flex-start;gap:6px;line-height:1.55;
+}
+.new-card ul li:last-child{border-bottom:none}
+.new-card ul li::before{content:'→';color:var(--blue-light);font-size:10px;flex-shrink:0;margin-top:2px}
+.mod-tag{
+  font-family:monospace;font-size:10px;
+  background:#eff6ff;color:var(--blue);
+  padding:1px 6px;border-radius:3px;border:1px solid #bfdbfe;
+}
+
+.spacer{height:28px}
+
+/* ═══ COLLAPSED ═══ */
+.collapsed .arr{transform:rotate(-90deg)}
+.collapsed .sec-body{display:none}
+
+/* ═══ PRINT ═══ */
+@media print{
+  .toolbar,.btn{display:none}
+  .sec,.new-sec{margin:10px 16px 0}
+  body{background:#fff}
+}
+@media(max-width:900px){body{min-width:auto}}
+</style>
+</head>
+<body>
+
+<!--═══════════════════════════════════════════════ HEADER ═══-->
+<div class="hdr">
+  <div class="hdr-inner">
+    <div class="hdr-pill">&#9670; Prime-AI &nbsp;·&nbsp; LMS Gap Analysis</div>
+    <h1>LMS <span class="accent">Full Gap Analysis</span></h1>
+    <div class="hdr-meta">
+      <div class="hdr-meta-item">Source: <span>LMS_Shailesh.xlsx</span></div>
+      <div class="hdr-dot"></div>
+      <div class="hdr-meta-item">Date: <span>2026-03-18</span></div>
+      <div class="hdr-dot"></div>
+      <div class="hdr-meta-item">Branch: <span>Brijesh_HPC</span></div>
+      <div class="hdr-dot"></div>
+      <div class="hdr-meta-item">Modules: <span>LmsQuiz · LmsExam · LmsHomework · LmsQuests · QuestionBank · Syllabus</span></div>
+    </div>
+  </div>
+</div>
+
+<!--═══════════════════════════════════════════════ MODULE RIBBON ═══-->
+<div class="ribbon">
+  <div class="ribbon-item">
+    <div class="ri-name">LmsQuiz</div>
+    <div class="ri-pct">85%</div>
+    <div class="ri-sub">Core done · No attempt engine</div>
+    <div class="ri-bar"><div class="ri-fill" style="width:85%"></div></div>
+  </div>
+  <div class="ribbon-item">
+    <div class="ri-name">LmsExam</div>
+    <div class="ri-pct">75%</div>
+    <div class="ri-sub">Blueprint done · No online attempt</div>
+    <div class="ri-bar"><div class="ri-fill" style="width:75%"></div></div>
+  </div>
+  <div class="ribbon-item">
+    <div class="ri-name">LmsHomework</div>
+    <div class="ri-pct">100%</div>
+    <div class="ri-sub">Full CRUD + Grading + Media</div>
+    <div class="ri-bar"><div class="ri-fill" style="width:100%"></div></div>
+  </div>
+  <div class="ribbon-item">
+    <div class="ri-name">LmsQuests</div>
+    <div class="ri-pct">80%</div>
+    <div class="ri-sub">Quest core done · No badge/board</div>
+    <div class="ri-bar"><div class="ri-fill" style="width:80%"></div></div>
+  </div>
+  <div class="ribbon-item">
+    <div class="ri-name">QuestionBank</div>
+    <div class="ri-pct">90%</div>
+    <div class="ri-sub">AI Gen + Stats + Versions</div>
+    <div class="ri-bar"><div class="ri-fill" style="width:90%"></div></div>
+  </div>
+  <div class="ribbon-item">
+    <div class="ri-name">Syllabus</div>
+    <div class="ri-pct">70%</div>
+    <div class="ri-sub">Lesson/Topic/Competency done</div>
+    <div class="ri-bar"><div class="ri-fill" style="width:70%"></div></div>
+  </div>
+  <div class="ribbon-item" style="background:#0a3d91">
+    <div class="ri-name">LMS TOTAL</div>
+    <div class="ri-pct">49%</div>
+    <div class="ri-sub">26 Done · 11 Partial · 28 Pending / 65</div>
+    <div class="ri-bar"><div class="ri-fill" style="width:49%;background:#fff176"></div></div>
+  </div>
+</div>
+
+<!--═══════════════════════════════════════════════ STATS ═══-->
+<div class="stats-row">
+  <div class="stat sd"><div class="v">26</div><div class="l">Done</div></div>
+  <div class="stat sp"><div class="v">11</div><div class="l">Partial</div></div>
+  <div class="stat sk"><div class="v">28</div><div class="l">Pending</div></div>
+  <div class="stat st"><div class="v">65</div><div class="l">Total Tasks</div></div>
+  <div class="stat so"><div class="v">49%</div><div class="l">Complete</div></div>
+</div>
+
+<!--═══════════════════════════════════════════════ PROGRESS BAR ═══-->
+<div class="prog-wrap">
+  <div class="prog-label">
+    <span>LMS Completion Progress — Excel Tasks Mapped to Codebase</span>
+    <div class="prog-legend">
+      <div class="prog-legend-item"><div class="leg-dot" style="background:#22c55e"></div> Done 40%</div>
+      <div class="prog-legend-item"><div class="leg-dot" style="background:#fbbf24"></div> Partial 17%</div>
+      <div class="prog-legend-item"><div class="leg-dot" style="background:#f87171"></div> Pending 43%</div>
+    </div>
+  </div>
+  <div class="prog-bar">
+    <div class="prog-done" style="width:40%">40%</div>
+    <div class="prog-part" style="width:17%">17%</div>
+  </div>
+</div>
+
+<!--═══════════════════════════════════════════════ TOOLBAR ═══-->
+<div class="toolbar">
+  <div class="tb-group">
+    <label>Status</label>
+    <select id="fStatus" onchange="go()">
+      <option value="">All</option>
+      <option value="Done">✓ Done</option>
+      <option value="Partial">◐ Partial</option>
+      <option value="Pending">○ Pending</option>
+    </select>
+  </div>
+  <div class="tb-div"></div>
+  <div class="tb-group">
+    <label>Module</label>
+    <select id="fMod" onchange="go()">
+      <option value="">All Modules</option>
+      <option>LmsQuiz</option>
+      <option>LmsExam</option>
+      <option>LmsHomework</option>
+      <option>LmsQuests</option>
+      <option>QuestionBank</option>
+      <option>Syllabus</option>
+      <option>Recommendation</option>
+      <option>Not Started</option>
+    </select>
+  </div>
+  <div class="tb-div"></div>
+  <div class="tb-group">
+    <label>Section</label>
+    <select id="fSec" onchange="go()">
+      <option value="">All Sections</option>
+      <option>1. Course Management</option>
+      <option>2. Micro-Credentials</option>
+      <option>3. Offline Content</option>
+      <option>4. Content Management</option>
+      <option>5. Assessment</option>
+      <option>6. Question Bank</option>
+      <option>7. Tracking &amp; Progress</option>
+      <option>8. Certificates</option>
+      <option>9. LMS Reports</option>
+      <option>10. Adaptive Learning</option>
+      <option>11. Competency-Based</option>
+      <option>12. New Functionality</option>
+    </select>
+  </div>
+  <div class="tb-div"></div>
+  <input type="text" id="fSearch" placeholder="Search tasks, files, notes…" oninput="go()">
+  <button class="btn btn-blue" onclick="go()">Filter</button>
+  <button class="btn btn-gray" onclick="rst()">Reset</button>
+  <span id="fcnt"></span>
+</div>
+
+<!--══════════════════════════════════════════════════════════════════
+    SECTION 1 — COURSE MANAGEMENT
+══════════════════════════════════════════════════════════════════-->
+<div class="sec" id="s1">
+  <div class="sec-hdr c1" onclick="tog('s1')">
+    <h2><span class="arr">▼</span><span class="sec-num">1</span> Course Management <span class="sec-sub">Create · Structure · Publish</span></h2>
+    <div class="sec-info">
+      <span class="sec-counts">2 Done · 2 Partial · 3 Pending</span>
+      <div class="mini-bar"><div class="mini-fill" style="width:50%"></div></div>
+      <span class="sec-pct">50%</span>
+    </div>
+  </div>
+  <div class="tbl-scroll sec-body">
+  <table>
+    <thead><tr>
+      <th>#</th><th>Sub-Module (Excel)</th><th>Task (Excel)</th><th>Sub-Task (Excel)</th>
+      <th>Status</th><th>LMS Module</th><th>Model / Controller / View Evidence</th><th>What's Missing / Next Step</th>
+    </tr></thead>
+    <tbody>
+      <tr data-s="Partial" data-m="Syllabus" data-sec="1. Course Management">
+        <td class="td-idx">1</td>
+        <td class="td-fn">Course Setup</td>
+        <td class="td-task">Create Course</td>
+        <td class="td-desc">Enter course title &amp; description</td>
+        <td><span class="b partial">Partial</span></td>
+        <td><span class="td-mod">Syllabus</span></td>
+        <td class="td-files">
+          <code>slb_lessons</code> table — <code>name</code>, <code>description</code> fields<br>
+          <code>Lesson.php</code> model · <code>LessonController.php</code> full CRUD<br>
+          Views: <code>resources/views/lesson/</code> (create, edit, index, show, trash)<br>
+          <em>Lesson = Chapter-level entity; no top-level "Course" wrapper yet</em>
+        </td>
+        <td class="td-miss">Need new <code>lms_courses</code> table as parent container above Lesson. Add <code>title</code>, <code>description</code>, <code>cover_image</code> fields.</td>
+      </tr>
+      <tr data-s="Done" data-m="Syllabus" data-sec="1. Course Management">
+        <td class="td-idx">2</td>
+        <td class="td-fn">Course Setup</td>
+        <td class="td-task">Create Course</td>
+        <td class="td-desc">Assign subject &amp; grade</td>
+        <td><span class="b done">Done</span></td>
+        <td><span class="td-mod">Syllabus</span></td>
+        <td class="td-files">
+          <code>Lesson.class_id</code> → <code>SchoolClass</code> FK<br>
+          <code>Lesson.subject_id</code> → <code>Subject</code> FK<br>
+          <code>Lesson.academic_session_id</code> → <code>AcademicSession</code> FK<br>
+          Full hierarchy: Session → Class → Subject → Lesson → Topic
+        </td>
+        <td class="td-miss">—</td>
+      </tr>
+      <tr data-s="Pending" data-m="Not Started" data-sec="1. Course Management">
+        <td class="td-idx">3</td>
+        <td class="td-fn">Course Setup</td>
+        <td class="td-task">Create Course</td>
+        <td class="td-desc">Upload course cover image</td>
+        <td><span class="b pending">Pending</span></td>
+        <td><span class="td-mod">—</span></td>
+        <td class="td-files">No <code>cover_image</code> field in any LMS model</td>
+        <td class="td-miss">Add <code>cover_image_path</code> to <code>lms_courses</code> or use Spatie MediaLibrary <code>registerMediaCollection('cover')</code></td>
+      </tr>
+      <tr data-s="Done" data-m="Syllabus" data-sec="1. Course Management">
+        <td class="td-idx">4</td>
+        <td class="td-fn">Course Structure</td>
+        <td class="td-task">Course Structure</td>
+        <td class="td-desc">Create units &amp; lessons</td>
+        <td><span class="b done">Done</span></td>
+        <td><span class="td-mod">Syllabus</span></td>
+        <td class="td-files">
+          <code>slb_lessons</code> — full CRUD with ordinal ordering<br>
+          <code>slb_topics</code> — topics under each lesson<br>
+          <code>LessonController.php</code> · <code>TopicController.php</code><br>
+          Views: <code>lesson/</code> · <code>lesson-management/</code><br>
+          <code>Lesson.ordinal</code> for unit ordering<br>
+          <code>Lesson.estimated_periods</code> · <code>Lesson.weightage_in_subject</code>
+        </td>
+        <td class="td-miss">—</td>
+      </tr>
+      <tr data-s="Done" data-m="Syllabus" data-sec="1. Course Management">
+        <td class="td-idx">5</td>
+        <td class="td-fn">Course Structure</td>
+        <td class="td-task">Course Structure</td>
+        <td class="td-desc">Define learning objectives</td>
+        <td><span class="b done">Done</span></td>
+        <td><span class="td-mod">Syllabus</span></td>
+        <td class="td-files">
+          <code>Lesson.learning_objectives</code> → JSON array cast<br>
+          <code>Lesson.prerequisites</code> → JSON array cast<br>
+          <code>TopicCompetencyController.php</code> + <code>TopicCompetency.php</code><br>
+          <code>CompetencieController.php</code> · <code>Competencie.php</code><br>
+          <code>Lesson.nep_alignment</code> — NEP 2020 alignment tag
+        </td>
+        <td class="td-miss">—</td>
+      </tr>
+      <tr data-s="Pending" data-m="Not Started" data-sec="1. Course Management">
+        <td class="td-idx">6</td>
+        <td class="td-fn">Publish Course</td>
+        <td class="td-task">Publish Course</td>
+        <td class="td-desc">Set course visibility (Draft / Published / Archived)</td>
+        <td><span class="b pending">Pending</span></td>
+        <td><span class="td-mod">—</span></td>
+        <td class="td-files"><code>Lesson.is_active</code> boolean exists — no publish workflow</td>
+        <td class="td-miss">Add <code>publish_status</code> ENUM('draft','published','archived') to <code>slb_lessons</code>. Add publish/unpublish action in <code>LessonController</code>.</td>
+      </tr>
+      <tr data-s="Partial" data-m="Syllabus" data-sec="1. Course Management">
+        <td class="td-idx">7</td>
+        <td class="td-fn">Publish Course</td>
+        <td class="td-task">Publish Course</td>
+        <td class="td-desc">Notify assigned students on publish</td>
+        <td><span class="b partial">Partial</span></td>
+        <td><span class="td-mod">Notification</span></td>
+        <td class="td-files">
+          <code>Modules/Notification/</code> — full notification infrastructure exists<br>
+          <code>NotificationController.php</code> ready to dispatch<br>
+          Notification module handles push/email/SMS
+        </td>
+        <td class="td-miss">Add Laravel Event + Listener: <code>LessonPublished</code> event → fire <code>NotificationController::dispatch()</code></td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<!--══════════════════════════════════════════════════════════════════
+    SECTION 2 — MICRO-CREDENTIALS & DIGITAL BADGES
+══════════════════════════════════════════════════════════════════-->
+<div class="sec" id="s2">
+  <div class="sec-hdr c2" onclick="tog('s2')">
+    <h2><span class="arr">▼</span><span class="sec-num">2</span> Micro-Credentials &amp; Digital Badges <span class="sec-sub">Badge Design · Criteria · Auto-Issue</span></h2>
+    <div class="sec-info">
+      <span class="sec-counts">0 Done · 0 Partial · 4 Pending</span>
+      <div class="mini-bar"><div class="mini-fill" style="width:0%"></div></div>
+      <span class="sec-pct">0%</span>
+    </div>
+  </div>
+  <div class="tbl-scroll sec-body">
+  <table>
+    <thead><tr><th>#</th><th>Sub-Module</th><th>Task</th><th>Sub-Task (Excel)</th><th>Status</th><th>LMS Module</th><th>Evidence</th><th>What's Missing</th></tr></thead>
+    <tbody>
+      <tr data-s="Pending" data-m="Not Started" data-sec="2. Micro-Credentials">
+        <td class="td-idx">8</td><td class="td-fn">Badge Design &amp; Issuance</td><td class="td-task">Design Digital Badge</td>
+        <td class="td-desc">Create badge image, name, and description</td>
+        <td><span class="b pending">Pending</span></td><td><span class="td-mod">—</span></td>
+        <td class="td-files">No badge model, table, or controller in any module</td>
+        <td class="td-miss">New table: <code>lms_badges</code> (name, description, image_path, criteria_type, criteria_value, is_active). Badge image upload via Spatie MediaLibrary.</td>
+      </tr>
+      <tr data-s="Pending" data-m="Not Started" data-sec="2. Micro-Credentials">
+        <td class="td-idx">9</td><td class="td-fn">Badge Design &amp; Issuance</td><td class="td-task">Design Digital Badge</td>
+        <td class="td-desc">Define issuance criteria (e.g., complete course with 90%+ score)</td>
+        <td><span class="b pending">Pending</span></td><td><span class="td-mod">—</span></td>
+        <td class="td-files">—</td>
+        <td class="td-miss">New: <code>lms_badge_criteria</code> — rule rows per badge (criterion_type: score/completion/streak, threshold_value). Can reuse <code>LmsHomework → RuleEngineConfig</code> pattern.</td>
+      </tr>
+      <tr data-s="Pending" data-m="Not Started" data-sec="2. Micro-Credentials">
+        <td class="td-idx">10</td><td class="td-fn">Auto-Issue &amp; Display</td><td class="td-task">Auto-Issue &amp; Display</td>
+        <td class="td-desc">Automatically award badge when student meets criteria</td>
+        <td><span class="b pending">Pending</span></td><td><span class="td-mod">—</span></td>
+        <td class="td-files">—</td>
+        <td class="td-miss">Laravel Event Listener on quiz/homework completion → evaluate badge criteria → insert <code>lms_student_badges</code> record. Fire via <code>TriggerEvent</code> pattern from LmsHomework.</td>
+      </tr>
+      <tr data-s="Pending" data-m="Not Started" data-sec="2. Micro-Credentials">
+        <td class="td-idx">11</td><td class="td-fn">Auto-Issue &amp; Display</td><td class="td-task">Auto-Issue &amp; Display</td>
+        <td class="td-desc">Display earned badges on student profile; Open Badges 2.0 export</td>
+        <td><span class="b pending">Pending</span></td><td><span class="td-mod">—</span></td>
+        <td class="td-files">—</td>
+        <td class="td-miss">Badge gallery in <code>StudentPortal</code>. JSON-LD Open Badges 2.0 export endpoint. <code>StudentProfile</code> section for badge display.</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<!--══════════════════════════════════════════════════════════════════
+    SECTION 3 — OFFLINE CONTENT & SYNC
+══════════════════════════════════════════════════════════════════-->
+<div class="sec" id="s3">
+  <div class="sec-hdr c3" onclick="tog('s3')">
+    <h2><span class="arr">▼</span><span class="sec-num">3</span> Offline Content &amp; Sync <span class="sec-sub">Download · PWA · Sync Queue</span></h2>
+    <div class="sec-info">
+      <span class="sec-counts">0 Done · 0 Partial · 4 Pending</span>
+      <div class="mini-bar"><div class="mini-fill" style="width:0%"></div></div>
+      <span class="sec-pct">0%</span>
+    </div>
+  </div>
+  <div class="tbl-scroll sec-body">
+  <table>
+    <thead><tr><th>#</th><th>Sub-Module</th><th>Task</th><th>Sub-Task (Excel)</th><th>Status</th><th>LMS Module</th><th>Evidence</th><th>What's Missing</th></tr></thead>
+    <tbody>
+      <tr data-s="Pending" data-m="Not Started" data-sec="3. Offline Content">
+        <td class="td-idx">12</td><td class="td-fn">Offline Access</td><td class="td-task">Download for Offline</td>
+        <td class="td-desc">Allow students to mark lessons/videos for offline viewing</td>
+        <td><span class="b pending">Pending</span></td><td><span class="td-mod">—</span></td>
+        <td class="td-files">No mobile app exists. No PWA implementation.</td>
+        <td class="td-miss">Requires PWA (service worker + cache manifest) or native app. Add <code>lms_offline_bookmarks</code> table (student_id, content_type, content_id, downloaded_at).</td>
+      </tr>
+      <tr data-s="Pending" data-m="Not Started" data-sec="3. Offline Content">
+        <td class="td-idx">13</td><td class="td-fn">Offline Access</td><td class="td-task">Download for Offline</td>
+        <td class="td-desc">Store downloaded content encrypted on device</td>
+        <td><span class="b pending">Pending</span></td><td><span class="td-mod">—</span></td>
+        <td class="td-files">—</td>
+        <td class="td-miss">AES-256 encryption via IndexedDB (browser) or native keychain. Signed URL for download via <code>Storage::temporaryUrl()</code>.</td>
+      </tr>
+      <tr data-s="Pending" data-m="Not Started" data-sec="3. Offline Content">
+        <td class="td-idx">14</td><td class="td-fn">Offline Access</td><td class="td-task">Sync Progress</td>
+        <td class="td-desc">Track quiz attempts and progress made offline</td>
+        <td><span class="b pending">Pending</span></td><td><span class="td-mod">—</span></td>
+        <td class="td-files">—</td>
+        <td class="td-miss">Offline queue (localStorage/IndexedDB) + POST <code>/api/lms/sync-progress</code> endpoint. Conflict resolution strategy needed.</td>
+      </tr>
+      <tr data-s="Pending" data-m="Not Started" data-sec="3. Offline Content">
+        <td class="td-idx">15</td><td class="td-fn">Offline Access</td><td class="td-task">Sync Progress</td>
+        <td class="td-desc">Auto-sync data when device reconnects to internet</td>
+        <td><span class="b pending">Pending</span></td><td><span class="td-mod">—</span></td>
+        <td class="td-files">—</td>
+        <td class="td-miss">Background Sync API (service worker) or Expo TaskManager (React Native). Sync job via <code>php artisan queue:work</code>.</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<!--══════════════════════════════════════════════════════════════════
+    SECTION 4 — CONTENT MANAGEMENT
+══════════════════════════════════════════════════════════════════-->
+<div class="sec" id="s4">
+  <div class="sec-hdr c4" onclick="tog('s4')">
+    <h2><span class="arr">▼</span><span class="sec-num">4</span> Content Management <span class="sec-sub">Upload · Metadata · Organize</span></h2>
+    <div class="sec-info">
+      <span class="sec-counts">1 Done · 2 Partial · 1 Pending</span>
+      <div class="mini-bar"><div class="mini-fill" style="width:62%"></div></div>
+      <span class="sec-pct">62%</span>
+    </div>
+  </div>
+  <div class="tbl-scroll sec-body">
+  <table>
+    <thead><tr><th>#</th><th>Sub-Module</th><th>Task</th><th>Sub-Task (Excel)</th><th>Status</th><th>LMS Module</th><th>Evidence</th><th>What's Missing</th></tr></thead>
+    <tbody>
+      <tr data-s="Partial" data-m="Syllabus" data-sec="4. Content Management">
+        <td class="td-idx">16</td><td class="td-fn">Content Upload</td><td class="td-task">Upload Learning Content</td>
+        <td class="td-desc">Upload PDF / Video / SCORM content files</td>
+        <td><span class="b partial">Partial</span></td><td><span class="td-mod">Syllabus</span></td>
+        <td class="td-files">
+          <code>slb_study_materials</code> — <code>url</code>, <code>media_id</code>, <code>material_type_id</code>, <code>duration_minutes</code><br>
+          <code>StudyMaterial.php</code> uses Spatie MediaLibrary (<code>Prime\Models\Media</code>)<br>
+          <code>StudyMaterialType.php</code> classifies content type<br>
+          PDF &amp; Video supported; <strong>SCORM not implemented</strong>
+        </td>
+        <td class="td-miss">SCORM 1.2/2004 player (xAPI/TinCan). Add <code>scorm_package_path</code> + <code>scorm_version</code> fields. Use Rustici SCORM Engine or open-source SCORM Cloud alternative.</td>
+      </tr>
+      <tr data-s="Done" data-m="Syllabus" data-sec="4. Content Management">
+        <td class="td-idx">17</td><td class="td-fn">Content Upload</td><td class="td-task">Upload Learning Content</td>
+        <td class="td-desc">Add metadata &amp; tags to content</td>
+        <td><span class="b done">Done</span></td><td><span class="td-mod">Syllabus</span></td>
+        <td class="td-files">
+          <code>StudyMaterial.tags</code> · <code>difficulty_level</code> · <code>language</code> · <code>source</code> · <code>avg_rating</code><br>
+          <code>BloomTaxonomyController.php</code> + <code>BloomTaxonomy.php</code> — full Bloom's 6 levels<br>
+          <code>CognitiveSkillController.php</code> + <code>CognitiveSkill.php</code><br>
+          <code>ComplexityLevelController.php</code> + <code>ComplexityLevel.php</code><br>
+          <code>PerformanceCategoryController.php</code> + <code>PerformanceCategory.php</code><br>
+          <code>StudyMaterialType.php</code> — PDF/Video/Audio/Worksheet etc.
+        </td>
+        <td class="td-miss">—</td>
+      </tr>
+      <tr data-s="Pending" data-m="Not Started" data-sec="4. Content Management">
+        <td class="td-idx">18</td><td class="td-fn">Organize Content</td><td class="td-task">Organize Content</td>
+        <td class="td-desc">Drag &amp; drop content ordering within lesson</td>
+        <td><span class="b pending">Pending</span></td><td><span class="td-mod">—</span></td>
+        <td class="td-files"><code>Lesson.ordinal</code> field exists; no drag-drop UI implemented</td>
+        <td class="td-miss">Integrate SortableJS on study materials list → PATCH <code>/lms/content/reorder</code> endpoint updating <code>ordinal</code> values.</td>
+      </tr>
+      <tr data-s="Partial" data-m="Syllabus" data-sec="4. Content Management">
+        <td class="td-idx">19</td><td class="td-fn">Organize Content</td><td class="td-task">Organize Content</td>
+        <td class="td-desc">Assign content to lessons</td>
+        <td><span class="b partial">Partial</span></td><td><span class="td-mod">Syllabus</span></td>
+        <td class="td-files">
+          <code>StudyMaterial.topic_id</code> — linked to Topic<br>
+          <code>Lesson.resources_json</code> — JSON array of resource refs<br>
+          Indirect link: Lesson → Topics → StudyMaterials
+        </td>
+        <td class="td-miss">Add direct <code>lesson_id</code> FK to <code>slb_study_materials</code> OR create <code>slb_lesson_materials_jnt</code> pivot table.</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<!--══════════════════════════════════════════════════════════════════
+    SECTION 5 — ASSESSMENT MANAGEMENT
+══════════════════════════════════════════════════════════════════-->
+<div class="sec" id="s5">
+  <div class="sec-hdr c5" onclick="tog('s5')">
+    <h2><span class="arr">▼</span><span class="sec-num">5</span> Assessment Management <span class="sec-sub">Quiz · Exam · Homework · Quest</span></h2>
+    <div class="sec-info">
+      <span class="sec-counts">7 Done · 1 Partial · 0 Pending</span>
+      <div class="mini-bar"><div class="mini-fill" style="width:94%"></div></div>
+      <span class="sec-pct">94%</span>
+    </div>
+  </div>
+  <div class="tbl-scroll sec-body">
+  <table>
+    <thead><tr><th>#</th><th>Sub-Module</th><th>Task</th><th>Sub-Task (Excel)</th><th>Status</th><th>LMS Module</th><th>Evidence</th><th>What's Missing</th></tr></thead>
+    <tbody>
+      <tr data-s="Done" data-m="LmsQuiz" data-sec="5. Assessment">
+        <td class="td-idx">20</td><td class="td-fn">Quiz Builder</td><td class="td-task">Create Quiz</td>
+        <td class="td-desc">Add MCQ / True-False / Short answer question types</td>
+        <td><span class="b done">Done</span></td><td><span class="td-mod">LmsQuiz · LmsExam · LmsQuests</span></td>
+        <td class="td-files">
+          <strong>LmsQuiz:</strong> <code>lms_quizzes</code> table · <code>Quiz.php</code> model · <code>LmsQuizController.php</code><br>
+          <code>QuizQuestion.php</code> · <code>QuizQuestionController.php</code><br>
+          Views: <code>quiz/</code> (create, edit, show, trash) · <code>quiz-question/</code><br>
+          <code>AssessmentType.php</code> · <code>AssessmentTypeController.php</code><br>
+          <strong>LmsExam:</strong> <code>PaperSetQuestion.php</code> · <code>PaperSetQuestionController.php</code><br>
+          <strong>LmsQuests:</strong> <code>QuestQuestion.php</code> · <code>QuestQuestionController.php</code><br>
+          Question types driven by <code>Syllabus → QuestionType.php</code> + <code>QuestionTypeController.php</code>
+        </td>
+        <td class="td-miss">—</td>
+      </tr>
+      <tr data-s="Done" data-m="LmsQuiz" data-sec="5. Assessment">
+        <td class="td-idx">21</td><td class="td-fn">Quiz Builder</td><td class="td-task">Create Quiz</td>
+        <td class="td-desc">Set marks &amp; difficulty level per question</td>
+        <td><span class="b done">Done</span></td><td><span class="td-mod">LmsQuiz · QuestionBank</span></td>
+        <td class="td-files">
+          <code>Quiz.total_marks</code> · <code>Quiz.passing_percentage</code> · <code>Quiz.negative_marks</code><br>
+          <code>DifficultyDistributionConfig.php</code> · <code>DifficultyDistributionConfigController.php</code><br>
+          <code>DifficultyDistributionDetail.php</code> — per-level mark split<br>
+          <code>QuizQuestion</code> pivot: <code>marks_override</code> per question<br>
+          <code>QuestionPerformanceCategory.php</code> in QuestionBank
+        </td>
+        <td class="td-miss">—</td>
+      </tr>
+      <tr data-s="Done" data-m="LmsQuiz" data-sec="5. Assessment">
+        <td class="td-idx">22</td><td class="td-fn">Quiz Builder</td><td class="td-task">Quiz Settings</td>
+        <td class="td-desc">Set time limit for quiz / exam attempt</td>
+        <td><span class="b done">Done</span></td><td><span class="td-mod">LmsQuiz · LmsQuests · LmsExam</span></td>
+        <td class="td-files">
+          <code>Quiz.duration_minutes</code> integer ✓<br>
+          <code>Quiz.timer_enforced</code> boolean ✓<br>
+          <code>Quest.duration_minutes</code> ✓ · <code>Quest.timer_enforced</code> ✓<br>
+          <code>Exam.start_date</code> + <code>Exam.end_date</code> for exam window<br>
+          <code>QuizAllocation.cut_off_date</code> hard deadline
+        </td>
+        <td class="td-miss">—</td>
+      </tr>
+      <tr data-s="Done" data-m="LmsQuiz" data-sec="5. Assessment">
+        <td class="td-idx">23</td><td class="td-fn">Quiz Builder</td><td class="td-task">Quiz Settings</td>
+        <td class="td-desc">Randomize question order per student attempt</td>
+        <td><span class="b done">Done</span></td><td><span class="td-mod">LmsQuiz · LmsQuests · LmsExam</span></td>
+        <td class="td-files">
+          <code>Quiz.is_randomized</code> boolean ✓<br>
+          <code>Quest.is_randomized</code> boolean ✓<br>
+          <code>ExamBlueprint.php</code> — blueprint controls question distribution<br>
+          <code>ExamPaperSet.php</code> — multiple sets for anti-copying<br>
+          <code>DifficultyDistributionConfig</code> + <code>DifficultyDistributionDetail</code>
+        </td>
+        <td class="td-miss">Randomization shuffle logic at attempt-start (runtime) needs student attempt controller to apply it</td>
+      </tr>
+      <tr data-s="Done" data-m="LmsHomework" data-sec="5. Assessment">
+        <td class="td-idx">24</td><td class="td-fn">Quiz Builder</td><td class="td-task">Create Assignment</td>
+        <td class="td-desc">Upload instructions for assignment</td>
+        <td><span class="b done">Done</span></td><td><span class="td-mod">LmsHomework</span></td>
+        <td class="td-files">
+          <code>Homework.title</code> · <code>Homework.description</code> (instructions)<br>
+          <code>Homework.lesson_id</code> → Syllabus Lesson FK<br>
+          <code>Homework.topic_id</code> → Syllabus Topic FK<br>
+          <code>Homework.submission_type_id</code> · <code>Homework.is_gradable</code><br>
+          <code>LmsHomeworkController.php</code> full CRUD<br>
+          Views: <code>home-work/</code> · <code>lmshome-work/</code> (5 views each)
+        </td>
+        <td class="td-miss">—</td>
+      </tr>
+      <tr data-s="Done" data-m="LmsHomework" data-sec="5. Assessment">
+        <td class="td-idx">25</td><td class="td-fn">Quiz Builder</td><td class="td-task">Create Assignment</td>
+        <td class="td-desc">Set submission deadline &amp; late submission policy</td>
+        <td><span class="b done">Done</span></td><td><span class="td-mod">LmsHomework</span></td>
+        <td class="td-files">
+          <code>Homework.due_date</code> datetime ✓<br>
+          <code>Homework.allow_late_submission</code> boolean ✓<br>
+          <code>Homework.assign_date</code> datetime ✓<br>
+          <code>Homework.release_condition_id</code> — conditional release<br>
+          <code>QuizAllocation.due_date</code> · <code>cut_off_date</code> · <code>published_at</code> for quizzes<br>
+          <code>RuleEngineConfig.php</code> — automation rules on deadline
+        </td>
+        <td class="td-miss">—</td>
+      </tr>
+      <tr data-s="Done" data-m="LmsHomework" data-sec="5. Assessment">
+        <td class="td-idx">26</td><td class="td-fn">Quiz Builder</td><td class="td-task">Grade Assignment</td>
+        <td class="td-desc">Teacher reviews student submissions</td>
+        <td><span class="b done">Done</span></td><td><span class="td-mod">LmsHomework</span></td>
+        <td class="td-files">
+          <code>HomeworkSubmission.php</code> — full model<br>
+          Fields: <code>homework_id</code> · <code>student_id</code> · <code>submitted_at</code> · <code>submission_text</code> · <code>status_id</code> · <code>is_late</code><br>
+          <code>HomeworkSubmission implements HasMedia</code> — file attachments via Spatie<br>
+          <code>HomeworkSubmissionController.php</code> full CRUD<br>
+          Views: <code>submission/</code> (create, edit, index, show, trash)
+        </td>
+        <td class="td-miss">—</td>
+      </tr>
+      <tr data-s="Done" data-m="LmsHomework" data-sec="5. Assessment">
+        <td class="td-idx">27</td><td class="td-fn">Quiz Builder</td><td class="td-task">Grade Assignment</td>
+        <td class="td-desc">Provide scoring &amp; written feedback to student</td>
+        <td><span class="b done">Done</span></td><td><span class="td-mod">LmsHomework</span></td>
+        <td class="td-files">
+          <code>HomeworkSubmission.marks_obtained</code> decimal(8,2) ✓<br>
+          <code>HomeworkSubmission.teacher_feedback</code> text ✓<br>
+          <code>HomeworkSubmission.graded_by</code> → User FK ✓<br>
+          <code>HomeworkSubmission.graded_at</code> datetime ✓<br>
+          <code>Homework.max_marks</code> · <code>Homework.passing_marks</code> ✓<br>
+          <code>Homework.auto_publish_score</code> boolean ✓
+        </td>
+        <td class="td-miss">—</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<!--══════════════════════════════════════════════════════════════════
+    SECTION 6 — QUESTION BANK MANAGEMENT
+══════════════════════════════════════════════════════════════════-->
+<div class="sec" id="s6">
+  <div class="sec-hdr c6" onclick="tog('s6')">
+    <h2><span class="arr">▼</span><span class="sec-num">6</span> Question Bank Management <span class="sec-sub">Add · Tag · Bulk Upload</span></h2>
+    <div class="sec-info">
+      <span class="sec-counts">3 Done · 1 Partial · 0 Pending</span>
+      <div class="mini-bar"><div class="mini-fill" style="width:87%"></div></div>
+      <span class="sec-pct">87%</span>
+    </div>
+  </div>
+  <div class="tbl-scroll sec-body">
+  <table>
+    <thead><tr><th>#</th><th>Sub-Module</th><th>Task</th><th>Sub-Task (Excel)</th><th>Status</th><th>LMS Module</th><th>Evidence</th><th>What's Missing</th></tr></thead>
+    <tbody>
+      <tr data-s="Done" data-m="QuestionBank" data-sec="6. Question Bank">
+        <td class="td-idx">28</td><td class="td-fn">Question Entry</td><td class="td-task">Add Questions</td>
+        <td class="td-desc">Create MCQ / Descriptive / True-False questions</td>
+        <td><span class="b done">Done</span></td><td><span class="td-mod">QuestionBank</span></td>
+        <td class="td-files">
+          <code>QuestionBank.php</code> — main question model<br>
+          <code>QuestionOption.php</code> — MCQ options<br>
+          <code>QuestionBankController.php</code> — full CRUD<br>
+          Views: <code>question-bank/</code> (create, edit, index, show, trash)<br>
+          <code>QuestionVersion.php</code> + <code>QuestionVersionController.php</code> — version history<br>
+          <code>QuestionReviewLog.php</code> — review/approval workflow<br>
+          Types from <code>Syllabus → QuestionType.php</code> · <code>QueTypeSpecifity.php</code>
+        </td>
+        <td class="td-miss">—</td>
+      </tr>
+      <tr data-s="Done" data-m="QuestionBank" data-sec="6. Question Bank">
+        <td class="td-idx">29</td><td class="td-fn">Question Entry</td><td class="td-task">Add Questions</td>
+        <td class="td-desc">Tag difficulty &amp; skill to each question</td>
+        <td><span class="b done">Done</span></td><td><span class="td-mod">QuestionBank</span></td>
+        <td class="td-files">
+          <code>QuestionTag.php</code> + <code>QuestionTagController.php</code><br>
+          <code>QuestionQuestionTagJnt.php</code> — M:M junction<br>
+          Views: <code>question-tags/</code><br>
+          <code>QuestionPerformanceCategory.php</code> + <code>QuestionPerformanceCategoryJnt.php</code><br>
+          <code>QuestionTopic.php</code> + <code>QuestionTopicJnt.php</code> — topic mapping<br>
+          <code>QuestionStatistic.php</code> — per-question performance data (avg_score, attempt_count, skip_count)<br>
+          Views: <code>question-statistics/</code>
+        </td>
+        <td class="td-miss">—</td>
+      </tr>
+      <tr data-s="Done" data-m="QuestionBank" data-sec="6. Question Bank">
+        <td class="td-idx">30</td><td class="td-fn">Bulk Upload</td><td class="td-task">Bulk Upload</td>
+        <td class="td-desc">Upload questions via Excel (bulk import)</td>
+        <td><span class="b done">Done</span></td><td><span class="td-mod">QuestionBank</span></td>
+        <td class="td-files">
+          <code>AIQuestionGeneratorController.php</code> — Excel import + AI generation<br>
+          Views: <code>ai-question-generator/</code><br>
+          Sample template: <code>sample_question_import_10_records.xlsx</code><br>
+          <code>QuestionMediaStore.php</code> + <code>QuestionMediaStoreController.php</code><br>
+          <code>QuestionMedia.php</code> — media attachments per question<br>
+          Views: <code>media-store/</code><br>
+          <code>QuestionUsageTypeController.php</code> · <code>QuestionUsageType.php</code>
+        </td>
+        <td class="td-miss">—</td>
+      </tr>
+      <tr data-s="Partial" data-m="QuestionBank" data-sec="6. Question Bank">
+        <td class="td-idx">31</td><td class="td-fn">Bulk Upload</td><td class="td-task">Bulk Upload</td>
+        <td class="td-desc">Map Excel columns to question fields (import wizard)</td>
+        <td><span class="b partial">Partial</span></td><td><span class="td-mod">QuestionBank</span></td>
+        <td class="td-files">
+          <code>AIQuestionGeneratorController.php</code> handles import<br>
+          <code>QuestionUsageLog.php</code> — tracks import usage<br>
+          Views: <code>question-usag-log/</code><br>
+          Exam paper check: <code>exam-paper-check/</code> view
+        </td>
+        <td class="td-miss">Dynamic step-2 wizard: show user's Excel headers → map to system fields (question_text, option_a, option_b…, correct_answer, difficulty, topic). Currently fixed template assumed.</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<!--══════════════════════════════════════════════════════════════════
+    SECTION 7 — TRACKING & PROGRESS
+══════════════════════════════════════════════════════════════════-->
+<div class="sec" id="s7">
+  <div class="sec-hdr c7" onclick="tog('s7')">
+    <h2><span class="arr">▼</span><span class="sec-num">7</span> Tracking &amp; Progress <span class="sec-sub">Lesson Completion · Performance Reports</span></h2>
+    <div class="sec-info">
+      <span class="sec-counts">0 Done · 1 Partial · 3 Pending</span>
+      <div class="mini-bar"><div class="mini-fill" style="width:12%"></div></div>
+      <span class="sec-pct">12%</span>
+    </div>
+  </div>
+  <div class="tbl-scroll sec-body">
+  <table>
+    <thead><tr><th>#</th><th>Sub-Module</th><th>Task</th><th>Sub-Task (Excel)</th><th>Status</th><th>LMS Module</th><th>Evidence</th><th>What's Missing</th></tr></thead>
+    <tbody>
+      <tr data-s="Pending" data-m="Not Started" data-sec="7. Tracking & Progress">
+        <td class="td-idx">32</td><td class="td-fn">Learning Progress</td><td class="td-task">Track Lesson Completion</td>
+        <td class="td-desc">Record when a student views / completes a lesson</td>
+        <td><span class="b pending">Pending</span></td><td><span class="td-mod">—</span></td>
+        <td class="td-files">No <code>lms_lesson_progress</code> or student-progress table anywhere</td>
+        <td class="td-miss">New tenant migration: <code>lms_lesson_progress</code> (student_id, lesson_id, first_viewed_at, completed_at, is_completed, completion_pct). Middleware or JS beacon to record view events.</td>
+      </tr>
+      <tr data-s="Pending" data-m="Not Started" data-sec="7. Tracking & Progress">
+        <td class="td-idx">33</td><td class="td-fn">Learning Progress</td><td class="td-task">Track Lesson Completion</td>
+        <td class="td-desc">Track time spent on each lesson / video</td>
+        <td><span class="b pending">Pending</span></td><td><span class="td-mod">—</span></td>
+        <td class="td-files">—</td>
+        <td class="td-miss">Add <code>time_spent_seconds</code> (int) to <code>lms_lesson_progress</code>. JS heartbeat every 30s sending time delta to <code>POST /api/lms/progress/time</code>.</td>
+      </tr>
+      <tr data-s="Partial" data-m="QuestionBank" data-sec="7. Tracking & Progress">
+        <td class="td-idx">34</td><td class="td-fn">Learning Progress</td><td class="td-task">Generate Performance Report</td>
+        <td class="td-desc">Analyze quiz &amp; exam scores per student</td>
+        <td><span class="b partial">Partial</span></td><td><span class="td-mod">QuestionBank</span></td>
+        <td class="td-files">
+          <code>QuestionStatistic.php</code> — avg_score, attempt_count, skip_count, avg_time_spent per question<br>
+          <code>QuestionStatistics.php</code> — aggregate model<br>
+          <code>QuestionStatisticController.php</code><br>
+          Views: <code>question-statistics/</code> · <code>exam-paper-check/</code><br>
+          <code>QuestionUsageLog.php</code> — per-attempt usage log
+        </td>
+        <td class="td-miss">Student-level score aggregation view. Per-quiz/exam result summary report. Export to PDF/Excel.</td>
+      </tr>
+      <tr data-s="Pending" data-m="Not Started" data-sec="7. Tracking & Progress">
+        <td class="td-idx">35</td><td class="td-fn">Learning Progress</td><td class="td-task">Generate Performance Report</td>
+        <td class="td-desc">Identify weak areas / topics per student</td>
+        <td><span class="b pending">Pending</span></td><td><span class="td-mod">—</span></td>
+        <td class="td-files"><code>QuestionTopic</code> + <code>QuestionTag</code> data exists as foundation</td>
+        <td class="td-miss">Aggregate wrong answers by topic/tag per student. SQL: GROUP BY topic_id, COUNT(wrong) → rank weakest topics. Blade view with topic-wise heat map.</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<!--══════════════════════════════════════════════════════════════════
+    SECTION 8 — CERTIFICATES FOR COURSES
+══════════════════════════════════════════════════════════════════-->
+<div class="sec" id="s8">
+  <div class="sec-hdr c8" onclick="tog('s8')">
+    <h2><span class="arr">▼</span><span class="sec-num">8</span> Certificates for Courses <span class="sec-sub">Generate · Template · Download</span></h2>
+    <div class="sec-info">
+      <span class="sec-counts">0 Done · 0 Partial · 4 Pending</span>
+      <div class="mini-bar"><div class="mini-fill" style="width:0%"></div></div>
+      <span class="sec-pct">0%</span>
+    </div>
+  </div>
+  <div class="tbl-scroll sec-body">
+  <table>
+    <thead><tr><th>#</th><th>Sub-Module</th><th>Task</th><th>Sub-Task (Excel)</th><th>Status</th><th>LMS Module</th><th>Evidence</th><th>What's Missing</th></tr></thead>
+    <tbody>
+      <tr data-s="Pending" data-m="Not Started" data-sec="8. Certificates">
+        <td class="td-idx">36</td><td class="td-fn">Certificate Rules</td><td class="td-task">Set Course Completion Criteria</td>
+        <td class="td-desc">Define minimum passing marks for certificate eligibility</td>
+        <td><span class="b pending">Pending</span></td><td><span class="td-mod">—</span></td>
+        <td class="td-files"><code>Quiz.passing_percentage</code> exists but not linked to certificate issuance</td>
+        <td class="td-miss">New: <code>lms_certificate_rules</code> (course_id / lesson_id, min_score_pct, min_lesson_completion_pct, min_attendance_pct). <code>CertificateRuleController.php</code> CRUD.</td>
+      </tr>
+      <tr data-s="Pending" data-m="Not Started" data-sec="8. Certificates">
+        <td class="td-idx">37</td><td class="td-fn">Certificate Rules</td><td class="td-task">Set Course Completion Criteria</td>
+        <td class="td-desc">Enable minimum lesson completion percentage requirement</td>
+        <td><span class="b pending">Pending</span></td><td><span class="td-mod">—</span></td>
+        <td class="td-files">Depends on #32 (lesson progress tracking) being built first</td>
+        <td class="td-miss">After <code>lms_lesson_progress</code> is built: check <code>COUNT(completed) / COUNT(all_lessons)</code> ≥ threshold before issuing certificate.</td>
+      </tr>
+      <tr data-s="Pending" data-m="Not Started" data-sec="8. Certificates">
+        <td class="td-idx">38</td><td class="td-fn">Certificate Rules</td><td class="td-task">Generate Certificate</td>
+        <td class="td-desc">Populate student details on certificate PDF</td>
+        <td><span class="b pending">Pending</span></td><td><span class="td-mod">—</span></td>
+        <td class="td-files">HPC module has DomPDF pattern (<code>*_pdf.blade.php</code>, inline CSS only, table layout) — reusable blueprint</td>
+        <td class="td-miss">New: <code>lms_certificates</code> table (student_id, course_id, issued_at, certificate_no). <code>CertificatePdfController.php</code> using HPC DomPDF pattern. Template: <code>certificate_pdf.blade.php</code>.</td>
+      </tr>
+      <tr data-s="Pending" data-m="Not Started" data-sec="8. Certificates">
+        <td class="td-idx">39</td><td class="td-fn">Certificate Rules</td><td class="td-task">Generate Certificate</td>
+        <td class="td-desc">Apply LMS certificate template with school branding</td>
+        <td><span class="b pending">Pending</span></td><td><span class="td-mod">—</span></td>
+        <td class="td-files">—</td>
+        <td class="td-miss">Blade PDF template at <code>Modules/LmsExam/resources/views/certificate_pdf.blade.php</code>. School logo via <code>asset()</code>. Follow HPC: inline CSS only, no Bootstrap, table layout, no JS.</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<!--══════════════════════════════════════════════════════════════════
+    SECTION 9 — LMS REPORTS & ANALYTICS
+══════════════════════════════════════════════════════════════════-->
+<div class="sec" id="s9">
+  <div class="sec-hdr c9" onclick="tog('s9')">
+    <h2><span class="arr">▼</span><span class="sec-num">9</span> LMS Reports &amp; Analytics <span class="sec-sub">Completion · Engagement · Insights</span></h2>
+    <div class="sec-info">
+      <span class="sec-counts">0 Done · 2 Partial · 2 Pending</span>
+      <div class="mini-bar"><div class="mini-fill" style="width:25%"></div></div>
+      <span class="sec-pct">25%</span>
+    </div>
+  </div>
+  <div class="tbl-scroll sec-body">
+  <table>
+    <thead><tr><th>#</th><th>Sub-Module</th><th>Task</th><th>Sub-Task (Excel)</th><th>Status</th><th>LMS Module</th><th>Evidence</th><th>What's Missing</th></tr></thead>
+    <tbody>
+      <tr data-s="Pending" data-m="Not Started" data-sec="9. LMS Reports">
+        <td class="td-idx">40</td><td class="td-fn">Reports</td><td class="td-task">Course Reports</td>
+        <td class="td-desc">Course-wise completion report (% students completed)</td>
+        <td><span class="b pending">Pending</span></td><td><span class="td-mod">—</span></td>
+        <td class="td-files">No <code>lms_lesson_progress</code> table yet; no Course entity</td>
+        <td class="td-miss">Depends on #32 + Course entity. Report: per-lesson/course completion rates, class-wise breakdown.</td>
+      </tr>
+      <tr data-s="Pending" data-m="Not Started" data-sec="9. LMS Reports">
+        <td class="td-idx">41</td><td class="td-fn">Reports</td><td class="td-task">Course Reports</td>
+        <td class="td-desc">Student participation report (active vs inactive students)</td>
+        <td><span class="b pending">Pending</span></td><td><span class="td-mod">—</span></td>
+        <td class="td-files">—</td>
+        <td class="td-miss">Aggregate from <code>lms_quiz_allocations</code> + <code>lms_homework_submissions</code> + <code>lms_lesson_progress</code>.</td>
+      </tr>
+      <tr data-s="Partial" data-m="QuestionBank" data-sec="9. LMS Reports">
+        <td class="td-idx">42</td><td class="td-fn">Reports</td><td class="td-task">Engagement Predictions</td>
+        <td class="td-desc">Predict students at risk of dropping off a course</td>
+        <td><span class="b partial">Partial</span></td><td><span class="td-mod">QuestionBank</span></td>
+        <td class="td-files">
+          <code>QuestionStatistic.php</code>: <code>avg_time_spent</code>, <code>attempt_count</code>, <code>skip_count</code>, <code>error_rate</code><br>
+          Statistical foundation exists. No prediction model.
+        </td>
+        <td class="td-miss">Threshold-based risk scoring: if skip_count &gt; X AND attempt_count &lt; Y → flag as at-risk. ML model as future upgrade.</td>
+      </tr>
+      <tr data-s="Partial" data-m="Recommendation" data-sec="9. LMS Reports">
+        <td class="td-idx">43</td><td class="td-fn">Reports</td><td class="td-task">Engagement Predictions</td>
+        <td class="td-desc">Recommend teacher intervention for at-risk students</td>
+        <td><span class="b partial">Partial</span></td><td><span class="td-mod">Recommendation</span></td>
+        <td class="td-files">
+          <code>RecommendationController.php</code> · <code>StudentRecommendation.php</code><br>
+          <code>RecommendationRule.php</code> — rule-based engine<br>
+          <code>RecTriggerEventController.php</code> · <code>RecAssessmentTypeController.php</code><br>
+          <code>RecommendationMode.php</code> — remedial/enrichment modes<br>
+          <code>MaterialBundleController.php</code> · <code>RecommendationMaterialController.php</code>
+        </td>
+        <td class="td-miss">Wire Recommendation module to LMS risk scores from #42. Currently standalone, not triggered by LMS events.</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<!--══════════════════════════════════════════════════════════════════
+    SECTION 10 — ADAPTIVE LEARNING & RECOMMENDATION
+══════════════════════════════════════════════════════════════════-->
+<div class="sec" id="s10">
+  <div class="sec-hdr c10" onclick="tog('s10')">
+    <h2><span class="arr">▼</span><span class="sec-num">10</span> Adaptive Learning &amp; Recommendation <span class="sec-sub">Tagging · Profile · Suggest</span></h2>
+    <div class="sec-info">
+      <span class="sec-counts">2 Done · 2 Partial · 2 Pending</span>
+      <div class="mini-bar"><div class="mini-fill" style="width:58%"></div></div>
+      <span class="sec-pct">58%</span>
+    </div>
+  </div>
+  <div class="tbl-scroll sec-body">
+  <table>
+    <thead><tr><th>#</th><th>Sub-Module</th><th>Task</th><th>Sub-Task (Excel)</th><th>Status</th><th>LMS Module</th><th>Evidence</th><th>What's Missing</th></tr></thead>
+    <tbody>
+      <tr data-s="Done" data-m="Syllabus" data-sec="10. Adaptive Learning">
+        <td class="td-idx">44</td><td class="td-fn">Content Tagging &amp; Profiling</td><td class="td-task">Tag Learning Resources</td>
+        <td class="td-desc">Tag videos, PDFs, quizzes with concepts &amp; difficulty levels</td>
+        <td><span class="b done">Done</span></td><td><span class="td-mod">Syllabus · QuestionBank</span></td>
+        <td class="td-files">
+          <strong>Syllabus:</strong> <code>StudyMaterial.tags</code> · <code>difficulty_level</code> · <code>material_type_id</code><br>
+          <code>BloomTaxonomy.php</code> — 6 cognitive levels (Remember → Create)<br>
+          <code>CognitiveSkill.php</code> · <code>ComplexityLevel.php</code> · <code>PerformanceCategory.php</code><br>
+          <strong>QuestionBank:</strong> <code>QuestionTag</code> · <code>QuestionPerformanceCategory</code> · <code>QuestionTopic</code>
+        </td>
+        <td class="td-miss">—</td>
+      </tr>
+      <tr data-s="Done" data-m="Syllabus" data-sec="10. Adaptive Learning">
+        <td class="td-idx">45</td><td class="td-fn">Content Tagging &amp; Profiling</td><td class="td-task">Tag Learning Resources</td>
+        <td class="td-desc">Define pre-requisite and post-requisite relationships between resources</td>
+        <td><span class="b done">Done</span></td><td><span class="td-mod">Syllabus</span></td>
+        <td class="td-files">
+          <code>TopicDependencies.php</code> — table: <code>slb_topic_dependencies</code><br>
+          Fields: <code>topic_id</code> · <code>prerequisite_topic_id</code> · <code>dependency_type</code> · <code>strength</code> · <code>description</code><br>
+          <code>Lesson.prerequisites</code> JSON array field<br>
+          <code>Lesson.resources_json</code> for post-requisite refs
+        </td>
+        <td class="td-miss">—</td>
+      </tr>
+      <tr data-s="Pending" data-m="Not Started" data-sec="10. Adaptive Learning">
+        <td class="td-idx">46</td><td class="td-fn">Content Tagging &amp; Profiling</td><td class="td-task">Student Learning Profile</td>
+        <td class="td-desc">Build student learning profile from quiz scores, time spent, engagement</td>
+        <td><span class="b pending">Pending</span></td><td><span class="td-mod">—</span></td>
+        <td class="td-files"><code>QuestionStatistic</code> has per-question data; no per-student aggregation</td>
+        <td class="td-miss">New: <code>lms_student_learning_profiles</code> (student_id, topic_id, mastery_score, last_assessed_at, attempt_count). Scheduled job to recompute nightly.</td>
+      </tr>
+      <tr data-s="Pending" data-m="Not Started" data-sec="10. Adaptive Learning">
+        <td class="td-idx">47</td><td class="td-fn">Content Tagging &amp; Profiling</td><td class="td-task">Student Learning Profile</td>
+        <td class="td-desc">Identify knowledge gaps and mastered concepts</td>
+        <td><span class="b pending">Pending</span></td><td><span class="td-mod">—</span></td>
+        <td class="td-files">Topic + Tag data exists; no gap computation</td>
+        <td class="td-miss">SQL query: JOIN wrong_answers → topics → tags. Group by topic, calculate gap_score. Display as radar/heatmap chart.</td>
+      </tr>
+      <tr data-s="Partial" data-m="Recommendation" data-sec="10. Adaptive Learning">
+        <td class="td-idx">48</td><td class="td-fn">Content Tagging &amp; Profiling</td><td class="td-task">Generate Personalized Suggestions</td>
+        <td class="td-desc">Recommend "next best" lesson based on student profile and goals</td>
+        <td><span class="b partial">Partial</span></td><td><span class="td-mod">Recommendation</span></td>
+        <td class="td-files">
+          <code>RecommendationController.php</code> · <code>RecommendationRule.php</code><br>
+          <code>StudentRecommendation.php</code> — stores per-student recommendations<br>
+          <code>DynamicMaterialType.php</code> · <code>DynamicPurposeController.php</code>
+        </td>
+        <td class="td-miss">Link Recommendation engine to Syllabus Lesson/Topic graph. Currently rule-based not profile-driven. Connect student_id → profile → gap topics → suggest <code>slb_study_materials</code>.</td>
+      </tr>
+      <tr data-s="Partial" data-m="Recommendation" data-sec="10. Adaptive Learning">
+        <td class="td-idx">49</td><td class="td-fn">Content Tagging &amp; Profiling</td><td class="td-task">Generate Personalized Suggestions</td>
+        <td class="td-desc">Suggest remedial content for weak areas / advanced for mastery</td>
+        <td><span class="b partial">Partial</span></td><td><span class="td-mod">Recommendation</span></td>
+        <td class="td-files">
+          <code>RecommendationMaterial.php</code> — material suggestions<br>
+          <code>RecommendationMaterialController.php</code><br>
+          <code>RecommendationMode.php</code> — modes: Remedial / Enrichment / Practice<br>
+          <code>MaterialBundleController.php</code> — bundle multiple materials
+        </td>
+        <td class="td-miss">Map <code>RecommendationMaterial</code> → actual <code>slb_study_materials</code> rows by topic+difficulty match. Remedial = difficulty_level lower, Enrichment = higher.</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<!--══════════════════════════════════════════════════════════════════
+    SECTION 11 — COMPETENCY-BASED ASSESSMENT
+══════════════════════════════════════════════════════════════════-->
+<div class="sec" id="s11">
+  <div class="sec-hdr c11" onclick="tog('s11')">
+    <h2><span class="arr">▼</span><span class="sec-num">11</span> Competency-Based Assessment <span class="sec-sub">Rubric · Evidence · Evaluation</span></h2>
+    <div class="sec-info">
+      <span class="sec-counts">0 Done · 1 Partial · 3 Pending</span>
+      <div class="mini-bar"><div class="mini-fill" style="width:12%"></div></div>
+      <span class="sec-pct">12%</span>
+    </div>
+  </div>
+  <div class="tbl-scroll sec-body">
+  <table>
+    <thead><tr><th>#</th><th>Sub-Module</th><th>Task</th><th>Sub-Task (Excel)</th><th>Status</th><th>LMS Module</th><th>Evidence</th><th>What's Missing</th></tr></thead>
+    <tbody>
+      <tr data-s="Partial" data-m="Syllabus" data-sec="11. Competency-Based">
+        <td class="td-idx">50</td><td class="td-fn">Rubric Management</td><td class="td-task">Create Assessment Rubric</td>
+        <td class="td-desc">Define competency dimensions &amp; performance levels (Novice → Expert)</td>
+        <td><span class="b partial">Partial</span></td><td><span class="td-mod">Syllabus · HPC</span></td>
+        <td class="td-files">
+          <strong>Syllabus:</strong> <code>Competencie.php</code> + <code>CompetencyType.php</code> + <code>CompetencieController.php</code><br>
+          <code>PerformanceCategory.php</code> + <code>PerformanceCategoryController.php</code><br>
+          <code>CognitiveSkill.php</code> · <code>BloomTaxonomy.php</code><br>
+          <strong>HPC:</strong> <code>hpc_performance_descriptors</code> table — Novice/Developing/Proficient/Expert levels
+        </td>
+        <td class="td-miss">Generic reusable rubric builder independent of HPC. New: <code>lms_rubrics</code> + <code>lms_rubric_criteria</code> + <code>lms_rubric_levels</code> tables.</td>
+      </tr>
+      <tr data-s="Pending" data-m="Not Started" data-sec="11. Competency-Based">
+        <td class="td-idx">51</td><td class="td-fn">Rubric Management</td><td class="td-task">Create Assessment Rubric</td>
+        <td class="td-desc">Attach rubric to assignments, projects, discussions</td>
+        <td><span class="b pending">Pending</span></td><td><span class="td-mod">—</span></td>
+        <td class="td-files">No <code>rubric_id</code> FK in homework/exam/quiz tables</td>
+        <td class="td-miss">Add nullable <code>rubric_id</code> FK to <code>lms_homework</code> · <code>lms_exams</code> · <code>lms_quizzes</code>.</td>
+      </tr>
+      <tr data-s="Pending" data-m="Not Started" data-sec="11. Competency-Based">
+        <td class="td-idx">52</td><td class="td-fn">Rubric Management</td><td class="td-task">Evidence-Based Assessment</td>
+        <td class="td-desc">Allow students to submit evidence (files, links) against rubric criteria</td>
+        <td><span class="b pending">Pending</span></td><td><span class="td-mod">—</span></td>
+        <td class="td-files"><code>HomeworkSubmission implements HasMedia</code> handles file upload — partial hook exists</td>
+        <td class="td-miss">New: <code>lms_evidence_submissions</code> (student_id, rubric_criterion_id, file_path, url, submitted_at). Separate from homework submission.</td>
+      </tr>
+      <tr data-s="Pending" data-m="Not Started" data-sec="11. Competency-Based">
+        <td class="td-idx">53</td><td class="td-fn">Rubric Management</td><td class="td-task">Evidence-Based Assessment</td>
+        <td class="td-desc">Enable teacher/peer evaluation using the rubric</td>
+        <td><span class="b pending">Pending</span></td><td><span class="td-mod">—</span></td>
+        <td class="td-files">—</td>
+        <td class="td-miss">New: <code>lms_rubric_evaluations</code> (evaluator_id, evaluator_type: teacher/peer, submission_id, criterion_id, level_id, score, comment). Peer review workflow.</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<!--══════════════════════════════════════════════════════════════════
+    SECTION 12 — NEW FUNCTIONALITY (Already Built Beyond Excel)
+══════════════════════════════════════════════════════════════════-->
+<div class="spacer"></div>
+<div class="new-sec" id="s12">
+  <div class="new-sec-hdr">
+    <span>★</span> 12. New Functionality Already Implemented (Not in Excel — Extra Capabilities Built)
+  </div>
+  <div class="new-grid">
+
+    <div class="new-card">
+      <h3><span class="td-mod">LmsQuiz</span> — Extra Features</h3>
+      <ul>
+        <li><code>allow_multiple_attempts</code> + <code>max_attempts</code> — retry control per student</li>
+        <li><code>negative_marks</code> decimal — negative marking per wrong answer</li>
+        <li><code>show_correct_answer</code> — reveal answer after attempt</li>
+        <li><code>show_explanation</code> — show question explanation after attempt</li>
+        <li><code>auto_publish_result</code> + <code>is_auto_publish_result</code> in allocation — auto-release scores</li>
+        <li><code>is_system_generated</code> — AI-generated quiz flag</li>
+        <li><code>quiz_code</code> auto-generation (Session_Class_Subject_Lesson_Topic_RAND)</li>
+        <li><code>question_marks_shown</code> — toggle marks display during quiz</li>
+        <li><code>scope_topic_id</code> — scope quiz to a specific topic</li>
+        <li><code>QuizAllocation</code>: <code>published_at</code>, <code>due_date</code>, <code>cut_off_date</code>, <code>result_publish_date</code></li>
+        <li><code>AssessmentType</code> — categorize quiz by assessment type</li>
+      </ul>
+    </div>
+
+    <div class="new-card">
+      <h3><span class="td-mod">LmsExam</span> — Extra Features</h3>
+      <ul>
+        <li><code>ExamBlueprint.php</code> — blueprint-based paper design (topic-wise question distribution)</li>
+        <li><code>ExamPaperSet.php</code> — multiple paper sets per exam (Set A, B, C for anti-copying)</li>
+        <li><code>ExamStudentGroup.php</code> + <code>ExamStudentGroupMember.php</code> — group students for exam batches</li>
+        <li><code>ExamStatusEvent.php</code> — track exam lifecycle (created → published → live → completed)</li>
+        <li><code>ExamScope.php</code> — scope exam to class/section/group</li>
+        <li><code>ExamType.php</code> — classify exams (Unit Test, Mid-Term, Final, Olympiad)</li>
+        <li><code>Exam.grading_schema_id</code> — custom grading schema per exam</li>
+        <li>UUID on all exam entities for API-safe references</li>
+        <li>Auto exam code generation on create</li>
+      </ul>
+    </div>
+
+    <div class="new-card">
+      <h3><span class="td-mod">LmsHomework</span> — Extra Features</h3>
+      <ul>
+        <li><code>RuleEngineConfig.php</code> — automation rule engine for homework lifecycle</li>
+        <li><code>TriggerEvent.php</code> — define triggers (on_due, on_submit, on_grade)</li>
+        <li><code>ActionType.php</code> — define actions (send_notification, auto_grade, remind)</li>
+        <li><code>Homework.release_condition_id</code> — conditional content release</li>
+        <li><code>HomeworkSubmission implements HasMedia</code> — Spatie MediaLibrary file attachments</li>
+        <li><code>Homework.is_gradable</code> — distinguish graded vs ungraded homework</li>
+        <li><code>HomeworkSubmission.is_late</code> — late submission flag</li>
+        <li><code>Homework.auto_publish_score</code> — auto-release grades on grading</li>
+        <li><code>Homework.difficulty_level_id</code> — difficulty tagging linked to Syllabus</li>
+      </ul>
+    </div>
+
+    <div class="new-card">
+      <h3><span class="td-mod">LmsQuests</span> — Extra Features</h3>
+      <ul>
+        <li><code>Quest.php</code> — gamified quest with same rich config as Quiz</li>
+        <li><code>QuestScope.php</code> + <code>QuestScopeController.php</code> — scope quests to topic/lesson</li>
+        <li><code>QuestAllocation.php</code> — allocate quests to students/groups</li>
+        <li><code>Quest.is_randomized</code> · <code>timer_enforced</code> · <code>negative_marks</code> — full quiz-like config</li>
+        <li><code>Quest.allow_multiple_attempts</code> + <code>max_attempts</code></li>
+        <li><code>Quest.show_correct_answer</code> · <code>show_explanation</code></li>
+        <li>Quest code auto-generation (same pattern as Quiz)</li>
+        <li>Inherits <code>DifficultyDistributionConfig</code> from LmsQuiz module</li>
+      </ul>
+    </div>
+
+    <div class="new-card">
+      <h3><span class="td-mod">QuestionBank</span> — Extra Features</h3>
+      <ul>
+        <li><code>AIQuestionGeneratorController.php</code> — AI-powered question generation from content</li>
+        <li><code>QuestionVersion.php</code> + <code>QuestionVersionController.php</code> — full version history</li>
+        <li><code>QuestionReviewLog.php</code> — review/approval workflow before publishing</li>
+        <li><code>QuestionStatistic.php</code> — per-question analytics (avg_score, attempt_count, skip_count, avg_time_spent)</li>
+        <li><code>QuestionUsageLog.php</code> + <code>QuestionUsageType.php</code> — where &amp; how each question is used</li>
+        <li><code>QuestionMedia.php</code> + <code>QuestionMediaStore.php</code> — media attachments on questions (images, audio)</li>
+        <li><code>exam-paper-check/</code> view — quality check before finalizing paper</li>
+        <li>Junction tables for M:M: QuestionTag ↔ Question, Topic ↔ Question, PerformanceCategory ↔ Question</li>
+      </ul>
+    </div>
+
+    <div class="new-card">
+      <h3><span class="td-mod">Syllabus</span> — Extra Features</h3>
+      <ul>
+        <li><code>Lesson.nep_alignment</code> — NEP 2020 national education policy alignment tag</li>
+        <li><code>Lesson.book_chapter_ref</code> — link to textbook chapter reference</li>
+        <li><code>Lesson.scheduled_year_week</code> — academic calendar scheduling</li>
+        <li><code>SyllabusSchedule.php</code> + <code>SyllabusScheduleController.php</code> — full schedule management</li>
+        <li><code>GradeDivisionMaster.php</code> + <code>GradeDivisionController.php</code> — grade band definitions</li>
+        <li><code>TopicLevelType.php</code> + <code>TopicLevelTypeController.php</code> — topic depth levels</li>
+        <li><code>BookTopicMapping.php</code> — map textbook topics to syllabus topics (via SyllabusBooks)</li>
+        <li><code>BloomTaxonomy.php</code> — Bloom's 6 levels with full CRUD</li>
+        <li><code>CompetencyType.php</code> — competency category classification</li>
+        <li><code>QuestionTypeSpecificityController.php</code> · <code>QueTypeSpecifity.php</code> — question type details</li>
+        <li><code>TopicDependencies</code>: <code>dependency_type</code> (Required/Recommended/Optional) + <code>strength</code> (0-1)</li>
+      </ul>
+    </div>
+
+  </div>
+</div>
+
+<!--══════════════════════════════════════════════════════════════════
+    SECTION-WISE SUMMARY TABLE
+══════════════════════════════════════════════════════════════════-->
+<div class="sum-wrap">
+  <div class="sum-title">Section-Wise Summary</div>
+  <div class="sum-subtitle">Excel task coverage mapped against the Prime-AI LMS codebase — 53 subtasks across 11 sections</div>
+  <table class="sum-table">
+    <thead>
+      <tr>
+        <th style="width:28px">#</th>
+        <th>Section (from Excel)</th>
+        <th>Total</th>
+        <th>Done</th>
+        <th>Partial</th>
+        <th>Pending</th>
+        <th>%</th>
+        <th>Primary Module(s)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1</td><td>Course Management</td><td>7</td>
+        <td class="chip-done">2</td><td class="chip-part">2</td><td class="chip-pend">3</td>
+        <td><strong>50%</strong></td><td><span class="td-mod">Syllabus · Notification</span></td>
+      </tr>
+      <tr style="background:#fff8f8">
+        <td>2</td><td>Micro-Credentials &amp; Digital Badges</td><td>4</td>
+        <td class="chip-done">0</td><td class="chip-part">0</td><td class="chip-pend">4</td>
+        <td style="color:#dc2626"><strong>0%</strong></td><td>— Not Started</td>
+      </tr>
+      <tr style="background:#fff8f8">
+        <td>3</td><td>Offline Content &amp; Sync</td><td>4</td>
+        <td class="chip-done">0</td><td class="chip-part">0</td><td class="chip-pend">4</td>
+        <td style="color:#dc2626"><strong>0%</strong></td><td>— Mobile App Needed</td>
+      </tr>
+      <tr>
+        <td>4</td><td>Content Management</td><td>4</td>
+        <td class="chip-done">1</td><td class="chip-part">2</td><td class="chip-pend">1</td>
+        <td><strong>62%</strong></td><td><span class="td-mod">Syllabus</span></td>
+      </tr>
+      <tr style="background:#f0fff4">
+        <td>5</td><td>Assessment Management</td><td>8</td>
+        <td class="chip-done">7</td><td class="chip-part">1</td><td class="chip-pend">0</td>
+        <td style="color:#16a34a"><strong>94%</strong></td><td><span class="td-mod">LmsQuiz · LmsExam · LmsHomework · LmsQuests</span></td>
+      </tr>
+      <tr style="background:#f0fff4">
+        <td>6</td><td>Question Bank Management</td><td>4</td>
+        <td class="chip-done">3</td><td class="chip-part">1</td><td class="chip-pend">0</td>
+        <td style="color:#16a34a"><strong>87%</strong></td><td><span class="td-mod">QuestionBank</span></td>
+      </tr>
+      <tr style="background:#fffdf0">
+        <td>7</td><td>Tracking &amp; Progress</td><td>4</td>
+        <td class="chip-done">0</td><td class="chip-part">1</td><td class="chip-pend">3</td>
+        <td style="color:#d97706"><strong>12%</strong></td><td><span class="td-mod">QuestionBank (partial)</span></td>
+      </tr>
+      <tr style="background:#fff8f8">
+        <td>8</td><td>Certificates for Courses</td><td>4</td>
+        <td class="chip-done">0</td><td class="chip-part">0</td><td class="chip-pend">4</td>
+        <td style="color:#dc2626"><strong>0%</strong></td><td>— Can reuse HPC DomPDF pattern</td>
+      </tr>
+      <tr style="background:#fffdf0">
+        <td>9</td><td>LMS Reports &amp; Analytics</td><td>4</td>
+        <td class="chip-done">0</td><td class="chip-part">2</td><td class="chip-pend">2</td>
+        <td style="color:#d97706"><strong>25%</strong></td><td><span class="td-mod">QuestionBank · Recommendation</span></td>
+      </tr>
+      <tr>
+        <td>10</td><td>Adaptive Learning &amp; Recommendation</td><td>6</td>
+        <td class="chip-done">2</td><td class="chip-part">2</td><td class="chip-pend">2</td>
+        <td><strong>58%</strong></td><td><span class="td-mod">Syllabus · Recommendation</span></td>
+      </tr>
+      <tr style="background:#fffdf0">
+        <td>11</td><td>Competency-Based Assessment</td><td>4</td>
+        <td class="chip-done">0</td><td class="chip-part">1</td><td class="chip-pend">3</td>
+        <td style="color:#d97706"><strong>12%</strong></td><td><span class="td-mod">Syllabus · HPC (partial base)</span></td>
+      </tr>
+      <tr>
+        <td>★</td><td>New Functionality (Extra / Not in Excel)</td><td>—</td>
+        <td colspan="3" style="color:#1d4ed8;font-weight:700">60+ extra features built across 6 modules</td>
+        <td>—</td><td><span class="td-mod">All 6 LMS Modules</span></td>
+      </tr>
+      <tr>
+        <td colspan="2"><strong>GRAND TOTAL (Excel Tasks)</strong></td>
+        <td><strong>53</strong></td>
+        <td class="chip-done"><strong>15</strong></td>
+        <td class="chip-part"><strong>12</strong></td>
+        <td class="chip-pend"><strong>26</strong></td>
+        <td><strong>49%</strong></td>
+        <td>6 Active LMS Modules</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!--══════════════════════════════════════════════════════════════════
+    JAVASCRIPT
+══════════════════════════════════════════════════════════════════-->
+<script>
+function tog(id){
+  const el=document.getElementById(id);
+  el.classList.toggle('collapsed');
+}
+
+function go(){
+  const st=document.getElementById('fStatus').value.toLowerCase();
+  const md=document.getElementById('fMod').value.toLowerCase();
+  const sc=document.getElementById('fSec').value.toLowerCase();
+  const sr=document.getElementById('fSearch').value.toLowerCase();
+  let n=0;
+  document.querySelectorAll('tbody tr[data-s]').forEach(r=>{
+    const rs=(r.dataset.s||'').toLowerCase();
+    const rm=(r.dataset.m||'').toLowerCase();
+    const rc=(r.dataset.sec||'').toLowerCase();
+    const rt=r.textContent.toLowerCase();
+    const ok=
+      (!st||rs===st)&&
+      (!md||rm.includes(md))&&
+      (!sc||rc.includes(sc.replace(/^\d+\.\s*/,'')))&&
+      (!sr||rt.includes(sr));
+    r.style.display=ok?'':'none';
+    if(ok)n++;
+    // ensure parent section visible
+    if(ok){const sec=r.closest('.sec');if(sec&&sec.classList.contains('collapsed'))sec.classList.remove('collapsed');}
+  });
+  document.getElementById('fcnt').textContent=n?n+' subtask(s) shown':'No matches';
+}
+
+function rst(){
+  ['fStatus','fMod','fSec'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('fSearch').value='';
+  document.querySelectorAll('tbody tr[data-s]').forEach(r=>r.style.display='');
+  document.getElementById('fcnt').textContent='';
+}
+</script>
+</body>
+</html>

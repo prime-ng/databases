@@ -12,6 +12,10 @@
 			"name": "prime_ai_main",
 			"path": "/Users/bkwork/Herd/prime_ai"
 		},
+		{
+			"name": "local_workspace",
+			"path": "/Users/bkwork/WorkFolder/3-Local_Workspace"
+		},
 	],
 	"settings": {
 		"search.exclude": {

@@ -52,7 +52,7 @@
 
 ## In Progress
 
-- [ ] **StudentPortal** (~28%) — 27 screens designed (S1-S27), 3 wired. Full architecture in `student-parent-portal.md`
+- [ ] **StudentPortal** (~55%, updated 2026-04-02) — 35 screens (22 ✅ | 8 🟡 | 5 ❌), 7 controllers, 55+ routes, 57 blade views. Dashboard fully live. Key gaps: Online Exam/Quiz/Quest player screens (FR-STP-30, stubs only), IDOR in proceedPayment(), zero Gate::authorize(). StudentAttempt DDL v2 created (10 tables). Full architecture in `student-parent-portal.md`. Requirement: `databases/2-Requirement_Module_wise/2-Detailed_Requirements/V2/STP_StudentPortal_Requirement.md`
 - [ ] **ParentPortal** (~5%) — 23 screens designed (P1-P23), none wired yet. Architecture in `student-parent-portal.md`
 - [ ] **Standard Timetable** (~70%) — Standard views and scheduling
 - [ ] **Event Engine** (~20%) — Cross-module event system
@@ -75,6 +75,7 @@
 - [ ] **Library** — Book circulation, fines (module exists, features pending)
 
 ## Current Work
+- StudentPortal — StudentAttempt DDL schema (Branch: Brijesh, 2026-04-02)
 - HPC module enhancements (Branch: Brijesh_HPC, Developer: Shailesh)
 
 ## Recently Completed

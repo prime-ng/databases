@@ -1,9 +1,10 @@
 # Development Progress Tracker
 
-> **Last full audit:** 2026-03-22 against `prime_ai_tarun` (branch `Brijesh_SmartTimetable`)
-> **Global stats:** 30 modules | 3176 lines in tenant.php | 1613 Route:: calls | 319 tenant migrations | 230 policies | 464 models | 339 controllers | 137 services | 2036 views | 190 FormRequests | 134 test files
-> **Security note:** Only 1 `EnsureTenantHasModule` usage across entire tenant.php. Library has 0 refs in tenant.php. Notification routes ALL commented out.
-> **Deep Gap Analysis:** Full 29-module gap analysis completed 2026-03-22. Reports in `{GAP_ANALYSIS_MODULE_WISE}/2026Mar22/`. Summary: ~950+ issues, ~140 P0 critical.
+> **Last full audit:** 2026-04-02 against `prime_ai` (branch current). Previous: 2026-03-22 on `prime_ai_tarun`.
+> **Deep code audit:** 2026-04-02 — 8-agent parallel scan of all 37 modules. Routes→controller mapping, security, performance, validation, dead code. Results in `AI_Brain/lessons/known-issues.md` section "Deep Audit — 2026-04-02".
+> **Global stats (2026-04-02):** 37 modules | 349 tenant migrations | 667 models | 506 controllers | 226 services | 2,253 views | 292 FormRequests | 97 module-level test files | 3,557 module route lines
+> **Security note:** Only 1 `EnsureTenantHasModule` usage across entire tenant.php. 13 seeder routes with NO auth. 7 HPC controllers missing imports (fatal). Payment webhook behind auth (always 401). Library IS wired into tenant.php (was missing, now confirmed present).
+> **Deep Gap Analysis:** Full 29-module gap analysis completed 2026-03-22. Reports in `{GAP_ANALYSIS_MODULE_WISE}/2026Mar22/`. Summary: ~950+ issues, ~140 P0 critical. Deep code audit 2026-04-02 found 14 P0 fatal, 10 P0 data-leak, 24 P1 auth-bypass, 16 P2 perf/val issues across all modules.
 
 ## V2 Requirement Documents — 2026-03-26
 
@@ -36,59 +37,74 @@
 > Completion % based ONLY on what routes, models, controllers, services, and tests actually exist in code.
 > Does NOT count as "complete" if controllers exist but have zero auth, empty stubs, or critical bugs.
 
-### Central-Scoped Modules
+### Central-Scoped Modules (deep-audited 2026-04-02)
 
-| Module | Code Exists | Completion | Key Gaps |
+| Module | Code Exists | Completion | Key Gaps (updated 2026-04-02 deep audit) |
 |--------|------------|------------|----------|
-| **Prime** | 21 ctrl, 27 mdl, 1 svc, 7 req | **~70%** | `db_password` plaintext in Domain model; 8 controllers with stub methods; `is_super_admin` mass-assignable; `$request->all()` in 5 controllers |
-| **GlobalMaster** | 15 ctrl, 12 mdl, 0 svc, 10 req | **~55%** | `$request->all()` in 12 places; GlobalMasterController zero auth on 7 stubs; wrong permission on ModuleController::show(); no services |
-| **SystemConfig** | 4 ctrl, 3 mdl, 0 svc, 1 req | **~50%** | ZERO auth on all 7 methods in SystemConfigController; MenuController `$request->all()`; create() empty stub |
-| **Billing** | 6 ctrl, 6 mdl, 0 svc, 3 req, 1 job | **~55%** | Duplicate policies; FK column mismatch; no try/catch on payment processing; 4 stubs |
-| **Documentation** | 3 ctrl, 2 mdl, 0 svc, 2 req | **~65%** | Gate permission mismatch (singular vs plural); XSS risk on Summernote content; oversized file uploads |
+| **Prime** | 22 ctrl, 27 mdl, 1 svc, 7 req | **~65%** | `is_super_admin` + `remember_token` in User $fillable; UserController passes is_super_admin via $request->only(); $request->all() in 6+ controllers despite FormRequest injected; TenantController::show()/destroy() empty; api.php apiResource points to stub; 5 controllers with 24+ stub methods |
+| **GlobalMaster** | 15 ctrl, 12 mdl, 0 svc, 10 req | **~50%** | `$request->all()` in 12 places; GlobalMasterController/OrganizationController all stubs; LanguageController uses `global-master.*` permission prefix (mismatch with seeded); N+1 in DropdownController::index(); AcademicSessionController::destroy() condition logically inverted; double activityLog() in State/Module controllers |
+| **SystemConfig** | 4 ctrl, 3 mdl, 0 svc, 1 req | **~40%** | ZERO auth on SystemConfigController (7 methods); MenuSyncController auth check COMMENTED OUT (any user truncates menus); MenuController 5 stubs; SettingController returns raw $request object; wasted Setting::all() query |
+| **Billing** | 7 ctrl, 6 mdl, 0 svc, 3 req, 1 job | **~55%** | **No try/catch on DB transaction in payment processing** — failures corrupt invoice state; both store() and consolidatedStore() affected; BillingManagementController::store() no ownership check on planRateId; Tenant::get()+User::get() unbounded on every page; 15+ stub methods; printData() calls isNotEmpty() on float (crash) |
+| **Documentation** | 3 ctrl, 2 mdl, 0 svc, 2 req | **~60%** | Gate permission mismatch (.store vs .create); XSS risk on Summernote; 20MB upload limit excessive; DocumentationController (only routed one) is mostly stubs; Article/Category controllers well-built but unrouted |
 
-### Tenant-Scoped Modules — School Administration
+### Tenant-Scoped Modules — School Administration (deep-audited 2026-04-02)
 
-| Module | Code Exists | Completion | Key Gaps |
+| Module | Code Exists | Completion | Key Gaps (updated 2026-04-02 deep audit) |
 |--------|------------|------------|----------|
-| **SchoolSetup** | 40 ctrl, 42 mdl, 0 svc, 27 req | **~55%** | `is_super_admin` settable via UserController; 5+ stub controllers; PHP concat crash; 15+ unprotected methods; zero services for 40 controllers |
-| **StudentProfile** | 5 ctrl, 14 mdl, 0 svc, 0 req | **~50%** | `is_super_admin` writable from student login; AttendanceController zero auth; 0 FormRequests; StudentProfileController empty stub |
-| **Transport** | 31 ctrl, 36 mdl, 0 svc, 18 req | **~55%** | 5 controllers zero auth; AttendanceDevice `tested.*` typo breaks all Gates; PII unencrypted (Aadhaar, PAN); zero services for 31 controllers |
-| **Vendor** | 7 ctrl, 8 mdl, 0 svc, 3 req, 1 job | **~53%** | 6/7 controllers NOT registered in routes; VendorInvoiceController zero auth on 14 methods; financial data unencrypted |
-| **Complaint** | 8 ctrl, 6 mdl, 2 svc, 0 req | **~40%** | `dd()` in production store/filter; 3 stub controllers; zero FormRequests; hardcoded dropdown IDs |
-| **Notification** | 12 ctrl, 14 mdl, 2 svc, 10 req | **~50%** | ALL routes COMMENTED OUT (module inaccessible); template send is stub; Gate prefix `prime.*` instead of `tenant.*` |
-| **Payment** | 2 ctrl, 5 mdl, 2 svc, 1 req | **~45%** | NO DDL schema for `ptm_*` tables; webhook behind auth middleware (always 401); Payment model is stub; gateway credentials unencrypted |
-| **Dashboard** | 1 ctrl, 0 mdl, 0 svc, 0 req | **~35%** | ZERO authorization in entire module; returns non-module view path; zero dynamic data |
-| **Scheduler** | 1 ctrl, 2 mdl, 2 svc, 1 req | **~40%** | Zero auth on entire controller; empty update/destroy methods; Schedule model missing SoftDeletes |
-| **StudentPortal** | 7 ctrl, 0 mdl, 0 svc, 0 req | **~55%** (V2 audit) | P0 IDOR in proceedPayment (payable_id unverified); zero Gate::authorize() calls; 0 FormRequests; 0 services; 0 policies; hard-coded dropdown ID 104; PaymentGateway::all() not filtered; currentFeeAssignemnt typo; 22 of 35 screens ✅ built; 8 🟡 partial; 5 ❌ stubs. **Completion prompt ready:** `5-Work-In-Progress/StudentPortal/1-Claude_Prompt/STP_2step_Prompt1.md` |
+| **SchoolSetup** | 41 ctrl, 42 mdl, 0 svc, 27 req | **~40%** | is_super_admin writable via UserController + in User $fillable + in UserRequest; SchoolSetupController all stubs; 3 routes → missing methods (trashedClassSubgroup, assignSubjects, StudyFormat); 5 backup controller files; student routes all commented out; rand() returns fake dashboard data; $request->all() in OrganizationController/GroupController |
+| **StudentProfile** | 5 ctrl, 14 mdl, 0 svc, 0 req | **~30%** | is_super_admin writable in student login creation; **Gate facade not imported in AttendanceController** — all Gate calls fatal; StudentReportController zero auth on PII reports; module web.php registers only stub controller; storeBulkAttendance validation fully commented out; 0 FormRequests |
+| **Transport** | 31 ctrl, 36 mdl, 0 svc, 18 req | **~40%** | Module web.php registers 0 tenant routes; `tested.*` permission typo blocks AttendanceDeviceController; updateLastSeen() publicly accessible (no auth); **Aadhaar/PAN stored plaintext** (IT Act violation); TptVehicleServiceRequestController zero auth + zero validation; 3 different permission prefixes (tenant.*/tested.*/transport.*) |
+| **StudentFee** | 15 ctrl, 23 mdl, 0 svc, 0 req | **~50%** | 14 seeder methods (~1,200 lines) in production controller; StudentFeeController zero Gate auth; module web.php registers only stub; FeeInvoiceController IDOR (student_assignment_id unchecked); N+1 in bulk invoice generation; 0 FormRequests for financial data |
+| **Vendor** | 7 ctrl, 8 mdl, 0 svc, 3 req, 1 job | **~53%** | VendorPaymentController missing create/store/show → 3 routes 500; VendorController::index() Gate commented out; wrong Gate prefix on VndUsageLogController + VendorPaymentController; module web.php bypasses tenancy |
+| **Complaint** | 8 ctrl, 6 mdl, 2 svc, 0 req | **~30%** | **6 routes point to non-existent methods** (trashed/restore/forceDelete/toggleStatus) → 500; 3 controllers zero Gate; dropdown queries use literal `dummy_table_name` key → always empty; module web.php bypasses tenancy; double-validate in store() |
+| **Notification** | 12 ctrl, 14 mdl, 2 svc, 10 req | **~35%** | **ALL controllers use `prime.*` Gate prefix** — every tenant check returns 403; **Tenant::all() in tenant context** → cross-tenant data leak; 2 controllers don't exist on disk; routes partially commented out; $request->all() mass-assigned |
+| **Payment** | 2 ctrl, 5 mdl, 2 svc, 1 req | **~45%** | **Webhook behind auth middleware** — all gateway callbacks return 401; payable_type accepts arbitrary class name (no allowlist); duplicate index routes |
+| **Dashboard** | 1 ctrl, 0 mdl, 0 svc, 0 req | **~25%** | ZERO authorization on entire controller; Schema::getColumnListing() fires 28+ DB introspection queries per page; 6 sub-dashboards are empty stubs; crosses to GlobalMaster NotificationController |
+| **Scheduler** | 1 ctrl, 2 mdl, 2 svc, 1 req | **~25%** | **No tenancy middleware in RSP** — runs on wrong database; zero Gate auth; store() redirects to non-existent route; show/edit/update/destroy stubs; cron_expression no format validation |
+| **StudentPortal** | 7 ctrl, 0 mdl, 0 svc, 0 req | **~55%** | **P0 IDOR in proceedPayment** (payable_id unverified); zero Gate::authorize() in all 7 controllers; ComplaintController show/edit/update/destroy empty; schoolCalendar()/applyLeave() return empty views; PaymentGateway::all() exposes API keys; 7 scaffolded stubs never routed. **Prompt ready:** `5-Work-In-Progress/StudentPortal/1-Claude_Prompt/STP_2step_Prompt1.md` |
 
-### Tenant-Scoped Modules — Academic & Curriculum
+### Tenant-Scoped Modules — Academic & Curriculum (deep-audited 2026-04-02)
 
-| Module | Code Exists | Completion | Key Gaps |
+| Module | Code Exists | Completion | Key Gaps (updated 2026-04-02 deep audit) |
 |--------|------------|------------|----------|
-| **Syllabus** | 15 ctrl, 22 mdl, 0 svc, 14 req | **~55%** | CompetencieController ZERO auth + `$request->all()`; Competencie model missing SoftDeletes; TopicController hard deletes |
-| **SyllabusBooks** | 4 ctrl, 6 mdl, 0 svc, 3 req | **~55%** | SyllabusBooksController empty stub; BookTopicMappingController zero auth; central AcademicSession cross-layer |
-| **QuestionBank** | 7 ctrl, 17 mdl, 0 svc, 6 req | **~45%** | **HARDCODED API KEYS (OpenAI + Gemini) — ROTATE IMMEDIATELY**; AIQuestionGenerator zero auth; generateQuestions() returns demo data only |
-| **LmsExam** | 11 ctrl, 11 mdl, 0 svc, 11 req | **~65%** | `dd($e)` in store(); 2 controllers Gate disabled; no EnsureTenantHasModule; student grading absent |
-| **LmsQuiz** | 5 ctrl, 6 mdl, 0 svc, 5 req | **~70%** | Gate commented out in index(); route prefix typo `lms-quize`; student attempt tracking absent |
-| **LmsHomework** | 5 ctrl, 5 mdl, 0 svc, 5 req | **~60%** | **FATAL: `HoemworkData()` missing `$request` parameter**; review() zero auth/validation; no EnsureTenantHasModule |
-| **LmsQuests** | 4 ctrl, 4 mdl, 0 svc, 4 req | **~60%** | Gate commented in index(); student-facing functionality completely absent; no EnsureTenantHasModule |
-| **Recommendation** | 10 ctrl, 11 mdl, 0 svc, 0 req | **~39%** | Gate::any() not enforcing auth; 4 different permission naming patterns; zero FormRequests; 3 empty stubs |
+| **Syllabus** | 15 ctrl, 22 mdl, 1 svc, 14 req | **~55%** | 14 controllers not routed (only SyllabusController has routes); CompetencieController 6 methods zero Gate + $request->all(); Competencie model missing SoftDeletes; N+1 in getCompetencyTree() recursive children; getLevelLabel() fires DB query per tree node; TopicCompetencyController::update() no validation; wrong permission names (tenant.subject.* used on non-subject controllers) |
+| **SyllabusBooks** | 4 ctrl, 6 mdl, 0 svc, 3 req | **~55%** | **Only routed controller has empty store/update/destroy** — routes do nothing; BookTopicMappingController::index() crashes (undefined variable); AuthorController::store()/update() missing Gate; **Cross-layer: BookController queries Prime\AcademicSession from tenant context** |
+| **QuestionBank** | 7 ctrl, 17 mdl, 0 svc, 6 req | **~45%** | API keys FIXED (now env()); **generateQuestions() permanently returns demo data** — real AI path unreachable dead code; AIQuestionGeneratorController entire controller zero auth; startImport() missing Gate; 6 controllers unrouted |
+| **LmsExam** | 11 ctrl, 11 mdl, 0 svc, 11 req | **~58%** | **dd($e) at store():577 renders DB::rollBack() unreachable**; ExamStudentGroupMemberController::toggleStatus() missing → 500; ExamStudentGroupMemberController::store() no FormRequest/validation; 9 unbounded queries on index; toggleStatus() missing Gate on 2 controllers |
+| **LmsQuiz** | 5 ctrl, 6 mdl, 0 svc, 5 req | **~72%** | Gate calls NOW active on all methods (BUG-LMS-005 FIXED for Quiz); route prefix typo `lms-quize`; store() no DB transaction; unused `$original = clone $quiz`; student attempt tracking absent |
+| **LmsHomework** | 2 ctrl, 3 mdl, 0 svc, 3 req | **~52%** | HoemworkData $request param FIXED; review() Gate FIXED; **NEW: show() has no auth (IDOR)**; 4 unused imports; unbounded Student::get() and HomeworkAssignment::get() in 3 methods; student submission portal missing |
+| **LmsQuests** | 4 ctrl, 4 mdl, 0 svc, 4 req | **~52%** | **Gate still commented in index()** (BUG-LMS-005 confirmed); **getTopics() method missing → 500**; no DB transactions on writes; student quest player absent |
+| **Recommendation** | 10 ctrl, 11 mdl, 0 svc, 0 req | **~39%** | **Gate::any() without abort(403)** — auth checks don't block; **StudentRecommendationController uses .create for delete/restore/forceDelete**; show()/edit() wrong permission; uses App\Models\User (wrong namespace); store/update/destroy empty stubs; 4 inconsistent permission prefixes |
 
-### Tenant-Scoped Modules — Timetable & HPC
+### Tenant-Scoped Modules — Timetable & HPC (deep-audited 2026-04-02)
 
-| Module | Code Exists | Completion | Key Gaps |
+| Module | Code Exists | Completion | Key Gaps (updated 2026-04-02 deep audit) |
 |--------|------------|------------|----------|
-| **SmartTimetable** | 20 ctrl, 63 mdl, 108 svc, 7 req, 176 views, 14 seeders | **~60%** | Full reverse-engineering documentation completed 2026-03-31 (4,621 lines, 31 sections). FETSolver 2,830 lines; 24 hard + 60 soft constraint classes; parallel periods done; God controller ~3,378 lines; 17/20 controllers lack auth (SEC-009); ~30/155 constraints implemented in solver; Phases 6-8 (Analytics/Publish/Substitution) mostly unstarted; 0 module-level tests; no EnsureTenantHasModule. **Full doc:** `5-Work-In-Progress/2-In-Progress/SmartTimetable/SmartTimetable_Module_Documentation.md` |
-| **TimetableFoundation** | 24 ctrl, 32 mdl, 3 svc, 4 req | **~68%** | EnsureTenantHasModule missing on 100+ routes; largest route file (262 lines) |
-| **StandardTimetable** | 1 ctrl, 0 mdl, 0 svc, 0 req | **~5%** | Module skeleton — 1 controller with 1 method, zero models/services/views |
-| **Hpc** | 22 ctrl, 32 mdl, 10 svc, 14 req | **~59%** | God controller (2,610 lines); no EnsureTenantHasModule; public PDF route; 9 missing FormRequests |
-| **Library** | 26 ctrl, 35 mdl, 9 svc, 19 req | **~45%** | NOT wired into tenant.php at all; 7 controllers zero auth; `$request->all()` in 5 controllers; cross-layer import |
+| **SmartTimetable** | 19 ctrl, 65 mdl, 108 svc, 7 req, 177 views, 14 seeders | **~58%** | **generateForClassSection missing → 500**; API controller zero Gate; ParallelGroupController bypasses tenancy stack; SubstitutionService crash (undefined $candidates) + Carbon API misuse (now()->parse()); God controller 3,501 lines + 8 unused imports; createConstraintManager() all 12 constraints commented out; index() fires 14+ unbounded queries; viewAndRefinement() loads all cells unbounded; 0 tests. **Full doc:** `5-Work-In-Progress/2-In-Progress/SmartTimetable/SmartTimetable_Module_Documentation.md` |
+| **TimetableFoundation** | 24 ctrl, 32 mdl, 3 svc, 4 req | **~65%** | **2 routes → missing methods (generateAllActivities, getBatchGenerationProgress) → 500**; generateActivities runs 400+ updateOrCreate in web request; ClassWorkingDayController up to 10,000 upserts in single request; EnsureTenantHasModule missing; 20/24 controllers use inline validation; eligible_teacher_count hardcoded to 1 |
+| **StandardTimetable** | 1 ctrl, 0 mdl, 0 svc, 0 req | **~5%** | Module skeleton — **controller file doesn't exist** despite being imported in tenant.php (fatal) |
+| **Hpc** | 23 ctrl, 32 mdl, 10 svc, 14 req | **~59%** | **7 controllers used in routes without `use` imports** (fatal, tenant.php:2565–2604); HpcController store/update/destroy empty stubs; 15 queries per tab via HpcIndexDataTrait; public PDF route without auth. Most HPC sprint fixes (2026-03-17) still valid but 3 new controller imports regressed. |
+| **Library** | 26 ctrl, 35 mdl, 9 svc, 19 req | **~45%** | IS wired into tenant.php (confirmed present at lines 2770+); No Gate on index() across 14 controllers; $request->all() in 5 controllers; User::all() in 20+ methods; 5 commented dd() calls |
 
-### New Module
+### Accounting & Supporting Modules (deep-audited 2026-04-02)
 
-| Module | Code Exists | Completion | Key Gaps |
+| Module | Code Exists | Completion | Key Gaps (updated 2026-04-02 deep audit) |
 |--------|------------|------------|----------|
-| **Accounting** | 18 ctrl, 21 mdl, 0 svc, 15 req | **~30%** | NEW — Tally-inspired voucher engine. Controllers and models scaffolded. 21 tenant migrations. 14 test files. Zero services yet. Needs integration with Payroll/Inventory via VoucherServiceInterface. |
+| **Accounting** | 18 ctrl, 21 mdl, 0 svc, 15 req, 14 tests | **~40%** | Scaffolding 85% done but core operations 30%: matchEntry/unmatchEntry route wildcard mismatch → 500; runDepreciation missing {fixed_asset} in route → 500; ExpenseClaim race condition (count+1); Dashboard 6 unbounded queries + 12-query monthly loop; autoMatch/importStatement/postNow/runDepreciation are stubs returning false positives |
+
+### Newly Scaffolded Modules (deep-audited 2026-04-02) — Scaffold Done, Partial Implementation
+
+> % based on file counts + business logic verification. ~15% = scaffold + stubs. ~20% = scaffold + some real logic.
+
+| Module | Code Exists | Completion | Notes (updated 2026-04-02 deep audit) |
+|--------|------------|------------|-------|
+| **Admission** | 15 ctrl, 20 mdl, 6 svc, 17 req, 34 views, 166 route lines | **~18%** | Has real pipeline logic via AdmissionPipelineService. **No Gate::authorize()** — auth deferred to service layer only. Prompt ready. |
+| **Cafeteria** | 16 ctrl, 21 mdl, 6 svc, 16 req, 54 views, 148 route lines | **~18%** | OrderController has real logic via OrderService. **Student IDOR in apiIndex()** — student_id from query string unverified. No Gate. Prompt ready. |
+| **Certificate** | 9 ctrl, 10 mdl, 3 svc, 10 req, 33 views, 1 job, 123 route lines | **~15%** | Scaffold stubs only. No real implementation. Prompt ready. |
+| **FrontOffice** | 20 ctrl, 22 mdl, 4 svc, 3 req, 61 views, 1 job, 172 route lines | **~12%** | Scaffold stubs only. Only 3 FormRequests for 20 controllers. Prompt ready. |
+| **HrStaff** | 22 ctrl, 33 mdl, 15 svc, 23 req, 75 views, 195 route lines | **~20%** | PayrollController well-implemented with Gate + FormRequests + service layer. **Arbitrary column override risk via field_name** in override(). Prompt ready. |
+| **Inventory** | 20 ctrl, 28 mdl, 7 svc, 13 req, 51 views, 1 job, 176 route lines | **~15%** | Mix of scaffold and partial. No dd/secrets found. Prompt ready. |
+| **EventEngine** | 4 ctrl, 3 mdl, 0 svc, 3 req, 17 views, 16 route lines | **~20%** | 3 CRUD sub-controllers well-implemented with Gate. **EventEngineController zero auth**; **No tenancy middleware in RSP** — runs on wrong DB; rule firing engine doesn't exist (config UI only); isset() vs filled() filter bug |
 
 ---
 

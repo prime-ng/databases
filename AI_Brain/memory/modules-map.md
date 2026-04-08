@@ -65,66 +65,104 @@ Modules/ModuleName/
 └── vite.config.js
 ```
 
-## All Modules (30)
-> **Audited:** 2026-03-22 against `prime_ai_tarun` / branch `Brijesh_SmartTimetable`.
-> Controllers exclude backup files (`*_backup*.php`, `*.bk`, `*copy*`).
+## All Modules (37)
+> **Audited:** 2026-04-02 against `prime_ai` / branch current.
+> Previous audit: 2026-03-22 on `prime_ai_tarun` / `Brijesh_SmartTimetable`.
+> Controllers counted recursively under `app/Http/Controllers/`.
 > Services count = unique .php files under `app/Services/` (recursive).
+> Tests = files inside each module's own `tests/` folder only (excludes central `tests/Unit|Feature|Browser/`).
 
 ### Global Statistics
 | Metric | Count |
 |--------|-------|
-| Total Modules | 30 (5 central + 25 tenant) |
-| Total Models | 464 |
-| Total Controllers | 339 |
-| Total Services | 137 (SmartTimetable: 106, Hpc: 10, Library: 9, TimetableFoundation: 3, others) |
-| Total Views | 2,036 blade files |
-| Total FormRequests | 190 |
-| Total Policies | 230 (in `app/Policies/`) |
-| Tenant Migrations | 319 files in `database/migrations/tenant/` |
-| Tenant Route Lines | 3,176 (1,613 Route:: calls) |
-| Central Route Lines | 954 (404 Route:: calls) |
-| Total Test Files | 134 |
+| Total Modules | 37 (5 central + 32 tenant) |
+| Total Models | 667 |
+| Total Controllers | 506 |
+| Total Services | 226 (SmartTimetable: 108, HrStaff: 15, Inventory: 7, Hpc: 10, Library: 9, TimetableFoundation: 3, others) |
+| Total Views | 2,253 blade files |
+| Total FormRequests | 292 |
+| Total Policies | ~230 (not re-counted — last audit 2026-03-22) |
+| Tenant Migrations | 349 files in `database/migrations/tenant/` |
+| Module Route Lines | 3,557 across all `routes/*.php` in module dirs |
+| Module-level Test Files | 97 (excludes central tests/Unit|Feature|Browser/) |
+| Total Jobs | 11 across all modules |
 | EnsureTenantHasModule usage | 1 (across entire tenant.php) |
 
 ### Central-Scoped Modules (run on central domain, access prime_db/global_db)
 | Module | Controllers | Models | Services | Requests | Views | Seeders | Route Lines | Tests | Description |
 |--------|-------------|--------|----------|----------|-------|---------|-------------|-------|-------------|
-| **Prime** | 21 | 27 | 1 | 7 | 84 | 2 | 244 | 9 | Tenant CRUD, plans, billing, users, roles, modules, menus, geography |
-| **GlobalMaster** | 15 | 12 | 0 | 10 | 48 | 3 | 27 | 4 | Countries, states, cities, boards, languages, plans, dropdowns |
+| **Prime** | 22 | 27 | 1 | 7 | 93 | 2 | 244 | 9 | Tenant CRUD, plans, billing, users, roles, modules, menus, geography |
+| **GlobalMaster** | 15 | 12 | 0 | 10 | 55 | 3 | 27 | 4 | Countries, states, cities, boards, languages, plans, dropdowns |
 | **SystemConfig** | 4 | 3 | 0 | 1 | 8 | 2 | 16 | 1 | Settings, menus, translations |
-| **Billing** | 6 | 6 | 0 | 3 | 40 | 1 | 18 | 1 | Invoice generation, payment tracking, billing cycles |
+| **Billing** | 7 | 6 | 0 | 3 | 43 | 1 | 18 | 1 | Invoice generation, payment tracking, billing cycles |
 | **Documentation** | 3 | 2 | 0 | 2 | 15 | 3 | 16 | 1 | Knowledge base, help docs |
 
 ### Tenant-Scoped Modules (run on tenant domain, access tenant_db)
-| Module | Controllers | Models | Services | Requests | Views | Jobs | Events | Listeners | Seeders | Route Lines | Tests | Description |
-|--------|-------------|--------|----------|----------|-------|------|--------|-----------|---------|-------------|-------|-------------|
-| **SchoolSetup** | 40 | 42 | 0 | 27 | 220 | 0 | 1 | 0 | 7 | 523 | 0 | School structure, classes, sections, subjects, teachers, rooms, buildings |
-| **SmartTimetable** | 12 | 62 | 106 | 7 | 218 | 1 | 0 | 0 | 14 | 41 | 7† | AI timetable: FET solver, 22 Hard + 55+ Soft constraint classes, analytics, refinement, substitution |
-| **TimetableFoundation** | 24 | 32 | 3 | 4 | 148 | 0 | 0 | 0 | 1 | 262 | 7 | Shared timetable config: period sets, day types, configurations, academic terms |
-| **Transport** | 31 | 36 | 0 | 18 | 151 | 0 | 0 | 0 | 1 | 32 | 0 | Vehicles, routes, trips, drivers, pickup points, student allocation, inspections |
-| **Hpc** | 22 | 32 | 10 | 14 | 242 | 1 | 0 | 0 | 0 | 8 | 8† | Holistic Progress Card: 4 PDF templates, approval workflow, student/parent/peer portals |
-| **Library** | 26 | 35 | 9 | 19 | 140 | 0 | 0 | 0 | 1 | 35 | 15† | Book catalog, members, transactions, fines, reservations, digital resources, reports |
-| **StudentProfile** | 5 | 14 | 0 | 0 | 45 | 0 | 0 | 0 | 1 | 16 | 6† | Student CRUD, guardians, attendance, medical incidents |
-| **StudentFee** | 15 | 23 | 0 | 0 | 88 | 0 | 0 | 0 | 1 | 16 | 24 | Fee heads, invoices, receipts, concessions, scholarships, fines, assignments |
-| **Syllabus** | 15 | 22 | 0 | 14 | 78 | 0 | 0 | 0 | 1 | 16 | 0 | Lessons, topics, competencies, bloom taxonomy, cognitive skills, schedules |
-| **QuestionBank** | 7 | 17 | 0 | 6 | 38 | 0 | 0 | 0 | 1 | 16 | 0 | Questions with bloom/cognitive/complexity tagging, AI generation, search |
-| **LmsExam** | 11 | 11 | 0 | 11 | 58 | 0 | 0 | 0 | 1 | 17 | 0 | Exam blueprints, paper sets, allocations, scopes, student groups |
-| **LmsQuiz** | 5 | 6 | 0 | 5 | 29 | 0 | 0 | 0 | 1 | 16 | 0 | Quizzes, questions, allocations, assessment types, difficulty distribution |
-| **LmsHomework** | 5 | 5 | 0 | 5 | 28 | 0 | 0 | 0 | 1 | 16 | 0 | Homework, submissions, action types, trigger events, rule engine |
-| **LmsQuests** | 4 | 4 | 0 | 4 | 23 | 0 | 0 | 0 | 1 | 16 | 0 | Quests, questions, scopes, allocations |
-| **Notification** | 12 | 14 | 2 | 10 | 64 | 0 | 1 | 1 | 1 | 16 | 0 | Channels, templates, targets, delivery; routes currently COMMENTED OUT |
-| **Complaint** | 8 | 6 | 2 | 0 | 34 | 0 | 1 | 1 | 1 | 16 | 4† | Complaints, categories, actions, SLA, AI insights, dashboard |
-| **Vendor** | 7 | 8 | 0 | 3 | 35 | 1 | 0 | 0 | 1 | 16 | 0 | Vendors, agreements, invoices, payments, inspections |
-| **Payment** | 2 | 5 | 2 | 1 | 9 | 0 | 2 | 0 | 1 | 16 | 8 | Payment gateway (Razorpay), processing, callbacks |
-| **Recommendation** | 10 | 11 | 0 | 0 | 53 | 0 | 0 | 0 | 1 | 16 | 0 | Rules, materials, student recommendations |
-| **SyllabusBooks** | 4 | 6 | 0 | 3 | 17 | 0 | 0 | 0 | 1 | 16 | 0 | Books, book-topic mapping, authors |
-| **Accounting** | 18 | 21 | 0 | 15 | 79 | 0 | 0 | 0 | 2 | 152 | 14 | **NEW** — Tally-inspired voucher engine, chart of accounts, ledgers, journal entries |
-| **StandardTimetable** | 1 | 0 | 0 | 0 | 3 | 0 | 0 | 0 | 1 | 30 | 0 | Standard timetable views (skeleton) |
-| **StudentPortal** | 7 | 0 | 0 | 0 | 57 | 0 | 0 | 0 | 1 | 55+ | 7 | Student-facing interface: ~55% complete. ZERO services/FormRequests/policies. P0 IDOR in proceedPayment. 7 ctrl, 57 views, 35 screens. **Prompt ready:** `5-Work-In-Progress/StudentPortal/1-Claude_Prompt/STP_2step_Prompt1.md` |
-| **Dashboard** | 1 | 0 | 0 | 0 | 8 | 0 | 0 | 0 | 1 | 16 | 0 | Admin dashboards |
-| **Scheduler** | 1 | 2 | 2 | 1 | 6 | 0 | 0 | 0 | 1 | 16 | 1 | Job scheduling (uses module-level routing) |
+> Audited 2026-04-02. Tests column = files inside `Modules/{Name}/tests/` only (module-level tests). Central tests (Unit/Feature/Browser) are tracked separately in state/progress.md.
 
-> † Test locations: SmartTimetable tests in `tests/Feature/SmartTimetable/` (1) + `tests/Unit/SmartTimetable/` (6). Hpc in `tests/Feature/Hpc/` (1) + `tests/Unit/Hpc/` (6) + `tests/Browser/Modules/HPC/` (1). Library in `tests/Browser/Modules/Library/` (15). StudentProfile in `tests/Browser/Modules/StudentProfile/` (5) + `tests/Unit/StudentProfile/` (1). Complaint in `tests/Browser/Modules/Complaint/` (4). Also: `tests/Browser/Modules/Class&SubjectMgmt/` (9 files — SchoolSetup related).
+| Module | Controllers | Models | Services | Requests | Views | Jobs | Seeders | Route Lines | Tests | Description |
+|--------|-------------|--------|----------|----------|-------|------|---------|-------------|-------|-------------|
+| **SchoolSetup** | 41 | 42 | 0 | 27 | 220 | 0 | 7 | 523 | 0 | School structure, classes, sections, subjects, teachers, rooms, buildings |
+| **SmartTimetable** | 19 | 65 | 108 | 7 | 177 | 1 | 14 | 41 | 0 | AI timetable: FET solver, 24 Hard + 60+ Soft constraint classes, analytics, refinement, substitution |
+| **TimetableFoundation** | 24 | 32 | 3 | 4 | 158 | 0 | 1 | 294 | 7 | Shared timetable config: period sets, day types, configurations, academic terms |
+| **Transport** | 31 | 36 | 0 | 20 | 151 | 0 | 1 | 32 | 0 | Vehicles, routes, trips, drivers, pickup points, student allocation, inspections |
+| **Hpc** | 23 | 32 | 10 | 14 | 242 | 1 | 0 | 8 | 0 | Holistic Progress Card: 4 PDF templates, approval workflow, student/parent/peer portals |
+| **Library** | 26 | 35 | 9 | 19 | 140 | 0 | 1 | 35 | 0 | Book catalog, members, transactions, fines, reservations, digital resources, reports |
+| **StudentProfile** | 5 | 14 | 0 | 0 | 45 | 0 | 1 | 16 | 0 | Student CRUD, guardians, attendance, medical incidents |
+| **StudentFee** | 15 | 23 | 0 | 0 | 89 | 0 | 1 | 16 | 24 | Fee heads, invoices, receipts, concessions, scholarships, fines, assignments |
+| **Syllabus** | 15 | 22 | 1 | 14 | 90 | 0 | 1 | 16 | 0 | Lessons, topics, competencies, bloom taxonomy, cognitive skills, schedules |
+| **QuestionBank** | 7 | 16 | 0 | 6 | 38 | 0 | 1 | 16 | 0 | Questions with bloom/cognitive/complexity tagging, AI generation, search |
+| **LmsExam** | 11 | 11 | 0 | 11 | 60 | 0 | 1 | 17 | 0 | Exam blueprints, paper sets, allocations, scopes, student groups |
+| **LmsQuiz** | 5 | 6 | 0 | 5 | 31 | 0 | 1 | 16 | 0 | Quizzes, questions, allocations, assessment types, difficulty distribution |
+| **LmsHomework** | 2 | 3 | 0 | 3 | 20 | 0 | 1 | 16 | 1 | Homework, submissions, action types, trigger events, rule engine |
+| **LmsQuests** | 4 | 4 | 0 | 4 | 25 | 0 | 1 | 16 | 0 | Quests, questions, scopes, allocations |
+| **Notification** | 12 | 14 | 2 | 10 | 64 | 0 | 1 | 16 | 0 | Channels, templates, targets, delivery; routes currently COMMENTED OUT |
+| **Complaint** | 8 | 6 | 2 | 0 | 34 | 0 | 1 | 16 | 0 | Complaints, categories, actions, SLA, AI insights, dashboard |
+| **Vendor** | 7 | 8 | 0 | 3 | 35 | 1 | 1 | 16 | 0 | Vendors, agreements, invoices, payments, inspections |
+| **Payment** | 2 | 5 | 2 | 1 | 9 | 0 | 1 | 16 | 8 | Payment gateway (Razorpay), processing, callbacks |
+| **Recommendation** | 10 | 11 | 0 | 0 | 53 | 0 | 1 | 16 | 0 | Rules, materials, student recommendations |
+| **SyllabusBooks** | 4 | 6 | 0 | 3 | 17 | 0 | 1 | 16 | 0 | Books, book-topic mapping, authors |
+| **Accounting** | 18 | 21 | 0 | 15 | 110 | 0 | 2 | 158 | 14 | Tally-inspired voucher engine, chart of accounts, ledgers, journal entries |
+| **StandardTimetable** | 1 | 0 | 0 | 0 | 3 | 0 | 1 | 38 | 0 | Standard timetable views (skeleton) |
+| **StudentPortal** | 7 | 0 | 0 | 0 | 58 | 0 | 1 | 85 | 7 | Student-facing: ~55% done. ZERO services/FormRequests/policies. P0 IDOR in proceedPayment. 35 screens. **Prompt:** `5-Work-In-Progress/StudentPortal/1-Claude_Prompt/STP_2step_Prompt1.md` |
+| **Dashboard** | 1 | 0 | 0 | 0 | 8 | 0 | 1 | 16 | 0 | Admin dashboards |
+| **Scheduler** | 1 | 2 | 2 | 1 | 6 | 0 | 1 | 16 | 1 | Job scheduling |
+| **EventEngine** | 4 | 3 | 0 | 3 | 17 | 0 | 1 | 16 | 0 | Cross-module event system (~20% done) |
+| **Admission** | 15 | 20 | 6 | 17 | 34 | 0 | 3 | 166 | 0 | **NEW** — Enquiry→application→shortlist→enroll funnel. Scaffold complete. **Prompt:** `5-Work-In-Progress/FrontOffice/1-Claude_Prompt/ADM_2step_Prompt1.md` |
+| **Cafeteria** | 16 | 21 | 6 | 16 | 54 | 0 | 3 | 148 | 0 | **NEW** — POS counter, meal cards, FSSAI compliance. Scaffold complete. **Prompt:** `5-Work-In-Progress/Cafeteria/1-Claude_Prompt/CAF_2step_Prompt1.md` |
+| **Certificate** | 9 | 10 | 3 | 10 | 33 | 1 | 4 | 123 | 0 | **NEW** — Bonafide/TC/Character/Achievement/ID cert lifecycle, HMAC-SHA256 QR. Scaffold complete. **Prompt:** `5-Work-In-Progress/Certificates/1-Claude_Prompt/CRT_2step_Prompt1.md` |
+| **FrontOffice** | 20 | 22 | 4 | 3 | 61 | 1 | 3 | 172 | 0 | **NEW** — Reception, postal register, circulars, gate pass, early departure. Scaffold complete. **Prompt:** `5-Work-In-Progress/FrontOffice/1-Claude_Prompt/FOF_2step_Prompt1.md` |
+| **HrStaff** | 22 | 33 | 15 | 23 | 75 | 0 | 9 | 195 | 0 | **NEW** — HR + Payroll. PF/ESI/TDS, leave FSM, payroll integration. Scaffold complete. **Prompt:** `5-Work-In-Progress/HrStaff/1-Claude_Prompt/HRS_2step_Prompt1.md` |
+| **Inventory** | 20 | 28 | 7 | 13 | 51 | 1 | 5 | 176 | 0 | **NEW** — GRN, stock issue, reorder, vendor integration. Scaffold complete. **Prompt:** `5-Work-In-Progress/22-Inventory/1-Claude_Prompt/INV_2step_Prompt1.md` |
+
+### Route & Policy Registration Architecture (Post-Migration 2026-04-02)
+
+> Migration prompt: `databases/5-Work-In-Progress/1-Completed/Update_Route_Permission_AllModules/migrate-module-routes-policies_v2.md`
+> Executed on: `prime_ai_shailesh` repo (Shailesh's working copy), 2026-04-02
+> Verified: `tenant.php` reduced from 3,039 → 224 lines; `AppServiceProvider.php` from ~923 → 127 lines
+
+**Canonical route file per tenant module:** `Modules/{ModuleName}/routes/web.php`
+
+**Canonical policy file per tenant module:** `Modules/{ModuleName}/app/Providers/{ModuleName}ServiceProvider.php`
+- Each module's `{Module}ServiceProvider::boot()` calls `$this->registerPolicies()`
+- `registerPolicies()` method holds all `Gate::policy(Model::class, Policy::class)` for that module
+
+**`routes/tenant.php` — remaining contents (224 lines, post-migration):**
+- Full tenancy middleware wrapper: `web → InitializeTenancyByDomain → PreventAccessFromCentralDomains → EnsureTenantIsActive`
+- Auth routes: login, register, forgot-password, reset-password, email-verification, logout
+- 1 cross-module route: `school-setup.student.create1` (uses `StudentController` from StudentProfile)
+- Empty standard-timetable group (placeholder)
+- ⚠️ **14 seeder routes with NO auth** (lines 207–224) — P0 SEC-RTG-001 still open
+- All other module route groups replaced with comments: `// {Module} routes → Modules/{Module}/routes/web.php`
+
+**`app/Providers/AppServiceProvider.php` — remaining contents (127 lines, post-migration):**
+- All `Gate::policy(...)` calls replaced with comments: `// {Module} policies → Modules/{Module}/app/Providers/{Module}ServiceProvider.php`
+- Cross-module policies only (if any) remain in AppServiceProvider
+
+**Module RSP loading:** Each module's `RouteServiceProvider` loads `Modules/{Module}/routes/web.php`.
+> ⚠️ RSP tenancy middleware gap (D23) still applies — Scheduler and EventEngine RSPs apply only `web` middleware, no `InitializeTenancyByDomain`.
+
+---
 
 ### Key Module Routes
 

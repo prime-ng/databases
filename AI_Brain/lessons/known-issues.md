@@ -808,3 +808,125 @@
 |------|----------|-------|
 | SEC-SYS-001 | HIGH | MenuController — 5 methods (trashedMenu, restore, forceDelete, destroy, toggleStatus) have ZERO auth |
 | BUG-SYS-001 | MED | `create()` is empty stub |
+
+---
+
+## Deep Audit — 2026-04-02 (8-agent parallel scan, all 37 modules)
+
+> This section captures NEW findings not already documented above.
+> Priority: P0 = production-fatal or data-leak, P1 = security/auth bypass, P2 = performance/validation, P3 = dead code/cleanup.
+> Verified against `prime_ai` repo, branch current. Route/policy issues updated 2026-04-02 post-migration (see D22) — now verified against `prime_ai_shailesh`.
+
+### P0 — FATAL / PRODUCTION-BREAKING
+
+| Code | Module | Issue | File:Line |
+|------|--------|-------|-----------|
+| SEC-RTG-001 | Routing | **14 seeder routes with NO auth at all** — any unauthenticated visitor can wipe and reseed entire tenant DB | `tenant.php:207–224` (post-migration; line numbers updated 2026-04-02) |
+| SEC-RTG-004 | Routing | ~~StandardTimetableController imported but file doesn't exist~~ | ✅ **RESOLVED 2026-04-02** — `use` statement commented out in post-migration tenant.php; routes → module web.php |
+| SEC-RTG-005 | Routing | ~~7 HPC controllers used in routes without `use` imports~~ | ✅ **RESOLVED 2026-04-02** — HPC routes moved to `Modules/Hpc/routes/web.php` which has proper imports |
+| BUG-PAY-001 | Payment | **Webhook behind auth middleware** — all Razorpay/PayU callbacks return 401, payments never reconcile | `tenant.php:327` |
+| BUG-CMP-001 | Complaint | **4 routes point to non-existent ComplaintController methods** (trashed/restore/forceDelete/toggleStatus) → 500 | `tenant.php:1279–1295` |
+| BUG-CMP-002 | Complaint | **2 routes point to non-existent ComplaintActionController methods** (restore/forceDelete) → 500 | `tenant.php:1312–1318` |
+| BUG-VND-002 | Vendor | **VendorPaymentController missing create/store/show** — 3 resource routes → 500 | `VendorPaymentController.php` |
+| BUG-TT-004 | SmartTimetable | **generateForClassSection method missing** — route → 500 | `tenant.php:1899` |
+| BUG-TT-005 | TimetableFoundation | **generateAllActivities + getBatchGenerationProgress missing** — 2 routes → 500 | `TF/routes/web.php:88–89` |
+| BUG-EXM-TOGGLE | LmsExam | **ExamStudentGroupMemberController::toggleStatus() missing** — route → 500 | `LmsExam/routes/web.php:112` |
+| BUG-QST-TOPICS | LmsQuests | **QuestScopeController::getTopics() missing** — quest scope UI topic dropdown broken | `LmsQuests/routes/web.php:22` |
+| BUG-SCH-ROUTES | SchoolSetup | **3 missing methods**: trashedClassSubgroup, assignSubjects, StudyFormatController methods | `SchoolSetup/routes/web.php` |
+| BUG-TT-006 | SmartTimetable | **SubstitutionService::reportAbsence — $candidates undefined** when teacher has no cells → crash | `SubstitutionService.php:57` |
+| BUG-TT-007 | SmartTimetable | **now()->parse($date) wrong API** — silently returns today's date instead of actual date | `SubstitutionService.php:32,67,206,289` |
+
+### P0 — DATA LEAK / PRIVILEGE ESCALATION
+
+| Code | Module | Issue | File:Line |
+|------|--------|-------|-----------|
+| SEC-STP-003 | StudentPortal | **IDOR in proceedPayment()** — payable_id accepted raw, any student pays another's invoice | `StudentPortalController.php:285–308` |
+| SEC-SCH-001 | SchoolSetup | **is_super_admin writable via UserController update** — admin can promote any user | `UserController.php:136` |
+| SEC-STP-001 | StudentProfile | **is_super_admin writable in student login creation** | `StudentController.php:391,412` |
+| SEC-PRM-001 | Prime | **is_super_admin + remember_token in User $fillable** — mass-assignable | `app/Models/User.php:48,53` |
+| SEC-PRM-007 | Prime | **UserController::update() explicitly passes is_super_admin** | `UserController.php:144` |
+| SEC-NOT-005 | Notification | **Tenant::all() inside tenant context** — cross-tenant data leak | `TemplateController.php:382,445` |
+| SEC-SYS-010 | SystemConfig | **MenuSyncController::sync() auth check commented out** — any user truncates all tenant menus | `MenuSyncController.php:57–63` |
+| SEC-RTG-003 | Routing | **HPC PDF view page accessible without auth** — student data exposed | `tenant.php:2530–2532` |
+| SEC-STP-006 | StudentPortal | **User::get() exposes full user roster** in complaint form | `StudentPortalComplaintController.php:35` |
+| SEC-PAY-005 | Payment | **payable_type accepts arbitrary class name** — no allowlist validation | `PaymentController.php:47` |
+
+### P1 — SECURITY / AUTH BYPASS
+
+| Code | Module | Issue | File:Line |
+|------|--------|-------|-----------|
+| TEN-RTG-001 | ALL | **EnsureTenantHasModule applied to only 1 of 26 module groups** — any tenant accesses Enterprise features | `tenant.php` |
+| SEC-NOT-003 | Notification | **ALL tenant controllers use `prime.*` Gate prefix** — all checks return 403 for tenants | All Notification controllers |
+| SEC-REC-001 | Recommendation | **Gate::any() without `\|\| abort(403)`** — auth checks don't block access | `RecommendationController.php:25,50` |
+| SEC-REC-002 | Recommendation | **StudentRecommendationController uses `.create` permission for delete/restore/forceDelete** | `StudentRecommendationController.php:200–330` |
+| SEC-BIL-001 | Billing | **No try/catch on DB transaction in payment processing** — failure corrupts invoice state | `InvoicingPaymentController.php:52–105` |
+| SEC-BIL-002 | Billing | **Same: consolidatedStore() no try/catch** — partial payment corruption | `InvoicingPaymentController.php:158–253` |
+| SEC-TPT-003 | Transport | **`tested.*` permission typo** — AttendanceDeviceController completely inaccessible | All methods except update() |
+| SEC-TPT-004 | Transport | **updateLastSeen() has no auth at all** — publicly accessible | `AttendanceDeviceController.php:261` |
+| SEC-TPT-005 | Transport | **Driver Aadhaar/PAN stored plaintext** — India IT Act violation | `DriverHelper model $fillable:['id_no']` |
+| SEC-STP-002 | StudentProfile | **Gate facade not imported in AttendanceController** — all Gate calls throw fatal | `AttendanceController.php` |
+| SEC-EVT-002 | EventEngine | **No tenancy middleware in RSP** — runs on wrong database | `EventEngine/RSP.php` |
+| SEC-SCH-003 | Scheduler | **No tenancy middleware in RSP** — runs on wrong database | `Scheduler/RSP.php` |
+| SEC-TT-002 | SmartTimetable | **ParallelGroupController routes bypass tenancy stack** | `SmartTimetable/RSP.php:38` |
+| SEC-DSH-002 | Dashboard | **Zero authorization on entire controller** — any user sees all school data | `DashboardController.php` |
+| SEC-BOK-001 | SyllabusBooks | **Only routed controller has zero auth** — SyllabusBooksController | `SyllabusBooksController.php` |
+| SEC-BOK-004 | SyllabusBooks | **Cross-layer: BookController queries Prime\AcademicSession from tenant context** | `BookController.php:20` |
+| SEC-QB-001 | QuestionBank | **AIQuestionGeneratorController — zero authorization on entire controller** | `AIQuestionGeneratorController.php` |
+| SEC-GLB-005 | GlobalMaster | **LanguageController uses `global-master.*` permission prefix** — mismatch with seeded permissions | `LanguageController.php:75–131` |
+| DEAD-GLB-002 | GlobalMaster | **AcademicSessionController::destroy() condition logically inverted** — `!$x === true` | `AcademicSessionController.php:124` |
+| DUP-WEB-001 | Routing | **global-master, billing, system-config routes registered 3 times in web.php** | `web.php:88/398/647` |
+| SEC-ACC-005 | Accounting | **ExpenseClaimController race condition** — claim number via `count() + 1` | `ExpenseClaimController.php:29` |
+| SEC-HR-001 | HrStaff | **Arbitrary column override via field_name in payroll** — `$detail->{$fieldName}` | `PayrollController.php:93` |
+| SEC-CAF-001 | Cafeteria | **Student IDOR in apiIndex()** — student_id from query string unverified | `OrderController.php:73` |
+
+### P2 — PERFORMANCE / VALIDATION
+
+| Code | Module | Issue | File:Line |
+|------|--------|-------|-----------|
+| PERF-TT-001 | SmartTimetable | **index() fires 14+ unbounded queries** including full Activity table scan | `SmartTimetableController.php:109–235` |
+| PERF-TT-012 | TimetableFoundation | **generateActivities runs 400+ updateOrCreate in web request** | `ActivityController.php:212–240` |
+| PERF-TT-013 | TimetableFoundation | **ClassWorkingDayController — up to 10,000 upserts in single request** | `ClassWorkingDayController.php:468` |
+| PERF-GLB-001 | GlobalMaster | **N+1 in DropdownController::index()** — loops paginated keys firing query per row | `DropdownController.php:28–33` |
+| PERF-LIB-004 | Library | **User::all() in 20+ controller methods** — full table scan every form load | Multiple files |
+| PERF-DSH-005 | Dashboard | **40+ queries per dashboard load** via Schema::getColumnListing introspection | `DashboardController.php` |
+| PERF-HPC-004 | Hpc | **15 queries per tab load** via HpcIndexDataTrait on every index() | `HpcIndexDataTrait.php:50–128` |
+| PERF-ACC-006 | Accounting | **Dashboard fires 6 unbounded query chains + 12-query monthly loop** | `AccDashboardController.php:47–99` |
+| VAL-STP-002 | StudentProfile | **storeBulkAttendance validation fully commented out** | `AttendanceController.php:302–307` |
+| STUB-BOK-001 | SyllabusBooks | **Only routed controller has empty store/update/destroy** — routes do nothing | `SyllabusBooksController.php` |
+| STUB-REC-001 | Recommendation | **RecommendationController store/update/destroy empty** — registered routes no-op | `RecommendationController.php` |
+| SEC-QB-003 | QuestionBank | **generateQuestions() permanently returns demo data** — real AI path unreachable | `AIQuestionGeneratorController.php:218` |
+| BUG-CMP-013 | Complaint | **Dropdown queries use `dummy_table_name` key** — always return empty collections | `ComplaintController.php:93–97` |
+| SEC-FEE-001 | StudentFee | **14 seeder methods (~1,200 lines) in production controller** | `StudentFeeController.php:92–1374` |
+| BUG-ACC-001 | Accounting | **matchEntry/unmatchEntry route wildcard mismatch** — 500 error | `BankReconciliationController.php:133` |
+| BUG-ACC-002 | Accounting | **runDepreciation missing {fixed_asset} in route URI** — 500 error | `web.php:112` |
+
+### P3 — DEAD CODE / CLEANUP
+
+| Code | Module | Issue |
+|------|--------|-------|
+| DEAD-EXM-001 | LmsExam | `dd($e)` at store():577 — renders DB::rollBack() unreachable |
+| DEAD-SCH-001 | SchoolSetup | 5 backup controller files in production directory |
+| DEAD-TT-001 | SmartTimetable | 8 unused imports (Faker, Hash, Role, etc.) in 3,501-line controller |
+| DEAD-TT-002 | SmartTimetable | createConstraintManager() — all 12 constraints commented out, never called |
+| DEAD-LIB-009–013 | Library | 5 commented-out dd() calls across controllers |
+| DEAD-NOT-010–011 | Notification | 2 commented-out dd() calls |
+| DEAD-TPT-001 | Transport | TransportController.php-old backup file |
+| DEAD-STP-014 | StudentPortal | 7 scaffolded CRUD stubs never routed |
+| DEAD-PRM-001–005 | Prime | 5 commented-out code blocks across controllers |
+| DEAD-FEE-001 | StudentFee | 14 seeder methods (~1,200 lines) should be Laravel Seeders |
+| SEC-SCH-008 | SchoolSetup | `rand()` returns fake student/class counts as real dashboard data |
+
+### Previously Documented — Status Update (2026-04-02)
+
+| Old Code | Status | Notes |
+|----------|--------|-------|
+| BUG-LMS-001 | **STILL PRESENT** | dd($e) in LmsExamController::store() at line 577 |
+| BUG-LMS-002 | **FIXED** | Gate calls active in ExamBlueprint/Scope controllers; only toggleStatus() missing Gate |
+| BUG-LMS-003 | **FIXED** | HomeworkData() now has `Request $request` parameter |
+| BUG-LMS-004 | **FIXED** | review() now has Gate::authorize; NEW: show() missing auth (SEC-HWK-002) |
+| BUG-LMS-005 | **PARTIAL** | LmsQuiz Gate active; LmsQuests Gate still commented out |
+| SEC-LMS-001 | **STILL PRESENT** | Zero EnsureTenantHasModule on any LMS route group |
+| PERF-LMS-001 | **STILL PRESENT** | 9+ unbounded queries in LmsExamController::index() |
+| SEC-QB-002 | **FIXED** | API keys now use env() — no hardcoded keys found |
+| SEC-HPC-001–015 | **MOSTLY FIXED** | 21 HPC bugs fixed in sprint; see HPC Post-Sprint section above |
+| BUG-HPC-001 | **REGRESSED** | Now 7 missing imports (was 4 fixed); 3 new controllers added without imports |

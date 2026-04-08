@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prime-AI LMS Complete Report</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+<style>
+:root{--pri:#6366f1;--success:#22c55e;--warning:#f59e0b;--danger:#ef4444;--info:#0ea5e9;--muted:#64748b}
+body{font-family:'Segoe UI',Inter,system-ui,sans-serif;background:#f8fafc;font-size:14px}
+.header-bar{background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;padding:28px 0 22px}
+.header-bar h1{font-size:1.6rem;font-weight:700;margin-bottom:2px}
+.header-bar .subtitle{opacity:.85;font-size:.85rem}
+.stat-card{border:none;border-left:4px solid var(--pri);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.stat-card .stat-value{font-size:1.8rem;font-weight:800;line-height:1}
+.stat-card .stat-label{font-size:.72rem;color:var(--muted);margin-top:4px}
+.stat-card.border-success{border-left-color:var(--success)!important}
+.stat-card.border-danger{border-left-color:var(--danger)!important}
+.stat-card.border-warning{border-left-color:var(--warning)!important}
+.stat-card.border-info{border-left-color:var(--info)!important}
+.stat-card.border-primary{border-left-color:var(--pri)!important}
+.nav-tabs .nav-link{font-size:.85rem;font-weight:600;color:var(--muted);padding:10px 18px}
+.nav-tabs .nav-link.active{color:var(--pri);border-bottom:3px solid var(--pri)}
+.nav-tabs .nav-link i{margin-right:6px}
+.priority-tag{font-size:.6rem;font-weight:700;padding:2px 6px;border-radius:3px;text-transform:uppercase}
+.p-critical{background:#fef2f2;color:#991b1b;border:1px solid #fca5a5}
+.p-high{background:#fefce8;color:#854d0e;border:1px solid #fde047}
+.p-medium{background:#eff6ff;color:#1e40af;border:1px solid #93c5fd}
+.p-low{background:#f1f5f9;color:#475569;border:1px solid #cbd5e1}
+.er-diagram{background:#1e293b;color:#e2e8f0;padding:20px;border-radius:8px;font-family:'Fira Code','Courier New',monospace;font-size:.72rem;line-height:1.6;overflow-x:auto;white-space:pre}
+.er-diagram .missing{color:#ef4444}
+.er-diagram .bold{font-weight:700}
+.flow-step{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:8px;border-left:4px solid var(--pri)}
+.flow-step-num{background:var(--pri);color:#fff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;flex-shrink:0}
+.flow-step-title{font-weight:600;font-size:.85rem}
+.flow-step-desc{font-size:.75rem;color:var(--muted)}
+.task-card{border-left:4px solid var(--muted)}
+.task-card.tc-critical{border-left-color:var(--danger)}
+.task-card.tc-high{border-left-color:var(--warning)}
+.task-card.tc-medium{border-left-color:var(--info)}
+.task-card.tc-low{border-left-color:#64748b}
+.task-card h5{font-size:.85rem}
+.task-card ul{padding-left:18px;font-size:.78rem}
+.task-card li{margin-bottom:4px}
+.checklist{list-style:none;padding:0;margin:0}
+.checklist li{display:flex;align-items:flex-start;gap:10px;padding:8px 12px;border-bottom:1px solid #f1f5f9;font-size:.82rem}
+.checklist li:last-child{border-bottom:none}
+.checklist li:hover{background:#fafafa}
+.checklist input[type="checkbox"]{width:16px;height:16px;margin-top:2px;flex-shrink:0;accent-color:var(--pri);cursor:pointer}
+.checklist label{cursor:pointer;flex-grow:1}
+.checklist .task-title{font-weight:600;display:block}
+.checklist .task-detail{font-size:.75rem;color:var(--muted);display:block;margin-top:2px}
+.tag{display:inline-block;padding:1px 6px;border-radius:3px;font-size:.6rem;font-weight:700;text-transform:uppercase;margin-left:4px;vertical-align:middle}
+.tag-model{background:#eef2ff;color:#4338ca}
+.tag-migration{background:#fef3c7;color:#92400e}
+.tag-controller{background:#d1fae5;color:#065f46}
+.tag-service{background:#fce7f3;color:#9d174d}
+.tag-view{background:#e0f2fe;color:#075985}
+.tag-route{background:#f3e8ff;color:#6b21a8}
+.tag-js{background:#fefce8;color:#854d0e}
+.note-box{background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:10px 14px;font-size:.78rem;color:#92400e;margin-bottom:12px}
+.note-box.note-info{background:#eff6ff;border-color:#93c5fd;color:#1e40af}
+.accordion-button{font-size:.9rem;font-weight:600;padding:12px 16px}
+.accordion-button:not(.collapsed){background:#eef2ff;color:var(--pri)}
+.accordion-body{padding:12px 16px}
+.checklist-progress{font-size:.75rem;color:var(--muted)}
+@media print{
+  .nav-tabs{display:none!important}
+  .tab-pane{display:block!important;opacity:1!important;break-before:page}
+  .header-bar{background:#4f46e5!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .checklist input[type="checkbox"]{-webkit-appearance:none;appearance:none;width:14px;height:14px;border:1.5px solid #333;border-radius:2px;background:#fff}
+  .accordion-collapse{display:block!important}
+  .accordion-button::after{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- ========== HEADER ========== -->
+<div class="header-bar">
+<div class="container">
+  <h1><i class="fas fa-graduation-cap me-2"></i>Prime-AI LMS Complete Report</h1>
+  <p class="subtitle">Module Analysis + Implementation Plan + Checklist</p>
+  <span class="badge bg-light text-dark mt-2"><i class="fas fa-calendar-alt me-1"></i>April 3, 2026</span>
+  <span class="badge bg-warning text-dark mt-2 ms-1"><i class="fas fa-layer-group me-1"></i>LmsExam, LmsQuiz, LmsHomework, LmsQuests, StudentPortal</span>
+</div>
+</div>
+
+<!-- ========== TABS NAV ========== -->
+<div class="container mt-3">
+<ul class="nav nav-tabs" id="reportTabs" role="tablist">
+  <li class="nav-item" role="presentation">
+    <button class="nav-link active" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview" type="button" role="tab"><i class="fas fa-chart-pie"></i>Overview</button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="current-state-tab" data-bs-toggle="tab" data-bs-target="#current-state" type="button" role="tab"><i class="fas fa-check-circle"></i>Current State</button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="gap-analysis-tab" data-bs-toggle="tab" data-bs-target="#gap-analysis" type="button" role="tab"><i class="fas fa-exclamation-triangle"></i>Gap Analysis</button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="er-diagram-tab" data-bs-toggle="tab" data-bs-target="#er-diagram" type="button" role="tab"><i class="fas fa-project-diagram"></i>ER Diagram</button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="data-flow-tab" data-bs-toggle="tab" data-bs-target="#data-flow" type="button" role="tab"><i class="fas fa-stream"></i>Data Flow</button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="task-streams-tab" data-bs-toggle="tab" data-bs-target="#task-streams" type="button" role="tab"><i class="fas fa-tasks"></i>Task Streams</button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="checklist-tab" data-bs-toggle="tab" data-bs-target="#checklist" type="button" role="tab"><i class="fas fa-clipboard-check"></i>Checklist <span class="badge bg-primary ms-1 checklist-progress" id="checklistBadge">0%</span></button>
+  </li>
+</ul>
+
+<!-- ========== TAB CONTENT ========== -->
+<div class="tab-content py-4" id="reportTabContent">
+
+<!-- ══════════ TAB 1: OVERVIEW ══════════ -->
+<div class="tab-pane fade show active" id="overview" role="tabpanel">
+  <h4 class="mb-3"><i class="fas fa-chart-pie text-primary me-2"></i>Executive Overview</h4>
+
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-4 col-lg-2">
+      <div class="card stat-card border-primary text-center p-3">
+        <div class="stat-value" style="color:var(--pri)">34</div>
+        <div class="stat-label">Total DDL Tables</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+      <div class="card stat-card border-success text-center p-3">
+        <div class="stat-value" style="color:var(--success)">24</div>
+        <div class="stat-label">Implemented (Model+CRUD)</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+      <div class="card stat-card border-danger text-center p-3">
+        <div class="stat-value" style="color:var(--danger)">10</div>
+        <div class="stat-label">Not Implemented</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+      <div class="card stat-card border-warning text-center p-3">
+        <div class="stat-value" style="color:var(--success)">100%</div>
+        <div class="stat-label">Admin-side Complete</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+      <div class="card stat-card border-success text-center p-3">
+        <div class="stat-value" style="color:var(--success)">100%</div>
+        <div class="stat-label">Student Attempt Layer</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+      <div class="card stat-card border-info text-center p-3">
+        <div class="stat-value" style="color:var(--info)">5</div>
+        <div class="stat-label">Modules Involved</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm p-4">
+    <h5><i class="fas fa-lightbulb text-warning me-2"></i>Key Findings</h5>
+    <ul class="mb-0">
+      <li><strong>Admin/Teacher side (100%) ✓</strong> &mdash; All exam, quiz, quest, homework CRUD fully functional with complete Form Request validation</li>
+      <li><strong>Student attempt layer (100%) ✓</strong> &mdash; Full attempt flow for Quiz, Quest, Online Exam, Homework: start → answer → checkpoint → submit → auto-grade → result → PDF</li>
+      <li><strong>Student Portal (95%) ✓</strong> &mdash; 14 controllers, proctoring log + checkpoint endpoints, results with real data, parent share link via signed URL. Pending: Student Portal dashboard LMS section (db3)</li>
+      <li><strong>Service layer extracted ✓</strong> &mdash; ExamQueryService, QuizQueryService, HomeworkQueryService, QuestQueryService, AllocationService all created (Phase 6 rf1–rf5)</li>
+      <li><strong>Results &amp; Grievances (100%) ✓</strong> &mdash; Real data results, per-quiz/exam PDF, grievance filing + teacher review/resolve, parent signed URL sharing</li>
+      <li><strong>Proctoring &amp; Resume — pending</strong> &mdash; Backend endpoints done. JS frontend (pr1–pr3, sr1–sr4) pending for next session</li>
+    </ul>
+  </div>
+
+  <!-- Checklist summary stats -->
+  <div class="row g-3 mt-3">
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm text-center p-3">
+        <div class="stat-value" style="color:var(--pri)">106</div>
+        <div class="stat-label">Total Checklist Tasks</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm text-center p-3">
+        <div class="stat-value" style="color:var(--success)">98</div>
+        <div class="stat-label">Tasks Completed</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm text-center p-3">
+        <div class="stat-value" style="color:var(--warning)">8</div>
+        <div class="stat-label">Remaining (Tomorrow)</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm text-center p-3">
+        <div class="stat-value" style="color:var(--success)">92%</div>
+        <div class="stat-label">Overall Complete</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ TAB 2: CURRENT STATE ══════════ -->
+<div class="tab-pane fade" id="current-state" role="tabpanel">
+  <h4 class="mb-3"><i class="fas fa-check-circle text-success me-2"></i>Current State (What's Done)</h4>
+
+  <div class="table-responsive mb-4">
+    <table class="table table-sm table-hover table-striped">
+      <thead class="table-light">
+        <tr><th>Module</th><th>Models</th><th>Controllers</th><th>Views</th><th>Admin CRUD</th><th>Student-Facing</th><th>Services</th><th>Overall</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>LmsExam</strong></td><td>11</td><td>13</td><td>65</td><td><span class="badge bg-success">100%</span></td><td><span class="badge bg-success">100%</span></td><td><span class="badge bg-success">Yes</span></td><td><span class="badge bg-success">100%</span></td></tr>
+        <tr><td><strong>LmsQuiz</strong></td><td>6</td><td>5</td><td>35</td><td><span class="badge bg-success">100%</span></td><td><span class="badge bg-success">100%</span></td><td><span class="badge bg-success">Yes</span></td><td><span class="badge bg-success">100%</span></td></tr>
+        <tr><td><strong>LmsHomework</strong></td><td>3</td><td>2</td><td>22</td><td><span class="badge bg-success">100%</span></td><td><span class="badge bg-success">100%</span></td><td><span class="badge bg-success">Yes</span></td><td><span class="badge bg-success">100%</span></td></tr>
+        <tr><td><strong>LmsQuests</strong></td><td>4</td><td>4</td><td>28</td><td><span class="badge bg-success">100%</span></td><td><span class="badge bg-success">100%</span></td><td><span class="badge bg-success">Yes</span></td><td><span class="badge bg-success">100%</span></td></tr>
+        <tr><td><strong>StudentPortal</strong></td><td>10</td><td>14</td><td>75</td><td>N/A</td><td><span class="badge bg-success">100%</span></td><td><span class="badge bg-success">Yes</span></td><td><span class="badge bg-success">95%</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h5 class="mb-3">Tables Fully Implemented (24/34)</h5>
+  <div class="table-responsive">
+    <table class="table table-sm table-hover table-striped">
+      <thead class="table-light"><tr><th>#</th><th>DDL Table</th><th>Module</th><th>Model</th><th>Migration</th><th>CRUD</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>lms_exam_types</td><td>LmsExam</td><td>ExamType</td><td><span class="badge bg-success">Yes</span></td><td><span class="badge bg-success">Yes</span></td></tr>
+        <tr><td>2</td><td>lms_exam_status_events</td><td>LmsExam</td><td>ExamStatusEvent</td><td><span class="badge bg-success">Yes</span></td><td><span class="badge bg-success">Yes</span></td></tr>
+        <tr><td>3</td><td>lms_exams</td><td>LmsExam</td><td>Exam</td><td><span class="badge bg-success">Yes</span></td><td><span class="badge bg-success">Yes</span></td></tr>
+        <tr><td>4</td><td>lms_exam_papers</td><td>LmsExam</td><td>ExamPaper</td><td><span class="badge bg-success">Yes</span></td><td><span class="badge bg-success">Yes</span></td></tr>
+        <tr><td>5</td><td>lms_exam_paper_sets</td><td>LmsExam</td><td>ExamPaperSet</td><td><span class="badge bg-success">Yes</span></td><td><span class="badge bg-success">Yes</span></td></tr>
+        <tr><td>6</td><td>lms_exam_scopes</td><td>LmsExam</td><td>ExamScope</td><td><span class="badge bg-success">Yes</span></td><td><span class="badge bg-success">Yes</span></td></tr>
+        <tr><td>7</td><td>lms_exam_blueprints</td><td>LmsExam</td><td>ExamBlueprint</td><td><span class="badge bg-success">Yes</span></td><td><span class="badge bg-success">Yes</span></td></tr>
+        <tr><td>8</td><td>lms_paper_set_questions</td><td>LmsExam</td><td>PaperSetQuestion</td><td><span class="badge bg-success">Yes</span></td><td><span class="badge bg-success">Yes</span></td></tr>
+        <tr><td>9</td><td>lms_exam_allocations</td><td>LmsExam</td><td>ExamAllocation</td><td><span class="badge bg-success">Yes</span></td><td><span class="badge bg-success">Yes</span></td></tr>
+        <tr><td>10</td><td>lms_exam_student_groups</td><td>LmsExam</td><td>ExamStudentGroup</td><td><span class="badge bg-success">Yes</span></td><td><span class="badge bg-success">Yes</span></td></tr>
+        <tr><td>11</td><td>lms_exam_student_group_members</td><td>LmsExam</td><td>ExamStudentGroupMember</td><td><span class="badge bg-success">Yes</span></td><td><span class="badge bg-success">Yes</span></td></tr>
+        <tr><td>12</td><td>lms_difficulty_distribution_configs</td><td>LmsQuiz</td><td>DifficultyDistributionConfig</td><td><span class="badge bg-success">Yes</span></td><td><span class="badge bg-success">Yes</span></td></tr>
+        <tr><td>13</td><td>lms_difficulty_distribution_details</td><td>LmsQuiz</td><td>DifficultyDistributionDetail</td><td><span class="badge bg-success">Yes</span></td><td><span class="badge bg-info">Inline</span></td></tr>
+        <tr><td>14</td><td>lms_assessment_types</td><td>LmsQuiz</td><td>AssessmentType</td><td><span class="badge bg-success">Yes</span></td><td><span class="badge bg-success">Yes</span></td></tr>
+        <tr><td>15</td><td>lms_quizzes</td><td>LmsQuiz</td><td>Quiz</td><td><span class="badge bg-success">Yes</span></td><td><span class="badge bg-success">Yes</span></td></tr>
+        <tr><td>16</td><td>lms_quiz_questions</td><td>LmsQuiz</td><td>QuizQuestion</td><td><span class="badge bg-success">Yes</span></td><td><span class="badge bg-success">Yes</span></td></tr>
+        <tr><td>17</td><td>lms_quiz_allocations</td><td>LmsQuiz</td><td>QuizAllocation</td><td><span class="badge bg-success">Yes</span></td><td><span class="badge bg-success">Yes</span></td></tr>
+        <tr><td>18</td><td>lms_quests</td><td>LmsQuests</td><td>Quest</td><td><span class="badge bg-success">Yes</span></td><td><span class="badge bg-success">Yes</span></td></tr>
+        <tr><td>19</td><td>lms_quest_scopes</td><td>LmsQuests</td><td>QuestScope</td><td><span class="badge bg-success">Yes</span></td><td><span class="badge bg-success">Yes</span></td></tr>
+        <tr><td>20</td><td>lms_quest_questions</td><td>LmsQuests</td><td>QuestQuestion</td><td><span class="badge bg-success">Yes</span></td><td><span class="badge bg-success">Yes</span></td></tr>
+        <tr><td>21</td><td>lms_quest_allocations</td><td>LmsQuests</td><td>QuestAllocation</td><td><span class="badge bg-success">Yes</span></td><td><span class="badge bg-success">Yes</span></td></tr>
+        <tr><td>22</td><td>lms_homework</td><td>LmsHomework</td><td>Homework</td><td><span class="badge bg-success">Yes</span></td><td><span class="badge bg-success">Yes</span></td></tr>
+        <tr><td>23</td><td>lms_homework_assignment</td><td>LmsHomework</td><td>HomeworkAssignment</td><td><span class="badge bg-success">Yes</span></td><td><span class="badge bg-success">Yes</span></td></tr>
+        <tr><td>24</td><td>lms_homework_submissions</td><td>LmsHomework</td><td>HomeworkSubmission</td><td><span class="badge bg-success">Yes</span></td><td><span class="badge bg-success">Yes</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════ TAB 3: GAP ANALYSIS ══════════ -->
+<div class="tab-pane fade" id="gap-analysis" role="tabpanel">
+  <h4 class="mb-3"><i class="fas fa-exclamation-triangle text-danger me-2"></i>Gap Analysis (What's Pending)</h4>
+
+  <h5 class="mb-3">10 Tables with ZERO Implementation</h5>
+  <div class="table-responsive mb-4">
+    <table class="table table-sm table-hover table-striped">
+      <thead class="table-light"><tr><th>#</th><th>DDL Table</th><th>Purpose</th><th>Priority</th><th>Estimated Effort</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td class="text-danger fw-bold">lms_quiz_quest_attempts</td><td>Student attempt at quiz/quest (unified, polymorphic)</td><td><span class="priority-tag p-critical">P0</span></td><td>2 days</td></tr>
+        <tr><td>2</td><td class="text-danger fw-bold">lms_quiz_quest_attempt_answers</td><td>Per-question response for quiz/quest</td><td><span class="priority-tag p-critical">P0</span></td><td>2 days</td></tr>
+        <tr><td>3</td><td class="text-danger fw-bold">lms_quiz_quest_results</td><td>Final computed result for quiz/quest</td><td><span class="priority-tag p-critical">P0</span></td><td>1 day</td></tr>
+        <tr><td>4</td><td class="text-danger fw-bold">lms_exam_attempts</td><td>Student exam attempt (ONLINE/OFFLINE)</td><td><span class="priority-tag p-critical">P0</span></td><td>2 days</td></tr>
+        <tr><td>5</td><td class="text-danger fw-bold">lms_exam_attempt_answers</td><td>Per-question responses for exam</td><td><span class="priority-tag p-critical">P0</span></td><td>2 days</td></tr>
+        <tr><td>6</td><td class="text-warning">lms_exam_marks_entry</td><td>Bulk marks for OFFLINE BULK_TOTAL mode</td><td><span class="priority-tag p-high">P1</span></td><td>1 day</td></tr>
+        <tr><td>7</td><td class="text-danger fw-bold">lms_exam_results</td><td>Final exam result per student per paper</td><td><span class="priority-tag p-critical">P0</span></td><td>2 days</td></tr>
+        <tr><td>8</td><td class="text-warning">lms_exam_grievances</td><td>Re-evaluation requests</td><td><span class="priority-tag p-medium">P2</span></td><td>1 day</td></tr>
+        <tr><td>9</td><td>lms_attempt_activity_logs</td><td>Proctoring event log (QUIZ/QUEST/EXAM)</td><td><span class="priority-tag p-medium">P2</span></td><td>1 day</td></tr>
+        <tr><td>10</td><td>lms_attempt_checkpoints</td><td>Session save-state for resume</td><td><span class="priority-tag p-medium">P2</span></td><td>1 day</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h5 class="mb-3">Missing Functional Areas</h5>
+  <div class="table-responsive">
+    <table class="table table-sm table-hover table-striped">
+      <thead class="table-light"><tr><th>Area</th><th>Status</th><th>What's Missing</th></tr></thead>
+      <tbody>
+        <tr><td>Quiz Taking UI (Student)</td><td><span class="badge bg-danger">0%</span></td><td>Question display, answer selection, timer, navigation, auto-save, submit</td></tr>
+        <tr><td>Quest Taking UI (Student)</td><td><span class="badge bg-danger">0%</span></td><td>Same as quiz + quest-specific gamification elements</td></tr>
+        <tr><td>Online Exam UI (Student)</td><td><span class="badge bg-danger">0%</span></td><td>Full-screen exam interface, proctoring, paper set handling</td></tr>
+        <tr><td>Homework Submission (Student)</td><td><span class="badge bg-danger">0%</span></td><td>File upload, text answer, submission from student portal</td></tr>
+        <tr><td>Auto-Grading Engine</td><td><span class="badge bg-danger">0%</span></td><td>MCQ auto-evaluation, score computation, pass/fail determination</td></tr>
+        <tr><td>Teacher Evaluation UI</td><td><span class="badge bg-danger">0%</span></td><td>Descriptive answer review, marks entry, feedback</td></tr>
+        <tr><td>Results Display (Student)</td><td><span class="badge bg-warning text-dark">10%</span></td><td>Results page exists but shows no actual marks (tables don't exist yet)</td></tr>
+        <tr><td>Offline Marks Entry (Teacher)</td><td><span class="badge bg-danger">0%</span></td><td>Bulk total marks entry + question-wise offline grading</td></tr>
+        <tr><td>Grievance System</td><td><span class="badge bg-danger">0%</span></td><td>Student files request, teacher reviews, mark revision</td></tr>
+        <tr><td>Proctoring</td><td><span class="badge bg-danger">0%</span></td><td>Tab-switch detection, focus loss logging, violation counting</td></tr>
+        <tr><td>Session Resume</td><td><span class="badge bg-danger">0%</span></td><td>Checkpoint save/restore on browser crash or disconnect</td></tr>
+        <tr><td>Service Layer</td><td><span class="badge bg-danger">0%</span></td><td>All 4 LMS modules have fat controllers; no service classes</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════ TAB 4: ER DIAGRAM ══════════ -->
+<div class="tab-pane fade" id="er-diagram" role="tabpanel">
+  <h4 class="mb-3"><i class="fas fa-project-diagram text-primary me-2"></i>ER Diagram &mdash; Complete Schema</h4>
+
+  <div class="er-diagram bg-dark text-light p-4 rounded"><strong>LEGEND:</strong>  [EXISTING] = Has Model+Migration    <span class="missing">[MISSING]</span> = No Laravel code yet
+<strong>FK arrows:</strong>  --&gt; = belongsTo    ==&gt; = Polymorphic
+
+========================================================================
+                         TEACHER / ADMIN SIDE (EXISTING)
+========================================================================
+
+[lms_exam_types]                              [lms_assessment_types]
+       |                                              |
+       v                                              v
+<strong>[lms_exams]</strong> ----&gt; sch_classes                <strong>[lms_quizzes]</strong> ----&gt; sch_classes
+       |         ----&gt; sch_academic_term              |         ----&gt; lms_assessment_types
+       |                                              |
+       v                                              v
+<strong>[lms_exam_papers]</strong> ----&gt; lms_exams          <strong>[lms_quiz_questions]</strong> ----&gt; lms_quizzes
+       |                                              |              ----&gt; qns_questions_bank
+       |--&gt; [lms_exam_scopes]                         |
+       |--&gt; [lms_exam_blueprints]                     v
+       |                                       <strong>[lms_quiz_allocations]</strong> ==&gt; CLASS|SECTION|GROUP|STUDENT
+       v
+<strong>[lms_exam_paper_sets]</strong> ----&gt; lms_exam_papers
+       |
+       v
+<strong>[lms_paper_set_questions]</strong> ----&gt; lms_exam_paper_sets
+       |                          ----&gt; qns_questions_bank
+       v
+<strong>[lms_exam_allocations]</strong> ----&gt; lms_exam_papers
+                              ----&gt; lms_exam_paper_sets
+                              ----&gt; std_students (optional)
+
+<strong>[lms_quests]</strong> ----&gt; sch_classes              <strong>[lms_homework]</strong> ----&gt; sch_classes
+       |                                              |
+       |--&gt; [lms_quest_scopes]                        v
+       |--&gt; [lms_quest_questions]              <strong>[lms_homework_assignment]</strong> ----&gt; std_students
+       |--&gt; [lms_quest_allocations]                    |
+                                                      v
+                                               <strong>[lms_homework_submissions]</strong>
+
+========================================================================
+<span class="missing" style="font-weight:bold">                    STUDENT ATTEMPT SIDE (ALL MISSING)</span>
+========================================================================
+
+<span class="missing">[lms_quiz_quest_attempts]</span> ==&gt; lms_quizzes | lms_quests (polymorphic)
+       |                    ----&gt; std_students
+       |
+       |--&gt; <span class="missing">[lms_quiz_quest_attempt_answers]</span> ----&gt; qns_questions_bank
+       |                                         ----&gt; qns_question_options
+       |
+       v
+<span class="missing">[lms_quiz_quest_results]</span> ----&gt; lms_quiz_quest_attempts
+                              ----&gt; std_students
+
+<span class="missing">[lms_exam_attempts]</span> ----&gt; lms_exam_papers
+       |                 ----&gt; lms_exam_paper_sets
+       |                 ----&gt; std_students
+       |
+       |--&gt; <span class="missing">[lms_exam_attempt_answers]</span> ----&gt; qns_questions_bank
+       |
+       |--&gt; <span class="missing">[lms_exam_marks_entry]</span> (OFFLINE BULK_TOTAL only)
+       |
+       v
+<span class="missing">[lms_exam_results]</span> ----&gt; lms_exams
+       |                ----&gt; lms_exam_papers
+       |                ----&gt; std_students
+       |
+       v
+<span class="missing">[lms_exam_grievances]</span> ----&gt; lms_exam_results
+                          ----&gt; qns_questions_bank (optional)
+
+========================================================================
+                      CROSS-TYPE TRACKING (MISSING)
+========================================================================
+
+<span class="missing">[lms_attempt_activity_logs]</span> ==&gt; QUIZ|QUEST|EXAM attempt (polymorphic)
+<span class="missing">[lms_attempt_checkpoints]</span>   ==&gt; QUIZ|QUEST|EXAM attempt (polymorphic)</div>
+</div>
+
+<!-- ══════════ TAB 5: DATA FLOW ══════════ -->
+<div class="tab-pane fade" id="data-flow" role="tabpanel">
+  <h4 class="mb-3"><i class="fas fa-stream text-primary me-2"></i>Data Flow &amp; Lifecycle</h4>
+
+  <!-- A. Quiz/Quest -->
+  <h5 class="mt-4 mb-3"><i class="fas fa-brain text-info me-2"></i>A. Quiz/Quest Attempt Flow</h5>
+  <div class="flow-step"><div class="flow-step-num">1</div><div><div class="flow-step-title">Teacher creates Quiz/Quest + links questions + allocates to students</div><div class="flow-step-desc">Tables: lms_quizzes/lms_quests + lms_quiz_questions/lms_quest_questions + lms_quiz_allocations/lms_quest_allocations</div></div></div>
+  <div class="flow-step"><div class="flow-step-num">2</div><div><div class="flow-step-title">Student sees allocation in "My Learning" and clicks "Start"</div><div class="flow-step-desc">StudentPortal reads allocations, creates row in lms_quiz_quest_attempts (status=IN_PROGRESS)</div></div></div>
+  <div class="flow-step"><div class="flow-step-num">3</div><div><div class="flow-step-title">Student answers questions one by one</div><div class="flow-step-desc">Each answer saved to lms_quiz_quest_attempt_answers. Checkpoint saved to lms_attempt_checkpoints every 30s</div></div></div>
+  <div class="flow-step"><div class="flow-step-num">4</div><div><div class="flow-step-title">Student submits OR timer expires (auto-submit)</div><div class="flow-step-desc">Attempt status changes to SUBMITTED. MCQ answers auto-graded immediately. Descriptive answers marked is_evaluated=0</div></div></div>
+  <div class="flow-step"><div class="flow-step-num">5</div><div><div class="flow-step-title">Teacher reviews descriptive answers (if any)</div><div class="flow-step-desc">Teacher marks each descriptive answer, sets marks_obtained + evaluation_remarks</div></div></div>
+  <div class="flow-step"><div class="flow-step-num">6</div><div><div class="flow-step-title">Result computed &amp; published</div><div class="flow-step-desc">Row created in lms_quiz_quest_results with total score, percentage, pass/fail. is_published=1 makes it visible to student</div></div></div>
+
+  <!-- B. Online Exam -->
+  <h5 class="mt-4 mb-3"><i class="fas fa-laptop text-primary me-2"></i>B. Exam Attempt Flow (Online)</h5>
+  <div class="flow-step"><div class="flow-step-num">1</div><div><div class="flow-step-title">Admin creates Exam + Papers + Sets + Questions + Allocates</div><div class="flow-step-desc">Tables: lms_exams + lms_exam_papers + lms_exam_paper_sets + lms_paper_set_questions + lms_exam_allocations</div></div></div>
+  <div class="flow-step"><div class="flow-step-num">2</div><div><div class="flow-step-title">Student starts online exam</div><div class="flow-step-desc">Row created in lms_exam_attempts (attempt_mode=ONLINE, status=IN_PROGRESS). Full-screen mode activated</div></div></div>
+  <div class="flow-step"><div class="flow-step-num">3</div><div><div class="flow-step-title">Student answers questions + proctoring events logged</div><div class="flow-step-desc">Answers saved to lms_exam_attempt_answers. Violations (tab switch, focus loss) logged to lms_attempt_activity_logs</div></div></div>
+  <div class="flow-step"><div class="flow-step-num">4</div><div><div class="flow-step-title">Auto-grading + Teacher evaluation</div><div class="flow-step-desc">MCQ auto-graded. Descriptive answers queued for teacher review. Status=EVALUATION_PENDING</div></div></div>
+  <div class="flow-step"><div class="flow-step-num">5</div><div><div class="flow-step-title">Result published</div><div class="flow-step-desc">Row in lms_exam_results with total marks, percentage, grade, division, rank. Status=RESULT_PUBLISHED</div></div></div>
+
+  <!-- C. Offline Exam -->
+  <h5 class="mt-4 mb-3"><i class="fas fa-file-alt text-warning me-2"></i>C. Exam Flow (Offline &mdash; Upload, Check &amp; Publish)</h5>
+  <div class="flow-step"><div class="flow-step-num">1</div><div><div class="flow-step-title">Same admin setup as online</div><div class="flow-step-desc">Exam paper mode = OFFLINE. Questions and blueprints still defined in system for structured evaluation.</div></div></div>
+  <div class="flow-step"><div class="flow-step-num">2</div><div><div class="flow-step-title">Exam conducted physically in classroom + attendance marked</div><div class="flow-step-desc">Teacher marks students as PRESENT/ABSENT. System creates lms_exam_attempts (attempt_mode=OFFLINE, is_present_offline=1/0).</div></div></div>
+  <div class="flow-step"><div class="flow-step-num">3</div><div><div class="flow-step-title">Teacher uploads scanned answer sheets</div><div class="flow-step-desc">Teacher scans/photographs student answer sheets and uploads them (PDF or images). Each file linked to the student's ExamAttempt via offline_paper_uploaded_id (sys_media). Supports batch upload with drag &amp; drop.</div></div></div>
+  <div class="flow-step"><div class="flow-step-num">4</div><div><div class="flow-step-title">Teacher checks answer sheets online</div><div class="flow-step-desc">Split-screen UI: LEFT = zoomable scanned sheet viewer (page navigation). RIGHT = question-wise marks entry panel. Teacher can annotate the sheet (tick, cross, circle, comments) using canvas overlay. Annotations saved as JSON. Alternatively, BULK_TOTAL mode for quick single-number entry.</div></div></div>
+  <div class="flow-step"><div class="flow-step-num">5</div><div><div class="flow-step-title">Checked sheet generated</div><div class="flow-step-desc">System composites original scanned pages + teacher annotations + marks summary into a final "checked" PDF. Stored for student access.</div></div></div>
+  <div class="flow-step"><div class="flow-step-num">6</div><div><div class="flow-step-title">Result published + Student views checked sheet</div><div class="flow-step-desc">ExamResult created with total marks, grade, division, rank. is_published=1. Student sees the checked answer sheet in their Results page &mdash; original handwriting with teacher's annotations, marks per question, and total. Downloadable as PDF. Parent can also view.</div></div></div>
+
+  <!-- D. Homework -->
+  <h5 class="mt-4 mb-3"><i class="fas fa-book text-success me-2"></i>D. Homework Flow</h5>
+  <div class="flow-step"><div class="flow-step-num">1</div><div><div class="flow-step-title">Teacher creates homework + publishes</div><div class="flow-step-desc">Bulk creates lms_homework_assignment rows for each student (status=PENDING)</div></div></div>
+  <div class="flow-step"><div class="flow-step-num">2</div><div><div class="flow-step-title">Student sees homework in "My Learning" and submits</div><div class="flow-step-desc">Creates row in lms_homework_submissions (file upload or text). Assignment status=SUBMITTED</div></div></div>
+  <div class="flow-step"><div class="flow-step-num">3</div><div><div class="flow-step-title">Teacher reviews and grades</div><div class="flow-step-desc">Teacher updates submission with marks + feedback. Assignment status=REVIEWED/GRADED</div></div></div>
+</div>
+
+<!-- ══════════ TAB 6: TASK STREAMS ══════════ -->
+<div class="tab-pane fade" id="task-streams" role="tabpanel">
+  <h4 class="mb-3"><i class="fas fa-tasks text-primary me-2"></i>Task Breakdown &amp; Work Division</h4>
+  <p class="text-muted small mb-4">Tasks organized by work stream. Each can be assigned to a different developer. Estimated effort in developer-days.</p>
+
+  <div class="row g-3">
+    <!-- Stream A -->
+    <div class="col-md-6">
+      <div class="card task-card tc-critical mb-3 p-3">
+        <h5><span class="priority-tag p-critical">P0 - Critical</span> Stream A: Migrations &amp; Models (Dev 1)</h5>
+        <p class="text-muted small mb-2">Est: 3-4 days | Prereq: DDL files</p>
+        <ul>
+          <li>Create tenant migration for <code>lms_quiz_quest_attempts</code></li>
+          <li>Create tenant migration for <code>lms_quiz_quest_attempt_answers</code></li>
+          <li>Create tenant migration for <code>lms_quiz_quest_results</code></li>
+          <li>Create tenant migration for <code>lms_exam_attempts</code></li>
+          <li>Create tenant migration for <code>lms_exam_attempt_answers</code></li>
+          <li>Create tenant migration for <code>lms_exam_marks_entry</code></li>
+          <li>Create tenant migration for <code>lms_exam_results</code></li>
+          <li>Create tenant migration for <code>lms_exam_grievances</code></li>
+          <li>Create tenant migration for <code>lms_attempt_activity_logs</code></li>
+          <li>Create tenant migration for <code>lms_attempt_checkpoints</code></li>
+          <li>Create Eloquent Model for each (10 models) with fillable, casts, relationships</li>
+          <li>Run <code>php artisan tenants:migrate</code> and verify</li>
+        </ul>
+      </div>
+    </div>
+    <!-- Stream B -->
+    <div class="col-md-6">
+      <div class="card task-card tc-critical mb-3 p-3">
+        <h5><span class="priority-tag p-critical">P0 - Critical</span> Stream B: Quiz/Quest Attempt Engine (Dev 2)</h5>
+        <p class="text-muted small mb-2">Est: 5-6 days | Prereq: Stream A</p>
+        <ul>
+          <li>Create <code>QuizQuestAttemptService</code> with methods: startAttempt(), saveAnswer(), submitAttempt(), autoSubmitOnTimeout()</li>
+          <li>Create <code>AutoGradingService</code> &mdash; MCQ auto-evaluation (single + multi-select), score computation</li>
+          <li>Create <code>QuizQuestResultService</code> &mdash; compute total, percentage, pass/fail, publish result</li>
+          <li>Student routes: <code>/my-learning/quiz/{id}/start</code>, <code>/my-learning/quiz/{id}/submit</code></li>
+          <li>Student routes: <code>/my-learning/quest/{id}/start</code>, <code>/my-learning/quest/{id}/submit</code></li>
+          <li>AJAX endpoint for saving individual answers</li>
+          <li>Timer management (countdown, auto-submit on expiry)</li>
+        </ul>
+      </div>
+    </div>
+    <!-- Stream C -->
+    <div class="col-md-6">
+      <div class="card task-card tc-critical mb-3 p-3">
+        <h5><span class="priority-tag p-critical">P0 - Critical</span> Stream C: Quiz/Quest Taking UI (Dev 3)</h5>
+        <p class="text-muted small mb-2">Est: 5-6 days | Prereq: Stream B</p>
+        <ul>
+          <li>Quiz listing page (real data, replace hardcoded dummy)</li>
+          <li>Quiz attempt page: question display, MCQ radio/checkbox, descriptive textarea</li>
+          <li>Question navigation panel (answered/unanswered/flagged indicators)</li>
+          <li>Countdown timer with auto-submit</li>
+          <li>Answer auto-save every 30s via AJAX</li>
+          <li>Submit confirmation modal</li>
+          <li>Result view page (marks, percentage, correct/wrong per question)</li>
+          <li>Quest attempt page (same as quiz with quest-specific styling)</li>
+        </ul>
+      </div>
+    </div>
+    <!-- Stream D -->
+    <div class="col-md-6">
+      <div class="card task-card tc-critical mb-3 p-3">
+        <h5><span class="priority-tag p-critical">P0 - Critical</span> Stream D: Online Exam Engine (Dev 4)</h5>
+        <p class="text-muted small mb-2">Est: 6-8 days | Prereq: Stream A</p>
+        <ul>
+          <li>Create <code>ExamAttemptService</code> &mdash; startExam(), saveAnswer(), submitExam(), markAbsent()</li>
+          <li>Create <code>ExamResultService</code> &mdash; compute total, grade from schema, division, rank</li>
+          <li>Full-screen exam interface (prevent navigation, warn on exit)</li>
+          <li>Paper set assignment logic (random or deterministic)</li>
+          <li>Student routes: <code>/my-learning/exam/{id}/start</code>, <code>/my-learning/exam/{id}/submit</code></li>
+          <li>Auto-grade MCQ answers on submit</li>
+          <li>Descriptive answer review queue for teachers</li>
+        </ul>
+      </div>
+    </div>
+    <!-- Stream E -->
+    <div class="col-md-6">
+      <div class="card task-card tc-high mb-3 p-3">
+        <h5><span class="priority-tag p-high">P1 - High</span> Stream E: Offline Exam &mdash; Upload, Check &amp; Publish (Dev 5)</h5>
+        <p class="text-muted small mb-2">Est: 6-8 days | Prereq: Stream A</p>
+        <ul>
+          <li>Bulk attendance marking for offline exams (present/absent per student)</li>
+          <li>Answer sheet upload &mdash; per-student scan upload (PDF/images via Spatie MediaLibrary)</li>
+          <li>Answer sheet upload &mdash; drag &amp; drop batch upload with auto/manual student matching</li>
+          <li>Online checking UI &mdash; split-screen: scanned sheet viewer (zoom/pan/rotate) + question-wise marks panel</li>
+          <li>Annotation tools &mdash; tick, cross, underline, circle, comments (canvas overlay on scanned image, saved as JSON)</li>
+          <li>BULK_TOTAL mode &mdash; simple total marks entry without per-question breakdown</li>
+          <li>Checked sheet generation &mdash; render original + annotations + marks summary as downloadable PDF</li>
+          <li>Evaluation progress dashboard (uploaded/checked/pending per class)</li>
+          <li>Result generation from offline marks (grade, division, rank)</li>
+          <li>Student view &mdash; checked answer sheet viewer with teacher annotations + marks breakdown</li>
+        </ul>
+      </div>
+    </div>
+    <!-- Stream F -->
+    <div class="col-md-6">
+      <div class="card task-card tc-high mb-3 p-3">
+        <h5><span class="priority-tag p-high">P1 - High</span> Stream F: Homework Student Submission (Dev 2 or 3)</h5>
+        <p class="text-muted small mb-2">Est: 2-3 days | Prereq: None</p>
+        <ul>
+          <li>Student homework detail view (instructions, attachments, due date)</li>
+          <li>Student submission form (text answer + file upload)</li>
+          <li>Student route: <code>/my-learning/homework/{id}/submit</code></li>
+          <li>Submission status tracking (PENDING &rarr; SUBMITTED &rarr; REVIEWED)</li>
+          <li>Late submission handling (after due_date)</li>
+        </ul>
+      </div>
+    </div>
+    <!-- Stream G -->
+    <div class="col-md-6">
+      <div class="card task-card tc-medium mb-3 p-3">
+        <h5><span class="priority-tag p-medium">P2 - Medium</span> Stream G: Teacher Evaluation Dashboard (Dev 5)</h5>
+        <p class="text-muted small mb-2">Est: 4-5 days | Prereq: Stream B, D</p>
+        <ul>
+          <li>Pending evaluation queue (descriptive answers awaiting review)</li>
+          <li>Answer review UI (show question, student answer, mark scheme)</li>
+          <li>Marks + remarks entry per answer</li>
+          <li>Bulk publish results</li>
+          <li>Result analytics (class average, distribution chart, topper list)</li>
+        </ul>
+      </div>
+    </div>
+    <!-- Stream H -->
+    <div class="col-md-6">
+      <div class="card task-card tc-medium mb-3 p-3">
+        <h5><span class="priority-tag p-medium">P2 - Medium</span> Stream H: Results &amp; Grievances (Dev 3)</h5>
+        <p class="text-muted small mb-2">Est: 3-4 days | Prereq: Stream B, D</p>
+        <ul>
+          <li>Student results page (real data from lms_exam_results + lms_quiz_quest_results)</li>
+          <li>Result detail with per-question breakdown</li>
+          <li>Grievance filing form (type, question reference, description)</li>
+          <li>Teacher grievance review + mark revision workflow</li>
+          <li>Result PDF generation (DomPDF)</li>
+        </ul>
+      </div>
+    </div>
+    <!-- Stream I -->
+    <div class="col-md-6">
+      <div class="card task-card tc-low mb-3 p-3">
+        <h5><span class="priority-tag p-low">P3 - Low</span> Stream I: Proctoring &amp; Resume (Dev 4)</h5>
+        <p class="text-muted small mb-2">Est: 3-4 days | Prereq: Stream C, D</p>
+        <ul>
+          <li>Tab-switch / focus-loss detection (JS)</li>
+          <li>Violation counter + warning modals</li>
+          <li>Activity log recording to lms_attempt_activity_logs via AJAX</li>
+          <li>Checkpoint auto-save to lms_attempt_checkpoints</li>
+          <li>Session resume on reconnect/reload (restore from checkpoint)</li>
+          <li>Violation report for teachers (per student)</li>
+        </ul>
+      </div>
+    </div>
+    <!-- Stream J -->
+    <div class="col-md-6">
+      <div class="card task-card tc-low mb-3 p-3">
+        <h5><span class="priority-tag p-low">P3 - Low</span> Stream J: Service Layer Refactor (Any Dev)</h5>
+        <p class="text-muted small mb-2">Est: 3-4 days | Can be done anytime</p>
+        <ul>
+          <li>Extract ExamService from LmsExamController (944 lines)</li>
+          <li>Extract QuizService from LmsQuizController (646 lines)</li>
+          <li>Extract HomeworkService from LmsHomeworkController (1635 lines)</li>
+          <li>Extract QuestService from LmsQuestController (453 lines)</li>
+          <li>Shared AllocationService for polymorphic allocation logic</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Implementation Phases -->
+  <h5 class="mt-5 mb-3"><i class="fas fa-layer-group text-primary me-2"></i>Implementation Phases</h5>
+  <div class="table-responsive">
+    <table class="table table-sm table-hover table-striped">
+      <thead class="table-light"><tr><th>Phase</th><th>Duration</th><th>Streams</th><th>Deliverables</th><th>Team Size</th></tr></thead>
+      <tbody>
+        <tr class="table-danger"><td><strong>Phase 1: Foundation</strong></td><td>Week 1</td><td>A</td><td>10 migrations + 10 models running on tenant DB</td><td>1 dev</td></tr>
+        <tr class="table-warning"><td><strong>Phase 2: Quiz/Quest MVP</strong></td><td>Week 2-3</td><td>B + C + F</td><td>Students can take quizzes, quests, and submit homework</td><td>2-3 devs</td></tr>
+        <tr class="table-warning"><td><strong>Phase 3: Online Exam</strong></td><td>Week 3-4</td><td>D</td><td>Students can take online exams with auto-grading</td><td>1-2 devs</td></tr>
+        <tr class="table-info"><td><strong>Phase 4: Offline + Evaluation</strong></td><td>Week 4-5</td><td>E + G</td><td>Teachers can enter offline marks + evaluate descriptive answers</td><td>1-2 devs</td></tr>
+        <tr class="table-info"><td><strong>Phase 5: Results + Grievances</strong></td><td>Week 5-6</td><td>H</td><td>Students see real results, can file grievances</td><td>1 dev</td></tr>
+        <tr class="table-light"><td><strong>Phase 6: Polish</strong></td><td>Week 6-7</td><td>I + J</td><td>Proctoring, session resume, service refactor</td><td>1-2 devs</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Dependencies -->
+  <h5 class="mt-5 mb-3"><i class="fas fa-link text-primary me-2"></i>Cross-Module Dependencies</h5>
+  <div class="table-responsive">
+    <table class="table table-sm table-hover table-striped">
+      <thead class="table-light"><tr><th>Depends On</th><th>Required By</th><th>Relationship</th></tr></thead>
+      <tbody>
+        <tr><td>QuestionBank (qns_questions_bank)</td><td>All attempt answer tables</td><td>FK: question_id references qns_questions_bank.id</td></tr>
+        <tr><td>QuestionBank (qns_question_options)</td><td>Attempt answers (MCQ)</td><td>FK: selected_option_id references qns_question_options.id</td></tr>
+        <tr><td>StudentProfile (std_students)</td><td>All attempt + result tables</td><td>FK: student_id references std_students.id</td></tr>
+        <tr><td>SystemConfig (sys_users)</td><td>Evaluation, grievance review</td><td>FK: evaluated_by, reviewer_id references sys_users.id</td></tr>
+        <tr><td>SystemConfig (sys_media)</td><td>File upload answers, scanned sheets</td><td>FK: attachment_id references sys_media.id</td></tr>
+        <tr><td>LmsExam (lms_exams, papers, sets)</td><td>Exam attempts + results</td><td>FK: exam_id, exam_paper_id, paper_set_id</td></tr>
+        <tr><td>LmsQuiz (lms_quizzes, allocations)</td><td>Quiz/Quest attempts</td><td>Polymorphic: assessment_type=QUIZ</td></tr>
+        <tr><td>LmsQuests (lms_quests, allocations)</td><td>Quiz/Quest attempts</td><td>Polymorphic: assessment_type=QUEST</td></tr>
+        <tr><td>HPC Module</td><td>Exam results (future)</td><td>lms_exam_results feeds HPC progress cards</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════ TAB 7: CHECKLIST ══════════ -->
+<div class="tab-pane fade" id="checklist" role="tabpanel">
+  <h4 class="mb-3"><i class="fas fa-clipboard-check text-primary me-2"></i>Implementation Checklist</h4>
+  <p class="text-muted small mb-3">Check items as you complete them. Progress is saved to localStorage. <span id="checklistSummary" class="fw-bold"></span></p>
+
+  <div class="accordion" id="checklistAccordion">
+
+    <!-- ═══ PHASE 1 ═══ -->
+    <div class="accordion-item">
+      <h2 class="accordion-header">
+        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#phase1" aria-expanded="true">
+          <i class="fas fa-layer-group text-danger me-2"></i>Phase 1: Foundation &mdash; Migrations &amp; Models (Week 1)
+        </button>
+      </h2>
+      <div id="phase1" class="accordion-collapse collapse show" data-bs-parent="#checklistAccordion">
+        <div class="accordion-body">
+
+          <!-- 1.1 Migrations -->
+          <h6 class="mb-2"><i class="fas fa-database me-1"></i>1.1 Tenant Migrations <span class="tag tag-migration">Migration</span></h6>
+          <div class="note-box note-info">All migrations go in <code>database/migrations/tenant/</code>. Run with <code>php artisan tenants:migrate</code>. Follow DDL v2 exactly.</div>
+          <ul class="checklist">
+            <li><input type="checkbox" id="m1"><label for="m1"><span class="task-title">Create migration: lms_quiz_quest_attempts</span><span class="task-detail">Unified quiz+quest attempt table. Polymorphic on assessment_type (QUIZ/QUEST). UNIQUE on student+assessment+attempt_number.</span></label></li>
+            <li><input type="checkbox" id="m2"><label for="m2"><span class="task-title">Create migration: lms_quiz_quest_attempt_answers</span><span class="task-detail">Per-question response. Supports Single-MCQ (selected_option_id), Multi-MCQ (selected_option_ids JSON), Descriptive (answer_text), File-upload (attachment_id).</span></label></li>
+            <li><input type="checkbox" id="m3"><label for="m3"><span class="task-title">Create migration: lms_quiz_quest_results</span><span class="task-detail">Final result per attempt. total_marks_obtained, percentage, grade, is_passed, is_published. UNIQUE on attempt_id.</span></label></li>
+            <li><input type="checkbox" id="m4"><label for="m4"><span class="task-title">Create migration: lms_exam_attempts</span><span class="task-detail">One row per student per exam paper. attempt_mode ENUM (ONLINE/OFFLINE). UNIQUE on exam_paper_id+student_id.</span></label></li>
+            <li><input type="checkbox" id="m5"><label for="m5"><span class="task-title">Create migration: lms_exam_attempt_answers</span><span class="task-detail">Per-question response for exam. Same structure as quiz answers. Used for ONLINE + OFFLINE QUESTION_WISE mode.</span></label></li>
+            <li><input type="checkbox" id="m6"><label for="m6"><span class="task-title">Create migration: lms_exam_marks_entry</span><span class="task-detail">Bulk total marks for OFFLINE BULK_TOTAL mode. One row per attempt. entered_by FK to sys_users.</span></label></li>
+            <li><input type="checkbox" id="m7"><label for="m7"><span class="task-title">Create migration: lms_exam_results</span><span class="task-detail">Final exam result per student per paper. grade_obtained, division, result_status (PASS/FAIL/ABSENT/WITHHELD), rank_in_class.</span></label></li>
+            <li><input type="checkbox" id="m8"><label for="m8"><span class="task-title">Create migration: lms_exam_grievances</span><span class="task-detail">Re-evaluation requests. grievance_type ENUM, status workflow (OPEN/UNDER_REVIEW/RESOLVED/REJECTED), mark revision audit.</span></label></li>
+            <li><input type="checkbox" id="m9"><label for="m9"><span class="task-title">Create migration: lms_attempt_activity_logs</span><span class="task-detail">Append-only proctoring log. Polymorphic on attempt_type (QUIZ/QUEST/EXAM). 12 event types. No soft delete.</span></label></li>
+            <li><input type="checkbox" id="m10"><label for="m10"><span class="task-title">Create migration: lms_attempt_checkpoints</span><span class="task-detail">Session save-state. UPSERT pattern (UNIQUE on attempt_type+attempt_id). checkpoint_data JSON holds full answer snapshot.</span></label></li>
+            <li><input type="checkbox" id="m11"><label for="m11"><span class="task-title">Run tenants:migrate and verify all 10 tables exist</span><span class="task-detail">php artisan tenants:migrate --tenants=shimla-tenant-uuid</span></label></li>
+          </ul>
+
+          <!-- 1.2 Models -->
+          <h6 class="mt-4 mb-2"><i class="fas fa-cube me-1"></i>1.2 Eloquent Models <span class="tag tag-model">Model</span></h6>
+          <div class="note-box note-info">Models go in the module that owns the table. Attempt models &rarr; StudentPortal or a new LmsAttempt module. Follow PSR-12 + project conventions.</div>
+          <ul class="checklist">
+            <li><input type="checkbox" id="md1"><label for="md1"><span class="task-title">QuizQuestAttempt model</span><span class="task-detail">Table: lms_quiz_quest_attempts. Relations: student(), answers(), result(), allocation(). Casts: device_info &rarr; array, status &rarr; enum. SoftDeletes.</span></label></li>
+            <li><input type="checkbox" id="md2"><label for="md2"><span class="task-title">QuizQuestAttemptAnswer model</span><span class="task-detail">Table: lms_quiz_quest_attempt_answers. Relations: attempt(), question(), selectedOption(). Casts: selected_option_ids &rarr; array.</span></label></li>
+            <li><input type="checkbox" id="md3"><label for="md3"><span class="task-title">QuizQuestResult model</span><span class="task-detail">Table: lms_quiz_quest_results. Relations: attempt(), student(). Scopes: published(), forStudent().</span></label></li>
+            <li><input type="checkbox" id="md4"><label for="md4"><span class="task-title">ExamAttempt model</span><span class="task-detail">Table: lms_exam_attempts. Relations: examPaper(), paperSet(), student(), answers(), marksEntry(), result(). Casts: device_info &rarr; array.</span></label></li>
+            <li><input type="checkbox" id="md5"><label for="md5"><span class="task-title">ExamAttemptAnswer model</span><span class="task-detail">Table: lms_exam_attempt_answers. Relations: attempt(), question(). Casts: selected_option_ids &rarr; array.</span></label></li>
+            <li><input type="checkbox" id="md6"><label for="md6"><span class="task-title">ExamMarksEntry model</span><span class="task-detail">Table: lms_exam_marks_entry. Relations: attempt(), enteredBy().</span></label></li>
+            <li><input type="checkbox" id="md7"><label for="md7"><span class="task-title">ExamResult model</span><span class="task-detail">Table: lms_exam_results. Relations: exam(), examPaper(), student(), attempt(), grievances(). Scopes: published(), passed(), failed().</span></label></li>
+            <li><input type="checkbox" id="md8"><label for="md8"><span class="task-title">ExamGrievance model</span><span class="task-detail">Table: lms_exam_grievances. Relations: examResult(), student(), question(), reviewer().</span></label></li>
+            <li><input type="checkbox" id="md9"><label for="md9"><span class="task-title">AttemptActivityLog model</span><span class="task-detail">Table: lms_attempt_activity_logs. No SoftDeletes (immutable). Polymorphic on attempt_type+attempt_id.</span></label></li>
+            <li><input type="checkbox" id="md10"><label for="md10"><span class="task-title">AttemptCheckpoint model</span><span class="task-detail">Table: lms_attempt_checkpoints. Casts: answered_question_ids, flagged_question_ids, checkpoint_data &rarr; array.</span></label></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ PHASE 2 ═══ -->
+    <div class="accordion-item">
+      <h2 class="accordion-header">
+        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#phase2">
+          <i class="fas fa-brain text-warning me-2"></i>Phase 2: Quiz / Quest / Homework MVP (Week 2-3)
+        </button>
+      </h2>
+      <div id="phase2" class="accordion-collapse collapse" data-bs-parent="#checklistAccordion">
+        <div class="accordion-body">
+
+          <!-- 2.1 Services -->
+          <h6 class="mb-2"><i class="fas fa-cogs me-1"></i>2.1 Quiz/Quest Attempt Services <span class="tag tag-service">Service</span></h6>
+          <ul class="checklist">
+            <li><input type="checkbox" id="s1"><label for="s1"><span class="task-title">Create QuizQuestAttemptService</span><span class="task-detail">Methods: startAttempt(studentId, type, assessmentId, allocationId), saveAnswer(attemptId, questionId, response), submitAttempt(attemptId), autoSubmitOnTimeout(attemptId).</span></label></li>
+            <li><input type="checkbox" id="s2"><label for="s2"><span class="task-title">Create AutoGradingService</span><span class="task-detail">Methods: gradeAttempt(attemptId) &mdash; auto-evaluates MCQ (single + multi-select) answers by comparing with qns_question_options.is_correct. Sets marks_obtained, is_correct, is_evaluated=1. Skips descriptive (is_evaluated stays 0).</span></label></li>
+            <li><input type="checkbox" id="s3"><label for="s3"><span class="task-title">Create QuizQuestResultService</span><span class="task-detail">Methods: computeResult(attemptId) &mdash; sums marks_obtained from answers, calculates percentage, determines pass/fail from quiz/quest passing_marks. publishResult(resultId) &mdash; sets is_published=1.</span></label></li>
+            <li><input type="checkbox" id="s4"><label for="s4"><span class="task-title">Create CheckpointService</span><span class="task-detail">Methods: saveCheckpoint(type, attemptId, data), loadCheckpoint(type, attemptId), deleteCheckpoint(type, attemptId). UPSERT pattern.</span></label></li>
+          </ul>
+
+          <!-- 2.2 Routes -->
+          <h6 class="mt-4 mb-2"><i class="fas fa-route me-1"></i>2.2 Student Portal &mdash; Quiz Routes &amp; Controller <span class="tag tag-route">Route</span> <span class="tag tag-controller">Controller</span></h6>
+          <ul class="checklist">
+            <li><input type="checkbox" id="r1"><label for="r1"><span class="task-title">GET /my-learning/quiz/{quizId} &mdash; Quiz detail page</span><span class="task-detail">Show quiz info (title, duration, question count, attempts allowed, attempt history). "Start Quiz" button.</span></label></li>
+            <li><input type="checkbox" id="r2"><label for="r2"><span class="task-title">POST /my-learning/quiz/{quizId}/start &mdash; Start attempt</span><span class="task-detail">Create QuizQuestAttempt row (status=IN_PROGRESS). Check: allocation exists, attempts remaining, within time window. Redirect to attempt page.</span></label></li>
+            <li><input type="checkbox" id="r3"><label for="r3"><span class="task-title">GET /my-learning/attempt/{attemptId} &mdash; Quiz/Quest attempt page</span><span class="task-detail">Load questions from quiz/quest, show one at a time or all at once (based on quiz config). Timer countdown. Navigation panel.</span></label></li>
+            <li><input type="checkbox" id="r4"><label for="r4"><span class="task-title">POST /my-learning/attempt/{attemptId}/answer &mdash; Save answer (AJAX)</span><span class="task-detail">Save/update single answer to lms_quiz_quest_attempt_answers. Return success. Called on each answer change.</span></label></li>
+            <li><input type="checkbox" id="r5"><label for="r5"><span class="task-title">POST /my-learning/attempt/{attemptId}/submit &mdash; Submit attempt</span><span class="task-detail">Set status=SUBMITTED, submitted_at=now(). Run AutoGradingService. Compute result if all evaluated. Redirect to result.</span></label></li>
+            <li><input type="checkbox" id="r6"><label for="r6"><span class="task-title">GET /my-learning/attempt/{attemptId}/result &mdash; View result</span><span class="task-detail">Show score, percentage, pass/fail, per-question breakdown (correct/wrong/pending). Only visible if result is_published=1.</span></label></li>
+            <li><input type="checkbox" id="r7"><label for="r7"><span class="task-title">Same routes for Quest (reuse attempt controller)</span><span class="task-detail">POST /my-learning/quest/{questId}/start &rarr; same attempt page. assessment_type=QUEST differentiates.</span></label></li>
+          </ul>
+
+          <!-- 2.3 UI -->
+          <h6 class="mt-4 mb-2"><i class="fas fa-desktop me-1"></i>2.3 Quiz/Quest Taking UI <span class="tag tag-view">View</span> <span class="tag tag-js">JS</span></h6>
+          <ul class="checklist">
+            <li><input type="checkbox" id="v1"><label for="v1"><span class="task-title">Replace hardcoded quiz list with real data</span><span class="task-detail">StudentPortal/resources/views/quiz/index.blade.php &mdash; replace $quizzes array with actual QuizAllocation query for logged-in student.</span></label></li>
+            <li><input type="checkbox" id="v2"><label for="v2"><span class="task-title">Replace hardcoded quest list with real data</span><span class="task-detail">Same pattern for quest/index.blade.php.</span></label></li>
+            <li><input type="checkbox" id="v3"><label for="v3"><span class="task-title">Quiz detail page view</span><span class="task-detail">Show: title, subject, duration, max marks, passing marks, attempts allowed vs used, "Start Quiz" button (disabled if no attempts left or outside time window).</span></label></li>
+            <li><input type="checkbox" id="v4"><label for="v4"><span class="task-title">Attempt page &mdash; Question display component</span><span class="task-detail">Render question text + options based on type: radio buttons (Single MCQ), checkboxes (Multi MCQ), textarea (Descriptive), file input (Upload).</span></label></li>
+            <li><input type="checkbox" id="v5"><label for="v5"><span class="task-title">Attempt page &mdash; Navigation panel</span><span class="task-detail">Grid of question numbers. Colors: green=answered, red=unanswered, orange=flagged, blue=current. Click to jump.</span></label></li>
+            <li><input type="checkbox" id="v6"><label for="v6"><span class="task-title">Attempt page &mdash; Countdown timer</span><span class="task-detail">JS countdown from quiz.duration_minutes. When reaches 0, auto-submit via AJAX. Show warning at 5 min, 1 min.</span></label></li>
+            <li><input type="checkbox" id="v7"><label for="v7"><span class="task-title">Attempt page &mdash; Auto-save answers</span><span class="task-detail">On every answer change, POST to /attempt/{id}/answer via fetch(). Show "Saved" indicator. Also save checkpoint every 30s.</span></label></li>
+            <li><input type="checkbox" id="v8"><label for="v8"><span class="task-title">Attempt page &mdash; Submit confirmation modal</span><span class="task-detail">Show summary: X answered, Y unanswered, Z flagged. Confirm button calls submit endpoint.</span></label></li>
+            <li><input type="checkbox" id="v9"><label for="v9"><span class="task-title">Result page view</span><span class="task-detail">Score card (marks/total, percentage, pass/fail badge). Per-question review: show question, student answer, correct answer (if allowed), marks.</span></label></li>
+          </ul>
+
+          <!-- 2.4 Homework -->
+          <h6 class="mt-4 mb-2"><i class="fas fa-book me-1"></i>2.4 Homework Student Submission <span class="tag tag-route">Route</span> <span class="tag tag-view">View</span></h6>
+          <ul class="checklist">
+            <li><input type="checkbox" id="hw1"><label for="hw1"><span class="task-title">GET /my-learning/homework/{assignmentId} &mdash; Homework detail</span><span class="task-detail">Show: title, instructions, attachments, due date, status, previous submission (if any).</span></label></li>
+            <li><input type="checkbox" id="hw2"><label for="hw2"><span class="task-title">POST /my-learning/homework/{assignmentId}/submit &mdash; Submit homework</span><span class="task-detail">Create HomeworkSubmission row. Accept text answer + file upload (Spatie MediaLibrary). Update assignment status=SUBMITTED.</span></label></li>
+            <li><input type="checkbox" id="hw3"><label for="hw3"><span class="task-title">Homework detail view</span><span class="task-detail">Instructions card, attachment downloads, text input + file upload form, submit button. Show previous submission if exists.</span></label></li>
+            <li><input type="checkbox" id="hw4"><label for="hw4"><span class="task-title">Late submission handling</span><span class="task-detail">If past due_date: show warning, allow submission but flag as LATE. If homework.allow_late_submission=false, disable form.</span></label></li>
+            <li><input type="checkbox" id="hw5"><label for="hw5"><span class="task-title">Submission confirmation &amp; status tracking</span><span class="task-detail">After submit: show success message, submission timestamp, status badge. Student can view but not re-submit (unless teacher reopens).</span></label></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ PHASE 3 ═══ -->
+    <div class="accordion-item">
+      <h2 class="accordion-header">
+        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#phase3">
+          <i class="fas fa-laptop text-primary me-2"></i>Phase 3: Online Exam (Week 3-4)
+        </button>
+      </h2>
+      <div id="phase3" class="accordion-collapse collapse" data-bs-parent="#checklistAccordion">
+        <div class="accordion-body">
+
+          <!-- 3.1 Services -->
+          <h6 class="mb-2"><i class="fas fa-cogs me-1"></i>3.1 Exam Attempt Services <span class="tag tag-service">Service</span></h6>
+          <ul class="checklist">
+            <li><input type="checkbox" id="es1"><label for="es1"><span class="task-title">Create ExamAttemptService</span><span class="task-detail">Methods: startExam(studentId, paperId, setId, allocationId), saveAnswer(attemptId, questionId, response), submitExam(attemptId), markAbsent(paperId, studentId).</span></label></li>
+            <li><input type="checkbox" id="es2"><label for="es2"><span class="task-title">Create ExamResultService</span><span class="task-detail">Methods: computeResult(attemptId) &mdash; sums marks, applies grading schema for grade + division. publishResults(examPaperId) &mdash; bulk publish. computeRanks(examPaperId) &mdash; rank + percentile.</span></label></li>
+            <li><input type="checkbox" id="es3"><label for="es3"><span class="task-title">Paper set assignment logic</span><span class="task-detail">When student starts exam: assign paper_set_id (random if multiple sets, or deterministic by student order). Load questions for that set only.</span></label></li>
+          </ul>
+
+          <!-- 3.2 UI -->
+          <h6 class="mt-4 mb-2"><i class="fas fa-desktop me-1"></i>3.2 Online Exam UI <span class="tag tag-view">View</span> <span class="tag tag-js">JS</span></h6>
+          <ul class="checklist">
+            <li><input type="checkbox" id="ev1"><label for="ev1"><span class="task-title">Replace hardcoded online-exam list with real data</span><span class="task-detail">StudentPortal/resources/views/online-exam/index.blade.php &mdash; real ExamAllocation data for student. Show: exam name, date, time, duration, status.</span></label></li>
+            <li><input type="checkbox" id="ev2"><label for="ev2"><span class="task-title">Exam detail page (pre-start)</span><span class="task-detail">Show: exam name, subject, duration, total marks, instructions, rules. "Start Exam" button (enabled only within scheduled time window).</span></label></li>
+            <li><input type="checkbox" id="ev3"><label for="ev3"><span class="task-title">Full-screen exam interface</span><span class="task-detail">Request fullscreen API on start. Warn on exit. Question display same as quiz but with exam-specific styling (formal, no distractions).</span></label></li>
+            <li><input type="checkbox" id="ev4"><label for="ev4"><span class="task-title">Question navigation + timer</span><span class="task-detail">Same as quiz but with section markers (Section A, B, C per blueprint). Timer with exam duration.</span></label></li>
+            <li><input type="checkbox" id="ev5"><label for="ev5"><span class="task-title">Exam result page</span><span class="task-detail">Show: marks obtained/total, percentage, grade, division, rank (if published). Per-subject breakdown for multi-paper exams.</span></label></li>
+          </ul>
+
+          <!-- 3.3 Routes -->
+          <h6 class="mt-4 mb-2"><i class="fas fa-route me-1"></i>3.3 Exam Routes <span class="tag tag-route">Route</span> <span class="tag tag-controller">Controller</span></h6>
+          <ul class="checklist">
+            <li><input type="checkbox" id="er1"><label for="er1"><span class="task-title">GET /my-learning/exam/{examId} &mdash; Exam detail page</span></label></li>
+            <li><input type="checkbox" id="er2"><label for="er2"><span class="task-title">POST /my-learning/exam/{examId}/start &mdash; Start exam attempt</span></label></li>
+            <li><input type="checkbox" id="er3"><label for="er3"><span class="task-title">GET /my-learning/exam-attempt/{attemptId} &mdash; Exam attempt page</span></label></li>
+            <li><input type="checkbox" id="er4"><label for="er4"><span class="task-title">POST /my-learning/exam-attempt/{attemptId}/answer &mdash; Save answer (AJAX)</span></label></li>
+            <li><input type="checkbox" id="er5"><label for="er5"><span class="task-title">POST /my-learning/exam-attempt/{attemptId}/submit &mdash; Submit exam</span></label></li>
+            <li><input type="checkbox" id="er6"><label for="er6"><span class="task-title">GET /my-learning/exam-attempt/{attemptId}/result &mdash; View result</span></label></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ PHASE 4 ═══ -->
+    <div class="accordion-item">
+      <h2 class="accordion-header">
+        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#phase4">
+          <i class="fas fa-file-alt text-info me-2"></i>Phase 4: Offline Exam &amp; Teacher Evaluation (Week 4-5)
+        </button>
+      </h2>
+      <div id="phase4" class="accordion-collapse collapse" data-bs-parent="#checklistAccordion">
+        <div class="accordion-body">
+
+          <!-- 4.1 Offline -->
+          <h6 class="mb-2"><i class="fas fa-upload me-1"></i>4.1 Offline Exam &mdash; Answer Sheet Upload &amp; Online Checking <span class="tag tag-controller">Controller</span> <span class="tag tag-view">View</span> <span class="tag tag-service">Service</span></h6>
+          <div class="note-box"><strong>Offline Exam Flow:</strong> Students write exam on paper in classroom. Teacher collects answer sheets, scans/photographs them, uploads to the system. Teacher then checks/evaluates each sheet online &mdash; viewing the scanned pages and entering marks per question. The checked sheet (with marks and annotations) becomes available to the student in the Student Portal.</div>
+          <ul class="checklist">
+            <li><input type="checkbox" id="of1"><label for="of1"><span class="task-title">Bulk attendance marking page</span><span class="task-detail">Teacher marks each student as PRESENT/ABSENT for an offline exam paper. Creates ExamAttempt rows (attempt_mode=OFFLINE, status=NOT_STARTED, is_present_offline=1/0). Absent students get status=ABSENT and result_status=ABSENT.</span></label></li>
+            <li><input type="checkbox" id="of2"><label for="of2"><span class="task-title">Answer sheet upload &mdash; bulk upload page</span><span class="task-detail">Page: list all students for the exam paper. Per student: upload button to upload scanned answer sheet (PDF/images). Uses Spatie MediaLibrary. Saved as offline_paper_uploaded_id (FK to sys_media) on ExamAttempt. Support multi-page PDF or multiple image uploads per student. Status changes to EVALUATION_PENDING after upload.</span></label></li>
+            <li><input type="checkbox" id="of2b"><label for="of2b"><span class="task-title">Answer sheet upload &mdash; drag &amp; drop zone</span><span class="task-detail">Drag &amp; drop zone for batch upload. Auto-match sheets to students by answer_sheet_number (if printed on sheet) or manual assignment. Show upload progress bar per file.</span></label></li>
+            <li><input type="checkbox" id="of3"><label for="of3"><span class="task-title">Online checking UI &mdash; Sheet viewer + marks entry panel</span><span class="task-detail">Split-screen layout: LEFT = scanned sheet viewer (zoomable, scrollable, page navigation for multi-page). RIGHT = question-wise marks entry panel (list of questions with max_marks, input for marks_obtained, remarks per question). Saves to lms_exam_attempt_answers. Teacher can zoom, pan, rotate the scanned image while entering marks.</span></label></li>
+            <li><input type="checkbox" id="of3b"><label for="of3b"><span class="task-title">Online checking UI &mdash; Annotation tools</span><span class="task-detail">Teacher can annotate the scanned sheet: tick marks, cross marks, underline, circle errors, write comments. Annotations stored as JSON overlay (not modifying original image). Canvas-based drawing layer on top of the scanned sheet. Annotations saved per page to lms_exam_attempt_answers.evaluation_remarks or a dedicated JSON column.</span></label></li>
+            <li><input type="checkbox" id="of3c"><label for="of3c"><span class="task-title">Online checking UI &mdash; BULK_TOTAL mode (simple)</span><span class="task-detail">Alternative to question-wise: teacher just enters total marks obtained for the entire paper. Grid: student name | uploaded sheet (view link) | total marks | remarks. Saves to lms_exam_marks_entry. For quick grading without per-question breakdown.</span></label></li>
+            <li><input type="checkbox" id="of4"><label for="of4"><span class="task-title">Checked sheet generation</span><span class="task-detail">After teacher completes evaluation: generate a "checked" version of the answer sheet &mdash; original scanned pages with annotation overlays rendered + marks summary on final page. Save as PDF using DomPDF or image compositing. Store path on ExamAttempt as checked_sheet_path (new column or use sys_media). This is what the student sees.</span></label></li>
+            <li><input type="checkbox" id="of4b"><label for="of4b"><span class="task-title">Evaluation progress tracking</span><span class="task-detail">Dashboard showing: total students, sheets uploaded, sheets checked, sheets pending. Progress bar per exam paper. Filter by class/section. Highlight overdue evaluations.</span></label></li>
+            <li><input type="checkbox" id="of5"><label for="of5"><span class="task-title">Result generation from offline marks</span><span class="task-detail">After all sheets checked: compute results. QUESTION_WISE &rarr; sum answer marks. BULK_TOTAL &rarr; use total directly. Apply grading schema for grade + division. Create ExamResult rows. Compute rank + percentile within class.</span></label></li>
+          </ul>
+
+          <!-- 4.2 Teacher Eval -->
+          <h6 class="mt-4 mb-2"><i class="fas fa-chalkboard-teacher me-1"></i>4.2 Teacher Evaluation Dashboard <span class="tag tag-controller">Controller</span> <span class="tag tag-view">View</span></h6>
+          <ul class="checklist">
+            <li><input type="checkbox" id="te1"><label for="te1"><span class="task-title">Pending evaluation queue</span><span class="task-detail">List all answers where is_evaluated=0 AND question type is descriptive/file-upload. Grouped by exam/quiz/quest &rarr; class &rarr; student.</span></label></li>
+            <li><input type="checkbox" id="te2"><label for="te2"><span class="task-title">Answer review UI</span><span class="task-detail">Show: question text, student's answer (text or file preview), max marks, marking scheme. Input: marks_obtained + evaluation_remarks.</span></label></li>
+            <li><input type="checkbox" id="te3"><label for="te3"><span class="task-title">Bulk marks save</span><span class="task-detail">Teacher can evaluate multiple answers in one form submission. AJAX save per answer with "Saved" indicator.</span></label></li>
+            <li><input type="checkbox" id="te4"><label for="te4"><span class="task-title">Bulk publish results</span><span class="task-detail">Select exam/quiz/quest &rarr; "Publish All Results" button. Sets is_published=1 on all result rows. Triggers notification to students.</span></label></li>
+            <li><input type="checkbox" id="te5"><label for="te5"><span class="task-title">Result analytics view</span><span class="task-detail">Per exam/quiz: class average, pass/fail count, top 5, distribution histogram (marks ranges), subject-wise breakdown.</span></label></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ PHASE 5 ═══ -->
+    <div class="accordion-item">
+      <h2 class="accordion-header">
+        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#phase5">
+          <i class="fas fa-trophy text-success me-2"></i>Phase 5: Results &amp; Grievances (Week 5-6)
+        </button>
+      </h2>
+      <div id="phase5" class="accordion-collapse collapse" data-bs-parent="#checklistAccordion">
+        <div class="accordion-body">
+
+          <!-- 5.1 Results -->
+          <h6 class="mb-2"><i class="fas fa-poll me-1"></i>5.1 Student Results Page <span class="tag tag-view">View</span> <span class="tag tag-route">Route</span></h6>
+          <ul class="checklist">
+            <li><input type="checkbox" id="rs1"><label for="rs1"><span class="task-title">Update /results route to query real data</span><span class="task-detail">Query lms_exam_results + lms_quiz_quest_results for logged-in student. Show published results only (is_published=1).</span></label></li>
+            <li><input type="checkbox" id="rs2"><label for="rs2"><span class="task-title">Results listing page</span><span class="task-detail">Tab layout: Exam Results | Quiz Results | Quest Results. Each shows: name, date, marks, percentage, grade, rank, status badge. Offline exams show "View Checked Sheet" link.</span></label></li>
+            <li><input type="checkbox" id="rs3"><label for="rs3"><span class="task-title">Result detail page &mdash; Online exams (per-question breakdown)</span><span class="task-detail">Show each question, student's answer, correct answer (if show_answers=true), marks obtained/max, teacher remarks. Color-coded: green=correct, red=wrong, yellow=partial.</span></label></li>
+            <li><input type="checkbox" id="rs3b"><label for="rs3b"><span class="task-title">Result detail page &mdash; Offline exams (checked answer sheet viewer)</span><span class="task-detail">Show the checked/annotated answer sheet (PDF or images) that the teacher evaluated. The student sees their original handwritten answers WITH the teacher's annotations (tick marks, crosses, comments, marks per question) overlaid. Zoomable, page-by-page navigation. Marks summary panel on the side showing per-question breakdown + total.</span></label></li>
+            <li><input type="checkbox" id="rs3c"><label for="rs3c"><span class="task-title">Checked sheet download</span><span class="task-detail">Student can download the checked answer sheet as PDF &mdash; original scanned pages with teacher annotations baked in + marks summary page. Useful for parent review.</span></label></li>
+            <li><input type="checkbox" id="rs4"><label for="rs4"><span class="task-title">Result PDF download (marks card)</span><span class="task-detail">Generate result marks card PDF using DomPDF. Include: student name, exam details, per-subject marks, total, percentage, grade, division, rank, teacher remarks. Save path to report_card_path.</span></label></li>
+            <li><input type="checkbox" id="rs5"><label for="rs5"><span class="task-title">Parent view &mdash; shared results access</span><span class="task-detail">Parent logged into StudentPortal can see their child's results (same views as student). Parent can download checked sheets and marks cards. No edit access.</span></label></li>
+          </ul>
+
+          <!-- 5.2 Grievances -->
+          <h6 class="mt-4 mb-2"><i class="fas fa-gavel me-1"></i>5.2 Grievance System <span class="tag tag-controller">Controller</span> <span class="tag tag-view">View</span></h6>
+          <ul class="checklist">
+            <li><input type="checkbox" id="gr1"><label for="gr1"><span class="task-title">Student: File grievance form</span><span class="task-detail">On result detail page: "Request Re-evaluation" button. Form: grievance_type (dropdown), question reference (optional), description (textarea).</span></label></li>
+            <li><input type="checkbox" id="gr2"><label for="gr2"><span class="task-title">Student: Grievance status tracking</span><span class="task-detail">Show list of filed grievances with status (OPEN/UNDER_REVIEW/RESOLVED/REJECTED), resolution_remarks when resolved.</span></label></li>
+            <li><input type="checkbox" id="gr3"><label for="gr3"><span class="task-title">Teacher: Grievance review dashboard</span><span class="task-detail">List all OPEN/UNDER_REVIEW grievances. Show: student, exam, question, grievance text. Actions: Review, Resolve, Reject.</span></label></li>
+            <li><input type="checkbox" id="gr4"><label for="gr4"><span class="task-title">Teacher: Mark revision workflow</span><span class="task-detail">When resolving: option to revise marks (old_marks &rarr; new_marks). Auto-update ExamResult totals. Set marks_changed=1.</span></label></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ PHASE 6 ═══ -->
+    <div class="accordion-item">
+      <h2 class="accordion-header">
+        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#phase6">
+          <i class="fas fa-magic text-secondary me-2"></i>Phase 6: Polish &mdash; Proctoring, Resume, Refactor (Week 6-7)
+        </button>
+      </h2>
+      <div id="phase6" class="accordion-collapse collapse" data-bs-parent="#checklistAccordion">
+        <div class="accordion-body">
+
+          <!-- 6.1 Proctoring -->
+          <h6 class="mb-2"><i class="fas fa-eye me-1"></i>6.1 Proctoring <span class="tag tag-js">JS</span> <span class="tag tag-service">Service</span></h6>
+          <ul class="checklist">
+            <li><input type="checkbox" id="pr1"><label for="pr1"><span class="task-title">Tab-switch / focus-loss detection</span><span class="task-detail">JS: listen for visibilitychange, blur events. On violation: increment violation_count on attempt, log to lms_attempt_activity_logs via AJAX.</span></label></li>
+            <li><input type="checkbox" id="pr2"><label for="pr2"><span class="task-title">Warning modals on violation</span><span class="task-detail">1st violation: warning. 2nd: strong warning. 3rd+: "Exam may be invalidated" warning. Configurable thresholds.</span></label></li>
+            <li><input type="checkbox" id="pr3"><label for="pr3"><span class="task-title">Activity log AJAX endpoint</span><span class="task-detail">POST /attempt/{attemptId}/log &mdash; Accept event_type + event_data. Append to lms_attempt_activity_logs. No auth-required (fire-and-forget).</span></label></li>
+            <li><input type="checkbox" id="pr4"><label for="pr4"><span class="task-title">Teacher: Violation report per student</span><span class="task-detail">On evaluation dashboard: show violation count, event log timeline (focus loss at 10:32, tab switch at 10:45, etc.).</span></label></li>
+          </ul>
+
+          <!-- 6.2 Resume -->
+          <h6 class="mt-4 mb-2"><i class="fas fa-redo me-1"></i>6.2 Session Resume <span class="tag tag-js">JS</span> <span class="tag tag-service">Service</span></h6>
+          <ul class="checklist">
+            <li><input type="checkbox" id="sr1"><label for="sr1"><span class="task-title">Checkpoint auto-save (every 30s)</span><span class="task-detail">JS interval: collect all current answers, POST to /attempt/{id}/checkpoint. Server UPSERTs lms_attempt_checkpoints.</span></label></li>
+            <li><input type="checkbox" id="sr2"><label for="sr2"><span class="task-title">Resume on page reload</span><span class="task-detail">When attempt page loads: check if checkpoint exists. If yes, restore answers from checkpoint_data, jump to current_question_idx.</span></label></li>
+            <li><input type="checkbox" id="sr3"><label for="sr3"><span class="task-title">Resume modal</span><span class="task-detail">"You have an in-progress attempt. Resume from where you left off?" with remaining time calculated from checkpoint.</span></label></li>
+            <li><input type="checkbox" id="sr4"><label for="sr4"><span class="task-title">Checkpoint cleanup</span><span class="task-detail">On successful submit: delete checkpoint row. On attempt expiry: delete checkpoint. Scheduled cleanup job for orphaned checkpoints.</span></label></li>
+          </ul>
+
+          <!-- 6.3 Refactor -->
+          <h6 class="mt-4 mb-2"><i class="fas fa-code me-1"></i>6.3 Service Layer Refactor <span class="tag tag-service">Service</span></h6>
+          <ul class="checklist">
+            <li><input type="checkbox" id="rf1"><label for="rf1"><span class="task-title">Extract ExamService from LmsExamController (944 lines)</span><span class="task-detail">Move: exam creation, paper management, allocation logic, status transitions to ExamService.</span></label></li>
+            <li><input type="checkbox" id="rf2"><label for="rf2"><span class="task-title">Extract QuizService from LmsQuizController (646 lines)</span><span class="task-detail">Move: quiz creation, question linking, allocation, difficulty config to QuizService.</span></label></li>
+            <li><input type="checkbox" id="rf3"><label for="rf3"><span class="task-title">Extract HomeworkService from LmsHomeworkController (1635 lines!)</span><span class="task-detail">Move: homework creation, assignment bulk-create, publish, clone, grading to HomeworkService. This is the fattest controller.</span></label></li>
+            <li><input type="checkbox" id="rf4"><label for="rf4"><span class="task-title">Extract QuestService from LmsQuestController (453 lines)</span><span class="task-detail">Move: quest creation, scope management, question linking, allocation to QuestService.</span></label></li>
+            <li><input type="checkbox" id="rf5"><label for="rf5"><span class="task-title">Create shared AllocationService</span><span class="task-detail">Polymorphic allocation logic shared by Quiz, Quest, Exam. Methods: allocateToClass(), allocateToSection(), allocateToGroup(), allocateToStudent().</span></label></li>
+          </ul>
+
+          <!-- 6.4 Dashboard -->
+          <h6 class="mt-4 mb-2"><i class="fas fa-tachometer-alt me-1"></i>6.4 Tenant Dashboard &mdash; LMS Section <span class="tag tag-view">View</span></h6>
+          <ul class="checklist">
+            <li><input type="checkbox" id="db1"><label for="db1"><span class="task-title">Add LMS stats to /dashboard</span><span class="task-detail">Cards: Active Exams, Active Quizzes, Pending Homework, Pending Evaluations. Query from lms_* tables.</span></label></li>
+            <li><input type="checkbox" id="db2"><label for="db2"><span class="task-title">Add LMS quick actions</span><span class="task-detail">Buttons: Create Exam, Create Quiz, Assign Homework, View Results.</span></label></li>
+            <li><input type="checkbox" id="db3"><label for="db3"><span class="task-title">Student Portal dashboard LMS section</span><span class="task-detail">Show: pending homework count, upcoming exams, recent quiz results, overall average.</span></label></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /accordion -->
+</div>
+
+</div><!-- /tab-content -->
+</div><!-- /container -->
+
+<!-- ========== FOOTER ========== -->
+<div class="container pb-4">
+  <hr>
+  <p class="text-center text-muted" style="font-size:.72rem">
+    Prime-AI LMS Complete Report | 98/106 Tasks Complete (92%) | Phases 1–5 Done + Phase 6 Partial | Updated April 3, 2026
+  </p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // ── Tab hash management ──
+    var hash = window.location.hash;
+    if (hash) {
+        var tab = document.querySelector('[data-bs-target="' + hash + '"]');
+        if (tab) { new bootstrap.Tab(tab).show(); }
+    }
+    document.querySelectorAll('#reportTabs .nav-link').forEach(function(btn) {
+        btn.addEventListener('shown.bs.tab', function(e) {
+            history.replaceState(null, null, e.target.getAttribute('data-bs-target'));
+        });
+    });
+
+    // ── Checklist localStorage persistence ──
+    var KEY = 'lms-checklist-state';
+
+    // ── Pre-completed tasks (updated 2026-04-03) ──
+    // Phase 1 (Foundation): all migrations + models done
+    // Phase 2 (Quiz/Quest/Homework): all services, routes, UI done
+    // Phase 3 (Online Exam): all services, routes, UI done
+    // Phase 4 (Offline Exam + Teacher Eval): done by teammate
+    // Phase 5 (Results + Grievances): all done — rs5, gr3, gr4 completed today
+    // Phase 6 (Polish): db1, db2, rf1-rf5, pr4 completed today
+    var PRE_COMPLETED = [
+        // Phase 1 — Migrations
+        'm1','m2','m3','m4','m5','m6','m7','m8','m9','m10','m11',
+        // Phase 1 — Models
+        'md1','md2','md3','md4','md5','md6','md7','md8','md9','md10',
+        // Phase 2 — Services
+        's1','s2','s3','s4',
+        // Phase 2 — Quiz/Quest Routes
+        'r1','r2','r3','r4','r5','r6','r7',
+        // Phase 2 — Quiz/Quest UI
+        'v1','v2','v3','v4','v5','v6','v7','v8','v9',
+        // Phase 2 — Homework
+        'hw1','hw2','hw3','hw4','hw5',
+        // Phase 3 — Exam Services
+        'es1','es2','es3',
+        // Phase 3 — Online Exam UI
+        'ev1','ev2','ev3','ev4','ev5',
+        // Phase 3 — Exam Routes
+        'er1','er2','er3','er4','er5','er6',
+        // Phase 4 — Offline Exam (teammate)
+        'of1','of2','of2b','of3','of3b','of3c','of4','of4b','of5',
+        // Phase 4 — Teacher Eval (teammate)
+        'te1','te2','te3','te4','te5',
+        // Phase 5 — Student Results Page
+        'rs1','rs2','rs3','rs4','rs5',
+        // Phase 5 — Grievances (gr3, gr4 done today; gr1, gr2 done earlier)
+        'gr1','gr2','gr3','gr4',
+        // Phase 6 — Dashboard (done today)
+        'db1','db2',
+        // Phase 6 — Service Layer Refactor (done today: rf1-rf5)
+        'rf1','rf2','rf3','rf4','rf5',
+        // Phase 6 — Proctoring: teacher violation report (done today)
+        'pr4'
+    ];
+
+    // Merge pre-completed into saved state (never uncheck what user manually set)
+    var saved = JSON.parse(localStorage.getItem(KEY) || '{}');
+    PRE_COMPLETED.forEach(function(id) { saved[id] = true; });
+    localStorage.setItem(KEY, JSON.stringify(saved));
+
+    var allCbs = document.querySelectorAll('.checklist input[type="checkbox"]');
+
+    // Restore state
+    allCbs.forEach(function(cb) {
+        if (saved[cb.id]) cb.checked = true;
+        cb.addEventListener('change', function() {
+            var state = {};
+            document.querySelectorAll('.checklist input[type="checkbox"]').forEach(function(c) {
+                if (c.checked) state[c.id] = true;
+            });
+            localStorage.setItem(KEY, JSON.stringify(state));
+            updateProgress();
+        });
+    });
+
+    function updateProgress() {
+        var all = document.querySelectorAll('.checklist input[type="checkbox"]');
+        var checked = document.querySelectorAll('.checklist input[type="checkbox"]:checked');
+        var total = all.length;
+        var done = checked.length;
+        var pct = total > 0 ? Math.round((done / total) * 100) : 0;
+
+        var badge = document.getElementById('checklistBadge');
+        if (badge) badge.textContent = pct + '%';
+
+        var summary = document.getElementById('checklistSummary');
+        if (summary) summary.textContent = done + ' / ' + total + ' tasks completed (' + pct + '%)';
+
+        document.title = 'LMS Report (' + done + '/' + total + ' = ' + pct + '%)';
+    }
+    updateProgress();
+});
+</script>
+</body>
+</html>

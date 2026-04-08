@@ -166,3 +166,35 @@
 ### Pending: Redis Migration
 - When to move queue, cache, and session drivers from database to Redis
 - Dependent on production traffic patterns
+
+---
+
+## Architectural Issues Discovered — Deep Audit 2026-04-02
+
+### D22: Route Registration Architecture — Module-Owned Routes (RESOLVED 2026-04-02)
+- **Discovery (2026-04-02):** 3 routing layers overlapped: `routes/tenant.php` (tenancy middleware), module `routes/web.php` (loaded by module RSP, often without tenancy middleware), central `routes/web.php`.
+- **Resolution:** Migration prompt `databases/5-Work-In-Progress/1-Completed/Update_Route_Permission_AllModules/migrate-module-routes-policies_v2.md` executed on `prime_ai_shailesh` 2026-04-02.
+- **New canonical architecture:**
+  - **Tenant module routes:** `Modules/{ModuleName}/routes/web.php` — each module owns its routes entirely
+  - **Gate policies:** `Modules/{ModuleName}/app/Providers/{ModuleName}ServiceProvider.php` → `registerPolicies()` method
+  - **`routes/tenant.php`** (224 lines): auth routes only + 1 cross-module route + seeder routes (still P0 SEC-RTG-001) + tenancy middleware wrapper
+  - **`AppServiceProvider.php`** (127 lines): module policy blocks removed; cross-module-only policies remain
+- **Status:** ✅ RESOLVED in `prime_ai_shailesh`. Remaining risk: module RSP tenancy middleware (D23 still open).
+
+### D23: RSP Tenancy Middleware — 2 Modules Missing Entirely
+- **Discovery:** Scheduler and EventEngine RSPs apply only `Route::middleware('web')` — no `InitializeTenancyByDomain`, no `PreventAccessFromCentralDomains`. SmartTimetable RSP missing tenancy on ParallelGroupController.
+- **Impact:** All routes served by these RSPs operate without tenant DB context — queries hit central database or fail.
+- **Decision needed:** Add full tenancy middleware stack (`InitializeTenancyByDomain`, `PreventAccessFromCentralDomains`, `EnsureTenantIsActive`) to all tenant module RSPs.
+- **Status:** Identified, not yet fixed.
+
+### D24: Permission Naming Taxonomy — 5 Conflicting Prefixes
+- **Discovery:** Five different Gate permission prefixes coexist: `tenant.*` (standard), `prime.*` (Notification module — wrong context), `global-master.*` (GlobalMaster Language), `vendor.*` (VndUsageLog/VendorPayment), `transport.*` (TripController). Additionally, `tested.*` in Transport AttendanceDevice is a typo.
+- **Impact:** Policies defined under one prefix are invisible to Gates checking another. Auth silently fails (403) or silently passes depending on how `Gate::authorize()` handles missing policies.
+- **Decision needed:** Standardize to `tenant.*` for all tenant-scoped modules and `prime.*` for all central modules. No exceptions.
+- **Status:** Identified, not yet fixed.
+
+### D25: $request->all() vs $request->validated() — Systemic Pattern
+- **Discovery:** 30+ controllers across 12+ modules inject FormRequest classes but call `$request->all()` instead of `$request->validated()`, bypassing the validation result entirely. This is the single most widespread vulnerability pattern.
+- **Impact:** Extra fields submitted in the request body bypass validation rules and flow directly into `Model::create()` / `->update()`, enabling mass-assignment attacks even with FormRequests in place.
+- **Decision needed:** Project-wide find-and-replace of `$request->all()` with `$request->validated()` in all controllers that inject FormRequest types. Add a custom PHPStan/Larastan rule to flag this pattern.
+- **Status:** Identified, not yet fixed.

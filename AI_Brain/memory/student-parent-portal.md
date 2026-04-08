@@ -7,40 +7,79 @@ type: reference
 # Student & Parent Portal — Architecture Reference
 
 > **Source:** Team member's architecture packs (v2/v3) from `pgdatabase/7-Work_on_Modules/StudentParentPortal/`
-> **Last Updated:** 2026-03-21
-> **Overall Maturity:** Student Portal ~28% | Parent Portal ~5%
+> **V2 Detailed Requirements:** `databases/2-Requirement_Module_wise/2-Detailed_Requirements/V2/STP_StudentPortal_Requirement.md`
+> **Last Updated:** 2026-04-02
+> **Overall Maturity:** Student Portal ~55% | Parent Portal ~5%
 
-## Student Portal Screens (S1-S27)
+## StudentAttempt DDL (Created 2026-04-02)
 
-| ID | Screen Name | Route | Key Tables | Status |
-|----|-------------|-------|------------|--------|
-| S1 | Login / Authentication | `/student-portal/login` | `sys_users` | 80% Existing |
-| S2 | Dashboard | `/student-portal/dashboard` | `std_attendance`, `lms_exams`, `lms_homework`, `fin_fee_invoices`, `tt_timetable_cells` | 15% Partial (dummy data) |
-| S3 | Profile / Account / Settings | `/student-portal/account` | `sys_users`, `std_students`, `std_guardians` | 30% Partial (no POST) |
-| S4 | Academic Information | `/student-portal/academic-information` | `sch_academic_sessions`, `sch_class_sections`, `slb_subject_syllabus`, `slb_lessons` | 40% Partial |
-| S5 | Attendance | `/student-portal/attendance` | `std_attendance`, `sch_holidays` | 10% Partial (dummy) |
-| S6 | Timetable / Class Schedule | `/student-portal/timetable` | `tt_timetable_cells`, `tt_activities` | 5% Stub |
-| S7 | Lesson Plan / Digital Content | `/student-portal/lessons` | `slb_lessons`, `slb_topics` | 0% Missing |
-| S8 | Homework | `/student-portal/homework` | `lms_homework`, `lms_homework_allocations`, `lms_homework_submissions` | 0% Missing |
-| S9 | Assignments | `/student-portal/assignments` | `lms_assignments`, `lms_assignment_allocations` | 0% Missing |
-| S10 | Quiz / Assessment | `/student-portal/quizzes` | `lms_quizzes`, `lms_quiz_allocations`, `lms_quiz_attempts`, `qns_question_banks` | 0% Missing |
-| S11 | Question Bank / Self-Practice | `/student-portal/practice` | `qns_question_banks`, `qns_question_options`, `slb_topics` | 0% Missing |
-| S12 | Exam Timetable | `/student-portal/exam-timetable` | `lms_exams`, `lms_exam_allocations` | 0% Missing |
-| S13 | Exam Modes (Online/Offline/Hybrid/Practical) | `/student-portal/exams/{id}/attempt` | `lms_exams`, `lms_exam_attempts`, `qns_paper_sets` | 0% Missing -- CRITICAL |
-| S14 | Result / Marksheet / Report Card | `/student-portal/results` | `lms_exam_results`, `hpc_reports` | 0% Missing |
-| S15 | Gradebook | `/student-portal/gradebook` | `lms_exam_results`, `lms_quiz_attempts`, `lms_homework_submissions` | 0% Missing |
-| S16 | Course / LMS View | `/student-portal/courses` | `lms_courses`, `lms_course_modules`, `lms_course_enrollments` | 0% Missing |
-| S17 | Certificates | `/student-portal/certificates` | `std_certificates`, `lms_course_enrollments` | 0% Missing |
-| S18 | Quest / Gamification / Badges | `/student-portal/quests` | `lms_quests`, `lms_quest_allocations`, `lms_quest_badges` | 3% Stub |
-| S19 | Fee / Invoice / Payment | `/student-portal/fees` | `fin_fee_assignments`, `fin_fee_invoices`, `fin_fee_receipts` | 45% Partial (SEC bug) |
-| S20 | Complaint / Grievance | `/student-portal/complaint` | `cmp_complaints`, `cmp_complaint_categories` | 60% Partial |
-| S21 | Notifications | `/student-portal/all-notifications` | `notifications` (polymorphic) | 65% Existing |
-| S22 | Document Vault | `/student-portal/documents` | `std_documents`, `fin_fee_receipts` | 10% Partial |
-| S23 | Events / School Calendar | `/student-portal/events` | `sch_school_events` (NEW), `sch_holidays` | 0% Missing |
-| S24 | Transport Visibility | `/student-portal/transport` | `tpt_student_route_allocation_jnt`, `tpt_routes`, `tpt_stops` | 0% Missing |
-| S25 | AI Insights / Progress Analytics | `/student-portal/insights` | All academic data aggregated | 0% Missing |
-| S26 | Health & Medical Records | `/student-portal/health` | `std_medical_details` (NEW) | 0% Missing |
-| S27 | Mentorship & Career Pathing | `/student-portal/mentorship` | `std_mentorship_assignments` (NEW) | 0% Missing |
+File: `databases/1-DDL_Tenant_Modules/55e-LMS_StudentAttempts/StudentAttempt_ddl_v2.sql`
+
+10 tables covering all LMS attempt types:
+
+| Table | Purpose |
+|---|---|
+| `lms_quiz_quest_attempts` | Unified attempt record (Quiz & Quest) |
+| `lms_quiz_quest_attempt_answers` | Per-question responses — MCQ/Multi-MCQ/Descriptive/File |
+| `lms_quiz_quest_results` | Final published result per attempt |
+| `lms_exam_attempts` | Exam attempt — ONLINE & OFFLINE modes |
+| `lms_exam_attempt_answers` | Per-question responses for exams |
+| `lms_exam_marks_entry` | Bulk total marks (OFFLINE BULK_TOTAL mode) |
+| `lms_exam_results` | Final consolidated exam result |
+| `lms_exam_grievances` | Student re-evaluation requests |
+| `lms_attempt_activity_logs` | Proctoring events (polymorphic — all types) |
+| `lms_attempt_checkpoints` | Save-state for browser crash/resume |
+
+Key design choices:
+- `lms_quiz_quest_attempts` is polymorphic on `assessment_type` (QUIZ/QUEST) to avoid duplication
+- `lms_exam_results` UNIQUE on `(exam_paper_id, student_id)` — one result per paper per student
+- Activity logs and checkpoints are polymorphic on `attempt_type` — point to quiz/quest/exam attempt tables
+- All answer tables support `selected_option_ids` JSON for Multi-MCQ questions
+- Checkpoints enable resume after browser crash (UPSERT — one row per active attempt)
+
+## Student Portal Screens — V2 Status (Updated 2026-04-02)
+
+**Summary (from V2 requirement doc):** 35 screens total — 22 ✅ | 8 🟡 | 5 ❌
+**7 controllers, 55+ named routes, 57 blade view files**
+**Critical gaps:** IDOR in `proceedPayment()`, zero `Gate::authorize()`, no `EnsureTenantHasModule` middleware, no FormRequest classes
+
+| ID | Screen | Route | Status | Notes |
+|----|--------|-------|--------|-------|
+| 1 | Login | `/student-portal/login` | ✅ | Rate limiting (throttle:5,2) recommended |
+| 2 | Dashboard | `/student-portal/dashboard` | ✅ | Real data live; N+1 risk on nested eager loads |
+| 3 | Academic Info | `/student-portal/academic-information` | 🟡 | Profile/guardian/health loaded |
+| 4 | Invoice View | `/student-portal/view-invoice/{id}` | 🟡 | Partial IDOR fix |
+| 5 | Fee Payment | `/student-portal/pay-due-amount/pay-now/{id}` | 🟡 | IDOR still in proceedPayment() |
+| 6 | Fee Summary | `/student-portal/fee-summary` | ✅ | |
+| 7 | My Timetable | `/student-portal/my-timetable` | ✅ | |
+| 8 | My Attendance | `/student-portal/my-attendance` | ✅ | |
+| 9 | Syllabus Progress | `/student-portal/syllabus-progress` | ✅ | |
+| 10 | Exam Schedule | `/student-portal/exam-schedule` | ✅ | |
+| 11 | Results | `/student-portal/results` | 🟡 | No marks displayed — needs ExamResult integration |
+| 12 | My Learning Hub | `/student-portal/my-learning` | ✅ | Homework/Quiz/Quest/Exam aggregated |
+| 13 | Homework List | via learning hub | 🟡 | No submission endpoint |
+| 14 | Quiz List | `/student-portal/quiz` (no route) | ❌ | Stub view only |
+| 15 | Quest List | `/student-portal/quest` (no route) | ❌ | Stub view only |
+| 16 | Online Exam Player | no route | ❌ | Stub view only — needs StudentAttempt tables |
+| 17 | My Teachers | `/student-portal/my-teachers` | ✅ | |
+| 18 | Health Records | `/student-portal/health-records` | ✅ | |
+| 19 | Progress Card | `/student-portal/progress-card` | ✅ | No PDF download |
+| 20 | Performance Analytics | `/student-portal/performance-analytics` | ✅ | No subject-wise charts |
+| 21 | Recommendations | `/student-portal/my-recommendations` | ✅ | |
+| 22 | Library Catalog | `/student-portal/library` | ✅ | |
+| 23 | My Books | `/student-portal/library/my-books` | ✅ | |
+| 24 | Transport | `/student-portal/transport` | ✅ | |
+| 25 | Study Resources | `/student-portal/study-resources` | ✅ | |
+| 26 | Prescribed Books | `/student-portal/prescribed-books` | ✅ | |
+| 27 | Notice Board | `/student-portal/notice-board` | 🟡 | Reads notifications — should read sch_notices |
+| 28 | School Calendar | `/student-portal/school-calendar` | ❌ | Stub |
+| 29 | Student ID Card | `/student-portal/student-id-card` | ✅ | No PDF |
+| 30 | Apply Leave | `/student-portal/apply-leave` | ❌ | Stub |
+| 31 | Hostel | `/student-portal/hostel` | ❌ | Stub |
+| 32 | Notifications | `/student-portal/all-notifications` | ✅ | |
+| 33 | Complaints | `/student-portal/complaint` | ✅ | Hardcoded ID 104 bug |
+| 34 | Account Settings | `/student-portal/account` | 🟡 | Partial — backend stubs |
+| 35 | Coming Soon | fallback | ✅ | Placeholder |
 
 ## Parent Portal Screens (P1-P23)
 

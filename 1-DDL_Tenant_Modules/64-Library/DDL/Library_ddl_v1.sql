@@ -769,14 +769,7 @@
 	CREATE TABLE IF NOT EXISTS `lib_predictive_analytics` (
 			`id` BIGINT PRIMARY KEY AUTO_INCREMENT,
 			`prediction_date` DATE NOT NULL,
-			`prediction_type` ENUM(
-					'Demand_Forecast', 
-					'Member_Churn', 
-					'Resource_Optimization', 
-					'Acquisition_Recommendation',
-					'Seasonal_Pattern',
-					'Budget_Projection'
-			) NOT NULL,
+			`prediction_type` ENUM('Demand_Forecast', 'Member_Churn', 'Resource_Optimization', 'Acquisition_Recommendation', 'Seasonal_Pattern', 'Budget_Projection') NOT NULL,
 			`target_entity_type` ENUM('Book', 'Category', 'Genre', 'Member', 'Department', 'All') NOT NULL,
 			`target_entity_id` INT,
 			`prediction_period_start` DATE NOT NULL,
@@ -796,7 +789,7 @@
 			INDEX `idx_predictive_entity` (`target_entity_type`, `target_entity_id`),
 			INDEX `idx_predictive_period` (`prediction_period_start`, `prediction_period_end`),
 			INDEX `idx_predictive_confidence` (`confidence_score`)
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 	-- Tracks how well library resources align with curriculum requirements and academic schedules.
 	CREATE TABLE IF NOT EXISTS `lib_curricular_alignment` (
@@ -823,7 +816,7 @@
 			UNIQUE KEY `uk_curricular_book` (`academic_year`, `class_id`, `subject_id`, `book_id`),
 			INDEX `idx_curricular_alignment` (`alignment_score`),
 			INDEX `idx_curricular_priority` (`priority_level`)
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 	-- Tracks granular user interactions with the library system for detailed behavior analysis.
 	CREATE TABLE IF NOT EXISTS `lib_engagement_events` (
@@ -849,7 +842,7 @@
 			INDEX `idx_engagement_type` (`event_type`, `created_at`),
 			INDEX `idx_engagement_book` (`book_id`),
 			INDEX `idx_engagement_session` (`session_id`)
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 
@@ -861,16 +854,16 @@
   -- ----------------------------------------------------------------------------
 
 	-- Additional indexes for complex queries
-	CREATE INDEX idx_transactions_overdue ON lib_transactions(status, due_date) WHERE status = 'issued';
-	CREATE INDEX idx_members_outstanding ON lib_members(outstanding_fines) WHERE outstanding_fines > 0;
-	CREATE INDEX idx_fines_pending ON lib_fines(status, created_at) WHERE status = 'pending';
-	CREATE INDEX idx_reservations_available ON lib_reservations(status, expected_available_date, notification_sent) WHERE status = 'pending';
-	CREATE INDEX idx_digital_license_expiry ON lib_digital_resources(license_end_date) WHERE license_end_date IS NOT NULL;
+    CREATE INDEX idx_transactions_overdue ON lib_transactions(status, due_date) WHERE status = 'issued';
+    CREATE INDEX idx_members_outstanding ON lib_members(outstanding_fines) WHERE outstanding_fines > 0;
+    CREATE INDEX idx_fines_pending ON lib_fines(status, created_at) WHERE status = 'pending';
+    CREATE INDEX idx_reservations_available ON lib_reservations(status, expected_available_date, notification_sent) WHERE status = 'pending';
+    CREATE INDEX idx_digital_license_expiry ON lib_digital_resources(license_end_date) WHERE license_end_date IS NOT NULL;
 
 	-- Composite indexes for reporting
-	CREATE INDEX idx_books_publisher_year ON lib_books_master(publisher_id, publication_year);
-	CREATE INDEX idx_copies_location_status ON lib_book_copies(shelf_location_id, status);
-	CREATE INDEX idx_transactions_member_dates ON lib_transactions(member_id, issue_date, return_date);
+    CREATE INDEX idx_books_publisher_year ON lib_books_master(publisher_id, publication_year);
+    CREATE INDEX idx_copies_location_status ON lib_book_copies(shelf_location_id, status);
+    CREATE INDEX idx_transactions_member_dates ON lib_transactions(member_id, issue_date, return_date);
 
   -- ----------------------------------------------------------------------------
   -- 12. TRIGGERS FOR DATA INTEGRITY
@@ -879,71 +872,71 @@
 	DELIMITER $$
 
 	-- Trigger to update member's total borrowed count
-	CREATE TRIGGER update_member_borrowed_count 
-	AFTER INSERT ON lib_transactions
-	FOR EACH ROW
-	BEGIN
-			IF NEW.status = 'issued' THEN
-					UPDATE lib_members 
-					SET total_books_borrowed = total_books_borrowed + 1,
-							last_activity_date = CURDATE()
-					WHERE member_id = NEW.member_id;
-			END IF;
-	END$$
+    CREATE TRIGGER update_member_borrowed_count 
+    AFTER INSERT ON lib_transactions
+    FOR EACH ROW
+    BEGIN
+        IF NEW.status = 'issued' THEN
+            UPDATE lib_members 
+            SET total_books_borrowed = total_books_borrowed + 1,
+                last_activity_date = CURDATE()
+            WHERE member_id = NEW.member_id;
+        END IF;
+    END$$
 
 	-- Trigger to update book copy status on transaction
-	CREATE TRIGGER update_copy_status_on_issue
-	AFTER INSERT ON lib_transactions
-	FOR EACH ROW
-	BEGIN
-			IF NEW.status = 'issued' THEN
-					UPDATE lib_book_copies 
-					SET status = 'issued'
-					WHERE copy_id = NEW.copy_id;
-			END IF;
-	END$$
+    CREATE TRIGGER update_copy_status_on_issue
+    AFTER INSERT ON lib_transactions
+    FOR EACH ROW
+    BEGIN
+        IF NEW.status = 'issued' THEN
+            UPDATE lib_book_copies 
+            SET status = 'issued'
+            WHERE copy_id = NEW.copy_id;
+        END IF;
+    END$$
 
-	CREATE TRIGGER update_copy_status_on_return
-	AFTER UPDATE ON lib_transactions
-	FOR EACH ROW
-	BEGIN
-			IF NEW.status = 'returned' AND OLD.status != 'returned' THEN
-					UPDATE lib_book_copies 
-					SET status = 'available',
-							current_condition_id = NEW.return_condition_id
-					WHERE copy_id = NEW.copy_id;
-			END IF;
-	END$$
+    CREATE TRIGGER update_copy_status_on_return
+    AFTER UPDATE ON lib_transactions
+    FOR EACH ROW
+    BEGIN
+        IF NEW.status = 'returned' AND OLD.status != 'returned' THEN
+            UPDATE lib_book_copies 
+            SET status = 'available',
+                current_condition_id = NEW.return_condition_id
+            WHERE copy_id = NEW.copy_id;
+        END IF;
+    END$$
 
-	-- Trigger to automatically calculate fines on overdue items
-	CREATE EVENT auto_calculate_fines
-	ON SCHEDULE EVERY 1 DAY
-	STARTS CURRENT_DATE
-	DO
-	BEGIN
-			INSERT INTO lib_fines (transaction_id, member_id, fine_type, amount, days_overdue, calculated_from, calculated_to, status)
-			SELECT 
-					t.transaction_id,
-					t.member_id,
-					'late_return',
-					DATEDIFF(CURDATE(), t.due_date) * mt.fine_rate_per_day,
-					DATEDIFF(CURDATE(), t.due_date),
-					t.due_date,
-					CURDATE(),
-					'pending'
-			FROM lib_transactions t
-			INNER JOIN lib_members m ON t.member_id = m.member_id
-			INNER JOIN lib_membership_types mt ON m.membership_type_id = mt.membership_type_id
-			WHERE t.status = 'issued' 
-					AND t.due_date < CURDATE()
-					AND DATEDIFF(CURDATE(), t.due_date) > mt.grace_period_days
-					AND NOT EXISTS (
-							SELECT 1 FROM lib_fines f 
-							WHERE f.transaction_id = t.transaction_id 
-							AND f.fine_type = 'late_return'
-							AND f.status = 'pending'
-					);
-	END$$
+    -- Trigger to automatically calculate fines on overdue items
+    CREATE EVENT auto_calculate_fines
+    ON SCHEDULE EVERY 1 DAY
+    STARTS CURRENT_DATE
+    DO
+    BEGIN
+        INSERT INTO lib_fines (transaction_id, member_id, fine_type, amount, days_overdue, calculated_from, calculated_to, status)
+        SELECT 
+            t.transaction_id,
+            t.member_id,
+            'late_return',
+            DATEDIFF(CURDATE(), t.due_date) * mt.fine_rate_per_day,
+            DATEDIFF(CURDATE(), t.due_date),
+            t.due_date,
+            CURDATE(),
+            'pending'
+        FROM lib_transactions t
+        INNER JOIN lib_members m ON t.member_id = m.member_id
+        INNER JOIN lib_membership_types mt ON m.membership_type_id = mt.membership_type_id
+        WHERE t.status = 'issued' 
+            AND t.due_date < CURDATE()
+            AND DATEDIFF(CURDATE(), t.due_date) > mt.grace_period_days
+            AND NOT EXISTS (
+                SELECT 1 FROM lib_fines f 
+                WHERE f.transaction_id = t.transaction_id 
+                AND f.fine_type = 'late_return'
+                AND f.status = 'pending'
+            );
+    END$$
 
 	DELIMITER ;
 
@@ -955,101 +948,101 @@
 
 	-- Comprehensive 360-degree view of member engagement and behavior.
 	CREATE OR REPLACE VIEW `lib_view_member_360` AS
-	SELECT 
-			m.member_id,
-			m.membership_number,
-			u.first_name,
-			u.last_name,
-			u.email,
-			u.phone,
-			mt.name as membership_type,
-			m.registration_date,
-			m.expiry_date,
-			m.status,
-			m.total_books_borrowed,
-			m.outstanding_fines,
-			m.engagement_score,
-			m.churn_risk_score,
-			m.lifetime_value,
-			m.reading_level,
-			rba.total_pages_read,
-			rba.avg_reading_days_per_book,
-			rba.reading_consistency_score,
-			rba.genre_diversity_index,
-			g.name as preferred_genre,
-			rba.preferred_borrowing_time,
-			rba.digital_vs_physical_ratio,
-			(
-					SELECT COUNT(*) 
-					FROM lib_reservations r 
-					WHERE r.member_id = m.member_id 
-					AND r.status = 'Pending'
-			) as active_reservations,
-			(
-					SELECT COUNT(*) 
-					FROM lib_transactions t 
-					WHERE t.member_id = m.member_id 
-					AND t.status = 'Issued'
-			) as currently_borrowed,
-			DATEDIFF(CURDATE(), m.last_activity_date) as days_since_last_activity,
-			CASE 
-					WHEN m.last_activity_date IS NULL THEN 'New'
-					WHEN DATEDIFF(CURDATE(), m.last_activity_date) <= 30 THEN 'Active'
-					WHEN DATEDIFF(CURDATE(), m.last_activity_date) <= 90 THEN 'At Risk'
-					ELSE 'Inactive'
-			END as activity_status
-	FROM lib_members m
-	INNER JOIN users u ON m.user_id = u.id
-	INNER JOIN lib_membership_types mt ON m.membership_type_id = mt.id
-	LEFT JOIN lib_reading_behavior_analytics rba ON m.member_id = rba.member_id AND rba.academic_year = YEAR(CURDATE())
-	LEFT JOIN lib_genres g ON rba.preferred_genre_id = g.id;
+    SELECT 
+        m.member_id,
+        m.membership_number,
+        u.first_name,
+        u.last_name,
+        u.email,
+        u.phone,
+        mt.name as membership_type,
+        m.registration_date,
+        m.expiry_date,
+        m.status,
+        m.total_books_borrowed,
+        m.outstanding_fines,
+        m.engagement_score,
+        m.churn_risk_score,
+        m.lifetime_value,
+        m.reading_level,
+        rba.total_pages_read,
+        rba.avg_reading_days_per_book,
+        rba.reading_consistency_score,
+        rba.genre_diversity_index,
+        g.name as preferred_genre,
+        rba.preferred_borrowing_time,
+        rba.digital_vs_physical_ratio,
+        (
+            SELECT COUNT(*) 
+            FROM lib_reservations r 
+            WHERE r.member_id = m.member_id 
+            AND r.status = 'Pending'
+        ) as active_reservations,
+        (
+            SELECT COUNT(*) 
+            FROM lib_transactions t 
+            WHERE t.member_id = m.member_id 
+            AND t.status = 'Issued'
+        ) as currently_borrowed,
+        DATEDIFF(CURDATE(), m.last_activity_date) as days_since_last_activity,
+        CASE 
+            WHEN m.last_activity_date IS NULL THEN 'New'
+            WHEN DATEDIFF(CURDATE(), m.last_activity_date) <= 30 THEN 'Active'
+            WHEN DATEDIFF(CURDATE(), m.last_activity_date) <= 90 THEN 'At Risk'
+            ELSE 'Inactive'
+        END as activity_status
+    FROM lib_members m
+    INNER JOIN users u ON m.user_id = u.id
+    INNER JOIN lib_membership_types mt ON m.membership_type_id = mt.id
+    LEFT JOIN lib_reading_behavior_analytics rba ON m.member_id = rba.member_id AND rba.academic_year = YEAR(CURDATE())
+    LEFT JOIN lib_genres g ON rba.preferred_genre_id = g.id;
 
 
 	-- Real-time performance metrics for collection management.
 	CREATE OR REPLACE VIEW `lib_view_collection_performance` AS
-	SELECT 
-			b.book_id,
-			b.title,
-			b.isbn,
-			p.name as publisher,
-			rt.name as resource_type,
-			COUNT(DISTINCT c.copy_id) as total_copies,
-			SUM(CASE WHEN c.status = 'available' THEN 1 ELSE 0 END) as available_copies,
-			SUM(CASE WHEN c.status = 'issued' THEN 1 ELSE 0 END) as issued_copies,
-			SUM(CASE WHEN c.status = 'reserved' THEN 1 ELSE 0 END) as reserved_copies,
-			SUM(CASE WHEN c.is_lost = 1 THEN 1 ELSE 0 END) as lost_copies,
-			SUM(CASE WHEN c.is_damaged = 1 THEN 1 ELSE 0 END) as damaged_copies,
-			COUNT(DISTINCT t.transaction_id) as total_issues,
-			COUNT(DISTINCT CASE WHEN t.return_date IS NULL AND t.due_date < CURDATE() THEN t.transaction_id END) as overdue_count,
-			AVG(CASE WHEN t.return_date IS NOT NULL THEN DATEDIFF(t.return_date, t.issue_date) END) as avg_loan_days,
-			COUNT(DISTINCT r.reservation_id) as active_reservations,
-			AVG(r.queue_position) as avg_queue_position,
-			b.popularity_rank,
-			b.curricular_relevance_score,
-			b.student_rating,
-			pt.popularity_score,
-			pt.trend_direction,
-			chm.utilization_rate as collection_utilization_rate,
-			CASE 
-					WHEN COUNT(DISTINCT t.transaction_id) > 100 THEN 'High Demand'
-					WHEN COUNT(DISTINCT t.transaction_id) > 50 THEN 'Medium Demand'
-					WHEN COUNT(DISTINCT t.transaction_id) > 10 THEN 'Low Demand'
-					ELSE 'Very Low Demand'
-			END as demand_category
-	FROM lib_books_master b
-	LEFT JOIN lib_publishers p ON b.publisher_id = p.id
-	LEFT JOIN lib_resource_types rt ON b.resource_type_id = rt.id
-	LEFT JOIN lib_book_copies c ON b.book_id = c.book_id
-	LEFT JOIN lib_transactions t ON c.copy_id = t.copy_id
-	LEFT JOIN lib_reservations r ON b.book_id = r.book_id AND r.status = 'Pending'
-	LEFT JOIN lib_book_popularity_trends pt ON b.book_id = pt.book_id AND pt.tracking_date = CURDATE()
-	LEFT JOIN lib_collection_health_metrics chm ON chm.metric_date = CURDATE()
-	GROUP BY b.book_id, b.title, b.isbn, p.name, rt.name, b.popularity_rank, 
-					b.curricular_relevance_score, b.student_rating, pt.popularity_score, pt.trend_direction;
+    SELECT 
+        b.book_id,
+        b.title,
+        b.isbn,
+        p.name as publisher,
+        rt.name as resource_type,
+        COUNT(DISTINCT c.copy_id) as total_copies,
+        SUM(CASE WHEN c.status = 'available' THEN 1 ELSE 0 END) as available_copies,
+        SUM(CASE WHEN c.status = 'issued' THEN 1 ELSE 0 END) as issued_copies,
+        SUM(CASE WHEN c.status = 'reserved' THEN 1 ELSE 0 END) as reserved_copies,
+        SUM(CASE WHEN c.is_lost = 1 THEN 1 ELSE 0 END) as lost_copies,
+        SUM(CASE WHEN c.is_damaged = 1 THEN 1 ELSE 0 END) as damaged_copies,
+        COUNT(DISTINCT t.transaction_id) as total_issues,
+        COUNT(DISTINCT CASE WHEN t.return_date IS NULL AND t.due_date < CURDATE() THEN t.transaction_id END) as overdue_count,
+        AVG(CASE WHEN t.return_date IS NOT NULL THEN DATEDIFF(t.return_date, t.issue_date) END) as avg_loan_days,
+        COUNT(DISTINCT r.reservation_id) as active_reservations,
+        AVG(r.queue_position) as avg_queue_position,
+        b.popularity_rank,
+        b.curricular_relevance_score,
+        b.student_rating,
+        pt.popularity_score,
+        pt.trend_direction,
+        chm.utilization_rate as collection_utilization_rate,
+        CASE 
+            WHEN COUNT(DISTINCT t.transaction_id) > 100 THEN 'High Demand'
+            WHEN COUNT(DISTINCT t.transaction_id) > 50 THEN 'Medium Demand'
+            WHEN COUNT(DISTINCT t.transaction_id) > 10 THEN 'Low Demand'
+            ELSE 'Very Low Demand'
+        END as demand_category
+    FROM lib_books_master b
+    LEFT JOIN lib_publishers p ON b.publisher_id = p.id
+    LEFT JOIN lib_resource_types rt ON b.resource_type_id = rt.id
+    LEFT JOIN lib_book_copies c ON b.book_id = c.book_id
+    LEFT JOIN lib_transactions t ON c.copy_id = t.copy_id
+    LEFT JOIN lib_reservations r ON b.book_id = r.book_id AND r.status = 'Pending'
+    LEFT JOIN lib_book_popularity_trends pt ON b.book_id = pt.book_id AND pt.tracking_date = CURDATE()
+    LEFT JOIN lib_collection_health_metrics chm ON chm.metric_date = CURDATE()
+    GROUP BY b.book_id, b.title, b.isbn, p.name, rt.name, b.popularity_rank, 
+            b.curricular_relevance_score, b.student_rating, pt.popularity_score, pt.trend_direction;
 
 
-	-- Predictive demand forecasting for inventory planning.
-    CREATE OR REPLACE VIEW `lib_view_predictive_demand` AS
+  -- Predictive demand forecasting for inventory planning.
+  CREATE OR REPLACE VIEW `lib_view_predictive_demand` AS
     SELECT b.book_id, b.title, c.name as category_name, g.name as genre_name, b.publication_year,
         (
             SELECT COUNT(*) 
@@ -1083,94 +1076,93 @@
     GROUP BY b.book_id, b.title, c.name, g.name, b.publication_year, pa.predicted_value, pa.confidence_score, pa.insights, pa.recommendations, ca.alignment_score;
 
 
-
   CREATE VIEW lib_view_overdue_books AS
-  SELECT 
-      t.transaction_id, b.title, b.isbn, c.barcode, m.membership_number, u.first_name, u.last_name, u.email, u.phone, t.due_date, DATEDIFF(CURDATE(), t.due_date) as days_overdue, 
-      mt.fine_rate_per_day, DATEDIFF(CURDATE(), t.due_date) * mt.fine_rate_per_day as estimated_fine
-  FROM lib_transactions t
-  INNER JOIN lib_book_copies c ON t.copy_id = c.copy_id
-  INNER JOIN lib_books_master b ON c.book_id = b.book_id
-  INNER JOIN lib_members m ON t.member_id = m.member_id
-  INNER JOIN users u ON m.user_id = u.id
-  INNER JOIN lib_membership_types mt ON m.membership_type_id = mt.membership_type_id
-  WHERE t.status = 'issued' AND t.due_date < CURDATE() AND DATEDIFF(CURDATE(), t.due_date) > mt.grace_period_days;
-  CREATE VIEW lib_view_most_issued_books AS
-  SELECT 
-      b.book_id, b.title, COUNT(t.transaction_id) as issue_count, COUNT(DISTINCT t.member_id) as unique_borrowers,
-      AVG(CASE WHEN t.return_date IS NOT NULL THEN DATEDIFF(t.return_date, t.issue_date) END) as avg_loan_days
-  FROM lib_books_master b
-  LEFT JOIN lib_book_copies c ON b.book_id = c.book_id
-  LEFT JOIN lib_transactions t ON c.copy_id = t.copy_id
-  WHERE t.status = 'returned'
-  GROUP BY b.book_id, b.title
-  ORDER BY issue_count DESC;
+    SELECT 
+        t.transaction_id, b.title, b.isbn, c.barcode, m.membership_number, u.first_name, u.last_name, u.email, u.phone, t.due_date, DATEDIFF(CURDATE(), t.due_date) as days_overdue, 
+        mt.fine_rate_per_day, DATEDIFF(CURDATE(), t.due_date) * mt.fine_rate_per_day as estimated_fine
+    FROM lib_transactions t
+    INNER JOIN lib_book_copies c ON t.copy_id = c.copy_id
+    INNER JOIN lib_books_master b ON c.book_id = b.book_id
+    INNER JOIN lib_members m ON t.member_id = m.member_id
+    INNER JOIN users u ON m.user_id = u.id
+    INNER JOIN lib_membership_types mt ON m.membership_type_id = mt.membership_type_id
+    WHERE t.status = 'issued' AND t.due_date < CURDATE() AND DATEDIFF(CURDATE(), t.due_date) > mt.grace_period_days;
+    CREATE VIEW lib_view_most_issued_books AS
+    SELECT 
+        b.book_id, b.title, COUNT(t.transaction_id) as issue_count, COUNT(DISTINCT t.member_id) as unique_borrowers,
+        AVG(CASE WHEN t.return_date IS NOT NULL THEN DATEDIFF(t.return_date, t.issue_date) END) as avg_loan_days
+    FROM lib_books_master b
+    LEFT JOIN lib_book_copies c ON b.book_id = c.book_id
+    LEFT JOIN lib_transactions t ON c.copy_id = t.copy_id
+    WHERE t.status = 'returned'
+    GROUP BY b.book_id, b.title
+    ORDER BY issue_count DESC;
 
 
   -- ----------------------------------------------------------------------------
   -- 10. SEED DATA (Lookup Tables)
   -- ----------------------------------------------------------------------------
 
-  -- Membership Types
-  INSERT INTO lib_membership_types (membership_type_code, membership_type_name, max_books_allowed, loan_period_days, fine_rate_per_day, grace_period_days, priority_level) VALUES
-  ('STD_STUDENT', 'Standard Student', 5, 14, 5.00, 2, 1),
-  ('STD_STAFF', 'Standard Staff', 10, 30, 2.00, 5, 3),
-  ('RESEARCH_SCHOLAR', 'Research Scholar', 15, 45, 2.00, 7, 4),
-  ('PREMIUM_STUDENT', 'Premium Student', 10, 21, 3.00, 3, 2),
-  ('EXTERNAL', 'External Member', 3, 14, 10.00, 0, 0);
+    -- Membership Types
+    INSERT INTO lib_membership_types (membership_type_code, membership_type_name, max_books_allowed, loan_period_days, fine_rate_per_day, grace_period_days, priority_level) VALUES
+    ('STD_STUDENT', 'Standard Student', 5, 14, 5.00, 2, 1),
+    ('STD_STAFF', 'Standard Staff', 10, 30, 2.00, 5, 3),
+    ('RESEARCH_SCHOLAR', 'Research Scholar', 15, 45, 2.00, 7, 4),
+    ('PREMIUM_STUDENT', 'Premium Student', 10, 21, 3.00, 3, 2),
+    ('EXTERNAL', 'External Member', 3, 14, 10.00, 0, 0);
 
-  -- Categories
-  INSERT INTO lib_categories (category_code, category_name, category_level) VALUES
-  ('FIC', 'Fiction', 1),
-  ('NFIC', 'Non-Fiction', 1),
-  ('SCI', 'Science', 2),
-  ('MATH', 'Mathematics', 2),
-  ('CS', 'Computer Science', 2),
-  ('LIT', 'Literature', 2),
-  ('HIST', 'History', 2),
-  ('GEO', 'Geography', 2),
-  ('ART', 'Art', 2);
+    -- Categories
+    INSERT INTO lib_categories (category_code, category_name, category_level) VALUES
+    ('FIC', 'Fiction', 1),
+    ('NFIC', 'Non-Fiction', 1),
+    ('SCI', 'Science', 2),
+    ('MATH', 'Mathematics', 2),
+    ('CS', 'Computer Science', 2),
+    ('LIT', 'Literature', 2),
+    ('HIST', 'History', 2),
+    ('GEO', 'Geography', 2),
+    ('ART', 'Art', 2);
 
-  -- Genres
-  INSERT INTO lib_genres (genre_code, genre_name) VALUES
-  ('SF', 'Science Fiction'),
-  ('FAN', 'Fantasy'),
-  ('MYS', 'Mystery'),
-  ('BIO', 'Biography'),
-  ('TECH', 'Technology'),
-  ('EDU', 'Educational'),
-  ('REF', 'Reference'),
-  ('CLS', 'Classics'),
-  ('POE', 'Poetry');
+    -- Genres
+    INSERT INTO lib_genres (genre_code, genre_name) VALUES
+    ('SF', 'Science Fiction'),
+    ('FAN', 'Fantasy'),
+    ('MYS', 'Mystery'),
+    ('BIO', 'Biography'),
+    ('TECH', 'Technology'),
+    ('EDU', 'Educational'),
+    ('REF', 'Reference'),
+    ('CLS', 'Classics'),
+    ('POE', 'Poetry');
 
-  -- Resource Types
-  INSERT INTO lib_resource_types (resource_type_code, resource_type_name, is_physical, is_digital) VALUES
-  ('PHY_BOOK', 'Physical Book', TRUE, FALSE),
-  ('EBOOK', 'E-Book', FALSE, TRUE),
-  ('PDF', 'PDF Document', FALSE, TRUE),
-  ('AUDIO', 'Audio Book', FALSE, TRUE),
-  ('VIDEO', 'Video Resource', FALSE, TRUE),
-  ('JOURNAL', 'Journal', TRUE, TRUE),
-  ('MAGAZINE', 'Magazine', TRUE, FALSE);
+    -- Resource Types
+    INSERT INTO lib_resource_types (resource_type_code, resource_type_name, is_physical, is_digital) VALUES
+    ('PHY_BOOK', 'Physical Book', TRUE, FALSE),
+    ('EBOOK', 'E-Book', FALSE, TRUE),
+    ('PDF', 'PDF Document', FALSE, TRUE),
+    ('AUDIO', 'Audio Book', FALSE, TRUE),
+    ('VIDEO', 'Video Resource', FALSE, TRUE),
+    ('JOURNAL', 'Journal', TRUE, TRUE),
+    ('MAGAZINE', 'Magazine', TRUE, FALSE);
 
-  -- Book Conditions
-  INSERT INTO lib_book_conditions (condition_code, condition_name, description, is_borrowable) VALUES
-  ('NEW', 'New', 'Brand new condition, never issued', TRUE),
-  ('EXC', 'Excellent', 'Like new, no signs of wear', TRUE),
-  ('GOOD', 'Good', 'Normal wear and tear, fully readable', TRUE),
-  ('FAIR', 'Fair', 'Significant wear but all pages intact', TRUE),
-  ('POOR', 'Poor', 'Damaged, may have missing pages', FALSE),
-  ('DAMAGED', 'Damaged', 'Needs repair before circulation', FALSE),
-  ('LOST', 'Lost', 'Reported lost by member', FALSE),
-  ('WITHDRAWN', 'Withdrawn', 'Removed from collection', FALSE);
+    -- Book Conditions
+    INSERT INTO lib_book_conditions (condition_code, condition_name, description, is_borrowable) VALUES
+    ('NEW', 'New', 'Brand new condition, never issued', TRUE),
+    ('EXC', 'Excellent', 'Like new, no signs of wear', TRUE),
+    ('GOOD', 'Good', 'Normal wear and tear, fully readable', TRUE),
+    ('FAIR', 'Fair', 'Significant wear but all pages intact', TRUE),
+    ('POOR', 'Poor', 'Damaged, may have missing pages', FALSE),
+    ('DAMAGED', 'Damaged', 'Needs repair before circulation', FALSE),
+    ('LOST', 'Lost', 'Reported lost by member', FALSE),
+    ('WITHDRAWN', 'Withdrawn', 'Removed from collection', FALSE);
 
-  -- Shelf Locations
-  INSERT INTO lib_shelf_locations (location_code, aisle_number, shelf_number, rack_number, floor_number, building) VALUES
-  ('A1-S1-R1', 'A1', 'S1', 'R1', '1', 'Main Library'),
-  ('A1-S1-R2', 'A1', 'S1', 'R2', '1', 'Main Library'),
-  ('A1-S2-R1', 'A1', 'S2', 'R1', '1', 'Main Library'),
-  ('B2-S1-R1', 'B2', 'S1', 'R1', '2', 'Science Block'),
-  ('REF-A1', 'REF', 'A1', NULL, '1', 'Reference Section');
+    -- Shelf Locations
+    INSERT INTO lib_shelf_locations (location_code, aisle_number, shelf_number, rack_number, floor_number, building) VALUES
+    ('A1-S1-R1', 'A1', 'S1', 'R1', '1', 'Main Library'),
+    ('A1-S1-R2', 'A1', 'S1', 'R2', '1', 'Main Library'),
+    ('A1-S2-R1', 'A1', 'S2', 'R1', '1', 'Main Library'),
+    ('B2-S1-R1', 'B2', 'S1', 'R1', '2', 'Science Block'),
+    ('REF-A1', 'REF', 'A1', NULL, '1', 'Reference Section');
 
   -- --------------------------------------------------------------------------------------------------------------------------
   -- Dropdown Table Entry

@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LMS Modules — Master Requirements Document</title>
+<style>
+  :root {
+    --primary: #2563eb;
+    --primary-dark: #1e40af;
+    --success: #16a34a;
+    --warning: #d97706;
+    --danger: #dc2626;
+    --info: #0891b2;
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --border: #e2e8f0;
+    --text: #1e293b;
+    --text-light: #64748b;
+    --code-bg: #f1f5f9;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+  .layout { display: flex; min-height: 100vh; }
+  .sidebar { width: 280px; background: #1e293b; color: #94a3b8; padding: 20px 0; position: fixed; height: 100vh; overflow-y: auto; z-index: 100; }
+  .sidebar h2 { color: white; font-size: 14px; font-weight: 700; padding: 0 20px 16px; border-bottom: 1px solid #334155; text-transform: uppercase; letter-spacing: 1px; }
+  .sidebar nav { padding: 16px 0; }
+  .sidebar a { display: block; padding: 6px 20px; color: #94a3b8; text-decoration: none; font-size: 13px; border-left: 3px solid transparent; transition: all 0.15s; }
+  .sidebar a:hover, .sidebar a.active { background: #334155; color: white; border-left-color: var(--primary); }
+  .sidebar .nav-section { padding: 12px 20px 4px; font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: #475569; font-weight: 700; }
+  .main { margin-left: 280px; padding: 40px; max-width: 1100px; }
+  .hero { background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%); color: white; padding: 40px; border-radius: 12px; margin-bottom: 40px; }
+  .hero h1 { font-size: 28px; font-weight: 800; margin-bottom: 8px; }
+  .hero p { opacity: 0.85; font-size: 15px; }
+  .meta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 24px; }
+  .meta-item { background: rgba(255,255,255,0.15); padding: 12px 16px; border-radius: 8px; }
+  .meta-item .label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.7; }
+  .meta-item .value { font-size: 15px; font-weight: 700; margin-top: 2px; }
+  .module-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 40px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.07); }
+  .module-header { padding: 24px 28px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 16px; }
+  .module-badge { font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 20px; }
+  .badge-syllabus { background: #dbeafe; color: #1d4ed8; }
+  .badge-quiz { background: #dcfce7; color: #166534; }
+  .badge-quest { background: #fef3c7; color: #92400e; }
+  .badge-exam { background: #ede9fe; color: #5b21b6; }
+  .badge-homework { background: #fce7f3; color: #9d174d; }
+  .badge-qbank { background: #f0fdf4; color: #14532d; }
+  .module-title { font-size: 22px; font-weight: 800; }
+  .module-subtitle { color: var(--text-light); font-size: 14px; margin-top: 2px; }
+  .module-body { padding: 28px; }
+  .section { margin-bottom: 28px; }
+  .section h3 { font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-light); margin-bottom: 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+  .section h4 { font-size: 15px; font-weight: 600; margin: 16px 0 8px; }
+  p { margin-bottom: 10px; font-size: 14px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 16px; }
+  th { background: #f8fafc; text-align: left; padding: 9px 12px; font-weight: 600; color: var(--text-light); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid var(--border); }
+  td { padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #f8fafc; }
+  code { font-family: 'Fira Code', 'Courier New', monospace; font-size: 12px; background: var(--code-bg); padding: 1px 5px; border-radius: 3px; }
+  pre { background: #0f172a; color: #e2e8f0; padding: 16px; border-radius: 8px; font-size: 12px; overflow-x: auto; margin: 12px 0; }
+  .tag { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+  .tag-critical { background: #fee2e2; color: #991b1b; }
+  .tag-high { background: #fef3c7; color: #92400e; }
+  .tag-medium { background: #dbeafe; color: #1d4ed8; }
+  .tag-low { background: #f0fdf4; color: #166534; }
+  .tag-gap { background: #fce7f3; color: #9d174d; }
+  .tag-derived { background: #f1f5f9; color: #475569; }
+  .alert { padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 13px; border-left: 4px solid; }
+  .alert-critical { background: #fef2f2; border-color: #ef4444; color: #7f1d1d; }
+  .alert-warning { background: #fffbeb; border-color: #f59e0b; color: #78350f; }
+  .alert-info { background: #eff6ff; border-color: #3b82f6; color: #1e3a8a; }
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .stat-item { background: var(--code-bg); padding: 16px; border-radius: 8px; text-align: center; }
+  .stat-item .num { font-size: 24px; font-weight: 800; color: var(--primary); }
+  .stat-item .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-light); margin-top: 4px; }
+  .gap-note { color: #dc2626; font-weight: 600; font-size: 12px; }
+  .toc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 40px; }
+  .toc-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; text-decoration: none; color: var(--text); transition: all 0.15s; display: block; }
+  .toc-card:hover { border-color: var(--primary); box-shadow: 0 4px 12px rgba(37,99,235,0.15); }
+  .toc-card .toc-title { font-weight: 700; font-size: 15px; }
+  .toc-card .toc-meta { font-size: 12px; color: var(--text-light); margin-top: 4px; }
+  .toc-card .toc-status { font-size: 11px; font-weight: 700; margin-top: 8px; }
+  ul, ol { padding-left: 20px; margin-bottom: 12px; }
+  li { font-size: 14px; margin-bottom: 4px; }
+  .section-anchor { display: block; margin-top: -80px; padding-top: 80px; }
+  .footer { margin-top: 60px; padding: 24px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; text-align: center; color: var(--text-light); font-size: 13px; }
+</style>
+</head>
+<body>
+
+<div class="layout">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <h2>LMS Requirements</h2>
+  <nav>
+    <span class="nav-section">Overview</span>
+    <a href="#overview">Platform Overview</a>
+    <a href="#modules-summary">Module Summary</a>
+
+    <span class="nav-section">Modules</span>
+    <a href="#syllabus">1. Syllabus</a>
+    <a href="#lmsquiz">2. LmsQuiz</a>
+    <a href="#lmsquests">3. LmsQuests</a>
+    <a href="#lmsexam">4. LmsExam</a>
+    <a href="#lmshomework">5. LmsHomework</a>
+    <a href="#questionbank">6. QuestionBank</a>
+
+    <span class="nav-section">Analysis</span>
+    <a href="#executive-summary">Executive Summary</a>
+    <a href="#common-patterns">Common Patterns</a>
+    <a href="#common-rules">Common Rules</a>
+    <a href="#suggestions">Overall Suggestions</a>
+  </nav>
+</aside>
+
+<!-- MAIN CONTENT -->
+<main class="main">
+
+  <!-- HERO -->
+  <div class="hero" id="overview">
+    <h1>LMS Modules — Master Requirements Document</h1>
+    <p>Prime-AI ERP + LMS + LXP | Multi-Tenant SaaS | Indian K-12 Schools | PHP 8.2+ / Laravel 12.0</p>
+    <div class="meta-grid">
+      <div class="meta-item"><div class="label">Generated</div><div class="value">2026-03-19</div></div>
+      <div class="meta-item"><div class="label">Modules Covered</div><div class="value">6</div></div>
+      <div class="meta-item"><div class="label">Source</div><div class="value">Code Inspection</div></div>
+      <div class="meta-item"><div class="label">Excel</div><div class="value">Binary (not parsed)</div></div>
+      <div class="meta-item"><div class="label">Total Issues</div><div class="value">30</div></div>
+    </div>
+  </div>
+
+  <!-- MODULE SUMMARY / TOC -->
+  <a class="section-anchor" id="modules-summary"></a>
+  <h2 style="font-size:20px;font-weight:800;margin-bottom:16px;">Module Summary</h2>
+  <div class="toc-grid">
+    <a class="toc-card" href="#syllabus">
+      <div class="toc-title">Syllabus</div>
+      <div class="toc-meta">15 controllers · 22 models · ~40 routes</div>
+      <div class="toc-status" style="color:#16a34a;">~100% Complete</div>
+    </a>
+    <a class="toc-card" href="#lmsquiz">
+      <div class="toc-title">LmsQuiz</div>
+      <div class="toc-meta">5 controllers · 6 models · ~25 routes</div>
+      <div class="toc-status" style="color:#d97706;">~90% Complete</div>
+    </a>
+    <a class="toc-card" href="#lmsquests">
+      <div class="toc-title">LmsQuests</div>
+      <div class="toc-meta">4 controllers · 4 models · ~25 routes</div>
+      <div class="toc-status" style="color:#d97706;">~85% Complete</div>
+    </a>
+    <a class="toc-card" href="#lmsexam">
+      <div class="toc-title">LmsExam</div>
+      <div class="toc-meta">11 controllers · 11 models · ~50 routes</div>
+      <div class="toc-status" style="color:#d97706;">~90% Complete</div>
+    </a>
+    <a class="toc-card" href="#lmshomework">
+      <div class="toc-title">LmsHomework</div>
+      <div class="toc-meta">5 controllers · 5 models · ~20 routes</div>
+      <div class="toc-status" style="color:#dc2626;">~80% Complete</div>
+    </a>
+    <a class="toc-card" href="#questionbank">
+      <div class="toc-title">QuestionBank</div>
+      <div class="toc-meta">7 controllers · 16 models · ~30 routes</div>
+      <div class="toc-status" style="color:#d97706;">~85% Complete</div>
+    </a>
+  </div>
+
+  <!-- CRITICAL ALERTS -->
+  <div class="alert alert-critical">
+    <strong>CRITICAL SECURITY:</strong> OpenAI and Gemini API keys are hardcoded in <code>AIQuestionGeneratorController.php</code>. Revoke these keys immediately and move to <code>.env</code>.
+  </div>
+  <div class="alert alert-warning">
+    <strong>SECURITY GAP:</strong> No <code>HomeworkPolicy</code> exists. Any authenticated user can create, edit, delete, or grade homework for any class.
+  </div>
+  <div class="alert alert-info">
+    <strong>NOTE:</strong> All requirements are derived from code inspection. Excel file <code>LMS_Shailesh.xlsx</code> was confirmed present (binary XLSX) but could not be parsed without a spreadsheet tool.
+  </div>
+
+  <!-- ===================== MODULE 1: SYLLABUS ===================== -->
+  <a class="section-anchor" id="syllabus"></a>
+  <div class="module-card">
+    <div class="module-header">
+      <span class="module-badge badge-syllabus">Syllabus</span>
+      <div>
+        <div class="module-title">1. Syllabus Module</div>
+        <div class="module-subtitle">Table prefix: slb_* · Route prefix: /syllabus/* · Status: ~100%</div>
+      </div>
+    </div>
+    <div class="module-body">
+
+      <div class="stat-grid">
+        <div class="stat-item"><div class="num">15</div><div class="lbl">Controllers</div></div>
+        <div class="stat-item"><div class="num">22</div><div class="lbl">Models</div></div>
+        <div class="stat-item"><div class="num">14</div><div class="lbl">Requests</div></div>
+        <div class="stat-item"><div class="num">~40</div><div class="lbl">Routes</div></div>
+        <div class="stat-item"><div class="num">1</div><div class="lbl">Policy (misnamed)</div></div>
+      </div>
+
+      <div class="section">
+        <h3>1.1 Module Purpose</h3>
+        <p>The Syllabus module is the academic content backbone of the platform. It defines the hierarchical curriculum structure — from Class/Subject down to Lesson and multi-level Topic trees. All other LMS modules (Quiz, Quest, Exam, Homework, QuestionBank) depend on this module for curriculum context.</p>
+      </div>
+
+      <div class="section">
+        <h3>1.2 Core Entities</h3>
+        <table>
+          <tr><th>Model</th><th>Table</th><th>Description</th></tr>
+          <tr><td><code>Lesson</code></td><td><code>slb_lessons</code></td><td>Lesson per Session+Class+Subject</td></tr>
+          <tr><td><code>Topic</code></td><td><code>slb_topics</code></td><td>Multi-level topic tree (materialized path)</td></tr>
+          <tr><td><code>BloomTaxonomy</code></td><td><code>slb_bloom_taxonomy</code></td><td>Bloom's Taxonomy levels</td></tr>
+          <tr><td><code>CognitiveSkill</code></td><td><code>slb_cognitive_skills</code></td><td>Cognitive skill categories</td></tr>
+          <tr><td><code>Competencie</code></td><td><code>slb_competencies</code></td><td>Learning competencies</td></tr>
+          <tr><td><code>ComplexityLevel</code></td><td><code>slb_complexity_level</code></td><td>Difficulty levels</td></tr>
+          <tr><td><code>QuestionType</code></td><td><code>slb_question_types</code></td><td>Question format types</td></tr>
+          <tr><td><code>GradeDivisionMaster</code></td><td><code>slb_grade_division_master</code></td><td>Grading schemas</td></tr>
+          <tr><td><code>SyllabusSchedule</code></td><td><code>slb_syllabus_schedule</code></td><td>Planned delivery schedule</td></tr>
+        </table>
+      </div>
+
+      <div class="section">
+        <h3>1.3 Key Field Requirements — slb_lessons</h3>
+        <table>
+          <tr><th>Field</th><th>Type</th><th>Required</th><th>Rule</th></tr>
+          <tr><td>academic_session_id</td><td>FK</td><td>Yes</td><td>exists:sch_org_academic_sessions_jnt</td></tr>
+          <tr><td>class_id</td><td>FK</td><td>Yes</td><td>exists:sch_classes</td></tr>
+          <tr><td>subject_id</td><td>FK</td><td>Yes</td><td>exists:sch_subjects</td></tr>
+          <tr><td>code</td><td>string(20)</td><td>Yes</td><td>globally unique</td></tr>
+          <tr><td>name</td><td>string(150)</td><td>Yes</td><td>unique per session+class+subject</td></tr>
+          <tr><td>ordinal</td><td>integer</td><td>Yes</td><td>unique per session+class+subject, min:1</td></tr>
+          <tr><td>estimated_periods</td><td>integer</td><td>No</td><td>min:1</td></tr>
+          <tr><td>weightage_in_subject</td><td>decimal</td><td>No</td><td>0-100</td></tr>
+          <tr><td>scheduled_year_week</td><td>integer</td><td>No</td><td>format YYYYWW, range 202001-210052</td></tr>
+          <tr><td>resources_json</td><td>JSON array</td><td>No</td><td>type in: video,pdf,link,document,image,audio,ppt</td></tr>
+        </table>
+      </div>
+
+      <div class="section">
+        <h3>1.4 Topic Hierarchy Rules</h3>
+        <ul>
+          <li>Topics form a recursive tree via <code>parent_id</code> with automatic materialized path computation</li>
+          <li>Level 0 = root topic; computed as parent.level + 1 automatically</li>
+          <li>Code auto-generated: <code>CLASS_SUBJECT_LESSON_TOP01</code>, sub-topics: <code>..._SUB01</code></li>
+          <li>Level prefixes: TOP(0), SUB(1), MIN(2), SMT(3), MIC(4), NAN(5), ULT(6)</li>
+          <li>Topic name unique per (lesson + parent)</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h3>1.5 Code Review Issues</h3>
+        <table>
+          <tr><th>ID</th><th>Severity</th><th>Issue</th></tr>
+          <tr><td>CR-003</td><td><span class="tag tag-high">HIGH</span></td><td>No LessonPolicy or TopicPolicy — any auth user can CRUD lessons/topics</td></tr>
+          <tr><td>CR-015</td><td><span class="tag tag-medium">MEDIUM</span></td><td>SyllabusSchedulePolicy.php misnamed — actually guards QuesTypeSpecificity</td></tr>
+          <tr><td>CR-023</td><td><span class="tag tag-low">LOW</span></td><td>Topic TEMP path not cleaned if saveQuietly() fails</td></tr>
+          <tr><td>CR-030</td><td><span class="tag tag-low">LOW</span></td><td>N+1 queries in batch lesson validation (6+ DB queries per lesson row)</td></tr>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===================== MODULE 2: LMSQUIZ ===================== -->
+  <a class="section-anchor" id="lmsquiz"></a>
+  <div class="module-card">
+    <div class="module-header">
+      <span class="module-badge badge-quiz">LmsQuiz</span>
+      <div>
+        <div class="module-title">2. LmsQuiz Module</div>
+        <div class="module-subtitle">Table prefix: lms_quizzes · Route prefix: /lms-quize/* (typo!) · Status: ~90%</div>
+      </div>
+    </div>
+    <div class="module-body">
+
+      <div class="stat-grid">
+        <div class="stat-item"><div class="num">5</div><div class="lbl">Controllers</div></div>
+        <div class="stat-item"><div class="num">6</div><div class="lbl">Models</div></div>
+        <div class="stat-item"><div class="num">5</div><div class="lbl">Requests</div></div>
+        <div class="stat-item"><div class="num">~25</div><div class="lbl">Routes</div></div>
+        <div class="stat-item"><div class="num">1</div><div class="lbl">Policy</div></div>
+      </div>
+
+      <div class="section">
+        <h3>2.1 Module Purpose</h3>
+        <p>Manages formative assessments in quiz format. Teachers create quizzes linked to an academic hierarchy (session → class → subject → lesson → topic), configure question settings, difficulty distribution, and allocate quizzes to classes, sections, groups, or individual students.</p>
+      </div>
+
+      <div class="section">
+        <h3>2.2 Quiz Lifecycle</h3>
+        <div style="display:flex;align-items:center;gap:12px;padding:16px;background:var(--code-bg);border-radius:8px;margin-bottom:16px;">
+          <span style="background:#dbeafe;color:#1d4ed8;padding:6px 14px;border-radius:6px;font-weight:700;">DRAFT</span>
+          <span style="color:var(--text-light);">→</span>
+          <span style="background:#dcfce7;color:#166534;padding:6px 14px;border-radius:6px;font-weight:700;">PUBLISHED</span>
+          <span style="color:var(--text-light);">→</span>
+          <span style="background:#fee2e2;color:#991b1b;padding:6px 14px;border-radius:6px;font-weight:700;">ARCHIVED</span>
+        </div>
+        <p>No state machine enforces transitions. Student access: <code>status = PUBLISHED AND is_active = true</code>.</p>
+      </div>
+
+      <div class="section">
+        <h3>2.3 Key Validation Rules (QuizRequest)</h3>
+        <table>
+          <tr><th>Field</th><th>Rule</th><th>Note</th></tr>
+          <tr><td>academic_session_id</td><td>required</td><td><span class="gap-note">GAP: no exists validation</span></td></tr>
+          <tr><td>class_id</td><td>required, exists:sch_classes</td><td></td></tr>
+          <tr><td>lesson_id</td><td>required, exists:slb_lessons</td><td></td></tr>
+          <tr><td>title</td><td>required, string, max:100</td><td></td></tr>
+          <tr><td>status</td><td>required, in:DRAFT,PUBLISHED,ARCHIVED</td><td></td></tr>
+          <tr><td>duration_minutes</td><td>nullable, integer, 1-600</td><td></td></tr>
+          <tr><td>passing_percentage</td><td>required, numeric, 0-100</td><td></td></tr>
+          <tr><td>negative_marks</td><td>required, numeric, 0-99.99</td><td></td></tr>
+          <tr><td>max_attempts</td><td>required_if:allow_multiple_attempts=true, 1-10</td><td></td></tr>
+        </table>
+      </div>
+
+      <div class="section">
+        <h3>2.4 Permissions (QuizPolicy)</h3>
+        <table>
+          <tr><th>Action</th><th>Permission String</th></tr>
+          <tr><td>View Any</td><td><code>tenant.quize.viewAny</code></td></tr>
+          <tr><td>Create</td><td><code>tenant.quize.create</code></td></tr>
+          <tr><td>Update</td><td><code>tenant.quize.update</code></td></tr>
+          <tr><td>Delete</td><td><code>tenant.quize.delete</code></td></tr>
+          <tr><td>Restore</td><td><code>tenant.quize.restore</code></td></tr>
+          <tr><td>Force Delete</td><td><code>tenant.quize.forceDelete</code></td></tr>
+          <tr><td>Toggle Status</td><td><code>tenant.quize.status</code></td></tr>
+        </table>
+        <p class="gap-note">GAP: No QuizAllocationPolicy or QuizQuestionPolicy found.</p>
+      </div>
+
+      <div class="section">
+        <h3>2.5 Code Review Issues</h3>
+        <table>
+          <tr><th>ID</th><th>Severity</th><th>Issue</th></tr>
+          <tr><td>CR-013</td><td><span class="tag tag-medium">MEDIUM</span></td><td>Route prefix typo: <code>lms-quize</code> instead of <code>lms-quiz</code></td></tr>
+          <tr><td>CR-008</td><td><span class="tag tag-high">HIGH</span></td><td>academic_session_id has no exists validation in QuizRequest</td></tr>
+          <tr><td>CR-004</td><td><span class="tag tag-high">HIGH</span></td><td>No QuizAllocation or QuizQuestion policy</td></tr>
+          <tr><td>CR-014</td><td><span class="tag tag-medium">MEDIUM</span></td><td>No publish guard — quiz can be published with 0 questions</td></tr>
+          <tr><td>CR-021</td><td><span class="tag tag-medium">MEDIUM</span></td><td>Quiz.php boot() fires 5 lazy-loaded queries during creation</td></tr>
+          <tr><td>CR-024</td><td><span class="tag tag-low">LOW</span></td><td>QuizAllocation uses non-standard polymorphic columns</td></tr>
+          <tr><td>CR-027</td><td><span class="tag tag-low">LOW</span></td><td>Quiz code 4-char random suffix — collision risk</td></tr>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===================== MODULE 3: LMSQUESTS ===================== -->
+  <a class="section-anchor" id="lmsquests"></a>
+  <div class="module-card">
+    <div class="module-header">
+      <span class="module-badge badge-quest">LmsQuests</span>
+      <div>
+        <div class="module-title">3. LmsQuests Module</div>
+        <div class="module-subtitle">Table prefix: lms_quests · Route prefix: /lms-quests/* · Status: ~85%</div>
+      </div>
+    </div>
+    <div class="module-body">
+
+      <div class="section">
+        <h3>3.1 canPublish() Logic (Quest Model)</h3>
+        <pre>public function canPublish(): bool {
+    if ($this->questQuestions()->count() === 0) return false;
+    if ($this->questQuestions()->count() !== $this->total_questions) return false;
+    if (!empty($this->validateSettings())) return false;
+    if (!$this->academic_session_id || !$this->class_id ||
+        !$this->subject_id || !$this->lesson_id) return false;
+    return true;
+}</pre>
+      </div>
+
+      <div class="section">
+        <h3>3.2 Quest vs Quiz — Differences</h3>
+        <table>
+          <tr><th>Feature</th><th>Quiz</th><th>Quest</th></tr>
+          <tr><td>Title max length</td><td>100</td><td>255</td></tr>
+          <tr><td>duration_minutes max</td><td>600</td><td>300</td></tr>
+          <tr><td>Academic fields required</td><td>Yes (required+exists)</td><td><span class="gap-note">No (nullable|string)</span></td></tr>
+          <tr><td>canPublish() guard</td><td>Not implemented</td><td>Implemented</td></tr>
+          <tr><td>Scope entity</td><td>No (topic on quiz itself)</td><td>Yes (QuestScope model)</td></tr>
+          <tr><td>Duplicate method</td><td>Not found</td><td>Implemented</td></tr>
+          <tr><td>pending flag</td><td>No</td><td>Yes (purpose unclear)</td></tr>
+          <tr><td>Policy richness</td><td>7 actions</td><td>13 actions</td></tr>
+        </table>
+      </div>
+
+      <div class="section">
+        <h3>3.3 Quest Allocation Date Rules</h3>
+        <table>
+          <tr><th>Field</th><th>Rule</th></tr>
+          <tr><td>due_date</td><td>required, after_or_equal:now, max 2 years</td></tr>
+          <tr><td>cut_off_date</td><td>nullable, after_or_equal:due_date, max 2 years</td></tr>
+          <tr><td>result_publish_date</td><td>nullable, after_or_equal:due_date, prohibited_unless:is_auto_publish_result=true</td></tr>
+        </table>
+      </div>
+
+      <div class="section">
+        <h3>3.4 Code Review Issues</h3>
+        <table>
+          <tr><th>ID</th><th>Severity</th><th>Issue</th></tr>
+          <tr><td>CR-011</td><td><span class="tag tag-high">HIGH</span></td><td>Quest question routes duplicated in tenant.php — one group is dead code</td></tr>
+          <tr><td>CR-010</td><td><span class="tag tag-high">HIGH</span></td><td>Academic fields nullable/unvalidated in QuestRequest</td></tr>
+          <tr><td>CR-025</td><td><span class="tag tag-low">LOW</span></td><td>duplicate() uses replicate() — media not copied</td></tr>
+          <tr><td>CR-026</td><td><span class="tag tag-low">LOW</span></td><td>pending flag has no defined business logic</td></tr>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===================== MODULE 4: LMSEXAM ===================== -->
+  <a class="section-anchor" id="lmsexam"></a>
+  <div class="module-card">
+    <div class="module-header">
+      <span class="module-badge badge-exam">LmsExam</span>
+      <div>
+        <div class="module-title">4. LmsExam Module</div>
+        <div class="module-subtitle">Table prefix: lms_exam* · Route prefix: /lms-exam/* · Status: ~90%</div>
+      </div>
+    </div>
+    <div class="module-body">
+
+      <div class="stat-grid">
+        <div class="stat-item"><div class="num">11</div><div class="lbl">Controllers</div></div>
+        <div class="stat-item"><div class="num">11</div><div class="lbl">Models</div></div>
+        <div class="stat-item"><div class="num">11</div><div class="lbl">Requests</div></div>
+        <div class="stat-item"><div class="num">~50</div><div class="lbl">Routes</div></div>
+        <div class="stat-item"><div class="num">9</div><div class="lbl">Policies</div></div>
+      </div>
+
+      <div class="section">
+        <h3>4.1 Exam Hierarchy</h3>
+        <div style="padding:16px;background:var(--code-bg);border-radius:8px;font-family:monospace;font-size:13px;">
+          Exam (session+class+exam_type)<br>
+          &nbsp;&nbsp;└─ ExamPaper (per subject, ONLINE or OFFLINE)<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├─ ExamScope (lesson+topic coverage)<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├─ ExamBlueprint (section-wise marking scheme)<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└─ ExamPaperSet (Set A, Set B...)<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└─ PaperSetQuestion (question with ordinal/marks/compulsory)<br>
+          ExamStudentGroup → ExamStudentGroupMember<br>
+          ExamAllocation (paper_set → CLASS/SECTION/GROUP/STUDENT + time)
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>4.2 ONLINE vs OFFLINE Paper Rules</h3>
+        <table>
+          <tr><th>Mode</th><th>Required Fields</th><th>Additional Options</th></tr>
+          <tr><td>ONLINE</td><td>show_result_type (IMMEDIATE/SCHEDULED/MANUAL)</td><td>is_proctored, is_ai_proctored, fullscreen_required, browser_lock_required, shuffle_questions</td></tr>
+          <tr><td>OFFLINE</td><td>offline_entry_mode (BULK_TOTAL/QUESTION_WISE)</td><td>—</td></tr>
+          <tr><td>Both</td><td>total_marks, passing_percentage, status_id</td><td>negative_marks, allow_calculator, difficulty_config_id</td></tr>
+        </table>
+      </div>
+
+      <div class="section">
+        <h3>4.3 Exam Allocation Target Types</h3>
+        <table>
+          <tr><th>Type</th><th>Required FK</th><th>Table</th></tr>
+          <tr><td>CLASS</td><td>class_id only</td><td>sch_classes</td></tr>
+          <tr><td>SECTION</td><td>class_id + section_id</td><td>sch_sections</td></tr>
+          <tr><td>EXAM_GROUP</td><td>class_id + exam_group_id</td><td>lms_exam_student_groups</td></tr>
+          <tr><td>STUDENT</td><td>class_id + student_id</td><td>std_students</td></tr>
+        </table>
+      </div>
+
+      <div class="section">
+        <h3>4.4 Code Review Issues</h3>
+        <table>
+          <tr><th>ID</th><th>Severity</th><th>Issue</th></tr>
+          <tr><td>CR-007</td><td><span class="tag tag-high">HIGH</span></td><td>Exam.generateExamCode() — null->code throws TypeError in PHP 8 (use ?->)</td></tr>
+          <tr><td>CR-009</td><td><span class="tag tag-high">HIGH</span></td><td>academic_session_id has no exists validation in ExamRequest</td></tr>
+          <tr><td>CR-018</td><td><span class="tag tag-medium">MEDIUM</span></td><td>ExamPaper allows duplicate (exam_id+class_id+subject_id) — no unique constraint</td></tr>
+          <tr><td>CR-022</td><td><span class="tag tag-medium">MEDIUM</span></td><td>ExamAllocation times cast as datetime but validated as H:i format — mismatch</td></tr>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===================== MODULE 5: LMSHOMEWORK ===================== -->
+  <a class="section-anchor" id="lmshomework"></a>
+  <div class="module-card">
+    <div class="module-header">
+      <span class="module-badge badge-homework">LmsHomework</span>
+      <div>
+        <div class="module-title">5. LmsHomework Module</div>
+        <div class="module-subtitle">Table prefix: lms_homework* · Route prefix: /lms-home-work/* · Status: ~80%</div>
+      </div>
+    </div>
+    <div class="module-body">
+
+      <div class="alert alert-critical">
+        <strong>CRITICAL GAP:</strong> No <code>HomeworkPolicy</code> exists. Any authenticated user can create, edit, delete homework and grade student submissions.
+      </div>
+
+      <div class="section">
+        <h3>5.1 Homework Model Business Logic</h3>
+        <table>
+          <tr><th>Method</th><th>Logic</th></tr>
+          <tr><td><code>isEditable()</code></td><td>status_id == config('lmshomework.status.draft')</td></tr>
+          <tr><td><code>isDeletable()</code></td><td>submission_count == 0</td></tr>
+          <tr><td><code>status accessor</code></td><td>UPCOMING / ONGOING / OVERDUE based on assign_date and due_date vs now()</td></tr>
+        </table>
+      </div>
+
+      <div class="section">
+        <h3>5.2 Rule Engine Architecture</h3>
+        <div style="padding:16px;background:var(--code-bg);border-radius:8px;font-family:monospace;font-size:13px;">
+          TriggerEvent (when homework submitted/overdue/etc.)<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;↓<br>
+          RuleEngineConfig (if event X + class_group Y → logic_config JSON)<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;↓<br>
+          ActionType (NOTIFY_TEACHER / SEND_REMINDER / etc.)
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>5.3 HomeworkSubmission — File Uploads</h3>
+        <p>Submissions use <strong>Spatie MediaLibrary</strong> via <code>HasMedia</code> + <code>InteractsWithMedia</code>.</p>
+        <ul>
+          <li>Collection: <code>homework_submission_files</code></li>
+          <li>Disk: <code>public</code></li>
+          <li>Conversions: <code>thumb</code> (150×150), <code>preview</code> (600×600)</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h3>5.4 Code Review Issues</h3>
+        <table>
+          <tr><th>ID</th><th>Severity</th><th>Issue</th></tr>
+          <tr><td>CR-002</td><td><span class="tag tag-critical">CRITICAL</span></td><td>No HomeworkPolicy — any auth user can CRUD homework and grade submissions</td></tr>
+          <tr><td>CR-006</td><td><span class="tag tag-high">HIGH</span></td><td>Homework.academicSession() references undefined class SchAcademicSession</td></tr>
+          <tr><td>CR-012</td><td><span class="tag tag-high">HIGH</span></td><td>Dual Dropdown model (Prime vs GlobalMaster) in same workflow</td></tr>
+          <tr><td>CR-016</td><td><span class="tag tag-medium">MEDIUM</span></td><td>isEditable() relies on config('lmshomework.status.draft') — config may not exist</td></tr>
+          <tr><td>CR-017</td><td><span class="tag tag-medium">MEDIUM</span></td><td>toggleStatus route uses {trigger_event} param instead of {homework_submission}</td></tr>
+          <tr><td>CR-028</td><td><span class="tag tag-low">LOW</span></td><td>HomeworkSubmission.student() binds to SysUser — may be wrong model</td></tr>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===================== MODULE 6: QUESTIONBANK ===================== -->
+  <a class="section-anchor" id="questionbank"></a>
+  <div class="module-card">
+    <div class="module-header">
+      <span class="module-badge badge-qbank">QuestionBank</span>
+      <div>
+        <div class="module-title">6. QuestionBank Module</div>
+        <div class="module-subtitle">Table prefix: qns_* · Route prefix: /question-bank/* · Status: ~85%</div>
+      </div>
+    </div>
+    <div class="module-body">
+
+      <div class="alert alert-critical">
+        <strong>CRITICAL:</strong> ChatGPT and Gemini API keys are hardcoded as class properties in <code>AIQuestionGeneratorController.php</code>. Revoke immediately.
+      </div>
+
+      <div class="section">
+        <h3>6.1 Question Availability Scoping</h3>
+        <table>
+          <tr><th>Availability</th><th>Scope</th><th>Extra Fields</th></tr>
+          <tr><td>GLOBAL</td><td>All tenants/schools</td><td>—</td></tr>
+          <tr><td>SCHOOL_ONLY</td><td>Current tenant only</td><td>is_school_specific=true</td></tr>
+          <tr><td>CLASS_ONLY</td><td>Specific class/section/student</td><td>selected_entity_group_id / selected_section_id / selected_student_id</td></tr>
+        </table>
+      </div>
+
+      <div class="section">
+        <h3>6.2 Usage Flags</h3>
+        <table>
+          <tr><th>Flag</th><th>Meaning</th><th>Consumed By</th></tr>
+          <tr><td>for_quiz</td><td>Can be used in quizzes</td><td>LmsQuiz question builder</td></tr>
+          <tr><td>for_assessment</td><td>Can be used in assessments/quests</td><td>LmsQuests question builder</td></tr>
+          <tr><td>for_exam</td><td>Can be used in exams</td><td>LmsExam paper set builder</td></tr>
+        </table>
+      </div>
+
+      <div class="section">
+        <h3>6.3 AI Question Generation</h3>
+        <table>
+          <tr><th>Provider</th><th>Model</th><th>Status</th></tr>
+          <tr><td>ChatGPT</td><td>gpt-4o-mini</td><td><span class="gap-note">active:false (inactive by default)</span></td></tr>
+          <tr><td>Gemini AI</td><td>gemini-2.0-flash</td><td><span class="gap-note">active:false (inactive by default)</span></td></tr>
+        </table>
+      </div>
+
+      <div class="section">
+        <h3>6.4 Code Review Issues</h3>
+        <table>
+          <tr><th>ID</th><th>Severity</th><th>Issue</th></tr>
+          <tr><td>CR-001</td><td><span class="tag tag-critical">CRITICAL</span></td><td>API keys hardcoded in AIQuestionGeneratorController.php — revoke immediately</td></tr>
+          <tr><td>CR-019</td><td><span class="tag tag-medium">MEDIUM</span></td><td>Duplicate model files: QuestionStatistic.php AND QuestionStatistics.php</td></tr>
+          <tr><td>CR-020</td><td><span class="tag tag-medium">MEDIUM</span></td><td>UUID stored as binary — breaks SQLite testing</td></tr>
+          <tr><td>CR-029</td><td><span class="tag tag-low">LOW</span></td><td>Both AI providers inactive by default — feature unreachable</td></tr>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- EXECUTIVE SUMMARY -->
+  <a class="section-anchor" id="executive-summary"></a>
+  <div class="module-card">
+    <div class="module-header">
+      <div class="module-title">Executive Summary</div>
+    </div>
+    <div class="module-body">
+      <div class="section">
+        <h3>Critical Findings</h3>
+        <ol>
+          <li><strong>Security:</strong> OpenAI and Gemini API keys hardcoded in <code>AIQuestionGeneratorController.php</code> — revoke immediately.</li>
+          <li><strong>Security:</strong> No <code>HomeworkPolicy</code> — any authenticated user can manage homework and grade submissions.</li>
+          <li><strong>Security:</strong> No <code>LessonPolicy</code> or <code>TopicPolicy</code> — curriculum data unprotected.</li>
+          <li><strong>Bug:</strong> <code>Homework.academicSession()</code> references undefined class <code>SchAcademicSession</code> — PHP fatal error at runtime.</li>
+          <li><strong>Bug:</strong> <code>Exam.generateExamCode()</code> will throw <code>TypeError</code> in PHP 8 when session/class/type not found.</li>
+          <li><strong>Data Integrity:</strong> <code>academic_session_id</code> not validated with <code>exists</code> in Quiz, Quest (not even required), and Exam requests.</li>
+          <li><strong>Route Bug:</strong> Quest question routes duplicated in <code>tenant.php</code> — one group is dead code.</li>
+          <li><strong>Route Typo:</strong> All Quiz URLs use <code>/lms-quize/</code> instead of <code>/lms-quiz/</code>.</li>
+        </ol>
+      </div>
+
+      <div class="section">
+        <h3>Module Health Scorecard</h3>
+        <table>
+          <tr><th>Module</th><th>Completeness</th><th>Security</th><th>Validation</th><th>Code Quality</th></tr>
+          <tr><td>Syllabus</td><td>100%</td><td>Poor (no policies)</td><td>Good</td><td>Good</td></tr>
+          <tr><td>LmsQuiz</td><td>90%</td><td>Fair (partial policies)</td><td>Fair (missing exists)</td><td>Fair</td></tr>
+          <tr><td>LmsQuests</td><td>85%</td><td>Good (rich policy)</td><td>Poor (nullable AC fields)</td><td>Good</td></tr>
+          <tr><td>LmsExam</td><td>90%</td><td>Good (9 policies)</td><td>Fair (missing exists)</td><td>Fair</td></tr>
+          <tr><td>LmsHomework</td><td>80%</td><td>Poor (NO policy)</td><td>Fair</td><td>Poor</td></tr>
+          <tr><td>QuestionBank</td><td>85%</td><td>Critical (keys in code)</td><td>Good</td><td>Fair</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMMON PATTERNS -->
+  <a class="section-anchor" id="common-patterns"></a>
+  <div class="module-card">
+    <div class="module-header"><div class="module-title">Common Patterns Across Modules</div></div>
+    <div class="module-body">
+      <table>
+        <tr><th>#</th><th>Pattern</th><th>Applies To</th></tr>
+        <tr><td>1</td><td>Soft Delete + Restore + Force Delete on all entities</td><td>All 6 modules</td></tr>
+        <tr><td>2</td><td>Toggle Status endpoint: POST /{resource}/{id}/toggle-status</td><td>All 6 modules</td></tr>
+        <tr><td>3</td><td>Trash View: GET /{resource}/trash/view</td><td>All 6 modules</td></tr>
+        <tr><td>4</td><td>AJAX cascading: sections → subject-groups → subjects → lessons → topics</td><td>Quiz, Quest, Exam, QB</td></tr>
+        <tr><td>5</td><td>Bulk store/destroy for question assignment</td><td>Quiz, Quest, Exam</td></tr>
+        <tr><td>6</td><td>Update ordinal (reorder) for questions</td><td>Quiz, Quest, Exam</td></tr>
+        <tr><td>7</td><td>Update marks (mark override per question)</td><td>Quiz, Quest, Exam</td></tr>
+        <tr><td>8</td><td>Auto code generation from hierarchy + random suffix</td><td>Quiz, Quest, Exam, Topic</td></tr>
+        <tr><td>9</td><td>Status ENUM: DRAFT / PUBLISHED / ARCHIVED</td><td>Quiz, Quest (Exam adds CONCLUDED)</td></tr>
+        <tr><td>10</td><td>Allocation types: CLASS / SECTION / GROUP / STUDENT</td><td>Quiz, Quest, Exam</td></tr>
+        <tr><td>11</td><td>Policy naming: tenant.{resource}.{action}</td><td>All 6 modules</td></tr>
+        <tr><td>12</td><td>All routes: auth + verified middleware</td><td>All 6 modules</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- COMMON RULES -->
+  <a class="section-anchor" id="common-rules"></a>
+  <div class="module-card">
+    <div class="module-header"><div class="module-title">Common Business Rules</div></div>
+    <div class="module-body">
+      <ol>
+        <li>An entity can be soft-deleted and restored independently of its <code>is_active</code> state.</li>
+        <li><code>is_active = false</code> + <code>deleted_at = null</code> = deactivated but visible to admins.</li>
+        <li><code>deleted_at != null</code> = soft-deleted, accessible only via trash view.</li>
+        <li>Academic session is the top-level scope for all teaching artifacts.</li>
+        <li>Questions sourced from QuestionBank into assessments with ordinal and mark overrides.</li>
+        <li>Availability flags control cross-module and cross-tenant access for questions.</li>
+        <li>All allocations support multiple target types (CLASS/SECTION/GROUP/STUDENT).</li>
+        <li>All FormRequest classes have <code>authorize() → true</code>; authorization done via controller <code>$this->authorize()</code> calls.</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- OVERALL SUGGESTIONS -->
+  <a class="section-anchor" id="suggestions"></a>
+  <div class="module-card">
+    <div class="module-header"><div class="module-title">Overall Suggestions (Prioritized)</div></div>
+    <div class="module-body">
+      <div class="section">
+        <h3>Priority 1 — Critical / Security (Immediate)</h3>
+        <ol>
+          <li>Revoke and move AI API keys from <code>AIQuestionGeneratorController.php</code> to <code>.env</code></li>
+          <li>Create <code>HomeworkPolicy</code> and <code>HomeworkSubmissionPolicy</code></li>
+          <li>Create <code>LessonPolicy</code> and <code>TopicPolicy</code></li>
+          <li>Fix <code>Homework.academicSession()</code> — replace <code>SchAcademicSession</code> with <code>OrganizationAcademicSession</code></li>
+          <li>Fix <code>Exam.generateExamCode()</code> — use null-safe operator <code>?-></code></li>
+        </ol>
+      </div>
+      <div class="section">
+        <h3>Priority 2 — Data Integrity (Next Sprint)</h3>
+        <ol>
+          <li>Add <code>exists:sch_org_academic_sessions_jnt,id</code> to all academic_session_id fields</li>
+          <li>Make academic context fields required (not nullable) in QuestRequest</li>
+          <li>Remove duplicate quest question route group in tenant.php</li>
+          <li>Fix HomeworkSubmission toggleStatus route parameter (<code>{trigger_event}</code> → <code>{homework_submission}</code>)</li>
+          <li>Add ExamPaper unique constraint on (exam_id + class_id + subject_id)</li>
+        </ol>
+      </div>
+      <div class="section">
+        <h3>Priority 3 — Consistency (Next Release)</h3>
+        <ol>
+          <li>Fix route prefix typo <code>lms-quize</code> → <code>lms-quiz</code></li>
+          <li>Implement <code>canPublish()</code> on Quiz model (mirror Quest)</li>
+          <li>Standardize Dropdown model (Prime vs GlobalMaster)</li>
+          <li>Remove duplicate <code>QuestionStatistics.php</code></li>
+          <li>Fix <code>SyllabusSchedulePolicy.php</code> naming mismatch</li>
+          <li>Create <code>lmshomework.php</code> config file with <code>status.draft</code> key</li>
+        </ol>
+      </div>
+      <div class="section">
+        <h3>Priority 4 — Architecture (Long-term)</h3>
+        <ol>
+          <li>Implement state machine for exam/quiz/quest status transitions</li>
+          <li>Switch QuestionBank UUID from binary to CHAR(36) for SQLite compatibility</li>
+          <li>Implement cascade soft-delete on parent-child entity relationships</li>
+          <li>Use standard morphTo columns (type/id) for QuizAllocation polymorphic relation</li>
+          <li>Enable AI providers via env config; document setup guide</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    Generated: 2026-03-19 | Prime-AI LMS Documentation | All requirements derived from code inspection | PHP 8.2+ / Laravel 12.0 / stancl/tenancy v3.9
+  </div>
+
+</main>
+</div>
+
+<script>
+  // Highlight active sidebar link based on scroll position
+  const anchors = document.querySelectorAll('.section-anchor');
+  const links = document.querySelectorAll('.sidebar a');
+
+  function onScroll() {
+    let current = '';
+    anchors.forEach(a => {
+      if (window.scrollY >= a.offsetTop - 100) {
+        current = a.id;
+      }
+    });
+    links.forEach(l => {
+      l.classList.remove('active');
+      if (l.getAttribute('href') === '#' + current) l.classList.add('active');
+    });
+  }
+  window.addEventListener('scroll', onScroll);
+</script>
+</body>
+</html>
