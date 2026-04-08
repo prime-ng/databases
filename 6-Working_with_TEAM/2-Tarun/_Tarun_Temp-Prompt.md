@@ -206,10 +206,12 @@ I want to create a MS Excel File to create a Menu List for my App but Many Work 
 Generate a new prompt to achive above and Save the prompt into "/Users/bkwork/WorkFolder/3-Local_Workspace/2-Menu_Items/Prompts".
 
 
----------------------
+-----------------------------
+
 I want you to design Screens for Report for LMS Module. I have created an initial version of nalytical Report Designing for LMS Module in file "/Users/bkwork/WorkFolder/3-Local_Workspace/9-Analytical_Reports/LMS/Report-Design_v2_3.md". This file has been created by Claude Website from the Source file "/Users/bkwork/WorkFolder/3-Local_Workspace/9-Analytical_Reports/LMS/Report-Design_v2.3.xlsx". The Format created by Claude is not appropriate. I want you to use file "/Users/bkwork/WorkFolder/3-Local_Workspace/9-Analytical_Reports/Screen_Design_Template.md" as a Template File to understand what type of Output I am looking for and create a New File "/Users/bkwork/WorkFolder/3-Local_Workspace/9-Analytical_Reports/LMS/Report-Design_v2.4.md"
 
----
+-----------------------------
+
 I want you to add more similer Analytical Reports in same Format as you created in "/Users/bkwork/WorkFolder/3-Local_Workspace/9-Analytical_Reports/LMS/Report-Design_v2.4.md". To get all Path, you need to read "/Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases/AI_Brain/config/paths.md".To understand what we have built in LMS Module you can read all LMS Modules from below folders in {LARAVEL_REPO} -
 LMS Homework - Modules/LmsHomework
 LMS Quiz - Modules/LmsQuiz
@@ -221,7 +223,21 @@ Also use AI_Brainunderstanding what has been built.
 
 Create a New Report Design File as "/Users/bkwork/WorkFolder/3-Local_Workspace/9-Analytical_Reports/LMS/Report-Design_v2.5.md", including all new Reports.
 
--------------------------
+-----------------------------
+
+I have changed the location of my OLD_REPO location. Here is the Detail :
+Old Location / Path :
+OLD_REPO       = /Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases
+AI_BRAIN       = {OLD_REPO}/AI_Brain
+
+New Location / Path :
+OLD_REPO       = /Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db
+AI_BRAIN       = {OLD_REPO}/AI_Brain
+
+Update the AI_Brain for new Location of AI_Brain and other Information. Whereever you find "/Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases", replace it with "/Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases"
+
+-----------------------------
+
 There are some Conditions when Other Module make etries into Accounting Module like :
 - In Library Module - If any Student Retun a Book after due date is passed, there is a provision that he need to pay Late charges for that. 
 - In Library Module - If a Student Lost the Book or Book is Damaged when Returned then he need to pay Fine for that.
@@ -239,7 +255,7 @@ In above scenario Library & Transport Module need to make an entry into Accounti
 
  I want you to create a new DDL to meet this Requirement. DO NOT change any existing DDL but create a new DDL file as "/Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases/1-DDL_Tenant_Modules/40-Accounting/DDL/ACC_Enhancement_ddl.sql"
 
-----------------------
+-----------------------------
 
 Read AI_Brain to understand what I have already developed in `Studentprofile` & `StudentPortal` Modules. I need to have a Table to for StudentProfile Module to capture below functionality:
 - Student Need to Apply Leaves
@@ -249,13 +265,26 @@ Read AI_Brain to understand what I have already developed in `Studentprofile` & 
 
 DO NOT Change exeisting DDL "1-DDL_Tenant_Modules/33-StudentProfile/DDL/StudentProfile_ddl_v1.4.sql" but create a New File name "1-DDL_Tenant_Modules/33-StudentProfile/DDL/StudentProfile_ddl_v1.5.sql". New File should have all Existing DDL Schema with new Schema proposed by you.
 
----
+-----------------------------
 
 Similar to the Student Leave Mgmt.
-Read AI_Brain to understand what I have already developed in `Studentprofile` & `StudentPortal` Modules. I need to have a Table to for StudentProfile Module to capture below functionality:
-- Student Need to Apply Leaves
-- Leave Application wil be Visibal to the Class Teacher and then She Appove or Reject the leave
-- He may need to Submit some support document (e.g. Medical Certificate etc.) along with Leave Application
-- Class Teacher can Ask additional Information or may ask to provide some support Document to approve the Leave.
+Read AI_Brain to understand what I have already developed in `StudentProfile` Modules. You need to first read below files :
+- "/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/1-DDL_Tenant_Modules/12-SchoolSetup/DDL/School_Setup_ddl_v1.sql"
+- "/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/1-DDL_Tenant_Modules/12-SchoolSetup/DDL/Employee_setup_ddl_v1.sql"
 
-DO NOT Change exeisting DDL "1-DDL_Tenant_Modules/33-StudentProfile/DDL/StudentProfile_ddl_v1.4.sql" but create a New File name "1-DDL_Tenant_Modules/33-StudentProfile/DDL/StudentProfile_ddl_v1.5.sql". New File should have all Existing DDL Schema with new Schema proposed by you.
+I want to create below functionality:
+- Employee can Apply Leaves as per the Leave type(sch_leave_types) & their Quota(sch_leave_config) available to them.
+- All the Leaves needs to be approved.
+- There should be a configured Approver for every Role / Department / Designation
+- Only Authorise Approver can Approve the Leave
+- Multipal Person / Role / Designation can be Authorised to approve Leaves
+- Multipal Level of Approvers also can be configured like If Admin failed to Approve the Leave within certain timelimit then it may escalate to Principal to be Approved.
+- Approver can Reject the Leave OR He can ask for more Detail OR He can ask to provide some support Document also.
+- There can be a Communication on between the Approver & the Applicant
+- Balance Leave will be update into Main Master to be used further
+- Add other detail if I missed anything
+
+DO NOT Change exeisting DDL but create a New File name "/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/1-DDL_Tenant_Modules/12-SchoolSetup/DDL/Employee_setup_ddl_v2.sql". New File should have all Existing DDL Schema with new Schema proposed by you.
+
+-----------------------------
+
