@@ -90,6 +90,24 @@
 - **Revised estimate:** ~40% overall. Need ~13 developer-weeks to reach full implementation.
 - **Reference:** `{HPC_GAP_ANALYSIS}`
 
+### D-TMP-001: Template Output Config — Cross-Module FK to msh_class_groups
+- **Decision (2026-04-16):** `tmp_template_assignments.class_group_id` references `msh_class_groups.id` directly (cross-module FK: Template → MarksheetGeneration).
+- **Why:** The class grouping concept (Primary 1-5, Secondary 6-12) is identical between MSG and Template output. Creating a duplicate `sch_class_groups` table would cause data drift and maintenance burden. Template only READs `msh_class_groups`, never writes — no write coupling.
+- **Trade-off:** Creates a dependency between Template and MSG modules. If more modules need class grouping in future, promote `msh_class_groups` to `sch_class_groups` via migration.
+
+### D-TMP-002: Template Output Config — Separate tmp_template_purposes Table (Not tmp_templates.type)
+- **Decision (2026-04-16):** A dedicated `tmp_template_purposes` lookup table is used instead of relying on `tmp_templates.type`.
+- **Why:** The existing `type` column is free-text `VARCHAR(255)`, nullable, with no validation or uniqueness. It cannot reliably enforce purpose-based assignment. The `type` column continues as a user-friendly categorization label; `tmp_template_purposes` provides the system-enforced purpose registry with UNIQUE codes.
+
+### D-TMP-003: Template Output Config — scope_hash Generated Column for Uniqueness
+- **Decision (2026-04-16):** A `STORED` generated column `scope_hash` on `tmp_template_assignments` enforces uniqueness across all scope types via a single UNIQUE index.
+- **Why:** MySQL treats NULLs as distinct in UNIQUE indexes, so a composite UNIQUE on `(purpose_id, session_id, class_id, class_group_id)` would allow duplicate school-wide assignments (both NULLs). The `scope_hash` generates a deterministic string (`"purpose:session:C{id}|G{id}|SCHOOL"`) enabling database-enforced uniqueness for all three scope types.
+- **Trade-off:** Soft-deleted rows retain their `scope_hash`, blocking new assignments for the same scope. To reassign, restore+update the old record or force-delete it.
+
+### D-TMP-004: Template Output Config — No FK Coupling to msh_config_templates
+- **Decision (2026-04-16):** `tmp_template_assignments` does NOT reference `msh_config_templates.id`.
+- **Why:** Template visual assignment (HOW the marksheet looks) and marksheet computation config (WHAT scores are computed) are separate concerns. They are resolved independently at render time and combined by the service layer. FK coupling would create an unnecessary bidirectional dependency.
+
 ---
 
 ## Future Decisions (Pending)

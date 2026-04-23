@@ -24,8 +24,8 @@
 |-------|----------|--------|---------|
 | Global | `global_db` | 12 | Shared reference data: countries, states, boards, languages, menus, modules |
 | Prime | `prime_db` | 27 | Central SaaS: tenants, plans, billing, central users, roles |
-| Tenant | `tenant_{uuid}` | 368 | Per-school isolated data: all school operations |
-| **Total** | — | **407** | — |
+| Tenant | `tenant_{uuid}` | 370 | Per-school isolated data: all school operations |
+| **Total** | — | **409** | — |
 
 ### prime_db also has VIEWS into global_db
 ```sql
@@ -44,7 +44,7 @@ CREATE VIEW glb_states    AS SELECT * FROM global_master.glb_states;
 | `prm_` | ~8 | Prime | prime_db |
 | `bil_` | ~5 | Billing | prime_db |
 | `sys_` | ~12 | System Config / RBAC | prime_db + tenant_db |
-| `sch_` | ~25 | SchoolSetup | tenant_db |
+| `sch_` | ~33 | SchoolSetup | tenant_db |
 | `tt_` | ~45 | SmartTimetable | tenant_db |
 | `std_` | ~14 | StudentProfile | tenant_db |
 | `slb_` | ~17 | Syllabus | tenant_db |
@@ -67,6 +67,9 @@ CREATE VIEW glb_states    AS SELECT * FROM global_master.glb_states;
 | `beh_` | — | Behaviour (reserved) | tenant_db |
 | `hos_` | — | Hostel (reserved) | tenant_db |
 | `mes_` | — | Mess (reserved) | tenant_db |
+| `tmp_` | 3 (1 existing + 2 new) | Template — visual template builder + output config assignments | tenant_db |
+| `msh_` | 23 | MarksheetGeneration — config, schedules, results, audit | tenant_db |
+| `fbk_` | 11 (planned) | Feedback — generic cross-entity feedback module (NEP 2020 compliant) | tenant_db |
 
 ---
 
@@ -135,7 +138,7 @@ CREATE VIEW glb_states    AS SELECT * FROM global_master.glb_states;
 
 ---
 
-## Layer 3: tenant_db (368 Tables)
+## Layer 3: tenant_db (370 Tables)
 
 ### System Module (sys_* — ~15 tables)
 Mirrors prime_db sys_* tables for tenant-level RBAC. Includes 9 tenant roles.
@@ -143,8 +146,13 @@ Key tables: `sys_users`, `sys_roles`, `sys_permissions`, `sys_role_has_permissio
 
 Also includes rule engine tables: `sys_rule_engine_config`, `sys_rule_engine_actions`, `sys_rule_engine_log`, `sys_trigger_event`, `sys_action_type`
 
-### SchoolSetup (sch_* — ~25 tables)
-`sch_organizations`, `sch_organization_groups`, `sch_org_academic_sessions_jnt`, `sch_board_organization_jnt`, `sch_classes`, `sch_sections`, `sch_class_section_jnt`, `sch_subjects`, `sch_subject_groups`, `sch_subject_group_subject_jnt`, `sch_subject_teachers`, `sch_teachers`, `sch_teacher_profiles`, `sch_teacher_capabilities`, `sch_rooms`, `sch_rooms_type`, `sch_buildings`, `sch_employees`, `sch_employee_profiles`, `sch_departments`, `sch_designations`, `sch_leave_types`, `sch_leave_configs`, `sch_study_formats`, `sch_subject_study_format_jnt`, `sch_entity_groups`, `sch_entity_group_members`, `sch_disable_reasons`, `sch_class_groups_jnt`
+### SchoolSetup (sch_* — ~33 tables)
+`sch_organizations`, `sch_organization_groups`, `sch_org_academic_sessions_jnt`, `sch_board_organization_jnt`, `sch_classes`, `sch_sections`, `sch_class_section_jnt`, `sch_subjects`, `sch_subject_groups`, `sch_subject_group_subject_jnt`, `sch_subject_teachers`, `sch_teachers`, `sch_teacher_profiles`, `sch_teacher_capabilities`, `sch_rooms`, `sch_rooms_type`, `sch_buildings`, `sch_employees`, `sch_employee_profiles`, `sch_departments`, `sch_designations`, `sch_leave_types`, `sch_leave_configs`, `sch_categories`, `sch_attendance_types`, `sch_study_formats`, `sch_subject_study_format_jnt`, `sch_entity_groups`, `sch_entity_group_members`, `sch_disable_reasons`, `sch_class_groups_jnt`
+
+**Employee Leave Management (8 new tables — DDL v2, 2026-04-08, code not yet implemented):**
+`sch_leave_approval_policies`, `sch_leave_approval_policy_levels`, `sch_leave_approval_level_approvers`, `sch_employee_leave_applications`, `sch_employee_leave_approvals`, `sch_employee_leave_application_docs`, `sch_employee_leave_application_remarks`, `sch_employee_leave_balance`
+> DDL source: `1-DDL_Tenant_Modules/12-SchoolSetup/DDL/Employee_setup_ddl_v2.sql`
+> Balance quota source: `sch_leave_config` (existing) drives `sch_employee_leave_balance.opening_balance` at year-start.
 
 ### SmartTimetable (tt_* — ~45 tables)
 Core: `tt_timetables`, `tt_timetable_cells`, `tt_timetable_cell_teachers`, `tt_activities`, `tt_sub_activities`, `tt_activity_teachers`, `tt_activity_priority`
@@ -219,6 +227,34 @@ Quests: `lms_quests`, `lms_quest_questions`, `lms_quest_allocations`, `lms_quest
 ### Accounting (acc_* — ~25 tables, reserved)
 `acc_account_groups`, `acc_ledgers`, `acc_fiscal_years`, `acc_journals`, `acc_journal_entries`, and more
 
+### Template (tmp_* — 3 tables, DDL v1 — 2026-04-16)
+`tmp_templates` (existing — visual template builder, canvas/HTML), `tmp_template_purposes` (output purpose registry — Marksheet Print, Student ID Card, Staff ID Card, etc.), `tmp_template_assignments` (scope-based template-to-purpose assignment per session — class, class-group, or school-wide)
+
+> DDL source: `1-DDL_Tenant_Modules/Template/Template_Config_DDL_v1.sql`
+> Cross-module FK: `tmp_template_assignments.class_group_id` → `msh_class_groups.id` (Decision D-TMP-001)
+> Scope uniqueness enforced via generated `scope_hash` column (Decision D-TMP-003)
+> `tmp_templates` migration DOES NOT EXIST yet — only `.gitkeep` in `Modules/Template/database/migrations/`
+> `tmp_templates.created_by` is BIGINT UNSIGNED but `sys_users.id` is INT UNSIGNED — type mismatch to fix
+
+### MarksheetGeneration (msh_* — 23 tables, DDL v1 — 2026-04-13)
+`msh_marksheet_types`, `msh_source_components`, `msh_ia_component_types`, `msh_class_groups`, `msh_class_group_items_jnt`, `msh_exam_groups`, `msh_exam_group_items_jnt`, `msh_config_templates`, `msh_template_scholastic_components`, `msh_template_exam_weightages`, `msh_template_ia_components`, `msh_template_coscholastic_components`, `msh_class_config_jnt`, `msh_subject_practical_configs`, `msh_marksheet_schedules`, `msh_schedule_class_jnt`, `msh_student_results`, `msh_student_subject_results`, `msh_student_subject_exam_marks`, `msh_student_ia_marks`, `msh_student_coscholastic_results`, `msh_student_attendance`, `msh_computation_logs`
+
+> DDL source: `1-DDL_Tenant_Modules/LMS_MarksheetGeneration/DDL/MSG_DDL_v1.sql`
+> Data dictionary: `1-DDL_Tenant_Modules/LMS_MarksheetGeneration/MSG_DataDictionary.md`
+> Cross-module FK to `msh_class_groups` is reused by Template module (D-TMP-001)
+
+### Feedback (fbk_* — 11 tables, DDL v2 — 2026-04-09, code pending)
+Generic cross-entity feedback module supporting Student/Parent → Teacher (and any other staff), NEP 2020 Teacher → Student, NEP 2020 Student → Peer Student, Admin → Teacher, Teacher 360°, and Self-Reflection.
+
+**Reference masters (3):** `fbk_target_types`, `fbk_relationship_types`, `fbk_categories`
+**Templates (2):** `fbk_templates`, `fbk_questions`
+**Cycles (3):** `fbk_cycles`, `fbk_cycle_feedback_types`, `fbk_cycle_targets`
+**Transactional (3):** `fbk_responses`, `fbk_answers`, `fbk_summary`
+
+> DDL source: `1-DDL_Tenant_Modules/39-Feedback/StudentFeedback_ddl_v2.sql` (v1 superseded)
+> Polymorphic target via 4 nullable FKs (user/student/employee/department) + 7 generated `_uq` COALESCE columns for dedup.
+> Peer feedback has forced anonymity (hardcoded rules R7-R8); k-anonymity enforced via `min_responses_for_visibility` (default 3).
+
 ---
 
 ## Common Schema Patterns
@@ -247,7 +283,7 @@ PRIMARY KEY (`id`)
 - Foreign keys: `INT UNSIGNED`
 - Booleans: `TINYINT(1)`
 - Money: `DECIMAL(12,2)`
-- Enums: `ENUM()` for fixed sets
+- Enums: **AVOID** — use FK to `sys_dropdown_table` (key = `{table}.{column}`) for any semi-open list. ENUM allowed only when the option set is immutably code-gated (see D29). For binary flags prefer `TINYINT(1)` over a 2-row dropdown.
 - Structured data: `JSON`
 - Tenant PK: UUID (`VARCHAR(36)`) for `prm_tenant.id`
 

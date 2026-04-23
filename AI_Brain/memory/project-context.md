@@ -30,7 +30,7 @@ Central SaaS management:
 - **Billing:** `bil_tenant_invoices`, `bil_tenant_invoicing_payments`, `bil_tenant_invoicing_audit_logs`
 - **System:** `sys_users`, `sys_roles`, `sys_permissions`, `sys_settings`, `sys_media`, `sys_activity_logs`
 
-### Layer 3: Tenant DB (`tenant_db`) — 368 tables
+### Layer 3: Tenant DB (`tenant_db`) — 370 tables
 Per-school isolated data organized by prefix (see consolidated DDL for full list):
 - `sys_*` — Tenant-level RBAC, settings, media
 - `sch_*` — School setup, organizations
@@ -91,7 +91,7 @@ Per-school isolated data organized by prefix (see consolidated DDL for full list
 | Total Models | ~470 |
 | Total Controllers | ~290 |
 | Total Services | ~40 (SmartTimetable: 21, Library: 9, others) |
-| Tenant DB Tables | 368 |
+| Tenant DB Tables | 370 |
 | Central DB Tables | ~39 (global + prime) |
 | Authorization Policies | 195+ |
 | Tenant Migrations | 278 files in `database/migrations/tenant/` |

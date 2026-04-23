@@ -287,4 +287,41 @@ I want to create below functionality:
 DO NOT Change exeisting DDL but create a New File name "/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/1-DDL_Tenant_Modules/12-SchoolSetup/DDL/Employee_setup_ddl_v2.sql". New File should have all Existing DDL Schema with new Schema proposed by you.
 
 -----------------------------
+Now I want to create a functionality where Student & Parents can provide Feedback for Teacher to communicate their satisfaction level for all Class Teacher & for Subject Teachers also. Read below tables to fetch the foundational information to tabes to capture Feedback from Student & Parents :
+- Teacher profile - "/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/1-DDL_Tenant_Modules/12-SchoolSetup/DDL/Employee_setup_ddl_v1.sql"
+- Student Profile - "/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/1-DDL_Tenant_Modules/33-StudentProfile/DDL/StudentProfile_ddl_v1.5.sql"
+- Subject assigned to Student - "/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/1-DDL_Tenant_Modules/12-SchoolSetup/DDL/Class_Setup_ddl_v2.sql"
+- Teacher assigned to a Class + Section for a Subject - "/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/1-DDL_Tenant_Modules/27-SmartTimetable/DDL/tt_timetable_ddl_v7.6.sql"
 
+you can also read files from folder "pgdatabase/1-Module_DDLs/StudentPortal/Claude_Plan" to understand StudentPortal Module.
+
+Now I want you to create Table Schema to capture Student & Parent Feedback. Do not change any existing schema just Create a new schema file as "old_db/1-DDL_Tenant_Modules/33-StudentProfile/DDL/StudentFeedback_ddl_v1.sql".
+
+
+-----------------
+IN LMS Module We will be storing different type of Documents in PDF & JPG Format. The Number will be big because :
+- in LMS-Quest  & LMS-Exam (Online) - All the Students will upload  Answer image for descriptive Questions then Teacher will again upload after checking the Answer with their comments.
+- in LMS Exam (Offline) - The Entire Answer Sheet (around 15-20 pages) will be uploaded into system for all the students then Teacher will uploade it again after checking the copies.
+- in LMS Homework - Every Student will uploade their Homework on daily basis and then Teacher will again uploade it after checking.
+
+Above are few Examples and there are many other fuctionalities where we need to uploade big number of documents. Therefor I am planning to  :
+- Take a eparate Storage Server on Cloude other then App Server, Datab Server & Caching Server.
+- I am planning to create a Key-Value for every requirement in the Table `sch_config` in DDL "/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/0-DDL_Masters/tenant_db_v2.sql".
+- We can have a Variable in our .env file to capture server related infor e.g. IP Address of the Storage Server etc.
+- We will store a Structured Folder Hirarchy into `sch_config` table, which will have a specific Quest_Key (Folder_path_for_student_upload_for_quest) and then will define folder structure againt that Key.
+- Then I will use .env variable+Quest_key to get the final Location to store Files.
+
+The key critaria to decide the Folder Name are :
+   - Student ID + Academic Session 
+   - Class_ID + Section_id
+   - OR we can use `std_student_academic_sessions.id` which is having `Student_id`, `academic_session_id`, `class_section_id`
+   - Quest_ID / Exam_Id
+
+Suggest me what should be the Key Name for Quest, Exam(Online) & Exam(Offline). Also How we should keep the  :
+Academic_Session -> Student_ID -> Class_Section_ID -> Quest_ID
+OR Student_ID -> Academic_Session -> Class_Section_ID -> Quest_ID
+OR Something else?
+
+Expected Output is 
+- Key_Names for all 3 requirement (Quest, Exam-Online, Exam-Offline)
+- Folder Hirarchy Structure?

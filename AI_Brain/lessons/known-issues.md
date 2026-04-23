@@ -930,3 +930,93 @@
 | SEC-QB-002 | **FIXED** | API keys now use env() — no hardcoded keys found |
 | SEC-HPC-001–015 | **MOSTLY FIXED** | 21 HPC bugs fixed in sprint; see HPC Post-Sprint section above |
 | BUG-HPC-001 | **REGRESSED** | Now 7 missing imports (was 4 fixed); 3 new controllers added without imports |
+
+---
+
+## Deep Audit — 2026-04-09 (Phase 2, post count-only re-audit)
+
+> Focused re-audit of modules that **changed** between 2026-04-02 and 2026-04-09, or needed verification of prior regression status.
+> Six parallel Explore agents audited: StudentPortal, Inventory, LmsExam/Quiz/Homework/Quests, StudentProfile Leave, Admission+Vendor, Hpc.
+> New codes start from existing numbering per module.
+
+### P0 — FATAL / PRODUCTION-BREAKING (Phase 2)
+
+| Code | Module | Issue | File:Line |
+|------|--------|-------|-----------|
+| SEC-STP-007 | StudentPortal | **IDOR in proceedPayment() STILL UNPATCHED** — `$request->payable_id` passed to PaymentService without verifying FeeInvoice belongs to auth()->user()->student->id. Any student can pay another student's invoice. | `StudentPortalController.php:427–450` |
+| SEC-EXM-005 | LmsExam | **GrievanceReviewController::show() + resolve() — ZERO authorization.** Any authenticated user can read/resolve any exam grievance across students. | `GrievanceReviewController.php:68,85` |
+| SEC-HWK-003 | LmsHomework | **HomeworkSubmissionController::show() — ZERO authorization (IDOR unchanged from 2026-04-02).** Any student can view any submission by guessing ID. | `HomeworkSubmissionController.php:225–229` |
+| BUG-HPC-016 | Hpc | **`generateReportPdf()` REGRESSED — NO `Gate::authorize()` call.** Inconsistent with 13 sibling methods (all of which have auth per the 2026-03-17 sprint). Any authenticated user can generate PDF reports for any student. | `HpcController.php:1232` |
+| BUG-VND-002 | Vendor | **VendorPaymentController STILL missing create/store/edit methods** — `Route::resource('vendor-payments', ...)` registered in Vendor module web.php but controller only implements `index/update/destroy/show`. POST `vendor-payments/create` and GET `vendor-payments/{id}/edit` return 500. Unpatched since 2026-04-02. | `Vendor/routes/web.php:62` + `VendorPaymentController.php` |
+| BUG-EXM-003 | LmsExam | **`ExamStudentGroupMemberController::toggleStatus()` STILL missing** → route at `LmsExam/routes/web.php:130` returns 500. Unpatched since 2026-04-02. | `LmsExam/routes/web.php:130` |
+
+### P0 — DATA LEAK / PRIVILEGE ESCALATION (Phase 2)
+
+| Code | Module | Issue | File:Line |
+|------|--------|-------|-----------|
+| SEC-STP-008 | StudentPortal | **IDOR in StudentExamAttemptController::attempt($id)** — no allocation check. Student can access ANY exam paper's attempt page via direct URL. Allocation check exists in `instructions()` but NOT in `attempt()` flow. | `StudentExamAttemptController.php:230–244` |
+| SEC-STP-009 | StudentPortal | **User::all() exposes full user roster** in complaint form — `$users = User::select('id','name')->get()` loads every tenant user (admins/staff/students) and renders in dropdown. | `StudentPortalComplaintController.php:41` |
+| SEC-STD-005 | StudentProfile | **Leave subsystem has NO tenancy scoping** — `LeaveApplication`, `LeaveApplicationRemark` extend plain `Model`, no `BelongsToTenant` trait, no `addGlobalScope`. If global tenancy middleware fails, cross-tenant data leak. | `Modules/StudentProfile/app/Models/Leave*.php` |
+| SEC-INV-001 | Inventory | **ALL 18 FormRequests have `authorize()` → `return true`** — extends systemic D25 pattern. Financial requests (StorePurchaseOrderRequest, StoreGrnRequest, StoreStockIssueRequest, StoreStockAdjustmentRequest, StoreQuotationRequest, StoreRateContractRequest, StorePurchaseRequisitionRequest, StoreIssueRequestRequest) rely solely on controller Gate checks — no defense in depth. | `Inventory/app/Http/Requests/*.php` (all 18) |
+| SEC-EXM-006 | LmsExam | **PaperSetQuestionRequest::authorize() = true** — mitigated by controller Gate checks but no defense in depth. | `PaperSetQuestionRequest.php:13` |
+| SEC-EXM-007 | LmsExam | **ExamQueryService — no explicit tenant scoping** on 381-line query builder. Relies on implicit global scopes; unverified. Used by new GrievanceReviewController + PaperSetQuestionController. | `ExamQueryService.php:26+` |
+
+### P1 — SECURITY / AUTH BYPASS (Phase 2)
+
+| Code | Module | Issue | File:Line |
+|------|--------|-------|-----------|
+| SEC-QZT-002 | LmsQuests | **`LmsQuestController::index()` Gate STILL commented out** — `// Gate::authorize('tenant.quest.viewAny');` left from 2026-03-14 audit. BUG-LMS-005 remains PARTIAL. | `LmsQuestController.php` (index method) |
+| SEC-VND-005 | Vendor | **`VendorController::index()` Gate::authorize STILL commented** — 2026-04-02 finding unpatched. Tab-based index page bypasses authorization. | `VendorController.php:26` |
+| SEC-VND-006 | Vendor | **Gate prefix MISMATCH STILL present**: VndUsageLogController uses `vendor.usageLog.*`; VendorPaymentController uses `vendor.vendor.viewAny`. Other Vendor controllers use `tenant.vendor-*`. Policies under `tenant.*` never match these calls → silent 403s. | `VndUsageLogController.php:21`, `VendorPaymentController.php:25` |
+| SEC-STP-010 | StudentPortal | **`StartAttemptRequest::authorize()` returns bare `auth()->check()`** — no ownership check against assessment_id. Controller compensates via AllocationService but FormRequest is a no-op safety net. | `StartAttemptRequest.php:11–14` |
+| SEC-INV-002 | Inventory | **`GrnController::reject()` uses `inventory.grn.accept` permission** instead of dedicated `inventory.grn.reject`. Accept/reject roles conflated. | `GrnController.php:154` |
+| SEC-STD-006 | StudentProfile | **`LeaveService::respondToInfoRequest()` / `respondToDocRequest()`** — validate `remark_id` against the passed `$application` object but DO NOT re-check `$application->student_id === auth()->user()->student_id`. If any future controller passes an attacker-supplied application, IDOR. | `LeaveService.php` |
+| SEC-STD-007 | StudentProfile | **`applied_by` + `reviewed_by` in LeaveApplication `$fillable`** — both FK to sys_users with no role gate. A student could mass-assign `reviewed_by` to themselves. | `LeaveApplication.php` |
+
+### P1 — DEAD CODE / UNFINISHED FEATURES (Phase 2)
+
+| Code | Module | Issue | File:Line |
+|------|--------|-------|-----------|
+| DEAD-STD-001 | StudentProfile | **Leave subsystem is FULLY DEAD CODE.** 4 models + LeaveService exist with real business logic, but **no LeaveController, zero routes registered** in `Modules/StudentProfile/routes/web.php`. Feature is floating — unreachable from UI/API. Phase 1 models+service count is misleading. | `Modules/StudentProfile/app/Models/Leave*.php`, `LeaveService.php` |
+| DEAD-STP-001 | StudentPortal | **`ParentResultsController::show()` + `generateLink()` — controller exists but NO routes registered**. Dead code for signed-URL result viewing. | `ParentResultsController.php:21–103` |
+| DEAD-STP-002 | StudentPortal | **`StudentPortalController` has 7 empty CRUD stub methods** (index, create, store, show, edit, update, destroy) at lines 711–759 — not routed. Scaffolding leftover. (Previously DEAD-STP-014.) | `StudentPortalController.php:711–759` |
+| DEAD-STP-003 | StudentPortal | **`StudentPortalComplaintController::show/edit/update/destroy` are stubs** — `Route::resource('complaint', ...)` registered but show() returns hardcoded view, edit/update/destroy are empty. | `StudentPortalComplaintController.php:204–225` |
+| DEAD-STP-004 | StudentPortal | **Commented `// dd($statusId);`** left in production code. | `StudentPortalComplaintController.php:137` |
+| DEAD-INV-001 | Inventory | **`InventoryController` is a scaffold stub** extending wrong base class (`App\Http\Controllers\Controller` instead of `Routing\Controller`), empty store/update bodies. Not routed. Delete. | `InventoryController.php` |
+| DEAD-INV-002 | Inventory | **Several route handlers build full eager-loaded queries then discard them** (e.g. `PurchaseOrderController::index()` at lines 22–32 — builds `$pos` query, then `return redirect()->route('inventory.procurement')`). Dead queries burning DB cycles. Same pattern in UomController::index. | `PurchaseOrderController.php:22–32` |
+| DEAD-EXM-002 | LmsExam | **BUG-LMS-001 / DEAD-EXM-001 (`dd($e)` at LmsExamController.php:577)** — verified FIXED in 2026-04-09 re-read. Remove from open list. | — |
+| BUG-HWK-001 | LmsHomework | **`show()` wraps `$request->all()` check before inline `$request->validate()`** (non-standard validation pattern — validation is reachable but confusing). | `StudentHomeworkController.php:179–198` |
+
+### P2 — PERFORMANCE / VALIDATION (Phase 2)
+
+| Code | Module | Issue | File:Line |
+|------|--------|-------|-----------|
+| PERF-STP-001 | StudentPortal | **`StudentPortalController::dashboard()` fires 5+ separate DB queries without pagination/eager-loading**. `HomeworkSubmission::pluck() + Homework::whereNotIn()` is explicit N+1. Raw LMS-result query loads all 6 results then filters in PHP. | `StudentPortalController.php:39–260` |
+| PERF-STP-002 | StudentPortal | **`StudentExamAttemptController::loadExamQuestions()` N+1** — for each question, queries `qns_question_options` inside `map()` callback. Needs `with('options')`. | `StudentExamAttemptController.php:54–107` |
+| PERF-INV-001 | Inventory | **`StockEntryController`** — `StockItem::active()->orderBy('name')->get()` and `Godown::active()->orderBy('name')->get()` unbounded. Scales O(n) with tenant size. | `StockEntryController.php:35–36` |
+| PERF-INV-002 | Inventory | **`UomController::indexConversions()`** — unbounded `UnitOfMeasure::active()->get()` for dropdown. | `UomController.php:106` |
+| VAL-STP-001 | StudentPortal | **9 of 14 controllers have NO FormRequest injection** — StudentPortalController, StudentGrievanceController, StudentExamAttemptController, StudentQuizAttemptController, StudentQuestAttemptController, StudentTimetableController, StudentTeachersController, StudentLmsController, NotificationController. 5 FormRequests for 14 controllers = major validation gap. | 9 files |
+| VAL-INV-001 | Inventory | **`StoreGrnRequest` allows `qty_accepted`/`qty_rejected` in store rules** (lines 34–35) — these are QC-only fields set during `inspect()`. Store payload can override QC decisions. | `StoreGrnRequest.php:34–35` |
+| VAL-STD-001 | StudentProfile | **No validation of `total_days` in `LeaveService::createAndSubmit()`** — calculated as `diffInDays() + 1` but never re-verified on approve. DB tampering could bypass leave quota. | `LeaveService.php` |
+| VAL-STD-002 | StudentProfile | **No overlap check on half-day leave** — two applications for same date with `is_half_day=true` can both be approved (no DB constraint, no service guard). Attendance fraud vector. | `LeaveService.php` |
+| BUG-STD-001 | StudentProfile | **`LeaveService::markAttendanceOnApproval()` is a STUB** with comment "To be implemented". On approval, attendance never flips to Leave — manual intervention required. | `LeaveService.php:239` |
+| BUG-STP-001 | StudentPortal | **`ExamAttempt::$fillable` includes `created_by`** — should be auto-set from `auth()->id()`, not mass-assignable. Same issue on `ExamGrievance::$fillable` (includes `created_by` AND `reviewer_id`). | `ExamAttempt.php:23–42`, `ExamGrievance.php:16–31` |
+| BUG-ADM-003 | Admission | **`AdmissionPipelineService` still references `$application->cycle_id`** — 2026-04-08 commit renamed `cycle_id → admission_cycle_id` in models/controllers but missed this service line. | `AdmissionPipelineService.php:73` |
+| PERF-LMS-002 | LmsExam | **PERF-LMS-001 CONFIRMED STILL PRESENT** — 9+ unbounded queries in `LmsExamController::index()` ($examDashboardStats array, lines 148–180). | `LmsExamController.php:148–180` |
+| VAL-STD-003 | StudentProfile | **`LeaveApplicationDocument` MediaCollection has no `maxUploadSize`** — Spatie default ~100MB; disk-exhaustion DoS vector. | `LeaveApplicationDocument.php` |
+
+### Phase 2 — Resolved / Status Updates
+
+| Code | Status | Notes |
+|------|--------|-------|
+| BUG-LMS-001 / DEAD-EXM-001 | **FIXED** | `dd($e)` removed from LmsExamController (verified 2026-04-09) |
+| BUG-QST-TOPICS | **FIXED** | `QuestScopeController::getTopics()` method now exists at LmsQuests/routes/web.php:32 |
+| BUG-EXM-TOGGLE | **STILL PRESENT** | `ExamStudentGroupMemberController::toggleStatus()` missing → 500 at `LmsExam/routes/web.php:130` |
+| BUG-LMS-005 | **STILL PARTIAL** | LmsQuiz Gate active; LmsQuests `LmsQuestController::index()` Gate STILL commented (SEC-QZT-002) |
+| SEC-RTG-005 | **PARTIALLY RESOLVED** | HPC controllers ARE imported in `Modules/Hpc/routes/web.php`, but BUG-HPC-016 shows one method (`generateReportPdf`) missing Gate::authorize. Route-layer class-not-found risk gone; method-layer auth bypass remains. |
+| SEC-HPC-001 through 005 | **STILL FIXED** (except BUG-HPC-016 regression on generateReportPdf) | 2026-03-17 sprint fixes hold for 13/14 HpcController methods and all 14 FormRequests. |
+| SEC-STP-003 | **STILL UNPATCHED** | proceedPayment IDOR unchanged since 2026-04-02. Now tracked as SEC-STP-007. |
+| Admission — "no Gate::authorize()" | **FIXED** | All 15 Admission controllers now have explicit `Gate::authorize()` calls. Service-layer-only auth replaced with defense-in-depth. |
+| Vendor — BUG-VND-002 | **STILL UNPATCHED** | VendorPaymentController create/store/edit methods still missing. |
+| Inventory — 14 services | **VERIFIED REAL** | All 14 services (Asset, Godown, GrnPosting, InventoryReport, PurchaseOrder, PurchaseRequisition, Quotation, RateContract, ReorderAlert, StockAdjustment, StockGroup, StockIssue, StockLedger, StockValuation) contain real logic, not stubs. GrnPostingService uses DB::transaction + StockLedgerService. PurchaseOrderService has generatePoNumber, convertFromPR, convertFromQuotation, requiresApproval. |
+

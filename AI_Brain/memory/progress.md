@@ -75,9 +75,13 @@
 - [ ] **Library** — Book circulation, fines (module exists, features pending)
 
 ## Current Work
+- Template Output Configuration — DDL schema complete, migration pending (Branch: Brijesh, 2026-04-16)
+- MarksheetGeneration — DDL schema complete (MSG_DDL_v1.sql, 23 tables), code pending (Branch: Brijesh, 2026-04-13)
 - StudentPortal — StudentAttempt DDL schema (Branch: Brijesh, 2026-04-02)
 - HPC module enhancements (Branch: Brijesh_HPC, Developer: Shailesh)
 
 ## Recently Completed
+- [x] **Template Output Configuration DDL** (2026-04-16) — `Template_Config_DDL_v1.sql`: 2 new tables (`tmp_template_purposes`, `tmp_template_assignments`) + dependency on existing `tmp_templates`. Scope-based assignment (class/class-group/school-wide) with generated `scope_hash` uniqueness. 7 seeded purposes. Cross-module FK to `msh_class_groups` (D-TMP-001). Decisions D-TMP-001 through D-TMP-004 documented.
+- [x] **MarksheetGeneration DDL** (2026-04-13) — `MSG_DDL_v1.sql`: 23 tables (3 master, 10 config, 2 schedule, 7 result, 1 audit). Full data dictionary in `MSG_DataDictionary.md`. Decisions D-MSG-001 through D-MSG-007.
 - [x] **HPC: Queued Email Report to Guardians** (2026-03-16) — `SendHpcReportEmail` Job, `HpcReportMail` Mailable, email button + AJAX on student-list, `POST /hpc/send-report-email` route. Job re-initializes tenancy, generates PDF via DomPDF, emails all guardians with PDF attachment. 3 retries, 300s timeout, `emails` queue.
 - [x] **HPC: CRUD Data Auto-Mapping into PDFs** (2026-03-16) — `HpcPdfDataService` fetches 10 CRUD modules (evaluations, coverage, goals, outcomes, activities, parameters, descriptors, question mappings, knowledge graph, topic equivalencies). Data passed as `$hpcData` to all 4 PDF templates. Shared `_crud_sections.blade.php` partial renders tables/bars after existing form sections. Refactored `generateReportPdf()` and `generateSingleStudentPdf()` to use `$viewMap`/`$viewData` pattern.
