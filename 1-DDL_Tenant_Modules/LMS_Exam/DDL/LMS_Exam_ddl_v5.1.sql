@@ -113,6 +113,7 @@
     `status_id` INT UNSIGNED NOT NULL DEFAULT 0,    -- FK to lms_exam_status_events.id (Status of the exam) 'DRAFT','PUBLISHED','CONCLUDED','ARCHIVED')
     `result_published` ENUM('IMMEDIATE','SCHEDULED','MANUAL') NOT NULL DEFAULT 'MANUAL',
     `scheduled_result_at` DATETIME DEFAULT NULL,
+    `is_result_published` TINYINT(1) NOT NULL DEFAULT 0,  -- Flag to indicate if result is published or not (This will be set to 1 when result will be published either manually or scheduled)
     `created_by` INT UNSIGNED DEFAULT NULL,         -- FK to sys_users.id
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
@@ -169,6 +170,7 @@
     -- `scheduled_result_at` DATETIME DEFAULT NULL,
     -- Offline Specific Config
     `offline_entry_mode` ENUM('BULK_TOTAL','QUESTION_WISE') DEFAULT 'QUESTION_WISE', -- How marks will be entered
+    `is_ques_wise_file_upload` TINYINT(1) NULL DEFAULT 0,       -- Flag to indicate if teacher has uploaded question-wise answer sheet even for BULK_TOTAL mode (optional)
     -- Audit
     `status_id` INT UNSIGNED NOT NULL DEFAULT 0,    -- FK to lms_exam_status_events.id (Status of the exam) 'DRAFT','PUBLISHED','CONCLUDED','ARCHIVED')
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,

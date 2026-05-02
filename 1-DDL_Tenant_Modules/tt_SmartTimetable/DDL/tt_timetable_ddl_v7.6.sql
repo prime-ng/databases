@@ -522,7 +522,7 @@
     -- 2025-26 TERM-1   Standard      Class-5th A   Period-8         Study Period - 0    Exam Period - 3   Free Period -5
 
   -- changed below Table name to - `tt_class_requirement_groups` from `tt_class_groups_jnt`
-  CREATE TABLE IF NOT EXISTS `tt_class_requirement_groups` (
+  CREATE TABLE IF NOT EXISTS `tt_class_groups` (
     `id` INT unsigned NOT NULL AUTO_INCREMENT,
     `code` char(50) NOT NULL,                                      -- Copy from sch_class_groups_jnt.code
     `name` varchar(100) NOT NULL,                                  -- Copy from sch_class_groups_jnt.name
@@ -560,7 +560,7 @@
   -- 1. student_count = sch_class_section_jnt.actual_total_student
 
   -- changed below Table name to - `tt_requirement_subgroups` from `tt_class_subgroup`
-  CREATE TABLE IF NOT EXISTS `tt_class_requirement_subgroups` (
+  CREATE TABLE IF NOT EXISTS `tt_class_subgroups` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `code` VARCHAR(50) NOT NULL,                                 -- Copy from sch_class_groups_jnt.code
     `name` VARCHAR(100) NOT NULL,                                -- Copy from sch_class_groups_jnt.name
@@ -624,10 +624,13 @@
     `min_periods_required_per_day` TINYINT UNSIGNED DEFAULT NULL,   -- Minimum periods allowed per day
     `max_periods_required_per_day` TINYINT UNSIGNED DEFAULT NULL,   -- Maximum periods allowed per day
     `min_gap_between_periods` TINYINT UNSIGNED DEFAULT NULL,        -- Minimum gap between periods
-    `required_consecutive_periods` TINYINT UNSIGNED DEFAULT NULL,    -- Required consecutive periods
-    `min_required_consecutive_periods` TINYINT UNSIGNED DEFAULT NULL, -- Number of periods need to be consecutive
-    `allow_consecutive_periods` TINYINT(1) NOT NULL DEFAULT 0,      -- Whether consecutive periods are allowed
-    `max_consecutive_periods` TINYINT UNSIGNED DEFAULT 2,           -- Maximum consecutive periods
+    -- Below parameter will be applicable for those subject which must have required consecutive periods > 1
+    `required_consecutive_periods` TINYINT UNSIGNED DEFAULT NULL,    -- Required consecutive periods (If Some Subject Must have multipal period Consecutively e.g. 2 Period of Science Lab should be together)
+    `min_required_consecutive_periods` TINYINT UNSIGNED DEFAULT NULL, -- Min. how many consecutive periods required (If Some Subject Must have multipal period Consecutively (This will be applicable if required_consecutive_periods is not null and > 1) e.g. 2 Period of Science Lab should be together but it can be 2,3 or 4 consecutive period)
+    -- below parameter will be applicable for those subject which are alowed to assigne consecutive periods but not mandatory e.g. Math, English, etc.
+    `allow_consecutive_periods` TINYINT(1) NOT NULL DEFAULT 0,      -- Whether consecutive periods are allowed (TRUE - if consecutive periods are allowed, FALSE - if consecutive periods are not allowed) This will not be applicable for those subject which have required_consecutive_periods > 1
+    `max_consecutive_periods` TINYINT UNSIGNED DEFAULT 2,           -- Maximum How many consecutive periods this subject can have (This will not be applicable for those subject which have required_consecutive_periods > 1)
+    -- Below parameter will be applicable for those subject which are alowed to have gap between periods e.g. Math, English, etc.
     `class_priority_score` TINYINT UNSIGNED DEFAULT NULL,           -- Priority Score from sch_class_group
     `preferred_periods_json` JSON DEFAULT NULL,                     -- On Screen User will see Multiselection of Periods but it will be saved as JSON
     `avoid_periods_json` JSON DEFAULT NULL,                         -- On Screen User will see Multiselection of Periods but it will be saved as JSON

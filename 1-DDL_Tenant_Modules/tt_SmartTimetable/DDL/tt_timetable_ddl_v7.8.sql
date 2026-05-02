@@ -1073,7 +1073,7 @@
     `study_format_id` INT unsigned NOT NULL,                       -- FK to sch_study_formats.id. e.g SCI_LEC, SCI_LAB, COM_LEC, COM_OPT, etc.
     `subject_type_id` INT unsigned NOT NULL,                       -- FK to sch_subject_types.id. e.g MAJOR, MINOR, OPTIONAL, etc.
     `subject_study_format_id` INT unsigned NOT NULL,               -- FK to sch_study_formats.id. e.g SCI_LEC, SCI_LAB, COM_LEC, COM_OPT, etc.
-    --
+    -- Duration & Frequency
     `required_weekly_periods` TINYINT UNSIGNED NOT NULL DEFAULT 1,   -- Total periods required per week for this Class Group (Class+{Section}+Subject+StudyFormat)
     `min_periods_per_week` TINYINT UNSIGNED DEFAULT NULL,  -- Minimum periods required per week
     `max_periods_per_week` TINYINT UNSIGNED DEFAULT NULL,  -- Maximum periods required per week
@@ -1085,11 +1085,11 @@
     `preferred_periods_json` JSON DEFAULT NULL,  -- On Screen User will see Multiselection of Periods but it will be saved as JSON
     `avoid_periods_json` JSON DEFAULT NULL,  -- On Screen User will see Multiselection of Periods but it will be saved as JSON
     `spread_evenly` TINYINT(1) DEFAULT 1,  -- Whether periods should be spread evenly
-
+    -- Resource Availability
     `eligible_teacher_count` INT UNSIGNED DEFAULT NULL,                  -- Number of teachers available for this group (Will capture from Teachers profile)
     `min_teacher_availability_score` DECIMAL(7,2) UNSIGNED DEFAULT 1,    -- Percentage of available teachers for this Class Group (Will capture from Teachers profile)
     `max_teacher_availability_score` DECIMAL(7,2) UNSIGNED DEFAULT 1,    -- Percentage of available teachers for this Class Group (Will capture from Teachers profile)
-
+    -- Duration & Frequency
     `duration_periods` TINYINT UNSIGNED NOT NULL DEFAULT 1,  -- If 1 Activity can not be done in 1 Period then this will how many periods required for one activity (e.g. Lab = 2 but will be count as 1 Activity)
     `weekly_periods` TINYINT UNSIGNED NOT NULL DEFAULT 1,  -- Number of times per week this activity is scheduled
     `total_periods` SMALLINT UNSIGNED GENERATED ALWAYS AS (`duration_periods` * `weekly_periods`) STORED,
@@ -1163,6 +1163,30 @@
     KEY `idx_subact_parent` (`parent_activity_id`),
     CONSTRAINT `fk_subact_parent` FOREIGN KEY (`parent_activity_id`) REFERENCES `tt_activity` (`id`) ON DELETE CASCADE,
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+    -- This table will have saperate record for every periods of every Activity. Activity has single consolidate record for (class+section+subject+study_format).
+    -- if an activity requires 4 periods in a week then in 'tt_sub_activity_detail' table we will have 4 records for the same activity with different period_number (1 to 4). 
+    -- This will help us to assign teachers, period number & rooms on an activity, resolving conflicts using re-suffling and also to calculate the score of each activity 
+    -- based on the teacher assigned, room assigned and period assigned. For Example: If for Class 10, Section A, Subject Maths, Study Format LAC requires 4 periods in a week 
+    -- then in 'tt_sub_activity_detail' table we will have 4 records for the same activity with different period_number (1 to 4). 
+    CREATE TABLE IF NOT EXISTS `tt_sub_activity_detail` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `sub_activity_id` INT UNSIGNED NULL,  -- FK to tt_sub_activity.id
+    `activity_id` INT UNSIGNED NOT NULL,  -- FK to tt_activity.id
+    `period_number` TINYINT UNSIGNED NOT NULL,  -- 1 to required_weekly_periods
+    `assigned_teacher_id` INT UNSIGNED DEFAULT NULL,  -- FK to sch_teacher_profile.id
+    `assigned_room_id` INT UNSIGNED DEFAULT NULL,  -- FK to sch_rooms.id
+    `assigned_time_slot` VARCHAR(50) DEFAULT NULL,  -- This can be a combination of day_number and period_number or a reference to a time slot
+    `assignment_status` ENUM('UNASSIGNED','TEACHER_ASSIGNED','ROOM_ASSIGNED','FULLY_ASSIGNED') NOT NULL DEFAULT 'UNASSIGNED', -- Status of this sub-activity detail record
+    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_subact_detail` (`sub_activity_id`, `period_number`),
+    CONSTRAINT `fk_subact_detail_subact` FOREIGN KEY (`sub_activity_id`) REFERENCES `tt_sub_activity` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_subact_detail_activity` FOREIGN KEY (`activity_id`) REFERENCES `tt_activity` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_subact_detail_teacher` FOREIGN KEY (`assigned_teacher_id`) REFERENCES `sch_teacher_profile` (`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_subact_detail_room` FOREIGN KEY (`assigned_room_id`) REFERENCES `sch_rooms` (`id`) ON DELETE SET NULL
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 
   -- This table will store the Activity Priority Scores for the Timetable Generation Process
   CREATE TABLE IF NOT EXISTS `tt_activity_priority` (
@@ -1537,8 +1561,6 @@
     CONSTRAINT `fk_sub_substitute_teacher` FOREIGN KEY (`substitute_teacher_id`) REFERENCES `sch_teachers` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_sub_assigned_by` FOREIGN KEY (`assigned_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-
 
 -- =====================================================================================================================================================
 -- SECTION 11: REFERENCE TABLES FROM OTHER MODULES

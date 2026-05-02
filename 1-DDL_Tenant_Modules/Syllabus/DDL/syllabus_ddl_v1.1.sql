@@ -263,6 +263,7 @@ SET FOREIGN_KEY_CHECKS = 0;
     `has_options` TINYINT(1) NOT NULL DEFAULT 0,    -- True if this type has options
     `auto_gradable` TINYINT(1) NOT NULL DEFAULT 1,  -- True if this type can be auto-graded (Can System Marked Automatically?)
     `description` TEXT DEFAULT NULL,
+    `is_system` TINYINT(1) DEFAULT 1, -- True if this is a system defined question type that schools cannot edit
     `is_active` TINYINT(1) DEFAULT 1,
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

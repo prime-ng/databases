@@ -16,10 +16,10 @@
     `question_content` TEXT NOT NULL,         -- header of the question (For User Display)
     `content_format` ENUM('TEXT','HTML','MARKDOWN','LATEX','JSON') NOT NULL DEFAULT 'TEXT', -- format of the question content
     `media_required_for_question` TINYINT(1) NOT NULL DEFAULT 0, -- whether media is required for this question
-    `media_location_for_question` ENUM('Above Text','Below Text','Left','Right') DEFAULT 'QUESTION', -- where media is required for this question
+    `media_location_for_question` ENUM('Above Text','Below Text','Left','Right') DEFAULT 'Below Text', -- where media is required for this question
     `teacher_explanation` TEXT DEFAULT NULL,      -- teacher explanation (For User Display)
     `media_required_for_teacher_explanation` TINYINT(1) NOT NULL DEFAULT 0, -- whether media is required for this question's explanation
-    `media_location_for_teacher_explanation` ENUM('Above Text','Below Text','Left','Right') DEFAULT 'QUESTION', -- where media is required for this question's explanation
+    `media_location_for_teacher_explanation` ENUM('Above Text','Below Text','Left','Right') DEFAULT 'Below Text', -- where media is required for this question's explanation
     -- Question Type & Taxonomy
     `bloom_id` INT UNSIGNED NOT NULL,       -- fk -> slb_bloom_taxonomy.id (Taxonomy)
     `cognitive_skill_id` INT UNSIGNED NOT NULL, -- fk -> slb_cognitive_skill.id (Taxonomy)
@@ -100,10 +100,12 @@
     `question_bank_id` INT UNSIGNED NOT NULL,
     `ordinal` SMALLINT UNSIGNED DEFAULT NULL,    -- ordinal position of this option
     `option_text` TEXT NOT NULL,                 -- text of the option
+    `media_required_for_question_option` TINYINT(1) NOT NULL DEFAULT 0, -- whether media is required for this question option
+    `media_location_for_question_option` ENUM('Above Text','Below Text','Left','Right') DEFAULT 'Below Text', -- where media is required for this question option
     `is_correct` TINYINT(1) NOT NULL DEFAULT 0,  -- whether this option is correct
     `explanation` TEXT DEFAULT NULL,             -- detailed explanation for this option (Why this option is correct / incorrect)
-    `media_required_for_question_option` TINYINT(1) NOT NULL DEFAULT 0, -- whether media is required for this question option
-    `media_location_for_question_option` ENUM('Above Text','Below Text','Left','Right') DEFAULT 'QUESTION', -- where media is required for this question option
+    `media_required_for_question_option_explanation` TINYINT(1) NOT NULL DEFAULT 0, -- whether media is required for this question option
+    `media_location_for_question_option_explanation` ENUM('Above Text','Below Text','Left','Right') DEFAULT 'Below Text', -- where media is required for this question option
     `is_active` TINYINT(1) DEFAULT 1,
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -242,7 +244,8 @@
   CREATE TABLE IF NOT EXISTS `qns_question_usage_log` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `question_bank_id` INT UNSIGNED NOT NULL,    -- FK to qns_questions_bank
-    `question_usage_type` INT UNSIGNED NOT NULL, -- FK to qns_question_usage_type.id
+    -- `question_usage_type` INT UNSIGNED NOT NULL, -- FK to qns_question_usage_type.id
+    `question_usage_type` ENUM('QUIZ','QUEST','ONLINE_EXAM','OFFLINE_EXAM') NOT NULL,
     `context_id` INT UNSIGNED NOT NULL,    -- quiz_id, assessment_id, exam_id - FK to sys_dropdowns table
     `used_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `is_active` TINYINT(1) DEFAULT 1,

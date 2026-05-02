@@ -170,13 +170,13 @@ CREATE TABLE IF NOT EXISTS `sch_teacher_capabilities` (
   `competancy_level`            ENUM('Facilitator','Basic','Intermediate','Advanced','Expert') DEFAULT 'Basic',
   `priority_order`              INT UNSIGNED DEFAULT NULL,
   `priority_weight`             TINYINT UNSIGNED DEFAULT NULL,
-  `scarcity_index`              TINYINT UNSIGNED DEFAULT NULL,
+  `scarcity_index`              TINYINT UNSIGNED DEFAULT NULL,  -- Derived from number of teachers available for this class-subject combination (for v2.0 allocation logic)
   `is_hard_constraint`          TINYINT(1)   DEFAULT 0,
-  `allocation_strictness`       ENUM('hard','medium','soft') DEFAULT 'medium',
-  `override_priority`           TINYINT UNSIGNED DEFAULT NULL,
-  `override_reason`             VARCHAR(255) DEFAULT NULL,
-  `historical_success_ratio`    TINYINT UNSIGNED DEFAULT NULL,
-  `last_allocation_score`       TINYINT UNSIGNED DEFAULT NULL,
+  `allocation_strictness`       ENUM('hard','medium','soft') DEFAULT 'medium',  -- hard = must-allocate; medium = try to allocate but can skip if no fit; soft = allocate if possible but low priority
+  `override_priority`           TINYINT UNSIGNED DEFAULT NULL,  -- Manual override of computed priority (higher value = higher priority)
+  `override_reason`             VARCHAR(255) DEFAULT NULL,      -- Explanation for any manual override of priority (for audit purposes)
+  `historical_success_ratio`    TINYINT UNSIGNED DEFAULT NULL,  -- % of past allocations that resulted in successful scheduling (for historical analysis)
+  `last_allocation_score`       TINYINT UNSIGNED DEFAULT NULL,  -- Snapshot of the allocation score at the time of last scheduling (for historical analysis)
   `effective_from`              DATE         DEFAULT NULL,
   `is_active`                   TINYINT(1)   NOT NULL DEFAULT 1,
   `active_flag`                 TINYINT(1) GENERATED ALWAYS AS (CASE WHEN (`is_active` = 1) THEN 1 ELSE NULL END) STORED,
