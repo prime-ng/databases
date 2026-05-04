@@ -420,6 +420,7 @@
     `duration_minutes` SMALLINT UNSIGNED GENERATED ALWAYS AS (TIMESTAMPDIFF(MINUTE, `start_time`, `end_time`)) STORED COMMENT 'Auto-calculated duration',
     `is_teaching_slot` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '1 if this slot is a teaching period (for quick filtering)',
     `display_order` TINYINT UNSIGNED NOT NULL DEFAULT 1 COMMENT 'UI display order (may differ from slot_ord for special views)',
+    `can_be_free_period` TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Can this slot be used as a free period in some period sets?',
     -- Standard
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
@@ -653,7 +654,7 @@
     CONSTRAINT `fk_clsReqGroups_subject_type_id_foreign` FOREIGN KEY (`subject_type_id`) REFERENCES `sch_subject_types` (`id`) ON DELETE RESTRICT
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
   -- Condition:
-  -- 1. student_count = sch_class_section_jnt.actual_total_student
+    -- 1. student_count = sch_class_section_jnt.actual_total_student
 
   -- changed below Table name to - `tt_requirement_subgroups` from `tt_class_subgroup`
   CREATE TABLE IF NOT EXISTS `tt_class_requirement_subgroups` (
@@ -867,9 +868,9 @@
     CONSTRAINT `fk_ru_constraint` FOREIGN KEY (`constraint_id`) REFERENCES `tt_constraint` (`id`) ON DELETE CASCADE
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- -------------------------------------------------
---  SECTION 4: TIMETABLE RESOURCE AVAILABILITY
--- -------------------------------------------------
+-- ----------------------------------------------------------
+--  SECTION 4: TIMETABLE RESOURCE (Teacher+Room) AVAILABILITY
+-- ----------------------------------------------------------
 
   -- Create Teachers Availability for every record of 'tt_requirement_consolidation'
   CREATE TABLE IF NOT EXISTS `tt_teacher_availability` (

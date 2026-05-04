@@ -64,16 +64,6 @@ I want to refine the Algorithm especially the sequence of the parameter being us
 - What should be the Priority Sequence of all those Parameters to get perfect Placement of Teacher+Period & Rooms? Save the output into a file "/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/1-DDL_Tenant_Modules/tt_SmartTimetable/Algo_Refinement/Algo_parameter_detail.md"
 
 
-
-
-
-======================================================================================================
-Queries / Checkpoint for Tarun
-======================================================================================================
-- Are we using `academic sessions` from Primedb?
-
-
-
 ------------------------------------------------------------------------------------------------------
 Now when I have understood the Algorithm in detail what all Parameters it is using to priorities the Activities. I found many discripencies :
 - Few Parameter which are being used to priorties Teacher (which activity we should place Teacher on first), actually should not be used for prioritising placement.
@@ -83,4 +73,161 @@ Now when I have understood the Algorithm in detail what all Parameters it is usi
 Now I want to know what is the best way to communicate all those discripencies, so that you can provide me a refined enhancement plan? Should I write all those discripencies in a saperarate .md file if yes then what should be format of that document(.md file)? Write the Template in folder "/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/1-DDL_Tenant_Modules/tt_SmartTimetable/Algo_Refinement"
 
 
-In process to enhance the Algo, what is the best way to raise the Points to refine the Application: 
+======================================================================================================
+## Points to Enhance Timetable Generation Process
+======================================================================================================
+
+| # | Parameter | Type | Source (table.column) | Used today? | Purpose |
+|---|---|---|---|---|---|
+| A1 | `is_compulsory` | USER_PROVIDED bool | tt_activity.is_compulsory | Yes (difficulty +20) | This will be used only to identify whether the subject+StudyFormat is compulsory for the entire Section of a Class OR this is a Optional Subject and Student can choose 1 option from Multipal options for one subject
+| A2 | `priority` | USER_PROVIDED 0–100 | tt_activity.priority | Yes (× 20 in class-teacher rule) | Manual school priority |
+| A3 | `difficulty_score` | USER_PROVIDED 0–100 | tt_activity.difficulty_score | Yes (fallback) | Scheduling hardness override |
+| A4 | `difficulty_score_calculated` | COMPUTED 0–100 | tt_activity.difficulty_score_calculated | Yes (primary) | Auto-difficulty (see §2) |
+| A5 | `required_weekly_periods` | USER_PROVIDED int | tt_activity.required_weekly_periods | Yes (× 500 in difficulty) | Higher load → harder |
+| A6 | `min_periods_per_week` | USER_PROVIDED int | tt_activity.min_periods_per_week | Partial | Floor for partial coverage |
+| A7 | `max_periods_per_week` | USER_PROVIDED int | tt_activity.max_periods_per_week | Partial | Ceiling |
+| A8 | `min_per_day` | USER_PROVIDED int | tt_activity.min_per_day | Yes (+15 if not met) | Daily floor |
+| A9 | `max_per_day` | USER_PROVIDED int | tt_activity.max_per_day | Yes (hard cap) | Daily ceiling |
+| A10 | `min_gap_periods` | USER_PROVIDED int | tt_activity.min_gap_periods | Partial | Min gap between same-activity periods |
+| A11 | `allow_consecutive` | USER_PROVIDED bool | tt_activity.allow_consecutive | Yes (built-in check) | Back-to-back permitted |
+| A12 | `max_consecutive` | USER_PROVIDED int | tt_activity.max_consecutive | Partial | Cap on consecutive same activity |
+| A13 | `duration_periods` | USER_PROVIDED int | tt_activity.duration_periods | Yes (× 3 in difficulty) | Block size (1 normal, 2 lab) |
+| A14 | `weekly_periods` | USER_PROVIDED int | tt_activity.weekly_periods | Yes | Repetitions/week |
+| A15 | `total_periods` | COMPUTED (generated col) | tt_activity.total_periods | Yes | duration × weekly |
+| A16 | `preferred_periods_json` | USER_PROVIDED int[] | tt_activity.preferred_periods_json | Yes (+20) | Per-day-pos preference |
+| A17 | `avoid_periods_json` | USER_PROVIDED int[] | tt_activity.avoid_periods_json | Yes (−30) | Per-day-pos avoidance |
+| A18 | `preferred_time_slots_json` | USER_PROVIDED [{day,period_ord},…] | tt_activity.preferred_time_slots_json | Yes (+40) | Exact (day,period) preference |
+| A19 | `avoid_time_slots_json` | USER_PROVIDED [{day,period_ord},…] | tt_activity.avoid_time_slots_json | Yes (−50) | Exact avoidance |
+| A20 | `spread_evenly` | USER_PROVIDED bool | tt_activity.spread_evenly | Yes (+10 / −15) | Day-balance preference |
+| A21 | `split_allowed` | USER_PROVIDED bool | tt_activity.split_allowed | Yes (−100 if violated) | Multi-day split permitted |
+| A22 | `subject_type_id` (MAJOR/MINOR/OPT) | USER_PROVIDED FK | tt_activity.subject_type_id → sch_subject_types | Yes (constraints C1.16, C1.17) | Major must appear daily; minor caps |
+| A23 | `study_format_id` | USER_PROVIDED FK | tt_activity.study_format_id → sch_study_formats | Yes (~12 study-format constraints) | LECTURE/LAB/TUTORIAL semantics |
+| A24 | `eligible_teacher_count` | COMPUTED int | tt_activity.eligible_teacher_count | Yes (drives teacher_availability_score) | Inverse → scarcity |
+| A25 | `min_teacher_availability_score` | COMPUTED 0–100 | tt_activity.min_teacher_availability_score | Yes | Floor of teacher pool % |
+| A26 | `max_teacher_availability_score` | COMPUTED 0–100 | tt_activity.max_teacher_availability_score | Yes | Ceil of teacher pool % |
+| A27 | `teacher_availability_score` | COMPUTED 0–100 | tt_activity.teacher_availability_score | Yes (in difficulty) | % of teachers actually available |
+| A28 | `constraint_count` | COMPUTED int | tt_activity.constraint_count | Yes | Number of constraints touching this activity |
+| A29 | `is_class_teacher_activity` | USER_PROVIDED bool | (custom field; verify in DDL — drift Q-13) | Yes (+1000) | First-period bonus |
+| A30 | `status` | USER_PROVIDED enum | tt_activity.status (DRAFT/ACTIVE/LOCKED/ARCHIVED) | Yes (filter ACTIVE only) | Lifecycle gate |
+| A31 | `activity_group_id` | USER_PROVIDED FK | tt_activity.activity_group_id | Yes | Parent class-group mapping |
+| A32 | `is_in_parallel_group` | COMPUTED bool | tt_parallel_group_activity (drift D-org-1) | Yes (+20000 difficulty) | Forces solver to place anchor first |
+| A33 | `is_anchor_in_group` | USER_PROVIDED bool | tt_parallel_group_activity.is_anchor | Yes (+5000) | Anchor placement leads siblings |
+
+
+
+### What should NOT consider for Prioritisation
+-----------------------------------------------
+- | A1 | `is_compulsory` | USER_PROVIDED bool | tt_activity.is_compulsory | This should not be considered for Prioritisation
+- | A6 | `min_periods_per_week` | USER_PROVIDED int | tt_activity.min_periods_per_week | 
+- | A7 | `max_periods_per_week` | USER_PROVIDED int | tt_activity.max_periods_per_week | 
+- | A8 | `min_per_day` | USER_PROVIDED int | tt_activity.min_per_day | 
+- | A9 | `max_per_day` | USER_PROVIDED int | tt_activity.max_per_day |
+- 
+
+
+
+
+
+
+
+### What SHOULD BE considered for Prioritisation
+------------------------------------------------
+
+| A2 | `priority` | USER_PROVIDED 0–100 | tt_activity.priority | Yes (× 20 in class-teacher rule) | Manual school priority |
+| A3 | `difficulty_score` | USER_PROVIDED 0–100 | tt_activity.difficulty_score | 
+| A4 | `difficulty_score_calculated` | COMPUTED 0–100 | tt_activity.difficulty_score_calculated |
+| A16 | `preferred_periods_json` | USER_PROVIDED int[] | tt_activity.preferred_periods_json |
+| A17 | `avoid_periods_json` | USER_PROVIDED int[] | tt_activity.avoid_periods_json |
+| A18 | `preferred_time_slots_json` | USER_PROVIDED [{day,period_ord},…] | tt_activity.preferred_time_slots_json |
+| A19 | `avoid_time_slots_json` | USER_PROVIDED [{day,period_ord},…] | tt_activity.avoid_time_slots_json |
+
+
+
+
+### Conditions (Must be followed by Algo)
+-----------------------------------------
+Class Teacher Conditions :
+- 1st Period of Every Class will be taken by Class Teacher. Below condition needs to be checked before assigning.
+- If Class Teacher doesn't teach any subject for the class which is assigned her as a Class Teacher then any Teacher can be assigned 1st Period.
+- If Total Required Periods of the Subject which can be tought by class teacher
+
+
+Validation Check :
+- If a Class Teacher is not having any Teaching capability to teach any subject of the class for which she is assigned as a Class Teach, then Raise Flag
+- 
+
+| A20 | `spread_evenly` | USER_PROVIDED bool | tt_activity.spread_evenly | Yes (+10 / −15) | Day-balance preference |
+| A21 | `split_allowed` | USER_PROVIDED bool | tt_activity.split_allowed | Yes (−100 if violated) | Multi-day split permitted |
+
+
+
+
+------------------------------------------------------------------------------------------------------
+## Queries / Checkpoint for Tarun
+----------------------------------
+- Are we using `academic sessions` from Primedb?
+
+
+------------------------------------------------------------------------------------------------------
+### Prompt
+I have few Queries related to the SmartTimetable Module :
+  - What all Algorithm are being used in the SmartTimetable Module to Generate Timetable?
+  - What is the Sequence of those Algorithms?
+  - Provide Complete detail of those Algorithms, what parameter are being used in those algorithm and how it is deciding what action should be take next in process of Algo?
+  - Does output of one Algorithm is being provided to the next Algorithm as input, if yes then provide detail?
+
+  I want you to provide complete Algorithm detail in generic language. I have ben a developer 10 years back but now I am not very handon with coding on PHP. So keep the language of explaination accordingly, so that I can understand it easily. Save the output into file "/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/1-DDL_Tenant_Modules/tt_SmartTimetable/Algo_Refinement/Algo_internal_detail.md"
+
+
+------------------------------------------------------------------------------------------------------
+### Prompt
+Yes, Create another deepDiving doc as "/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/1-DDL_Tenant_Modules/tt_SmartTimetable/Algo_Refinement/Algo_deep_dive.md" where you should walk me through one by one all the algorithms in more depth — e.g., the backtracking + cache interaction, or how LPT and alternative-teacher retry actually interact?
+
+### Final Summary
+Saved to 1-DDL_Tenant_Modules/tt_SmartTimetable/Algo_Refinement/Algo_deep_dive.md.
+
+What's deeper here vs. Algo_internal_detail.md
+
+The plain-language doc told you what each algorithm does. This one shows you exactly how decisions are made, how state evolves, and where the interactions between algorithms produce non-obvious behavior.
+
+Each section has the same 7-part structure:
+  1. Decision in one sentence
+  2. State at entry
+  3. Exact rule (formula/pseudocode, no hand-waving)
+  4. Worked example with state evolution
+  5. Edge cases & boundaries
+  6. Interactions with other algorithms 
+  7. Where the bugs lurk
+
+Two extra-deep sections (the ones you specifically asked about)
+
+§10 — LPT + Alternative-Teacher Retry — walks through the three layers of teacher state (LPT charge, in-memory teacherOccupied, DB tt_teacher_workload) and exposes five non-obvious behaviors of the alternative-teacher retry:
+  - (a) charge[] is not updated when retry reassigns a card → LPT's "balanced" view becomes stale.
+  - (b) Eligible-teacher list is not re-sorted by least-loaded.
+  - (c) Retry is per-card — splits an activity across multiple teachers.
+  - (d) Retry doesn't honor is_preferred_teacher flags.
+  - (e) Phase 1 doesn't try alternatives at all — meaning a card that could place cleanly with a different teacher is instead force-placed.
+
+  Includes a full LPT trace (3 activities, 2 teachers, charge counters evolving step by step) and a Phase-2 retry trace showing how a Maths activity ends up split T1/T2.
+
+  §12 — Phase 1 Backtracking + Constraint Cache — explains the cache key shape {type}-{classKey}-{dayId}-{startIndex}-{cardId}, walks two backtracking traces (one with no backtrack, one with cache pollution after undo), explains why the cache must be cleared coarsely on every backtrack, and where a smarter dependency-tracking cache could live.
+
+  Other deeply-treated sections
+
+  - §11 Difficulty Ordering — full numeric breakdown of three example cards with weights, plus the pathological "scarcity-blind" case that motivates your discrepancy doc.
+  - §13 Slot Scoring — full formula with two complete trace calculations on the same card at different slots.
+  - §17 Phase 3b Force-Place Bucketing — first-match-wins gotcha (a placement that's both D_CAPACITY and C_REAL_TEACHER gets only the first label).
+  - §18 Room Allocation — score-then-walk dual-pass, why rooms aren't in the search space.
+  - §20 Cross-Cutting Interactions — five "easy-to-miss" interaction issues across the whole pipeline.
+
+  How to use this with the discrepancy template
+ 
+  When you fill Activity_Prioritization_Discrepancies_TEMPLATE.md, you can now cite this doc by section in the "Evidence" column — e.g., "see §11.5 pathological case" or "see §10.5 alternative-teacher behaviors."
+  That gives me a tight evidence chain when I do the architecture-review pass on your discrepancies.
+ 
+  Want me to walk through any specific section live, or move on to drafting starter discrepancy rows based on what we've documented here? 
+
+recap: We're refining SmartTimetable's activity-prioritization algorithm; you have a discrepancy template, plain-language algo doc, and deep-dive doc ready in Algo_Refinement/. Next action: fill the discrepancy template with your flagged parameter issues so I can do the architecture review.
+
+------------------------------------------------------------------------------------------------------
+
