@@ -381,8 +381,9 @@
   CREATE TABLE IF NOT EXISTS `lib_members` (
     `id` INT PRIMARY KEY AUTO_INCREMENT,
     `user_id` INT NOT NULL,
-    `membership_type_id` INT NOT NULL,
-    `membership_number` VARCHAR(50) NOT NULL,
+    `membership_type_id` INT NOT NULL,  -- FK to lib_membership_types.membership_type_id
+    `user_type` ENUM('Student', 'Teacher', 'Staff') NOT NULL,
+    `membership_number` VARCHAR(50) NOT NULL,  -- Unique membership number assigned to each member (e.g., M0001, M0002)
     `library_card_barcode` VARCHAR(100),
     `registration_date` DATE NOT NULL,
     `expiry_date` DATE NOT NULL,

@@ -1,3 +1,0 @@
-# Requirement Document - LMS-Quiz
-=================================
-

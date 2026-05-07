@@ -25,7 +25,7 @@
   --      Timing inherited from tt_period_config. Period type can be
   --      overridden per set if needed.
 -- =====================================================================
--- Timetable Master:
+-- Timetable Master List:
   -- School Days
   -- Shifts
   -- Day Types

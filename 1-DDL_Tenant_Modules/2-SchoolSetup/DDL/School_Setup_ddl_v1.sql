@@ -1,50 +1,6 @@
-/* ============================================================
-   COMMON ACADEMIC & HR MASTER TABLES
-   Scope  : Tenant DB (Per School)
-   DB     : MySQL 8+
-   Style  : Audit-ready, Soft Delete
-   ============================================================ */
-
-   -- ----------------------------------------------------------------------------
-   -- This table will capture different types of attendance status for both students and staff. 
-   -- It will be used in attendance marking and reporting.
-   -- ----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS `sch_attendance_types` (
-    `id`  INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
-    `code`     VARCHAR(10) NOT NULL,  -- e.g. 'P', 'A', 'L', 'H'
-    `name`     VARCHAR(100) NOT NULL,  -- e.g. 'Present', 'Absent', 'Leave', 'Holiday'
-    `applicable_for`      ENUM('STUDENT','STAFF','BOTH') NOT NULL,
-    `is_present`          TINYINT(1) NOT NULL DEFAULT 0,  -- 0: Not Present, 1: Present
-    `is_absent`           TINYINT(1) NOT NULL DEFAULT 0,  -- 0: Not Absent, 1: Absent
-    `display_order`       INT NOT NULL DEFAULT 0,
-    `is_active`           TINYINT(1) NOT NULL DEFAULT 1,
-    `created_at`          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    `updated_at`          TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    `deleted_at`          TIMESTAMP NULL,
-    UNIQUE KEY `uq_attendance_code` (`code`),
-    INDEX `idx_attendance_active` (`is_active`, `is_deleted`)
-) ENGINE=InnoDB;
-
-
-   -- ----------------------------------------------------------------------------
-   -- This table will capture type of Leaves available for staff. 
-   -- It will be used in leave application and reporting.
-   -- ----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS `sch_leave_types` (
-    `id`       INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
-    `code`          VARCHAR(10) NOT NULL,  -- e.g. 'CL', 'SL', 'PL', 'LOP'
-    `name`          VARCHAR(100) NOT NULL,  -- e.g. 'Casual Leave', 'Sick Leave', 'Parental Leave', 'Leave On Pay'
-    `is_paid`             TINYINT(1) NOT NULL DEFAULT 1,  -- 0: Unpaid Leave, 1: Paid Leave
-    `requires_approval`   TINYINT(1) NOT NULL DEFAULT 1,  -- 0: No Approval Required, 1: Approval Required
-    `allow_half_day`      TINYINT(1) NOT NULL DEFAULT 0,  -- 0: Full Day Leave Only, 1: Half Day Leave Allowed
-    `display_order`       INT NOT NULL DEFAULT 0,
-    `is_active`           TINYINT(1) NOT NULL DEFAULT 1,
-    `created_at`          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    `updated_at`          TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    `deleted_at`          TIMESTAMP NULL,
-    UNIQUE KEY `uq_leave_code` (`code`)
-) ENGINE=InnoDB;
-
+-- ===================================================================================================================================
+-- Check Table `sch_categories` & `sch_disable_reasons`, may be used in Student. If not then Removed these also.
+-- ===================================================================================================================================
 
    -- ----------------------------------------------------------------------------
    -- This table will capture different categories for both students and staff. 
@@ -63,6 +19,75 @@ CREATE TABLE IF NOT EXISTS `sch_categories` (
     UNIQUE KEY `uq_student_category_code` (`code`)
 ) ENGINE=InnoDB;
 
+   -- ----------------------------------------------------------------------------
+   -- This table will capture the reasons for disabling a student or staff. 
+   -- It will be used in disable/enable operations and reporting.
+   -- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `sch_disable_reasons` (
+    `id`     INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    `code`         VARCHAR(30) NOT NULL,
+    `name`         VARCHAR(150) NOT NULL,
+    `description`         VARCHAR(255) NULL,
+    `is_reversible`       TINYINT(1) NOT NULL DEFAULT 1,
+    `applicable_for`      ENUM('STUDENT','STAFF','BOTH') NOT NULL,
+    `count_attrition`     TINYINT(1) NOT NULL DEFAULT 0,
+    `is_active`           TINYINT(1) NOT NULL DEFAULT 1,
+    `created_at`          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`          TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at`          TIMESTAMP NULL,
+    UNIQUE KEY `uq_disable_reason_code` (`code`)
+) ENGINE=InnoDB;
+
+
+
+
+
+
+
+
+
+-- ===================================================================================================================================
+-- All Below Tables are NOT REQUIRED and need to be removed after checking.
+-- ===================================================================================================================================
+   -- ----------------------------------------------------------------------------
+   -- This table will capture different types of attendance status for both students and staff. 
+   -- It will be used in attendance marking and reporting.
+   -- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `sch_attendance_types` (
+    `id`                    INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    `code`                  VARCHAR(10) NOT NULL,  -- e.g. 'P', 'A', 'L', 'H'
+    `name`                  VARCHAR(100) NOT NULL,  -- e.g. 'Present', 'Absent', 'Leave', 'Late', 'Holiday'
+    `applicable_for`        ENUM('STUDENT','STAFF','BOTH') NOT NULL,
+    `is_present`            TINYINT(1) NOT NULL DEFAULT 0,  -- 0: Absent, 1: Present
+    -- `is_absent`             TINYINT(1) NOT NULL DEFAULT 0,  -- 0: Not Absent, 1: Absent
+    `display_order`         INT NOT NULL DEFAULT 0,
+    `is_active`             TINYINT(1) NOT NULL DEFAULT 1,
+    `created_at`            TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`            TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at`            TIMESTAMP NULL,
+    UNIQUE KEY `uq_attendance_code` (`code`),
+    INDEX `idx_attendance_active` (`is_active`, `is_deleted`)
+) ENGINE=InnoDB;
+
+
+   -- ----------------------------------------------------------------------------
+   -- This table will capture type of Leaves available for staff. 
+   -- It will be used in leave application and reporting.
+   -- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `sch_leave_types` (
+    `id`       INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    `code`          VARCHAR(10) NOT NULL,  -- e.g. 'EL', 'CL', 'SL', 'PTL', 'MTL', 'Short', 'Half-Day' etc.
+    `name`          VARCHAR(100) NOT NULL,  -- e.g. 'Earned Leave', 'Casual Leave', 'Sick Leave', 'Parental Leave', 'Maternity Leave', 'Short Leave', 'Half Day Leave' etc.
+    `is_paid`             TINYINT(1) NOT NULL DEFAULT 1,  -- 0: Unpaid Leave, 1: Paid Leave
+    `requires_approval`   TINYINT(1) NOT NULL DEFAULT 1,  -- 0: No Approval Required, 1: Approval Required
+    `allow_half_day`      TINYINT(1) NOT NULL DEFAULT 0,  -- 0: Full Day Leave Only, 1: Half Day Leave Allowed
+    `display_order`       INT NOT NULL DEFAULT 0,
+    `is_active`           TINYINT(1) NOT NULL DEFAULT 1,
+    `created_at`          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`          TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at`          TIMESTAMP NULL,
+    UNIQUE KEY `uq_leave_code` (`code`)
+) ENGINE=InnoDB;
 
    -- ----------------------------------------------------------------------------
    -- This table will capture Leave configuration for different staff categories and leave types.
@@ -86,22 +111,5 @@ CREATE TABLE IF NOT EXISTS `sch_leave_config` (
 ) ENGINE=InnoDB;
 
 
-   -- ----------------------------------------------------------------------------
-   -- This table will capture the reasons for disabling a student or staff. 
-   -- It will be used in disable/enable operations and reporting.
-   -- ----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS `sch_disable_reasons` (
-    `id`     INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
-    `code`         VARCHAR(30) NOT NULL,
-    `name`         VARCHAR(150) NOT NULL,
-    `description`         VARCHAR(255) NULL,
-    `is_reversible`       TINYINT(1) NOT NULL DEFAULT 1,
-    `applicable_for`      ENUM('STUDENT','STAFF','BOTH') NOT NULL,
-    `count_attrition`     TINYINT(1) NOT NULL DEFAULT 0,
-    `is_active`           TINYINT(1) NOT NULL DEFAULT 1,
-    `created_at`          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    `updated_at`          TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    `deleted_at`          TIMESTAMP NULL,
-    UNIQUE KEY `uq_disable_reason_code` (`code`)
-) ENGINE=InnoDB;
 
+-- ===================================================================================================================================

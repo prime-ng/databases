@@ -60,25 +60,27 @@ StudentPortal provides a **student-facing self-service interface** operating on 
 
 ### 2.2 Module Characteristics
 
-| Attribute            | Value                                                               |
-|----------------------|---------------------------------------------------------------------|
-| Laravel Module       | `nwidart/laravel-modules` v12, name `StudentPortal`                 |
-| Namespace            | `Modules\StudentPortal`                                             |
-| Module Code          | STP                                                                 |
-| Domain               | Tenant (school-specific subdomain) — student-facing pages           |
-| DB Connection        | `tenant` (tenant_{uuid})                                            |
-| Table Prefix         | `stp_` (own tables: none — reads from std_, fee_, cmp_, lib_, tpt_) |
-| Auth Guard           | Laravel Auth — `role:Student|Parent` Spatie middleware              |
-| Controllers          | 7 (`StudentPortalController`, `StudentPortalComplaintController`, `NotificationController`, `StudentLmsController`, `StudentProgressController`, `StudentTeachersController`, `StudentTimetableController`) |
-| Models               | 0 (uses models from external modules)                               |
-| Services             | 0 (all logic in controllers)                                        |
-| FormRequests         | 0 (inline validation or none)                                       |
-| Middleware           | `role:Student|Parent` at RouteServiceProvider; no `EnsureTenantHasModule` |
-| Tests                | 7 files (3 Feature + 3 Unit + 1 Pest config) — basic scaffolding only |
-| Blade Views          | 57 files across 30 directories                                      |
-| Route Count          | 55+ named routes under prefix `student-portal.`                     |
-| Payment Gateway      | Razorpay (via Payment module — `PaymentService::createPayment()`)   |
-| Completion           | ~55%                                                                |
+| Attribute            | Value                                                                                                           |
+|----------------------|-----------------------------------------------------------------------------------------------------------------|
+| Laravel Module       | `nwidart/laravel-modules` v12, name `StudentPortal`                                                             |
+| Namespace            | `Modules\StudentPortal`                                                                                         |
+| Module Code          | STP                                                                                                             |
+| Domain               | Tenant (school-specific subdomain) — student-facing pages                                                       |
+| DB Connection        | `tenant` (tenant_{uuid})                                                                                        |
+| Table Prefix         | `stp_` (own tables: none — reads from std_, fee_, cmp_, lib_, tpt_)                                             |
+| Auth Guard           | Laravel Auth — `role:Student|Parent` Spatie middleware                                                          |
+| Controllers          | 7 (`StudentPortalController`, `StudentPortalComplaintController`, `NotificationController`,                     |
+|                      | `StudentLmsController`, `StudentProgressController`, `StudentTeachersController`, `StudentTimetableController`) |
+| Models               | 0 (uses models from external modules)                                                                           |
+| Services             | 0 (all logic in controllers)                                                                                    |
+| FormRequests         | 0 (inline validation or none)                                                                                   |
+| Middleware           | `role:Student|Parent` at RouteServiceProvider; no `EnsureTenantHasModule`                                       |
+| Tests                | 7 files (3 Feature + 3 Unit + 1 Pest config) — basic scaffolding only                                           |
+| Blade Views          | 57 files across 30 directories                                                                                  |
+| Route Count          | 55+ named routes under prefix `student-portal.`                                                                 |
+| Payment Gateway      | Razorpay (via Payment module — `PaymentService::createPayment()`)                                               |
+| Completion           | ~55%                                                                                                            |
+|----------------------|-----------------------------------------------------------------------------------------------------------------|
 
 ### 2.3 Module Position in the Platform
 

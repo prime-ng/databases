@@ -36,6 +36,18 @@
 -- LAYER 1 — No hst_* dependencies
 -- ─────────────────────────────────────────────────────────────────────────────
 
+CREATE TABLE IF NOT EXISTS `hst_room_types` (
+    `id`            TINYINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    `code`          VARCHAR(20)      NOT NULL,  -- e.g. 'single', 'double', 'triple', 'dormitory'
+    `name`          VARCHAR(100)     NOT NULL,  -- e.g. 'Single Occupancy', 'Double Occupancy', 'Triple Occupancy', 'Dormitory (4+ beds)'
+    `is_active`     TINYINT(1)       NOT NULL DEFAULT 1,
+    `created_at`    TIMESTAMP        DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`    TIMESTAMP        DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at`    TIMESTAMP        NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Master list of room types; referenced by hst_rooms.room_type; allows dynamic room type definitions without code changes';
+
+
+
 CREATE TABLE IF NOT EXISTS `hst_hostels` (
     `id`                   BIGINT UNSIGNED  NOT NULL AUTO_INCREMENT COMMENT 'Primary key',
     `name`                 VARCHAR(150)     NOT NULL COMMENT 'Hostel/building display name',
@@ -113,9 +125,10 @@ CREATE TABLE IF NOT EXISTS `hst_warden_assignments` (
 
 CREATE TABLE IF NOT EXISTS `hst_rooms` (
     `id`                   BIGINT UNSIGNED  NOT NULL AUTO_INCREMENT COMMENT 'Primary key',
-    `floor_id`             BIGINT UNSIGNED  NOT NULL COMMENT 'Parent floor (hst_floors.id)',
+    `floor_id`             BIGINT UNSIGNED  NOT NULL COMMENT 'Parent floor (hst_floors.id)',   -- FK to hst_floors.id; FK constraint ensures data integrity
+    `hostel_id`            BIGINT UNSIGNED  NOT NULL COMMENT 'Parent hostel (hst_hostels.id)',  -- denormalized for easier querying; FK to hst_hostels.id
     `room_number`          VARCHAR(20)      NOT NULL COMMENT 'Room number/label within floor; e.g. 101, A-12',
-    `room_type`            ENUM('single','double','triple','dormitory') NOT NULL COMMENT 'Room type: single=1 student, double=2, triple=3, dormitory=4+',
+    `room_type`            TINYINT UNSIGNED NOT NULL COMMENT 'Room type: single, double, triple, dormitory etc.', -- FK to hst_room_types.id; allows dynamic room type definitions without code changes
     `capacity`             TINYINT UNSIGNED NOT NULL COMMENT 'Total beds in room; max allotable students',
     `current_occupancy`    TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Denormalized occupied bed count; maintained by AllotmentService',
     `status`               ENUM('available','full','maintenance') NOT NULL DEFAULT 'available' COMMENT 'Room status: auto-set to full when current_occupancy >= capacity (BR-HST-010); maintenance = blocked from allotments',
@@ -129,7 +142,8 @@ CREATE TABLE IF NOT EXISTS `hst_rooms` (
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_hst_room_num` (`floor_id`, `room_number`),
     KEY `idx_hst_room_floor` (`floor_id`),
-    CONSTRAINT `fk_hst_room_floor` FOREIGN KEY (`floor_id`) REFERENCES `hst_floors` (`id`)
+    CONSTRAINT `fk_hst_room_floor` FOREIGN KEY (`floor_id`) REFERENCES `hst_floors` (`id`),
+    CONSTRAINT `fk_hst_room_hostel` FOREIGN KEY (`hostel_id`) REFERENCES `hst_hostels` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Room within a floor; status auto-updated by AllotmentService on occupancy change (BR-HST-010)';
 
 -- ─────────────────────────────────────────────────────────────────────────────

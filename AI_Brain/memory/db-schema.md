@@ -65,7 +65,7 @@ CREATE VIEW glb_states    AS SELECT * FROM global_master.glb_states;
 | `prl_` | 19 (planned) | Payroll — pay heads, salary structures, payroll runs, leave, attendance, appraisals, training | tenant_db |
 | `inv_` | 19 (planned) | Inventory — stock groups, items, godowns, procurement (PR/PO/GRN), issue requests | tenant_db |
 | `beh_` | — | Behaviour (reserved) | tenant_db |
-| `hos_` | — | Hostel (reserved) | tenant_db |
+| `hst_` | 36 (DDL v3 — 2026-05-04) | Hostel | tenant_db |
 | `mes_` | — | Mess (reserved) | tenant_db |
 | `tmp_` | 3 (1 existing + 2 new) | Template — visual template builder + output config assignments | tenant_db |
 | `msh_` | 23 | MarksheetGeneration — config, schedules, results, audit | tenant_db |
@@ -153,6 +153,16 @@ Also includes rule engine tables: `sys_rule_engine_config`, `sys_rule_engine_act
 `sch_leave_approval_policies`, `sch_leave_approval_policy_levels`, `sch_leave_approval_level_approvers`, `sch_employee_leave_applications`, `sch_employee_leave_approvals`, `sch_employee_leave_application_docs`, `sch_employee_leave_application_remarks`, `sch_employee_leave_balance`
 > DDL source: `1-DDL_Tenant_Modules/12-SchoolSetup/DDL/Employee_setup_ddl_v2.sql`
 > Balance quota source: `sch_leave_config` (existing) drives `sch_employee_leave_balance.opening_balance` at year-start.
+
+**Employee Setup DDL v4 (2026-05-04, D33) — `Employee_setup_ddl_v4.sql`:** 25 tables total (was 13 in v3). Fixed 3 CREATE-time bugs and added 12 new HR tables:
+- Personal: `sch_employee_addresses`, `sch_employee_emergency_contacts`, `sch_employee_bank_details`
+- Documents: `sch_employee_documents`
+- Lifecycle: `sch_employee_role_history` (promotion/transfer audit), `sch_employee_separations` (resignation workflow)
+- Leave masters: `sch_leave_types` (closed dangling FK from 4 tables), `sch_leave_config` (per-(role × leave_type) entitlement / accrual)
+- Holidays + Shifts: `sch_holidays`, `sch_employee_shifts`, `sch_employee_shift_assignments`
+- Attendance: `sch_employee_attendance_punches` (raw biometric/mobile), `sch_employee_attendance_corrections` (correction workflow)
+> DDL source: `1-DDL_Tenant_Modules/2-SchoolSetup/DDL/Employee_setup_ddl_v4.sql`
+> Strictly additive over v3 — no renames or type changes. Renames (sch_employees_profile → plural, etc.) deferred to v5.
 
 ### SmartTimetable (tt_* — ~45 tables)
 Core: `tt_timetables`, `tt_timetable_cells`, `tt_timetable_cell_teachers`, `tt_activities`, `tt_sub_activities`, `tt_activity_teachers`, `tt_activity_priority`
@@ -242,6 +252,28 @@ Quests: `lms_quests`, `lms_quest_questions`, `lms_quest_allocations`, `lms_quest
 > DDL source: `1-DDL_Tenant_Modules/LMS_MarksheetGeneration/DDL/MSG_DDL_v1.sql`
 > Data dictionary: `1-DDL_Tenant_Modules/LMS_MarksheetGeneration/MSG_DataDictionary.md`
 > Cross-module FK to `msh_class_groups` is reused by Template module (D-TMP-001)
+
+### Hostel (hst_* — 36 tables, DDL v3 — 2026-05-04, code pending)
+21-table v2 augmented to 36 tables in v3 (D34). Convention fix: `created_by`/`updated_by` added on every v2 table (was systematically missing). 15 new tables across 10 domains:
+
+**Warden / Duty:** `hst_warden_duty_roster` (daily on-duty, distinct from role-level posting)
+**Maintenance:** `hst_bed_maintenance_log`, `hst_housekeeping_log`
+**Laundry:** `hst_laundry_tickets`
+**Mess:** `hst_mess_opt_outs`, `hst_mess_bills`
+**Fee:** `hst_fee_demands` (local audit of fin_* charges)
+**Discipline masters:** `hst_incident_types` (closes free-text VARCHAR), `hst_incident_warnings` (letter audit)
+**Reservation:** `hst_room_reservations` (pre-allotment, supports prospective_name when std_students record doesn't yet exist)
+**Emergency:** `hst_emergency_contacts` (hostel-level: doctor / ambulance / hospital / police / vendors)
+**Security:** `hst_visitor_media` (multi-photo per visit)
+**Sick bay:** `hst_sick_bay_vitals`, `hst_sick_bay_medications`
+**Cross-cutting:** `hst_audit_log`, `hst_notification_log`
+
+> DDL source: `1-DDL_Tenant_Modules/Hostel/DDL/HST_DDL_v3.sql` (v2 superseded but available for diff)
+> Strictly additive — every v2 column / constraint / index preserved.
+> 14 field additions on v2 tables, all nullable. Notable: `hst_incidents.incident_type_id` FK (old VARCHAR retained for back-compat).
+> Deferred to v4: drop `hst_incidents.incident_type` VARCHAR; normalize `facilities_json`/`amenities_json` to master + junction; visitor blacklist; partition audit_log + notification_log by month.
+
+---
 
 ### Feedback (fbk_* — 11 tables, DDL v2 — 2026-04-09, code pending)
 Generic cross-entity feedback module supporting Student/Parent → Teacher (and any other staff), NEP 2020 Teacher → Student, NEP 2020 Student → Peer Student, Admin → Teacher, Teacher 360°, and Self-Reflection.

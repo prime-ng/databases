@@ -146,3 +146,20 @@ Dropdown List (If user belongs to Tenant)
 │ 10    | Other                        | BIGINT       | {"table_name": "cmp_complaints", "column_name": "target_user_type_id"}                │
 └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
                                                                                                                                   [Map & Save]
+
+
+6. Subject + Study Format + Subject Type
+┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│  CREATE DROPDOWN                                                                                                                            │
+├─────────────────────────┤ ├───────────────────────┤ ├─────────────────────────────────────────────────────────────────────────────────────────┤
+│ Subject.                | | Study Format          | │ Subject Type        │ Room Type       │ Room           │ Cls.House │ Specific │ Status  │
+│                         │ │                       │ │                     │                 │                │  Room     │ Room     │         │
+├─────────────────────────┤ ├───────────────────────┤ ├─────────────────────────────────────────────────────────────────────────────────────────┤
+│ Economics            >> | | [] Theory             | | [] Study Format     │ Room Type       │ Room           │ Class Room 
+│ Math                 >> | | [] Practical          | | [] Study Format     │ Room Type       │ Room           │ Class Room 
+│ Science              >> | | [] Activity           | | [] Study Format     │ Room Type       │ Room           │ Class Room 
+│ English              >> | | [] Reading            | | [] Study Format     │ Room Type       │ Room           │ Class Room 
+│ Hindi.               >> | | [] Oral               | | [] Study Format     │ Room Type       │ Room           │ Class Room 
+│ Physics              >> | | [] Written            | | [] Study Format     │ Room Type       │ Room           │ Class Room 
+└─────────────────────────┤ ├───────────────────────┤ ├───────────────────────────────────────────────────────────────────────────────────────────┘
+                                                                                                                                  [Map & Save]

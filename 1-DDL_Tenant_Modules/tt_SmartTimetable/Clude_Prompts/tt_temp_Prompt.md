@@ -231,3 +231,46 @@ recap: We're refining SmartTimetable's activity-prioritization algorithm; you ha
 
 ------------------------------------------------------------------------------------------------------
 
+Read and Evaluate DDL schema from "/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/1-DDL_Tenant_Modules/2-SchoolSetup/DDL/Employee_setup_ddl_v3.sql" and enhance or Add a new table if anything is missing (any field in any table or any table itself is missing). Create a New DDL as "/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/1-DDL_Tenant_Modules/2-SchoolSetup/DDL/Employee_setup_ddl_v4.sql"
+
+
+hst_dynamic_status_masters (hst_dynamic_status_masters.id)
+
+Room Status - 'available','full','maintenance','reserved'
+Bed Status  - 'available','occupied','maintenance','reserved'
+Bed Condition Status - 'good','fair','poor'
+Repair Status - 'none','pending','under_repair','repaired','written_off'
+Room Condition Status - 'good','fair','poor','under_repair','disposed'
+Hostel Allotement Status - 'active','vacated','transferred','waitlisted'
+Mess Attendance Status - 'present','absent','on_leave','opted_out'
+Hostel Complaint Status - 'open','in_progress','resolved','escalated','closed'
+Attendance Entry Status - 'present','absent','leave','home','late','sick_bay'
+Room Change Request Status - 'pending','approved','rejected'
+Hostel Leave Approval Status - 'pending','approved','rejected','returned','cancelled'
+Bed Mainitenance Status - 'reported','assigned','in_progress','blocked','resolved','closed','cancelled'
+Laundry Ticket Status - 'submitted','in_wash','ready','collected','lost','damaged','disputed'
+Mess Opt-out Request Status - 'pending','approved','rejected','active','expired','cancelled'
+Mess Bill Status - 'draft','finalised','disputed','adjusted','settled'
+Hostel Fee Status - 'draft','pushed','accepted','rejected','revised','settled'
+Room Reservation Status - 'pending','confirmed','expired','converted','cancelled','refunded'
+
+------------------------------------------------------------------------------------------------------
+Act as a Business Analysts.
+
+I want to Create a Mobile Application for my ERP+LMS+LXP Application. Primarily I want to Create Mobile app for Student, Parents, Teachers & Transport Department But it can be usefull for other Department and Roles also to perform Day to Day Tasks quickly without loging into their System. I want you to create a list of Features which should be include inMobile Application. 
+
+------------------------------------------------------------------------------------------------------
+
+I want you to create a DDL schema for PTM Schduling (Parent Teacher Meeting) Module. Read "/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/1-DDL_Tenant_Modules/2-SchoolSetup/PTM/Ptm_Requirement.md" to understand the Requirement of the Module, then creat best DDL schema for the Module as "/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/1-DDL_Tenant_Modules/2-SchoolSetup/PTM/Ptm_Setup_ddl_v2.sql". Add detail about the Tables and their Fields, what is the use of those with data example.
+
+------------------------------------------------------------------------------------------------------
+
+Read & understand "/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/1-DDL_Tenant_Modules/SyllabusBooks/DDL/SyllabusBooks_ddl_v2.sql". This DDL schema is for storing Syllabus Books for every subject of every Class, which Student can watch and download on `Student Portal` Moduel. I want to add a config table which will capture default parameter related to Books & Notes uplaod e.g. Maximum Size of the Book, Format of the Book/Notes (PDF/ePub/Jpg), Books are downloadable or not etc. I also want to add one more Table to upload / Download Notes. Below is the detail of functionality :
+- Teachers can upload Notes to help Students
+- Students can also upload Notes to help other Students.
+- Students can Download Notes
+
+I wanted to add a field to control whether book is downloadable or not. Other then all above if you find any gap which need to be enhanced then add those as well. Create a new Enhanced DDL as "/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/1-DDL_Tenant_Modules/SyllabusBooks/DDL/SyllabusBooks_ddl_v3.sql"
+
+
+

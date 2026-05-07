@@ -19,9 +19,43 @@
 --   sch_employee_leave_balance           — Live leave-balance ledger per employee
 -- ===========================================================================
 
+-- ===========================================================================
+-- SECTION 1 : EMPLOYEE ATTENDANCE MASTER TABLES
+-- ===========================================================================
+
+CREATE TABLE IF NOT EXISTS `sch_staff_attendance_types` (
+    `id`                    INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    `code`                  VARCHAR(10) NOT NULL,  -- e.g. 'P', 'A', 'L', 'H'
+    `name`                  VARCHAR(100) NOT NULL,  -- e.g. 'Present', 'Absent', 'Leave', 'Late', 'Holiday'
+    `is_present`            TINYINT(1) NOT NULL DEFAULT 0,  -- 0: Absent, 1: Present
+    -- `is_absent`             TINYINT(1) NOT NULL DEFAULT 0,  -- 0: Not Absent, 1: Absent
+    `display_order`         INT NOT NULL DEFAULT 0,
+    `is_active`             TINYINT(1) NOT NULL DEFAULT 1,
+    `created_at`            TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`            TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at`            TIMESTAMP NULL,
+    UNIQUE KEY `uq_attendance_code` (`code`),
+    INDEX `idx_attendance_active` (`is_active`, `is_deleted`)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS `sch_staff_leave_types` (
+    `id`       INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    `code`          VARCHAR(10) NOT NULL,  -- e.g. 'EL', 'CL', 'SL', 'PTL', 'MTL', 'Short', 'Half-Day' etc.
+    `name`          VARCHAR(100) NOT NULL,  -- e.g. 'Earned Leave', 'Casual Leave', 'Sick Leave', 'Parental Leave', 'Maternity Leave', 'Short Leave', 'Half Day Leave' etc.
+    `is_paid`             TINYINT(1) NOT NULL DEFAULT 1,  -- 0: Unpaid Leave, 1: Paid Leave
+    `requires_approval`   TINYINT(1) NOT NULL DEFAULT 1,  -- 0: No Approval Required, 1: Approval Required
+    `allow_half_day`      TINYINT(1) NOT NULL DEFAULT 0,  -- 0: Full Day Leave Only, 1: Half Day Leave Allowed
+    `display_order`       INT NOT NULL DEFAULT 0,
+    `is_active`           TINYINT(1) NOT NULL DEFAULT 1,
+    `created_at`          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`          TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at`          TIMESTAMP NULL,
+    UNIQUE KEY `uq_leave_code` (`code`)
+) ENGINE=InnoDB;
+
 
 -- ===========================================================================
--- SECTION 1 : EXISTING TABLES (from Employee_setup_ddl_v1.sql — NO CHANGES)
+-- SECTION 2 : EMPLOYEE CREATION & PROFILE MANAGEMENT
 -- ===========================================================================
 
 -- ---------------------------------------------------------------------------
@@ -55,7 +89,6 @@ CREATE TABLE IF NOT EXISTS `sch_employees` (
   KEY `teachers_user_id_foreign` (`user_id`),
   CONSTRAINT `fk_teachers_userId` FOREIGN KEY (`user_id`) REFERENCES `sys_users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 
 -- ---------------------------------------------------------------------------
 -- 1.2  sch_employees_profile
@@ -102,7 +135,6 @@ CREATE TABLE IF NOT EXISTS `sch_employees_profile` (
   CONSTRAINT `fk_employeeProfile_departmentId` FOREIGN KEY (`department_id`) REFERENCES `sch_departments` (`id`),
   CONSTRAINT `fk_employeeProfile_reportingTo`  FOREIGN KEY (`reporting_to`) REFERENCES `sch_employees` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 
 -- ---------------------------------------------------------------------------
 -- 1.3  sch_teacher_profile
@@ -155,7 +187,6 @@ CREATE TABLE IF NOT EXISTS `sch_teacher_profile` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 -- Condition: One record per teacher (UNIQUE on employee_id).
 
-
 -- ---------------------------------------------------------------------------
 -- 1.4  sch_teacher_capabilities
 -- ---------------------------------------------------------------------------
@@ -190,16 +221,47 @@ CREATE TABLE IF NOT EXISTS `sch_teacher_capabilities` (
   CONSTRAINT `fk_tc_subject_study_format` FOREIGN KEY (`subject_study_format_id`) REFERENCES `sch_subject_study_format_jnt` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- ===========================================================================
+-- SECTION 3 : EMPLOYEE ATTENDANCE MANAGEMENT
+-- ===========================================================================
+
+-- we need to create a table for Employee Attendance as well, but since it's a large table with potential for high write volume, 
+-- we'll design it separately and not include it in this initial v2.0 rollout. The attendance system will be designed to handle 
+-- daily check-ins, check-outs, and leave tracking at a granular level, and will likely require a more complex schema with partitioning for performance.
+CREATE TABLE IF NOT EXISTS `sch_employee_attendance` (
+  `id`                    INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `employee_id`           INT UNSIGNED NOT NULL COMMENT 'FK → sch_employees.id',
+  `date`                  DATE NOT NULL COMMENT 'Attendance date',
+  `check_in_time`         TIME DEFAULT NULL,
+  `check_out_time`        TIME DEFAULT NULL,
+  `status`                ENUM('Present','Absent','On Leave','Half Day') NOT NULL DEFAULT 'Absent',
+  `leave_application_id`  INT UNSIGNED DEFAULT NULL COMMENT 'FK → sch_employee_leave_applications.id — if status = On Leave or Half Day',
+  `remarks`               VARCHAR(255) DEFAULT NULL,
+  `marked_by` INT UNSIGNED DEFAULT NULL,        -- User ID who marked attendance
+  `marked_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  -- Audit
+  `created_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_attendance` (`employee_id`, `date`),
+  INDEX `idx_attendance_employee` (`employee_id`),
+  INDEX `idx_attendance_date`     (`date`),
+  CONSTRAINT `fk_attendance_employee` FOREIGN KEY (`employee_id`) REFERENCES `sch_employees` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_attendance_leave_application` FOREIGN KEY (`leave_application_id`) REFERENCES `sch_employee_leave_applications` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Employee attendance records — daily check-in/check-out and leave status.;
+
+
+
 
 -- ===========================================================================
--- SECTION 2 : NEW TABLES  —  EMPLOYEE LEAVE MANAGEMENT  (v2.0)
+-- SECTION 4 : EMPLOYEE LEAVE MANAGEMENT
 -- ===========================================================================
 --
 -- SYSTEM OVERVIEW
 -- ───────────────
--- An employee submits a leave application.  The application is routed through 
--- a multi-level approval pipeline determined by the Leave Approval Policy that
--- matches the employee's role / department / designation.
+-- An employee submits a leave application.  The application is routed through a multi-level approval pipeline 
+-- determined by the Leave Approval Policy that matches the employee's role / department / designation.
 --
 -- POLICY MATCHING (resolved at submission time, priority-ordered):
 --   1. Most specific wins: role + department + designation
@@ -208,13 +270,9 @@ CREATE TABLE IF NOT EXISTS `sch_teacher_capabilities` (
 --
 -- APPROVAL LEVELS:
 --   • Each policy has 1-N ordered levels.
---   • Each level has 1-N configured approvers (by specific user, role,
---     designation, department-head, or "reporting_to" manager).
---   • approval_mode per level = ANY_ONE | ALL
---     (ANY_ONE: first person to act closes the level;
---      ALL: everyone must approve before the level advances)
---   • escalation_after_hours: if no action within X hours the application
---     automatically advances to the next level and a notification is sent.
+--   • Each level has 1-N configured approvers (by specific user, role, designation, department-head, or "reporting_to" manager).
+--   • approval_mode per level = ANY_ONE | ALL  (ANY_ONE: first person to act closes the level | ALL: everyone must approve before the level advances)
+--   • escalation_after_hours: if no action within X hours the application automatically advances to the next level and a notification is sent.
 --
 -- STATUS FSM (sch_employee_leave_applications.status):
 --   Draft          → saved but not submitted
@@ -230,11 +288,10 @@ CREATE TABLE IF NOT EXISTS `sch_teacher_capabilities` (
 
 
 -- ---------------------------------------------------------------------------
--- 2.1  sch_leave_approval_policies
+-- 4.1  sch_leave_approval_policies
 -- ---------------------------------------------------------------------------
--- Defines WHICH approval pipeline applies to a combination of
--- role / department / designation.  Leave NULL to mean "any".
--- Most-specific match wins (use `priority` to break ties).
+-- Defines WHICH approval pipeline applies to a combination of role / department / designation.  
+-- Leave NULL to mean "any". Most-specific match wins (use `priority` to break ties).
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `sch_leave_approval_policies` (
   `id`                    INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -267,7 +324,7 @@ COMMENT='Approval policy master — matches employee context to an approval pipe
 
 
 -- ---------------------------------------------------------------------------
--- 2.2  sch_leave_approval_policy_levels
+-- 4.2  sch_leave_approval_policy_levels
 -- ---------------------------------------------------------------------------
 -- Ordered approval levels within a policy.
 -- e.g., Policy "Teacher Leave" → Level 1 "HOD Review", Level 2 "Principal Final".
@@ -296,7 +353,7 @@ COMMENT='Ordered approval levels within a policy (Level 1 → Level 2 → …)';
 
 
 -- ---------------------------------------------------------------------------
--- 2.3  sch_leave_approval_level_approvers
+-- 4.3  sch_leave_approval_level_approvers
 -- ---------------------------------------------------------------------------
 -- WHO is authorised to approve at a given level.
 -- Multiple rows per level (any/all logic controlled by approval_mode in parent).
@@ -339,7 +396,7 @@ COMMENT='Authorised approvers per level — USER / ROLE / DESIGNATION / DEPARTME
 
 
 -- ---------------------------------------------------------------------------
--- 2.4  sch_employee_leave_applications
+-- 4.4  sch_employee_leave_applications
 -- ---------------------------------------------------------------------------
 -- Core leave request. One row per leave application.
 -- `approval_policy_id` and `current_level_number` are snapshot/runtime fields
@@ -399,7 +456,7 @@ COMMENT='Employee leave application — core request record with multi-level app
 
 
 -- ---------------------------------------------------------------------------
--- 2.5  sch_employee_leave_approvals
+-- 4.5  sch_employee_leave_approvals
 -- ---------------------------------------------------------------------------
 -- One row per level per individual approver action.
 -- Provides a full audit trail: who acted, at what level, what was the decision,
@@ -447,7 +504,7 @@ COMMENT='Per-level approver action trail — one row per approver per level; esc
 -- Skipped'        -- Skipped (e.g., approver same as applicant, or already resolved)
 
 -- ---------------------------------------------------------------------------
--- 2.6  sch_employee_leave_application_docs
+-- 4.6  sch_employee_leave_application_docs
 -- ---------------------------------------------------------------------------
 -- Supporting documents attached to a leave application.
 -- Can be uploaded at submission OR later in response to a Doc Requested remark.
@@ -481,7 +538,7 @@ COMMENT='Supporting documents for employee leave applications (voluntary or in r
 
 
 -- ---------------------------------------------------------------------------
--- 2.7  sch_employee_leave_application_remarks
+-- 4.7  sch_employee_leave_application_remarks
 -- ---------------------------------------------------------------------------
 -- Bidirectional communication thread between approver(s) and the employee,
 -- AND automatic FSM audit log on every status transition.
@@ -537,7 +594,7 @@ COMMENT='Approver ↔ Employee communication thread + automatic FSM audit log fo
 
 
 -- ---------------------------------------------------------------------------
--- 2.8  sch_employee_leave_balance
+-- 4.8  sch_employee_leave_balance
 -- ---------------------------------------------------------------------------
 -- Live leave-balance ledger: one row per employee × leave_type × academic year.
 -- The application layer updates this atomically when an application is Approved,
@@ -591,44 +648,15 @@ COMMENT='Live leave-balance ledger per employee per leave type per academic year
 --   available_balance GENERATED COLUMN does NOT include manual_adjustment by design —
 --     if needed, app layer should use: available_balance + manual_adjustment for display.
 
--- we need to create a table for Employee Attendance as well, but since it's a large table with potential for high write volume, 
--- we'll design it separately and not include it in this initial v2.0 rollout. The attendance system will be designed to handle 
--- daily check-ins, check-outs, and leave tracking at a granular level, and will likely require a more complex schema with partitioning for performance.
-CREATE TABLE IF NOT EXISTS `sch_employee_attendance` (
-  `id`                    INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `employee_id`           INT UNSIGNED NOT NULL COMMENT 'FK → sch_employees.id',
-  `date`                  DATE NOT NULL COMMENT 'Attendance date',
-  `check_in_time`         TIME DEFAULT NULL,
-  `check_out_time`        TIME DEFAULT NULL,
-  `status`                ENUM('Present','Absent','On Leave','Half Day') NOT NULL DEFAULT 'Absent',
-  `leave_application_id`  INT UNSIGNED DEFAULT NULL COMMENT 'FK → sch_employee_leave_applications.id — if status = On Leave or Half Day',
-  `remarks`               VARCHAR(255) DEFAULT NULL,
-  -- Audit
-  `created_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_attendance` (`employee_id`, `date`),
-  INDEX `idx_attendance_employee` (`employee_id`),
-  INDEX `idx_attendance_date`     (`date`),
-  CONSTRAINT `fk_attendance_employee` FOREIGN KEY (`employee_id`) REFERENCES `sch_employees` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_attendance_leave_application` FOREIGN KEY (`leave_application_id`) REFERENCES `sch_employee_leave_applications` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-COMMENT='Employee attendance records — daily check-in/check-out and leave status.;
-
-
 -- ===========================================================================
 -- APPENDIX: TABLE SUMMARY
 -- ===========================================================================
 --
---  EXISTING (v1) — unchanged
---  ─────────────────────────
 --  sch_employees                         — Employee master
 --  sch_employees_profile                 — Non-teacher staff profile
 --  sch_teacher_profile                   — Teacher-specific profile
 --  sch_teacher_capabilities              — Teacher class×subject teaching capability
 --
---  NEW (v2) — Employee Leave Management
---  ─────────────────────────────────────
 --  sch_leave_approval_policies           — Policy: which approval flow applies to whom
 --  sch_leave_approval_policy_levels      — Ordered levels within a policy (L1, L2 …)
 --  sch_leave_approval_level_approvers    — Authorised approvers per level
@@ -638,10 +666,4 @@ COMMENT='Employee attendance records — daily check-in/check-out and leave stat
 --  sch_employee_leave_application_remarks— Approver ↔ Employee communication + FSM log
 --  sch_employee_leave_balance            — Live balance ledger (used, pending, available)
 --
--- ===========================================================================
--- Change Log
--- ===========================================================================
--- v1.0 → v2.0 (2026-04-08):
---   Added Employee Leave Management sub-system (8 new tables).
---   v1 tables carried forward verbatim (no structural changes).
--- ===========================================================================
+
