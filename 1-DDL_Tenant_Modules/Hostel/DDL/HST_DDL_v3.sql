@@ -256,7 +256,7 @@ CREATE TABLE IF NOT EXISTS `hst_rooms` (
     `priority_flags_json`         JSON             NULL,
     `notes`                       VARCHAR(500)     NULL,
     `is_active`                   TINYINT(1)       NOT NULL DEFAULT 1,
-        `created_at`                  TIMESTAMP        NULL,
+    `created_at`                  TIMESTAMP        NULL,
     `updated_at`                  TIMESTAMP        NULL,
     `deleted_at`                  TIMESTAMP        NULL,
     PRIMARY KEY (`id`),

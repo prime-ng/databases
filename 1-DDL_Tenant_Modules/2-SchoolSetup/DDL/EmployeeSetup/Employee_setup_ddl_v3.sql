@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS `sch_staff_attendance_types` (
     `deleted_at`            TIMESTAMP NULL,
     UNIQUE KEY `uq_attendance_code` (`code`),
     INDEX `idx_attendance_active` (`is_active`, `is_deleted`)
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `sch_staff_leave_types` (
     `id`       INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS `sch_staff_leave_types` (
     `updated_at`          TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`          TIMESTAMP NULL,
     UNIQUE KEY `uq_leave_code` (`code`)
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 -- ===========================================================================

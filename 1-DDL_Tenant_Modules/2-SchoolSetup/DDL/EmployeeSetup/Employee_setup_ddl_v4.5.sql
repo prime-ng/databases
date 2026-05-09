@@ -1,73 +1,12 @@
 -- ===========================================================================
--- EMPLOYEE SETUP SUB-MODULE  —  v4.0
+-- EMPLOYEE SETUP SUB-MODULE  —  v5.0
 -- Scope   : Tenant DB (Per School)
 -- DB      : MySQL 8+
--- Style   : Audit-ready, Soft Delete, Additive (v3 tables retained, v4 adds + fixes)
+-- Style   : Mannually enhanced
 --
--- This file supersedes Employee_setup_ddl_v3.sql.
--- Reviewed and enhanced by the Database Architect role on 2026-05-04.
+-- This file supersedes Employee_setup_ddl_v4.sql.
+-- Reviewed and enhanced by the Database Architect role on 2026-05-07.
 --
--- ───────────────────────────────────────────────────────────────────────────
--- v3 → v4 CHANGE SUMMARY
--- ───────────────────────────────────────────────────────────────────────────
--- BUG FIXES (would have failed at CREATE time on a fresh tenant):
---   • sch_employee_attendance — missing closing quote on COMMENT clause.
---   • sch_teacher_capabilities — fixed typo `competancy_level` → `competency_level`.
---   • sch_employees_profile  — UNIQUE on (employee_id, role_id, effective_to)
---                               replaced with the active_flag GENERATED COLUMN pattern
---                               so NULL effective_to actually enforces "one active".
---
--- CONVENTION FIXES (per AI_Brain/agents/db-architect.md):
---   • sch_employees, sch_employees_profile, sch_teacher_profile,
---     sch_teacher_capabilities, leave-management approvals/remarks, attendance —
---     added missing required columns (is_active, created_by, deleted_at).
---
--- NEW MASTER TABLES (resolved dangling FKs from v3):
---   • sch_staff_leave_types            — leave type master (FK target from 4 tables)
---   • sch_staff_leave_config           — per-(role × leave_type) entitlement + accrual
---   • sch_holidays                     — school holiday calendar
---   • sch_employee_shifts              — shift master
---
--- NEW PERSONAL / PROFESSIONAL DETAIL TABLES:
---   • sch_employee_addresses           — current + permanent addresses
---   • sch_employee_emergency_contacts  — next-of-kin
---   • sch_employee_bank_details        — payroll integration
---   • sch_employee_documents           — joining letter, ID proof, contracts (Spatie media)
---
--- NEW LIFECYCLE TABLES:
---   • sch_employee_role_history        — promotion / transfer / role-change audit
---   • sch_employee_separations         — resignation / termination / retirement workflow
---
--- NEW SHIFT + ATTENDANCE EXTENSIONS:
---   • sch_employee_shift_assignments   — employee × shift × effective range
---   • sch_employee_attendance_punches  — raw biometric / mobile punches (1 row / punch)
---   • sch_employee_attendance_corrections — manual correction request / approval
---
--- FIELD ADDITIONS (additive — DEFAULT NULL so existing data is not broken):
---   • sch_employees: gender, date_of_birth, marital_status, blood_group,
---     nationality, religion, mobile_number_primary, mobile_number_alternate,
---     personal_email, official_email, photo_media_id, aadhaar_number,
---     pan_number, pf_number, esi_number, uan_number, employment_status,
---     employment_type, confirmation_date, probation_end_date,
---     last_working_date, branch_id, is_active, created_by.
---   • sch_employee_attendance: shift_id, attendance_source, device_id,
---     check_in_lat, check_in_lng, check_out_lat, check_out_lng,
---     working_hours, late_minutes, early_minutes, is_overtime,
---     overtime_hours, is_holiday, is_weekend, is_active, created_by.
---   • sch_employee_leave_applications: cancelled_by, cancelled_at,
---     cancellation_reason, is_emergency, pending_with_user_id, created_by.
---   • sch_teacher_capabilities: effective_to, created_by.
---   • sch_teacher_profile: is_class_teacher, class_teacher_of_section_id,
---     created_by.
---
--- TABLE NAME NON-CONFORMANCE (kept as-is to avoid breaking; flagged for v5):
---   • sch_employees_profile          should be sch_employee_profiles
---   • sch_employee_leave_balance     should be sch_employee_leave_balances
---   • sch_employee_attendance        should be sch_employee_attendances
---   Renaming requires application code update; deferred.
--- ===========================================================================
-
-
 -- ===========================================================================
 -- SECTION 0 : EXTERNAL DEPENDENCY MAP (informational only, NOT created here)
 -- ===========================================================================
@@ -79,9 +18,117 @@
 --   sch_branches                                         (multi-campus, optional)
 -- ===========================================================================
 
+-- ===========================================================================
+-- SECTION 1 : EMPLOYEE ATTENDANCE MASTER TABLES
+-- ===========================================================================
+
+CREATE TABLE IF NOT EXISTS `sch_staff_attendance_types` (
+    `id`                    INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    `code`                  VARCHAR(10) NOT NULL,  -- e.g. 'P', 'A', 'L', 'H'
+    `name`                  VARCHAR(100) NOT NULL,  -- e.g. 'Present', 'Absent', 'Leave', 'Late', 'Holiday'
+    `is_present`            TINYINT(1) NOT NULL DEFAULT 0,  -- 0: Absent, 1: Present
+    `display_order`         INT NOT NULL DEFAULT 0,
+    `is_active`             TINYINT(1) NOT NULL DEFAULT 1,
+    `created_at`            TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`            TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at`            TIMESTAMP NULL,
+    UNIQUE KEY `uq_attendance_code` (`code`),
+    INDEX `idx_attendance_active` (`is_active`, `is_deleted`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+
+
+-- ---------------------------------------------------------------------------
+-- sch_staff_leave_types   (NEW Table in v4)
+-- ---------------------------------------------------------------------------
+-- Master list of leave categories. Referenced by sch_leave_approval_policies,
+-- sch_employee_leave_applications, sch_employee_leave_balance, and
+-- sch_staff_leave_config.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `sch_staff_leave_types` (
+  `id`                    INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `code`                  VARCHAR(20)  NOT NULL  COMMENT 'CL, SL, EL, ML, PL, COMP, LWP, HALF',
+  `name`                  VARCHAR(100) NOT NULL  COMMENT 'Casual Leave, Sick Leave, Earned Leave, …',
+  `description`           VARCHAR(500) DEFAULT NULL,
+  -- Behavior flags
+  `is_paid`               TINYINT(1)   NOT NULL DEFAULT 1   COMMENT '0: Unpaid Leave, 1: Paid Leave',
+  `is_carry_forwardable`  TINYINT(1)   NOT NULL DEFAULT 0,  -- 'Can unused leave be carried forward to next year',
+  `is_encashable`         TINYINT(1)   NOT NULL DEFAULT 0   COMMENT 'Can be paid out at year-end',
+  `requires_doc`          TINYINT(1)   NOT NULL DEFAULT 0   COMMENT 'e.g., medical cert for Sick Leave',
+  `min_doc_required_days` TINYINT UNSIGNED DEFAULT NULL     COMMENT 'Doc only required if leave > N days',
+  `requires_substitute`   TINYINT(1)   NOT NULL DEFAULT 0   COMMENT 'For teachers — auto-create sub flow',
+  `allows_half_day`       TINYINT(1)   NOT NULL DEFAULT 1,  -- 0: No Approval Required, 1: Approval Required
+  `allows_back_dated`     TINYINT(1)   NOT NULL DEFAULT 0   COMMENT 'For Sick Leave / emergency',
+  `requires_approval`     TINYINT(1) NOT NULL DEFAULT 1,  -- 0: No Approval Required, 1: Approval Required
+  -- Constraints
+  `min_days_per_application` DECIMAL(4,1) NOT NULL DEFAULT 0.5,  -- 'Min days that can be applied for in a single application',
+  `max_days_per_application` DECIMAL(4,1) DEFAULT NULL,          -- NULL means no limit; e.g., for Maternity Leave, max might be 90 days
+  `min_advance_notice_days`  TINYINT UNSIGNED DEFAULT 0     COMMENT 'Must apply N days in advance',
+  `max_consecutive_days`     TINYINT UNSIGNED DEFAULT NULL,  -- 'Max consecutive days allowed; NULL means no limit',
+  -- Display
+  `display_order`         TINYINT UNSIGNED DEFAULT 100,
+  `color_hex`             VARCHAR(7)   DEFAULT NULL  COMMENT 'For calendar UI: #FF5733',
+  `is_system`             TINYINT(1)   NOT NULL DEFAULT 0   COMMENT '1 = built-in, cannot be deleted by user',
+  `is_active`             TINYINT(1)   NOT NULL DEFAULT 1,
+  `created_by`            INT UNSIGNED DEFAULT NULL,
+  `created_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at`            TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_lt_code`   (`code`),
+  KEY `idx_lt_active`       (`is_active`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Master list of leave types (CL, SL, EL, ML, PL, LWP, etc.).';
+
+
+-- ---------------------------------------------------------------------------
+-- sch_staff_leave_config   (NEW in v4)
+-- ---------------------------------------------------------------------------
+-- Per-(role × leave_type) entitlement: opening balance, max carry forward,
+-- accrual schedule. Used at year-rollover to seed sch_employee_leave_balance.
+-- POLICY MATCHING (role / department / designation):
+--   • Most-specific match wins; otherwise the catch-all (all-NULL) row applies.
+--   • This mirrors sch_leave_approval_policies semantics.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `sch_staff_leave_config` (
+  `id`                    INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `leave_type_id`         INT UNSIGNED NOT NULL,           -- FK to sch_staff_leave_types
+  `applies_to_role_id`        INT UNSIGNED DEFAULT NULL,   -- FK to sch_employee_roles; NULL means applies to all roles
+  `applies_to_department_id`  INT UNSIGNED DEFAULT NULL,   -- FK to sch_departments; NULL means applies to all departments
+  `applies_to_designation_id` INT UNSIGNED DEFAULT NULL,   -- FK to sch_designations; NULL means applies to all designations
+  `applies_to_employment_type` ENUM('Permanent','Contract','Temporary','Visiting','Intern','Probation') DEFAULT NULL,
+  -- Entitlement
+  `annual_entitlement`    DECIMAL(5,2) NOT NULL DEFAULT 0.00  COMMENT 'Days granted per academic year',
+  `accrual_method`        ENUM('Lump_Sum','Monthly_Pro_Rata','Quarterly') NOT NULL DEFAULT 'Lump_Sum',
+  `accrual_start_offset_months` TINYINT UNSIGNED DEFAULT 0    COMMENT 'Wait N months from joining before accrual starts',
+  -- Carry forward
+  `is_carry_forwardable`  TINYINT(1)   NOT NULL DEFAULT 0,   -- 'Can unused leave be carried forward to next year',
+  `max_carry_forward`     DECIMAL(5,2) DEFAULT NULL,         -- 'Max days that can be carried forward; NULL means no limit',
+  -- Encashment
+  `is_encashable_at_separation` TINYINT(1) NOT NULL DEFAULT 0, -- 'Can this leave type be encashed at separation (resignation/retirement)?',
+  `max_encashable_days`         DECIMAL(5,2) DEFAULT NULL,     -- 'Max days that can be encashed at separation; NULL means no limit',
+  -- Probation behavior
+  `available_during_probation` TINYINT(1) NOT NULL DEFAULT 0,      -- 0: No leave during probation, 1: Leave available during probation
+  `probation_entitlement_pro_rata` TINYINT(1) NOT NULL DEFAULT 1,  -- 0: No pro-rata during probation, 1: Pro-rata based on probation duration
+  -- Tie-breaker (mirrors sch_leave_approval_policies pattern)
+  `priority`              TINYINT UNSIGNED NOT NULL DEFAULT 10,    -- Lower number = higher priority. Evaluated when multiple rows match an employee.
+  `is_active`             TINYINT(1)   NOT NULL DEFAULT 1,
+  `created_by`            INT UNSIGNED DEFAULT NULL,
+  `created_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at`            TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_lc_lookup` (`leave_type_id`, `applies_to_role_id`, `applies_to_department_id`, `applies_to_designation_id`, `is_active`),
+  CONSTRAINT `fk_lc_leave_type`  FOREIGN KEY (`leave_type_id`)            REFERENCES `sch_staff_leave_types` (`id`)        ON DELETE CASCADE,
+  CONSTRAINT `fk_lc_role`        FOREIGN KEY (`applies_to_role_id`)        REFERENCES `sch_employee_roles` (`id`)    ON DELETE SET NULL,
+  CONSTRAINT `fk_lc_department`  FOREIGN KEY (`applies_to_department_id`)  REFERENCES `sch_departments` (`id`)       ON DELETE SET NULL,
+  CONSTRAINT `fk_lc_designation` FOREIGN KEY (`applies_to_designation_id`) REFERENCES `sch_designations` (`id`)      ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Leave entitlement config — drives year-rollover and accrual.';
 
 -- ===========================================================================
--- SECTION 1 : EMPLOYEE MASTER TABLES (v3 retained + v4 enhancements)
+-- SECTION 2 : EMPLOYEE CREATION & PROFILE MANAGEMENT
 -- ===========================================================================
 
 -- ---------------------------------------------------------------------------
@@ -137,7 +184,7 @@ CREATE TABLE IF NOT EXISTS `sch_employees` (
   `confirmation_date`         DATE         DEFAULT NULL          COMMENT 'v4 — date confirmed after probation',
   `probation_end_date`        DATE         DEFAULT NULL          COMMENT 'v4',
   `last_working_date`         DATE         DEFAULT NULL          COMMENT 'v4 — set on resignation / termination',
-  `notes`                     TEXT COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `notes`                     TEXT         DEFAULT NULL,
   -- Required audit columns (v4 fixed — added is_active and created_by)
   `is_active`                 TINYINT(1)   NOT NULL DEFAULT 1    COMMENT 'v4',
   `created_by`                INT UNSIGNED DEFAULT NULL          COMMENT 'v4',
@@ -169,31 +216,31 @@ CREATE TABLE IF NOT EXISTS `sch_employees_profile` (
   `user_id`                   INT UNSIGNED NOT NULL,
   `role_id`                   INT UNSIGNED NOT NULL,
   `department_id`             INT UNSIGNED DEFAULT NULL,
-  `specialization_area`       VARCHAR(100) DEFAULT NULL,
-  `qualification_level`       VARCHAR(50)  DEFAULT NULL,
-  `qualification_field`       VARCHAR(100) DEFAULT NULL,
-  `certifications`            JSON         DEFAULT NULL,
-  `work_hours_daily`          DECIMAL(4,2) DEFAULT 8.0,
-  `max_hours_daily`           DECIMAL(4,2) DEFAULT 10.0,
-  `work_hours_weekly`         DECIMAL(5,2) DEFAULT 40.0,
-  `max_hours_weekly`          DECIMAL(5,2) DEFAULT 50.0,
-  `preferred_shift`           ENUM('morning','evening','flexible') DEFAULT 'morning',
-  `is_full_time`              TINYINT(1)   DEFAULT 1,
-  `core_responsibilities`     JSON         DEFAULT NULL,
-  `technical_skills`          JSON         DEFAULT NULL,
-  `soft_skills`               JSON         DEFAULT NULL,
-  `experience_months`         SMALLINT UNSIGNED DEFAULT NULL,
-  `performance_rating`        TINYINT UNSIGNED  DEFAULT NULL,
-  `last_performance_review`   DATE         DEFAULT NULL,
-  `security_clearance_done`   TINYINT(1)   DEFAULT 0,
-  `reporting_to`              INT UNSIGNED DEFAULT NULL,
-  `can_approve_budget`        TINYINT(1)   DEFAULT 0,
-  `can_manage_staff`          TINYINT(1)   DEFAULT 0,
-  `can_access_sensitive_data` TINYINT(1)   DEFAULT 0,
-  `assignment_meta`           JSON         DEFAULT NULL,
+  `specialization_area`       VARCHAR(100) DEFAULT NULL,  -- e.g., for teachers: subject specialization; for admin: HR, Finance, etc.
+  `qualification_level`       VARCHAR(50)  DEFAULT NULL,  -- e.g., 'Bachelor', 'Master', 'PhD', 'Diploma'
+  `qualification_field`       VARCHAR(100) DEFAULT NULL,  -- e.g., 'Computer Science', 'Business Administration'
+  `certifications`            JSON         DEFAULT NULL,  -- e.g., [{"name": "PMP", "issued_by": "PMI", "issue_date": "2020-05-01", "expiry_date": "2023-05-01"}]
+  `work_hours_daily`          DECIMAL(4,2) DEFAULT 8.0,   -- Expected daily work hours (e.g., 8.0)
+  `max_hours_daily`           DECIMAL(4,2) DEFAULT 10.0,  -- Maximum daily work hours before overtime applies (e.g., 10.0)
+  `work_hours_weekly`         DECIMAL(5,2) DEFAULT 40.0,  -- Expected weekly work hours (e.g., 40.0)
+  `max_hours_weekly`          DECIMAL(5,2) DEFAULT 50.0,  -- Maximum weekly work hours before overtime applies (e.g., 50.0)
+  `preferred_shift`           ENUM('Morning','Evening','Flexible') DEFAULT 'Morning',
+  `is_full_time`              TINYINT(1)   DEFAULT 1,     -- 0: Part-time, 1: Full-time
+  `core_responsibilities`     JSON         DEFAULT NULL,  -- e.g., [{"type": "Teaching", "description": "Teach Computer Science to grades 9-12"}, {"type": "Admin", "description": "Manage school IT infrastructure"}]
+  `technical_skills`          JSON         DEFAULT NULL,  -- e.g., [{"skill": "Python", "proficiency": "Advanced"}, {"skill": "Project Management", "proficiency": "Intermediate"}]
+  `soft_skills`               JSON         DEFAULT NULL,  -- e.g., [{"skill": "Communication", "proficiency": "Advanced"}, {"skill": "Teamwork", "proficiency": "Advanced"}]
+  `experience_months`         SMALLINT UNSIGNED DEFAULT NULL,  -- e.g., 24 (for 2 years)
+  `performance_rating`        TINYINT UNSIGNED  DEFAULT NULL,  -- e.g., 4 (on a scale of 1-5)
+  `last_performance_review`   DATE         DEFAULT NULL,       -- Date of last performance review
+  `security_clearance_done`   TINYINT(1)   DEFAULT 0,          -- 0: No, 1: Yes
+  `reporting_to`              INT UNSIGNED DEFAULT NULL,       -- FK to sch_employees.id; NULL means reports to no one (e.g., top-level admin)
+  `can_approve_budget`        TINYINT(1)   DEFAULT 0,       -- 0: No, 1: Yes  
+  `can_manage_staff`          TINYINT(1)   DEFAULT 0,     -- 0: No, 1: Yes (e.g., for teachers: can they be a class teacher with student management responsibilities? For admin: can they have direct reports?)
+  `can_access_sensitive_data` TINYINT(1)   DEFAULT 0,     -- 0: No, 1: Yes (e.g., salary info, personal details of other employees)
+  `assignment_meta`           JSON         DEFAULT NULL,  -- e.g., {"current_projects": ["School Website Redesign", "Annual Day Event"], "past_projects": ["Science Fair 2023", "Math Olympiad 2022"]}
   `notes`                     TEXT         DEFAULT NULL,
-  `effective_from`            DATE         DEFAULT NULL,
-  `effective_to`              DATE         DEFAULT NULL,
+  `effective_from`            DATE         DEFAULT NULL,    -- `effective_to` is now unused (v4) but kept for historical/audit purposes; active_flag GENERATED COLUMN enforces "one active per employee_id + role_id"
+  `effective_to`              DATE         DEFAULT NULL,    -- `effective_to` is now unused (v4) but kept for historical/audit purposes; active_flag GENERATED COLUMN enforces "one active per employee_id + role_id"
   `is_active`                 TINYINT(1)   NOT NULL DEFAULT 1,
   -- v4 — generated active_flag so the UNIQUE actually enforces "only one active per (employee, role)"
   `active_flag`               TINYINT(1) GENERATED ALWAYS AS (CASE WHEN (`is_active` = 1 AND `deleted_at` IS NULL) THEN 1 ELSE NULL END) STORED,
@@ -230,32 +277,31 @@ CREATE TABLE IF NOT EXISTS `sch_teacher_profile` (
   `class_teacher_of_class_id`       INT UNSIGNED DEFAULT NULL          COMMENT 'v4 — FK → sch_classes.id',
   `class_teacher_of_section_id`     INT UNSIGNED DEFAULT NULL          COMMENT 'v4 — FK → sch_sections.id',
   -- Coloumn from (v3)
-  `is_full_time`                    TINYINT(1)   DEFAULT 1,
-  `preferred_shift`                 INT UNSIGNED DEFAULT NULL,
-  `capable_handling_multiple_classes` TINYINT(1) DEFAULT 0,
-  `can_be_used_for_substitution`    TINYINT(1)   DEFAULT 1,
-  `certified_for_lab`               TINYINT(1)   DEFAULT 0,
-  `is_proficient_with_computer`     TINYINT(1)   DEFAULT 0,
-  `can_manage_staff`                TINYINT(1)   DEFAULT 0,
-  `special_skill_area`              VARCHAR(100) DEFAULT NULL,
-  `soft_skills`                     JSON         DEFAULT NULL,
-  `assignment_meta`                 JSON         DEFAULT NULL,
-  `max_available_periods_weekly`    TINYINT UNSIGNED DEFAULT 48,
-  `min_available_periods_weekly`    TINYINT UNSIGNED DEFAULT 36,
-  `max_allocated_periods_weekly`    TINYINT UNSIGNED DEFAULT 1,
-  `min_allocated_periods_weekly`    TINYINT UNSIGNED DEFAULT 1,
-  `can_be_split_across_sections`    TINYINT(1)   DEFAULT 0,
-  `min_teacher_availability_score`  DECIMAL(7,2) UNSIGNED DEFAULT 1,
-  `max_teacher_availability_score`  DECIMAL(7,2) UNSIGNED DEFAULT 1,
-  `performance_rating`              TINYINT UNSIGNED DEFAULT NULL,
-  `last_performance_review`         DATE         DEFAULT NULL,
-  `security_clearance_done`         TINYINT(1)   DEFAULT 0,
-  `reporting_to`                    INT UNSIGNED DEFAULT NULL,
-  `can_access_sensitive_data`       TINYINT(1)   DEFAULT 0,
+  `is_full_time`                    TINYINT(1)   DEFAULT 1,   -- 0: Part-time, 1: Full-time
+  `preferred_shift`                 ENUM('Morning','Evening','Flexible') DEFAULT 'Morning',  -- v4 — added Flexible option
+  `capable_handling_multiple_classes` TINYINT(1) DEFAULT 0,   -- 0: No, 1: Yes (can this teacher handle multiple classes/sections if needed?)
+  `can_be_used_for_substitution`    TINYINT(1)   DEFAULT 1,   -- 0: No, 1: Yes (can this teacher be assigned as a substitute for another teacher's class if needed?)
+  `certified_for_lab`               TINYINT(1)   DEFAULT 0,   -- 0: No, 1: Yes (is this teacher certified to handle lab sessions, if applicable?)
+  `is_proficient_with_computer`     TINYINT(1)   DEFAULT 0,   -- 0: No, 1: Yes (can this teacher use computer software for teaching or administrative tasks?)
+  `can_manage_staff`                TINYINT(1)   DEFAULT 0,   -- 0: No, 1: Yes (can this teacher have administrative responsibilities or manage other staff members?)
+  `special_skill_area`              VARCHAR(100) DEFAULT NULL, -- e.g., 'STEM Education', 'Special Needs Education', 'Sports Coaching'
+  `soft_skills`                     JSON         DEFAULT NULL, -- e.g., [{"skill": "Communication", "proficiency": "Advanced"}, {"skill": "Classroom Management", "proficiency": "Intermediate"}]
+  `assignment_meta`                 JSON         DEFAULT NULL,  -- e.g., {"current_classes": ["10A", "12B"], "past_classes": ["9C", "11A"]}
+  `max_available_periods_weekly`    TINYINT UNSIGNED DEFAULT 48,  -- Max periods this teacher can be assigned per week (e.g., 48 for full-time)
+  `min_available_periods_weekly`    TINYINT UNSIGNED DEFAULT 36,  -- Min periods this teacher should be assigned per week to be considered full-time (e.g., 36)
+  `max_allocated_periods_weekly`    TINYINT UNSIGNED DEFAULT 1,   -- Max periods this teacher should be allocated per week to avoid overloading (e.g., 1 for part-time, or 5 for full-time)
+  `min_allocated_periods_weekly`    TINYINT UNSIGNED DEFAULT 1,   -- Min periods this teacher should be allocated per week to ensure they are utilized effectively (e.g., 1 for part-time, or 10 for full-time)
+  `can_be_split_across_sections`    TINYINT(1)   DEFAULT 0,       -- 0: No, 1: Yes (can this teacher's assigned class be split across multiple sections if needed?)
+  `min_teacher_availability_score`  DECIMAL(7,2) UNSIGNED DEFAULT 1,  -- Minimum availability score (0 to 1) required for this teacher to be considered for allocation; calculated based on their availability and preferences
+  `max_teacher_availability_score`  DECIMAL(7,2) UNSIGNED DEFAULT 1,  -- Maximum availability score (0 to 1) for this teacher; can be used to deprioritize teachers with low availability or preferences
+  `performance_rating`              TINYINT UNSIGNED DEFAULT NULL,    -- e.g., 4 (on a scale of 1-5)
+  `last_performance_review`         DATE         DEFAULT NULL,       -- Date of last performance review
+  `security_clearance_done`         TINYINT(1)   DEFAULT 0,          -- 0: No, 1: Yes
+  `reporting_to`                    INT UNSIGNED DEFAULT NULL,       -- FK to sch_employees.id; NULL means reports to no one (e.g., top-level admin)
+  `can_access_sensitive_data`       TINYINT(1)   DEFAULT 0,          -- 0: No, 1: Yes (e.g., salary info, personal details of other employees)
   `notes`                           TEXT         NULL,
   `effective_from`                  DATE         DEFAULT NULL,
-  `effective_to`                    DATE         DEFAULT NULL,
-  `is_active`                       TINYINT(1)   NOT NULL DEFAULT 1,
+  `effective_to`                    DATE         DEFAULT NULL,     
   `created_by`                      INT UNSIGNED DEFAULT NULL          COMMENT 'v4',
   `created_at`                      TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at`                      TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -284,19 +330,19 @@ CREATE TABLE IF NOT EXISTS `sch_teacher_capabilities` (
   `teacher_profile_id`          INT UNSIGNED NOT NULL,
   `class_id`                    INT UNSIGNED NOT NULL,
   `subject_study_format_id`     INT UNSIGNED NOT NULL,
-  `proficiency_percentage`      TINYINT UNSIGNED DEFAULT NULL,
-  `teaching_experience_months`  SMALLINT UNSIGNED DEFAULT NULL,
-  `is_primary_subject`          TINYINT(1)   NOT NULL DEFAULT 1,
+  `proficiency_percentage`      TINYINT UNSIGNED DEFAULT NULL,   -- 0 to 100 indicating how proficient this teacher is in teaching this subject-format; can be used for allocation scoring and prioritization
+  `teaching_experience_months`  SMALLINT UNSIGNED DEFAULT NULL,  -- Number of months of experience teaching this subject-format; can be used for allocation scoring and prioritization
+  `is_primary_subject`          TINYINT(1)   NOT NULL DEFAULT 1, -- 0: No, 1: Yes (is this subject-format one of the primary ones this teacher should be allocated to if possible?)
   `competency_level`            ENUM('Facilitator','Basic','Intermediate','Advanced','Expert') DEFAULT 'Basic'  COMMENT 'v4 — fixed typo from competancy_level',
-  `priority_order`              INT UNSIGNED DEFAULT NULL,
-  `priority_weight`             TINYINT UNSIGNED DEFAULT NULL,
-  `scarcity_index`              TINYINT UNSIGNED DEFAULT NULL,
-  `is_hard_constraint`          TINYINT(1)   DEFAULT 0,
-  `allocation_strictness`       ENUM('hard','medium','soft') DEFAULT 'medium',
-  `override_priority`           TINYINT UNSIGNED DEFAULT NULL,
-  `override_reason`             VARCHAR(255) DEFAULT NULL,
-  `historical_success_ratio`    TINYINT UNSIGNED DEFAULT NULL,
-  `last_allocation_score`       TINYINT UNSIGNED DEFAULT NULL,
+  `priority_order`              INT UNSIGNED DEFAULT NULL,       -- Lower number = higher priority for allocation; can be used as a tie-breaker when proficiency and experience are similar
+  `priority_weight`             TINYINT UNSIGNED DEFAULT NULL,   -- Weight (0-100) indicating how important it is to allocate this teacher to this subject-format; can be used in allocation scoring to balance teacher preferences and institutional priorities
+  `scarcity_index`              TINYINT UNSIGNED DEFAULT NULL,   -- Calculated scarcity index for this subject-format based on the number of teachers available with proficiency in it; can be used to prioritize allocation of teachers to high-scarcity subjects
+  `is_hard_constraint`          TINYINT(1)   DEFAULT 0,          -- 0: No, 1: Yes (if true, the allocation engine should treat this capability as a hard constraint and not allocate this teacher to this subject-format if it doesn't meet the proficiency/experience requirements)
+  `allocation_strictness`       ENUM('Hard','Medium','Soft') DEFAULT 'Medium',  -- Indicates how strictly the allocation engine should try to meet this capability when allocating this teacher to this subject-format; can be used to allow flexibility in allocations while still prioritizing important capabilities
+  `override_priority`           TINYINT UNSIGNED DEFAULT NULL,   -- Manual override for priority order; lower number = higher priority. If set, this takes precedence over calculated priority_order based on proficiency and experience.
+  `override_reason`             VARCHAR(255) DEFAULT NULL,       -- Reason for manual override (e.g., "Principal's recommendation", "Recent training in this subject-format", etc.)
+  `historical_success_ratio`    TINYINT UNSIGNED DEFAULT NULL,   -- Historical success ratio for this teacher's performance in teaching this subject-format; can be used for allocation scoring and prioritization
+  `last_allocation_score`       TINYINT UNSIGNED DEFAULT NULL,   -- Last calculated allocation score for this teacher-subject-format combination based on proficiency, experience, priority weight, scarcity index, and other factors; can be used to track how well this capability is being utilized in allocations
   `effective_from`              DATE         DEFAULT NULL,
   `effective_to`                DATE         DEFAULT NULL          COMMENT 'v4',
   `is_active`                   TINYINT(1)   NOT NULL DEFAULT 1,
@@ -477,12 +523,10 @@ CREATE TABLE IF NOT EXISTS `sch_employee_role_history` (
   `from_role_id`          INT UNSIGNED DEFAULT NULL,
   `from_department_id`    INT UNSIGNED DEFAULT NULL,
   `from_designation_id`   INT UNSIGNED DEFAULT NULL,
-  `from_branch_id`        INT UNSIGNED DEFAULT NULL,
   -- Snapshot AFTER the change
   `to_role_id`            INT UNSIGNED DEFAULT NULL,
   `to_department_id`      INT UNSIGNED DEFAULT NULL,
   `to_designation_id`     INT UNSIGNED DEFAULT NULL,
-  `to_branch_id`          INT UNSIGNED DEFAULT NULL,
   -- Effective range
   `effective_from`        DATE         NOT NULL,
   `effective_to`          DATE         DEFAULT NULL  COMMENT 'NULL = current; set when superseded',
@@ -564,108 +608,17 @@ CREATE TABLE IF NOT EXISTS `sch_employee_separations` (
 COMMENT='Employee separation (resignation / termination / retirement) workflow.';
 
 
--- ===========================================================================
--- SECTION 5 : LEAVE MANAGEMENT MASTERS (NEW in v4 — close the dangling FKs)
--- ===========================================================================
-
--- ---------------------------------------------------------------------------
--- 5.1  sch_staff_leave_types   (NEW Table in v4)
--- ---------------------------------------------------------------------------
--- Master list of leave categories. Referenced by sch_leave_approval_policies,
--- sch_employee_leave_applications, sch_employee_leave_balance, and
--- sch_staff_leave_config.
--- ---------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS `sch_staff_leave_types` (
-  `id`                    INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `code`                  VARCHAR(20)  NOT NULL  COMMENT 'CL, SL, EL, ML, PL, COMP, LWP, HALF',
-  `name`                  VARCHAR(100) NOT NULL  COMMENT 'Casual Leave, Sick Leave, Earned Leave, …',
-  `description`           VARCHAR(500) DEFAULT NULL,
-  -- Behavior flags
-  `is_paid`               TINYINT(1)   NOT NULL DEFAULT 1   COMMENT '0 = LWP / unpaid',
-  `is_carry_forwardable`  TINYINT(1)   NOT NULL DEFAULT 0,
-  `is_encashable`         TINYINT(1)   NOT NULL DEFAULT 0   COMMENT 'Can be paid out at year-end',
-  `requires_doc`          TINYINT(1)   NOT NULL DEFAULT 0   COMMENT 'e.g., medical cert for Sick Leave',
-  `min_doc_required_days` TINYINT UNSIGNED DEFAULT NULL     COMMENT 'Doc only required if leave > N days',
-  `requires_substitute`   TINYINT(1)   NOT NULL DEFAULT 0   COMMENT 'For teachers — auto-create sub flow',
-  `allows_half_day`       TINYINT(1)   NOT NULL DEFAULT 1,
-  `allows_back_dated`     TINYINT(1)   NOT NULL DEFAULT 0   COMMENT 'For Sick Leave / emergency',
-  -- Constraints
-  `min_days_per_application` DECIMAL(4,1) NOT NULL DEFAULT 0.5,
-  `max_days_per_application` DECIMAL(4,1) DEFAULT NULL,
-  `min_advance_notice_days`  TINYINT UNSIGNED DEFAULT 0     COMMENT 'Must apply N days in advance',
-  `max_consecutive_days`     TINYINT UNSIGNED DEFAULT NULL,
-  -- Display
-  `display_order`         TINYINT UNSIGNED DEFAULT 100,
-  `color_hex`             VARCHAR(7)   DEFAULT NULL  COMMENT 'For calendar UI: #FF5733',
-  `is_system`             TINYINT(1)   NOT NULL DEFAULT 0   COMMENT '1 = built-in, cannot be deleted by user',
-  `is_active`             TINYINT(1)   NOT NULL DEFAULT 1,
-  `created_by`            INT UNSIGNED DEFAULT NULL,
-  `created_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `deleted_at`            TIMESTAMP NULL DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_lt_code`   (`code`),
-  KEY `idx_lt_active`       (`is_active`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-COMMENT='Master list of leave types (CL, SL, EL, ML, PL, LWP, etc.).';
-
-
--- ---------------------------------------------------------------------------
--- 5.2  sch_staff_leave_config   (NEW in v4)
--- ---------------------------------------------------------------------------
--- Per-(role × leave_type) entitlement: opening balance, max carry forward,
--- accrual schedule. Used at year-rollover to seed sch_employee_leave_balance.
---
--- POLICY MATCHING (role / department / designation):
---   • Most-specific match wins; otherwise the catch-all (all-NULL) row applies.
---   • This mirrors sch_leave_approval_policies semantics.
--- ---------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS `sch_staff_leave_config` (
-  `id`                    INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `leave_type_id`         INT UNSIGNED NOT NULL,
-  `applies_to_role_id`        INT UNSIGNED DEFAULT NULL,
-  `applies_to_department_id`  INT UNSIGNED DEFAULT NULL,
-  `applies_to_designation_id` INT UNSIGNED DEFAULT NULL,
-  `applies_to_employment_type` ENUM('Permanent','Contract','Temporary','Visiting','Intern','Probation') DEFAULT NULL,
-  -- Entitlement
-  `annual_entitlement`    DECIMAL(5,2) NOT NULL DEFAULT 0.00  COMMENT 'Days granted per academic year',
-  `accrual_method`        ENUM('Lump_Sum','Monthly_Pro_Rata','Quarterly') NOT NULL DEFAULT 'Lump_Sum',
-  `accrual_start_offset_months` TINYINT UNSIGNED DEFAULT 0    COMMENT 'Wait N months from joining before accrual starts',
-  -- Carry forward
-  `is_carry_forwardable`  TINYINT(1)   NOT NULL DEFAULT 0,
-  `max_carry_forward`     DECIMAL(5,2) DEFAULT NULL,
-  -- Encashment
-  `is_encashable_at_separation` TINYINT(1) NOT NULL DEFAULT 0,
-  `max_encashable_days`         DECIMAL(5,2) DEFAULT NULL,
-  -- Probation behavior
-  `available_during_probation` TINYINT(1) NOT NULL DEFAULT 0,
-  `probation_entitlement_pro_rata` TINYINT(1) NOT NULL DEFAULT 1,
-  -- Tie-breaker (mirrors sch_leave_approval_policies pattern)
-  `priority`              TINYINT UNSIGNED NOT NULL DEFAULT 10,
-  `is_active`             TINYINT(1)   NOT NULL DEFAULT 1,
-  `created_by`            INT UNSIGNED DEFAULT NULL,
-  `created_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `deleted_at`            TIMESTAMP NULL DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  KEY `idx_lc_lookup` (`leave_type_id`, `applies_to_role_id`, `applies_to_department_id`, `applies_to_designation_id`, `is_active`),
-  CONSTRAINT `fk_lc_leave_type`  FOREIGN KEY (`leave_type_id`)            REFERENCES `sch_staff_leave_types` (`id`)        ON DELETE CASCADE,
-  CONSTRAINT `fk_lc_role`        FOREIGN KEY (`applies_to_role_id`)        REFERENCES `sch_employee_roles` (`id`)    ON DELETE SET NULL,
-  CONSTRAINT `fk_lc_department`  FOREIGN KEY (`applies_to_department_id`)  REFERENCES `sch_departments` (`id`)       ON DELETE SET NULL,
-  CONSTRAINT `fk_lc_designation` FOREIGN KEY (`applies_to_designation_id`) REFERENCES `sch_designations` (`id`)      ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-COMMENT='Leave entitlement config — drives year-rollover and accrual.';
 
 
 -- ===========================================================================
--- SECTION 6 : LEAVE MANAGEMENT (v3 retained + v4 minor fixes)
+-- SECTION 5 : LEAVE MANAGEMENT (v3 retained + v4 minor fixes)
 -- ===========================================================================
 -- v3 narrative is preserved verbatim in v3. Only structural fixes here.
 -- ===========================================================================
 
 
 -- ---------------------------------------------------------------------------
--- 6.1  sch_leave_approval_policies   (v3 retained)
+-- 5.1  sch_leave_approval_policies   (v3 retained)
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `sch_leave_approval_policies` (
   `id`                    INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -696,7 +649,7 @@ COMMENT='Approval policy master — matches employee context to an approval pipe
 
 
 -- ---------------------------------------------------------------------------
--- 6.2  sch_leave_approval_policy_levels   (v3 retained)
+-- 5.2  sch_leave_approval_policy_levels   (v3 retained)
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `sch_leave_approval_policy_levels` (
   `id`                    INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -720,7 +673,7 @@ COMMENT='Ordered approval levels within a policy';
 
 
 -- ---------------------------------------------------------------------------
--- 6.3  sch_leave_approval_level_approvers   (v3 retained)
+-- 5.3  sch_leave_approval_level_approvers   (v3 retained)
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `sch_leave_approval_level_approvers` (
   `id`                    INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -751,7 +704,7 @@ COMMENT='Authorised approvers per level';
 
 
 -- ---------------------------------------------------------------------------
--- 6.4  sch_employee_leave_applications   (v3 + v4 additions)
+-- 5.4  sch_employee_leave_applications   (v3 + v4 additions)
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `sch_employee_leave_applications` (
   `id`                    INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -807,7 +760,7 @@ COMMENT='Employee leave application — core request record';
 
 
 -- ---------------------------------------------------------------------------
--- 6.5  sch_employee_leave_approvals   (v3 + v4 audit columns)
+-- 5.5  sch_employee_leave_approvals   (v3 + v4 audit columns)
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `sch_employee_leave_approvals` (
   `id`                    INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -841,7 +794,7 @@ COMMENT='Per-level approver action trail + escalation log';
 
 
 -- ---------------------------------------------------------------------------
--- 6.6  sch_employee_leave_application_docs   (v3 retained)
+-- 5.6  sch_employee_leave_application_docs   (v3 retained)
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `sch_employee_leave_application_docs` (
   `id`                    INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -871,7 +824,7 @@ COMMENT='Supporting documents for employee leave applications';
 
 
 -- ---------------------------------------------------------------------------
--- 6.7  sch_employee_leave_application_remarks   (v3 + v4 audit + read tracking)
+-- 5.7  sch_employee_leave_application_remarks   (v3 + v4 audit + read tracking)
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `sch_employee_leave_application_remarks` (
   `id`                    INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -909,7 +862,7 @@ COMMENT='Approver ↔ Employee communication thread + FSM audit log';
 
 
 -- ---------------------------------------------------------------------------
--- 6.8  sch_employee_leave_balance   (v3 retained — name kept for compat)
+-- 5.8  sch_employee_leave_balance   (v3 retained — name kept for compat)
 -- ---------------------------------------------------------------------------
 -- Note: name should be plural per convention; deferred to v5.
 -- ---------------------------------------------------------------------------
@@ -943,11 +896,11 @@ COMMENT='Live leave-balance ledger per employee per leave type per academic year
 
 
 -- ===========================================================================
--- SECTION 7 : HOLIDAY CALENDAR (NEW in v4)
+-- SECTION 6 : HOLIDAY CALENDAR (NEW in v4)
 -- ===========================================================================
 
 -- ---------------------------------------------------------------------------
--- 7.1  sch_holidays   (NEW in v4)
+-- 6.1  sch_holidays   (NEW in v4)
 -- ---------------------------------------------------------------------------
 -- School holiday calendar. Used by leave-day-counting (skip holidays in the
 -- "total_days" calculation) and attendance (mark is_holiday=1).
@@ -979,11 +932,11 @@ COMMENT='School holiday calendar (public, religious, optional, school-specific).
 
 
 -- ===========================================================================
--- SECTION 8 : SHIFT MANAGEMENT (NEW in v4)
+-- SECTION 7 : SHIFT MANAGEMENT (NEW in v4)
 -- ===========================================================================
 
 -- ---------------------------------------------------------------------------
--- 8.1  sch_employee_shifts   (NEW in v4)
+-- 7.1  sch_employee_shifts   (NEW in v4)
 -- ---------------------------------------------------------------------------
 -- Shift master. e.g., "Morning 8-2", "Day 9-5", "Evening 2-8".
 -- ---------------------------------------------------------------------------
@@ -1014,7 +967,7 @@ COMMENT='Shift master — start/end times, grace, half-day thresholds.';
 
 
 -- ---------------------------------------------------------------------------
--- 8.2  sch_employee_shift_assignments   (NEW in v4)
+-- 7.2  sch_employee_shift_assignments   (NEW in v4)
 -- ---------------------------------------------------------------------------
 -- Employee × shift × effective range.
 -- ---------------------------------------------------------------------------
@@ -1041,11 +994,11 @@ COMMENT='Employee shift assignment with effective range.';
 
 
 -- ===========================================================================
--- SECTION 9 : ATTENDANCE (v3 fixed + v4 enhancements + new tables)
+-- SECTION 8 : ATTENDANCE (v3 fixed + v4 enhancements + new tables)
 -- ===========================================================================
 
 -- ---------------------------------------------------------------------------
--- 9.1  sch_employee_attendance   (FIXED + enhanced in v4)
+-- 8.1  sch_employee_attendance   (FIXED + enhanced in v4)
 -- ---------------------------------------------------------------------------
 -- One row per (employee × date). Aggregated final state.
 -- Raw punches live in sch_employee_attendance_punches.
@@ -1102,7 +1055,7 @@ COMMENT='Daily attendance summary per employee. One row per (employee, date). Ra
 
 
 -- ---------------------------------------------------------------------------
--- 9.2  sch_employee_attendance_punches   (NEW in v4)
+-- 8.2  sch_employee_attendance_punches   (NEW in v4)
 -- ---------------------------------------------------------------------------
 -- Raw punch log. One row per swipe / mobile check-in.
 -- Aggregated nightly into sch_employee_attendance.
@@ -1137,7 +1090,7 @@ COMMENT='Raw biometric / mobile punch log. Aggregated into sch_employee_attendan
 
 
 -- ---------------------------------------------------------------------------
--- 9.3  sch_employee_attendance_corrections   (NEW in v4)
+-- 8.3  sch_employee_attendance_corrections   (NEW in v4)
 -- ---------------------------------------------------------------------------
 -- Manual correction request workflow (employee files, manager approves).
 -- ---------------------------------------------------------------------------
@@ -1176,7 +1129,10 @@ COMMENT='Attendance correction request / approval workflow.';
 -- ===========================================================================
 -- APPENDIX : TABLE INVENTORY (v4)
 -- ===========================================================================
---
+----  SECTION 0 : LEAVE MASTERS  (NEW)
+--    sch_staff_leave_types
+--    sch_staff_leave_config
+
 --  SECTION 1 : EMPLOYEE MASTER  (v3 retained, enhanced)
 --    sch_employees                          — Employee master (HR fields added)
 --    sch_employees_profile                  — Non-teacher profile (UNIQUE fixed)
@@ -1195,11 +1151,7 @@ COMMENT='Attendance correction request / approval workflow.';
 --    sch_employee_role_history
 --    sch_employee_separations
 --
---  SECTION 5 : LEAVE MASTERS  (NEW)
---    sch_staff_leave_types
---    sch_staff_leave_config
---
---  SECTION 6 : LEAVE WORKFLOW  (v3 retained, audit columns added)
+--  SECTION 5 : LEAVE WORKFLOW  (v3 retained, audit columns added)
 --    sch_leave_approval_policies
 --    sch_leave_approval_policy_levels
 --    sch_leave_approval_level_approvers
@@ -1209,14 +1161,14 @@ COMMENT='Attendance correction request / approval workflow.';
 --    sch_employee_leave_application_remarks
 --    sch_employee_leave_balance
 --
---  SECTION 7 : HOLIDAY CALENDAR  (NEW)
+--  SECTION 6 : HOLIDAY CALENDAR  (NEW)
 --    sch_holidays
 --
---  SECTION 8 : SHIFT MANAGEMENT  (NEW)
+--  SECTION 7 : SHIFT MANAGEMENT  (NEW)
 --    sch_employee_shifts
 --    sch_employee_shift_assignments
 --
---  SECTION 9 : ATTENDANCE  (v3 fixed, enhanced + 2 new)
+--  SECTION 8 : ATTENDANCE  (v3 fixed, enhanced + 2 new)
 --    sch_employee_attendance                — Daily summary (FIXED + enhanced)
 --    sch_employee_attendance_punches        — Raw punch log
 --    sch_employee_attendance_corrections    — Correction workflow

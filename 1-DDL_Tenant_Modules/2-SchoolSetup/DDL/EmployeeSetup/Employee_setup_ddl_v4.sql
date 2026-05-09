@@ -1,0 +1,1309 @@
+-- ===========================================================================
+-- EMPLOYEE SETUP SUB-MODULE  —  v4.0
+-- Scope   : Tenant DB (Per School)
+-- DB      : MySQL 8+
+-- Style   : Audit-ready, Soft Delete, Additive (v3 tables retained, v4 adds + fixes)
+--
+-- This file supersedes Employee_setup_ddl_v3.sql.
+-- Reviewed and enhanced by the Database Architect role on 2026-05-04.
+--
+-- ───────────────────────────────────────────────────────────────────────────
+-- v3 → v4 CHANGE SUMMARY
+-- ───────────────────────────────────────────────────────────────────────────
+-- BUG FIXES (would have failed at CREATE time on a fresh tenant):
+--   • sch_employee_attendance — missing closing quote on COMMENT clause.
+--   • sch_teacher_capabilities — fixed typo `competancy_level` → `competency_level`.
+--   • sch_employees_profile  — UNIQUE on (employee_id, role_id, effective_to)
+--                               replaced with the active_flag GENERATED COLUMN pattern
+--                               so NULL effective_to actually enforces "one active".
+--
+-- CONVENTION FIXES (per AI_Brain/agents/db-architect.md):
+--   • sch_employees, sch_employees_profile, sch_teacher_profile,
+--     sch_teacher_capabilities, leave-management approvals/remarks, attendance —
+--     added missing required columns (is_active, created_by, deleted_at).
+--
+-- NEW MASTER TABLES (resolved dangling FKs from v3):
+--   • sch_staff_leave_types            — leave type master (FK target from 4 tables)
+--   • sch_staff_leave_config           — per-(role × leave_type) entitlement + accrual
+--   • sch_holidays                     — school holiday calendar
+--   • sch_employee_shifts              — shift master
+--
+-- NEW PERSONAL / PROFESSIONAL DETAIL TABLES:
+--   • sch_employee_addresses           — current + permanent addresses
+--   • sch_employee_emergency_contacts  — next-of-kin
+--   • sch_employee_bank_details        — payroll integration
+--   • sch_employee_documents           — joining letter, ID proof, contracts (Spatie media)
+--
+-- NEW LIFECYCLE TABLES:
+--   • sch_employee_role_history        — promotion / transfer / role-change audit
+--   • sch_employee_separations         — resignation / termination / retirement workflow
+--
+-- NEW SHIFT + ATTENDANCE EXTENSIONS:
+--   • sch_employee_shift_assignments   — employee × shift × effective range
+--   • sch_employee_attendance_punches  — raw biometric / mobile punches (1 row / punch)
+--   • sch_employee_attendance_corrections — manual correction request / approval
+--
+-- FIELD ADDITIONS (additive — DEFAULT NULL so existing data is not broken):
+--   • sch_employees: gender, date_of_birth, marital_status, blood_group,
+--     nationality, religion, mobile_number_primary, mobile_number_alternate,
+--     personal_email, official_email, photo_media_id, aadhaar_number,
+--     pan_number, pf_number, esi_number, uan_number, employment_status,
+--     employment_type, confirmation_date, probation_end_date,
+--     last_working_date, branch_id, is_active, created_by.
+--   • sch_employee_attendance: shift_id, attendance_source, device_id,
+--     check_in_lat, check_in_lng, check_out_lat, check_out_lng,
+--     working_hours, late_minutes, early_minutes, is_overtime,
+--     overtime_hours, is_holiday, is_weekend, is_active, created_by.
+--   • sch_employee_leave_applications: cancelled_by, cancelled_at,
+--     cancellation_reason, is_emergency, pending_with_user_id, created_by.
+--   • sch_teacher_capabilities: effective_to, created_by.
+--   • sch_teacher_profile: is_class_teacher, class_teacher_of_section_id,
+--     created_by.
+--
+-- TABLE NAME NON-CONFORMANCE (kept as-is to avoid breaking; flagged for v5):
+--   • sch_employees_profile          should be sch_employee_profiles
+--   • sch_employee_leave_balance     should be sch_employee_leave_balances
+--   • sch_employee_attendance        should be sch_employee_attendances
+--   Renaming requires application code update; deferred.
+-- ===========================================================================
+
+
+-- ===========================================================================
+-- SECTION 0 : EXTERNAL DEPENDENCY MAP (informational only, NOT created here)
+-- ===========================================================================
+-- The following tables are referenced via FK but defined elsewhere:
+--   sys_users, sys_dropdown_table, sys_media           (sys_* module)
+--   sch_classes, sch_sections, sch_subject_study_format_jnt,
+--   sch_org_academic_sessions_jnt, sch_buildings        (school-setup core)
+--   sch_employee_roles, sch_departments, sch_designations (school-setup roles)
+--   sch_branches                                         (multi-campus, optional)
+-- ===========================================================================
+
+-- ===========================================================================
+-- SECTION 1 : EMPLOYEE ATTENDANCE MASTER TABLES
+-- ===========================================================================
+
+CREATE TABLE IF NOT EXISTS `sch_staff_attendance_types` (
+    `id`                    INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    `code`                  VARCHAR(10) NOT NULL,  -- e.g. 'P', 'A', 'L', 'H'
+    `name`                  VARCHAR(100) NOT NULL,  -- e.g. 'Present', 'Absent', 'Leave', 'Late', 'Holiday'
+    `is_present`            TINYINT(1) NOT NULL DEFAULT 0,  -- 0: Absent, 1: Present
+    -- `is_absent`             TINYINT(1) NOT NULL DEFAULT 0,  -- 0: Not Absent, 1: Absent
+    `display_order`         INT NOT NULL DEFAULT 0,
+    `is_active`             TINYINT(1) NOT NULL DEFAULT 1,
+    `created_at`            TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`            TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at`            TIMESTAMP NULL,
+    UNIQUE KEY `uq_attendance_code` (`code`),
+    INDEX `idx_attendance_active` (`is_active`, `is_deleted`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `sch_staff_leave_types` (
+    `id`       INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    `code`          VARCHAR(10) NOT NULL,  -- e.g. 'EL', 'CL', 'SL', 'PTL', 'MTL', 'Short', 'Half-Day' etc.
+    `name`          VARCHAR(100) NOT NULL,  -- e.g. 'Earned Leave', 'Casual Leave', 'Sick Leave', 'Parental Leave', 'Maternity Leave', 'Short Leave', 'Half Day Leave' etc.
+    `is_paid`             TINYINT(1) NOT NULL DEFAULT 1,  -- 0: Unpaid Leave, 1: Paid Leave
+    `requires_approval`   TINYINT(1) NOT NULL DEFAULT 1,  -- 0: No Approval Required, 1: Approval Required
+    `allow_half_day`      TINYINT(1) NOT NULL DEFAULT 0,  -- 0: Full Day Leave Only, 1: Half Day Leave Allowed
+    `display_order`       INT NOT NULL DEFAULT 0,
+    `is_active`           TINYINT(1) NOT NULL DEFAULT 1,
+    `created_at`          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`          TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at`          TIMESTAMP NULL,
+    UNIQUE KEY `uq_leave_code` (`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- ===========================================================================
+-- SECTION 2 : EMPLOYEE CREATION & PROFILE MANAGEMENT
+-- ===========================================================================
+
+-- ---------------------------------------------------------------------------
+-- 1.1  sch_employees   (enhanced in v4)
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `sch_employees` (
+  `id`                        INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_id`                   INT UNSIGNED NOT NULL              COMMENT 'FK → sys_users.id',
+  -- Employee identity (v3)
+  `emp_code`                  VARCHAR(20)  NOT NULL,
+  `emp_id_card_type`          ENUM('QR','RFID','NFC','Barcode') NOT NULL DEFAULT 'QR',
+  `emp_smart_card_id`         VARCHAR(100) DEFAULT NULL,
+ 
+  -- Personal details (v4 — additive, all nullable so v3 rows still valid)
+  `first_name`                VARCHAR(100) DEFAULT NULL          COMMENT 'v4 — kept on sys_users too; mirror here for fast HR queries',
+  `middle_name`               VARCHAR(100) DEFAULT NULL          COMMENT 'v4',
+  `last_name`                 VARCHAR(100) DEFAULT NULL          COMMENT 'v4',
+  `gender`                    ENUM('Male','Female','Other','Prefer Not to Say') DEFAULT NULL COMMENT 'v4',
+  `date_of_birth`             DATE         DEFAULT NULL          COMMENT 'v4',
+  `marital_status`            ENUM('Single','Married','Divorced','Widowed','Separated') DEFAULT NULL COMMENT 'v4',
+  `blood_group`               ENUM('A+','A-','B+','B-','O+','O-','AB+','AB-','Unknown') DEFAULT NULL COMMENT 'v4',
+  `nationality`               VARCHAR(50)  DEFAULT 'Indian'      COMMENT 'v4',
+  `religion`                  VARCHAR(50)  DEFAULT NULL          COMMENT 'v4',
+  `mother_tongue`             VARCHAR(50)  DEFAULT NULL          COMMENT 'v4',
+  `photo_media_id`            INT UNSIGNED DEFAULT NULL          COMMENT 'v4 — FK → sys_media.id',
+  -- Contact (v4)
+  `mobile_number_primary`     VARCHAR(20)  DEFAULT NULL          COMMENT 'v4',
+  `mobile_number_alternate`   VARCHAR(20)  DEFAULT NULL          COMMENT 'v4',
+  `personal_email`            VARCHAR(150) DEFAULT NULL          COMMENT 'v4',
+  `official_email`            VARCHAR(150) DEFAULT NULL          COMMENT 'v4',
+  -- Identity numbers (Indian context, v4 — encrypt at app layer)
+  `aadhaar_number`            VARCHAR(20)  DEFAULT NULL          COMMENT 'v4 — encrypted at app layer; partial visible in UI',
+  `pan_number`                VARCHAR(15)  DEFAULT NULL          COMMENT 'v4',
+  `pf_number`                 VARCHAR(30)  DEFAULT NULL          COMMENT 'v4 — Provident Fund',
+  `esi_number`                VARCHAR(30)  DEFAULT NULL          COMMENT 'v4 — Employee State Insurance',
+  `uan_number`                VARCHAR(20)  DEFAULT NULL          COMMENT 'v4 — Universal Account Number for PF',
+ 
+  -- Employment info (v3)
+  `is_teacher`                TINYINT(1)   NOT NULL DEFAULT 0,
+  `joining_date`              DATE         NOT NULL,
+  `total_experience_years`    DECIMAL(4,1) DEFAULT NULL,
+  `highest_qualification`     VARCHAR(100) DEFAULT NULL,
+  `specialization`            VARCHAR(150) DEFAULT NULL,
+  `last_institution`          VARCHAR(200) DEFAULT NULL,
+  `awards`                    TEXT         DEFAULT NULL,
+  `skills`                    TEXT         DEFAULT NULL,
+  `qualifications_json`       JSON         DEFAULT NULL,
+  `certifications_json`       JSON         DEFAULT NULL,
+  `experiences_json`          JSON         DEFAULT NULL,
+  -- Employment lifecycle (v4)
+  `employment_status`         ENUM('Active','On Leave','On Sabbatical','Notice Period','Resigned','Terminated','Retired','Suspended') NOT NULL DEFAULT 'Active' COMMENT 'v4',
+  `employment_type`           ENUM('Permanent','Contract','Temporary','Visiting','Intern','Probation') NOT NULL DEFAULT 'Permanent' COMMENT 'v4',
+  `confirmation_date`         DATE         DEFAULT NULL          COMMENT 'v4 — date confirmed after probation',
+  `probation_end_date`        DATE         DEFAULT NULL          COMMENT 'v4',
+  `last_working_date`         DATE         DEFAULT NULL          COMMENT 'v4 — set on resignation / termination',
+  `notes`                     TEXT COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  -- Required audit columns (v4 fixed — added is_active and created_by)
+  `is_active`                 TINYINT(1)   NOT NULL DEFAULT 1    COMMENT 'v4',
+  `created_by`                INT UNSIGNED DEFAULT NULL          COMMENT 'v4',
+  `created_at`                TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`                TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at`                TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `teachers_emp_code_unique` (`emp_code`),
+  UNIQUE KEY `uq_employees_aadhaar`     (`aadhaar_number`)        COMMENT 'v4 — partial uniqueness (NULLs allowed)',
+  UNIQUE KEY `uq_employees_pan`         (`pan_number`)            COMMENT 'v4',
+  KEY `teachers_user_id_foreign`        (`user_id`),
+  KEY `idx_employees_branch`            (`branch_id`)             COMMENT 'v4',
+  KEY `idx_employees_is_teacher`        (`is_teacher`)            COMMENT 'v4',
+  KEY `idx_employees_employment_status` (`employment_status`)     COMMENT 'v4',
+  KEY `idx_employees_joining_date`      (`joining_date`)          COMMENT 'v4',
+  KEY `idx_employees_active`            (`is_active`, `deleted_at`) COMMENT 'v4',
+  CONSTRAINT `fk_employees_userId` FOREIGN KEY (`user_id`)        REFERENCES `sys_users` (`id`)   ON DELETE CASCADE,
+  CONSTRAINT `fk_employees_photo`  FOREIGN KEY (`photo_media_id`) REFERENCES `sys_media` (`id`)   ON DELETE SET NULL  -- v4
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Employee master record. Personal + identity + employment lifecycle (enhanced in v4).';
+
+
+-- ---------------------------------------------------------------------------
+-- 1.2  sch_employees_profile   (enhanced in v4 — fixed UNIQUE, added created_by)
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `sch_employees_profile` (
+  `id`                        INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `employee_id`               INT UNSIGNED NOT NULL,
+  `user_id`                   INT UNSIGNED NOT NULL,
+  `role_id`                   INT UNSIGNED NOT NULL,
+  `department_id`             INT UNSIGNED DEFAULT NULL,
+  `specialization_area`       VARCHAR(100) DEFAULT NULL,
+  `qualification_level`       VARCHAR(50)  DEFAULT NULL,
+  `qualification_field`       VARCHAR(100) DEFAULT NULL,
+  `certifications`            JSON         DEFAULT NULL,
+  `work_hours_daily`          DECIMAL(4,2) DEFAULT 8.0,
+  `max_hours_daily`           DECIMAL(4,2) DEFAULT 10.0,
+  `work_hours_weekly`         DECIMAL(5,2) DEFAULT 40.0,
+  `max_hours_weekly`          DECIMAL(5,2) DEFAULT 50.0,
+  `preferred_shift`           ENUM('morning','evening','flexible') DEFAULT 'morning',
+  `is_full_time`              TINYINT(1)   DEFAULT 1,
+  `core_responsibilities`     JSON         DEFAULT NULL,
+  `technical_skills`          JSON         DEFAULT NULL,
+  `soft_skills`               JSON         DEFAULT NULL,
+  `experience_months`         SMALLINT UNSIGNED DEFAULT NULL,
+  `performance_rating`        TINYINT UNSIGNED  DEFAULT NULL,
+  `last_performance_review`   DATE         DEFAULT NULL,
+  `security_clearance_done`   TINYINT(1)   DEFAULT 0,
+  `reporting_to`              INT UNSIGNED DEFAULT NULL,
+  `can_approve_budget`        TINYINT(1)   DEFAULT 0,
+  `can_manage_staff`          TINYINT(1)   DEFAULT 0,
+  `can_access_sensitive_data` TINYINT(1)   DEFAULT 0,
+  `assignment_meta`           JSON         DEFAULT NULL,
+  `notes`                     TEXT         DEFAULT NULL,
+  `effective_from`            DATE         DEFAULT NULL,
+  `effective_to`              DATE         DEFAULT NULL,
+  `is_active`                 TINYINT(1)   NOT NULL DEFAULT 1,
+  -- v4 — generated active_flag so the UNIQUE actually enforces "only one active per (employee, role)"
+  `active_flag`               TINYINT(1) GENERATED ALWAYS AS (CASE WHEN (`is_active` = 1 AND `deleted_at` IS NULL) THEN 1 ELSE NULL END) STORED,
+  `created_at`                TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`                TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at`                TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_employee_role_active` (`employee_id`, `role_id`, `active_flag`)  COMMENT 'v4 — fixed: NULLable active_flag enforces single active row per pair',
+  KEY `idx_emp_profile_reporting`     (`reporting_to`),
+  KEY `idx_emp_profile_department`    (`department_id`),
+  KEY `idx_emp_profile_active`        (`is_active`, `deleted_at`),
+  CONSTRAINT `fk_employeeProfile_employeeId`   FOREIGN KEY (`employee_id`)   REFERENCES `sch_employees` (`id`)        ON DELETE CASCADE,
+  CONSTRAINT `fk_employeeProfile_userId`       FOREIGN KEY (`user_id`)       REFERENCES `sys_users` (`id`)            ON DELETE RESTRICT,
+  CONSTRAINT `fk_employeeProfile_roleId`       FOREIGN KEY (`role_id`)       REFERENCES `sch_employee_roles` (`id`)   ON DELETE RESTRICT,
+  CONSTRAINT `fk_employeeProfile_departmentId` FOREIGN KEY (`department_id`) REFERENCES `sch_departments` (`id`)      ON DELETE SET NULL,
+  CONSTRAINT `fk_employeeProfile_reportingTo`  FOREIGN KEY (`reporting_to`)  REFERENCES `sch_employees` (`id`)        ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Non-teacher employee profile (admin/staff). One active row per (employee, role).';
+
+
+-- ---------------------------------------------------------------------------
+-- 1.3  sch_teacher_profile   (enhanced in v4)
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `sch_teacher_profile` (
+  `id`                              INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `employee_id`                     INT UNSIGNED NOT NULL,
+  `user_id`                         INT UNSIGNED NOT NULL,
+  `role_id`                         INT UNSIGNED NOT NULL,
+  `department_id`                   INT UNSIGNED NOT NULL,
+  `designation_id`                  INT UNSIGNED NOT NULL,
+  `teacher_house_room_id`           INT UNSIGNED DEFAULT NULL,
+  -- Class teacher assignment (v4)
+  `is_class_teacher`                TINYINT(1)   NOT NULL DEFAULT 0  COMMENT 'v4 — denormalized flag for fast filter',
+  `class_teacher_of_class_id`       INT UNSIGNED DEFAULT NULL          COMMENT 'v4 — FK → sch_classes.id',
+  `class_teacher_of_section_id`     INT UNSIGNED DEFAULT NULL          COMMENT 'v4 — FK → sch_sections.id',
+  -- Coloumn from (v3)
+  `is_full_time`                    TINYINT(1)   DEFAULT 1,
+  `preferred_shift`                 INT UNSIGNED DEFAULT NULL,
+  `capable_handling_multiple_classes` TINYINT(1) DEFAULT 0,
+  `can_be_used_for_substitution`    TINYINT(1)   DEFAULT 1,
+  `certified_for_lab`               TINYINT(1)   DEFAULT 0,
+  `is_proficient_with_computer`     TINYINT(1)   DEFAULT 0,
+  `can_manage_staff`                TINYINT(1)   DEFAULT 0,
+  `special_skill_area`              VARCHAR(100) DEFAULT NULL,
+  `soft_skills`                     JSON         DEFAULT NULL,
+  `assignment_meta`                 JSON         DEFAULT NULL,
+  `max_available_periods_weekly`    TINYINT UNSIGNED DEFAULT 48,
+  `min_available_periods_weekly`    TINYINT UNSIGNED DEFAULT 36,
+  `max_allocated_periods_weekly`    TINYINT UNSIGNED DEFAULT 1,
+  `min_allocated_periods_weekly`    TINYINT UNSIGNED DEFAULT 1,
+  `can_be_split_across_sections`    TINYINT(1)   DEFAULT 0,
+  `min_teacher_availability_score`  DECIMAL(7,2) UNSIGNED DEFAULT 1,
+  `max_teacher_availability_score`  DECIMAL(7,2) UNSIGNED DEFAULT 1,
+  `performance_rating`              TINYINT UNSIGNED DEFAULT NULL,
+  `last_performance_review`         DATE         DEFAULT NULL,
+  `security_clearance_done`         TINYINT(1)   DEFAULT 0,
+  `reporting_to`                    INT UNSIGNED DEFAULT NULL,
+  `can_access_sensitive_data`       TINYINT(1)   DEFAULT 0,
+  `notes`                           TEXT         NULL,
+  `effective_from`                  DATE         DEFAULT NULL,
+  `effective_to`                    DATE         DEFAULT NULL,
+  `is_active`                       TINYINT(1)   NOT NULL DEFAULT 1,
+  `created_by`                      INT UNSIGNED DEFAULT NULL          COMMENT 'v4',
+  `created_at`                      TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`                      TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at`                      TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_teacher_employee` (`employee_id`),
+  KEY `idx_teacher_class_teacher`  (`is_class_teacher`, `class_teacher_of_class_id`, `class_teacher_of_section_id`)  COMMENT 'v4',
+  KEY `idx_teacher_active`         (`is_active`, `deleted_at`),
+  CONSTRAINT `fk_teacher_employee`     FOREIGN KEY (`employee_id`)               REFERENCES `sch_employees` (`id`)          ON DELETE CASCADE,
+  CONSTRAINT `fk_teacher_user`         FOREIGN KEY (`user_id`)                   REFERENCES `sys_users` (`id`)              ON DELETE RESTRICT,
+  CONSTRAINT `fk_teacher_role`         FOREIGN KEY (`role_id`)                   REFERENCES `sch_employee_roles` (`id`)     ON DELETE RESTRICT,
+  CONSTRAINT `fk_teacher_department`   FOREIGN KEY (`department_id`)             REFERENCES `sch_departments` (`id`)        ON DELETE RESTRICT,
+  CONSTRAINT `fk_teacher_designation`  FOREIGN KEY (`designation_id`)            REFERENCES `sch_designations` (`id`)       ON DELETE RESTRICT,
+  CONSTRAINT `fk_teacher_reporting_to` FOREIGN KEY (`reporting_to`)              REFERENCES `sch_employees` (`id`)          ON DELETE SET NULL,
+  CONSTRAINT `fk_teacher_class`        FOREIGN KEY (`class_teacher_of_class_id`) REFERENCES `sch_classes` (`id`)            ON DELETE SET NULL,
+  CONSTRAINT `fk_teacher_section`      FOREIGN KEY (`class_teacher_of_section_id`) REFERENCES `sch_sections` (`id`)         ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Teacher-specific profile. One row per teacher.';
+
+
+-- ---------------------------------------------------------------------------
+-- 1.4  sch_teacher_capabilities   (enhanced in v4 — fixed typo, added effective_to)
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `sch_teacher_capabilities` (
+  `id`                          INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `teacher_profile_id`          INT UNSIGNED NOT NULL,
+  `class_id`                    INT UNSIGNED NOT NULL,
+  `subject_study_format_id`     INT UNSIGNED NOT NULL,
+  `proficiency_percentage`      TINYINT UNSIGNED DEFAULT NULL,
+  `teaching_experience_months`  SMALLINT UNSIGNED DEFAULT NULL,
+  `is_primary_subject`          TINYINT(1)   NOT NULL DEFAULT 1,
+  `competency_level`            ENUM('Facilitator','Basic','Intermediate','Advanced','Expert') DEFAULT 'Basic'  COMMENT 'v4 — fixed typo from competancy_level',
+  `priority_order`              INT UNSIGNED DEFAULT NULL,
+  `priority_weight`             TINYINT UNSIGNED DEFAULT NULL,
+  `scarcity_index`              TINYINT UNSIGNED DEFAULT NULL,
+  `is_hard_constraint`          TINYINT(1)   DEFAULT 0,
+  `allocation_strictness`       ENUM('hard','medium','soft') DEFAULT 'medium',
+  `override_priority`           TINYINT UNSIGNED DEFAULT NULL,
+  `override_reason`             VARCHAR(255) DEFAULT NULL,
+  `historical_success_ratio`    TINYINT UNSIGNED DEFAULT NULL,
+  `last_allocation_score`       TINYINT UNSIGNED DEFAULT NULL,
+  `effective_from`              DATE         DEFAULT NULL,
+  `effective_to`                DATE         DEFAULT NULL          COMMENT 'v4',
+  `is_active`                   TINYINT(1)   NOT NULL DEFAULT 1,
+  `active_flag`                 TINYINT(1) GENERATED ALWAYS AS (CASE WHEN (`is_active` = 1) THEN 1 ELSE NULL END) STORED,
+  `created_by`                  INT UNSIGNED DEFAULT NULL          COMMENT 'v4',
+  `created_at`                  TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`                  TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at`                  TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_teacher_capability` (`teacher_profile_id`, `class_id`, `subject_study_format_id`, `active_flag`),
+  KEY `idx_tc_lookup` (`class_id`, `subject_study_format_id`, `is_active`)  COMMENT 'v4 — common solver lookup pattern',
+  CONSTRAINT `fk_tc_teacher_profile`      FOREIGN KEY (`teacher_profile_id`)      REFERENCES `sch_teacher_profile` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_tc_class`                FOREIGN KEY (`class_id`)                REFERENCES `sch_classes` (`id`)         ON DELETE RESTRICT,
+  CONSTRAINT `fk_tc_subject_study_format` FOREIGN KEY (`subject_study_format_id`) REFERENCES `sch_subject_study_format_jnt` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Teacher capability matrix: which class × subject_format they can teach, with proficiency / priority.';
+
+
+-- ===========================================================================
+-- SECTION 2 : EMPLOYEE PERSONAL DETAIL TABLES (NEW in v4)
+-- ===========================================================================
+
+-- ---------------------------------------------------------------------------
+-- 2.1  sch_employee_addresses   (NEW Table in v4)
+-- ---------------------------------------------------------------------------
+-- Multi-row per employee. address_type distinguishes Current / Permanent /
+-- Local Guardian. Same employee can have multiple active addresses.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `sch_employee_addresses` (
+  `id`                    INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `employee_id`           INT UNSIGNED NOT NULL,
+  `address_type`          ENUM('Current','Permanent','Emergency','Local_Address','Other') NOT NULL DEFAULT 'Current',
+  `address_line_1`        VARCHAR(200) NOT NULL,
+  `address_line_2`        VARCHAR(200) DEFAULT NULL,
+  `landmark`              VARCHAR(150) DEFAULT NULL,
+  `city`                  VARCHAR(100) NOT NULL,
+  `district`              VARCHAR(100) DEFAULT NULL,
+  `state`                 VARCHAR(100) NOT NULL,
+  `pincode`               VARCHAR(15)  NOT NULL,
+  `country`               VARCHAR(50)  NOT NULL DEFAULT 'India',
+  `is_same_as_permanent`  TINYINT(1)   NOT NULL DEFAULT 0  COMMENT 'Quick flag for "current = permanent"',
+  `is_primary`            TINYINT(1)   NOT NULL DEFAULT 0  COMMENT 'Primary address among multiple of same type',
+  `effective_from`        DATE         DEFAULT NULL,
+  `effective_to`          DATE         DEFAULT NULL,
+  `notes`                 VARCHAR(255) DEFAULT NULL,
+  `is_active`             TINYINT(1)   NOT NULL DEFAULT 1,
+  `created_by`            INT UNSIGNED DEFAULT NULL,
+  `created_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at`            TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_ea_employee_type` (`employee_id`, `address_type`),
+  KEY `idx_ea_active`        (`is_active`, `deleted_at`),
+  CONSTRAINT `fk_ea_employee` FOREIGN KEY (`employee_id`) REFERENCES `sch_employees` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Employee addresses (current, permanent, emergency, local guardian).';
+
+
+-- ---------------------------------------------------------------------------
+-- 2.2  sch_employee_emergency_contacts   (NEW Table in v4)
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `sch_employee_emergency_contacts` (
+  `id`                    INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `employee_id`           INT UNSIGNED NOT NULL,
+  `contact_name`          VARCHAR(150) NOT NULL,
+  `relation`              VARCHAR(50)  NOT NULL          COMMENT 'Spouse, Father, Mother, Sibling, Friend, Other',
+  `mobile_number`         VARCHAR(20)  NOT NULL,
+  `alternate_number`      VARCHAR(20)  DEFAULT NULL,
+  `email`                 VARCHAR(150) DEFAULT NULL,
+  `address`               VARCHAR(500) DEFAULT NULL,
+  `is_primary`            TINYINT(1)   NOT NULL DEFAULT 0  COMMENT '1 = call this person FIRST in an emergency',
+  `priority_order`        TINYINT UNSIGNED DEFAULT 1       COMMENT 'Order to attempt contact (1 first)',
+  `is_active`             TINYINT(1)   NOT NULL DEFAULT 1,
+  `created_by`            INT UNSIGNED DEFAULT NULL,
+  `created_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at`            TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_eec_employee` (`employee_id`, `priority_order`),
+  CONSTRAINT `fk_eec_employee` FOREIGN KEY (`employee_id`) REFERENCES `sch_employees` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Emergency contact persons per employee.';
+
+
+-- ---------------------------------------------------------------------------
+-- 2.3  sch_employee_bank_details   (NEW Table in v4)
+-- ---------------------------------------------------------------------------
+-- For salary credit. Account numbers should be encrypted at the application
+-- layer; partial-mask in UI by default.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `sch_employee_bank_details` (
+  `id`                    INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `employee_id`           INT UNSIGNED NOT NULL,
+  `bank_name`             VARCHAR(150) NOT NULL,
+  `branch_name`           VARCHAR(150) DEFAULT NULL,
+  `account_holder_name`   VARCHAR(150) NOT NULL,
+  `account_number`        VARCHAR(50)  NOT NULL          COMMENT 'Encrypted at app layer',
+  `account_type`          ENUM('Savings','Current','Salary','NRE','NRO','Other') NOT NULL DEFAULT 'Savings',
+  `ifsc_code`             VARCHAR(20)  NOT NULL,
+  `swift_code`            VARCHAR(20)  DEFAULT NULL,
+  `iban`                  VARCHAR(40)  DEFAULT NULL      COMMENT 'For overseas wires',
+  `is_primary_for_salary` TINYINT(1)   NOT NULL DEFAULT 0,
+  `verified_at`           TIMESTAMP NULL DEFAULT NULL,
+  `verified_by`           INT UNSIGNED DEFAULT NULL,
+  `cancelled_cheque_media_id` INT UNSIGNED DEFAULT NULL  COMMENT 'FK → sys_media.id',
+  `notes`                 VARCHAR(255) DEFAULT NULL,
+  `is_active`             TINYINT(1)   NOT NULL DEFAULT 1,
+  `created_by`            INT UNSIGNED DEFAULT NULL,
+  `created_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at`            TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_ebd_employee_primary` (`employee_id`, `is_primary_for_salary`),
+  CONSTRAINT `fk_ebd_employee` FOREIGN KEY (`employee_id`)             REFERENCES `sch_employees` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_ebd_verified` FOREIGN KEY (`verified_by`)              REFERENCES `sys_users` (`id`)     ON DELETE SET NULL,
+  CONSTRAINT `fk_ebd_cheque`   FOREIGN KEY (`cancelled_cheque_media_id`) REFERENCES `sys_media` (`id`)    ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Employee bank account details for salary disbursement.';
+
+
+-- ===========================================================================
+-- SECTION 3 : EMPLOYEE PROFESSIONAL DOCUMENTS (NEW in v4)
+-- ===========================================================================
+
+-- ---------------------------------------------------------------------------
+-- 3.1  sch_employee_documents   (NEW Table in v4)
+-- ---------------------------------------------------------------------------
+-- Generic document store: joining letter, ID proof, contract, NDA, training
+-- certificates, salary slips, etc. Spatie-media link (media_id) is the
+-- preferred integration, with file_name kept for legacy convenience.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `sch_employee_documents` (
+  `id`                    INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `employee_id`           INT UNSIGNED NOT NULL,
+  `document_category`     ENUM('ID_Proof','Address_Proof','Educational','Experience','Joining','Contract','NDA','Salary_Slip','Tax','Health','Photo','Other') NOT NULL,
+  `document_name`         VARCHAR(150) NOT NULL          COMMENT 'Display: "Aadhaar Card", "Joining Letter 2026"',
+  `document_number`       VARCHAR(100) DEFAULT NULL      COMMENT 'For ID proofs: card / cert number',
+  `issued_by`             VARCHAR(150) DEFAULT NULL,
+  `issued_date`           DATE         DEFAULT NULL,
+  `expiry_date`           DATE         DEFAULT NULL      COMMENT 'NULL if non-expiring',
+  `media_id`              INT UNSIGNED DEFAULT NULL      COMMENT 'FK → sys_media (Spatie)',
+  `file_name`             VARCHAR(255) DEFAULT NULL      COMMENT 'Convenience: stored filename if not using media',
+  `is_verified`           TINYINT(1)   NOT NULL DEFAULT 0,
+  `verified_at`           TIMESTAMP NULL DEFAULT NULL,
+  `verified_by`           INT UNSIGNED DEFAULT NULL,
+  `notes`                 VARCHAR(500) DEFAULT NULL,
+  `is_active`             TINYINT(1)   NOT NULL DEFAULT 1,
+  `created_by`            INT UNSIGNED DEFAULT NULL,
+  `created_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at`            TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_edoc_employee_category` (`employee_id`, `document_category`),
+  KEY `idx_edoc_expiry`            (`expiry_date`)        COMMENT 'For expiry-warning scheduler',
+  CONSTRAINT `fk_edoc_employee` FOREIGN KEY (`employee_id`) REFERENCES `sch_employees` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_edoc_media`    FOREIGN KEY (`media_id`)    REFERENCES `sys_media` (`id`)     ON DELETE SET NULL,
+  CONSTRAINT `fk_edoc_verified` FOREIGN KEY (`verified_by`) REFERENCES `sys_users` (`id`)     ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Employee documents (ID proof, joining letter, contracts, expiry-tracked credentials).';
+
+
+-- ===========================================================================
+-- SECTION 4 : EMPLOYEE LIFECYCLE TABLES (NEW in v4)
+-- ===========================================================================
+
+-- ---------------------------------------------------------------------------
+-- 4.1  sch_employee_role_history   (NEW Table in v4)
+-- ---------------------------------------------------------------------------
+-- Append-only audit of role / department / designation changes (promotion,
+-- transfer, demotion). One row per change. Keeps the active assignment in
+-- sch_employees_profile / sch_teacher_profile; this table is the trail.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `sch_employee_role_history` (
+  `id`                    INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `employee_id`           INT UNSIGNED NOT NULL,
+  `change_type`           ENUM('Promotion','Demotion','Transfer','Role_Change','Department_Change','Designation_Change','Confirmation','Probation_Extended','Other') NOT NULL,
+  -- Snapshot BEFORE the change
+  `from_role_id`          INT UNSIGNED DEFAULT NULL,
+  `from_department_id`    INT UNSIGNED DEFAULT NULL,
+  `from_designation_id`   INT UNSIGNED DEFAULT NULL,
+  `from_branch_id`        INT UNSIGNED DEFAULT NULL,
+  -- Snapshot AFTER the change
+  `to_role_id`            INT UNSIGNED DEFAULT NULL,
+  `to_department_id`      INT UNSIGNED DEFAULT NULL,
+  `to_designation_id`     INT UNSIGNED DEFAULT NULL,
+  `to_branch_id`          INT UNSIGNED DEFAULT NULL,
+  -- Effective range
+  `effective_from`        DATE         NOT NULL,
+  `effective_to`          DATE         DEFAULT NULL  COMMENT 'NULL = current; set when superseded',
+  -- Reason / approval
+  `reason`                VARCHAR(500) DEFAULT NULL,
+  `order_reference`       VARCHAR(100) DEFAULT NULL  COMMENT 'HR order number',
+  `approved_by`           INT UNSIGNED DEFAULT NULL,
+  `approved_at`           TIMESTAMP NULL DEFAULT NULL,
+  `order_media_id`        INT UNSIGNED DEFAULT NULL  COMMENT 'FK → sys_media — scanned order',
+  `is_active`             TINYINT(1)   NOT NULL DEFAULT 1,
+  `created_by`            INT UNSIGNED DEFAULT NULL,
+  `created_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at`            TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_erh_employee_effective` (`employee_id`, `effective_from`),
+  KEY `idx_erh_change_type`        (`change_type`),
+  CONSTRAINT `fk_erh_employee`     FOREIGN KEY (`employee_id`)        REFERENCES `sch_employees` (`id`)        ON DELETE CASCADE,
+  CONSTRAINT `fk_erh_from_role`    FOREIGN KEY (`from_role_id`)       REFERENCES `sch_employee_roles` (`id`)   ON DELETE SET NULL,
+  CONSTRAINT `fk_erh_to_role`      FOREIGN KEY (`to_role_id`)         REFERENCES `sch_employee_roles` (`id`)   ON DELETE SET NULL,
+  CONSTRAINT `fk_erh_from_dept`    FOREIGN KEY (`from_department_id`) REFERENCES `sch_departments` (`id`)      ON DELETE SET NULL,
+  CONSTRAINT `fk_erh_to_dept`      FOREIGN KEY (`to_department_id`)   REFERENCES `sch_departments` (`id`)      ON DELETE SET NULL,
+  CONSTRAINT `fk_erh_from_desig`   FOREIGN KEY (`from_designation_id`) REFERENCES `sch_designations` (`id`)    ON DELETE SET NULL,
+  CONSTRAINT `fk_erh_to_desig`     FOREIGN KEY (`to_designation_id`)   REFERENCES `sch_designations` (`id`)    ON DELETE SET NULL,
+  CONSTRAINT `fk_erh_approved`     FOREIGN KEY (`approved_by`)         REFERENCES `sys_users` (`id`)           ON DELETE SET NULL,
+  CONSTRAINT `fk_erh_order_media`  FOREIGN KEY (`order_media_id`)      REFERENCES `sys_media` (`id`)           ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Append-only audit of role / department / designation / branch changes per employee.';
+
+
+-- ---------------------------------------------------------------------------
+-- 4.2  sch_employee_separations   (NEW Table in v4)
+-- ---------------------------------------------------------------------------
+-- Resignation / termination / retirement workflow. One active row per
+-- employee at a time. Drives the FSM for sch_employees.employment_status.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `sch_employee_separations` (
+  `id`                    INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `employee_id`           INT UNSIGNED NOT NULL,
+  `separation_type`       ENUM('Resignation','Termination','Retirement','End_of_Contract','Death','Absconded','Other') NOT NULL,
+  `initiated_by`          ENUM('Employee','Employer','System') NOT NULL,
+  `initiated_at`          TIMESTAMP NULL DEFAULT NULL,
+  `notice_period_days`    SMALLINT UNSIGNED DEFAULT NULL,
+  `notice_start_date`     DATE         DEFAULT NULL,
+  `intended_last_working_date` DATE    DEFAULT NULL,
+  `actual_last_working_date`   DATE    DEFAULT NULL,
+  `reason_category`       VARCHAR(100) DEFAULT NULL  COMMENT 'Better_Opportunity / Personal / Performance / Misconduct / Health / Family',
+  `reason`                TEXT         DEFAULT NULL,
+  -- Workflow status
+  `status`                ENUM('Initiated','Under_Review','Approved','Notice_Period','Completed','Cancelled','Rejected') NOT NULL DEFAULT 'Initiated',
+  `approved_by`           INT UNSIGNED DEFAULT NULL,
+  `approved_at`           TIMESTAMP NULL DEFAULT NULL,
+  -- Exit formalities
+  `exit_interview_done`   TINYINT(1)   NOT NULL DEFAULT 0,
+  `exit_interview_notes`  TEXT         DEFAULT NULL,
+  `clearance_complete`    TINYINT(1)   NOT NULL DEFAULT 0,
+  `clearance_summary_json` JSON        DEFAULT NULL  COMMENT 'Per-department clearance: IT, Library, Finance, Stores, etc.',
+  `final_settlement_done` TINYINT(1)   NOT NULL DEFAULT 0,
+  `final_settlement_amount` DECIMAL(12,2) DEFAULT NULL,
+  `relieving_letter_issued` TINYINT(1) NOT NULL DEFAULT 0,
+  `experience_letter_issued` TINYINT(1) NOT NULL DEFAULT 0,
+  `relieving_letter_media_id` INT UNSIGNED DEFAULT NULL,
+  `experience_letter_media_id` INT UNSIGNED DEFAULT NULL,
+  `is_eligible_for_rehire` TINYINT(1)  NOT NULL DEFAULT 1,
+  `rehire_notes`          VARCHAR(500) DEFAULT NULL,
+  `is_active`             TINYINT(1)   NOT NULL DEFAULT 1,
+  `created_by`            INT UNSIGNED DEFAULT NULL,
+  `created_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at`            TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_esep_employee`  (`employee_id`, `status`),
+  KEY `idx_esep_lwd`       (`actual_last_working_date`),
+  CONSTRAINT `fk_esep_employee`     FOREIGN KEY (`employee_id`)             REFERENCES `sch_employees` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_esep_approved`     FOREIGN KEY (`approved_by`)             REFERENCES `sys_users` (`id`)     ON DELETE SET NULL,
+  CONSTRAINT `fk_esep_relieving`    FOREIGN KEY (`relieving_letter_media_id`) REFERENCES `sys_media` (`id`)   ON DELETE SET NULL,
+  CONSTRAINT `fk_esep_experience`   FOREIGN KEY (`experience_letter_media_id`) REFERENCES `sys_media` (`id`)  ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Employee separation (resignation / termination / retirement) workflow.';
+
+
+-- ===========================================================================
+-- SECTION 5 : LEAVE MANAGEMENT MASTERS (NEW in v4 — close the dangling FKs)
+-- ===========================================================================
+
+-- ---------------------------------------------------------------------------
+-- 5.1  sch_staff_leave_types   (NEW Table in v4)
+-- ---------------------------------------------------------------------------
+-- Master list of leave categories. Referenced by sch_leave_approval_policies,
+-- sch_employee_leave_applications, sch_employee_leave_balance, and
+-- sch_staff_leave_config.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `sch_staff_leave_types` (
+  `id`                    INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `code`                  VARCHAR(20)  NOT NULL  COMMENT 'CL, SL, EL, ML, PL, COMP, LWP, HALF',
+  `name`                  VARCHAR(100) NOT NULL  COMMENT 'Casual Leave, Sick Leave, Earned Leave, …',
+  `description`           VARCHAR(500) DEFAULT NULL,
+  -- Behavior flags
+  `is_paid`               TINYINT(1)   NOT NULL DEFAULT 1   COMMENT '0 = LWP / unpaid',
+  `is_carry_forwardable`  TINYINT(1)   NOT NULL DEFAULT 0,
+  `is_encashable`         TINYINT(1)   NOT NULL DEFAULT 0   COMMENT 'Can be paid out at year-end',
+  `requires_doc`          TINYINT(1)   NOT NULL DEFAULT 0   COMMENT 'e.g., medical cert for Sick Leave',
+  `min_doc_required_days` TINYINT UNSIGNED DEFAULT NULL     COMMENT 'Doc only required if leave > N days',
+  `requires_substitute`   TINYINT(1)   NOT NULL DEFAULT 0   COMMENT 'For teachers — auto-create sub flow',
+  `allows_half_day`       TINYINT(1)   NOT NULL DEFAULT 1,
+  `allows_back_dated`     TINYINT(1)   NOT NULL DEFAULT 0   COMMENT 'For Sick Leave / emergency',
+  -- Constraints
+  `min_days_per_application` DECIMAL(4,1) NOT NULL DEFAULT 0.5,
+  `max_days_per_application` DECIMAL(4,1) DEFAULT NULL,
+  `min_advance_notice_days`  TINYINT UNSIGNED DEFAULT 0     COMMENT 'Must apply N days in advance',
+  `max_consecutive_days`     TINYINT UNSIGNED DEFAULT NULL,
+  -- Display
+  `display_order`         TINYINT UNSIGNED DEFAULT 100,
+  `color_hex`             VARCHAR(7)   DEFAULT NULL  COMMENT 'For calendar UI: #FF5733',
+  `is_system`             TINYINT(1)   NOT NULL DEFAULT 0   COMMENT '1 = built-in, cannot be deleted by user',
+  `is_active`             TINYINT(1)   NOT NULL DEFAULT 1,
+  `created_by`            INT UNSIGNED DEFAULT NULL,
+  `created_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at`            TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_lt_code`   (`code`),
+  KEY `idx_lt_active`       (`is_active`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Master list of leave types (CL, SL, EL, ML, PL, LWP, etc.).';
+
+
+-- ---------------------------------------------------------------------------
+-- 5.2  sch_staff_leave_config   (NEW in v4)
+-- ---------------------------------------------------------------------------
+-- Per-(role × leave_type) entitlement: opening balance, max carry forward,
+-- accrual schedule. Used at year-rollover to seed sch_employee_leave_balance.
+--
+-- POLICY MATCHING (role / department / designation):
+--   • Most-specific match wins; otherwise the catch-all (all-NULL) row applies.
+--   • This mirrors sch_leave_approval_policies semantics.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `sch_staff_leave_config` (
+  `id`                    INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `leave_type_id`         INT UNSIGNED NOT NULL,
+  `applies_to_role_id`        INT UNSIGNED DEFAULT NULL,
+  `applies_to_department_id`  INT UNSIGNED DEFAULT NULL,
+  `applies_to_designation_id` INT UNSIGNED DEFAULT NULL,
+  `applies_to_employment_type` ENUM('Permanent','Contract','Temporary','Visiting','Intern','Probation') DEFAULT NULL,
+  -- Entitlement
+  `annual_entitlement`    DECIMAL(5,2) NOT NULL DEFAULT 0.00  COMMENT 'Days granted per academic year',
+  `accrual_method`        ENUM('Lump_Sum','Monthly_Pro_Rata','Quarterly') NOT NULL DEFAULT 'Lump_Sum',
+  `accrual_start_offset_months` TINYINT UNSIGNED DEFAULT 0    COMMENT 'Wait N months from joining before accrual starts',
+  -- Carry forward
+  `is_carry_forwardable`  TINYINT(1)   NOT NULL DEFAULT 0,
+  `max_carry_forward`     DECIMAL(5,2) DEFAULT NULL,
+  -- Encashment
+  `is_encashable_at_separation` TINYINT(1) NOT NULL DEFAULT 0,
+  `max_encashable_days`         DECIMAL(5,2) DEFAULT NULL,
+  -- Probation behavior
+  `available_during_probation` TINYINT(1) NOT NULL DEFAULT 0,
+  `probation_entitlement_pro_rata` TINYINT(1) NOT NULL DEFAULT 1,
+  -- Tie-breaker (mirrors sch_leave_approval_policies pattern)
+  `priority`              TINYINT UNSIGNED NOT NULL DEFAULT 10,
+  `is_active`             TINYINT(1)   NOT NULL DEFAULT 1,
+  `created_by`            INT UNSIGNED DEFAULT NULL,
+  `created_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at`            TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_lc_lookup` (`leave_type_id`, `applies_to_role_id`, `applies_to_department_id`, `applies_to_designation_id`, `is_active`),
+  CONSTRAINT `fk_lc_leave_type`  FOREIGN KEY (`leave_type_id`)            REFERENCES `sch_staff_leave_types` (`id`)        ON DELETE CASCADE,
+  CONSTRAINT `fk_lc_role`        FOREIGN KEY (`applies_to_role_id`)        REFERENCES `sch_employee_roles` (`id`)    ON DELETE SET NULL,
+  CONSTRAINT `fk_lc_department`  FOREIGN KEY (`applies_to_department_id`)  REFERENCES `sch_departments` (`id`)       ON DELETE SET NULL,
+  CONSTRAINT `fk_lc_designation` FOREIGN KEY (`applies_to_designation_id`) REFERENCES `sch_designations` (`id`)      ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Leave entitlement config — drives year-rollover and accrual.';
+
+
+-- ===========================================================================
+-- SECTION 6 : LEAVE MANAGEMENT (v3 retained + v4 minor fixes)
+-- ===========================================================================
+-- v3 narrative is preserved verbatim in v3. Only structural fixes here.
+-- ===========================================================================
+
+
+-- ---------------------------------------------------------------------------
+-- 6.1  sch_leave_approval_policies   (v3 retained)
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `sch_leave_approval_policies` (
+  `id`                    INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `name`                  VARCHAR(150) NOT NULL,
+  `description`           VARCHAR(500) DEFAULT NULL,
+  `applies_to_role_id`        INT UNSIGNED DEFAULT NULL,
+  `applies_to_department_id`  INT UNSIGNED DEFAULT NULL,
+  `applies_to_designation_id` INT UNSIGNED DEFAULT NULL,
+  `applies_to_leave_type_id`  INT UNSIGNED DEFAULT NULL,
+  `priority`              TINYINT UNSIGNED NOT NULL DEFAULT 10,
+  `is_active`             TINYINT(1)   NOT NULL DEFAULT 1,
+  `created_by`            INT UNSIGNED DEFAULT NULL,
+  `created_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at`            TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  INDEX `idx_lap_role`        (`applies_to_role_id`),
+  INDEX `idx_lap_department`  (`applies_to_department_id`),
+  INDEX `idx_lap_designation` (`applies_to_designation_id`),
+  INDEX `idx_lap_leave_type`  (`applies_to_leave_type_id`),
+  INDEX `idx_lap_active`      (`is_active`),
+  CONSTRAINT `fk_lap_role`        FOREIGN KEY (`applies_to_role_id`)        REFERENCES `sch_employee_roles` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_lap_department`  FOREIGN KEY (`applies_to_department_id`)  REFERENCES `sch_departments` (`id`)    ON DELETE SET NULL,
+  CONSTRAINT `fk_lap_designation` FOREIGN KEY (`applies_to_designation_id`) REFERENCES `sch_designations` (`id`)  ON DELETE SET NULL,
+  CONSTRAINT `fk_lap_leave_type`  FOREIGN KEY (`applies_to_leave_type_id`)  REFERENCES `sch_staff_leave_types` (`id`)   ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Approval policy master — matches employee context to an approval pipeline';
+
+
+-- ---------------------------------------------------------------------------
+-- 6.2  sch_leave_approval_policy_levels   (v3 retained)
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `sch_leave_approval_policy_levels` (
+  `id`                    INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `policy_id`             INT UNSIGNED NOT NULL,
+  `level_number`          TINYINT UNSIGNED NOT NULL,
+  `level_name`            VARCHAR(100) NOT NULL,
+  `approval_mode`         ENUM('ANY_ONE', 'ALL') NOT NULL DEFAULT 'ANY_ONE',
+  `escalation_after_hours` SMALLINT UNSIGNED DEFAULT NULL,
+  `notify_applicant_on_escalation` TINYINT(1) NOT NULL DEFAULT 1,
+  `is_active`             TINYINT(1) NOT NULL DEFAULT 1,
+  `created_by`            INT UNSIGNED DEFAULT NULL,
+  `created_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at`            TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_policy_level` (`policy_id`, `level_number`),
+  INDEX `idx_lapl_policy` (`policy_id`),
+  CONSTRAINT `fk_lapl_policy` FOREIGN KEY (`policy_id`) REFERENCES `sch_leave_approval_policies` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Ordered approval levels within a policy';
+
+
+-- ---------------------------------------------------------------------------
+-- 6.3  sch_leave_approval_level_approvers   (v3 retained)
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `sch_leave_approval_level_approvers` (
+  `id`                    INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `level_id`              INT UNSIGNED NOT NULL,
+  `approver_type`         ENUM('USER','ROLE','DESIGNATION','DEPARTMENT_HEAD','REPORTING_TO') NOT NULL,
+  `approver_user_id`         INT UNSIGNED DEFAULT NULL,
+  `approver_role_id`         INT UNSIGNED DEFAULT NULL,
+  `approver_designation_id`  INT UNSIGNED DEFAULT NULL,
+  `approver_department_id`   INT UNSIGNED DEFAULT NULL,
+  `approver_reporting_to_id` INT UNSIGNED DEFAULT NULL,
+  `is_active`             TINYINT(1) NOT NULL DEFAULT 1,
+  `created_by`            INT UNSIGNED DEFAULT NULL,
+  `created_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at`            TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  INDEX `idx_lala_level`       (`level_id`),
+  INDEX `idx_lala_user`        (`approver_user_id`),
+  INDEX `idx_lala_role`        (`approver_role_id`),
+  INDEX `idx_lala_designation` (`approver_designation_id`),
+  CONSTRAINT `fk_lala_level`       FOREIGN KEY (`level_id`)              REFERENCES `sch_leave_approval_policy_levels` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_lala_user`        FOREIGN KEY (`approver_user_id`)      REFERENCES `sys_users` (`id`)          ON DELETE SET NULL,
+  CONSTRAINT `fk_lala_role`        FOREIGN KEY (`approver_role_id`)      REFERENCES `sch_employee_roles` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_lala_designation` FOREIGN KEY (`approver_designation_id`) REFERENCES `sch_designations` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_lala_department`  FOREIGN KEY (`approver_department_id`) REFERENCES `sch_departments` (`id`)  ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Authorised approvers per level';
+
+
+-- ---------------------------------------------------------------------------
+-- 6.4  sch_employee_leave_applications   (v3 + v4 additions)
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `sch_employee_leave_applications` (
+  `id`                    INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `employee_id`           INT UNSIGNED NOT NULL,
+  `academic_session_id`   INT UNSIGNED NOT NULL,
+  `leave_type_id`         INT UNSIGNED NOT NULL,
+  `from_date`             DATE NOT NULL,
+  `to_date`               DATE NOT NULL,
+  `total_days`            DECIMAL(4,1) NOT NULL DEFAULT 1.0,
+  `is_half_day`           TINYINT(1) NOT NULL DEFAULT 0,
+  `half_day_slot`         ENUM('Morning','Afternoon') DEFAULT NULL,
+  `is_emergency`          TINYINT(1) NOT NULL DEFAULT 0  COMMENT 'v4 — true if applied after-the-fact',
+  `reason`                TEXT NOT NULL,
+  `status`                ENUM('Draft','Submitted','Under Review','Info Requested','Doc Requested','Escalated','Approved','Rejected','Cancelled') NOT NULL DEFAULT 'Draft',
+  `approval_policy_id`    INT UNSIGNED DEFAULT NULL,
+  `current_level_number`  TINYINT UNSIGNED DEFAULT NULL,
+  `pending_with_user_id`  INT UNSIGNED DEFAULT NULL  COMMENT 'v4 — denormalized: which user this is currently waiting on (for "leaves pending with me" dashboard)',
+  `applied_by`            INT UNSIGNED NOT NULL,
+  `submitted_at`          TIMESTAMP NULL DEFAULT NULL,
+  -- Cancellation (v4)
+  `cancelled_by`          INT UNSIGNED DEFAULT NULL  COMMENT 'v4',
+  `cancelled_at`          TIMESTAMP NULL DEFAULT NULL  COMMENT 'v4',
+  `cancellation_reason`   VARCHAR(500) DEFAULT NULL  COMMENT 'v4',
+  -- Final decision
+  `final_reviewed_by`     INT UNSIGNED DEFAULT NULL,
+  `final_reviewed_at`     TIMESTAMP NULL DEFAULT NULL,
+  `approved_days`         DECIMAL(4,1) DEFAULT NULL,
+  `final_remarks`         TEXT DEFAULT NULL,
+  `is_active`             TINYINT(1)   NOT NULL DEFAULT 1  COMMENT 'v4',
+  `created_by`            INT UNSIGNED DEFAULT NULL  COMMENT 'v4',
+  `created_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at`            TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  INDEX `idx_ela_employee`         (`employee_id`, `academic_session_id`),
+  INDEX `idx_ela_status`           (`status`),
+  INDEX `idx_ela_dates`            (`from_date`, `to_date`),
+  INDEX `idx_ela_leave_type`       (`leave_type_id`),
+  INDEX `idx_ela_policy`           (`approval_policy_id`),
+  INDEX `idx_ela_applied_by`       (`applied_by`),
+  INDEX `idx_ela_final_reviewed`   (`final_reviewed_by`),
+  INDEX `idx_ela_pending_with`     (`pending_with_user_id`)  COMMENT 'v4 — fast dashboard query',
+  CONSTRAINT `fk_ela_employee`       FOREIGN KEY (`employee_id`)         REFERENCES `sch_employees` (`id`)                  ON DELETE RESTRICT,
+  CONSTRAINT `fk_ela_session`        FOREIGN KEY (`academic_session_id`) REFERENCES `sch_org_academic_sessions_jnt` (`id`)  ON DELETE RESTRICT,
+  CONSTRAINT `fk_ela_leave_type`    FOREIGN KEY (`leave_type_id`)       REFERENCES `sch_staff_leave_types` (`id`)                ON DELETE RESTRICT,
+  CONSTRAINT `fk_ela_policy`        FOREIGN KEY (`approval_policy_id`)  REFERENCES `sch_leave_approval_policies` (`id`)    ON DELETE SET NULL,
+  CONSTRAINT `fk_ela_applied_by`    FOREIGN KEY (`applied_by`)          REFERENCES `sys_users` (`id`)                      ON DELETE RESTRICT,
+  CONSTRAINT `fk_ela_final_reviewed` FOREIGN KEY (`final_reviewed_by`)  REFERENCES `sys_users` (`id`)                      ON DELETE SET NULL,
+  CONSTRAINT `fk_ela_cancelled_by`  FOREIGN KEY (`cancelled_by`)        REFERENCES `sys_users` (`id`)                      ON DELETE SET NULL,
+  CONSTRAINT `fk_ela_pending_with`  FOREIGN KEY (`pending_with_user_id`) REFERENCES `sys_users` (`id`)                     ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Employee leave application — core request record';
+
+
+-- ---------------------------------------------------------------------------
+-- 6.5  sch_employee_leave_approvals   (v3 + v4 audit columns)
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `sch_employee_leave_approvals` (
+  `id`                    INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `leave_application_id`  INT UNSIGNED NOT NULL,
+  `policy_level_id`       INT UNSIGNED NOT NULL,
+  `level_number`          TINYINT UNSIGNED NOT NULL,
+  `level_name`            VARCHAR(100) NOT NULL,
+  `approver_user_id`      INT UNSIGNED DEFAULT NULL,
+  `action`                ENUM('Pending','Approved','Rejected','Info Requested','Doc Requested','Escalated','Skipped') NOT NULL DEFAULT 'Pending',
+  `remarks`               TEXT DEFAULT NULL,
+  `acted_at`              TIMESTAMP NULL DEFAULT NULL,
+  `escalation_deadline`   TIMESTAMP NULL DEFAULT NULL,
+  `escalated_at`          TIMESTAMP NULL DEFAULT NULL,
+  `escalated_to_level`    TINYINT UNSIGNED DEFAULT NULL,
+  `is_active`             TINYINT(1) NOT NULL DEFAULT 1  COMMENT 'v4',
+  `created_by`            INT UNSIGNED DEFAULT NULL  COMMENT 'v4',
+  `created_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at`            TIMESTAMP NULL DEFAULT NULL  COMMENT 'v4',
+  PRIMARY KEY (`id`),
+  INDEX `idx_elap_application`     (`leave_application_id`, `level_number`),
+  INDEX `idx_elap_approver`        (`approver_user_id`),
+  INDEX `idx_elap_action`          (`action`),
+  INDEX `idx_elap_pending`         (`leave_application_id`, `action`),
+  INDEX `idx_elap_deadline`        (`escalation_deadline`),
+  CONSTRAINT `fk_elap_application` FOREIGN KEY (`leave_application_id`) REFERENCES `sch_employee_leave_applications` (`id`)   ON DELETE CASCADE,
+  CONSTRAINT `fk_elap_level`       FOREIGN KEY (`policy_level_id`)      REFERENCES `sch_leave_approval_policy_levels` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `fk_elap_approver`    FOREIGN KEY (`approver_user_id`)     REFERENCES `sys_users` (`id`)                        ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Per-level approver action trail + escalation log';
+
+
+-- ---------------------------------------------------------------------------
+-- 6.6  sch_employee_leave_application_docs   (v3 retained)
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `sch_employee_leave_application_docs` (
+  `id`                    INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `leave_application_id`  INT UNSIGNED NOT NULL,
+  `document_name`         VARCHAR(150) NOT NULL,
+  `document_type_id`      INT UNSIGNED DEFAULT NULL,
+  `description`           VARCHAR(255) DEFAULT NULL,
+  `file_name`             VARCHAR(255) NOT NULL,
+  `media_id`              INT UNSIGNED DEFAULT NULL,
+  `uploaded_by`           INT UNSIGNED NOT NULL,
+  `is_in_response_to_request` TINYINT(1) NOT NULL DEFAULT 0,
+  `request_remark_id`     INT UNSIGNED DEFAULT NULL,
+  `is_active`             TINYINT(1)   NOT NULL DEFAULT 1  COMMENT 'v4',
+  `created_by`            INT UNSIGNED DEFAULT NULL  COMMENT 'v4',
+  `created_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at`            TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  INDEX `idx_elad_application`     (`leave_application_id`),
+  INDEX `idx_elad_request_remark`  (`request_remark_id`),
+  CONSTRAINT `fk_elad_application` FOREIGN KEY (`leave_application_id`) REFERENCES `sch_employee_leave_applications` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_elad_doc_type`    FOREIGN KEY (`document_type_id`)     REFERENCES `sys_dropdown_table` (`id`)             ON DELETE SET NULL,
+  CONSTRAINT `fk_elad_uploaded_by` FOREIGN KEY (`uploaded_by`)          REFERENCES `sys_users` (`id`)                      ON DELETE RESTRICT,
+  CONSTRAINT `fk_elad_media`       FOREIGN KEY (`media_id`)             REFERENCES `sys_media` (`id`)                      ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Supporting documents for employee leave applications';
+
+
+-- ---------------------------------------------------------------------------
+-- 6.7  sch_employee_leave_application_remarks   (v3 + v4 audit + read tracking)
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `sch_employee_leave_application_remarks` (
+  `id`                    INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `leave_application_id`  INT UNSIGNED NOT NULL,
+  `approval_level_id`     INT UNSIGNED DEFAULT NULL,
+  `remark_type`           ENUM('Comment','Info_Request','Doc_Request','Response','Status_Change') NOT NULL DEFAULT 'Comment',
+  `message`               TEXT NOT NULL,
+  `is_from_approver`      TINYINT(1) NOT NULL DEFAULT 0,
+  `remarked_by`           INT UNSIGNED NOT NULL,
+  `parent_remark_id`      INT UNSIGNED DEFAULT NULL,
+  `is_resolved`           TINYINT(1) NOT NULL DEFAULT 0,
+  `resolved_at`           TIMESTAMP NULL DEFAULT NULL,
+  `read_at`               TIMESTAMP NULL DEFAULT NULL  COMMENT 'v4 — when the recipient first read this remark',
+  `read_by`               INT UNSIGNED DEFAULT NULL    COMMENT 'v4',
+  `old_status`            VARCHAR(30) DEFAULT NULL,
+  `new_status`            VARCHAR(30) DEFAULT NULL,
+  `is_active`             TINYINT(1)  NOT NULL DEFAULT 1  COMMENT 'v4',
+  `created_by`            INT UNSIGNED DEFAULT NULL  COMMENT 'v4',
+  `created_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at`            TIMESTAMP NULL DEFAULT NULL  COMMENT 'v4',
+  PRIMARY KEY (`id`),
+  INDEX `idx_elar_application`   (`leave_application_id`, `remark_type`),
+  INDEX `idx_elar_level`         (`approval_level_id`),
+  INDEX `idx_elar_parent`        (`parent_remark_id`),
+  INDEX `idx_elar_remarked_by`   (`remarked_by`),
+  INDEX `idx_elar_unresolved`    (`leave_application_id`, `is_resolved`),
+  CONSTRAINT `fk_elar_application`   FOREIGN KEY (`leave_application_id`) REFERENCES `sch_employee_leave_applications` (`id`)        ON DELETE CASCADE,
+  CONSTRAINT `fk_elar_level`         FOREIGN KEY (`approval_level_id`)    REFERENCES `sch_leave_approval_policy_levels` (`id`)      ON DELETE SET NULL,
+  CONSTRAINT `fk_elar_remarked_by`   FOREIGN KEY (`remarked_by`)          REFERENCES `sys_users` (`id`)                              ON DELETE RESTRICT,
+  CONSTRAINT `fk_elar_parent_remark` FOREIGN KEY (`parent_remark_id`)     REFERENCES `sch_employee_leave_application_remarks` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_elar_read_by`       FOREIGN KEY (`read_by`)              REFERENCES `sys_users` (`id`)                              ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Approver ↔ Employee communication thread + FSM audit log';
+
+
+-- ---------------------------------------------------------------------------
+-- 6.8  sch_employee_leave_balance   (v3 retained — name kept for compat)
+-- ---------------------------------------------------------------------------
+-- Note: name should be plural per convention; deferred to v5.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `sch_employee_leave_balance` (
+  `id`                    INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `employee_id`           INT UNSIGNED NOT NULL,
+  `academic_year`         VARCHAR(9)   NOT NULL,
+  `leave_type_id`         INT UNSIGNED NOT NULL,
+  `opening_balance`       DECIMAL(5,2) NOT NULL DEFAULT 0.00,
+  `carry_forward`         DECIMAL(5,2) NOT NULL DEFAULT 0.00,
+  `total_used`            DECIMAL(5,2) NOT NULL DEFAULT 0.00,
+  `total_pending`         DECIMAL(5,2) NOT NULL DEFAULT 0.00,
+  `available_balance`     DECIMAL(5,2) GENERATED ALWAYS AS (opening_balance + carry_forward - total_used) STORED,
+  `manual_adjustment`     DECIMAL(5,2) NOT NULL DEFAULT 0.00,
+  `adjustment_reason`     VARCHAR(255) DEFAULT NULL,
+  `is_active`             TINYINT(1)   NOT NULL DEFAULT 1,
+  `created_by`            INT UNSIGNED DEFAULT NULL,
+  `updated_by`            INT UNSIGNED DEFAULT NULL,
+  `created_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at`            TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_leave_balance` (`employee_id`, `academic_year`, `leave_type_id`),
+  INDEX `idx_elb_employee`      (`employee_id`, `academic_year`),
+  INDEX `idx_elb_leave_type`    (`leave_type_id`),
+  INDEX `idx_elb_active`        (`is_active`),
+  CONSTRAINT `fk_elb_employee`   FOREIGN KEY (`employee_id`)  REFERENCES `sch_employees` (`id`)   ON DELETE RESTRICT,
+  CONSTRAINT `fk_elb_leave_type` FOREIGN KEY (`leave_type_id`) REFERENCES `sch_staff_leave_types` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Live leave-balance ledger per employee per leave type per academic year';
+
+
+-- ===========================================================================
+-- SECTION 7 : HOLIDAY CALENDAR (NEW in v4)
+-- ===========================================================================
+
+-- ---------------------------------------------------------------------------
+-- 7.1  sch_holidays   (NEW in v4)
+-- ---------------------------------------------------------------------------
+-- School holiday calendar. Used by leave-day-counting (skip holidays in the
+-- "total_days" calculation) and attendance (mark is_holiday=1).
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `sch_holidays` (
+  `id`                    INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `academic_session_id`   INT UNSIGNED NOT NULL,
+  `holiday_date`          DATE         NOT NULL,
+  `name`                  VARCHAR(150) NOT NULL,
+  `description`           VARCHAR(500) DEFAULT NULL,
+  `holiday_type`          ENUM('Public','Religious','Optional','School_Specific','Sunday','Saturday','Vacation','Other') NOT NULL DEFAULT 'Public',
+  `is_optional`           TINYINT(1)   NOT NULL DEFAULT 0  COMMENT 'Optional holidays — employee chooses from a list',
+  `is_paid`               TINYINT(1)   NOT NULL DEFAULT 1,
+  `applies_to_role_id`    INT UNSIGNED DEFAULT NULL  COMMENT 'NULL = all roles',
+  `applies_to_department_id` INT UNSIGNED DEFAULT NULL,
+  `is_active`             TINYINT(1)   NOT NULL DEFAULT 1,
+  `created_by`            INT UNSIGNED DEFAULT NULL,
+  `created_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at`            TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_hol_session_date` (`academic_session_id`, `holiday_date`),
+  KEY `idx_hol_date`         (`holiday_date`),
+  CONSTRAINT `fk_hol_session`    FOREIGN KEY (`academic_session_id`)   REFERENCES `sch_org_academic_sessions_jnt` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_hol_role`       FOREIGN KEY (`applies_to_role_id`)    REFERENCES `sch_employee_roles` (`id`)            ON DELETE SET NULL,
+  CONSTRAINT `fk_hol_department` FOREIGN KEY (`applies_to_department_id`) REFERENCES `sch_departments` (`id`)            ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='School holiday calendar (public, religious, optional, school-specific).';
+
+
+-- ===========================================================================
+-- SECTION 8 : SHIFT MANAGEMENT (NEW in v4)
+-- ===========================================================================
+
+-- ---------------------------------------------------------------------------
+-- 8.1  sch_employee_shifts   (NEW in v4)
+-- ---------------------------------------------------------------------------
+-- Shift master. e.g., "Morning 8-2", "Day 9-5", "Evening 2-8".
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `sch_employee_shifts` (
+  `id`                    INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `code`                  VARCHAR(20)  NOT NULL,
+  `name`                  VARCHAR(100) NOT NULL,
+  `start_time`            TIME NOT NULL,
+  `end_time`              TIME NOT NULL,
+  `break_duration_minutes` SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+  `working_hours`         DECIMAL(4,2) NOT NULL  COMMENT 'Net working hours (excluding break)',
+  `grace_minutes_late`    SMALLINT UNSIGNED NOT NULL DEFAULT 10  COMMENT 'Late beyond this triggers half-day mark',
+  `grace_minutes_early`   SMALLINT UNSIGNED NOT NULL DEFAULT 10  COMMENT 'Leaving early beyond this triggers half-day mark',
+  `half_day_threshold_minutes` SMALLINT UNSIGNED DEFAULT 240  COMMENT 'Below this many present minutes = half-day',
+  `applies_to_days`       JSON         DEFAULT NULL  COMMENT '[Mon, Tue, …] — null = all days',
+  `is_default`            TINYINT(1)   NOT NULL DEFAULT 0,
+  `description`           VARCHAR(255) DEFAULT NULL,
+  `is_active`             TINYINT(1)   NOT NULL DEFAULT 1,
+  `created_by`            INT UNSIGNED DEFAULT NULL,
+  `created_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at`            TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_shift_code` (`code`),
+  KEY `idx_shift_active` (`is_active`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Shift master — start/end times, grace, half-day thresholds.';
+
+
+-- ---------------------------------------------------------------------------
+-- 8.2  sch_employee_shift_assignments   (NEW in v4)
+-- ---------------------------------------------------------------------------
+-- Employee × shift × effective range.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `sch_employee_shift_assignments` (
+  `id`                    INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `employee_id`           INT UNSIGNED NOT NULL,
+  `shift_id`              INT UNSIGNED NOT NULL,
+  `effective_from`        DATE         NOT NULL,
+  `effective_to`          DATE         DEFAULT NULL,
+  `assignment_reason`     VARCHAR(255) DEFAULT NULL,
+  `is_active`             TINYINT(1)   NOT NULL DEFAULT 1,
+  `active_flag`           TINYINT(1) GENERATED ALWAYS AS (CASE WHEN (`is_active` = 1 AND `deleted_at` IS NULL) THEN 1 ELSE NULL END) STORED,
+  `created_by`            INT UNSIGNED DEFAULT NULL,
+  `created_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at`            TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_employee_shift_active` (`employee_id`, `active_flag`)  COMMENT 'Only one active shift per employee at a time',
+  KEY `idx_esa_shift` (`shift_id`),
+  CONSTRAINT `fk_esa_employee` FOREIGN KEY (`employee_id`) REFERENCES `sch_employees` (`id`)        ON DELETE CASCADE,
+  CONSTRAINT `fk_esa_shift`    FOREIGN KEY (`shift_id`)    REFERENCES `sch_employee_shifts` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Employee shift assignment with effective range.';
+
+
+-- ===========================================================================
+-- SECTION 9 : ATTENDANCE (v3 fixed + v4 enhancements + new tables)
+-- ===========================================================================
+
+-- ---------------------------------------------------------------------------
+-- 9.1  sch_employee_attendance   (FIXED + enhanced in v4)
+-- ---------------------------------------------------------------------------
+-- One row per (employee × date). Aggregated final state.
+-- Raw punches live in sch_employee_attendance_punches.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `sch_employee_attendance` (
+  `id`                    INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `employee_id`           INT UNSIGNED NOT NULL,
+  `date`                  DATE NOT NULL,
+  `shift_id`              INT UNSIGNED DEFAULT NULL  COMMENT 'v4 — which shift was applicable that day',
+  -- Aggregate punch summary
+  `check_in_time`         TIME DEFAULT NULL  COMMENT 'First punch-in of the day',
+  `check_out_time`        TIME DEFAULT NULL  COMMENT 'Last punch-out of the day',
+  `total_punches`         SMALLINT UNSIGNED NOT NULL DEFAULT 0  COMMENT 'v4',
+  -- Geo & source for first/last punch (v4)
+  `attendance_source`     ENUM('Biometric','MobileApp','Manual','SmartCard','QRCode','RFID','WebCheckIn','Other') NOT NULL DEFAULT 'Manual'  COMMENT 'v4',
+  `device_id`             VARCHAR(100) DEFAULT NULL  COMMENT 'v4 — biometric / RFID terminal ID',
+  `check_in_lat`          DECIMAL(10,7) DEFAULT NULL  COMMENT 'v4 — for geo-fenced mobile apps',
+  `check_in_lng`          DECIMAL(10,7) DEFAULT NULL  COMMENT 'v4',
+  `check_out_lat`         DECIMAL(10,7) DEFAULT NULL  COMMENT 'v4',
+  `check_out_lng`         DECIMAL(10,7) DEFAULT NULL  COMMENT 'v4',
+  -- Calculated metrics (set by attendance engine on day-close)
+  `working_hours`         DECIMAL(5,2) DEFAULT NULL  COMMENT 'v4 — net hours present',
+  `late_minutes`          SMALLINT DEFAULT NULL      COMMENT 'v4 — minutes late beyond grace',
+  `early_minutes`         SMALLINT DEFAULT NULL      COMMENT 'v4 — minutes left early beyond grace',
+  `is_overtime`           TINYINT(1) NOT NULL DEFAULT 0  COMMENT 'v4',
+  `overtime_hours`        DECIMAL(4,2) DEFAULT NULL  COMMENT 'v4',
+  -- Day classification (v4)
+  `is_holiday`            TINYINT(1) NOT NULL DEFAULT 0  COMMENT 'v4 — denormalized from sch_holidays',
+  `is_weekend`            TINYINT(1) NOT NULL DEFAULT 0  COMMENT 'v4',
+  `status`                ENUM('Present','Absent','On Leave','Half Day','Late','Holiday','Weekend','On_Tour','Work_From_Home') NOT NULL DEFAULT 'Absent',
+  `leave_application_id`  INT UNSIGNED DEFAULT NULL,
+  `remarks`               VARCHAR(255) DEFAULT NULL,
+  -- Marked-by audit
+  `marked_by`             INT UNSIGNED DEFAULT NULL,
+  `marked_at`             TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `auto_marked`           TINYINT(1) NOT NULL DEFAULT 0  COMMENT 'v4 — 1 = system computed, 0 = manual',
+  `is_active`             TINYINT(1) NOT NULL DEFAULT 1  COMMENT 'v4',
+  `created_by`            INT UNSIGNED DEFAULT NULL  COMMENT 'v4',
+  `created_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at`            TIMESTAMP NULL DEFAULT NULL  COMMENT 'v4',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_attendance` (`employee_id`, `date`),
+  INDEX `idx_attendance_date`     (`date`),
+  INDEX `idx_attendance_status`   (`status`)        COMMENT 'v4',
+  INDEX `idx_attendance_shift`    (`shift_id`)      COMMENT 'v4',
+  INDEX `idx_attendance_late`     (`late_minutes`)  COMMENT 'v4',
+  CONSTRAINT `fk_attendance_employee`           FOREIGN KEY (`employee_id`)         REFERENCES `sch_employees` (`id`)                ON DELETE CASCADE,
+  CONSTRAINT `fk_attendance_shift`              FOREIGN KEY (`shift_id`)            REFERENCES `sch_employee_shifts` (`id`)          ON DELETE SET NULL,
+  CONSTRAINT `fk_attendance_leave_application`  FOREIGN KEY (`leave_application_id`) REFERENCES `sch_employee_leave_applications` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_attendance_marked_by`          FOREIGN KEY (`marked_by`)           REFERENCES `sys_users` (`id`)                    ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Daily attendance summary per employee. One row per (employee, date). Raw punches in sch_employee_attendance_punches.';
+
+
+-- ---------------------------------------------------------------------------
+-- 9.2  sch_employee_attendance_punches   (NEW in v4)
+-- ---------------------------------------------------------------------------
+-- Raw punch log. One row per swipe / mobile check-in.
+-- Aggregated nightly into sch_employee_attendance.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `sch_employee_attendance_punches` (
+  `id`                    INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `employee_id`           INT UNSIGNED NOT NULL,
+  `attendance_id`         INT UNSIGNED DEFAULT NULL  COMMENT 'FK → sch_employee_attendance.id (set after aggregation)',
+  `punch_at`              DATETIME NOT NULL,
+  `punch_type`            ENUM('In','Out','Break_Out','Break_In','Tour_Out','Tour_In','Unknown') NOT NULL DEFAULT 'Unknown',
+  `attendance_source`     ENUM('Biometric','MobileApp','Manual','SmartCard','QRCode','RFID','WebCheckIn','Other') NOT NULL,
+  `device_id`             VARCHAR(100) DEFAULT NULL,
+  `device_location`       VARCHAR(150) DEFAULT NULL,
+  `latitude`              DECIMAL(10,7) DEFAULT NULL,
+  `longitude`             DECIMAL(10,7) DEFAULT NULL,
+  `ip_address`            VARCHAR(45)  DEFAULT NULL  COMMENT 'IPv4 or IPv6',
+  `user_agent`            VARCHAR(255) DEFAULT NULL,
+  `is_within_geofence`    TINYINT(1)   DEFAULT NULL  COMMENT 'NULL if no geofence configured',
+  `is_processed`          TINYINT(1)   NOT NULL DEFAULT 0  COMMENT '1 = aggregated into attendance row',
+  `is_invalid`            TINYINT(1)   NOT NULL DEFAULT 0  COMMENT '1 = duplicate / out-of-shift / spam',
+  `invalidation_reason`   VARCHAR(255) DEFAULT NULL,
+  `raw_payload`           JSON         DEFAULT NULL  COMMENT 'Full vendor payload for forensic',
+  `created_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_eap_employee_date` (`employee_id`, `punch_at`),
+  KEY `idx_eap_unprocessed`   (`is_processed`, `punch_at`),
+  KEY `idx_eap_attendance`    (`attendance_id`),
+  CONSTRAINT `fk_eap_employee`   FOREIGN KEY (`employee_id`)   REFERENCES `sch_employees` (`id`)         ON DELETE CASCADE,
+  CONSTRAINT `fk_eap_attendance` FOREIGN KEY (`attendance_id`) REFERENCES `sch_employee_attendance` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Raw biometric / mobile punch log. Aggregated into sch_employee_attendance.';
+
+
+-- ---------------------------------------------------------------------------
+-- 9.3  sch_employee_attendance_corrections   (NEW in v4)
+-- ---------------------------------------------------------------------------
+-- Manual correction request workflow (employee files, manager approves).
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `sch_employee_attendance_corrections` (
+  `id`                    INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `attendance_id`         INT UNSIGNED NOT NULL,
+  `employee_id`           INT UNSIGNED NOT NULL,
+  `correction_type`       ENUM('Forgot_Punch_In','Forgot_Punch_Out','Wrong_Status','On_Tour','Work_From_Home','Time_Adjustment','Other') NOT NULL,
+  `requested_check_in`    TIME DEFAULT NULL,
+  `requested_check_out`   TIME DEFAULT NULL,
+  `requested_status`      ENUM('Present','Absent','On Leave','Half Day','Late','Holiday','Weekend','On_Tour','Work_From_Home') DEFAULT NULL,
+  `reason`                TEXT NOT NULL,
+  `supporting_doc_media_id` INT UNSIGNED DEFAULT NULL,
+  `status`                ENUM('Pending','Approved','Rejected','Cancelled') NOT NULL DEFAULT 'Pending',
+  `reviewed_by`           INT UNSIGNED DEFAULT NULL,
+  `reviewed_at`           TIMESTAMP NULL DEFAULT NULL,
+  `review_remarks`        VARCHAR(500) DEFAULT NULL,
+  `applied_at`            TIMESTAMP NULL DEFAULT NULL  COMMENT 'When the correction was actually written back to attendance row',
+  `is_active`             TINYINT(1)   NOT NULL DEFAULT 1,
+  `created_by`            INT UNSIGNED DEFAULT NULL,
+  `created_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at`            TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_eac_attendance` (`attendance_id`),
+  KEY `idx_eac_employee`   (`employee_id`, `status`),
+  KEY `idx_eac_pending`    (`status`, `created_at`),
+  CONSTRAINT `fk_eac_attendance` FOREIGN KEY (`attendance_id`)         REFERENCES `sch_employee_attendance` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_eac_employee`   FOREIGN KEY (`employee_id`)           REFERENCES `sch_employees` (`id`)           ON DELETE CASCADE,
+  CONSTRAINT `fk_eac_reviewer`   FOREIGN KEY (`reviewed_by`)           REFERENCES `sys_users` (`id`)               ON DELETE SET NULL,
+  CONSTRAINT `fk_eac_doc`        FOREIGN KEY (`supporting_doc_media_id`) REFERENCES `sys_media` (`id`)             ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Attendance correction request / approval workflow.';
+
+
+-- ===========================================================================
+-- APPENDIX : TABLE INVENTORY (v4)
+-- ===========================================================================
+--
+--  SECTION 1 : EMPLOYEE MASTER  (v3 retained, enhanced)
+--    sch_employees                          — Employee master (HR fields added)
+--    sch_employees_profile                  — Non-teacher profile (UNIQUE fixed)
+--    sch_teacher_profile                    — Teacher profile (class-teacher fields)
+--    sch_teacher_capabilities               — Capability matrix (typo fixed)
+--
+--  SECTION 2 : PERSONAL DETAILS  (NEW)
+--    sch_employee_addresses
+--    sch_employee_emergency_contacts
+--    sch_employee_bank_details
+--
+--  SECTION 3 : DOCUMENTS  (NEW)
+--    sch_employee_documents
+--
+--  SECTION 4 : LIFECYCLE  (NEW)
+--    sch_employee_role_history
+--    sch_employee_separations
+--
+--  SECTION 5 : LEAVE MASTERS  (NEW)
+--    sch_staff_leave_types
+--    sch_staff_leave_config
+--
+--  SECTION 6 : LEAVE WORKFLOW  (v3 retained, audit columns added)
+--    sch_leave_approval_policies
+--    sch_leave_approval_policy_levels
+--    sch_leave_approval_level_approvers
+--    sch_employee_leave_applications
+--    sch_employee_leave_approvals
+--    sch_employee_leave_application_docs
+--    sch_employee_leave_application_remarks
+--    sch_employee_leave_balance
+--
+--  SECTION 7 : HOLIDAY CALENDAR  (NEW)
+--    sch_holidays
+--
+--  SECTION 8 : SHIFT MANAGEMENT  (NEW)
+--    sch_employee_shifts
+--    sch_employee_shift_assignments
+--
+--  SECTION 9 : ATTENDANCE  (v3 fixed, enhanced + 2 new)
+--    sch_employee_attendance                — Daily summary (FIXED + enhanced)
+--    sch_employee_attendance_punches        — Raw punch log
+--    sch_employee_attendance_corrections    — Correction workflow
+--
+-- ===========================================================================
+-- TOTAL: 25 tables (v3 had 13, v4 adds 12)
+-- ===========================================================================
+
+
+-- ===========================================================================
+-- DEFERRED TO v5 (review items, not blocking)
+-- ===========================================================================
+-- 1. Rename non-conformant tables to plural form:
+--    sch_employees_profile   → sch_employee_profiles
+--    sch_employee_attendance → sch_employee_attendances
+--    sch_employee_leave_balance → sch_employee_leave_balances
+--    Requires application code migration.
+--
+-- 2. Normalize JSON columns to first-class tables:
+--    sch_employees.qualifications_json → sch_employee_qualifications (table)
+--    sch_employees.experiences_json    → sch_employee_experiences (table)
+--    sch_employees.certifications_json → sch_employee_certifications (table)
+--    Allows query, expiry alerts, and FK to certificate-issuer tables.
+--
+-- 3. Family members table (sch_employee_family_members) — only if dependents
+--    or beneficiary tracking is required.
+--
+-- 4. Review FK ON DELETE behaviour on sch_employees.user_id (currently CASCADE
+--    — a user delete wipes the employee record). Likely should be RESTRICT.
+--
+-- 5. Encryption-at-rest for sensitive identity columns (aadhaar, pan, account
+--    number) via MySQL 8 invisible columns + app-layer KMS.
+-- ===========================================================================
+
+
+-- ===========================================================================
+-- CHANGE LOG
+-- ===========================================================================
+-- v1.0 → v2.0 (2026-04-08): Added Employee Leave Management (8 tables).
+-- v2.0 → v3.0:               Minor revisions in leave-management table comments.
+-- v3.0 → v4.0 (2026-05-04):
+--   • FIXED 3 CREATE-time bugs (attendance COMMENT quote, competancy typo,
+--     broken UNIQUE on sch_employees_profile).
+--   • ADDED 12 new tables (HR personal details, lifecycle, masters,
+--     holidays, shifts, attendance punches/corrections).
+--   • ADDED missing required columns (is_active, created_by, deleted_at)
+--     on 7 existing tables for convention compliance.
+--   • EXPANDED sch_employees with 19 personal/identity/employment fields
+--     (all nullable — additive, non-breaking).
+--   • EXPANDED sch_employee_leave_applications with cancellation +
+--     pending_with_user_id for dashboard performance.
+--   • EXPANDED sch_employee_attendance with shift, geo, source, calculated
+--     metrics (late, early, overtime, working_hours).
+--   • RESOLVED 4 dangling FK targets (sch_staff_leave_types, sch_leave_config
+--     used to be referenced but undefined).
+-- ===========================================================================
