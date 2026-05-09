@@ -5,7 +5,7 @@
 > each, and any files still pending. Append-only log per phase.
 >
 > **Prompt being executed:** `{OLD_REPO}/1-DDL_Tenant_Modules/0-Mobile_App/Claude_Prompt/PrimeAi_MobileApp_prompt_v2.md`
-> **Current phase:** Phase 1 — Feature List
+> **Current phase:** Phase 2 — SRS (complete; awaiting approval to proceed to Phase 3)
 > **Owner:** Business Analyst + Mobile Application Architect (Claude)
 
 ---
@@ -94,13 +94,47 @@
 
 ---
 
-## Phase 2 — Pending (do not execute until approved)
+## Phase 2 — Files Consumed (2026-05-08)
 
-- Read `{RBS_MAPPING}` end-to-end
-- Read `{LIFECYCLE_BLUEPRINT}` for MVP sequencing
-- Read `{PROJECT_DOCS}/11-all-modules-controllers-models.md` for endpoint mapping
-- Spot-read `{TENANT_DDL}` for column-level schema where needed per feature
-- Produce `02_mobile_srs_index.md` + `02_mobile_srs_batch_NN.md`
+| File | What I took from it |
+|------|---------------------|
+| `01_mobile_feature_list_v1.md` (Phase 1 deliverable) | Authoritative feature catalogue (53 F-XXX), MVP sprints (M1–M4), Backend Gap matrix (BG-01 .. BG-43), Open Decisions Q-1 .. Q-13, P0/P1/P2 cross-index |
+| `00_context_index.md` (Phase 1 own notes) | Pre-loaded summary of AI_Brain consumption — used as a base instead of re-reading every memory file |
+| `{AI_BRAIN}/config/paths.md` | `{VARIABLE}` resolution still active; OLD_REPO root verified |
+
+> **Deferred (still pending for Phase 3):**
+> - `{RBS_MAPPING}` end-to-end — RBS Mapping field across SRS still marked `TBD` (Q-3 unresolved)
+> - `{LIFECYCLE_BLUEPRINT}` — needed for Phase 3 §9 dev pipeline alignment
+> - `{PROJECT_DOCS}/11-all-modules-controllers-models.md` — needed for Phase 3 §2 OpenAPI
+> - `{TENANT_DDL}` column-level — column-level schemas in §6 of each batch left as table-level pointers; full column inventory deferred to Phase 3 OpenAPI work
+
+## Phase 2 — Files Produced
+
+| Path | Contents |
+|------|----------|
+| `Requirement/02_mobile_srs_index.md` | Doc control · glossary · client architecture (Flutter) · auth flow · API gateway / headers · push architecture · offline + Drift design · security summary · NFRs · master feature index · API summary table (66 endpoints) · push catalogue · permissions matrix · release & versioning |
+| `Requirement/02_mobile_srs_batch_01.md` | F-001..F-005 — Authentication & Onboarding (full depth) |
+| `Requirement/02_mobile_srs_batch_02.md` | F-010..F-013 — Dashboards |
+| `Requirement/02_mobile_srs_batch_03.md` | F-020..F-023, F-030..F-032 — Attendance / Timetable / Syllabus / Lesson Plan |
+| `Requirement/02_mobile_srs_batch_04.md` | F-040..F-043 — Homework |
+| `Requirement/02_mobile_srs_batch_05.md` | F-050..F-054 — Quiz / Quest / Exam / Results |
+| `Requirement/02_mobile_srs_batch_06.md` | F-060..F-062, F-070..F-073 — Fees / Transport |
+| `Requirement/02_mobile_srs_batch_07.md` | F-080..F-084, F-090..F-091 — Communication / HPC |
+| `Requirement/02_mobile_srs_batch_08.md` | F-100..F-103, F-110..F-111, F-120..F-121 — Leave / Library / Hostel |
+| `Requirement/02_mobile_srs_batch_09.md` | F-130..F-135, F-140 — Profile / Settings / Search |
+
+> Coverage: 53/53 features in Phase 1 §2 covered exactly once.
+> Cross-cutting capabilities CC-05 (PDF viewer), CC-10 (tenant branding), CC-11 (analytics) folded inline (F-001 / F-062 / F-090 / F-130 / F-135).
+
+## Phase 2 — Status
+
+- ✅ Master index produced
+- ✅ All 9 batch files produced
+- ✅ Every BG-XX from Phase 1 §6 referenced from at least one feature §5
+- ✅ Every push event from §7 of index referenced from corresponding feature §8
+- 🛑 **STOP** — awaiting "approved — proceed to Phase 3"
+
+---
 
 ## Phase 3 — Pending
 
