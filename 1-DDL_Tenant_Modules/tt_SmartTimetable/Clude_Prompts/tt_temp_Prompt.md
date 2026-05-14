@@ -272,5 +272,7 @@ Read & understand "/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/1-DDL_Tenant_Mo
 
 I wanted to add a field to control whether book is downloadable or not. Other then all above if you find any gap which need to be enhanced then add those as well. Create a new Enhanced DDL as "/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/1-DDL_Tenant_Modules/SyllabusBooks/DDL/SyllabusBooks_ddl_v3.sql"
 
+------------------------------------------------------------------------------------------------------
 
-
+Read and understand "/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/1-DDL_Tenant_Modules/Hostel/DDL/HST_DDL_v3.sql" and Create All required Reports with all possible deatil of the Reports (e.g. Report design, Table will be used, Filters required for Reports etc.) to provide to developer.
+Save the Report file as "/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/1-DDL_Tenant_Modules/Hostel/Design/HST_Report_Design_v1.md"

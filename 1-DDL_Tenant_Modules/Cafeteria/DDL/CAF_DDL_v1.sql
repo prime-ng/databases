@@ -29,8 +29,7 @@ CREATE TABLE IF NOT EXISTS `caf_menu_categories` (
   `id`               INT UNSIGNED     NOT NULL AUTO_INCREMENT COMMENT 'Primary key',
   `name`             VARCHAR(100)     NOT NULL                COMMENT 'Category name e.g. Breakfast, Lunch',
   `code`             VARCHAR(20)      NULL     DEFAULT NULL   COMMENT 'Short code e.g. BRK, LNC, SNK — nullable UNIQUE',
-  `meal_time`        ENUM('Breakfast','Lunch','Snacks','Dinner','Tuck_Shop')
-                                      NOT NULL                COMMENT 'Serving type',
+  `meal_time`        ENUM('Breakfast','Lunch','Snacks','Dinner','Tuck_Shop') NOT NULL COMMENT 'Serving type',
   `meal_start_time`  TIME             NULL     DEFAULT NULL   COMMENT 'Scheduled serving start time',
   `description`      TEXT             NULL     DEFAULT NULL   COMMENT 'Optional description',
   `display_order`    TINYINT UNSIGNED NOT NULL DEFAULT 0      COMMENT 'Sort order on student portal',
@@ -79,11 +78,9 @@ CREATE TABLE IF NOT EXISTS `caf_suppliers` (
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `caf_fssai_records` (
   `id`                      INT UNSIGNED    NOT NULL AUTO_INCREMENT COMMENT 'Primary key',
-  `record_type`             ENUM('License','Audit')
-                                            NOT NULL                COMMENT 'Discriminator: License or Audit record',
+  `record_type`             ENUM('License','Audit') NOT NULL        COMMENT 'Discriminator: License or Audit record',
   `license_number`          VARCHAR(50)     NULL     DEFAULT NULL   COMMENT 'FSSAI license number — for License records',
-  `license_type`            ENUM('Basic','State','Central')
-                                            NULL     DEFAULT NULL   COMMENT 'License category — for License records',
+  `license_type`            ENUM('Basic','State','Central') NULL DEFAULT NULL   COMMENT 'License category — for License records',
   `issue_date`              DATE            NULL     DEFAULT NULL   COMMENT 'License issue date',
   `expiry_date`             DATE            NULL     DEFAULT NULL   COMMENT 'Alert 60 days (and 30 days) before expiry (BR-CAF-014)',
   `licensed_entity_name`    VARCHAR(150)    NULL     DEFAULT NULL   COMMENT 'School or cafeteria unit name on license',
@@ -117,8 +114,7 @@ CREATE TABLE IF NOT EXISTS `caf_daily_menus` (
   `menu_date`        DATE           NOT NULL                COMMENT 'Calendar date — UNIQUE; one menu per date (BR-CAF-018)',
   `week_start_date`  DATE           NOT NULL                COMMENT 'ISO Monday of the menu week',
   `academic_term_id` SMALLINT UNSIGNED NULL  DEFAULT NULL   COMMENT 'sch_academic_term.id (SMALLINT — verified)',
-  `status`           ENUM('Draft','Published','Archived')
-                                    NOT NULL DEFAULT 'Draft' COMMENT 'Menu lifecycle: Draft→Published→Archived',
+  `status`           ENUM('Draft','Published','Archived') NOT NULL DEFAULT 'Draft' COMMENT 'Menu lifecycle: Draft→Published→Archived',
   `published_at`     TIMESTAMP      NULL     DEFAULT NULL   COMMENT 'Timestamp when menu was published',
   `published_by`     INT UNSIGNED   NULL     DEFAULT NULL   COMMENT 'sys_users.id who published the menu',
   `notes`            TEXT           NULL     DEFAULT NULL   COMMENT 'Kitchen notes for this day',
@@ -147,8 +143,7 @@ CREATE TABLE IF NOT EXISTS `caf_subscription_plans` (
   `name`                      VARCHAR(150)     NOT NULL                COMMENT 'Plan name e.g. Full Day Plan, Hostel Mess Plan',
   `description`               TEXT             NULL     DEFAULT NULL   COMMENT 'Plan description',
   `included_category_ids_json` JSON            NOT NULL                COMMENT 'Array of caf_menu_categories.id included in this plan',
-  `billing_period`            ENUM('Monthly','Termly','Annual')
-                                               NOT NULL DEFAULT 'Monthly' COMMENT 'Billing cycle',
+  `billing_period`            ENUM('Monthly','Quarterly','Termly','Annual') NOT NULL DEFAULT 'Monthly' COMMENT 'Billing cycle',
   `price`                     DECIMAL(10,2)    NOT NULL                COMMENT 'Plan price in INR',
   `academic_term_id`          SMALLINT UNSIGNED NULL    DEFAULT NULL   COMMENT 'sch_academic_term.id — term this plan applies to',
   `is_hostel_plan`            TINYINT(1)       NOT NULL DEFAULT 0      COMMENT 'Links to HST module — auto-enroll on hostel admission (BR-CAF-015)',
@@ -196,7 +191,7 @@ CREATE TABLE IF NOT EXISTS `caf_meal_cards` (
 
 -- ----------------------------------------------------------------------------
 -- 7. caf_pos_sessions
--- POS shift sessions — open/close model per staff per day (no created_by; opened_by serves)
+-- POS (Point of Sale) shift sessions — open/close model per staff per day (no created_by; opened_by serves)
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `caf_pos_sessions` (
   `id`                   INT UNSIGNED  NOT NULL AUTO_INCREMENT COMMENT 'Primary key',
@@ -227,8 +222,7 @@ CREATE TABLE IF NOT EXISTS `caf_pos_sessions` (
 CREATE TABLE IF NOT EXISTS `caf_dietary_profiles` (
   `id`                   INT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'Primary key',
   `student_id`           INT UNSIGNED NOT NULL                COMMENT 'std_students.id — UNIQUE; one profile per student',
-  `food_preference`      ENUM('Veg','Non_Veg','Egg','Jain')
-                                      NOT NULL DEFAULT 'Veg'  COMMENT 'Primary food preference',
+  `food_preference`      ENUM('Veg','Non_Veg','Egg','Jain') NOT NULL DEFAULT 'Veg'  COMMENT 'Primary food preference',
   `is_no_onion_garlic`   TINYINT(1)   NOT NULL DEFAULT 0      COMMENT '1 = no onion/garlic restriction',
   `is_gluten_free`       TINYINT(1)   NOT NULL DEFAULT 0      COMMENT '1 = gluten-free restriction',
   `is_nut_allergy`       TINYINT(1)   NOT NULL DEFAULT 0      COMMENT '1 = nut allergy — flagged on POS scan (BR-CAF-002)',
@@ -261,8 +255,7 @@ CREATE TABLE IF NOT EXISTS `caf_menu_items` (
   `name`           VARCHAR(150)     NOT NULL                COMMENT 'Dish name',
   `description`    TEXT             NULL     DEFAULT NULL   COMMENT 'Dish description',
   `price`          DECIMAL(8,2)     NOT NULL                COMMENT 'Per-serving price in INR',
-  `food_type`      ENUM('Veg','Non_Veg','Egg','Jain')
-                                    NOT NULL DEFAULT 'Veg'  COMMENT 'Food type — used for dietary conflict check',
+  `food_type`      ENUM('Veg','Non_Veg','Egg','Jain') NOT NULL DEFAULT 'Veg'  COMMENT 'Food type — used for dietary conflict check',
   `calories`       SMALLINT UNSIGNED NULL    DEFAULT NULL   COMMENT 'Calories per serving (kcal)',
   `protein_grams`  DECIMAL(5,2)     NULL     DEFAULT NULL   COMMENT 'Protein per serving (g)',
   `carbs_grams`    DECIMAL(5,2)     NULL     DEFAULT NULL   COMMENT 'Carbohydrates per serving (g)',
@@ -295,8 +288,7 @@ CREATE TABLE IF NOT EXISTS `caf_stock_items` (
   `id`               INT UNSIGNED  NOT NULL AUTO_INCREMENT COMMENT 'Primary key',
   `supplier_id`      INT UNSIGNED  NULL     DEFAULT NULL   COMMENT 'caf_suppliers.id — preferred supplier (nullable)',
   `name`             VARCHAR(150)  NOT NULL                COMMENT 'Raw material name',
-  `category`         ENUM('Grains','Pulses','Vegetables','Fruits','Dairy','Spices','Beverages','Condiments','Cleaning','Other')
-                                   NOT NULL                COMMENT 'Material category',
+  `category`         ENUM('Grains','Pulses','Vegetables','Fruits','Dairy','Spices','Beverages','Condiments','Cleaning','Other') NOT NULL COMMENT 'Material category',
   `unit`             VARCHAR(20)   NOT NULL                COMMENT 'Unit of measurement: kg, litre, piece, dozen',
   `current_quantity` DECIMAL(10,3) NOT NULL DEFAULT 0.000  COMMENT 'Current stock level — updated by StockService on each consumption log',
   `reorder_level`    DECIMAL(10,3) NOT NULL                COMMENT 'Alert threshold — triggers reorder notification (BR-CAF-007)',

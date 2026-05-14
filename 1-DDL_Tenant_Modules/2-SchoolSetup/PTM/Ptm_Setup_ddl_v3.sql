@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS `ptm_events` (
   `description`         text         DEFAULT NULL,       -- free-form notes shown to staff & parents
   `event_start_date`    date         NOT NULL,           -- first day on which any class will hold its PTM (e.g. 2026-05-10)
   `event_end_date`      date         NOT NULL,           -- last day on which any class will hold its PTM (e.g. 2026-05-15)
-  `default_meeting_mode` varchar(20) NOT NULL DEFAULT 'IN_PERSON', -- IN_PERSON | ZOOM | TEAMS | GMEET | HYBRID
+  `default_meeting_mode` ENUM('IN_PERSON', 'ONLINE', 'HYBRID') DEFAULT 'IN_PERSON', -- How Parent can join the PTM by default, can be overridden at class+section level (Req §3 — Meeting Mode)
   -- Settings that apply to ALL classes+sections in the event, unless overridden at the assignment level:
   `booking_window_start`        datetime     NOT NULL,        -- when parents can START booking (e.g. 2026-05-01 09:00:00)
   `booking_window_end`          datetime     NOT NULL,        -- when parents can NO LONGER book (e.g. 2026-05-09 23:59:59)
@@ -76,7 +76,7 @@ CREATE TABLE IF NOT EXISTS `ptm_event_class_section_jnt` (
   `scheduled_date`       date         NOT NULL,             -- the day THIS class+section meets parents (e.g. 2026-05-10)
   `day_start_time`       time         NOT NULL,             -- earliest slot may start (e.g. '09:00:00')
   `day_end_time`         time         NOT NULL,             -- last slot must finish by (e.g. '13:00:00')
-  `meeting_mode`         varchar(20)  DEFAULT NULL,         -- IN_PERSON | ZOOM | TEAMS | GMEET | HYBRID — NULL inherits ptm_events.default_meeting_mode
+  `meeting_mode`         ENUM('IN_PERSON', 'ONLINE', 'HYBRID') DEFAULT 'IN_PERSON',  -- 'IN_PERSON' | 'ONLINE' | 'HYBRID', inherits ptm_events.default_meeting_mode, overrides event default
   `room_id`              int unsigned DEFAULT NULL,         -- FK sch_rooms.id — physical room (NULL when virtual)
   `virtual_link`         varchar(500) DEFAULT NULL,         -- Zoom / Teams / Meet URL (NULL when in-person)
   `notes`                text         DEFAULT NULL,         -- e.g. 'Use main hall, 2 entry points'
@@ -110,7 +110,7 @@ CREATE TABLE IF NOT EXISTS `ptm_batches_template` (
   `id`                       int unsigned NOT NULL AUTO_INCREMENT,
   `code`                     varchar(30)  NOT NULL,         -- e.g. 'BATCH_2H_12STU' (unique short code)
   `name`                     varchar(100) NOT NULL,         -- e.g. 'Morning 9-11 AM, 12 students × 10 min'
-  `owner_teacher_id`         int unsigned NOT NULL,         -- FK sys_users.id — staff who owns the template
+      `owner_teacher_id`         int unsigned NOT NULL,         -- FK sys_users.id — staff who owns the template
   `window_start_time`        time         NOT NULL,         -- e.g. '09:00:00' — wall-clock start of the batch on any given day
   `window_end_time`          time         NOT NULL,         -- e.g. '11:00:00' — wall-clock end
   `slot_duration_min`        tinyint unsigned NOT NULL,     -- per-meeting duration in minutes (e.g. 10, 15)
@@ -231,7 +231,7 @@ CREATE TABLE IF NOT EXISTS `ptm_assignment_teacher_jnt` (
   `sub_batch_label`   varchar(50)  DEFAULT NULL,       -- e.g. 'Group 1 (Roll 1-15)', 'Group 2 (Roll 16-30)'
   `room_id`           int unsigned DEFAULT NULL,       -- FK sch_rooms.id — sub-batch can use a different room
   `virtual_link`      varchar(500) DEFAULT NULL,       -- sub-batch can use a different virtual link
-  `student_filter_json` json       DEFAULT NULL,       -- e.g. {"roll_from":1,"roll_to":15} or {"student_ids":[12,15,17]}
+      `student_filter_json` json       DEFAULT NULL,       -- e.g. {"roll_from":1,"roll_to":15} or {"student_ids":[12,15,17]}
   `is_active`         tinyint(1)   NOT NULL DEFAULT 1,
   `created_at`        timestamp    NULL DEFAULT NULL,
   `updated_at`        timestamp    NULL DEFAULT NULL,
@@ -256,7 +256,7 @@ CREATE TABLE IF NOT EXISTS `ptm_assignment_teacher_jnt` (
 CREATE TABLE IF NOT EXISTS `ptm_blockouts` (
   `id`            int unsigned NOT NULL AUTO_INCREMENT,
   `ptm_event_id`  int unsigned NOT NULL,                  -- FK ptm_events.id (scoped to one event)
-  `teacher_id`    int unsigned NOT NULL,                  -- FK sys_users.id
+  `teacher_id`    int unsigned NULL,                  -- FK sys_users.id (If NULL, applies to all teachers — e.g. power outage; if set, applies only to the specified teacher — e.g. lunch)
   `blockout_date` date         NOT NULL,                  -- e.g. 2026-05-10
   `start_time`    time         NOT NULL,                  -- e.g. '12:00:00'
   `end_time`      time         NOT NULL,                  -- e.g. '13:00:00'
@@ -290,13 +290,13 @@ CREATE TABLE IF NOT EXISTS `ptm_slots` (
   `id`                  int unsigned NOT NULL AUTO_INCREMENT,
   `assignment_id`       int unsigned NOT NULL,                  -- FK ptm_assignments.id
   `assignment_teacher_id` int unsigned DEFAULT NULL,            -- FK ptm_assignment_teacher_jnt.id (NULL when single-teacher assignment)
-  `batch_slot_def_id`   int unsigned DEFAULT NULL,              -- FK ptm_batch_slot_template.id (the template row this came from; NULL if hand-created)
+  `batch_slot_template_id` int unsigned DEFAULT NULL,           -- FK ptm_batch_slot_template.id (the template row this came from; NULL if hand-created)
   `teacher_id`          int unsigned NOT NULL,                  -- FK sys_users.id (denormalized for fast cross-class conflict checks)
   `slot_start`          datetime     NOT NULL,                  -- absolute wall-clock start, e.g. 2026-05-10 09:00:00
   `slot_end`            datetime     NOT NULL,                  -- absolute wall-clock end,   e.g. 2026-05-10 09:10:00
   `capacity`            tinyint unsigned NOT NULL DEFAULT 1,    -- 1 = 1-on-1, >1 = group slot
   `booked_count`        tinyint unsigned NOT NULL DEFAULT 0,    -- denormalized count of confirmed bookings (matches COUNT(*) in ptm_slot_bookings)
-  `status`              varchar(20)  NOT NULL DEFAULT 'AVAILABLE', -- AVAILABLE | BOOKED | FULL | BLOCKED | COMPLETED | CANCELLED
+  `status`              ENUM('AVAILABLE', 'BOOKED', 'FULL', 'BLOCKED', 'COMPLETED', 'CANCELLED') NOT NULL DEFAULT 'AVAILABLE', -- 'AVAILABLE' = open for booking, 'BOOKED' = at least 1 booking but not full, 'FULL' = booked_count=capacity, 'BLOCKED' = cannot be booked (e.g. overlaps a ptm_blockouts or is_break), 'COMPLETED' = meeting happened, 'CANCELLED' = slot cancelled by admin/teacher
   `is_break`            tinyint(1)   NOT NULL DEFAULT 0,        -- mirrors batch_slot_def.is_break (carried for fast filtering)
   `room_id`             int unsigned DEFAULT NULL,              -- FK sch_rooms.id — usually inherits from event_class_section / sub-batch
   `virtual_link`        varchar(500) DEFAULT NULL,              -- per-slot virtual link override (rarely used)
@@ -343,7 +343,7 @@ CREATE TABLE IF NOT EXISTS `ptm_slot_bookings` (
   `student_id`        int unsigned NOT NULL,                       -- FK std_students.id
   `booked_by_user_id` int unsigned DEFAULT NULL,                   -- FK sys_users.id — parent / staff user who placed the booking
   `parent_comments`   text         DEFAULT NULL,                   -- "Want to discuss math performance"
-  `status`            varchar(20)  NOT NULL DEFAULT 'CONFIRMED',   -- CONFIRMED | CANCELLED | NO_SHOW | COMPLETED | RESCHEDULED
+  `status`            ENUM('CONFIRMED', 'CANCELLED', 'NO_SHOW', 'COMPLETED', 'RESCHEDULED') NOT NULL DEFAULT 'CONFIRMED',   -- CONFIRMED | CANCELLED | NO_SHOW | COMPLETED | RESCHEDULED
   `booked_at`         timestamp    NULL DEFAULT NULL,              -- when the booking was placed
   `cancelled_at`      timestamp    NULL DEFAULT NULL,              -- when it was cancelled (NULL while CONFIRMED)
   `cancel_reason`     varchar(255) DEFAULT NULL,                   -- e.g. 'Parent unavailable'
@@ -351,16 +351,15 @@ CREATE TABLE IF NOT EXISTS `ptm_slot_bookings` (
   `meeting_notes`     text         DEFAULT NULL,                   -- post-meeting notes captured by teacher
   -- Generated column: only CONFIRMED rows participate in the unique key —
   -- this lets a student re-book after cancelling.
-  `active_booking_key` int unsigned GENERATED ALWAYS AS
-       (CASE WHEN `status` = 'CONFIRMED' THEN `student_id` ELSE NULL END) VIRTUAL,
+  `active_booking_key` int unsigned GENERATED ALWAYS AS (CASE WHEN `status` = 'CONFIRMED' THEN `student_id` ELSE NULL END) VIRTUAL,
   `is_active`         tinyint(1)   NOT NULL DEFAULT 1,
   `created_by`        int unsigned DEFAULT NULL,
   `created_at`        timestamp    NULL DEFAULT NULL,
   `updated_at`        timestamp    NULL DEFAULT NULL,
   `deleted_at`        timestamp    NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
-  -- One CONFIRMED booking per student per teacher per event (Req §2 — Limit per Student)
-  UNIQUE KEY `uq_ptmBooking_event_teacher_studentActive` (`ptm_event_id`,`teacher_id`,`active_booking_key`),
+  -- One CONFIRMED booking per student per event (Req §2 — Limit per Student)
+  UNIQUE KEY `uq_ptmBooking_event_teacher_studentActive` (`ptm_event_id`,`active_booking_key`),
   -- A student cannot occupy the same slot twice (paranoia constraint)
   UNIQUE KEY `uq_ptmBooking_slot_studentActive` (`slot_id`,`active_booking_key`),
   KEY `idx_ptmBooking_slot` (`slot_id`),
