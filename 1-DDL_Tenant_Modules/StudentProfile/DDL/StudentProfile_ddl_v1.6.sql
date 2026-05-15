@@ -83,7 +83,6 @@
   -- Short Name - (sys_user.short_name VARCHAR(30)) - This field value will be saved as 'short_name' in 'sys_users' table
   -- Password - (sys_user.password VARCHAR(255)) - The Hashed Value of Password will be saved as 'password' in 'sys_users' table
 
-
   -- Extended Personal Profile
   CREATE TABLE IF NOT EXISTS `std_student_profiles` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -248,15 +247,18 @@
   CREATE TABLE IF NOT EXISTS `std_student_opted_subjects` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `student_academic_session_id` INT UNSIGNED NOT NULL,   -- FK to std_student_academic_sessions.id
+    `subject_group_id` INT UNSIGNED DEFAULT NULL,          -- FK to sch_subject_groups (if streams apply)
     `subject_id` INT UNSIGNED NOT NULL,                    -- FK to sch_subjects
     `study_format_id` INT UNSIGNED NOT NULL,               -- FK to sch_subject_study_format_jnt (e.g. Regular, Honors, AP, etc.)
-
+    `sch_class_group_subject_options_id` INT UNSIGNED DEFAULT NULL, -- FK to sch_class_group_subject_options (if subject groups have specific options)
     `is_core` TINYINT(1) NOT NULL DEFAULT 0,              -- Is this a core subject (non-optional)?
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE KEY `uq_std_opted_subj_session_subject` (`student_academic_session_id`, `subject_id`),
     CONSTRAINT `fk_opted_subj_student_session` FOREIGN KEY (`student_academic_session_id`) REFERENCES `std_student_academic_sessions` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_opted_subj_subject` FOREIGN KEY (`subject_id`) REFERENCES `sch_subjects` (`id`) ON DELETE RESTRICT,
+    CONSTRAINT `fk_opted_subj_study_format` FOREIGN KEY (`study_format_id`) REFERENCES `sch_subject_study_format_jnt` (`id`) ON DELETE RESTRICT,
+    CONSTRAINT `fk_opted_subj_class_group_subject_option` FOREIGN KEY (`sch_class_group_subject_options_id`) REFERENCES `sch_class_group_subject_options` (`id`) ON DELETE SET NULL
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
@@ -622,9 +624,4 @@
 -- ========================================================================================================
 -- End of DDL
 -- ========================================================================================================
--- Change Log:
--- v1.3 → v1.4: Added `count_for_timetable` column to `std_student_academic_sessions` table
--- v1.4 → v1.5: Added Student Leave Management — 4 new tables:
---              std_leave_types, std_leave_applications,
---              std_leave_application_documents, std_leave_application_remarks
--- ========================================================================================================
+

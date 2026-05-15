@@ -1143,6 +1143,9 @@
   -- Conditions:
   -- 1. In 'activity_group_id' we will be
 
+-- storing the detail of merging classes OR merging Sections which has been merged into single activity in table "tt_activity". 
+-- For Example: If Class 10, Section A,B & C have been merged for French LAC then in 'tt_activity' table we will have single record for all 3 sections. 
+-- This will help us to assign teachers, rooms on merged classes/sections, with same period assigned.
   CREATE TABLE IF NOT EXISTS `tt_sub_activity` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `parent_activity_id` INT UNSIGNED NOT NULL,  -- FK to tt_activity.id
@@ -1174,7 +1177,7 @@
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `sub_activity_id` INT UNSIGNED NULL,  -- FK to tt_sub_activity.id
     `activity_id` INT UNSIGNED NOT NULL,  -- FK to tt_activity.id
-    `period_number` TINYINT UNSIGNED NOT NULL,  -- 1 to required_weekly_periods
+    `period_number` TINYINT UNSIGNED NOT NULL,  -- Period Number of the activity (1 to 8)
     `assigned_teacher_id` INT UNSIGNED DEFAULT NULL,  -- FK to sch_teacher_profile.id
     `assigned_room_id` INT UNSIGNED DEFAULT NULL,  -- FK to sch_rooms.id
     `assigned_time_slot` VARCHAR(50) DEFAULT NULL,  -- This can be a combination of day_number and period_number or a reference to a time slot
