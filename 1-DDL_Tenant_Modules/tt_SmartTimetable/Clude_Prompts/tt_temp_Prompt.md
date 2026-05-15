@@ -276,3 +276,20 @@ I wanted to add a field to control whether book is downloadable or not. Other th
 
 Read and understand "/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/1-DDL_Tenant_Modules/Hostel/DDL/HST_DDL_v3.sql" and Create All required Reports with all possible deatil of the Reports (e.g. Report design, Table will be used, Filters required for Reports etc.) to provide to developer.
 Save the Report file as "/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/1-DDL_Tenant_Modules/Hostel/Design/HST_Report_Design_v1.md"
+
+------------------------------------------------------------------------------------------------------
+
+Read and understand "/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/1-DDL_Tenant_Modules/2-SchoolSetup/PTM/Ptm_Setup_ddl_v3.sql" and Create All required Reports with all possible deatil of the Reports (e.g. Report design, Table will be used, Filters required for Reports etc.) to provide to developer.
+Save the Report file as "/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/1-DDL_Tenant_Modules/2-SchoolSetup/PTM/PTM_Report_Design_v1.md"
+
+Create Required
+------------------------------------------------------------------------------------------------------
+
+I have created Chat Functionality for Students in `StudentProfile` Module and for Employees in `SchoolSetup` Module. Now I want to create a a Common Chat Functionality where any Registered user can chat with any other registered user. I want to create below Documents :
+- Phase-1 : Create a High Level Requirement Document (A Collection of Required Fuctionalities and Condition which those Functionalities should follow)
+- Phase-2 : Using Requirement Document, create DDL schema for the Module (mention detail whay those table require and what is the meaning of each fields in those tables)
+
+Provide me a Prompt which should read all required files from above Folders and then generate above documents. Save the Prompt in folder "/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/1-DDL_Tenant_Modules/2-SchoolSetup/1-Sub-Modules/CommonChat". Prompt should read all the files from below Folders before generating all the documents :
+- Read Files from `/Users/bkwork/Herd/prime_ai/Modules/StudentProfile` to understand `StudentProfile` Module
+- Read Files from `/Users/bkwork/Herd/prime_ai/Modules/SchoolSetup` to understand `SchoolSetup` Module
+- Read AI_Brain to get detailed understanding about Folder Paths & Application as required.

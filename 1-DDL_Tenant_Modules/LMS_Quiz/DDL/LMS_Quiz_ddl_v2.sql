@@ -160,7 +160,7 @@
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `quiz_id` INT UNSIGNED NOT NULL,
     `allocation_type` ENUM('CLASS','SECTION','GROUP','STUDENT') NOT NULL,
-    `target_table_name` VARCHAR(60) NOT NULL,        -- Name of the target table (e.g. 'sch_classes', 'sch_sections', 'sch_entity_groups', 'std_students')
+    `target_table_name` VARCHAR(60) NOT NULL,      -- Name of the target table (e.g. 'sch_classes', 'sch_sections', 'sch_entity_groups', 'std_students')
     `target_id` INT UNSIGNED NOT NULL,             -- ID of Class, Section, Group, or Student (e.g. sch_classes.id, sch_sections.id, sch_entity_groups.id, std_students.id)
     `assigned_by` INT UNSIGNED DEFAULT NULL,       -- FK to sys_users.id (Who assigned the quest). Null if assigned by System
     -- Timing

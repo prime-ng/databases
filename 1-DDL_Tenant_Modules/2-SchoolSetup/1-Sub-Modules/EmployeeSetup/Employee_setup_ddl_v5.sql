@@ -21,6 +21,21 @@
 -- ===========================================================================
 -- SECTION 1 : EMPLOYEE ATTENDANCE MASTER TABLES
 -- ===========================================================================
+-- we need to create a table to annual session for leave which will start from Jan and will end in Dec. This table will be used to link the leave with the annual session and also to calculate the leave balance for the employees. This table will be linked with the sch_employee_leave_balance table and sch_employee_leave_applications table.
+  CREATE TABLE IF NOT EXISTS `sch_annual_leave_sessions` (
+    `id`                    INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    `name`                  VARCHAR(100) NOT NULL,  -- e.g. "2024 Calendar Year", "2024-25 Academic Year"
+    `start_date`            DATE NOT NULL,
+    `end_date`              DATE NOT NULL,
+    `description`           VARCHAR(255) DEFAULT NULL,
+    `is_active`             TINYINT(1) NOT NULL DEFAULT 1,
+    `created_by`            INT UNSIGNED DEFAULT NULL,  -- FK to sys_users.id
+    `created_at`            TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`            TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at`            TIMESTAMP NULL,
+    UNIQUE KEY `uq_session_name` (`name`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  COMMENT='Defines annual sessions for leave tracking (e.g., calendar year, academic year).';
 
   CREATE TABLE IF NOT EXISTS `sch_staff_attendance_types` (
     `id`                    INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
@@ -55,7 +70,8 @@
   -- ---------------------------------------------------------------------------
   CREATE TABLE IF NOT EXISTS `sch_holidays` (
     `id`                    INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `academic_session_id`   INT UNSIGNED NOT NULL,
+    --`academic_session_id`   INT UNSIGNED NOT NULL,
+    `annual_leave_sessions_id`   INT UNSIGNED NOT NULL,   -- FK to sch_annual_leave_sessions.id
     `holiday_date`          DATE         NOT NULL,
     `name`                  VARCHAR(150) NOT NULL,
     `description`           VARCHAR(500) DEFAULT NULL,
@@ -70,9 +86,9 @@
     `updated_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`            TIMESTAMP NULL DEFAULT NULL,
     PRIMARY KEY (`id`),
-    KEY `idx_hol_session_date` (`academic_session_id`, `holiday_date`),
+    KEY `idx_hol_session_date` (`annual_leave_sessions_id`, `holiday_date`),
     KEY `idx_hol_date`         (`holiday_date`),
-    CONSTRAINT `fk_hol_session`    FOREIGN KEY (`academic_session_id`)   REFERENCES `sch_org_academic_sessions_jnt` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_hol_session`    FOREIGN KEY (`annual_leave_sessions_id`)   REFERENCES `sch_annual_leave_sessions` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_hol_role`       FOREIGN KEY (`applies_to_role_id`)    REFERENCES `sch_employee_roles` (`id`)            ON DELETE SET NULL,
     CONSTRAINT `fk_hol_department` FOREIGN KEY (`applies_to_department_id`) REFERENCES `sch_departments` (`id`)            ON DELETE SET NULL,
     CONSTRAINT `fk_created_by`     FOREIGN KEY (`created_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
@@ -957,10 +973,11 @@
   -- ---------------------------------------------------------------------------
   -- sch_employee_leave_applications   (v3 + v4 additions)
   -- ---------------------------------------------------------------------------
-  CREATE TABLE IF NOT EXISTS `sch_employee_leave_applications` (
+    CREATE TABLE IF NOT EXISTS `sch_employee_leave_applications` (
     `id`                    INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `employee_id`           INT UNSIGNED NOT NULL,
-    `academic_session_id`   INT UNSIGNED NOT NULL,
+    -- `academic_session_id`   INT UNSIGNED NOT NULL,
+    `annual_leave_sessions_id`   INT UNSIGNED NOT NULL,   -- FK to sch_annual_leave_sessions.id
     `leave_type_id`         INT UNSIGNED NOT NULL,
     `from_date`             DATE NOT NULL,
     `to_date`               DATE NOT NULL,
@@ -990,7 +1007,7 @@
     `updated_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`            TIMESTAMP NULL DEFAULT NULL,
     PRIMARY KEY (`id`),
-    INDEX `idx_ela_employee`         (`employee_id`, `academic_session_id`),
+    INDEX `idx_ela_employee`         (`employee_id`, `annual_leave_sessions_id`),
     INDEX `idx_ela_status`           (`status`),
     INDEX `idx_ela_dates`            (`from_date`, `to_date`),
     INDEX `idx_ela_leave_type`       (`leave_type_id`),
@@ -998,9 +1015,9 @@
     INDEX `idx_ela_applied_by`       (`applied_by`),
     INDEX `idx_ela_final_reviewed`   (`final_reviewed_by`),
     INDEX `idx_ela_pending_with`     (`pending_with_user_id`)  COMMENT 'v4 — fast dashboard query',
-    CONSTRAINT `fk_ela_employee`       FOREIGN KEY (`employee_id`)         REFERENCES `sch_employees` (`id`)                  ON DELETE RESTRICT,
-    CONSTRAINT `fk_ela_session`        FOREIGN KEY (`academic_session_id`) REFERENCES `sch_org_academic_sessions_jnt` (`id`)  ON DELETE RESTRICT,
-    CONSTRAINT `fk_ela_leave_type`    FOREIGN KEY (`leave_type_id`)       REFERENCES `sch_staff_leave_types` (`id`)                ON DELETE RESTRICT,
+    CONSTRAINT `fk_ela_employee`      FOREIGN KEY (`employee_id`)         REFERENCES `sch_employees` (`id`)                  ON DELETE RESTRICT,
+    CONSTRAINT `fk_ela_session`       FOREIGN KEY (`annual_leave_sessions_id`) REFERENCES `sch_annual_leave_sessions` (`id`) ON DELETE RESTRICT,
+    CONSTRAINT `fk_ela_leave_type`    FOREIGN KEY (`leave_type_id`)       REFERENCES `sch_staff_leave_types` (`id`)          ON DELETE RESTRICT,
     CONSTRAINT `fk_ela_policy`        FOREIGN KEY (`approval_policy_id`)  REFERENCES `sch_leave_approval_policies` (`id`)    ON DELETE SET NULL,
     CONSTRAINT `fk_ela_applied_by`    FOREIGN KEY (`applied_by`)          REFERENCES `sys_users` (`id`)                      ON DELETE RESTRICT,
     CONSTRAINT `fk_ela_final_reviewed` FOREIGN KEY (`final_reviewed_by`)  REFERENCES `sys_users` (`id`)                      ON DELETE SET NULL,
