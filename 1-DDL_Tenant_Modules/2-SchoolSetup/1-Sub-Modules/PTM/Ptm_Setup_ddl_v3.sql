@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS `ptm_events` (
   `id`                  int unsigned NOT NULL AUTO_INCREMENT,
   `code`                varchar(20)  NOT NULL,           -- e.g. 'PTM-T1-2526' (unique short code, used in URLs / reports)
   `title`               varchar(255) NOT NULL,           -- e.g. 'Term 1 Parent-Teacher Meet 2025-26'
-  `academic_session_id` INT  NOT NULL,                   -- FK to sch_academic_sessions.id, e.g. '2025-2026'
+  `academic_session_id` INT  NOT NULL,                   -- FK to sch_org_academic_sessions_jnt.id, e.g. '2025-2026'
   `academic_term`       SMALLINT  DEFAULT NULL,          -- FK to sch_academic_terms.id, e.g. 'Term 1', 'Mid-Term', 'Annual'
   `description`         text         DEFAULT NULL,       -- free-form notes shown to staff & parents
   `event_start_date`    date         NOT NULL,           -- first day on which any class will hold its PTM (e.g. 2026-05-10)
@@ -54,7 +54,7 @@ CREATE TABLE IF NOT EXISTS `ptm_events` (
   UNIQUE KEY `uq_ptmEvents_code` (`code`),
   KEY `idx_ptmEvents_academicSession` (`academic_session_id`),
   KEY `idx_ptmEvents_dates` (`event_start_date`, `event_end_date`),
-  CONSTRAINT `fk_ptmEvents_academicSession` FOREIGN KEY (`academic_session_id`) REFERENCES `sch_academic_sessions` (`id`),
+  CONSTRAINT `fk_ptmEvents_academicSession` FOREIGN KEY (`academic_session_id`) REFERENCES `sch_org_academic_sessions_jnt` (`id`),
   CONSTRAINT `fk_ptmEvents_academicTerm` FOREIGN KEY (`academic_term`) REFERENCES `sch_academic_terms` (`id`),
   CONSTRAINT `fk_ptmEvents_createdBy` FOREIGN KEY (`created_by`) REFERENCES `sys_users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

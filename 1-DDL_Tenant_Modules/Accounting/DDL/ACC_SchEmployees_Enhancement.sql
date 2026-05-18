@@ -7,15 +7,6 @@
 -- Some columns may already exist in the table
 -- ============================================================================
 
--- Add is_active if missing (not in original DDL)
-ALTER TABLE `sch_employees` ADD COLUMN IF NOT EXISTS
-    `is_active` TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Soft active flag'
-    AFTER `notes`;
-
--- Add created_by if missing (not in original DDL)
-ALTER TABLE `sch_employees` ADD COLUMN IF NOT EXISTS
-    `created_by` BIGINT UNSIGNED NULL COMMENT 'FK → sys_users'
-    AFTER `is_active`;
 
 -- Staff category for payroll grouping (maps to sch_categories)
 ALTER TABLE `sch_employees` ADD COLUMN IF NOT EXISTS
@@ -75,3 +66,19 @@ ALTER TABLE `sch_employees` ADD COLUMN IF NOT EXISTS
 CREATE INDEX IF NOT EXISTS `idx_sch_emp_category` ON `sch_employees` (`staff_category_id`);
 CREATE INDEX IF NOT EXISTS `idx_sch_emp_ledger` ON `sch_employees` (`ledger_id`);
 CREATE INDEX IF NOT EXISTS `idx_sch_emp_salary_structure` ON `sch_employees` (`salary_structure_id`);
+
+
+-- ========================================================================================================
+-- Below are Implemented
+-- ========================================================================================================
+--
+-- Add is_active if missing (not in original DDL)
+ALTER TABLE `sch_employees` ADD COLUMN IF NOT EXISTS
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Soft active flag'
+    AFTER `notes`;
+
+-- Add created_by if missing (not in original DDL)
+ALTER TABLE `sch_employees` ADD COLUMN IF NOT EXISTS
+    `created_by` BIGINT UNSIGNED NULL COMMENT 'FK → sys_users'
+    AFTER `is_active`;
+

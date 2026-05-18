@@ -1,5 +1,5 @@
--- Global DB
--- ---------
+-- Global DB (v2)
+-- --------------
 
 CREATE TABLE IF NOT EXISTS `glb_countries` (
   `id` INT unsigned NOT NULL AUTO_INCREMENT,

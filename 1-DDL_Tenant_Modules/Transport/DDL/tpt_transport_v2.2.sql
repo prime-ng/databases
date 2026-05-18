@@ -8,149 +8,149 @@
 -- =======================================================================
 
 	CREATE TABLE IF NOT EXISTS `tpt_vehicle` (
-    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `vehicle_no` VARCHAR(20) NOT NULL,              -- Vehicle number(Vehicle Identification Number (VIN)/Chassis Number: A unique 17-character code stamped on the vehicle's chassis)
-    `registration_no` VARCHAR(30) NOT NULL,         -- Unique govt registration number
-    `model` VARCHAR(50),                            -- Vehicle model
-    `manufacturer` VARCHAR(50),                     -- Vehicle manufacturer 
-    `vehicle_type_id` INT UNSIGNED NOT NULL,     -- fk to sys_dropdown_table ('BUS','VAN','CAR')
-    `fuel_type_id` INT UNSIGNED NOT NULL,        -- fk to sys_dropdown_table ('Diesel','Petrol','CNG','Electric')
-    `capacity` INT UNSIGNED NOT NULL DEFAULT 40,    -- Seating capacity
-    `max_capacity` INT UNSIGNED NOT NULL DEFAULT 40, -- Maximum allowed capacity including standing
-    `ownership_type_id` INT UNSIGNED NOT NULL,   -- fk to sys_dropdown_table ('Owned','Leased','Rented')
-    `vendor_id` INT UNSIGNED NOT NULL,           -- fk to tpt_vendor
-    `fitness_valid_upto` DATE NOT NULL,             -- Fitness certificate expiry date
-    `insurance_valid_upto` DATE NOT NULL,           -- Insurance expiry date
-    `pollution_valid_upto` DATE NOT NULL,           -- Pollution certificate expiry date
-    `vehicle_emission_class_id` INT UNSIGNED NOT NULL,  -- fk to sys_dropdown_table ('BS IV', 'BS V', 'BS VI')
-    `fire_extinguisher_valid_upto` DATE NOT NULL,    -- Fire extinguisher expiry date
-    `gps_device_id` VARCHAR(50),                    -- Installed GPS device identifier
-    `vehicle_photo_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (vehicle photo will be uploaded in sys.media)
-    `registration_cert_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (registration certificate will be uploaded in sys.media)
-    `fitness_cert_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (fitness certificate will be uploaded in sys.media)
-    `insurance_cert_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (insurance certificate will be uploaded in sys.media)
-    `pollution_cert_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (pollution certificate will be uploaded in sys.media)
-    `vehicle_emission_cert_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (vehicle emission certificate will be uploaded in sys.media)
-    `fire_extinguisher_cert_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (fire extinguisher certificate will be uploaded in sys.media)
-    `gps_device_cert_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (gps device certificate will be uploaded in sys.media)
-    `availability_status` tinyint(1) unsigned not null default 1,  -- 0: Not Available, 1: Available
-    `is_active` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,
-    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
-    UNIQUE KEY `uq_vehicle_vehicleNo` (`vehicle_no`),
-    UNIQUE KEY `uq_vehicle_registration_no` (`registration_no`),
-    CONSTRAINT `fk_vehicle_vehicle_type` FOREIGN KEY (`vehicle_type_id`) REFERENCES `sys_dropdown_table`(`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_vehicle_fuel_type` FOREIGN KEY (`fuel_type_id`) REFERENCES `sys_dropdown_table`(`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_vehicle_ownership_type` FOREIGN KEY (`ownership_type_id`) REFERENCES `sys_dropdown_table`(`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_vehicle_vendor` FOREIGN KEY (`vendor_id`) REFERENCES `tpt_vendor`(`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_vehicle_vehicle_emission_class` FOREIGN KEY (`vehicle_emission_class_id`) REFERENCES `sys_dropdown_table`(`id`) ON DELETE CASCADE
+        `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        `vehicle_no` VARCHAR(20) NOT NULL,              -- Vehicle number(Vehicle Identification Number (VIN)/Chassis Number: A unique 17-character code stamped on the vehicle's chassis)
+        `registration_no` VARCHAR(30) NOT NULL,         -- Unique govt registration number
+        `model` VARCHAR(50),                            -- Vehicle model
+        `manufacturer` VARCHAR(50),                     -- Vehicle manufacturer 
+        `vehicle_type_id` INT UNSIGNED NOT NULL,     -- fk to sys_dropdown_table ('BUS','VAN','CAR')
+        `fuel_type_id` INT UNSIGNED NOT NULL,        -- fk to sys_dropdown_table ('Diesel','Petrol','CNG','Electric')
+        `capacity` INT UNSIGNED NOT NULL DEFAULT 40,    -- Seating capacity
+        `max_capacity` INT UNSIGNED NOT NULL DEFAULT 40, -- Maximum allowed capacity including standing
+        `ownership_type_id` INT UNSIGNED NOT NULL,   -- fk to sys_dropdown_table ('Owned','Leased','Rented')
+        `vendor_id` INT UNSIGNED NOT NULL,           -- fk to tpt_vendor
+        `fitness_valid_upto` DATE NOT NULL,             -- Fitness certificate expiry date
+        `insurance_valid_upto` DATE NOT NULL,           -- Insurance expiry date
+        `pollution_valid_upto` DATE NOT NULL,           -- Pollution certificate expiry date
+        `vehicle_emission_class_id` INT UNSIGNED NOT NULL,  -- fk to sys_dropdown_table ('BS IV', 'BS V', 'BS VI')
+        `fire_extinguisher_valid_upto` DATE NOT NULL,    -- Fire extinguisher expiry date
+        `gps_device_id` VARCHAR(50),                    -- Installed GPS device identifier
+        `vehicle_photo_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (vehicle photo will be uploaded in sys.media)
+        `registration_cert_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (registration certificate will be uploaded in sys.media)
+        `fitness_cert_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (fitness certificate will be uploaded in sys.media)
+        `insurance_cert_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (insurance certificate will be uploaded in sys.media)
+        `pollution_cert_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (pollution certificate will be uploaded in sys.media)
+        `vehicle_emission_cert_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (vehicle emission certificate will be uploaded in sys.media)
+        `fire_extinguisher_cert_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (fire extinguisher certificate will be uploaded in sys.media)
+        `gps_device_cert_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (gps device certificate will be uploaded in sys.media)
+        `availability_status` tinyint(1) unsigned not null default 1,  -- 0: Not Available, 1: Available
+        `is_active` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+        UNIQUE KEY `uq_vehicle_vehicleNo` (`vehicle_no`),
+        UNIQUE KEY `uq_vehicle_registration_no` (`registration_no`),
+        CONSTRAINT `fk_vehicle_vehicle_type` FOREIGN KEY (`vehicle_type_id`) REFERENCES `sys_dropdown_table`(`id`) ON DELETE CASCADE,
+        CONSTRAINT `fk_vehicle_fuel_type` FOREIGN KEY (`fuel_type_id`) REFERENCES `sys_dropdown_table`(`id`) ON DELETE CASCADE,
+        CONSTRAINT `fk_vehicle_ownership_type` FOREIGN KEY (`ownership_type_id`) REFERENCES `sys_dropdown_table`(`id`) ON DELETE CASCADE,
+        CONSTRAINT `fk_vehicle_vendor` FOREIGN KEY (`vendor_id`) REFERENCES `tpt_vendor`(`id`) ON DELETE CASCADE,
+        CONSTRAINT `fk_vehicle_vehicle_emission_class` FOREIGN KEY (`vehicle_emission_class_id`) REFERENCES `sys_dropdown_table`(`id`) ON DELETE CASCADE
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 	CREATE TABLE IF NOT EXISTS `tpt_personnel` (
-    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `user_id` INT UNSIGNED DEFAULT NULL,
-    `user_qr_code` VARCHAR(30) NOT NULL,
-    `id_card_type` ENUM('QR','RFID','NFC','Barcode') NOT NULL DEFAULT 'QR',
-    `name` VARCHAR(100) NOT NULL,
-    `phone` VARCHAR(30) DEFAULT NULL,
-    `id_type` VARCHAR(20) DEFAULT NULL,     -- ID Type (e.g., Aadhaar, PAN, Passport)
-    `id_no` VARCHAR(100) DEFAULT NULL,      -- ID Number   
-    `role` VARCHAR(20) NOT NULL,            -- Role (e.g., Driver, Helper, Transport Manager etc.)
-    `license_no` VARCHAR(50) DEFAULT NULL,  -- License Number
-    `license_valid_upto` DATE DEFAULT NULL,  -- License Valid Upto
-    `assigned_vehicle_id` INT UNSIGNED DEFAULT NULL,  -- fk to tpt_vehicle
-    `driving_exp_months` SMALLINT UNSIGNED DEFAULT NULL,  -- Driving Experience in Months
-    `police_verification_done` TINYINT(1) NOT NULL DEFAULT 0,  -- 0: Not Done, 1: Done
-    `address` VARCHAR(512) DEFAULT NULL,
-    `id_card_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (id card will be uploaded in sys.media)
-    `photo_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (photo will be uploaded in sys.media)
-    `driving_license_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (driving license will be uploaded in sys.media)
-    `police_verification_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (police verification will be uploaded in sys.media)
-    `address_proof_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (address proof will be uploaded in sys.media)
-    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
-    CONSTRAINT `fk_personnel_user` FOREIGN KEY (`user_id`) REFERENCES `sys_users`(`id`) ON DELETE SET NULL,
-    CONSTRAINT `fk_personnel_vehicle` FOREIGN KEY (`assigned_vehicle_id`) REFERENCES `tpt_vehicle`(`id`) ON DELETE SET NULL	
+        `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        `user_id` INT UNSIGNED DEFAULT NULL,
+        `user_qr_code` VARCHAR(30) NOT NULL,
+        `id_card_type` ENUM('QR','RFID','NFC','Barcode') NOT NULL DEFAULT 'QR',
+        `name` VARCHAR(100) NOT NULL,
+        `phone` VARCHAR(30) DEFAULT NULL,
+        `id_type` VARCHAR(20) DEFAULT NULL,     -- ID Type (e.g., Aadhaar, PAN, Passport)
+        `id_no` VARCHAR(100) DEFAULT NULL,      -- ID Number   
+        `role` VARCHAR(20) NOT NULL,            -- Role (e.g., Driver, Helper, Transport Manager etc.)
+        `license_no` VARCHAR(50) DEFAULT NULL,  -- License Number
+        `license_valid_upto` DATE DEFAULT NULL,  -- License Valid Upto
+        `assigned_vehicle_id` INT UNSIGNED DEFAULT NULL,  -- fk to tpt_vehicle
+        `driving_exp_months` SMALLINT UNSIGNED DEFAULT NULL,  -- Driving Experience in Months
+        `police_verification_done` TINYINT(1) NOT NULL DEFAULT 0,  -- 0: Not Done, 1: Done
+        `address` VARCHAR(512) DEFAULT NULL,
+        `id_card_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (id card will be uploaded in sys.media)
+        `photo_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (photo will be uploaded in sys.media)
+        `driving_license_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (driving license will be uploaded in sys.media)
+        `police_verification_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (police verification will be uploaded in sys.media)
+        `address_proof_upload` tinyint(1) unsigned not null default 0,  -- 0: Not Uploaded, 1: Uploaded (address proof will be uploaded in sys.media)
+        `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+        CONSTRAINT `fk_personnel_user` FOREIGN KEY (`user_id`) REFERENCES `sys_users`(`id`) ON DELETE SET NULL,
+        CONSTRAINT `fk_personnel_vehicle` FOREIGN KEY (`assigned_vehicle_id`) REFERENCES `tpt_vehicle`(`id`) ON DELETE SET NULL	
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 	CREATE TABLE IF NOT EXISTS `tpt_shift` (
-    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `code` VARCHAR(20) NOT NULL,
-    `name` VARCHAR(100) NOT NULL,
-    `effective_from` DATE NOT NULL,
-    `effective_to` DATE NOT NULL,
-    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
-    UNIQUE KEY `uq_shift_code` (`code`),
-    UNIQUE KEY `uq_shift_name` (`name`)
+        `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        `code` VARCHAR(20) NOT NULL,
+        `name` VARCHAR(100) NOT NULL,
+        `effective_from` DATE NOT NULL,
+        `effective_to` DATE NOT NULL,
+        `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+        `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+        `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+        UNIQUE KEY `uq_shift_code` (`code`),
+        UNIQUE KEY `uq_shift_name` (`name`)
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 	CREATE TABLE IF NOT EXISTS `tpt_route` (
-    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `code` VARCHAR(50) NOT NULL,
-    `name` VARCHAR(200) NOT NULL,
-    `description` VARCHAR(500) DEFAULT NULL,
-    `pickup_drop` ENUM('Pickup','Drop') NOT NULL DEFAULT 'Pickup',
-    `shift_id` INT UNSIGNED NOT NULL,
-    `route_geometry` LINESTRING SRID 4326 DEFAULT NULL,
-    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
-    UNIQUE KEY `uq_route_code` (`code`),
-    UNIQUE KEY `uq_route_name` (`name`),
-    SPATIAL INDEX `sp_idx_route_geometry` (`route_geometry`),
-    CONSTRAINT `fk_route_shiftId` FOREIGN KEY (`shift_id`) REFERENCES `tpt_shift`(`id`) ON DELETE CASCADE
+        `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        `code` VARCHAR(50) NOT NULL,
+        `name` VARCHAR(200) NOT NULL,
+        `description` VARCHAR(500) DEFAULT NULL,
+        `pickup_drop` ENUM('Pickup','Drop') NOT NULL DEFAULT 'Pickup',
+        `shift_id` INT UNSIGNED NOT NULL,
+        `route_geometry` LINESTRING SRID 4326 DEFAULT NULL,
+        `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+        UNIQUE KEY `uq_route_code` (`code`),
+        UNIQUE KEY `uq_route_name` (`name`),
+        SPATIAL INDEX `sp_idx_route_geometry` (`route_geometry`),
+        CONSTRAINT `fk_route_shiftId` FOREIGN KEY (`shift_id`) REFERENCES `tpt_shift`(`id`) ON DELETE CASCADE
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 	CREATE TABLE IF NOT EXISTS `tpt_pickup_points` (
-    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `shift_id` INT UNSIGNED NOT NULL,
-    `code` VARCHAR(50) NOT NULL,
-    `name` VARCHAR(200) NOT NULL,
-    `latitude` DECIMAL(10,7) DEFAULT NULL,
-    `longitude` DECIMAL(10,7) DEFAULT NULL,
-    `location` POINT NOT NULL SRID 4326,    -- e.g.
-    `total_distance` DECIMAL(7,2) DEFAULT NULL,
-    `estimated_time` INT DEFAULT NULL,
-    `stop_type` ENUM('Pickup','Drop','Both') NOT NULL DEFAULT 'Both',
-    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
-    UNIQUE KEY `uq_pickup_code` (`code`),
-    UNIQUE KEY `uq_pickup_name` (`name`),
-    SPATIAL INDEX `sp_idx_pickup_location` (`location`),
-    CONSTRAINT `fk_pickupPoint_shiftId` FOREIGN KEY (`shift_id`) REFERENCES `tpt_shift`(`id`) ON DELETE CASCADE
+        `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        `shift_id` INT UNSIGNED NOT NULL,
+        `code` VARCHAR(50) NOT NULL,
+        `name` VARCHAR(200) NOT NULL,
+        `latitude` DECIMAL(10,7) DEFAULT NULL,
+        `longitude` DECIMAL(10,7) DEFAULT NULL,
+        `location` POINT NOT NULL SRID 4326,    -- e.g.
+        `total_distance` DECIMAL(7,2) DEFAULT NULL,
+        `estimated_time` INT DEFAULT NULL,
+        `stop_type` ENUM('Pickup','Drop','Both') NOT NULL DEFAULT 'Both',
+        `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+        UNIQUE KEY `uq_pickup_code` (`code`),
+        UNIQUE KEY `uq_pickup_name` (`name`),
+        SPATIAL INDEX `sp_idx_pickup_location` (`location`),
+        CONSTRAINT `fk_pickupPoint_shiftId` FOREIGN KEY (`shift_id`) REFERENCES `tpt_shift`(`id`) ON DELETE CASCADE
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 	CREATE TABLE IF NOT EXISTS `tpt_pickup_points_route_jnt` (
-    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `shift_id` INT UNSIGNED NOT NULL,
-    `route_id` INT UNSIGNED NOT NULL,
-    `pickup_drop` ENUM('Pickup','Drop') NOT NULL DEFAULT 'Pickup',
-    `pickup_point_id` INT UNSIGNED NOT NULL,
-    `ordinal` SMALLINT UNSIGNED NOT NULL DEFAULT 1,
-    `total_distance` DECIMAL(7,2) DEFAULT NULL,
-    `arrival_time` INT DEFAULT NULL,
-    `departure_time` INT DEFAULT NULL,   
-    `estimated_time` INT DEFAULT NULL,
-    `pickup_drop_fare` DECIMAL(10,2) DEFAULT NULL,  -- One Side (Pickup / Drop) Fare
-    `both_side_fare` DECIMAL(10,2) DEFAULT NULL,    -- Bothside Fare if Student choose same Stop for Pickup & Drop both
-    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
-    UNIQUE KEY `uq_pickupPointRoute_route_pickupPoint` (`route_id`,`pickup_point_id`),
-    KEY `idx_pprj_route_ordinal` (`route_id`, `ordinal`),
-    CONSTRAINT `fk_pickupPointRoute_shiftId` FOREIGN KEY (`shift_id`) REFERENCES `tpt_shift`(`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_pickupPointRoute_routeId` FOREIGN KEY (`route_id`) REFERENCES `tpt_route`(`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_pickupPointRoute_pickupPointId` FOREIGN KEY (`pickup_point_id`) REFERENCES `tpt_pickup_points`(`id`) ON DELETE CASCADE
+        `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        `shift_id` INT UNSIGNED NOT NULL,
+        `route_id` INT UNSIGNED NOT NULL,
+        `pickup_drop` ENUM('Pickup','Drop') NOT NULL DEFAULT 'Pickup',
+        `pickup_point_id` INT UNSIGNED NOT NULL,
+        `ordinal` SMALLINT UNSIGNED NOT NULL DEFAULT 1,
+        `total_distance` DECIMAL(7,2) DEFAULT NULL,
+        `arrival_time` INT DEFAULT NULL,
+        `departure_time` INT DEFAULT NULL,   
+        `estimated_time` INT DEFAULT NULL,
+        `pickup_drop_fare` DECIMAL(10,2) DEFAULT NULL,  -- One Side (Pickup / Drop) Fare
+        `both_side_fare` DECIMAL(10,2) DEFAULT NULL,    -- Bothside Fare if Student choose same Stop for Pickup & Drop both
+        `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+        `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+        `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+        UNIQUE KEY `uq_pickupPointRoute_route_pickupPoint` (`route_id`,`pickup_point_id`),
+        KEY `idx_pprj_route_ordinal` (`route_id`, `ordinal`),
+        CONSTRAINT `fk_pickupPointRoute_shiftId` FOREIGN KEY (`shift_id`) REFERENCES `tpt_shift`(`id`) ON DELETE CASCADE,
+        CONSTRAINT `fk_pickupPointRoute_routeId` FOREIGN KEY (`route_id`) REFERENCES `tpt_route`(`id`) ON DELETE CASCADE,
+        CONSTRAINT `fk_pickupPointRoute_pickupPointId` FOREIGN KEY (`pickup_point_id`) REFERENCES `tpt_pickup_points`(`id`) ON DELETE CASCADE
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 	-- =======================================================================
@@ -158,74 +158,74 @@
 	-- =======================================================================
 
 	CREATE TABLE IF NOT EXISTS `tpt_driver_route_vehicle_jnt` (
-    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `shift_id` INT UNSIGNED NOT NULL,
-    `route_id` INT UNSIGNED NOT NULL,
-    `vehicle_id` INT UNSIGNED NOT NULL,
-    `driver_id` INT UNSIGNED NOT NULL,
-    `helper_id` INT UNSIGNED DEFAULT NULL,
-    `pickup_drop` ENUM('Pickup','Drop') NOT NULL DEFAULT 'Pickup',
-    `effective_from` DATE NOT NULL,
-    `effective_to` DATE DEFAULT NULL,
-    `total_students` INT NOT NULL DEFAULT 0,
-    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
-    CONSTRAINT `fk_routeVehicle_shiftId` FOREIGN KEY (`shift_id`) REFERENCES `tpt_shift`(`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_routeVehicle_routeId` FOREIGN KEY (`route_id`) REFERENCES `tpt_route`(`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_routeVehicle_vehicleId` FOREIGN KEY (`vehicle_id`) REFERENCES `tpt_vehicle`(`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_routeVehicle_driverId` FOREIGN KEY (`driver_id`) REFERENCES `tpt_personnel`(`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_routeVehicle_helperId` FOREIGN KEY (`helper_id`) REFERENCES `tpt_personnel`(`id`) ON DELETE SET NULL
+        `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        `shift_id` INT UNSIGNED NOT NULL,
+        `route_id` INT UNSIGNED NOT NULL,
+        `vehicle_id` INT UNSIGNED NOT NULL,
+        `driver_id` INT UNSIGNED NOT NULL,
+        `helper_id` INT UNSIGNED DEFAULT NULL,
+        `pickup_drop` ENUM('Pickup','Drop') NOT NULL DEFAULT 'Pickup',
+        `effective_from` DATE NOT NULL,
+        `effective_to` DATE DEFAULT NULL,
+        `total_students` INT NOT NULL DEFAULT 0,
+        `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+        `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+        `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+        CONSTRAINT `fk_routeVehicle_shiftId` FOREIGN KEY (`shift_id`) REFERENCES `tpt_shift`(`id`) ON DELETE CASCADE,
+        CONSTRAINT `fk_routeVehicle_routeId` FOREIGN KEY (`route_id`) REFERENCES `tpt_route`(`id`) ON DELETE CASCADE,
+        CONSTRAINT `fk_routeVehicle_vehicleId` FOREIGN KEY (`vehicle_id`) REFERENCES `tpt_vehicle`(`id`) ON DELETE CASCADE,
+        CONSTRAINT `fk_routeVehicle_driverId` FOREIGN KEY (`driver_id`) REFERENCES `tpt_personnel`(`id`) ON DELETE CASCADE,
+        CONSTRAINT `fk_routeVehicle_helperId` FOREIGN KEY (`helper_id`) REFERENCES `tpt_personnel`(`id`) ON DELETE SET NULL
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 	DELIMITER $$
-	CREATE TRIGGER `trg_driver_route_vehicle_unique_assignment`
-	BEFORE INSERT ON `tpt_driver_route_vehicle_jnt`
-	FOR EACH ROW
-	BEGIN
-			IF EXISTS (
-					SELECT 1 FROM `tpt_driver_route_vehicle_jnt`
-					WHERE `shift_id` = NEW.`shift_id`
-						AND `route_id` = NEW.`route_id`
-						AND `vehicle_id` = NEW.`vehicle_id`
-						AND `driver_id` = NEW.`driver_id`
-						AND (
-								(NEW.`effective_to` IS NULL AND (`effective_to` IS NULL OR `effective_to` >= NEW.`effective_from`))
-								OR
-								(NEW.`effective_to` IS NOT NULL AND (
-										(`effective_from` <= NEW.`effective_to` AND `effective_to` >= NEW.`effective_from`)
-								))
-						)
-			) THEN
-					SIGNAL SQLSTATE '45000'
-					SET MESSAGE_TEXT = 'Overlapping assignment for the same shift, route, vehicle, and driver.';
-			END IF;
-	END$$
+        CREATE TRIGGER `trg_driver_route_vehicle_unique_assignment`
+        BEFORE INSERT ON `tpt_driver_route_vehicle_jnt`
+        FOR EACH ROW
+        BEGIN
+                IF EXISTS (
+                        SELECT 1 FROM `tpt_driver_route_vehicle_jnt`
+                        WHERE `shift_id` = NEW.`shift_id`
+                            AND `route_id` = NEW.`route_id`
+                            AND `vehicle_id` = NEW.`vehicle_id`
+                            AND `driver_id` = NEW.`driver_id`
+                            AND (
+                                    (NEW.`effective_to` IS NULL AND (`effective_to` IS NULL OR `effective_to` >= NEW.`effective_from`))
+                                    OR
+                                    (NEW.`effective_to` IS NOT NULL AND (
+                                            (`effective_from` <= NEW.`effective_to` AND `effective_to` >= NEW.`effective_from`)
+                                    ))
+                            )
+                ) THEN
+                        SIGNAL SQLSTATE '45000'
+                        SET MESSAGE_TEXT = 'Overlapping assignment for the same shift, route, vehicle, and driver.';
+                END IF;
+        END$$
 	DELIMITER ;
 
 	CREATE TABLE IF NOT EXISTS `tpt_route_scheduler_jnt` (
-    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `scheduled_date` DATE NOT NULL,
-    `shift_id` INT UNSIGNED NOT NULL,
-    `route_id` INT UNSIGNED NOT NULL,
-    `vehicle_id` INT UNSIGNED NOT NULL,
-    `driver_id` INT UNSIGNED NOT NULL,
-    `helper_id` INT UNSIGNED DEFAULT NULL,
-    `pickup_drop` ENUM('Pickup','Drop') NOT NULL DEFAULT 'Pickup',
-    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
-    UNIQUE KEY `uq_route_scheduler_schedDate_shift_route` (`scheduled_date`,`shift_id`,`route_id`,`pickup_drop`),
-    UNIQUE KEY `uq_route_scheduler_vehicle_schedDate_shift` (`vehicle_id`,`scheduled_date`,`shift_id`,`pickup_drop`),
-    UNIQUE KEY `uq_route_scheduler_driver_schedDate_shift` (`driver_id`,`scheduled_date`,`shift_id`,`pickup_drop`),
-    UNIQUE KEY `uq_route_scheduler_helper_schedDate_shift` (`helper_id`,`scheduled_date`,`shift_id`,`pickup_drop`),
-    CONSTRAINT `fk_sched_shift` FOREIGN KEY (`shift_id`) REFERENCES `tpt_shift`(`id`) ON DELETE RESTRICT,
-    CONSTRAINT `fk_sched_route` FOREIGN KEY (`route_id`) REFERENCES `tpt_route`(`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_sched_vehicle` FOREIGN KEY (`vehicle_id`) REFERENCES `tpt_vehicle`(`id`) ON DELETE SET NULL,
-    CONSTRAINT `fk_sched_driver` FOREIGN KEY (`driver_id`) REFERENCES `tpt_personnel`(`id`) ON DELETE SET NULL,
-    CONSTRAINT `fk_sched_helper` FOREIGN KEY (`helper_id`) REFERENCES `tpt_personnel`(`id`) ON DELETE SET NULL
+        `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        `scheduled_date` DATE NOT NULL,
+        `shift_id` INT UNSIGNED NOT NULL,
+        `route_id` INT UNSIGNED NOT NULL,
+        `vehicle_id` INT UNSIGNED NOT NULL,
+        `driver_id` INT UNSIGNED NOT NULL,
+        `helper_id` INT UNSIGNED DEFAULT NULL,
+        `pickup_drop` ENUM('Pickup','Drop') NOT NULL DEFAULT 'Pickup',
+        `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+        `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+        `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+        UNIQUE KEY `uq_route_scheduler_schedDate_shift_route` (`scheduled_date`,`shift_id`,`route_id`,`pickup_drop`),
+        UNIQUE KEY `uq_route_scheduler_vehicle_schedDate_shift` (`vehicle_id`,`scheduled_date`,`shift_id`,`pickup_drop`),
+        UNIQUE KEY `uq_route_scheduler_driver_schedDate_shift` (`driver_id`,`scheduled_date`,`shift_id`,`pickup_drop`),
+        UNIQUE KEY `uq_route_scheduler_helper_schedDate_shift` (`helper_id`,`scheduled_date`,`shift_id`,`pickup_drop`),
+        CONSTRAINT `fk_sched_shift` FOREIGN KEY (`shift_id`) REFERENCES `tpt_shift`(`id`) ON DELETE RESTRICT,
+        CONSTRAINT `fk_sched_route` FOREIGN KEY (`route_id`) REFERENCES `tpt_route`(`id`) ON DELETE CASCADE,
+        CONSTRAINT `fk_sched_vehicle` FOREIGN KEY (`vehicle_id`) REFERENCES `tpt_vehicle`(`id`) ON DELETE SET NULL,
+        CONSTRAINT `fk_sched_driver` FOREIGN KEY (`driver_id`) REFERENCES `tpt_personnel`(`id`) ON DELETE SET NULL,
+        CONSTRAINT `fk_sched_helper` FOREIGN KEY (`helper_id`) REFERENCES `tpt_personnel`(`id`) ON DELETE SET NULL
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 	-- =======================================================================
@@ -233,40 +233,41 @@
 	-- =======================================================================
 
 	CREATE TABLE IF NOT EXISTS `tpt_trip` (
-    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `trip_date` DATE NOT NULL,      --  Date of the trip
-    `route_scheduler_id` INT UNSIGNED NOT NULL, -- FK to tpt_route_scheduler_jnt
-    `route_id` INT UNSIGNED NOT NULL, -- FK to tpt_route
-    `vehicle_id` INT UNSIGNED NOT NULL, -- FK to tpt_vehicle
-    `driver_id` INT UNSIGNED NOT NULL, -- FK to tpt_personnel
-    `helper_id` INT UNSIGNED DEFAULT NULL, -- FK to tpt_personnel
-    `start_time` DATETIME DEFAULT NULL, -- Start time of the trip
-    `end_time` DATETIME DEFAULT NULL, -- End time of the trip
-    `start_odometer_reading` DECIMAL(11, 2) DEFAULT 0.00,
-    `end_odometer_reading` DECIMAL(11, 2) DEFAULT 0.00,
-    `start_fuel_reading` DECIMAL(8, 3) DEFAULT 0.00,
-    `end_fuel_reading` DECIMAL(8, 3) DEFAULT 0.00,
-    `status` VARCHAR(20) NOT NULL DEFAULT 'Scheduled',
-    `approved` TINYINT(1) NOT NULL DEFAULT 0,
-    `approved_by` INT UNSIGNED DEFAULT NULL,
-    `approved_at` TIMESTAMP NULL DEFAULT NULL,
-    `remarks` VARCHAR(512) DEFAULT NULL, 
-    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
-    KEY `idx_trip_routeSched_tripDate` (`route_scheduler_id`, `trip_date`),
-    KEY `idx_trip_vehicle` (`vehicle_id`),
-    CONSTRAINT `fk_trip_route_scheduler` FOREIGN KEY (`route_scheduler_id`) REFERENCES `tpt_route_scheduler_jnt`(`id`) ON DELETE RESTRICT,
-    CONSTRAINT `fk_trip_vehicle` FOREIGN KEY (`vehicle_id`) REFERENCES `tpt_vehicle`(`id`) ON DELETE RESTRICT,
-    CONSTRAINT `fk_trip_driver` FOREIGN KEY (`driver_id`) REFERENCES `tpt_personnel`(`id`) ON DELETE RESTRICT,
-    CONSTRAINT `fk_trip_helper` FOREIGN KEY (`helper_id`) REFERENCES `tpt_personnel`(`id`) ON DELETE RESTRICT
+        `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        `trip_date` DATE NOT NULL,      --  Date of the trip
+        `route_scheduler_id` INT UNSIGNED NOT NULL, -- FK to tpt_route_scheduler_jnt
+        `route_id` INT UNSIGNED NOT NULL, -- FK to tpt_route
+        `vehicle_id` INT UNSIGNED NOT NULL, -- FK to tpt_vehicle
+        `driver_id` INT UNSIGNED NOT NULL, -- FK to tpt_personnel
+        `helper_id` INT UNSIGNED DEFAULT NULL, -- FK to tpt_personnel
+        `start_time` DATETIME DEFAULT NULL, -- Start time of the trip
+        `end_time` DATETIME DEFAULT NULL, -- End time of the trip
+        `start_odometer_reading` DECIMAL(11, 2) DEFAULT 0.00,
+        `end_odometer_reading` DECIMAL(11, 2) DEFAULT 0.00,
+        `start_fuel_reading` DECIMAL(8, 3) DEFAULT 0.00,
+        `end_fuel_reading` DECIMAL(8, 3) DEFAULT 0.00,
+        `status` VARCHAR(20) NOT NULL DEFAULT 'Scheduled',
+        `approved` TINYINT(1) NOT NULL DEFAULT 0,
+        `approved_by` INT UNSIGNED DEFAULT NULL,
+        `approved_at` TIMESTAMP NULL DEFAULT NULL,
+        `remarks` VARCHAR(512) DEFAULT NULL, 
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+        KEY `idx_trip_routeSched_tripDate` (`route_scheduler_id`, `trip_date`),
+        KEY `idx_trip_vehicle` (`vehicle_id`),
+        CONSTRAINT `fk_trip_route_scheduler` FOREIGN KEY (`route_scheduler_id`) REFERENCES `tpt_route_scheduler_jnt`(`id`) ON DELETE RESTRICT,
+        CONSTRAINT `fk_trip_vehicle` FOREIGN KEY (`vehicle_id`) REFERENCES `tpt_vehicle`(`id`) ON DELETE RESTRICT,
+        CONSTRAINT `fk_trip_driver` FOREIGN KEY (`driver_id`) REFERENCES `tpt_personnel`(`id`) ON DELETE RESTRICT,
+        CONSTRAINT `fk_trip_helper` FOREIGN KEY (`helper_id`) REFERENCES `tpt_personnel`(`id`) ON DELETE RESTRICT
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `tpt_trip_stop_detail` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `trip_id` INT UNSIGNED NOT NULL,     -- fk to tpt_trip
-    `stop_id` INT UNSIGNED DEFAULT NULL, -- fk to tpt_stop
+    `stop_id` INT UNSIGNED DEFAULT NULL, -- fk to tpt_pickup_points
     `pickup_drop` ENUM('Pickup','Drop') NOT NULL DEFAULT 'Pickup',
+    `ordinal` SMALLINT UNSIGNED NOT NULL DEFAULT 1,
     `sch_arrival_time` DATETIME DEFAULT NULL, -- scheduled arrival time
     `sch_departure_time` DATETIME DEFAULT NULL, -- scheduled departure time
     `reached_flag` TINYINT(1) NOT NULL DEFAULT 0,   -- 1 if reached, 0 if not reached

@@ -1,3 +1,5 @@
+-- prime_db (v2)
+-- -------------
 -- Prefix Abbreviation Detail used for Tables Name to distinguish them
 -- -------------------------------------------------------------------
   -- sys - System Configuration

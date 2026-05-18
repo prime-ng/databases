@@ -1,5 +1,5 @@
 -- ===========================================================================
--- Tanent Database
+-- Tenant Database (v3)
 -- ===========================================================================
 
 -- ===========================================================================
@@ -83,6 +83,9 @@
     CONSTRAINT `fk_modelHasRoles_roleId` FOREIGN KEY (`role_id`) REFERENCES `sys_roles` (`id`),
     CONSTRAINT `fk_modelHasRoles_modelId_modelType` FOREIGN KEY (`model_id`) REFERENCES `sys_models` (`id`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ------------------------------------------------ Checked till Here -----------------------------------------------------
+
 
   CREATE TABLE IF NOT EXISTS `sys_users` (
     `id` INT unsigned NOT NULL AUTO_INCREMENT,

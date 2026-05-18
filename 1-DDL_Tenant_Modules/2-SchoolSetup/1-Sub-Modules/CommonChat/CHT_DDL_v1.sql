@@ -1,11 +1,11 @@
--- ============================================================
+-- ==================================================================================================================================================
 -- CommonChat Module (CHT) — Tenant Database Schema
 -- Table Prefix : cht_
 -- Scope        : tenant_db (per-school isolated, NOT prime_db)
 -- Version      : v1.0
 -- Date         : 2026-05-14
 -- Requirement  : CHT_Requirements_v1.md
--- ============================================================
+-- ==================================================================================================================================================
 --
 -- SECTION 0: Conventions
 --   - All PKs          : BIGINT UNSIGNED AUTO_INCREMENT
@@ -24,40 +24,43 @@
 -- SECTION 6: cht_messages         (individual messages)
 -- SECTION 7: cht_message_receipts (read receipts, per-message per-recipient)
 -- SECTION 8: cht_attachments      (file metadata for message attachments)
--- ============================================================
+-- ==================================================================================================================================================
 
--- ============================================================
--- SECTION 1: cht_settings
+-- ==================================================================================================================================================
 -- PURPOSE: This table will controls which role-pairs can message each other and sets attachment/retention limits.
--- ============================================================
+-- ==================================================================================================================================================
 CREATE TABLE IF NOT EXISTS `cht_settings` (
-    `id`                        BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `allow_student_to_student`  TINYINT(1) NOT NULL DEFAULT 0,  -- students can initiate DMs to other students in the same school.
-    `allow_parent_to_parent`    TINYINT(1) NOT NULL DEFAULT 0,  -- parents can initiate DMs to other parents in the same school.
-    `allow_student_to_parent`   TINYINT(1) NOT NULL DEFAULT 0,  -- students can DM their own linked parents/guardians. Does NOT allow student-to-parent DMs outside of that relationship.
-    `allow_student_to_staff`    TINYINT(1) NOT NULL DEFAULT 1,  -- students can initiate DMs to teachers and staff in the same school.
-    `max_group_members`         SMALLINT UNSIGNED NOT NULL DEFAULT 100,  -- Number of participants (including creator) allowed in a group chat. Enforced at service layer with a hard upper limit of 500.
-    `max_attachment_size_mb`    TINYINT UNSIGNED NOT NULL DEFAULT 10,  -- 10 MB default, configurable by school admin. Enforced at service layer and re-validated at file upload.
-    `message_retention_days`    SMALLINT UNSIGNED NOT NULL DEFAULT 0,  -- 0 means keep messages indefinitely; otherwise, messages older than this many days will be automatically purged by a scheduled job.
-    `typing_indicator_enabled`  TINYINT(1) NOT NULL DEFAULT 1,  -- When 1, the client shows typing indicators via polling; can be disabled if the school has performance issues with the polling mechanism for typing indicators.
-    `read_receipt_enabled`      TINYINT(1) NOT NULL DEFAULT 1,  -- When 1, the UI shows read receipts based on cht_message_receipts. When 0, receipts are still tracked in the DB but not displayed in the UI.
+    `id`                         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `allow_student_to_student`   TINYINT(1) NOT NULL DEFAULT 0,  -- students can initiate DMs to other students in the same school.
+    `allow_parent_to_parent`     TINYINT(1) NOT NULL DEFAULT 0,  -- parents can initiate DMs to other parents in the same school.
+    `allow_student_to_parent`    TINYINT(1) NOT NULL DEFAULT 0,  -- students can DM their own linked parents/guardians. Does NOT allow student-to-parent DMs outside of that relationship.
+    `allow_student_to_staff`     TINYINT(1) NOT NULL DEFAULT 1,  -- students can initiate DMs to teachers and staff in the same school.
+    `allow_student_to_Principal` TINYINT(1) NOT NULL DEFAULT 0,  -- parents can initiate DMs to Principal in the school.
+    `allow_parent_to_Principal`  TINYINT(1) NOT NULL DEFAULT 0,  -- parents can initiate DMs to Principal in the school.
+    `allow_student_to_Teacher` TINYINT(1) NOT NULL DEFAULT 0,  -- parents can initiate DMs to Principal in the school.
+    `allow_parent_to_Teacher`  TINYINT(1) NOT NULL DEFAULT 0,  -- parents can initiate DMs to Principal in the school.
+    `allow_student_to_Principal` TINYINT(1) NOT NULL DEFAULT 0,  -- parents can initiate DMs to Principal in the school.
+    `allow_parent_to_Principal`  TINYINT(1) NOT NULL DEFAULT 0,  -- parents can initiate DMs to Principal in the school.
+    `max_group_members`          SMALLINT UNSIGNED NOT NULL DEFAULT 100,  -- Number of participants (including creator) allowed in a group chat. Enforced at service layer with a hard upper limit of 500.
+    `max_attachment_size_mb`     TINYINT UNSIGNED NOT NULL DEFAULT 10,  -- 10 MB default, configurable by school admin. Enforced at service layer and re-validated at file upload.
+    `message_retention_days`     SMALLINT UNSIGNED NOT NULL DEFAULT 0,  -- 0 means keep messages indefinitely; otherwise, messages older than this many days will be automatically purged by a scheduled job.
+    `typing_indicator_enabled`   TINYINT(1) NOT NULL DEFAULT 1,  -- When 1, the client shows typing indicators via polling; can be disabled if the school has performance issues with the polling mechanism for typing indicators.
+    `read_receipt_enabled`       TINYINT(1) NOT NULL DEFAULT 1,  -- When 1, the UI shows read receipts based on cht_message_receipts. When 0, receipts are still tracked in the DB but not displayed in the UI.
     -- Standard audit columns
-    `is_active`                 TINYINT(1) NOT NULL DEFAULT 1,
-    `created_by`                BIGINT UNSIGNED NULL,
-    `created_at`                TIMESTAMP NULL DEFAULT NULL,
-    `updated_at`                TIMESTAMP NULL DEFAULT NULL,
-    `deleted_at`                TIMESTAMP NULL DEFAULT NULL,
+    `is_active`                  TINYINT(1) NOT NULL DEFAULT 1,
+    `created_by`                 BIGINT UNSIGNED NULL,
+    `created_at`                 TIMESTAMP NULL DEFAULT NULL,
+    `updated_at`                 TIMESTAMP NULL DEFAULT NULL,
+    `deleted_at`                 TIMESTAMP NULL DEFAULT NULL,
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   COMMENT='School-level configuration for the CommonChat module. One row per tenant.';
 
 
--- ============================================================
--- SECTION 2: cht_user_settings
--- PURPOSE: Per-user notification and privacy preferences for the chat module. 
--- Created lazily on first chat access or pre-seeded for all users at module enablement. 
+-- ==================================================================================================================================================
+-- PURPOSE: Per-user notification and privacy preferences for the chat module. Created lazily on first chat access or pre-seeded for all users at module enablement. 
 -- Updated by users via a settings UI. One row per sys_users.id.
--- ============================================================
+-- ==================================================================================================================================================
 CREATE TABLE IF NOT EXISTS `cht_user_settings` (
     `id`                             BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `user_id`                        BIGINT UNSIGNED NOT NULL,  -- FK to sys_users.id; one-to-one relationship
@@ -78,17 +81,16 @@ CREATE TABLE IF NOT EXISTS `cht_user_settings` (
   COMMENT='Per-user notification and privacy preferences for CommonChat.';
 
 
--- ============================================================
--- SECTION 3: cht_user_presence
+-- ==================================================================================================================================================
 -- PURPOSE: Tracks the last time each user pinged the server to support online/offline status display. Uses user_id as PK (one row per user) with an upsert pattern:
 -- INSERT INTO cht_user_presence (user_id, last_seen_at, device_type, ...)  ON DUPLICATE KEY UPDATE last_seen_at = VALUES(last_seen_at), ...
 --          NOT a full audit table — no deleted_at or created_by. Deliberately omits is_active, deleted_at (always current state).
--- ============================================================
+-- ==================================================================================================================================================
 CREATE TABLE IF NOT EXISTS `cht_user_presence` (
     -- user_id is both the PK and the FK to sys_users.id
     `user_id`       BIGINT UNSIGNED NOT NULL,
     `last_seen_at`  TIMESTAMP NULL DEFAULT NULL, -- UTC timestamp of the last heartbeat ping. A user is considered "Online" if last_seen_at > (UTC_TIMESTAMP() - INTERVAL 60 SECOND).
-    `device_type`   VARCHAR(20) NULL,  -- Optional: 'web', 'mobile', 'tablet'. Informational only. Allows showing "Active on mobile" style status in Phase-2.
+    `device_type`   VARCHAR(20) NULL,  -- Optional: 'web', 'mobile', 'tablet'. Informational only. Allows showing "Active on mobile" style status.
     -- Minimal timestamps — no full audit trail needed for ephemeral presence data
     `created_at`    TIMESTAMP NULL DEFAULT NULL,
     `updated_at`    TIMESTAMP NULL DEFAULT NULL,
@@ -99,20 +101,11 @@ CREATE TABLE IF NOT EXISTS `cht_user_presence` (
   COMMENT='Live presence tracking. One row per user, upsert on each heartbeat ping.';
 
 
--- ============================================================
--- SECTION 4: cht_conversations
--- PURPOSE: Header record for every conversation — whether a 1:1
---          direct message (DM), a named group chat, or a
---          one-way announcement broadcast thread.
---
---          DM uniqueness is enforced at the DB level via the
---          dm_pair_hash STORED generated column (pattern from
---          Architectural Decision D-TMP-003). The service layer
---          sets user_a_id = LEAST(userId, recipientId) and
---          user_b_id = GREATEST(userId, recipientId) before insert
---          to guarantee the ordering that dm_pair_hash depends on.
---          Requires MySQL 8.0+ (LEAST/GREATEST in generated columns).
--- ============================================================
+-- ==================================================================================================================================================
+-- PURPOSE: Header record for every conversation — whether a 1:1 direct message (DM), a named group chat, or a one-way announcement broadcast thread. DM uniqueness is enforced at the 
+--          DB level via the dm_pair_hash STORED generated column (pattern from Architectural Decision D-TMP-003). The service layer sets user_a_id = LEAST(userId, recipientId) and
+--          user_b_id = GREATEST(userId, recipientId) before insert to guarantee the ordering that dm_pair_hash depends on. Requires MySQL 8.0+ (LEAST/GREATEST in generated columns).
+-- ==================================================================================================================================================
 CREATE TABLE IF NOT EXISTS `cht_conversations` (
     `id`                   BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `conversation_type`    ENUM('Direct', 'Group', 'Announcement') NOT NULL DEFAULT 'Direct',  -- 'Direct'—1:1 private DM between two users. 'Group'—Named multi-user conversation. 'Announcement' — One-way broadcast; only creator/admins can post.
@@ -124,23 +117,9 @@ CREATE TABLE IF NOT EXISTS `cht_conversations` (
     -- FIELD: dm_pair_hash
     -- STORED generated column: CONCAT(LEAST(user_a_id, user_b_id), '_', GREATEST(...)) for direct conversations; NULL for groups/announcements. UNIQUE index on this column enforces BR-CHT-001 (one DM per pair). The hash is a string like "42_178" — intentionally not reversible to a URL.
     `dm_pair_hash`         VARCHAR(40) GENERATED ALWAYS AS (CASE WHEN `conversation_type` = 'Direct' AND `user_a_id` IS NOT NULL AND `user_b_id` IS NOT NULL THEN CONCAT(LEAST(`user_a_id`, `user_b_id`), '_', GREATEST(`user_a_id`, `user_b_id`)) ELSE NULL END) STORED,
-
-    -- FIELD: last_message_at
-    -- Denormalised: updated within DB::transaction() on every new message.
-    -- Used as the primary sort key for the conversation list.
-    `last_message_at`       TIMESTAMP NULL DEFAULT NULL,
-
-    -- FIELD: last_message_preview
-    -- Denormalised: first 100 characters of the last message body.
-    -- Cleared to NULL if the last message is soft-deleted.
-    -- Stored here to avoid a JOIN to cht_messages on every list render.
-    `last_message_preview`  VARCHAR(100) NULL,
-
-    -- FIELD: is_archived (school-wide archive by admin, not per-user)
-    -- When 1, conversation is read-only for all participants.
-    -- Per-user archiving is handled in cht_participants.archived_at.
-    `is_archived`           TINYINT(1) NOT NULL DEFAULT 0,
-
+    `last_message_at`       TIMESTAMP NULL DEFAULT NULL,  -- Used as the primary sort key for the conversation list. (Denormalised: updated within DB::transaction() on every new message.)
+    `last_message_preview`  VARCHAR(100) NULL,  -- Stored here to avoid a JOIN to cht_messages on every list render. Denormalised: first 100 characters of the last message body. Cleared to NULL if the last message is soft-deleted.
+    `is_archived`           TINYINT(1) NOT NULL DEFAULT 0,  -- When 1, conversation is read-only for all participants. Per-user archiving is handled in cht_participants.archived_at.
     -- Standard audit columns
     `is_active`             TINYINT(1) NOT NULL DEFAULT 1,
     `created_by`            BIGINT UNSIGNED NULL,
@@ -148,12 +127,8 @@ CREATE TABLE IF NOT EXISTS `cht_conversations` (
     `created_at`            TIMESTAMP NULL DEFAULT NULL,
     `updated_at`            TIMESTAMP NULL DEFAULT NULL,
     `deleted_at`            TIMESTAMP NULL DEFAULT NULL,
-
     PRIMARY KEY (`id`),
-
-    -- Enforces BR-CHT-001: one DM conversation per user pair.
-    -- NULL values are treated as distinct by MySQL UNIQUE indexes,
-    -- so group/announcement rows (where dm_pair_hash IS NULL) do not conflict.
+    -- NULL values are treated as distinct by MySQL UNIQUE indexes, so group/announcement rows (where dm_pair_hash IS NULL) do not conflict.
     UNIQUE KEY `uq_cht_conversations_dm_pair_hash` (`dm_pair_hash`),
     INDEX `idx_cht_conversations_type`            (`conversation_type`),
     INDEX `idx_cht_conversations_last_message_at` (`last_message_at`),
@@ -166,73 +141,22 @@ CREATE TABLE IF NOT EXISTS `cht_conversations` (
   COMMENT='Header record for each conversation (DM, group, or announcement).';
 
 
--- ============================================================
--- SECTION 5: cht_participants
--- PURPOSE: Membership table linking users to conversations.
---          Every user-conversation relationship has exactly one
---          row here. Stores per-user state: unread count, mute,
---          pin order, archive, and departure timestamp.
---
---          For DMs: 2 rows (one per participant).
---          For groups: N rows (one per member, including admins).
---          For announcements: N rows (recipients) + 1 (creator/admin).
--- ============================================================
+-- ==================================================================================================================================================
+-- PURPOSE: Membership table linking users to conversations. Every user-conversation relationship has exactly one row here. Stores per-user state: unread count, mute, pin order, archive, 
+-- and departure timestamp. For DMs: 2 rows (one per participant). For groups: N rows (one per member, including admins). For announcements: N rows (recipients) + 1 (creator/admin).
+-- ==================================================================================================================================================
 CREATE TABLE IF NOT EXISTS `cht_participants` (
     `id`               BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-
-    -- FIELD: conversation_id
-    -- Parent conversation. Cascade-delete removes participant record
-    -- if the conversation is hard-deleted (e.g., by admin force-delete).
-    `conversation_id`  BIGINT UNSIGNED NOT NULL,
-
-    -- FIELD: user_id
-    -- The participating user from sys_users.
-    `user_id`          BIGINT UNSIGNED NOT NULL,
-
-    -- FIELD: role
-    -- 'member' — Regular participant (can read and send messages).
-    -- 'admin'  — Group administrator (can add/remove members,
-    --            archive, rename). Only meaningful for group/announcement types.
-    `role`             ENUM('member', 'admin') NOT NULL DEFAULT 'member',
-
-    -- FIELD: joined_at
-    -- When the user was added to the conversation. Set at creation for
-    -- founding members; set at invitation time for later additions.
-    `joined_at`        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    -- FIELD: left_at
-    -- Set when the user voluntarily leaves a group (BR-CHT-013).
-    -- NULL means currently active in the conversation.
-    -- A user with left_at IS NOT NULL cannot send/receive new messages.
-    `left_at`          TIMESTAMP NULL DEFAULT NULL,
-
-    -- FIELD: muted_until
-    -- NULL = conversation is not muted.
-    -- Future timestamp = muted until that time.
-    -- '9999-12-31 23:59:59' = muted indefinitely (BR-CHT-006).
-    -- Prevents unread_count increment and notification dispatch.
-    `muted_until`      TIMESTAMP NULL DEFAULT NULL,
-
-    -- FIELD: is_pinned
-    -- Whether this user has pinned this conversation (BR-CHT-015).
-    -- Max 5 pins per user enforced at ChatService level.
-    `is_pinned`        TINYINT(1) NOT NULL DEFAULT 0,
-
-    -- FIELD: pin_order
-    -- Display order of pinned conversations (1 = topmost). NULL if not pinned.
-    `pin_order`        TINYINT UNSIGNED NULL,
-
-    -- FIELD: unread_count
-    -- Denormalised count of unread messages for this user in this conversation.
-    -- Incremented on new non-muted message; reset to 0 on mark-read (BR-CHT-012).
-    `unread_count`     INT UNSIGNED NOT NULL DEFAULT 0,
-
-    -- FIELD: archived_at
-    -- Per-user archive timestamp. When set, this conversation is hidden from
-    -- the user's main list and shown in the "Archived" tab.
-    -- Does NOT affect other participants (per-user, not school-wide).
-    `archived_at`      TIMESTAMP NULL DEFAULT NULL,
-
+    `conversation_id`  BIGINT UNSIGNED NOT NULL,  -- Parent conversation. Cascade-delete removes participant record. if the conversation is hard-deleted (e.g., by admin force-delete).
+    `user_id`          BIGINT UNSIGNED NOT NULL,  -- The participating user from sys_users.
+    `role`             ENUM('Member', 'Admin') NOT NULL DEFAULT 'Member',  -- 'Member' — Regular participant (can read and send messages). 'Admin'—Group administrator (can add/remove members, archive, rename). Only meaningful for group/announcement types.
+    `joined_at`        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,  -- When the user was added to the conversation. Set at creation for founding members; set at invitation time for later additions.
+    `left_at`          TIMESTAMP NULL DEFAULT NULL,  -- Set when the user voluntarily leaves a group (BR-CHT-013). NULL means currently active in the conversation. A user with left_at IS NOT NULL cannot send/receive new messages.
+    `muted_until`      TIMESTAMP NULL DEFAULT NULL,  -- NULL = conversation is not muted. Future timestamp = muted until that time. '9999-12-31 23:59:59' = muted indefinitely (BR-CHT-006). Prevents unread_count increment and notification dispatch.
+    `is_pinned`        TINYINT(1) NOT NULL DEFAULT 0,  -- Whether this user has pinned this conversation (BR-CHT-015). Max 5 pins per user enforced at ChatService level.
+    `pin_order`        TINYINT UNSIGNED NULL,  -- Display order of pinned conversations (1 = topmost). NULL if not pinned.
+    `unread_count`     INT UNSIGNED NOT NULL DEFAULT 0,  -- Denormalised count of unread messages for this user in this conversation. Incremented on new non-muted message; reset to 0 on mark-read (BR-CHT-012).
+    `archived_at`      TIMESTAMP NULL DEFAULT NULL,  -- Per-user archive timestamp. When set, this conversation is hidden from the user's main list and shown in the "Archived" tab. Does NOT affect other participants (per-user, not school-wide).
     -- Standard audit columns (excluding deleted_at — membership uses left_at instead)
     `is_active`        TINYINT(1) NOT NULL DEFAULT 1,
     `created_by`       BIGINT UNSIGNED NULL,
@@ -240,83 +164,34 @@ CREATE TABLE IF NOT EXISTS `cht_participants` (
     `created_at`       TIMESTAMP NULL DEFAULT NULL,
     `updated_at`       TIMESTAMP NULL DEFAULT NULL,
     `deleted_at`       TIMESTAMP NULL DEFAULT NULL,
-
     PRIMARY KEY (`id`),
-
     -- Enforces that a user can only appear once in any given conversation.
     UNIQUE KEY `uq_cht_participants_conv_user` (`conversation_id`, `user_id`),
-
     INDEX `idx_cht_participants_user_id`       (`user_id`),
     INDEX `idx_cht_participants_left_at`       (`left_at`),
     INDEX `idx_cht_participants_muted_until`   (`muted_until`),
     INDEX `idx_cht_participants_is_pinned`     (`is_pinned`),
     INDEX `idx_cht_participants_unread_count`  (`unread_count`),
     INDEX `idx_cht_participants_archived_at`   (`archived_at`),
-
-    CONSTRAINT `fk_cht_participants_conversation_id`
-        FOREIGN KEY (`conversation_id`) REFERENCES `cht_conversations` (`id`)
-        ON DELETE CASCADE ON UPDATE CASCADE,
-
-    CONSTRAINT `fk_cht_participants_user_id`
-        FOREIGN KEY (`user_id`) REFERENCES `sys_users` (`id`)
-        ON DELETE CASCADE ON UPDATE CASCADE
-
+    CONSTRAINT `fk_cht_participants_conversation_id` FOREIGN KEY (`conversation_id`) REFERENCES `cht_conversations` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_cht_participants_user_id` FOREIGN KEY (`user_id`) REFERENCES `sys_users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   COMMENT='Membership table: one row per user per conversation. Stores per-user unread count, mute, pin, and archive state.';
 
 
--- ============================================================
--- SECTION 6: cht_messages
--- PURPOSE: Stores every message sent within a conversation.
---          Fetched ordered by created_at ASC within a conversation
---          (same pattern as EmployeeLeaveApplicationRemarkController::getByApplication()).
---          Soft-deleted messages retain their row but have body cleared
---          and is_deleted = 1 (BR-CHT-004, BR-CHT-012).
--- ============================================================
+-- ==================================================================================================================================================
+-- PURPOSE: Stores every message sent within a conversation. Fetched ordered by created_at ASC within a conversation (same pattern as EmployeeLeaveApplicationRemarkController::getByApplication()).
+--          Soft-deleted messages retain their row but have body cleared and is_deleted = 1 (BR-CHT-004, BR-CHT-012).
+-- ==================================================================================================================================================
 CREATE TABLE IF NOT EXISTS `cht_messages` (
     `id`               BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-
-    -- FIELD: conversation_id
-    -- The conversation this message belongs to.
-    `conversation_id`  BIGINT UNSIGNED NOT NULL,
-
-    -- FIELD: sender_id
-    -- The sys_users.id of the message author. SET NULL on user delete
-    -- so the message record is preserved but attributed to "Deleted User".
-    `sender_id`        BIGINT UNSIGNED NULL,
-
-    -- FIELD: parent_message_id
-    -- For reply-to threading (F-CHT-04). References another cht_messages.id
-    -- in the SAME conversation. NULL for top-level messages.
-    -- Reply depth capped at 1 level (BR-CHT-016).
-    `parent_message_id` BIGINT UNSIGNED NULL,
-
-    -- FIELD: body
-    -- Plain text message content (no HTML). UTF-8 to support all Indian
-    -- regional scripts and emoji. Max 5,000 characters enforced at FormRequest.
-    -- Cleared to NULL when is_deleted = 1 (privacy on soft-delete).
-    `body`             TEXT NULL,
-
-    -- FIELD: message_type
-    -- 'text'       — Regular text message (body may be NULL if attachment present).
-    -- 'attachment' — Message with a file attachment (body optional).
-    -- 'system'     — Auto-generated message: "User joined", "Admin removed message",
-    --               "User left", "Ownership transferred", etc.
-    `message_type`     ENUM('text', 'attachment', 'system') NOT NULL DEFAULT 'text',
-
-    -- FIELD: is_deleted
-    -- 1 = message has been soft-deleted. body is set to NULL.
-    -- 'deleted_by' indicates who deleted it (sender vs. admin moderator).
-    -- Recipients see "This message was deleted" (sender delete) or
-    -- "Removed by Admin" (moderation delete) based on deleted_by vs. sender_id.
-    `is_deleted`       TINYINT(1) NOT NULL DEFAULT 0,
-
-    -- FIELD: deleted_by
-    -- sys_users.id of who performed the delete.
-    -- If deleted_by = sender_id → "This message was deleted".
-    -- If deleted_by != sender_id (admin action) → "Removed by Admin".
-    `deleted_by`       BIGINT UNSIGNED NULL,
-
+    `conversation_id`  BIGINT UNSIGNED NOT NULL,  -- The conversation this message belongs to.
+    `sender_id`        BIGINT UNSIGNED NULL,  -- The sys_users.id of the message author. SET NULL on user delete so the message record is preserved but attributed to "Deleted User".
+    `parent_message_id` BIGINT UNSIGNED NULL,  -- For reply-to threading (F-CHT-04). References another cht_messages.id in the SAME conversation. NULL for top-level messages. Reply depth capped at 1 level (BR-CHT-016).
+    `body`             TEXT NULL,  -- Plain text message content (no HTML). UTF-8 to support all Indian regional scripts and emoji. Max 5,000 characters enforced at FormRequest. Cleared to NULL when is_deleted = 1 (privacy on soft-delete).
+    `message_type`     ENUM('Text', 'Attachment', 'System') NOT NULL DEFAULT 'text',  -- 'text' — Regular text message (body may be NULL if attachment present). 'attachment' — Message with a file attachment (body optional). 'system' — Auto-generated message: "User joined", "Admin removed message", "User left", "Ownership transferred", etc.
+    `is_deleted`       TINYINT(1) NOT NULL DEFAULT 0,  -- 1 = message has been soft-deleted. body is set to NULL.
+    `deleted_by`       BIGINT UNSIGNED NULL,  -- sys_users.id of who performed the delete. If deleted_by = sender_id → "This message was deleted". If deleted_by != sender_id (admin action) → "Removed by Admin".
     -- Standard audit columns
     `is_active`        TINYINT(1) NOT NULL DEFAULT 1,
     `created_by`       BIGINT UNSIGNED NULL,
@@ -324,179 +199,78 @@ CREATE TABLE IF NOT EXISTS `cht_messages` (
     `created_at`       TIMESTAMP NULL DEFAULT NULL,
     `updated_at`       TIMESTAMP NULL DEFAULT NULL,
     `deleted_at`       TIMESTAMP NULL DEFAULT NULL,
-
     PRIMARY KEY (`id`),
-
-    -- Primary fetch pattern: all messages in a conversation ordered by time.
-    -- Composite index supports: WHERE conversation_id = ? ORDER BY created_at ASC
+    -- Primary fetch pattern: all messages in a conversation ordered by time. Composite index supports: WHERE conversation_id = ? ORDER BY created_at ASC
     INDEX `idx_cht_messages_conv_time`      (`conversation_id`, `created_at`),
-
     INDEX `idx_cht_messages_sender_id`      (`sender_id`),
     INDEX `idx_cht_messages_parent_msg_id`  (`parent_message_id`),
     INDEX `idx_cht_messages_is_deleted`     (`is_deleted`),
     INDEX `idx_cht_messages_message_type`   (`message_type`),
-
-    CONSTRAINT `fk_cht_messages_conversation_id`
-        FOREIGN KEY (`conversation_id`) REFERENCES `cht_conversations` (`id`)
-        ON DELETE CASCADE ON UPDATE CASCADE,
-
-    CONSTRAINT `fk_cht_messages_sender_id`
-        FOREIGN KEY (`sender_id`) REFERENCES `sys_users` (`id`)
-        ON DELETE SET NULL ON UPDATE CASCADE,
-
-    CONSTRAINT `fk_cht_messages_parent_message_id`
-        FOREIGN KEY (`parent_message_id`) REFERENCES `cht_messages` (`id`)
-        ON DELETE SET NULL ON UPDATE CASCADE,
-
-    CONSTRAINT `fk_cht_messages_deleted_by`
-        FOREIGN KEY (`deleted_by`) REFERENCES `sys_users` (`id`)
-        ON DELETE SET NULL ON UPDATE CASCADE
-
+    CONSTRAINT `fk_cht_messages_conversation_id` FOREIGN KEY (`conversation_id`) REFERENCES `cht_conversations` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_cht_messages_sender_id` FOREIGN KEY (`sender_id`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT `fk_cht_messages_parent_message_id` FOREIGN KEY (`parent_message_id`) REFERENCES `cht_messages` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT `fk_cht_messages_deleted_by` FOREIGN KEY (`deleted_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   COMMENT='Individual messages within conversations. Soft-delete clears body; row is retained for audit.';
 
 
--- ============================================================
--- SECTION 7: cht_message_receipts
--- PURPOSE: Per-message, per-recipient read receipt tracking (F-CHT-05).
---          One row is created for each non-sender participant when a
---          message is sent. read_at is set when the participant opens
---          the conversation (bulk mark-read endpoint).
---
---          Intentionally has NO deleted_at — receipts are an
---          immutable delivery audit log.
---
---          For DMs: 1 row per message (one recipient).
---          For groups of N: (N-1) rows per message (all non-senders).
---
---          Performance note: this table grows rapidly. Index on
---          (message_id, user_id) and (user_id, read_at) for the
---          two primary query patterns:
---            1. "Who read message M?" (message view)
---            2. "Mark all unread messages in conversation C as read for user U"
--- ============================================================
+-- ==================================================================================================================================================
+-- PURPOSE: Per-message, per-recipient read receipt tracking (F-CHT-05). One row is created for each non-sender participant when a message is sent. read_at is set when the participant opens
+-- the conversation (bulk mark-read endpoint). Intentionally has NO deleted_at — receipts are an immutable delivery audit log. For DMs: 1 row per message (one recipient). For groups of
+-- N: (N-1) rows per message (all non-senders). Performance note: this table grows rapidly. Index on (message_id, user_id) and (user_id, read_at) for the two primary query patterns:
+--  1. "Who read message M?" (message view).   2. "Mark all unread messages in conversation C as read for user U"
+-- ==================================================================================================================================================
 CREATE TABLE IF NOT EXISTS `cht_message_receipts` (
     `id`          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-
-    -- FIELD: message_id
-    -- The message this receipt tracks.
-    `message_id`  BIGINT UNSIGNED NOT NULL,
-
-    -- FIELD: user_id
-    -- The recipient (non-sender) participant.
-    `user_id`     BIGINT UNSIGNED NOT NULL,
-
-    -- FIELD: read_at
-    -- NULL = message has not been read by this recipient.
-    -- Timestamp = when the recipient first read the message.
-    -- Set in bulk by the mark-read endpoint when the user opens the conversation.
-    `read_at`     TIMESTAMP NULL DEFAULT NULL,
-
-    -- Intentionally omitting: deleted_at, is_active, created_by, updated_by
-    -- Receipts are append-only records; they are never modified after read_at is set.
-    `created_at`  TIMESTAMP NULL DEFAULT NULL,
+    `message_id`  BIGINT UNSIGNED NOT NULL,  -- The message this receipt tracks.
+    `user_id`     BIGINT UNSIGNED NOT NULL,  -- The recipient (non-sender) participant.
+    `read_at`     TIMESTAMP NULL DEFAULT NULL,  -- NULL = message has not been read by this recipient. Timestamp = when the recipient first read the message. Set in bulk by the mark-read endpoint when the user opens the conversation.
+    `created_at`  TIMESTAMP NULL DEFAULT NULL,  -- Intentionally omitting: deleted_at, is_active, created_by, updated_by Receipts are append-only records; they are never modified after read_at is set.
     `updated_at`  TIMESTAMP NULL DEFAULT NULL,
-
     PRIMARY KEY (`id`),
-
     -- Ensures one receipt per message per recipient (BR-CHT-005 data integrity).
     UNIQUE KEY `uq_cht_message_receipts_msg_user` (`message_id`, `user_id`),
-
-    -- Pattern 2: fetch all unread messages for user U in conversation C
-    -- (JOIN cht_messages ON message_id to filter by conversation_id)
+    -- Pattern 2: fetch all unread messages for user U in conversation C (JOIN cht_messages ON message_id to filter by conversation_id)
     INDEX `idx_cht_message_receipts_user_read` (`user_id`, `read_at`),
-
-    CONSTRAINT `fk_cht_message_receipts_message_id`
-        FOREIGN KEY (`message_id`) REFERENCES `cht_messages` (`id`)
-        ON DELETE CASCADE ON UPDATE CASCADE,
-
-    CONSTRAINT `fk_cht_message_receipts_user_id`
-        FOREIGN KEY (`user_id`) REFERENCES `sys_users` (`id`)
-        ON DELETE CASCADE ON UPDATE CASCADE
-
+    CONSTRAINT `fk_cht_message_receipts_message_id` FOREIGN KEY (`message_id`) REFERENCES `cht_messages` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_cht_message_receipts_user_id` FOREIGN KEY (`user_id`) REFERENCES `sys_users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   COMMENT='Per-message, per-recipient read receipts. No deleted_at — immutable delivery log.';
 
 
--- ============================================================
--- SECTION 8: cht_attachments
--- PURPOSE: File metadata for attachments linked to messages (F-CHT-03).
---          One attachment per message in Phase-1. The actual file is
---          stored via Spatie Media Library in:
---            storage/tenant_{uuid}/chat-attachments/
---          This table stores metadata for display and download
---          without requiring a Media Library JOIN on every message fetch.
---
---          Intentionally has NO deleted_at — attachment rows follow
---          the lifecycle of their parent message. When a message is
---          soft-deleted (is_deleted = 1), the attachment row is retained
---          but the file URL is no longer served (ChatAttachment model
---          accessor returns NULL if message.is_deleted = 1).
--- ============================================================
+-- ==================================================================================================================================================
+-- PURPOSE: File metadata for attachments linked to messages (F-CHT-03). One attachment per message in Phase-1. The actual file is stored via Spatie Media Library in: 
+-- storage/tenant_{uuid}/chat-attachments/ This table stores metadata for display and download without requiring a Media Library JOIN on every message fetch.
+-- Intentionally has NO deleted_at — attachment rows follow the lifecycle of their parent message. When a message is soft-deleted (is_deleted = 1), the attachment row is retained
+-- but the file URL is no longer served (ChatAttachment model accessor returns NULL if message.is_deleted = 1).
+-- ==================================================================================================================================================
 CREATE TABLE IF NOT EXISTS `cht_attachments` (
     `id`           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-
-    -- FIELD: message_id
-    -- The message this attachment belongs to. Cascade-delete removes
-    -- the attachment record when the message is hard-deleted (admin action).
-    `message_id`   BIGINT UNSIGNED NOT NULL,
-
-    -- FIELD: file_name
-    -- Original filename as uploaded by the user (client-provided, sanitised
-    -- server-side before storage). Displayed as the download link label.
-    `file_name`    VARCHAR(255) NOT NULL,
-
-    -- FIELD: file_path
-    -- Storage path relative to the tenant disk root.
-    -- Example: "chat-attachments/2026/05/14/abc123_contract.pdf"
-    `file_path`    VARCHAR(500) NOT NULL,
-
-    -- FIELD: file_size
-    -- File size in bytes. Used to display "2.4 MB" labels in the UI
-    -- without re-fetching the file.
-    `file_size`    INT UNSIGNED NOT NULL,
-
-    -- FIELD: mime_type
-    -- Server-validated MIME type. Used to determine icon rendering and
-    -- preview eligibility (images can be shown inline; PDFs/docs use icon).
-    `mime_type`    VARCHAR(100) NOT NULL,
-
-    -- FIELD: media_id
-    -- Spatie Media Library spatie_media.id for this file.
-    -- NULL if stored without Spatie (direct disk storage fallback).
-    `media_id`     BIGINT UNSIGNED NULL,
-
-    -- FIELD: thumbnail_media_id
-    -- Spatie media.id for the generated thumbnail (images only).
-    -- NULL for non-image attachments.
-    `thumbnail_media_id` BIGINT UNSIGNED NULL,
-
+    `message_id`   BIGINT UNSIGNED NOT NULL,  -- The message this attachment belongs to. Cascade-delete removes the attachment record when the message is hard-deleted (admin action).
+    `file_name`    VARCHAR(255) NOT NULL,  -- Original filename as uploaded by the user (client-provided, sanitised server-side before storage). Displayed as the download link label.
+    `file_path`    VARCHAR(500) NOT NULL,  -- Storage path relative to the tenant disk root. Example: "chat-attachments/2026/05/14/abc123_contract.pdf"
+    `file_size`    INT UNSIGNED NOT NULL,  -- File size in bytes. Used to display "2.4 MB" labels in the UI without re-fetching the file.
+    `mime_type`    VARCHAR(100) NOT NULL,  -- Server-validated MIME type. Used to determine icon rendering and preview eligibility (images can be shown inline; PDFs/docs use icon).
+    `media_id`     BIGINT UNSIGNED NULL,  -- Spatie Media Library spatie_media.id for this file. NULL if stored without Spatie (direct disk storage fallback).
+    `thumbnail_media_id` BIGINT UNSIGNED NULL,  -- Spatie media.id for the generated thumbnail (images only). NULL for non-image attachments.
     -- Standard audit columns (no deleted_at — follows message lifecycle)
     `is_active`    TINYINT(1) NOT NULL DEFAULT 1,
     `created_by`   BIGINT UNSIGNED NULL,
     `updated_by`   BIGINT UNSIGNED NULL,
     `created_at`   TIMESTAMP NULL DEFAULT NULL,
     `updated_at`   TIMESTAMP NULL DEFAULT NULL,
-
     PRIMARY KEY (`id`),
-
-    -- One attachment per message in Phase-1.
-    -- UNIQUE constraint removed for Phase-2 multi-attachment support.
-    -- Index retained for JOIN performance.
+    -- One attachment per message in Phase-1. UNIQUE constraint removed for Phase-2 multi-attachment support. Index retained for JOIN performance.
     INDEX `idx_cht_attachments_message_id` (`message_id`),
     INDEX `idx_cht_attachments_media_id`   (`media_id`),
-
-    CONSTRAINT `fk_cht_attachments_message_id`
-        FOREIGN KEY (`message_id`) REFERENCES `cht_messages` (`id`)
-        ON DELETE CASCADE ON UPDATE CASCADE
-
+    CONSTRAINT `fk_cht_attachments_message_id` FOREIGN KEY (`message_id`) REFERENCES `cht_messages` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   COMMENT='File attachment metadata for chat messages. Actual files via Spatie Media Library.';
 
 
--- ============================================================
+-- ==================================================================================================================================================
 -- SUMMARY
--- ============================================================
+-- ==================================================================================================================================================
 -- Table                  | Rows / Scale              | Notes
 -- -----------------------|---------------------------|-----------------------------
 -- cht_settings           | 1 per tenant              | Seeded on tenant create
@@ -507,9 +281,9 @@ CREATE TABLE IF NOT EXISTS `cht_attachments` (
 -- cht_messages           | Very high (all messages)  | Paginated; indexed by conv+time
 -- cht_message_receipts   | msg_count × recipient_N   | Highest volume; append-only
 -- cht_attachments        | ≤ 1 per message           | Moderate volume
--- ============================================================
+-- ==================================================================================================================================================
 -- Total new tables: 8
 -- All tables: tenant_db only (never prime_db / global_db)
 -- Migration file: 2026_05_14_000001_create_cht_common_chat_tables.php
 -- Seeder: ChtSettingsSeeder (seeds 1 row in cht_settings with all defaults)
--- ============================================================
+-- ==================================================================================================================================================

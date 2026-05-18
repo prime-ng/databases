@@ -29,7 +29,7 @@ It is just as important to know when they fail to ignite:
 
 Mass Updates/Deletes: If you use the Query Builder directly, events are bypassed because no model instance is ever instantiated.
 
-PHP
+``` PHP
 // THIS WILL NOT TRIGGER OBSERVERS
 User::where('active', 1)->update(['status' => 'inactive']); 
 
@@ -37,12 +37,13 @@ User::where('active', 1)->update(['status' => 'inactive']);
 User::where('active', 1)->get()->each(function($user) {
     $user->update(['status' => 'inactive']);
 });
+```
 No Changes Made: If you call $user->save() but haven't actually changed any values, the updating and updated events will not fire because the model isn't "dirty."
 
 4. Implementation Example
 For your School ERP, if you want to automatically assign a Pulse Quiz when a teacher marks a topic as "Completed," you would use the updated event:
 
-PHP
+``` PHP
 namespace App\Observers;
 
 use App\Models\Syllabus;
@@ -58,6 +59,8 @@ class SyllabusObserver
         }
     }
 }
+```
+
 Summary Comparison
 Feature	Plain PHP Variable	Eloquent Attribute	Observer Trigger
 Action	$x = 10;	$user->score = 10;	$user->save();
