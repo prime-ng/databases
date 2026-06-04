@@ -98,7 +98,7 @@ CREATE TABLE IF NOT EXISTS `acc_voucher_types` (
     `id`                BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `name`              VARCHAR(80) NOT NULL COMMENT 'e.g., Payment Voucher',
     `code`              VARCHAR(20) NOT NULL COMMENT 'PAYMENT, RECEIPT, CONTRA, JOURNAL, etc.',
-    `category`          ENUM('accounting','inventory','payroll','order') NOT NULL COMMENT 'Domain category',
+    `category`          ENUM('Accounting','Inventory','Payroll','Order') NOT NULL COMMENT 'Domain category',
     `prefix`            VARCHAR(5) NULL COMMENT 'Voucher number prefix e.g., PAY-, RCV-',
     `auto_numbering`    TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Auto-increment enabled',
     `last_number`       INT NOT NULL DEFAULT 0 COMMENT 'Current voucher counter',
@@ -114,6 +114,23 @@ CREATE TABLE IF NOT EXISTS `acc_voucher_types` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 -- Conditions:
 -- If `is_system` = 1, then that voucher type cannot be deleted.
+
+-- 7. Cost Centers (Department/Wing/Activity)
+CREATE TABLE IF NOT EXISTS `acc_cost_centers` (
+    `id`            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `name`          VARCHAR(100) NOT NULL COMMENT 'e.g., Primary Wing, Transport',
+    `code`          VARCHAR(20) NULL COMMENT 'Cost center code',
+    `parent_id`     BIGINT UNSIGNED NULL COMMENT 'Self-referencing hierarchy',
+    `category`      VARCHAR(50) NULL COMMENT 'Department, Activity, Project',
+    `is_active`     TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Soft active flag',
+    `created_by`    BIGINT UNSIGNED NULL COMMENT 'FK → sys_users',
+    `created_at`    TIMESTAMP NULL DEFAULT NULL,
+    `updated_at`    TIMESTAMP NULL DEFAULT NULL,
+    `deleted_at`    TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    INDEX `idx_acc_cc_parent` (`parent_id`),
+    CONSTRAINT `fk_acc_cc_parent` FOREIGN KEY (`parent_id`) REFERENCES `acc_cost_centers` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 5. Vouchers (THE HEART — every transaction is a voucher)
 CREATE TABLE IF NOT EXISTS `acc_vouchers` (
@@ -183,22 +200,7 @@ CREATE TABLE IF NOT EXISTS `acc_voucher_items` (
     CONSTRAINT `fk_acc_vi_cost` FOREIGN KEY (`cost_center_id`) REFERENCES `acc_cost_centers` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 7. Cost Centers (Department/Wing/Activity)
-CREATE TABLE IF NOT EXISTS `acc_cost_centers` (
-    `id`            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `name`          VARCHAR(100) NOT NULL COMMENT 'e.g., Primary Wing, Transport',
-    `code`          VARCHAR(20) NULL COMMENT 'Cost center code',
-    `parent_id`     BIGINT UNSIGNED NULL COMMENT 'Self-referencing hierarchy',
-    `category`      VARCHAR(50) NULL COMMENT 'Department, Activity, Project',
-    `is_active`     TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Soft active flag',
-    `created_by`    BIGINT UNSIGNED NULL COMMENT 'FK → sys_users',
-    `created_at`    TIMESTAMP NULL DEFAULT NULL,
-    `updated_at`    TIMESTAMP NULL DEFAULT NULL,
-    `deleted_at`    TIMESTAMP NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    INDEX `idx_acc_cc_parent` (`parent_id`),
-    CONSTRAINT `fk_acc_cc_parent` FOREIGN KEY (`parent_id`) REFERENCES `acc_cost_centers` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 
 -- 8. Budgets
 CREATE TABLE IF NOT EXISTS `acc_budgets` (
