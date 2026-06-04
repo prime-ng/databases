@@ -1,12 +1,12 @@
 -- =======================================================================
--- TRANSPORT MODULE v2.2 for MySQL 8.x
+-- TRANSPORT MODULE v2.3 for MySQL 8.x
 -- Strategy: Enhanced v1.9 with Vendor Lease, Billing, and Payment tables.
 -- =======================================================================
 
 -- =======================================================================
 -- TRANSPORT MASTER TABLES
 -- =======================================================================
-
+ 
 	CREATE TABLE IF NOT EXISTS `tpt_vehicle` (
         `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
         `vehicle_no` VARCHAR(20) NOT NULL,              -- Vehicle number(Vehicle Identification Number (VIN)/Chassis Number: A unique 17-character code stamped on the vehicle's chassis)
@@ -38,12 +38,11 @@
         `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         `deleted_at` TIMESTAMP NULL DEFAULT NULL,
-        UNIQUE KEY `uq_vehicle_vehicleNo` (`vehicle_no`),
-        UNIQUE KEY `uq_vehicle_registration_no` (`registration_no`),
+        UNIQUE KEY `uq_vehicle_regNo_vehicleNo` (`registration_no`, `vehicle_no`),
         CONSTRAINT `fk_vehicle_vehicle_type` FOREIGN KEY (`vehicle_type_id`) REFERENCES `sys_dropdown_table`(`id`) ON DELETE CASCADE,
         CONSTRAINT `fk_vehicle_fuel_type` FOREIGN KEY (`fuel_type_id`) REFERENCES `sys_dropdown_table`(`id`) ON DELETE CASCADE,
         CONSTRAINT `fk_vehicle_ownership_type` FOREIGN KEY (`ownership_type_id`) REFERENCES `sys_dropdown_table`(`id`) ON DELETE CASCADE,
-        CONSTRAINT `fk_vehicle_vendor` FOREIGN KEY (`vendor_id`) REFERENCES `tpt_vendor`(`id`) ON DELETE CASCADE,
+        CONSTRAINT `fk_vehicle_vendor` FOREIGN KEY (`vendor_id`) REFERENCES `vnd_vendors`(`id`) ON DELETE CASCADE,
         CONSTRAINT `fk_vehicle_vehicle_emission_class` FOREIGN KEY (`vehicle_emission_class_id`) REFERENCES `sys_dropdown_table`(`id`) ON DELETE CASCADE
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -352,10 +351,11 @@
 		`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
 		`student_session_id` INT UNSIGNED NOT NULL,
 		`student_id` INT UNSIGNED NOT NULL,
-		`pickup_route_id` INT UNSIGNED NOT NULL,
-		`pickup_stop_id` INT UNSIGNED NOT NULL,
-		`drop_route_id` INT UNSIGNED NOT NULL,
-		`drop_stop_id` INT UNSIGNED NOT NULL,
+		`transport_use_type` ENUM('Pickup','Drop','Both') NOT NULL,
+		`pickup_route_id` INT UNSIGNED NULL,  -- fk to tpt_route
+		`pickup_stop_id` INT UNSIGNED NULL,
+		`drop_route_id` INT UNSIGNED NULL,
+		`drop_stop_id` INT UNSIGNED NULL,
 		`fare` DECIMAL(10,2) NOT NULL,
 		`effective_from` DATE NOT NULL,
 		`active_status` TINYINT(1) NOT NULL DEFAULT 1,
@@ -368,17 +368,30 @@
 		CONSTRAINT `fk_sa_drop` FOREIGN KEY (`drop_stop_id`) REFERENCES `tpt_pickup_points`(`id`) ON DELETE RESTRICT
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+	CREATE TABLE IF NOT EXISTS `tpt_fine_category` (
+		`id` TINYINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+		`category_name` VARCHAR(100) NOT NULL,         -- e.g., 'Late Fee', 'Misconduct', 'Route Violation', 'Property Damage', 'Operational'
+		`initiated_by` ENUM('Transport','Finance') NOT NULL DEFAULT 'Transport',
+		`evidence_required` TINYINT(1)  DEFAULT 0     -- 1 = photo/proof mandatory before raising fine
+		`is_active` TINYINT(1) DEFAULT 1,
+		`created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		`updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+		`deleted_at` TIMESTAMP NULL DEFAULT NULL
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 	CREATE TABLE IF NOT EXISTS `tpt_fine_master` (
 		`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+		`fine_category_id` TINYINT UNSIGNED NOT NULL,  -- fk to tpt_fine_category
 		`std_academic_sessions_id` INT UNSIGNED NOT NULL,
-		`fine_from_days` TINYINT DEFAULT 0,
-		`fine_to_days` TINYINT DEFAULT 0,
+		`fine_from_days` TINYINT DEFAULT 0,  -- fine_from_days - 1  fine_to_days - 5
+		`fine_to_days` TINYINT DEFAULT 0,    -- fine_from_days - 1  fine_to_days - 5
 		`fine_type` ENUM('Fixed','Percentage') DEFAULT 'Fixed',
-		`fine_rate` DECIMAL(5,2) DEFAULT 0.00,
-		`student_restricted` TINYINT(1) DEFAULT 0,
+		`fine_rate` DECIMAL(5,2) DEFAULT 0.00,   -- fine_type - 'Fixed'  fine_rate - 50.00
+		`student_restricted` TINYINT(1) DEFAULT 0,  -- If True the student is blocked/restricted (e.g., from boarding the transport or accessing services)
 		`Remark` VARCHAR(512) DEFAULT NULL,
 		`created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-		`deleted_at` TIMESTAMP NULL DEFAULT NULL
+		`deleted_at` TIMESTAMP NULL DEFAULT NULL,
+		CONSTRAINT `fk_fm_fine_category` FOREIGN KEY (`fine_category_id`) REFERENCES `tpt_fine_category`(`id`) ON DELETE RESTRICT
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 	CREATE TABLE IF NOT EXISTS `tpt_student_fee_detail` (
@@ -672,3 +685,24 @@
 	-- 5. Enhanced Table tpt_student_route_allocation_jnt to have `pickup_route_id` and `drop_route_id`.
 	-- 6. Enhanced Table tpt_route to have `pickup_drop` field to define if the Route is for Pickup or Drop, can not be for Both.
 
+
+-- -----------------------------------------------------------------------------------------------------------------------------------------------
+-- Change Log - 29 May 2026
+-- -----------------------------------------------------------------------------------------------------------------------------------------------
+-- Update UNIQUE KEY `uq_vehicle_regNo_vehicleNo` (`registration_no`, `vehicle_no`)
+-- Remove UNIQUE KEY `uq_vehicle_vehicleNo` (`vehicle_no`),
+--
+-- Update Table - `tpt_student_route_allocation_jnt`
+--     Added - `transport_use_type` ENUM('Pickup','Drop','Both') NOT NULL,
+--	   Changed - `pickup_route_id` : Made it Nullable
+--     Changed - `drop_route_id` : Made it Nullable
+--	   Changed - `pickup_stop_id` : Made it Nullable
+--	   Changed - `drop_stop_id` : Made it Nullable
+--     Changed the UNIQUE KEY `uq_sa_studentSession_route_pickupPoint` (`student_session_id`, `route_id`, `pickup_stop_id`)
+--
+-- Create a New table `tpt_fine_category`
+--
+-- Update Table - `tpt_fine_master` 
+--     Added - `fine_category_id` TINYINT UNSIGNED NOT NULL,  -- fk to tpt_fine_category
+--     Added - FOREIGN KEY (`fine_category_id`) REFERENCES `tpt_fine_category`(`id`) ON DELETE RESTRICT
+--
