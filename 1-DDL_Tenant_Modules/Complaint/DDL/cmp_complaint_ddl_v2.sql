@@ -55,18 +55,18 @@
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `complaint_category_id` INT UNSIGNED NOT NULL,       -- FK to cmp_complaint_categories
     `complaint_subcategory_id` INT UNSIGNED DEFAULT NULL, -- FK to cmp_complaint_categories (if sub-category is Null then it will be applied to all sub-categories exept those defined in the sub-category)
-  -- Group wise SLA
+    -- Group wise SLA
     `target_department_id` INT UNSIGNED DEFAULT NULL,    -- FK to sys_departments
     `target_designation_id` INT UNSIGNED DEFAULT NULL,   -- FK to sys_designations
     `target_role_id` INT UNSIGNED DEFAULT NULL,          -- FK to sys_roles
     `target_entity_group_id` INT UNSIGNED DEFAULT NULL,  -- FK to sys_groups
-  -- User wise SLA
+    -- User wise SLA
     `target_user_id` INT UNSIGNED DEFAULT NULL,          -- FK to sys_users
-  -- Vehicle wise SLA
+    -- Vehicle wise SLA
     `target_vehicle_id` INT UNSIGNED DEFAULT NULL,       -- FK to sys_vehicles
-  -- Vendor wise SLA
+    -- Vendor wise SLA
     `target_vendor_id` INT UNSIGNED DEFAULT NULL,        -- FK to tpt_vendor
-  -- SLA (Expected Resolution Time & Escalation Time)
+    -- SLA (Expected Resolution Time & Escalation Time)
     `dept_expected_resolution_hours` INT UNSIGNED NOT NULL, -- This must be less than escalation_l1_hours
     `dept_escalation_hours_l1` INT UNSIGNED NOT NULL,       -- Time before escalating to L1 (This must be less than escalation_l2_hours)
     `dept_escalation_hours_l2` INT UNSIGNED NOT NULL,       -- Time before escalating to L2 (This must be less than escalation_l3_hours)
