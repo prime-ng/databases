@@ -131,24 +131,6 @@ CREATE TABLE IF NOT EXISTS `sch_subjects` (
   UNIQUE KEY `uq_subjects_code` (`code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `sch_subject_options` (
-  `id` INT unsigned NOT NULL AUTO_INCREMENT,
-  `subject_id` int unsigned NOT NULL,           -- FK to 'sch_subjects'
-  `ordinal` tinyint DEFAULT NULL,               -- will have sequence order (Auto Update by Drag & Drop)
-  `subject_option_code` varchar(20) NOT NULL,   -- e.g. 'CS','PE','FA' etc. (Added new)
-  `subject_option_name` varchar(50) NOT NULL,   -- e.g. 'Computer Science', 'Physical Education', 'Fine Arts' etc. (Added new)
-  `is_active` tinyint(1) NOT NULL DEFAULT '1',
-  `deleted_at` timestamp NULL DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT NULL,
-  `updated_at` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_subjectOptions_subjectOptionCode` (`subject_option_code`),
-  UNIQUE KEY `uq_subjectOptions_subjectId_subjectOptionName` (`subject_id`,`subject_option_name`),
-  CONSTRAINT `fk_subjectOptions_subjectId` FOREIGN KEY (`subject_id`) REFERENCES `sch_subjects` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_subjectOptions_classId` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_subjectOptions_sectionId` FOREIGN KEY (`section_id`) REFERENCES `sch_sections` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- subject_study_format is grouping for different streams like Sci-10 Lacture, Arts-10 Activity, Core-10
 -- I have removed 'sub_types' from 'sch_subject_study_format_jnt' because one Subject_StudyFormat may belongs to different Subject_type for different classes
 -- Removed 'short_name' as we can use `sub_stdformat_code`
@@ -175,6 +157,23 @@ CREATE TABLE IF NOT EXISTS `sch_subject_study_format_jnt` (
   CONSTRAINT `fk_subStudyFormat_studyFormatId` FOREIGN KEY (`study_format_id`) REFERENCES `sch_study_formats` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_subStudyFormat_subjectTypeId` FOREIGN KEY (`subject_type_id`) REFERENCES `sch_subject_types` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 'sch_subject_study_format_options' is grouping for different subjects under same group (Games - Football, Basketball, Volleyball etc.) and will be used for TimeTable. It is also used to define whether specific room type is required for this subject-study format combination.
+CREATE TABLE IF NOT EXISTS `sch_subject_study_format_options` (
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
+  `subject_study_format_id` int unsigned NOT NULL,  -- FK to 'sch_subject_study_format_jnt'
+  `subject_studyformat_option_code` varchar(20) NOT NULL,       -- e.g. 'CS','PE','FA' etc.
+  `subject_studyformat_option_name` varchar(50) NOT NULL,       -- e.g. 'Computer Science', 'Physical Education', 'Fine Arts' etc. (Added new)
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_subjectOptions_subjectStudyFormatOptionCode` (`subject_studyformat_option_code`),
+  UNIQUE KEY `uq_subjectOptions_subjectStudyFormatId_subjectStudyFormatOptionName` (`subject_study_format_id`,`subject_studyformat_option_name`),
+  CONSTRAINT `fk_subjectOptions_subjectStudyFormatId` FOREIGN KEY (`subject_study_format_id`) REFERENCES `sch_subject_study_format_jnt` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 
 -- Ths table will be used to define different Class Groups like 10th-A Science Lecture Major, 7th-B Commerce Optional etc.
 -- old name 'sch_subject_study_format_class_subj_types_jnt' changed to 'sch_class_groups_jnt'
