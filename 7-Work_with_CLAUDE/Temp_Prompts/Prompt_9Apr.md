@@ -244,5 +244,6 @@ Now create an Implementation Guide for how to Generate & Show Marksheet to the S
 Create New Implementtion Guide in folder "/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/1-DDL_Tenant_Modules/Template/Design"
 
 ---------------------------------------------------------------------------------------------
+Priviously I have created DDL Schema for HR & Payrol in File "
 
-
+---------------------------------------------------------------------------------------------
