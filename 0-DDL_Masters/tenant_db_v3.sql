@@ -18,6 +18,127 @@
   -- CREATE VIEW glb_menu_model_jnt AS SELECT * FROM global_master.glb_menu_model_jnt;
   -- CREATE VIEW glb_translations AS SELECT * FROM global_master.glb_translations;
 
+-- ===========================================================================
+-- FOUNDATIONAL SETUP
+-- ===========================================================================
+ -- ------------------------------------------------------------------
+ -- SCHOOL PROFILE
+ -- ------------------------------------------------------------------
+  -- This table is a replica of 'prm_tenant' table in 'prmprime_db' database
+  CREATE TABLE IF NOT EXISTS `sch_organizations` (
+    `id` SMALLINT unsigned NOT NULL,              -- it will have same id as it is in 'prm_tenant'
+    `group_code` varchar(20) NOT NULL,          -- Code for Grouping of Organizations/Schools
+    `group_short_name` varchar(50) NOT NULL,
+    `group_name` varchar(150) NOT NULL,
+    `code` varchar(20) NOT NULL,                -- School Code
+    `short_name` varchar(50) NOT NULL,
+    `name` varchar(150) NOT NULL,
+    `udise_code` varchar(30) DEFAULT NULL,      -- U-DISE Code of the School
+    `affiliation_no` varchar(60) DEFAULT NULL,  -- Affiliation Number of the School
+    `crc_code` varchar(30) DEFAULT NULL,        -- CRC Code of the School
+    `brc_code` varchar(30) DEFAULT NULL,        -- BRC Code of the School
+    `instruction_language` varchar(20) DEFAULT NULL,  -- FK to sys_dropdown_table.id
+    `rural_urban` ENUM('RURAL','URBAN') DEFAULT 'URBAN',     -- Rural/Urban of the School
+    `email` varchar(100) DEFAULT NULL,
+    `website_url` varchar(150) DEFAULT NULL,
+    `address_1` varchar(200) DEFAULT NULL,
+    `address_2` varchar(200) DEFAULT NULL,
+    `area` varchar(100) DEFAULT NULL,
+    `city_id` INT unsigned NOT NULL,
+    `pincode` varchar(10) DEFAULT NULL,
+    `phone_1` varchar(20) DEFAULT NULL,
+    `phone_2` varchar(20) DEFAULT NULL,
+    `whatsapp_number` varchar(20) DEFAULT NULL,
+    `longitude` decimal(10,7) DEFAULT NULL,
+    `latitude` decimal(10,7) DEFAULT NULL,
+    `locale` varchar(16) DEFAULT 'en_IN',
+    `currency` varchar(8) DEFAULT 'INR',
+    `established_date` date DEFAULT NULL,                 -- School Established Date
+    `flg_single_record` tinyint(1) NOT NULL DEFAULT '1',  -- To ensure only one record in this table
+    `is_active` tinyint(1) NOT NULL DEFAULT '1',
+    `deleted_at` timestamp NULL DEFAULT NULL,
+    `created_at` timestamp NULL DEFAULT NULL,
+    `updated_at` timestamp NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `chk_org_singleRecord` (`flg_single_record`),
+    CONSTRAINT fk_organizations_cityId FOREIGN KEY (city_id) REFERENCES glb_cities (id) ON DELETE RESTRICT
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+ -- ------------------------------------------------------------------
+ -- SESSION & BOARD SETUP
+ -- ------------------------------------------------------------------
+  -- Junction Table to link Organizations with Academic Sessions
+  CREATE TABLE IF NOT EXISTS `sch_org_academic_sessions_jnt` (
+    `id` SMALLINT unsigned NOT NULL AUTO_INCREMENT,
+    `academic_sessions_id` INT unsigned NOT NULL,  -- Added New
+    `short_name` varchar(10) NOT NULL,
+    `name` varchar(50) NOT NULL,
+    `start_date` date NOT NULL,
+    `end_date` date NOT NULL,
+    `is_current` tinyint(1) NOT NULL DEFAULT '0',
+    `is_active` tinyint(1) NOT NULL DEFAULT '1',
+    `current_flag` tinyint(1) GENERATED ALWAYS AS ((case when (`is_current` = 1) then '1' else NULL end)) STORED,
+    `deleted_at` timestamp NULL DEFAULT NULL,
+    `created_at` timestamp NULL DEFAULT NULL,
+    `updated_at` timestamp NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_orgAcademicSession_shortName` (`short_name`),
+    UNIQUE KEY `uq_orgAcademicSession_currentFlag` (`current_flag`),
+    CONSTRAINT `fk_orgAcademicSession_sessionId` FOREIGN KEY (`academic_sessions_id`) REFERENCES `glb_academic_sessions` (`id`) ON DELETE CASCADE  -- Added New
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+  -- Junction Table to link Organizations with Boards
+  CREATE TABLE IF NOT EXISTS `sch_board_organization_jnt` (
+    `id` INT unsigned NOT NULL AUTO_INCREMENT,
+    `academic_sessions_id` INT unsigned NOT NULL,
+    `board_id` INT unsigned NOT NULL,
+    `created_at` timestamp NULL DEFAULT NULL,
+    `updated_at` timestamp NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    CONSTRAINT `fk_boardOrg_boardId` FOREIGN KEY (`board_id`) REFERENCES `glb_boards` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_boardOrg_academicSessionId` FOREIGN KEY (`academic_sessions_id`) REFERENCES `sch_org_academic_sessions_jnt` (`id`) ON DELETE CASCADE
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+ -- ------------------------------------------------------------------
+ -- BILLING
+ -- ------------------------------------------------------------------
+
+  -- Billing will be shown from Prime Database
+
+
+ -- ------------------------------------------------------------------
+ -- SCHOOL CONFIG (Due for Implementation)
+ -- ------------------------------------------------------------------
+
+  -- Here we are setting all the configurations that will be used for the All Modules of the Application. This will be a Master Table to control the configurations for all modules.
+  -- Only Edit Functionality will be available for Tenant. No one can Add or Delete any record and in Edit also "key" can not be edited. In Edit "key" will not be even displayed.
+  CREATE TABLE IF NOT EXISTS `sch_config` (
+    `id` SMALLINT unsigned NOT NULL AUTO_INCREMENT,
+    `module_id` INT unsigned NOT NULL,                     -- FK to glb_modules.id to identify which module this config belongs to (e.g. Student Mgmt., Teacher Mgmt., Class Mgmt.)
+    `ordinal` int unsigned NOT NULL DEFAULT '1',
+    `key` varchar(150) NOT NULL,                           -- Can not changed by user (He can edit other fields only but not KEY)
+    `key_name` varchar(150) NOT NULL,                      -- Can be Changed by user
+    `value` varchar(512) NOT NULL,                         -- Can be Changed by user
+    `value_type` ENUM('STRING', 'NUMBER', 'BOOLEAN', 'DATE', 'TIME', 'DATETIME', 'JSON') NOT NULL,
+    `description` varchar(255) NOT NULL,
+    `additional_info` JSON DEFAULT NULL,
+    `tenant_can_modify` tinyint(1) NOT NULL DEFAULT '0',
+    `mandatory` tinyint(1) NOT NULL DEFAULT '1',
+    `used_by_app` tinyint(1) NOT NULL DEFAULT '1',
+    `is_active` tinyint(1) NOT NULL DEFAULT '1',
+    `deleted_at` timestamp NULL DEFAULT NULL,
+    `created_at` timestamp NULL DEFAULT NULL,
+    `updated_at` timestamp NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_settings_ordinal` (`ordinal`),
+    UNIQUE KEY `uq_settings_key` (`key`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+  -- Data Seed for sch_config
+    -- INSERT INTO `sch_config` (`module_id`,`ordinal`,`key`,`key_name`,`value`,`value_type`,`description`,`additional_info`,`tenant_can_modify`,`mandatory`,`used_by_app`,`is_active`,`deleted_at`,`created_at`,`updated_at`) VALUES
+    -- (`LMS`,1,'performance_percentage_threshold_to_reassign_quiz', 'Performance Percentage Threshold to Reassign Quiz to a Student', '35', 'NUMBER', 'If Student Performance falls below this threshold, system will generate a new Quiz and will reassign it to the student', NULL, 1, 1, 1, 1, NULL, NULL, NULL),
+
+
 
 -- ===========================================================================
 -- SYSTEM MODULE (sys)
@@ -42,7 +163,7 @@
     `name` varchar(50) NOT NULL,
     `short_name` VARCHAR(20) NOT NULL,
     `description` VARCHAR(255) NULL,
-    `guard_name` varchar(255) NOT NULL,
+    `guard_name` varchar(255) NOT NULL,         -- used by Laravel routing
     `is_system`  TINYINT(1) NOT NULL DEFAULT 0, -- if true, role belongs to PG
     `is_active` tinyint(1) NOT NULL DEFAULT '1',
     `created_at` timestamp NULL DEFAULT NULL,
@@ -65,7 +186,7 @@
   -- Junction Tables for Polymorphic Many-to-Many Relationships
   CREATE TABLE IF NOT EXISTS `sys_model_has_permissions_jnt` (
     `permission_id` INT unsigned NOT NULL,   -- FK to sys_permissions
-    `model_type` varchar(190) NOT NULL,         -- E.g., 'App\Models\User'
+    `model_type` varchar(190) NOT NULL,      -- E.g., 'App\Models\User'
     `model_id` INT unsigned NOT NULL,        -- E.g., User ID
     PRIMARY KEY (`permission_id`,`model_id`,`model_type`),
     KEY `idx_modelHasPermissions_modelId_modelType` (`model_id`,`model_type`),
@@ -128,7 +249,7 @@
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Super Admin cannot be deleted';
       END IF;
     END$$
-  -- 2. Handle Update Trigger
+    -- 2. Handle Update Trigger
     DROP TRIGGER IF EXISTS trg_users_prevent_update_super$$
 
     CREATE TRIGGER trg_users_prevent_update_super BEFORE UPDATE ON sys_users
@@ -138,8 +259,8 @@
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Super Admin cannot be demoted';
       END IF;
     END$$
-
   DELIMITER ;
+  
   -- --------------------------------------------------------------------------------------------------------
   -- This table will store various system-wide settings and configurations
   CREATE TABLE IF NOT EXISTS `sys_settings` (
@@ -154,6 +275,8 @@
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_settings_key` (`key`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
 
   -- --------------------------------------------------------------------------------------------------------
   -- Ths Table will capture the detail of which Field of Which Table fo Which Databse Type, I can create a Dropdown in sys_dropdown_table of?
@@ -193,6 +316,7 @@
     --    d. Tab Name (this will come from sys_dropdown_needs.tab_name). This is a Optional Dropdown.
     --    e. Field Name (this will come from sys_dropdown_needs.field_name). This is a Must Dropdown.
     --    f. is_system = 1
+  -- Conditions End
 
   -- --------------------------------------------------------------------------------------------------------
   -- Dropdown Table to store various dropdown values used across the system
@@ -211,7 +335,7 @@
     UNIQUE KEY `uq_ddt_key_ordinal` (`key`,`ordinal`),
     UNIQUE KEY `uq_ddt_key_value` (`key`,`value`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-  -- conditions:
+  -- Conditions:
     -- 1. When we go to create a New Dropdown, 
     --    1.1 PG_USER (PG-Admin/PG-Support) will get 2 option to select -
     --        Option 1 - Dropdown creation by DB details.
@@ -238,6 +362,7 @@
     -- 2. System will check if the Dropdown Need is already configured in sys_dropdown_needs table.
     -- 3. If not, Developer need to create a new Dropdown Need first as per the requirement.
     -- 4. If yes, System will use the existing Dropdown Need.
+  -- Conditions End
 
   -- This table will be Junction table for sys_dropdown_needs & sys_dropdown_table
   CREATE TABLE IF NOT EXISTS `sys_dropdown_need_table_jnt` (
@@ -280,6 +405,7 @@
     KEY `idx_media_orderColumn` (`order_column`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+
 -- ===========================================================================
 -- 2 - EVENT ENGINE (sys)
 -- ===========================================================================
@@ -299,7 +425,6 @@
     `deleted_at` TIMESTAMP NULL DEFAULT NULL
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-
   -- ------------------------------------------------------------------
   -- TRIGGER EVENTS
   -- ------------------------------------------------------------------
@@ -314,7 +439,6 @@
     `updated_at` TIMESTAMP NULL DEFAULT NULL,
     `deleted_at` TIMESTAMP NULL DEFAULT NULL
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 
   -- ------------------------------------------------------------------
   -- ACTION TYPES (WHAT SYSTEM CAN DO)
@@ -331,7 +455,6 @@
     `updated_at` TIMESTAMP NULL DEFAULT NULL,
     `deleted_at` TIMESTAMP NULL DEFAULT NULL
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 
   -- ------------------------------------------------------------------
   -- RULE ENGINE CONFIG (CORE RULE DEFINITION)
@@ -393,129 +516,36 @@
     CONSTRAINT fk_log_action FOREIGN KEY (action_type_id) REFERENCES `lms_action_type`(`id`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+
 -- ===========================================================================
--- 3 - TENANT SETUP MODULE (sch) [School, Class, Infra & Employee Setup]
+-- 3 - TENANT SETUP MODULE 
 -- ===========================================================================
 
- -- ===========================================================================
+ -- ------------------------------------------------------------------
  -- 3.1 - TENANT SETUP SUB-MODULE (sch)
- -- ===========================================================================
+ -- ------------------------------------------------------------------
 
-  -- This table is a replica of 'prm_tenant' table in 'prmprime_db' database
-  CREATE TABLE IF NOT EXISTS `sch_organizations` (
-    `id` SMALLINT unsigned NOT NULL,              -- it will have same id as it is in 'prm_tenant'
-    `group_code` varchar(20) NOT NULL,          -- Code for Grouping of Organizations/Schools
-    `group_short_name` varchar(50) NOT NULL,
-    `group_name` varchar(150) NOT NULL,
-    `code` varchar(20) NOT NULL,                -- School Code
-    `short_name` varchar(50) NOT NULL,
-    `name` varchar(150) NOT NULL,
-    `udise_code` varchar(30) DEFAULT NULL,      -- U-DISE Code of the School
-    `affiliation_no` varchar(60) DEFAULT NULL,  -- Affiliation Number of the School
-    `crc_code` varchar(30) DEFAULT NULL,        -- CRC Code of the School
-    `brc_code` varchar(30) DEFAULT NULL,        -- BRC Code of the School
-    `instruction_language` varchar(20) DEFAULT NULL,  -- FK to sys_dropdown_table.id
-    `rural_urban` ENUM('RURAL','URBAN') DEFAULT 'URBAN',     -- Rural/Urban of the School
-    `email` varchar(100) DEFAULT NULL,
-    `website_url` varchar(150) DEFAULT NULL,
-    `address_1` varchar(200) DEFAULT NULL,
-    `address_2` varchar(200) DEFAULT NULL,
-    `area` varchar(100) DEFAULT NULL,
-    `city_id` INT unsigned NOT NULL,
-    `pincode` varchar(10) DEFAULT NULL,
-    `phone_1` varchar(20) DEFAULT NULL,
-    `phone_2` varchar(20) DEFAULT NULL,
-    `whatsapp_number` varchar(20) DEFAULT NULL,
-    `longitude` decimal(10,7) DEFAULT NULL,
-    `latitude` decimal(10,7) DEFAULT NULL,
-    `locale` varchar(16) DEFAULT 'en_IN',
-    `currency` varchar(8) DEFAULT 'INR',
-    `established_date` date DEFAULT NULL,                 -- School Established Date
-    `flg_single_record` tinyint(1) NOT NULL DEFAULT '1',  -- To ensure only one record in this table
-    `is_active` tinyint(1) NOT NULL DEFAULT '1',
-    `deleted_at` timestamp NULL DEFAULT NULL,
-    `created_at` timestamp NULL DEFAULT NULL,
-    `updated_at` timestamp NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `chk_org_singleRecord` (`flg_single_record`),
-    CONSTRAINT fk_organizations_cityId FOREIGN KEY (city_id) REFERENCES glb_cities (id) ON DELETE RESTRICT
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-  -- Junction Table to link Organizations with Academic Sessions
-  CREATE TABLE IF NOT EXISTS `sch_org_academic_sessions_jnt` (
-    `id` SMALLINT unsigned NOT NULL AUTO_INCREMENT,
-    `academic_sessions_id` INT unsigned NOT NULL,  -- Added New
-    `short_name` varchar(10) NOT NULL,
-    `name` varchar(50) NOT NULL,
-    `start_date` date NOT NULL,
-    `end_date` date NOT NULL,
-    `is_current` tinyint(1) NOT NULL DEFAULT '0',
-    `is_active` tinyint(1) NOT NULL DEFAULT '1',
-    `current_flag` tinyint(1) GENERATED ALWAYS AS ((case when (`is_current` = 1) then '1' else NULL end)) STORED,
-    `deleted_at` timestamp NULL DEFAULT NULL,
-    `created_at` timestamp NULL DEFAULT NULL,
-    `updated_at` timestamp NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_orgAcademicSession_shortName` (`short_name`),
-    UNIQUE KEY `uq_orgAcademicSession_currentFlag` (`current_flag`),
-    CONSTRAINT `fk_orgAcademicSession_sessionId` FOREIGN KEY (`academic_sessions_id`) REFERENCES `glb_academic_sessions` (`id`) ON DELETE CASCADE  -- Added New
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-  -- Junction Table to link Organizations with Boards
-  CREATE TABLE IF NOT EXISTS `sch_board_organization_jnt` (
-    `id` INT unsigned NOT NULL AUTO_INCREMENT,
-    `academic_sessions_id` INT unsigned NOT NULL,
-    `board_id` INT unsigned NOT NULL,
-    `created_at` timestamp NULL DEFAULT NULL,
-    `updated_at` timestamp NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    CONSTRAINT `fk_boardOrg_boardId` FOREIGN KEY (`board_id`) REFERENCES `glb_boards` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_boardOrg_academicSessionId` FOREIGN KEY (`academic_sessions_id`) REFERENCES `sch_org_academic_sessions_jnt` (`id`) ON DELETE CASCADE
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-  -- Here we are setting all the configurations that will be used for the All Modules of the Application. This will be a Master Table to control the configurations for all modules.
-  -- Only Edit Functionality will be available for Tenant. No one can Add or Delete any record and in Edit also "key" can not be edited. In Edit "key" will not be even displayed.
-  CREATE TABLE IF NOT EXISTS `sch_config` (
-    `id` SMALLINT unsigned NOT NULL AUTO_INCREMENT,
-    `module_id` INT unsigned NOT NULL,                     -- FK to glb_modules.id to identify which module this config belongs to (e.g. Student Mgmt., Teacher Mgmt., Class Mgmt.)
-    `ordinal` int unsigned NOT NULL DEFAULT '1',
-    `key` varchar(150) NOT NULL,                           -- Can not changed by user (He can edit other fields only but not KEY)
-    `key_name` varchar(150) NOT NULL,                      -- Can be Changed by user
-    `value` varchar(512) NOT NULL,                         -- Can be Changed by user
-    `value_type` ENUM('STRING', 'NUMBER', 'BOOLEAN', 'DATE', 'TIME', 'DATETIME', 'JSON') NOT NULL,
-    `description` varchar(255) NOT NULL,
-    `additional_info` JSON DEFAULT NULL,
-    `tenant_can_modify` tinyint(1) NOT NULL DEFAULT '0',
-    `mandatory` tinyint(1) NOT NULL DEFAULT '1',
-    `used_by_app` tinyint(1) NOT NULL DEFAULT '1',
-    `is_active` tinyint(1) NOT NULL DEFAULT '1',
-    `deleted_at` timestamp NULL DEFAULT NULL,
-    `created_at` timestamp NULL DEFAULT NULL,
-    `updated_at` timestamp NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_settings_ordinal` (`ordinal`),
-    UNIQUE KEY `uq_settings_key` (`key`)
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-  -- Data Seed for sch_config
-    -- INSERT INTO `sch_config` (`module_id`,`ordinal`,`key`,`key_name`,`value`,`value_type`,`description`,`additional_info`,`tenant_can_modify`,`mandatory`,`used_by_app`,`is_active`,`deleted_at`,`created_at`,`updated_at`) VALUES
-    -- (`LMS`,1,'performance_percentage_threshold_to_reassign_quiz', 'Performance Percentage Threshold to Reassign Quiz to a Student', '35', 'NUMBER', 'If Student Performance falls below this threshold, system will generate a new Quiz and will reassign it to the student', NULL, 1, 1, 1, 1, NULL, NULL, NULL),
-    -- 
 
   CREATE TABLE IF NOT EXISTS `sch_department` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `name` VARCHAR(100) NOT NULL, -- e.g. "Transport", "Academic", "Rash Driving"
     `code` VARCHAR(30) DEFAULT NULL, -- Optional short code e.g. "TPT", "ACD"
+    `is_system` TINYINT(1) DEFAULT 0,
     `is_active` TINYINT(1) DEFAULT 1,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  -- Condition:
+  -- Transport Department Name MUST be "Transport" (case-sensitive) & is_system = 1 (Can not be Edit or Deleted)
+
 
   CREATE TABLE IF NOT EXISTS `sch_designation` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `name` VARCHAR(100) NOT NULL, -- e.g. "Teacher", "Staff", "Student"
     `code` VARCHAR(30) DEFAULT NULL, -- Optional short code e.g. "TCH", "STF", "STD"
+    `is_system` TINYINT(1) DEFAULT 0,
     `is_active` TINYINT(1) DEFAULT 1,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -569,6 +599,9 @@
    -- This table will capture different types of attendance status for both students and staff. 
    -- It will be used in attendance marking and reporting.
    -- ----------------------------------------------------------------------------
+
+
+
   CREATE TABLE IF NOT EXISTS `sch_attendance_types` (
     `id`  INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
     `code`     VARCHAR(10) NOT NULL,  -- e.g. 'P', 'A', 'L', 'H'

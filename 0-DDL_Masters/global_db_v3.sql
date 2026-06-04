@@ -130,15 +130,15 @@ CREATE TABLE IF NOT EXISTS `glb_modules` (
   `version` tinyint NOT NULL DEFAULT '1',
   `is_sub_module` tinyint(1) NOT NULL DEFAULT '0',    -- kept for CONSTRAINT `chk_isSubModule_parentId`
   `description` varchar(500) DEFAULT NULL,
-  `is_core` tinyint(1) NOT NULL DEFAULT '0',
-  `default_visible` tinyint(1) NOT NULL DEFAULT '1',
-  `available_perm_view` tinyint(1) NOT NULL DEFAULT '1',
-  `available_perm_add` tinyint(1) NOT NULL DEFAULT '1',
-  `available_perm_edit` tinyint(1) NOT NULL DEFAULT '1',
-  `available_perm_delete` tinyint(1) NOT NULL DEFAULT '1',
-  `available_perm_export` tinyint(1) NOT NULL DEFAULT '1',
-  `available_perm_import` tinyint(1) NOT NULL DEFAULT '1',
-  `available_perm_print` tinyint(1) NOT NULL DEFAULT '1',
+  `is_core` tinyint(1) NOT NULL DEFAULT '0',              -- Is this a core module (If Yes, cannot be removed from plans, will be considered as must have module)
+  `default_visible` tinyint(1) NOT NULL DEFAULT '1',      -- Whether this module is visible by default
+  `available_perm_view` tinyint(1) NOT NULL DEFAULT '1',  -- Whether View permission is available on this module
+  `available_perm_add` tinyint(1) NOT NULL DEFAULT '1',   -- Whether Add permission is available on this module
+  `available_perm_edit` tinyint(1) NOT NULL DEFAULT '1',  -- Whether Edit permission is available on this module
+  `available_perm_delete` tinyint(1) NOT NULL DEFAULT '1',  -- Whether Delete permission is available on this module
+  `available_perm_export` tinyint(1) NOT NULL DEFAULT '1',  -- Whether Export permission is available on this module
+  `available_perm_import` tinyint(1) NOT NULL DEFAULT '1',  -- Whether Import permission is available on this module
+  `available_perm_print` tinyint(1) NOT NULL DEFAULT '1',   -- Whether Print permission is available on this module
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
   `deleted_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,

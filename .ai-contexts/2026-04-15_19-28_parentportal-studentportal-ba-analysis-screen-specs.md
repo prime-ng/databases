@@ -159,7 +159,7 @@ None — this was an analysis and documentation session. No code issues encounte
 - User is acting as (or requesting output in the style of) a **Business Analyst** — not a developer. Deliverables should be business-oriented: screen specs, wireframes, data contracts, acceptance criteria, not raw code.
 
 ### Key File Locations
-- **Screen specs document:** `/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/1-DDL_Tenant_Modules/38-ParentPortal/PPT_Screen_Specs_Dashboard_Transport_v1.md`
+- **Screen specs document:** `/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/1-DDL_Tenant_Modules/ParentPortal/PPT_Screen_Specs_Dashboard_Transport_v1.md`
 - **DDL explanation:** `/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/1-DDL_Tenant_Modules/ParentPortal/DDL/PPT_DDL_Explain.md`
 - **DDL source:** `/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/1-DDL_Tenant_Modules/ParentPortal/DDL/PPT_DDL_v1.sql`
 - **ParentPortal Laravel module:** `/Users/bkwork/Herd/prime_ai/Modules/ParentPortal/`
