@@ -131,7 +131,7 @@
 		`updated_at`    TIMESTAMP       DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 		`deleted_at`    TIMESTAMP       NULL,
 		PRIMARY KEY (`id`),
-		UNIQUE KEY `uq_dynamic_status_code` (`module`, `code`)
+		UNIQUE KEY `uq_dynamic_status_code` (`status_type`, `code`)
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Generic master for dynamic status codes across modules; allows adding new statuses without code changes';
 
 	-- Data seed :
