@@ -145,8 +145,7 @@
   -- --------------------------------------------------------------------------------------------------------
 
   -- Parent/Guardian Master
-  -- Guardians can be parents to multiple students (Siblings).
-  -- Optional link to sys_users if Parent Portal access is granted.
+  -- Guardians can be parents to multiple students (Siblings). Optional link to sys_users if Parent Portal access is granted.
   CREATE TABLE IF NOT EXISTS `std_guardians` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `user_code` VARCHAR(20) NOT NULL,  -- Unique code for guardian (this will be saved as emp_code in sys_users table)
@@ -211,10 +210,10 @@
   -- Tracks chronological academic history (Class/Section allocation per session)
   CREATE TABLE IF NOT EXISTS `std_student_academic_sessions` (
     `id` INT UNSIGNED AUTO_INCREMENT,
-    `student_id` INT UNSIGNED NOT NULL,
+    `student_id` INT UNSIGNED NOT NULL,  -- FK to `std_students`
     -- Academic Session
     `academic_session_id` INT UNSIGNED NOT NULL,   -- FK to glb_academic_sessions (or sch_org_academic_sessions_jnt)
-    `class_section_id` INT UNSIGNED NOT NULL,         -- FK to sch_class_section_jnt
+    `class_section_id` INT UNSIGNED NOT NULL,      -- FK to sch_class_section_jnt
     `roll_no` INT UNSIGNED DEFAULT NULL,
     `subject_group_id` INT UNSIGNED DEFAULT NULL,  -- FK to sch_subject_groups (if streams apply)
     -- Other Detail
@@ -251,7 +250,7 @@
     `subject_id` INT UNSIGNED NOT NULL,                    -- FK to sch_subjects
     `study_format_id` INT UNSIGNED NOT NULL,               -- FK to sch_subject_study_format_jnt (e.g. Regular, Honors, AP, etc.)
     `sch_class_group_subject_options_id` INT UNSIGNED DEFAULT NULL, -- FK to sch_class_group_subject_options (if subject groups have specific options)
-    `is_core` TINYINT(1) NOT NULL DEFAULT 0,              -- Is this a core subject (non-optional)?
+    `is_optional` TINYINT(1) NOT NULL DEFAULT 0,              -- Is this a core subject (non-optional)?
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE KEY `uq_std_opted_subj_session_subject` (`student_academic_session_id`, `subject_id`),
