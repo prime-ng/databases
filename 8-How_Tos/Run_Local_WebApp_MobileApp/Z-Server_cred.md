@@ -4,10 +4,8 @@
 IP : http://192.168.29.100:8000
 
 
-**After Restart the Laptop below steps needs to be followed** :
-
-
-
+## After Restart the Laptop below steps needs to be followed :
+--------------------------------------------------------------
 
 
 Open VS code on 'mobile_student' folder in "/Users/bkwork/Herd"
