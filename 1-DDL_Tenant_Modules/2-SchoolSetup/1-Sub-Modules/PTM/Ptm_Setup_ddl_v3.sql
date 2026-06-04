@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS `ptm_events` (
   `notify_parent_on_cancel`     tinyint(1)   NOT NULL DEFAULT 1,        -- send Notification on cancellation
   `is_active`           tinyint(1)   NOT NULL DEFAULT 1, -- master switch — turning OFF hides the event from parents
   `created_by`          int unsigned DEFAULT NULL,       -- FK sys_users.id — staff who created the event
-  `created_at`          timestamp    NULL DEFAULT NULL,
+  `created_at`          timestamp    NULL DEFAULT NULL,  -- 
   `updated_at`          timestamp    NULL DEFAULT NULL,
   `deleted_at`          timestamp    NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -80,7 +80,7 @@ CREATE TABLE IF NOT EXISTS `ptm_event_class_section_jnt` (
   `room_id`              int unsigned DEFAULT NULL,         -- FK sch_rooms.id — physical room (NULL when virtual)
   `virtual_link`         varchar(500) DEFAULT NULL,         -- Zoom / Teams / Meet URL (NULL when in-person)
   `notes`                text         DEFAULT NULL,         -- e.g. 'Use main hall, 2 entry points'
-  `is_active`            tinyint(1)   NOT NULL DEFAULT 1,
+  `is_active`            tinyint(1)   NOT NULL DEFAULT 1,   -- master switch
   `created_by`           int unsigned DEFAULT NULL,
   `created_at`           timestamp    NULL DEFAULT NULL,
   `updated_at`           timestamp    NULL DEFAULT NULL,
@@ -110,7 +110,7 @@ CREATE TABLE IF NOT EXISTS `ptm_batches_template` (
   `id`                       int unsigned NOT NULL AUTO_INCREMENT,
   `code`                     varchar(30)  NOT NULL,         -- e.g. 'BATCH_2H_12STU' (unique short code)
   `name`                     varchar(100) NOT NULL,         -- e.g. 'Morning 9-11 AM, 12 students × 10 min'
-      `owner_teacher_id`         int unsigned NOT NULL,         -- FK sys_users.id — staff who owns the template
+  `owner_teacher_id`         int unsigned NOT NULL,         -- FK sys_users.id — staff who owns the template
   `window_start_time`        time         NOT NULL,         -- e.g. '09:00:00' — wall-clock start of the batch on any given day
   `window_end_time`          time         NOT NULL,         -- e.g. '11:00:00' — wall-clock end
   `slot_duration_min`        tinyint unsigned NOT NULL,     -- per-meeting duration in minutes (e.g. 10, 15)
@@ -231,7 +231,7 @@ CREATE TABLE IF NOT EXISTS `ptm_assignment_teacher_jnt` (
   `sub_batch_label`   varchar(50)  DEFAULT NULL,       -- e.g. 'Group 1 (Roll 1-15)', 'Group 2 (Roll 16-30)'
   `room_id`           int unsigned DEFAULT NULL,       -- FK sch_rooms.id — sub-batch can use a different room
   `virtual_link`      varchar(500) DEFAULT NULL,       -- sub-batch can use a different virtual link
-      `student_filter_json` json       DEFAULT NULL,       -- e.g. {"roll_from":1,"roll_to":15} or {"student_ids":[12,15,17]}
+  `student_filter_json` json       DEFAULT NULL,       -- e.g. {"roll_from":1,"roll_to":15} or {"student_ids":[12,15,17]}
   `is_active`         tinyint(1)   NOT NULL DEFAULT 1,
   `created_at`        timestamp    NULL DEFAULT NULL,
   `updated_at`        timestamp    NULL DEFAULT NULL,
@@ -327,12 +327,11 @@ CREATE TABLE IF NOT EXISTS `ptm_slots` (
 
 
 -- ---------------------------------------------------------------------------
--- The actual booking by a student/parent. Separated from ptm_slots so that:
---   - 1-on-1 slots have exactly 1 booking,
+-- The actual booking by a student/parent. Separated from ptm_slots so that: 
+--   - 1-on-1 slots have exactly 1 booking, 
 --   - "Group Slots" can hold up to capacity bookings,
 --   - cancellation history is preserved (status change, not row delete).
--- The unique key enforces "one booking per student per teacher per event"
--- (Req §2 — Limit per Student) without forbidding the student to also book
+-- The unique key enforces "one booking per student per teacher per event" (Req §2 — Limit per Student) without forbidding the student to also book
 -- a different teacher in the same event.
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `ptm_slot_bookings` (
@@ -373,41 +372,12 @@ CREATE TABLE IF NOT EXISTS `ptm_slot_bookings` (
   CONSTRAINT `fk_ptmBooking_createdBy`    FOREIGN KEY (`created_by`)        REFERENCES `sys_users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 -- Sample rows:
---   (1, 2, 1, 45, 312, 1100, 'Discuss math performance', 'CONFIRMED',
---    '2026-05-02 14:21:00', NULL, NULL, NULL, NULL, ...)
---   (2, 7, 1, 45, 318, 1107, 'Sport activity feedback',  'CANCELLED',
---    '2026-05-02 15:00:00', '2026-05-08 09:00:00', 'Parent travelling', NULL, NULL, ...)
---   (3, 7, 1, 45, 318, 1107, 'Re-booked',                'CONFIRMED',
---    '2026-05-08 10:00:00', NULL, NULL, NULL, NULL, ...)  -- allowed because (#2) is CANCELLED
+--   (1, 2, 1, 45, 312, 1100, 'Discuss math performance', 'CONFIRMED', '2026-05-02 14:21:00', NULL, NULL, NULL, NULL, ...)
+--   (2, 7, 1, 45, 318, 1107, 'Sport activity feedback',  'CANCELLED', '2026-05-02 15:00:00', '2026-05-08 09:00:00', 'Parent travelling', NULL, NULL, ...)
+--   (3, 7, 1, 45, 318, 1107, 'Re-booked',                'CONFIRMED', '2026-05-08 10:00:00', NULL, NULL, NULL, NULL, ...)  -- allowed because (#2) is CANCELLED
 
 
 -- =====================================================================
 -- END OF PTM MODULE V2
 -- =====================================================================
--- IMPLEMENTATION NOTES (application layer — NOT enforced by DDL alone):
--- A. SLOT GENERATION (when ptm_assignments.is_published flips to 1):
---    For each ptm_batch_slot_template row of the assignment's batch,
---    insert a ptm_slots row at scheduled_date + slot_start_time.
---    Mark `status='BLOCKED'` and `is_break=1` if the def is a break OR if
---    it overlaps any ptm_blockouts of primary_teacher_id.
--- B. BOOKING (PARENT_PICK mode):
---    1. Verify NOW between booking_window_start and booking_window_end.
---    2. Lock target ptm_slots row (SELECT … FOR UPDATE).
---    3. Reject if status != 'AVAILABLE' OR booked_count >= capacity.
---    4. INSERT ptm_slot_bookings (status='CONFIRMED').
---    5. UPDATE ptm_slots SET booked_count = booked_count + 1,
---       status = IF(booked_count+1 = capacity, 'FULL', 'BOOKED').
--- C. SCHOOL_ALLOCATED mode:
---    Bypass step 1. Admin or scheduler service inserts bookings directly,
---    typically one per student in the class+section's roster.
--- D. CANCELLATION:
---    1. Verify NOW + cancellation_lead_time_hrs <= slot_start.
---    2. UPDATE ptm_slot_bookings SET status='CANCELLED', cancelled_at=NOW().
---    3. UPDATE ptm_slots SET booked_count = booked_count - 1,
---       status = IF(booked_count-1 = 0, 'AVAILABLE', 'BOOKED').
--- E. CROSS-CLASS TEACHER CONFLICT:
---    The UNIQUE (teacher_id, slot_start) on ptm_slots stops two slots from
---    EXISTING at the same teacher+start. App should additionally check
---    [slot_start, slot_end) overlap with the teacher's other slots (e.g.
---    when slot durations differ across batches).
--- =====================================================================
+
