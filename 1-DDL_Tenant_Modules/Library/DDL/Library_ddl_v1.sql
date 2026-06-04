@@ -18,7 +18,7 @@
     `max_renewals` INT DEFAULT 0 CHECK (max_renewals >= 0),
     `fine_rate_per_day` DECIMAL(10,2) NOT NULL DEFAULT 0.00 CHECK (fine_rate_per_day >= 0),
     `grace_period_days` INT DEFAULT 0 CHECK (grace_period_days >= 0),
-    `priority_level` INT DEFAULT 0,
+    `priority_level` TINYINT DEFAULT 0,  -- Used for sorting membership types
     `is_active` TINYINT(1) DEFAULT TRUE,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -80,7 +80,7 @@
   -- Classification of resource formats (physical books, e-books, PDFs, audio books, etc.) to handle different media types appropriately.
   CREATE TABLE IF NOT EXISTS `lib_resource_types` (
     `id` INT PRIMARY KEY AUTO_INCREMENT,
-    `code` VARCHAR(30) NOT NULL UNIQUE,
+    `code` VARCHAR(30) NOT NULL UNIQUE,  -- Unique code for the resource type
     `name` VARCHAR(100) NOT NULL,
     `is_physical` TINYINT(1) NOT NULL DEFAULT 1,
     `is_digital` TINYINT(1) NOT NULL DEFAULT 0,
@@ -123,7 +123,7 @@
   -- Standardized condition states for physical books to track wear and tear, damage, and usability.
   CREATE TABLE IF NOT EXISTS `lib_book_conditions` (
     `id` INT PRIMARY KEY AUTO_INCREMENT,
-    `code` VARCHAR(30) NOT NULL UNIQUE,
+    `code` VARCHAR(30) NOT NULL UNIQUE,  -- Unique code for the condition (e.g. New, Good, Fair, Poor)
     `name` VARCHAR(50) NOT NULL,
     `description` VARCHAR(255),
     `is_borrowable` TINYINT(1) NOT NULL DEFAULT 1,  -- Whether books in this condition can be issued
@@ -349,6 +349,9 @@
     `file_size_bytes` BIGINT,
     `mime_type` VARCHAR(100),
     `file_format` VARCHAR(50),
+    `is_downloadable_by_student` TINYINT(1) NOT NULL DEFAULT 0,
+    `is_downloadable_by_teacher` TINYINT(1) NOT NULL DEFAULT 0,
+    `is_downloadable_by_staff` TINYINT(1) NOT NULL DEFAULT 0,
     `download_count` INT DEFAULT 0,
     `view_count` INT DEFAULT 0,
     `license_key` VARCHAR(100),
@@ -478,6 +481,33 @@
     INDEX `idx_reserve_member` (`member_id`, `status`),
     INDEX `idx_reserve_status` (`status`, `pickup_by_date`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+  CREATE TABLE IF NOT EXISTS `lib_digital_access_requests` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `member_id` BIGINT UNSIGNED NOT NULL,  -- fk to lib_members
+    `book_id` BIGINT UNSIGNED NOT NULL,    -- fk to lib_books_master
+    `digital_resource_id` BIGINT UNSIGNED NULL,  -- fk to lib_digital_resources
+    `reason` TEXT NULL,
+    `status` ENUM('Pending', 'Approved', 'Denied', 'Withdrawn') NOT NULL DEFAULT 'Pending',
+    `reviewed_by_id` BIGINT UNSIGNED NULL,  -- fk to sys_users
+    `reviewed_at` TIMESTAMP NULL DEFAULT NULL,
+    `notes` TEXT NULL,
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+    `created_by` BIGINT UNSIGNED NULL,
+    `updated_by` BIGINT UNSIGNED NULL,
+    `created_at` TIMESTAMP NULL DEFAULT NULL,
+    `updated_at` TIMESTAMP NULL DEFAULT NULL,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    CONSTRAINT `lib_digital_access_requests_member_id_foreign` FOREIGN KEY (`member_id`) REFERENCES `lib_members` (`id`) ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT `lib_digital_access_requests_book_id_foreign`  FOREIGN KEY (`book_id`) REFERENCES `lib_books_master` (`id`) ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT `lib_digital_access_requests_digital_resource_id_foreign` FOREIGN KEY (`digital_resource_id`) REFERENCES `lib_digital_resources` (`id`) ON DELETE SET NULL,
+    CONSTRAINT `lib_digital_access_requests_reviewed_by_id_foreign` FOREIGN KEY (`reviewed_by_id`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL,
+    CONSTRAINT `uq_digital_access_member_book_status` UNIQUE (`member_id`, `book_id`, `status`),
+    INDEX `idx_dac_member_status` (`member_id`, `status`),
+    INDEX `idx_dac_book_status` (`book_id`, `status`),
+    INDEX `idx_dac_status_date` (`status`, `created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
   CREATE TABLE IF NOT EXISTS `lib_fines` (

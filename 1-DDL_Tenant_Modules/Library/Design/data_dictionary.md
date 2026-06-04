@@ -35,7 +35,7 @@ This comprehensive data dictionary documents all tables, fields, relationships, 
 |parent_id	                |Self-reference for hierarchical categories
 |code	                    |Business code (e.g., 'FIC', 'SCI_FI')
 |name	                    |Display name (e.g., 'Fiction', 'Science Fiction')
-|description	                |Detailed description of the category
+|description	            |Detailed description of the category
 |level	                    |Depth in hierarchy (1 = top level)
 |display_order	            |Order for display in dropdowns
 |is_active	                |Whether this category is currently active
@@ -53,7 +53,7 @@ This comprehensive data dictionary documents all tables, fields, relationships, 
 |id	                    |Unique identifier for each genre
 |code	                |Business code (e.g., 'SF', 'MYSTERY')
 |name	                |Display name (e.g., 'Science Fiction', 'Mystery')
-|description	            |Description of the genre
+|description	        |Description of the genre
 |is_active	            |Whether this genre is currently active
 |is_deleted	            |Soft delete flag
 |created_at	            |Record creation timestamp
@@ -66,12 +66,12 @@ This comprehensive data dictionary documents all tables, fields, relationships, 
 
 |Field Name		    |Description
 |-------------------|-----------------------------------------------------------------
-|id			    |Unique identifier for each publisher
-|code			|Business code for the publisher
-|name			|Full name of the publishing company
+|id			        |Unique identifier for each publisher
+|code			    |Business code for the publisher
+|name			    |Full name of the publishing company
 |address			|Physical/registered address
 |contact			|Primary contact person
-|email			|Contact email address
+|email			    |Contact email address
 |publisher_phone	|Contact phone number
 |website			|Publisher's website URL
 |is_active		    |Whether this publisher is currently active
@@ -85,9 +85,9 @@ This comprehensive data dictionary documents all tables, fields, relationships, 
 
 |Field Name		    |Description
 |-------------------|-----------------------------------------------------------------
-|id			    |Unique identifier for each resource type
-|code			|Business code (e.g., 'PHY_BOOK', 'EBOOK')
-|name			|Display name (e.g., 'Physical Book', 'E-Book')
+|id			        |Unique identifier for each resource type
+|code		    	|Business code (e.g., 'PHY_BOOK', 'EBOOK')
+|name			    |Display name (e.g., 'Physical Book', 'E-Book')
 |is_physical		|Whether this is a physical resource
 |is_digital		    |Whether this is a digital resource
 |is_active		    |Whether this resource type is currently active
@@ -101,7 +101,7 @@ This comprehensive data dictionary documents all tables, fields, relationships, 
 
 |Field Name		    |Description
 |-------------------|-----------------------------------------------------------------
-|id			    |Unique identifier for each shelf location
+|id			        |Unique identifier for each shelf location
 |code			    |Business code (e.g., 'A1-S1-R1')
 |aisle_number	    |Aisle identifier (e.g., 'A1', 'B2')
 |shelf_number	    |Shelf identifier within aisle
@@ -174,11 +174,11 @@ This comprehensive data dictionary documents all tables, fields, relationships, 
 ### Table Name: lib_book_category_mapping
 **Purpose:** Many-to-many relationship between books and categories. Books can belong to multiple categories.
 
-|Field Name	    |Description
+|Field Name	     |Description
 |----------------|-----------------------------------------------------------------
-|book_id	    |Reference to lib_books_master
-|category_id	|Reference to lib_categories
-|created_at	    |Record creation timestamp
+|book_id	     |Reference to lib_books_master
+|category_id	 |Reference to lib_categories
+|created_at	     |Record creation timestamp
 
 ### Table Name: lib_book_genre_mapping
 **Purpose:** Many-to-many relationship between books and genres for flexible tagging and filtering.
@@ -221,7 +221,7 @@ This comprehensive data dictionary documents all tables, fields, relationships, 
 
 |Field Name	            |Description
 |-----------------------|-----------------------------------------------------------------
-|id	            |Unique identifier for each digital resource
+|id	                    |Unique identifier for each digital resource
 |book_id	            |Reference to lib_books_master
 |file_name	            |Original file name
 |file_path	            |Storage path or URL
@@ -246,7 +246,7 @@ This comprehensive data dictionary documents all tables, fields, relationships, 
 
 |Field Name	                |Description
 |---------------------------|-----------------------------------------------------------------
-|id	                    |Unique identifier for each tag assignment
+|id	                        |Unique identifier for each tag assignment
 |digital_resource_id	    |Reference to lib_digital_resources
 |tag_name	                |Tag text (e.g., 'interactive', 'video-lecture')
 |created_at	                |Record creation timestamp
@@ -255,8 +255,8 @@ This comprehensive data dictionary documents all tables, fields, relationships, 
 **Purpose:** Library-specific member profiles linked to the main user table in the ERP system.
 
 |Field Name	            |Description
-|------------------------|-----------------------------------------------------------------
-|id	            |Unique identifier for library member
+|-----------------------|-----------------------------------------------------------------
+|id	                    |Unique identifier for library member
 |user_id	            |Reference to main users table in ERP
 |membership_type_id	    |Reference to lib_membership_types
 |membership_number	    |Unique library membership number
@@ -305,7 +305,7 @@ This comprehensive data dictionary documents all tables, fields, relationships, 
 
 |Field Name		            |Description
 |---------------------------|-----------------------------------------------------------------
-|id					    |Unique identifier for each reservation
+|id					        |Unique identifier for each reservation
 |reservation_uuid		    |UUID for distributed tracing
 |book_id				    |Reference to lib_books_master
 |member_id				    |Reference to lib_members
@@ -325,7 +325,7 @@ This comprehensive data dictionary documents all tables, fields, relationships, 
 
 |Field Name			|Description
 |-------------------|-----------------------------------------------------------------
-|id				|Unique identifier for each fine
+|id				    |Unique identifier for each fine
 |transaction_id		|Reference to lib_transactions
 |member_id			|Reference to lib_members
 |fine_type			|Type of fine (late_return, lost_book, damaged_book, processing_fee)
@@ -347,7 +347,7 @@ This comprehensive data dictionary documents all tables, fields, relationships, 
 
 |Field Name	    	|Description
 |-------------------|-----------------------------------------------------------------
-|id			    |Unique identifier for each payment
+|id			        |Unique identifier for each payment
 |fine_id			|Reference to lib_fines
 |payment_uuid	    |UUID for distributed tracing
 |amount_paid		|Amount paid
@@ -365,7 +365,7 @@ This comprehensive data dictionary documents all tables, fields, relationships, 
   
 |Field Name	        |Description
 |-------------------|-----------------------------------------------------------------
-|id	        |Unique identifier for each history record
+|id	                |Unique identifier for each history record
 |transaction_id	    |Reference to lib_transactions
 |action_type	    |Type of action (issued, returned, renewed, marked_lost, condition_updated)
 |old_value	        |Previous values as JSON
@@ -379,7 +379,7 @@ This comprehensive data dictionary documents all tables, fields, relationships, 
 
 |Field Name	        |Description
 |-------------------|-----------------------------------------------------------------
-|id	        |Unique identifier for each audit
+|id	                |Unique identifier for each audit
 |audit_uuid	        |UUID for distributed tracing
 |audit_date	        |Date of audit
 |performed_by	    |User ID who performed the audit
@@ -398,7 +398,7 @@ This comprehensive data dictionary documents all tables, fields, relationships, 
 
 |Field Name	            |Description
 |-----------------------|-----------------------------------------------------------------
-|id	    |Unique identifier for each audit detail
+|id	                    |Unique identifier for each audit detail
 |audit_id	            |Reference to lib_inventory_audit
 |copy_id	            |Reference to lib_book_copies
 |expected_location_id	|Where copy should be
@@ -413,7 +413,7 @@ This comprehensive data dictionary documents all tables, fields, relationships, 
 
 |Field Name	        |Description
 |-------------------|-----------------------------------------------------------------
-|id	        |Transaction identifier
+|id	                |Transaction identifier
 |title	            |Book title
 |isbn	            |ISBN number
 |barcode	        |Copy barcode
@@ -458,7 +458,7 @@ This comprehensive data dictionary documents all tables, fields, relationships, 
 
 ## SUMMARY OF ANALYTICS CAPABILITIES
 
-|Analytics Area	        |Key Metrics	                                    |Business Value
+|Analytics Area	            |Key Metrics	                                                |Business Value
 |---------------------------|---------------------------------------------------------------|------------------------------------------------------------------------------
 |Member Behavior	        |Reading patterns, preferences, engagement scores, churn risk	|Personalized recommendations, retention strategies, targeted communication
 |Collection Performance	    |Utilization rates, turnover rates, popula  rity trends	        |Data-driven acquisition, weeding decisions, budget optimization
