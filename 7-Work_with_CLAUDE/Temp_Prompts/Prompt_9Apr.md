@@ -247,3 +247,4 @@ Create New Implementtion Guide in folder "/Users/bkwork/WorkFolder/1-Old_PrimeDB
 Priviously I have created DDL Schema for HR & Payrol in File "
 
 ---------------------------------------------------------------------------------------------
+Read "old_db/1-DDL_Tenant_Modules/Library/DDL/Library_ddl_v4.sql" and evaluate the DDL Schema 

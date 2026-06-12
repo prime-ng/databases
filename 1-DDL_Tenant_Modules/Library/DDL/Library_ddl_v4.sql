@@ -1,209 +1,263 @@
 -- =====================================================
 -- Library Module Database Schema
--- Version: v2 — Field-level descriptions added from data_dictionary.md
+-- Version: v4 — Field-level descriptions added from data_dictionary.md
 -- MySQL 8 Compatible
 -- =====================================================
 
 -- ----------------------------------------------------------------------------
--- Sub-Menu 1: LIBRARY MASTERS 
+-- Sub-Menu 1: BOOK MASTERS 
 -- ----------------------------------------------------------------------------
-  -- Defines different types of library memberships with their associated privileges and rules. Controls borrowing limits, loan periods, and fine calculations.
-  CREATE TABLE IF NOT EXISTS `lib_membership_types` (
-    `id`                  INT PRIMARY KEY AUTO_INCREMENT,
-    `code`                VARCHAR(30) NOT NULL UNIQUE,                       -- Business code (e.g., 'STD_STUDENT', 'PREMIUM_STAFF')
-    `name`                VARCHAR(100) NOT NULL,                             -- Display name (e.g., 'Standard Student', 'Premium Staff')
-    `max_books_allowed`   TINYINT NOT NULL CHECK (max_books_allowed >= 0),   -- Maximum number of books a member can borrow simultaneously
-    `loan_period_days`    TINYINT NOT NULL CHECK (loan_period_days > 0),     -- Standard loan duration in days
-    `renewal_allowed`     TINYINT(1) DEFAULT TRUE,                           -- Whether members can renew books
-    `max_renewals`        TINYINT DEFAULT 0 CHECK (max_renewals >= 0),       -- Maximum number of times a book can be renewed
-    `fine_rate_per_day`   DECIMAL(10,2) NOT NULL DEFAULT 0.00 CHECK (fine_rate_per_day >= 0), -- Daily fine amount for late returns
-    `grace_period_days`   TINYINT DEFAULT 0 CHECK (grace_period_days >= 0),  -- Days after due date before fines start accruing
-    `priority_level`      TINYINT DEFAULT 0,                                 -- Priority for reservations (higher = better priority)
-    `digital_access_days` TINYINT DEFAULT 0,                                 -- For how many Digital Resource access will be provided to this membership type
-    `is_active`           TINYINT(1) DEFAULT TRUE,                           -- Whether this membership type is currently available
-    `created_at`          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    `updated_at`          TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    `deleted_at`          TIMESTAMP NULL,
-    INDEX `idx_membership_active` (`is_active`, `is_deleted`),
-    INDEX `idx_membership_priority` (`priority_level`),
-    UNIQUE KEY `uk_membership_type_code` (`code`),
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-  -- Classification of resource formats (physical books, e-books, PDFs, audio books, etc.) to handle different media types appropriately.
+  -- Tab-1.1 : Classification of resource formats (physical books, e-books, PDFs, audio books, etc.) to handle different media types appropriately.
   CREATE TABLE IF NOT EXISTS `lib_resource_types` (
-    `id`             SMALLINT PRIMARY KEY AUTO_INCREMENT,                                  -- Unique identifier for each resource type
-    `code`           VARCHAR(30) NOT NULL UNIQUE,                                          -- Business code (e.g., 'PHY_BOOK', 'EBOOK')
-    `name`           VARCHAR(100) NOT NULL,                                                -- Display name (e.g., 'Physical Book', 'E-Book')
-    `is_physical`    TINYINT(1) NOT NULL DEFAULT 1,                                        -- Whether this is a physical resource
-    `is_digital`     TINYINT(1) NOT NULL DEFAULT 0,                                        -- Whether this is a digital resource
-    `is_audio_books` TINYINT(1) NOT NULL DEFAULT 0,                                        -- Whether this resource type represents audio books
-    `is_borrowable`  TINYINT(1) NOT NULL DEFAULT 1,                                        -- Whether resources of this type can be borrowed
-    `is_active`      TINYINT(1) NOT NULL DEFAULT 1,                                        -- Whether this resource type is currently active
-    `created_at`     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,                                  -- Record creation timestamp
-    `updated_at`     TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,      -- Last update timestamp
-    `deleted_at`     TIMESTAMP NULL,                                                       -- Soft delete timestamp
-    INDEX `idx_restype_active` (`is_active`, `is_deleted`)
+    `id`             SMALLINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    `code`           VARCHAR(30) NOT NULL UNIQUE,            -- Business code (e.g., 'PHY_BOOK', 'EBOOK')
+    `name`           VARCHAR(100) NOT NULL,                  -- Display name (e.g., 'Physical Book', 'E-Book')
+    `is_physical`    TINYINT(1) NOT NULL DEFAULT 1,          -- Whether this is a physical resource
+    `is_digital`     TINYINT(1) NOT NULL DEFAULT 0,          -- Whether this is a digital resource
+    `is_audio_books` TINYINT(1) NOT NULL DEFAULT 0,          -- Whether this resource type represents audio books
+    `is_borrowable`  TINYINT(1) NOT NULL DEFAULT 1,          -- Whether resources of this type can be borrowed
+    `is_active`      TINYINT(1) NOT NULL DEFAULT 1,          -- Whether this resource type is currently active
+    `created_at`     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`     TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at`     TIMESTAMP NULL,
+    INDEX `idx_restype_active` (`is_active`),
+    UNIQUE KEY `uq_restype_code` (`code`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-  -- Hierarchical classification of books/resources (e.g., Fiction → Science Fiction → Space Opera). Supports multi-level categorization.
+  -- Tab-1.2 :  Hierarchical classification of books/resources (e.g., Fiction → Science Fiction → Space Opera). Supports multi-level categorization.
   CREATE TABLE IF NOT EXISTS `lib_categories` (
-    `id`                 INT PRIMARY KEY AUTO_INCREMENT,                                   -- Unique identifier for each category
-    `parent_category_id` INT NULL,                                                         -- Self-reference for hierarchical categories
-    `code`               VARCHAR(30) NOT NULL UNIQUE,                                      -- Business code (e.g., 'FIC', 'SCI_FI')
-    `name`               VARCHAR(100) NOT NULL,                                            -- Display name (e.g., 'Fiction', 'Science Fiction')
-    `description`        VARCHAR(255),                                                     -- Detailed description of the category
-    `level`              INT DEFAULT 1,                                                    -- Depth in hierarchy (1 = top level)
-    `display_order`      INT DEFAULT 0,                                                    -- Order for display in dropdowns
-    `is_active`          TINYINT(1) DEFAULT TRUE,                                          -- Whether this category is currently active
-    `created_at`         TIMESTAMP DEFAULT CURRENT_TIMESTAMP,                              -- Record creation timestamp
-    `updated_at`         TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,  -- Last update timestamp
-    `deleted_at`         TIMESTAMP NULL,                                                   -- Soft delete timestamp
-    FOREIGN KEY (`parent_category_id`) REFERENCES `lib_categories`(`category_id`),
-    INDEX `idx_category_parent` (`parent_category_id`),
-    INDEX `idx_category_active` (`is_active`, `is_deleted`),
-    INDEX `idx_category_order` (`display_order`)
+    `id`                 INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    `parent_category_id` INT UNSIGNED NULL,            -- Self-reference for hierarchical categories
+    `code`               VARCHAR(30) NOT NULL,         -- Business code (e.g., 'FIC', 'SCI_FI')
+    `name`               VARCHAR(100) NOT NULL,        -- Display name (e.g., 'Fiction', 'Science Fiction')
+    `description`        VARCHAR(255),                 -- Detailed description of the category
+    `level`              TINYINT UNSIGNED DEFAULT 1,   -- Depth in hierarchy (1 = top level)
+    `display_order`      TINYINT UNSIGNED DEFAULT 1,   -- Order for display in dropdowns
+    `is_active`          TINYINT(1) DEFAULT TRUE,
+    `created_at`         TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`         TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at`         TIMESTAMP NULL,
+    INDEX `idx_category_parentCatId` (`parent_category_id`),
+    INDEX `idx_category_active` (`is_active`),
+    INDEX `idx_category_order` (`display_order`),
+    UNIQUE KEY `uq_lib_category_code` (`code`),
+    CONSTRAINT `fk_lib_category_parentCatId` FOREIGN KEY (`parent_category_id`) REFERENCES `lib_categories`(`id`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  -- Condition:
+  -- Use Grouping for showng Categories under Parent Category
 
-  -- Tags for literary genres that can be applied across categories for flexible searching and recommendations.
+  -- Tab-1.3 : Tags for literary genres that can be applied across categories for flexible searching and recommendations.
   CREATE TABLE IF NOT EXISTS `lib_genres` (
-    `id`          INT PRIMARY KEY AUTO_INCREMENT,                                          -- Unique identifier for each genre
-    `code`        VARCHAR(30) NOT NULL UNIQUE,                                             -- Business code (e.g., 'SF', 'MYSTERY')
-    `name`        VARCHAR(100) NOT NULL,                                                   -- Display name (e.g., 'Science Fiction', 'Mystery')
-    `description` VARCHAR(255),                                                            -- Description of the genre
-    `is_active`   TINYINT(1) NOT NULL DEFAULT 1,                                           -- Whether this genre is currently active
-    `created_at`  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,                                     -- Record creation timestamp
-    `updated_at`  TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,         -- Last update timestamp
-    `deleted_at`  TIMESTAMP NULL,                                                          -- Soft delete timestamp
-    INDEX `idx_genre_active` (`is_active`, `is_deleted`)
+    `id`          INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    `code`        VARCHAR(30) NOT NULL,           -- Business code (e.g., 'SF', 'MYSTERY')
+    `name`        VARCHAR(100) NOT NULL,          -- Display name (e.g., 'Science Fiction', 'Mystery')
+    `description` VARCHAR(255),                   -- Description of the genre
+    `is_active`   TINYINT(1) NOT NULL DEFAULT 1,
+    `created_at`  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`  TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at`  TIMESTAMP NULL,
+    INDEX `idx_genre_active` (`is_active`),
+    UNIQUE KEY `uq_genre_code` (`code`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-  -- Standardized condition states for physical books to track wear and tear, damage, and usability.
+  -- Tab-1.4 : Standardized condition states for physical books to track wear and tear, damage, and usability.
   CREATE TABLE IF NOT EXISTS `lib_book_conditions` (
-    `id`           INT PRIMARY KEY AUTO_INCREMENT,                                          -- Unique identifier for each condition
-    `code`         VARCHAR(30) NOT NULL UNIQUE,                                            -- Business code (e.g., 'NEW', 'DAMAGED')
-    `name`         VARCHAR(50) NOT NULL,                                                   -- Display name (e.g., 'New', 'Damaged')
-    `description`  VARCHAR(255),                                                           -- Detailed description of the condition
-    `is_borrowable` TINYINT(1) NOT NULL DEFAULT 1,                                         -- Whether books in this condition can be issued
-    `is_active`    TINYINT(1) NOT NULL DEFAULT 1,                                          -- Whether this condition is currently active
-    `created_at`   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,                                    -- Record creation timestamp
-    `updated_at`   TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,        -- Last update timestamp
-    `deleted_at`   TIMESTAMP NULL,                                                         -- Soft delete timestamp
+    `id`            INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    `code`          VARCHAR(30) NOT NULL,           -- Business code (e.g., 'NEW', 'DAMAGED')
+    `name`          VARCHAR(50) NOT NULL,           -- Display name (e.g., 'New', 'Damaged')
+    `description`   VARCHAR(255),                   -- Detailed description of the condition
+    `is_borrowable` TINYINT(1) NOT NULL DEFAULT 1,  -- Whether books in this condition can be issued
+    `is_active`     TINYINT(1) NOT NULL DEFAULT 1,
+    `created_at`    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`    TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at`    TIMESTAMP NULL,
     INDEX `idx_condition_active` (`is_active`)
+    UNIQUE KEY `uq_condition_code` (`code`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-  -- Physical location mapping for books in the library, enabling efficient shelving and retrieval.
+  -- Tab-1.5 : Master list of publishers for books and resources.
+  CREATE TABLE IF NOT EXISTS `lib_publishers` (
+    `id`         INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    `code`       VARCHAR(30) NOT NULL,   -- Business code for the publisher
+    `name`       VARCHAR(200) NOT NULL,  -- Full name of the publishing company
+    `address`    TEXT NULL,              -- Physical/registered address
+    `contact`    VARCHAR(100) NULL,      -- Primary contact person
+    `email`      VARCHAR(100) NULL,      -- Contact email address
+    `phone`      VARCHAR(20) NULL,       -- Contact phone number
+    `website`    VARCHAR(255) NULL,      -- Publisher's website URL
+    `is_active`  TINYINT(1) DEFAULT TRUE,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL,
+    INDEX `idx_publisher_active` (`is_active`),
+    UNIQUE KEY `uq_publisher_code` (`code`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+  -- Tab-1.6 : Master list of authors for books and resources.
+  CREATE TABLE IF NOT EXISTS `lib_authors` (
+    `id`               INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `short_name`       VARCHAR(50) NOT NULL,   -- Short identifier or pen name for the author
+    `author_name`      VARCHAR(200) NOT NULL,  -- Full name of the author
+    `country_id`       INT UNSIGNED NOT NULL,  -- FK to glb_countries.id, Country of the author
+    `primary_genre_id` INT UNSIGNED NOT NULL,  -- FK to lib_genres.id, Primary genre preference of the author
+    `notes`            TEXT DEFAULT NULL,      -- Additional notes about the author
+    `is_active`        TINYINT(1) NOT NULL DEFAULT 1,
+    `created_at`       TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`       TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at`       TIMESTAMP NULL,
+    UNIQUE KEY `uq_author_shortName` (`short_name`),
+    UNIQUE KEY `uq_author_name` (`author_name`),
+    INDEX `idx_author_active` (`is_active`)
+    CONSTRAINT `fk_authors_countries` FOREIGN KEY (`country_id`) REFERENCES `glb_countries` (`id`),
+    CONSTRAINT `fk_authors_genres` FOREIGN KEY (`primary_genre_id`) REFERENCES `lib_genres` (`id`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+  -- Tab-1.7 : Searchable keywords that can be applied across books for flexible discovery and filtering.
+  CREATE TABLE IF NOT EXISTS `lib_keywords` (
+    `id`         INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    `code`       VARCHAR(30) NOT NULL UNIQUE,         -- Business code for the keyword
+    `name`       VARCHAR(100) NOT NULL,               -- Keyword text
+    `is_active`  TINYINT(1) NOT NULL DEFAULT 1,       -- Whether this keyword is currently active
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL,
+    INDEX `idx_keyword_active` (`is_active`)
+    UNIQUE KEY `uq_keyword_code` (`code`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------------------------
+-- Sub-Menu 2: LOCATION MASTERS 
+-- ----------------------------------------------------------------------------
+
+  -- Tab-2.1 : This table will hold all available options for Zone, Floor, Aisle, Shelf, Rack.
+  CREATE TABLE IF NOT EXISTS `lib_location_master` (
+    `id`          MEDIUMINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    `code`        VARCHAR(30) NOT NULL,              -- Business code (e.g., 'A1-S1-R1')
+    `name`        VARCHAR(50) NOT NULL,              -- Display name (e.g., 'Aisle 1', 'Shelf 1')
+    `description` VARCHAR(255),                      -- Detailed description of the location
+    `type`        ENUM('Zone', 'Floor', 'Aisle', 'Shelf', 'Rack') NOT NULL,  -- Location type
+    `building_id` INT UNSIGNED NOT NULL,             -- FK to sch_buildings.id
+    `is_active`   TINYINT(1) NOT NULL DEFAULT 1,
+    `created_at`  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`  TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at`  TIMESTAMP NULL,
+    INDEX `idx_location_active` (`is_active`),
+    UNIQUE KEY `uq_location_code` (`code`),
+    CONSTRAINT `fk_lib_locationMaster_buildingId` FOREIGN KEY (`building_id`) REFERENCES `sch_buildings`(`id`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+  -- Tab-2.2 : Physical location mapping for books in the library, enabling efficient shelving and retrieval.
   CREATE TABLE IF NOT EXISTS `lib_shelf_locations` (
-    `id`           INT PRIMARY KEY AUTO_INCREMENT,  -- Unique identifier for each shelf location
-    `code`         VARCHAR(30) NOT NULL UNIQUE,     -- Business code (e.g., 'A1-S1-R1')
-    `building`     VARCHAR(100),                    -- Building name or code
-    `zone`         VARCHAR(50),                     -- Zone or section (e.g., 'Reference', 'Children')
-    `floor_number` VARCHAR(10),                     -- Floor/level in the building
-    `aisle_number` VARCHAR(20) NOT NULL,            -- Aisle identifier (e.g., 'A1', 'B2'). 1 aisle can have multipal racks and 1 rack can have multipal shelves
-    `rack_number`  VARCHAR(20),                     -- Rack identifier if applicable. 1 aisle can have multipal racks and 1 rack can have multipal shelves
-    `shelf_number` VARCHAR(20) NOT NULL,            -- Shelf identifier within aisle. 1 aisle can have multipal racks and 1 rack can have multipal shelves
-    `description`  VARCHAR(255),                    -- Additional location details
-    `is_active`    TINYINT(1) NOT NULL DEFAULT 1,   -- Whether this location is currently active
+    `id`           INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    `code`         VARCHAR(30) NOT NULL,           -- Business code (e.g., 'A1-S1-R1')
+    `building_id`  INT UNSIGNED NOT NULL,          -- FK to sch_buildings.id
+    `zone_id`      MEDIUMINT UNSIGNED NOT NULL,    -- FK to lib_location_master.id, Zone or section (e.g., 'Reference', 'Children')
+    `floor_id`     MEDIUMINT UNSIGNED NOT NULL,    -- FK to lib_location_master.id, Floor/level in the building
+    `aisle_id`     MEDIUMINT UNSIGNED NOT NULL,    -- FK to lib_location_master.id, Aisle identifier (e.g., 'A1', 'B2'). 1 aisle can have multipal racks and 1 rack can have multipal shelves
+    `rack_id`      MEDIUMINT UNSIGNED NOT NULL,    -- FK to lib_location_master.id, Rack identifier if applicable. 1 aisle can have multipal racks and 1 rack can have multipal shelves
+    `shelf_id`     MEDIUMINT UNSIGNED NOT NULL,    -- FK to lib_location_master.id, Shelf identifier within aisle. 1 aisle can have multipal racks and 1 rack can have multipal shelves
+    `description`  VARCHAR(255),                   -- Additional location details
+    `is_active`    TINYINT(1) NOT NULL DEFAULT 1,
     `created_at`   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at`   TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`   TIMESTAMP NULL,
-    UNIQUE KEY `uk_shelf_location` (`aisle_number`, `shelf_number`, `rack_number`),
-    INDEX `idx_location_active` (`is_active`, `is_deleted`)
+    UNIQUE KEY `uq_shelf_location_code` (`code`),
+    INDEX `idx_location_active` (`is_active`),
+    CONSTRAINT `fk_lib_shelfLocations_buildingId` FOREIGN KEY (`building_id`) REFERENCES `sch_buildings`(`id`),
+    CONSTRAINT `fk_lib_shelfLocations_zoneId` FOREIGN KEY (`zone_id`) REFERENCES `lib_location_master`(`id`),
+    CONSTRAINT `fk_lib_shelfLocations_floorId` FOREIGN KEY (`floor_id`) REFERENCES `lib_location_master`(`id`),
+    CONSTRAINT `fk_lib_shelfLocations_aisleId` FOREIGN KEY (`aisle_id`) REFERENCES `lib_location_master`(`id`),
+    CONSTRAINT `fk_lib_shelfLocations_rackId` FOREIGN KEY (`rack_id`) REFERENCES `lib_location_master`(`id`),
+    CONSTRAINT `fk_lib_shelfLocations_shelfId` FOREIGN KEY (`shelf_id`) REFERENCES `lib_location_master`(`id`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-    -- Conditions:
-  -- Aisle Number - An aisle is the open passage or walkway between rows of shelving units.
-  -- shelf_number - A shelf is a flat, horizontal surface, typically made of wood or metal, used for storing or displaying items.
-  -- rack_number - A rack is a framework, typically consisting of bars or hooks, used for storing or displaying items.
-  -- floor_number - A floor is the lower surface of a room, on which one walks.
-  -- zone - A zone is an area or stretch of land having a particular characteristic, purpose, or use, or subject to particular restrictions.
-  -- description - A description is a spoken or written representation or account of a person, object, or event.
-  -- Physical location mapping for books in the library, enabling efficient shelving and retrieval.
-
-  -- Master list of publishers for books and resources.
-  CREATE TABLE IF NOT EXISTS `lib_publishers` (
-    `id`         INT PRIMARY KEY AUTO_INCREMENT,                                            -- Unique identifier for each publisher
-    `code`       VARCHAR(30) NOT NULL UNIQUE,                                              -- Business code for the publisher
-    `name`       VARCHAR(200) NOT NULL,                                                    -- Full name of the publishing company
-    `address`    TEXT,                                                                     -- Physical/registered address
-    `contact`    VARCHAR(100),                                                             -- Primary contact person
-    `email`      VARCHAR(100),                                                             -- Contact email address
-    `phone`      VARCHAR(20),                                                              -- Contact phone number
-    `website`    VARCHAR(255),                                                             -- Publisher's website URL
-    `is_active`  TINYINT(1) DEFAULT TRUE,                                                  -- Whether this publisher is currently active
-    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,                                      -- Record creation timestamp
-    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,          -- Last update timestamp
-    `deleted_at` TIMESTAMP NULL,                                                           -- Soft delete timestamp
-    INDEX `idx_publisher_active` (`is_active`, `is_deleted`)
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-  CREATE TABLE IF NOT EXISTS `lib_authors` (
-    `id`               INT AUTO_INCREMENT PRIMARY KEY,                                      -- Unique identifier for each author record
-    `short_name`       VARCHAR(50) NOT NULL,                                               -- Short identifier or pen name for the author
-    `author_name`      VARCHAR(200) NOT NULL,                                              -- Full name of the author
-    `country`          VARCHAR(120),                                                       -- Country of the author (FK to glb_countries)
-    `primary_genre_id` INT,                                                                -- Primary genre preference of the author (FK to lib_genres)
-    `notes`            TEXT DEFAULT NULL,                                                  -- Additional notes about the author
-    `is_active`        TINYINT(1) NOT NULL DEFAULT 1,                                      -- Whether this author record is active
-    `created_at`       TIMESTAMP DEFAULT CURRENT_TIMESTAMP,                                -- Record creation timestamp
-    `updated_at`       TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,    -- Last update timestamp
-    `deleted_at`       TIMESTAMP NULL,                                                     -- Soft delete timestamp
-    UNIQUE KEY `uq_author_shortName` (`short_name`),
-    UNIQUE KEY `uq_author_name` (`author_name`)
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-  -- Searchable keywords that can be applied across books for flexible discovery and filtering.
-  CREATE TABLE IF NOT EXISTS `lib_keywords` (
-    `id`         INT PRIMARY KEY AUTO_INCREMENT,                                            -- Unique identifier for each keyword
-    `code`       VARCHAR(30) NOT NULL UNIQUE,                                              -- Business code for the keyword
-    `name`       VARCHAR(100) NOT NULL,                                                    -- Keyword text
-    `is_active`  TINYINT(1) NOT NULL DEFAULT 1,                                            -- Whether this keyword is currently active
-    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,                                      -- Record creation timestamp
-    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,          -- Last update timestamp
-    `deleted_at` TIMESTAMP NULL,                                                           -- Soft delete timestamp
-    INDEX `idx_keyword_active` (`is_active`)
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
+  -- Conditions:
+    -- Aisle Number - An aisle is the open passage or walkway between rows of shelving units.
+    -- shelf_number - A shelf is a flat, horizontal surface, typically made of wood or metal, used for storing or displaying items.
+    -- rack_number - A rack is a framework, typically consisting of bars or hooks, used for storing or displaying items.
+    -- floor_number - A floor is the lower surface of a room, on which one walks.
+    -- zone - A zone is an area or stretch of land having a particular characteristic, purpose, or use, or subject to particular restrictions.
+ 
+ 
 -- ----------------------------------------------------------------------------
--- Sub-Menu 2. LIBRARY CONFIGURATION
+-- Sub-Menu 3. LIBRARY CONFIGURATION
 -- ----------------------------------------------------------------------------
+  -- Tab-3.1 : Library Fine Types
+  CREATE TABLE IF NOT EXISTS `lib_fine_type` (
+    `id`          SMALLINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    `code`        VARCHAR(30) NOT NULL, -- Code for the fine type ('e.g., LateReturn', 'LostBook', 'DamagedBook', 'ProcessingFee')
+    `name`        VARCHAR(50) NOT NULL, -- Name of the fine type ('Late Book Return Fine', 'Lost Book Fine', 'Damaged Book Fine', 'Processing Fee Fine')
+    `description` VARCHAR(250) NULL,
+    `created_at`  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`  TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at`  TIMESTAMP NULL,
+    UNIQUE KEY `uq_fine_type_code` (`code`),
+    UNIQUE KEY `uq_fine_type_name` (`name`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+  -- Tab-3.2 : Library Fine Slab Config (Parent)
   CREATE TABLE IF NOT EXISTS `lib_fine_slab_config` (
-    `id`                  INT PRIMARY KEY AUTO_INCREMENT,                                   -- Unique identifier for each fine slab configuration
-    `name`                VARCHAR(100) NOT NULL COMMENT 'e.g., Standard Student Fine Slab, Staff Fine Slab', -- Name of the fine slab
-    `membership_type_id`  INT NULL COMMENT 'If NULL, applies to all membership types',     -- Reference to lib_membership_types (NULL = all types)
-    `resource_type_id`    SMALLINT NULL COMMENT 'If NULL, applies to all resource types',  -- Reference to lib_resource_types (NULL = all types)
-    `fine_type`           ENUM('Late Return', 'Lost Book', 'Damaged Book', 'Processing Fee') DEFAULT 'Late Return', -- Type of fine this slab applies to
-    `max_fine_amount`     DECIMAL(10,2) NULL COMMENT 'Maximum fine cap (could be book cost or school-defined limit)', -- Maximum fine cap
-    `max_fine_type`       ENUM('Fixed', 'BookCost', 'Unlimited') DEFAULT 'Unlimited',      -- Type of maximum fine cap (Fixed, BookCost, Unlimited)
-    `is_active`           TINYINT(1) NOT NULL DEFAULT 1,                                   -- Whether this fine slab is currently active
-    `effective_from`      DATE NOT NULL,                                                   -- Date from which this slab is effective
-    `effective_to`        DATE NULL,                                                       -- Date until which this slab is effective
-    `priority`            INT DEFAULT 0 COMMENT 'Higher priority slabs are evaluated first', -- Priority for slab evaluation (higher = evaluated first)
-    `created_at`          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,                             -- Record creation timestamp
-    `updated_at`          TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, -- Last update timestamp
-    `deleted_at`          TIMESTAMP NULL,                                                  -- Soft delete timestamp
-    FOREIGN KEY (`membership_type_id`) REFERENCES `lib_membership_types`(`id`),
-    FOREIGN KEY (`resource_type_id`) REFERENCES `lib_resource_types`(`id`),
-    INDEX `idx_fine_slab_membership` (`membership_type_id`),
-    INDEX `idx_fine_slab_active` (`is_active`, `effective_from`, `effective_to`),
-    INDEX `idx_fine_slab_priority` (`priority`)
+    `id`                  INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    `name`                VARCHAR(100) NOT NULL,        -- Name of the fine slab ('e.g., Standard Student Fine Slab, Staff Fine Slab')
+    `membership_type_id`  INT UNSIGNED NULL,            -- Fk to `lib_membership_types.id` (If NULL, applies to all membership types)
+    `resource_type_id`    SMALLINT UNSIGNED NULL,       -- Fk to `lib_resource_types.id` (If NULL, applies to all resource types)
+    `fine_type_id`        SMALLINT UNSIGNED NOT NULL,   -- FK to `lib_fine_type.id` ('Late Return', 'Lost Book', 'Damaged Book', 'Processing Fee')
+    `max_fine_cap`        ENUM('Fixed', 'BookCost', 'Unlimited') DEFAULT 'Unlimited',      -- Type of maximum fine cap (Fixed, BookCost, Unlimited)
+    `max_fine_amt`        DECIMAL(10,2) NULL,           -- Maximum fine cap (could school-defined limit OR if Fixed, this is the fixed amount)
+    `fine_amt_calc_type`  ENUM('Fixed', 'Percentage', 'BookCost') DEFAULT 'Fixed', -- Type of maximum fine cap (Fixed, BookCost, Unlimited)
+    `effective_from`      DATE NOT NULL,                -- Date from which this slab is effective
+    `effective_to`        DATE NULL,                    -- Date until which this slab is effective, If NULL, slab is effective indefinitely
+    `priority`            TINYINT UNSIGNED DEFAULT 0,   -- Priority for slab evaluation (Higher priority slabs are evaluated first)
+    `is_active`           TINYINT(1) NOT NULL DEFAULT 1,
+    `created_at`          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`          TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at`          TIMESTAMP NULL,
+    CONSTRAINT `fk_fineSlabConfig_membershipType` FOREIGN KEY (`membership_type_id`) REFERENCES `lib_membership_types`(`id`),
+    CONSTRAINT `fk_fineSlabConfig_resourceType` FOREIGN KEY (`resource_type_id`) REFERENCES `lib_resource_types`(`id`),
+    CONSTRAINT `fk_fineSlabConfig_fineType` FOREIGN KEY (`fine_type_id`) REFERENCES `lib_fine_type`(`id`),
+    INDEX `idx_fineSlabConfig_membership` (`membership_type_id`),
+    INDEX `idx_fineSlabConfig_active_EffFrom_EffTo` (`is_active`, `effective_from`, `effective_to`),
+    INDEX `idx_fineSlabConfig_priority` (`priority`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+  -- Tab-3.2 : Library Fine Slab Details (Child)
   CREATE TABLE IF NOT EXISTS `lib_fine_slab_details` (
-    `id`                  INT PRIMARY KEY AUTO_INCREMENT,                                   -- Unique identifier for each fine slab day range
-    `fine_slab_config_id` INT NOT NULL,                                                    -- Reference to lib_fine_slab_config
-    `from_day`            INT NOT NULL CHECK (from_day >= 0),                              -- Starting day of the overdue range (inclusive)
-    `to_day`              INT NOT NULL CHECK (to_day >= from_day),                         -- Ending day of the overdue range (inclusive)
-    `rate_per_day`        DECIMAL(10,2) NOT NULL,                                          -- Fine rate per day for this overdue range
-    `rate_type`           ENUM('Fixed', 'Percentage') DEFAULT 'Fixed' COMMENT 'Fixed amount or percentage of book cost', -- Type of rate (Fixed amount or percentage of book cost)
-    `created_at`          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,                             -- Record creation timestamp
-    `updated_at`          TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, -- Last update timestamp
-    `deleted_at`          TIMESTAMP NULL,                                                  -- Soft delete timestamp
-    FOREIGN KEY (`fine_slab_config_id`) REFERENCES `lib_fine_slab_config`(`id`) ON DELETE CASCADE,
-    UNIQUE KEY `uk_slab_days` (`fine_slab_config_id`, `from_day`, `to_day`),
+    `id`                  INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    `fine_slab_config_id` INT UNSIGNED NOT NULL,                                 -- Reference to lib_fine_slab_config
+    `from_day`            TINYINT UNSIGNED NOT NULL CHECK (from_day >= 0),       -- Starting day of the overdue range (inclusive)
+    `to_day`              TINYINT UNSIGNED NOT NULL CHECK (to_day >= from_day),  -- Ending day of the overdue range (inclusive)
+    `fine_rate`           DECIMAL(10,2) NOT NULL,                                -- Fine rate per day for this overdue range
+    `rate_type`           ENUM('Fixed', 'Percentage') DEFAULT 'Fixed',           -- Type of rate (Fixed amount or percentage of book cost)
+    `calculation_type`    ENUM('Per_Day', 'Per_Week', 'Per_Month', 'Per_Year', 'Per_Book') DEFAULT 'Per_Day', -- Type of rate (Fixed amount or percentage of book cost)
+    `created_at`          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`          TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at`          TIMESTAMP NULL,
+    CONSTRAINT `fk_fineSlabDetails_fineSlabConfig` FOREIGN KEY (`fine_slab_config_id`) REFERENCES `lib_fine_slab_config`(`id`) ON DELETE CASCADE,
+    UNIQUE KEY `uq_slab_days` (`fine_slab_config_id`, `from_day`, `to_day`),
     INDEX `idx_slab_day_range` (`from_day`, `to_day`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+  -- Tab-3.3 : Library Account Entry Config
+  CREATE TABLE IF NOT EXISTS `lib_account_entry_config` (
+    `id`                  INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    `name`                VARCHAR(100) NOT NULL,        -- Name of the fine slab ('e.g., Standard Student Fine Slab, Staff Fine Slab')
+    `fine_type_id`        SMALLINT UNSIGNED NOT NULL,   -- FK to `lib_fine_type.id` ('Late Return', 'Lost Book', 'Damaged Book', 'Processing Fee')
+    `fine_slab_config_id` INT UNSIGNED NULL,            -- FK to `lib_fine_slab_config.id` (If NULL, applies to all fine slabs for this fine_type)
+    `account_group_id`    INT UNSIGNED NOT NULL,        -- Fk to `acc_account_groups.id`
+    `ledger_id`           INT UNSIGNED NOT NULL,        -- Fk to `acc_ledgers.id`
+    `is_active`           TINYINT(1) NOT NULL DEFAULT 1,
+    `created_at`          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`          TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at`          TIMESTAMP NULL,
+    UNIQUE KEY `uq_account_entry_config_name` (`name`),
+    CONSTRAINT `fk_lib_aec_fineType` FOREIGN KEY (`fine_type_id`) REFERENCES `lib_fine_type`(`id`),
+    CONSTRAINT `fk_lib_aec_fineSlabConfig` FOREIGN KEY (`fine_slab_config_id`) REFERENCES `lib_fine_slab_config`(`id`),
+    CONSTRAINT `fk_lib_aec_accountGroup` FOREIGN KEY (`account_group_id`) REFERENCES `acc_account_groups`(`id`),
+    CONSTRAINT `fk_lib_aec_ledger` FOREIGN KEY (`ledger_id`) REFERENCES `acc_ledgers`(`id`),
+    UNIQUE KEY `uq_lib_aec_fineType_SlabConf_accGrp_ledger` (`fine_type_id`, `fine_slab_config_id`, `account_group_id`, `ledger_id`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+  -- Tab-3.4 : Library Status Master
 	CREATE TABLE IF NOT EXISTS `lib_library_status_masters` (
 		`id`            SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
 		`status_type`   ENUM(`Book Status`, `Member Status`, `Transaction Status`, `Reservation Status`, 'Fine Status', `Inventry Audit Status`, `Inventory Audit Detail Status`) NOT NULL,
@@ -219,59 +273,62 @@
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Generic master for dynamic status codes across modules; allows adding new statuses without code changes';
 
 	-- Data seed (`lib_library_status_masters`) :
-		-- Status Type                        Code
-		-- --------------------------------   ----------------------------------------------------------------------------------
-		-- `Book Status`                    - 'Available', 'Issued', 'Reserved', 'Under_Maintenance', 'Lost', 'Withdrawn'
-		-- `Member Status`                  - 'Active', 'Expired', 'Suspended', 'Deactivated'
-		-- `Transaction Status`             - 'Issued', 'Returned', 'Overdue', 'Lost'
-    -- `Reservation Status`             - 'Pending', 'Available', 'Picked_Up', 'Cancelled', 'Expired'
-		-- 'Fine Status'                    - 'Pending', 'Paid', 'Waived', 'Overdue'
-    -- `Inventry Audit Status`          - 'In Progress', 'Completed', 'Cancelled'
-    -- `Inventory Audit Detail Status`  - 'Found', 'Missing', 'Misplaced', 'Damaged'
+		-- Status Type                                                      Code
+		-- --------------------------------------------------------------   ----------------------------------------------------------------------------------
+		-- `lib_book_copies` (Book Status)                                - 'Available', 'Issued', 'Reserved', 'Under_Maintenance', 'Lost', 'Withdrawn'
+    -- `lib_digital_resources` (Digital Resource Status)              - 'Available', 'License Consumed', 'License Expired'
+		-- `lib_members` (Member Status)                                  - 'Active', 'Expired', 'Suspended', 'Deactivated'
+		-- `lib_transactions` (Transaction Status)                        - 'Issued', 'Returned', 'Overdue', 'Lost'
+    -- `lib_reservations` (Reservation Status)                        - 'Pending', 'Available', 'Picked_Up', 'Cancelled', 'Expired'
+    -- `lib_digital_access_requests` (Digital Access Request Status)  - 'Pending', 'Approved', 'Rejected', 'Withdrawn'
+		-- `lib_fines` (Fine Status)                                      - 'Pending', 'Paid', 'Waived', 'Overdue'
+    -- `lib_inventory_audit` (Inventry Audit Status)                  - 'In Progress', 'Completed', 'Cancelled'
+    -- `lib_inventory_audit_details` (Inventory Audit Detail Status)  - 'Found', 'Missing', 'Misplaced', 'Damaged'
 
 
 -- ----------------------------------------------------------------------------
--- Sub-Menu 3. BOOK ACQUISITION & CATALOGING
+-- Sub-Menu 4. ACQUISITION & CATALOGING
 -- ----------------------------------------------------------------------------
--- Tab : 3.1 Book Master Creation
+-- Tab-4.1 : Book Master Creation
 -- ------------------------------
   -- Master catalog of all books and resources owned by the library.
   CREATE TABLE IF NOT EXISTS `lib_books_master` (
-    `id`                         INT PRIMARY KEY AUTO_INCREMENT,                                       -- Unique identifier for each book title
-    `title`                      VARCHAR(500) NOT NULL,                                               -- Main title of the book
-    `subtitle`                   VARCHAR(500),                                                        -- Subtitle if applicable
-    `edition`                    VARCHAR(50),                                                         -- Edition information (e.g., '2nd', 'Revised')
-    `isbn`                       VARCHAR(20) UNIQUE,                                                  -- International Standard Book Number (13 digits)
-    `issn`                       VARCHAR(20),                                                         -- International Standard Serial Number (for journals)
-    `doi`                        VARCHAR(100),                                                        -- Digital Object Identifier
-    `publication_year`           INT,                                                                 -- Year of publication
-    `publisher_id`               INT,                                                                 -- Reference to lib_publishers
-    `language`                   VARCHAR(50) DEFAULT 'English',                                       -- Primary language of the resource
-    `page_count`                 INT CHECK (page_count > 0),                                          -- Total number of pages
-    `summary`                    TEXT,                                                                -- Brief summary/abstract
-    `table_of_contents`          TEXT,                                                               -- Structured table of contents
-    `cover_image_url`            VARCHAR(500),                                                        -- URL to cover image
-    `resource_type_id`           SMALLINT NOT NULL,                                                   -- Reference to lib_resource_types
-    `is_reference_only`          TINYINT(1) NOT NULL DEFAULT 0,                                       -- Whether book cannot be borrowed (in-library use only)
+    `id`                         INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    `title`                      VARCHAR(500) NOT NULL,               -- Main title of the book
+    `subtitle`                   VARCHAR(500),                        -- Subtitle if applicable
+    `edition`                    VARCHAR(50),                         -- Edition information (e.g., '2nd', 'Revised')
+    `isbn`                       VARCHAR(20) UNIQUE,                  -- International Standard Book Number (13 digits)
+    `issn`                       VARCHAR(20),                         -- International Standard Serial Number (for journals)
+    `doi`                        VARCHAR(100),                        -- Digital Object Identifier
+    `publication_year`           SMALLINT UNSIGNED,                   -- Year of publication
+    `publisher_id`               INT UNSIGNED NOT NULL,               -- Reference to lib_publishers
+    `language`                   VARCHAR(50) DEFAULT 'English',       -- Primary language of the resource
+    `page_count`                 INT CHECK (page_count > 0),          -- Total number of pages
+    `summary`                    TEXT NULL,                           -- Brief summary/abstract
+    `table_of_contents`          TEXT NULL,                           -- Structured table of contents
+    `cover_image_media_id`       VARCHAR(500),                        -- FK to sys_media.id, URL to cover image
+    `resource_type_id`           SMALLINT UNSIGNED NOT NULL,          -- FK to lib_resource_types.id
+    `is_reference_only`          TINYINT(1) NOT NULL DEFAULT 0,       -- Whether book cannot be borrowed (in-library use only)
     -- Analytics
-    `lexile_level`               VARCHAR(20) NULL,                                                    -- Reading difficulty level
-    `reading_age_range`          VARCHAR(20) NULL,                                                    -- Recommended reading age range (e.g., '8-12 years')
-    `awards`                     TEXT NULL,                                                           -- List of awards won by the book
-    `series_name`                VARCHAR(200) NULL,                                                   -- Series name if book is part of a series
-    `series_position`            INT NULL,                                                            -- Position of the book within the series
-    `popularity_rank`            INT NULL,                                                            -- Popularity rank of the book
-    `academic_rating`            DECIMAL(3,2) NULL,                                                   -- Rating by faculty
-    `student_rating`             DECIMAL(3,2) NULL,                                                   -- Average student rating
-    `rating_count`               INT DEFAULT 0,                                                       -- Number of ratings received
-    `curricular_relevance_score` DECIMAL(5,2) NOT NULL DEFAULT 0.00,                                  -- Curricular relevance score
-    `tags`                       JSON NULL,                                                           -- Auto-generated tags from AI analysis
-    `ai_summary`                 TEXT NULL,                                                           -- AI-generated summary
-    `key_concepts`               JSON NULL,                                                           -- Key concepts extracted from the book
+    `lexile_level`               VARCHAR(20) NULL,                    -- Reading difficulty level
+    `reading_age_range`          VARCHAR(20) NULL,                    -- Recommended reading age range (e.g., '8-12 years')
+    `awards`                     TEXT NULL,                           -- List of awards won by the book
+    `series_name`                VARCHAR(200) NULL,                   -- Series name if book is part of a series
+    `series_position`            TINYINT UNSIGNED NULL,               -- Position of the book within the series e.g. 1, 2
+    `popularity_rank`            TINYINT UNSIGNED NULL,               -- Popularity rank of the book e.g. 1, 2, 3
+    `academic_rating`            DECIMAL(3,2) NULL,                   -- Rating by faculty
+    `student_rating`             DECIMAL(3,2) NULL,                   -- Average student rating
+    `rating_count`               INT DEFAULT 0,                       -- Number of ratings received
+    `curricular_relevance_score` DECIMAL(5,2) NOT NULL DEFAULT 0.00,  -- Curricular relevance score
+    `tags`                       JSON NULL,                           -- Auto-generated tags from AI analysis
+    `ai_summary`                 TEXT NULL,                           -- AI-generated summary
+    `key_concepts`               JSON NULL,                           -- Key concepts extracted from the book
+    `is_available`               TINYINT(1) NOT NULL DEFAULT 1,       -- Whether the book is currently available        
     -- Audit
-    `is_active`                  TINYINT(1) NOT NULL DEFAULT 1,                                       -- Whether this title is currently active
-    `created_at`                 TIMESTAMP DEFAULT CURRENT_TIMESTAMP,                                 -- Record creation timestamp
-    `updated_at`                 TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,     -- Last update timestamp
-    `deleted_at`                 TIMESTAMP NULL,                                                      -- Soft delete timestamp
+    `is_active`                  TINYINT(1) NOT NULL DEFAULT 1,       -- Whether this title is currently active
+    `created_at`                 TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`                 TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at`                 TIMESTAMP NULL,
     FOREIGN KEY (`publisher_id`) REFERENCES `lib_publishers`(`publisher_id`),
     FOREIGN KEY (`resource_type_id`) REFERENCES `lib_resource_types`(`resource_type_id`),
     INDEX `idx_book_title` (`title`(191)),
@@ -281,10 +338,13 @@
     INDEX `idx_book_publisher` (`publisher_id`),
     FULLTEXT INDEX `ft_book_search` (`title`, `subtitle`, `summary`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
+  -- Condition :
+  -- If `is_reference_only` = 1, then book can not be borrowed (in-library use only).
+  -- Show Book Sttaus from Field 'is_available' in Book Master.
+  
   -- Junction table to link books with their authors (many-to-many).
   CREATE TABLE IF NOT EXISTS `lib_book_author_jnt` (
-    `id`           INT PRIMARY KEY AUTO_INCREMENT,                                          -- Unique identifier for each author assignment
+    `id`           INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,                                          -- Unique identifier for each author assignment
     `book_id`      INT NOT NULL,                                                           -- Reference to lib_books_master
     `author_id`    INT NOT NULL,                                                           -- Reference to lib_authors
     `author_order` INT NOT NULL DEFAULT 1,                                                 -- Display order of authors (1 = first)
@@ -294,12 +354,12 @@
     `deleted_at`   TIMESTAMP NULL,                                                         -- Soft delete timestamp
     FOREIGN KEY (`book_id`) REFERENCES `lib_books_master`(`book_id`) ON DELETE CASCADE,
     FOREIGN KEY (`author_id`) REFERENCES `lib_authors`(`id`) ON DELETE CASCADE,
-    UNIQUE KEY `uk_book_author` (`book_id`, `author_id`, `author_order`)
+    UNIQUE KEY `uq_book_author` (`book_id`, `author_id`, `author_order`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   -- Junction table to link books with their categories (many-to-many).
   CREATE TABLE IF NOT EXISTS `lib_book_category_jnt` (
-    `id`          INT PRIMARY KEY AUTO_INCREMENT,                                           -- Unique identifier for each book-category mapping
+    `id`          INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,                                           -- Unique identifier for each book-category mapping
     `book_id`     INT NOT NULL,                                                            -- Reference to lib_books_master
     `category_id` INT NOT NULL,                                                            -- Reference to lib_categories
     `created_at`  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,                                     -- Record creation timestamp
@@ -313,9 +373,9 @@
 
   -- Junction table to link books with their genres (many-to-many).
   CREATE TABLE IF NOT EXISTS `lib_book_genre_jnt` (
-    `id`         INT PRIMARY KEY AUTO_INCREMENT,                                            -- Unique identifier for each book-genre mapping
-    `book_id`    INT NOT NULL,                                                             -- Reference to lib_books_master
-    `genre_id`   INT NOT NULL,                                                             -- Reference to lib_genres
+    `id`         INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,                                            -- Unique identifier for each book-genre mapping
+    `book_id`    INT UNSIGNED NOT NULL,                                                             -- Reference to lib_books_master
+    `genre_id`   INT UNSIGNED NOT NULL,                                                             -- Reference to lib_genres
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,                                      -- Record creation timestamp
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,          -- Last update timestamp
     `deleted_at` TIMESTAMP NULL,                                                           -- Soft delete timestamp
@@ -327,7 +387,7 @@
 
   -- Junction table to link books with their subjects (many-to-many).
   CREATE TABLE IF NOT EXISTS `lib_book_subject_jnt` (
-    `id`         INT PRIMARY KEY AUTO_INCREMENT,                                            -- Unique identifier for each book-subject-class mapping
+    `id`         INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,                                            -- Unique identifier for each book-subject-class mapping
     `book_id`    INT NOT NULL,                                                             -- Reference to lib_books_master
     `class_id`   INT NOT NULL,                                                             -- Reference to sch_classes
     `subject_id` INT NOT NULL,                                                             -- Reference to sch_subjects
@@ -342,7 +402,7 @@
 
   -- Junction table to link books with their keywords (many-to-many).
   CREATE TABLE IF NOT EXISTS `lib_book_keyword_jnt` (
-    `id`         INT PRIMARY KEY AUTO_INCREMENT,                                            -- Unique identifier for each book-keyword mapping
+    `id`         INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,                                            -- Unique identifier for each book-keyword mapping
     `book_id`    INT NOT NULL,                                                             -- Reference to lib_books_master
     `keyword_id` INT NOT NULL,                                                             -- Reference to lib_keywords
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,                                      -- Record creation timestamp
@@ -355,10 +415,10 @@
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- 3.2 Book Acquisition (Purchase)
--- -------------------------------
+-- Tab-4.2 : Book Acquisition (Purchase)
+-- -------------------------------------
   CREATE TABLE IF NOT EXISTS `lib_book_purchases` (
-    `id`             INT PRIMARY KEY AUTO_INCREMENT,    -- Unique identifier for each book purchase
+    `id`             INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,    -- Unique identifier for each book purchase
     `vendor_id`      INT UNSIGNED NOT NULL,             -- FK to vnd_vendors (supplier/vendor)
     `bill_no`        VARCHAR(50) NULL,                  -- Vendot Invoice No
     `bill_date`      DATE NOT NULL,                     -- Date when copy was purchased
@@ -376,11 +436,11 @@
     CONSTRAINT `fk_bookPurchase_vendor_id` FOREIGN KEY (`vendor_id`) REFERENCES `vnd_vendors`(`vendor_id`) ON DELETE SET NULL,
     INDEX `idx_book_id` (`book_id`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
--- Condition :
--- Check `resource_type_id` in lib_resource_types master table and showcase on screen whether the Item is physical or digital .
+  -- Condition :
+  -- Check `resource_type_id` in lib_resource_types master table and showcase on screen whether the Item is physical or digital .
 
   CREATE TABLE IF NOT EXISTS `lib_book_purchases_items` (
-    `id`                   INT PRIMARY KEY AUTO_INCREMENT,    -- Unique identifier for each book purchase
+    `id`                   INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,    -- Unique identifier for each book purchase
     `book_purchase_id`     INT UNSIGNED NOT NULL,             -- Unique identifier for each book purchase
     `book_id`              INT UNSIGNED NOT NULL,             -- FK to lib_books_master, Reference to lib_books_master.id
     `resource_type_id`     SMALLINT UNSIGNED NOT NULL,        -- FK to lib_resource_types, Reference to lib_resource_types.id (e.g., 'PHY_BOOK', 'EBOOK')
@@ -403,15 +463,15 @@
     CONSTRAINT `fk_bookPurchase_vendor_id` FOREIGN KEY (`vendor_id`) REFERENCES `vnd_vendors`(`vendor_id`) ON DELETE SET NULL,
     INDEX `idx_book_id` (`book_id`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
--- Condition :
--- Check `resource_type_id` in lib_resource_types master table and showcase on screen whether it is physical or digital.
+  -- Condition :
+  -- Check `resource_type_id` in lib_resource_types master table and showcase on screen whether it is physical or digital.
 
 
--- 3.3 Book Copy Management
--- ------------------------
+-- Tab-4.3 : Book Copy Management
+-- ------------------------------
   -- Item-level tracking of each physical copy of a book, including location, condition, and circulation status.
   CREATE TABLE IF NOT EXISTS `lib_book_copies` (
-    `id`                   INT PRIMARY KEY AUTO_INCREMENT, -- Unique identifier for each physical copy
+    `id`                   INT UNSIGNED PRIMARY KEY AUTO_INCREMENT, -- Unique identifier for each physical copy
     `book_id`              INT UNSIGNED NOT NULL,          -- Reference to lib_books_master
     `accession_number`     VARCHAR(50) NOT NULL,           -- Institution's unique accession number
     `barcode`              VARCHAR(100) NOT NULL,          -- Scannable barcode for circulation
@@ -448,7 +508,7 @@
 
   -- Historical condition log per book copy for tracking wear and damage over time.
   CREATE TABLE IF NOT EXISTS `lib_book_condition_jnt` (
-    `id`           INT PRIMARY KEY AUTO_INCREMENT,
+    `id`           INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
     `date`         DATE NOT NULL,   -- Date when condition was assessed
     `book_id`      INT NOT NULL,    -- FK to lib_books_master
     `book_copy_id` INT NOT NULL,    -- FK to lib_book_copies, Reference to lib_book_copies
@@ -464,29 +524,29 @@
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
- -- 3.4 Digital Resource Management
- -- -------------------------------
+-- Tab-4.4 : Digital Resource Management
+-- -------------------------------------
   CREATE TABLE IF NOT EXISTS `lib_digital_resources` (
-    `id`                    INT PRIMARY KEY AUTO_INCREMENT,
-    `book_id`               INT NOT NULL,                   -- FK to lib_books_master
-    `file_name`             VARCHAR(255) NOT NULL,          -- Original file name
-    `file_media_id`         INT UNSIGNED DEFAULT NULL,      -- Reference to media_files for stored file
-    `file_path`             VARCHAR(500) NOT NULL,          -- Storage path or URL
-    `file_size_bytes`       BIGINT,                         -- Size of the file in bytes
-    `mime_type`             VARCHAR(100),                   -- MIME type (e.g., 'application/pdf')
-    `file_format`           VARCHAR(50),                    -- Format (e.g., 'PDF', 'EPUB', 'MP3')
-    `can_student_download`  TINYINT(1) NOT NULL DEFAULT 1,  -- Does Student allowed to download the Book
-    `can_teacher_download`  TINYINT(1) NOT NULL DEFAULT 1,  -- Does Teacher allowed to download the Book
-    `can_staff_download`    TINYINT(1) NOT NULL DEFAULT 1,  -- Does Other Staff allowed to download the Book
-    `download_count`        INT DEFAULT 0,                  -- Number of times downloaded
-    `view_count`            INT DEFAULT 0,                  -- Number of times viewed online
-    `license_key`           VARCHAR(100),                   -- License identifier if applicable
-    `license_type`          VARCHAR(50),                    -- Type of license (e.g., 'Single User', 'Concurrent', 'Site')
-    `license_start_date`    DATE,                           -- License validity start date
-    `license_end_date`      DATE,                           -- License validity end date
-    `license_count`         TINYINT NOT NULL DEFAULT 0,  -- Number of concurrent licenses, IF `license_count` = 0 THEN UNLIMITED DOWNOAD COUNT
-    `access_restriction`    JSON,                           -- JSON defining access rules (user roles, IP ranges, etc.)
-    `is_active`             TINYINT(1) NOT NULL DEFAULT 1,  -- Whether this resource is currently active
+    `id`                    INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    `book_id`               INT NOT NULL,                    -- FK to lib_books_master
+    `file_name`             VARCHAR(255) NOT NULL,           -- Original file name
+    `file_media_id`         INT UNSIGNED DEFAULT NULL,       -- Reference to media_files for stored file
+    `file_path`             VARCHAR(500) NOT NULL,           -- Storage path or URL (Auto save, will not be visibal to users)
+    `file_size_bytes`       INT UNSIGNED NOT NULL,           -- Size of the file in bytes
+    `mime_type`             VARCHAR(100),                    -- MIME type (e.g., 'application/pdf')
+    `file_format`           VARCHAR(50),                     -- Format (e.g., 'PDF', 'EPUB', 'MP3')
+    `can_student_download`  TINYINT(1) NOT NULL DEFAULT 1,   -- Does Student allowed to download the Book
+    `can_teacher_download`  TINYINT(1) NOT NULL DEFAULT 1,   -- Does Teacher allowed to download the Book
+    `can_staff_download`    TINYINT(1) NOT NULL DEFAULT 1,   -- Does Other Staff allowed to download the Book
+    `download_count`        INT UNSIGNED NOT NULL DEFAULT 0, -- Number of times downloaded
+    `view_count`            INT UNSIGNED NOT NULL DEFAULT 0, -- Number of times viewed online
+    `license_key`           VARCHAR(100),                    -- License identifier if applicable
+    `license_type`          VARCHAR(50),                     -- Type of license (e.g., 'Single User', 'Concurrent', 'Site')
+    `license_start_date`    DATE,                            -- License validity start date
+    `license_end_date`      DATE,                            -- License validity end date
+    `license_count`         TINYINT NOT NULL DEFAULT 0,      -- Number of concurrent licenses, IF `license_count` = 0 THEN UNLIMITED DOWNOAD COUNT
+    `status`                SMALLINT UNSIGNED NOT NULL,      -- FK to `lib_library_status_masters`. Status of the digital resource
+    `is_active`             TINYINT(1) NOT NULL DEFAULT 1,   -- Whether this resource is currently active
     `created_at`            TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at`            TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`            TIMESTAMP NULL,
@@ -497,30 +557,62 @@
     INDEX `idx_digital_active` (`is_active`),
     FULLTEXT INDEX `ft_digital_search` (`file_name`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  -- Conditions:
+  -- If `license_count` > 0 then the number of downloads will be limited to `license_count`
 
   CREATE TABLE IF NOT EXISTS `lib_digital_resource_tags` (
-    `id`                  INT PRIMARY KEY AUTO_INCREMENT,                                   -- Unique identifier for each tag assignment
+    `id`                  INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,                                   -- Unique identifier for each tag assignment
     `digital_resource_id` INT NOT NULL,                                                    -- Reference to lib_digital_resources
     `tag_name`            VARCHAR(100) NOT NULL,                                           -- Tag text (e.g., 'interactive', 'video-lecture')
     `created_at`          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,                             -- Record creation timestamp
     FOREIGN KEY (`digital_resource_id`) REFERENCES `lib_digital_resources`(`digital_resource_id`) ON DELETE CASCADE,
-    UNIQUE KEY `uk_resource_tag` (`digital_resource_id`, `tag_name`),
+    UNIQUE KEY `uq_resource_tag` (`digital_resource_id`, `tag_name`),
     INDEX `idx_tag_name` (`tag_name`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 
 -- ----------------------------------------------------------------------------
--- 4. MEMBER MANAGEMENT
+-- 5. MEMBER & ACCESS MANAGEMENT
 -- ----------------------------------------------------------------------------
 
+  -- Tab-5.1 : Defines different types of library memberships with their associated privileges and rules. Controls borrowing limits, loan periods, and fine calculations.
+  CREATE TABLE IF NOT EXISTS `lib_membership_types` (
+    `id`                  INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    `code`                VARCHAR(30) NOT NULL UNIQUE,                            -- Business code (e.g., 'STD_STUDENT', 'PREMIUM_STAFF')
+    `name`                VARCHAR(100) NOT NULL,                                  -- Display name (e.g., 'Standard Student', 'Premium Staff')
+    `max_books_allowed`   TINYINT UNSIGNED NOT NULL CHECK (loan_period_days > 0), -- Maximum number of books a member can borrow simultaneously
+    `loan_period_days`    TINYINT UNSIGNED NOT NULL CHECK (loan_period_days > 0), -- Standard loan duration in days
+    `renewal_allowed`     TINYINT(1) DEFAULT 1,                                   -- Whether members can renew books
+    `max_renewals`        TINYINT UNSIGNED NOT NULL DEFAULT 0,                    -- Maximum number of times a book can be renewed
+    `fine_rate_per_day`   DECIMAL(8,2) NOT NULL DEFAULT 0.00 CHECK (fine_rate_per_day >= 0), -- Daily fine amount for late returns
+    `grace_period_days`   TINYINT UNSIGNED NOT NULL DEFAULT 0,                    -- Days after due date before fines start accruing
+    `priority_level`      TINYINT UNSIGNED NOT NULL DEFAULT 1,                    -- Priority for reservations (higher = better priority)
+    `digital_access_days` TINYINT UNSIGNED NOT NULL DEFAULT 0,                    -- For how many Digital Resource access will be provided to this membership type
+    `can_restricted_members_view_list` TINYINT(1) DEFAULT 0,                      -- If 0, then Restricted Members can not View the Book List
+    `is_active`           TINYINT(1) DEFAULT TRUE,
+    `created_at`          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`          TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at`          TIMESTAMP NULL,
+    INDEX `idx_membership_active` (`is_active`),
+    INDEX `idx_membership_priority` (`priority_level`),
+    UNIQUE KEY `uq_membership_type_code` (`code`),
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  -- Condition on Table `lib_membership_types` :
+    -- When Student try to request for a Book, check `max_books_allowed` in `lib_membership_types` master table, If member has exceeded the limit, then the member Get msg "Reached Limit".
+    -- When Book Issue then check `max_books_allowed` in `lib_membership_types` master table, If member has Reached the limit, then show msg "Reached Limit".
+    -- Check whether user is Membr of the Membership Type or Not. If Not he will not be able to see Book List, get msg. "You are not Authorized to issue Book".
+    -- If `can_restricted_members_view_list` is 0, then Restricted Members can not see the Book List.
+    -- Once 
+
+  -- Tab-5.2 : Stores information about library members, including their membership type, membership number, and other details.
   CREATE TABLE IF NOT EXISTS `lib_members` (
-    `id`                            INT PRIMARY KEY AUTO_INCREMENT,
+    `id`                            INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
     `user_id`                       INT NOT NULL,                   -- Reference to main users table in ERP
     `membership_type_id`            INT NOT NULL,                   -- Reference to lib_membership_types
     `user_type`                     ENUM('Student', 'Teacher', 'Staff') NOT NULL,  -- Type of user (Student, Teacher, Staff)
     `membership_number`             VARCHAR(50) NOT NULL,           -- Unique library membership number
-    `library_card_barcode`          VARCHAR(100),                   -- Barcode on physical library card
+    `library_card_barcode`          VARCHAR(100) NOT NULL,          -- Barcode on physical library card
     `registration_date`             DATE NOT NULL,                  -- Date of membership registration
     `expiry_date`                   DATE NOT NULL,                  -- Membership expiry date
     `is_auto_renew`                 TINYINT(1) NOT NULL DEFAULT 1,  -- Whether membership auto-renews
@@ -558,12 +650,77 @@
     INDEX `idx_member_active` (`is_active`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
- -- ----------------------------------------------------------------------------
- -- OPERATION MANAGEMENT
- -- ----------------------------------------------------------------------------
+  -- Tab-5.3 : This table will hold the access restrictions configuration for digital resources
+  CREATE TABLE IF NOT EXISTS `lib_digital_resource_access_restrictions` (
+    `id`                  INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,                                  -- Unique identifier for each tag assignment
+    `digital_resource_id` INT NOT NULL,                                                    -- Reference to lib_digital_resources
+    `role_id`             INT NOT NULL,                                                    -- Reference to main roles table in ERP
+    `designation_id`      INT NOT NULL,                                                    -- Reference to main designations table in ERP
+    `department_id`       INT NOT NULL,                                                    -- Reference to main departments table in ERP
+    `user_id`             INT NOT NULL,                                                    -- Reference to main users table in ERP
+    `is_active`           TINYINT(1) NOT NULL DEFAULT 1,                                   -- Whether this resource is currently active
+    `created_at`          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,                             -- Record creation timestamp
+    `updated_at`          TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, -- Last update timestamp
+    `deleted_at`          TIMESTAMP NULL,                                                  -- Soft delete timestamp
+    FOREIGN KEY (`digital_resource_id`) REFERENCES `lib_digital_resources`(`digital_resource_id`) ON DELETE CASCADE,
+    UNIQUE KEY `uq_resource_user` (`digital_resource_id`, `user_id`),
+    INDEX `idx_digital_resource_id` (`digital_resource_id`,`is_active`),
+    INDEX `idx_digital_access_active_resource` (`digital_resource_id`, `role_id`, `designation_id`, `department_id`, `user_id`, `is_active`),
+    CONSTRAINT `fk_lib_drar_user_id` FOREIGN KEY (`user_id`) REFERENCES `sys_users`(`id`),
+    CONSTRAINT `fk_lib_drar_role_id` FOREIGN KEY (`role_id`) REFERENCES `sys_roles`(`id`),
+    CONSTRAINT `fk_lib_drar_designation_id` FOREIGN KEY (`designation_id`) REFERENCES `sys_designations`(`id`),
+    CONSTRAINT `fk_lib_drar_department_id` FOREIGN KEY (`department_id`) REFERENCES `sys_departments`(`id`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+
+
+-- ----------------------------------------------------------------------------
+-- 6- OPERATION MANAGEMENT
+-- ----------------------------------------------------------------------------
+
+  -- Tab-6.1 : This table will hold the book Reservations & Renewals
+  CREATE TABLE IF NOT EXISTS `lib_reservations` (
+    `id`                      INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    `book_id`                 INT NOT NULL,                    -- Reference to lib_books_master
+    `member_id`               INT NOT NULL,                    -- Reference to lib_members
+    `reservation_date`        DATETIME NOT NULL,               -- Date and time of reservation/ Request Date
+    `expected_available_date` DATE NULL,                       -- Estimated date when book will be available
+    `notification_sent`       TINYINT(1) NOT NULL DEFAULT 0,   -- Whether availability notification was sent
+    `notification_sent_at`    DATETIME NULL,                   -- When notification was sent
+    `pickup_by_date`          DATE NULL,                       -- Date by which member must pick up the book
+    `transaction_id`          INT UNSIGNED NULL,               -- Book Issued Transaction ID against this request
+    `status`                  SMALLINT UNSIGNED NOT NULL,      -- FK to `lib_library_status_masters`. Reservation status ('Pending', 'Available', 'Picked_Up', 'Cancelled', 'Expired')
+    -- `queue_position`          INT NULL DEFAULT 1,           -- Position in reservation queue
+    `cancellation_reason`     TEXT,                            -- Reason if cancelled
+    `is_renewal_reuest`       TINYINT(1) NOT NULL DEFAULT 0,   -- Whether this is a renewal request
+    `renewal_days_requested`  TINYINT DEFAULT 0,               -- Number of times this has been renewed
+    `renewal_approved`        TINYINT(1) NOT NULL DEFAULT 0,   -- Whether renewal was approved
+    `renewal_approved_at`     DATETIME NULL,                   -- When renewal was approved
+    `renewal_approved_by_id`  INT NULL,                        -- User ID who approved renewal
+    `created_at`              TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`              TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at`              TIMESTAMP NULL,
+    UNIQUE KEY `uq_active_reservation` (`book_id`, `member_id`, `status`),
+    INDEX `idx_reserve_book` (`book_id`, `status`, `queue_position`),
+    INDEX `idx_reserve_member` (`member_id`, `status`),
+    INDEX `idx_reserve_status` (`status`, `pickup_by_date`),
+    CONSTRAINT `fk_reservation_bookId` FOREIGN KEY (`book_id`) REFERENCES `lib_books_master`(`book_id`),
+    CONSTRAINT `fk_reservation_membrId` FOREIGN KEY (`member_id`) REFERENCES `lib_members`(`member_id`),
+    CONSTRAINT `fk_reservation_status` FOREIGN KEY (`status`) REFERENCES `lib_library_status_masters`(id),
+    CONSTRAINT `fk_reservation_transactionId` FOREIGN KEY (`transaction_id`) REFERENCES `lib_book_transactions`(`id`),
+    CONSTRAINT `fk_reservation_approvedBy` FOREIGN KEY (`renewal_approved_by_id`) REFERENCES `sys_users`(id)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  -- Condition :
+    -- Mamber can request for Renewal, then Renewal Request will be Approved by Library Incharge.
+    -- Member can also Withdraw the Renewal / Reservation Request.
+    -- When raise Renewal Request -> Check `renewal_allowed` in `lib_membership_types` master table, Renewal is allowed only if `renewal_allowed` is 1 for his Membership Type in `lib_membership_types` master table.
+    -- When raise Renewal Request -> Check `max_renewals` in `lib_membership_types` master table, and then check `renewal_count` in `lib_transactions` table. If member has reached the limit, then the member cannot renew a book.
+    -- When raise Renewal Request -> Check `max_books_allowed` in `lib_membership_types` master table, If member has reached the limit, then the member cannot renew a book.
+  
+
+  -- Tab-6.2 : This table will hold the book transactions (Issue, Return, Renewal, etc.)
   CREATE TABLE IF NOT EXISTS `lib_transactions` (
-    `id`                  BIGINT PRIMARY KEY AUTO_INCREMENT,
+    `id`                  INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
     `book_id`             INT NOT NULL,                  -- FK to lib_books_master
     `copy_id`             INT NOT NULL,                  -- Reference to lib_book_copies
     `member_id`           INT NOT NULL,                  -- Reference to lib_members
@@ -594,50 +751,148 @@
     INDEX `idx_trans_status` (`status`, `due_date`),
     INDEX `idx_trans_issued_by` (`issued_by`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  -- Condition :
+    -- When Issue Check -> Check `max_books_allowed` in `lib_membership_types` master table, If member has exceeded the limit, then the member cannot issue a new book.
+    -- When Return -> Check all the pending requests in `lib_reservations` table for that book. Send msg. to the members requested first for the Book. e.g.
+    -- 3 members requested on 10th May & 1 member requested on 12th May. Then, send msg. to all 3 members requested on 10th May and then issue the book the member who come first to collect the book.
+    -- Next time when book is returned OR purchased new book, then send msg. to 2 members who requested for the same book on 10th may and then 3rd time send to the last member who requested for the same book on 10th may.
+    -- When Renewal -> Check `renewal_allowed` in `lib_membership_types` master table, Renewal is allowed only if `renewal_allowed` is 1.
+    -- When Renewal -> Check `max_renewals` in `lib_membership_types` master table, and then check `renewal_count` in `lib_transactions` table. If member has reached the limit, then the member cannot renew a book.
+    -- When Return -> Check the Book condition at time of issue & return. If condition is not same, then update the condition for the book and see whther any fine needs to be charged to the member.
+    -- When Return -> Check Return date is before due date. If Not then check `grace_period_days` in `lib_membership_types` master table. If member has exceeded the grace period, then fine needs to be charged to the member.
 
-  CREATE TABLE IF NOT EXISTS `lib_reservations` (
-    `id`                      BIGINT PRIMARY KEY AUTO_INCREMENT,
-    `book_id`                 INT NOT NULL,                    -- Reference to lib_books_master
-    `member_id`               INT NOT NULL,                    -- Reference to lib_members
-    `reservation_date`        DATETIME NOT NULL,               -- Date and time of reservation
-    `expected_available_date` DATE NOT NULL,                   -- Estimated date when book will be available
-    `notification_sent`       TINYINT(1) NOT NULL DEFAULT 0,   -- Whether availability notification was sent
-    `notification_sent_at`    DATETIME NULL,                   -- When notification was sent
-    `pickup_by_date`          DATE NULL,                       -- Date by which member must pick up the book
-    `transaction_id`          BIGINT UNSIGNED NULL,            -- Book Issued Transaction ID against this request
-    `status`                  SMALLINT UNSIGNED NOT NULL,      -- FK to `lib_library_status_masters`. Reservation status ('Pending', 'Available', 'Picked_Up', 'Cancelled', 'Expired')
-    `queue_position`          INT NOT NULL DEFAULT 1,          -- Position in reservation queue
-    `cancellation_reason`     TEXT,                            -- Reason if cancelled
-    `created_at`              TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    `updated_at`              TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    `deleted_at`              TIMESTAMP NULL,
-    UNIQUE KEY `uk_active_reservation` (`book_id`, `member_id`, `status`),
-    INDEX `idx_reserve_book` (`book_id`, `status`, `queue_position`),
-    INDEX `idx_reserve_member` (`member_id`, `status`),
-    INDEX `idx_reserve_status` (`status`, `pickup_by_date`),
-    CONSTRAINT `fk_reservation_bookId` FOREIGN KEY (`book_id`) REFERENCES `lib_books_master`(`book_id`),
-    CONSTRAINT `fk_reservation_membrId` FOREIGN KEY (`member_id`) REFERENCES `lib_members`(`member_id`),
-    CONSTRAINT `fk_reservation_status` FOREIGN KEY (`status`) REFERENCES `lib_library_status_masters`(id)
+
+  -- Tab-6.3 : This table will capture the Access Requests for Digital Books / Media
+  CREATE TABLE IF NOT EXISTS `lib_digital_access_requests` (
+    `id`                  INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `request_type`        SMALLINT UNSIGNED NOT NULL,   -- FK to `lib_digital_access_request_types`
+    `member_id`           INT UNSIGNED NOT NULL,        -- FK to `lib_members`
+    `book_id`             INT UNSIGNED NOT NULL,        -- FK to `lib_books_master`
+    `digital_resource_id` INT UNSIGNED DEFAULT NULL,    -- FK to `lib_digital_resources`
+    `reason`              TEXT DEFAULT NULL,            -- Reason for request
+    `status`              SMALLINT UNSIGNED NOT NULL,   -- FK to `lib_library_status_masters`. Request status ('Pending', 'Approved', 'Rejected', 'Withdrawn')
+    `reviewed_by_id`      INT UNSIGNED DEFAULT NULL,    -- FK to `sys_users` (User who reviewed & Approved/Reject the request)
+    `reviewed_at`         TIMESTAMP NULL DEFAULT NULL,  -- Review timestamp
+    `notes`               TEXT DEFAULT NULL,            -- Additional notes
+    `is_active`           TINYINT(1) NOT NULL DEFAULT 1,
+    `created_at`          TIMESTAMP NULL DEFAULT NULL,
+    `updated_at`          TIMESTAMP NULL DEFAULT NULL,
+    `deleted_at`          TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    CONSTRAINT `fk_lib_daReq_memberId` FOREIGN KEY (`member_id`) REFERENCES `lib_members` (`id`) ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT `fk_lib_daReq_bookId` FOREIGN KEY (`book_id`) REFERENCES `lib_books_master` (`id`) ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT `fk_lib_daReq_digitalResourceId` FOREIGN KEY (`digital_resource_id`) REFERENCES `lib_digital_resources` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT `fk_lib_daReq_reviewedById` FOREIGN KEY (`reviewed_by_id`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+    UNIQUE KEY `uq_lib_daReq_member_book_status` (`member_id`, `book_id`, `status`),
+    INDEX `idx_lib_daReq_member_status` (`member_id`, `status`),
+    INDEX `idx_lib_daReq_book_status` (`book_id`, `status`),
+    INDEX `idx_lib_daReq_status_date` (`status`, `created_at`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  -- Condition :
+    -- Mamber can request for Renewal, then Renewal Request will be Reviewed & Approved by Library Incharge.
+    -- Member can also Withdraw the Renewal / Reservation Request.
+    -- When raise Renewal Request -> Check `renewal_allowed` in `lib_membership_types` master table, Renewal is allowed only if `renewal_allowed` is 1 for his Membership Type in `lib_membership_types` master table.
+    -- When raise Renewal Request -> Check `max_renewals` in `lib_membership_types` master table, and then check `renewal_count` in `lib_transactions` table. If member has reached the limit, then the member cannot renew a book.
+    -- When raise Renewal Request -> Check `max_books_allowed` in `lib_membership_types` master table, If member has reached the limit, then the member cannot renew a book.
+
+
+  -- Tab-6.4 : This table captures every Access Transaction for Digital Books / Media.
+  --           Each row = one granted access window for a member on a specific digital resource.
+  --           Tracks whether the file was downloaded, how many times, from which IP & device,
+  --           plus online view time and full revocation audit trail.
+  CREATE TABLE IF NOT EXISTS `lib_digital_access_transactions` (
+    `id`                        INT UNSIGNED    PRIMARY KEY AUTO_INCREMENT,
+
+    -- ── Core References ──────────────────────────────────────────────────────
+    `member_id`                 INT UNSIGNED    NOT NULL,                     -- FK to lib_members.id
+    `book_id`                   INT UNSIGNED    NOT NULL,                     -- FK to lib_books_master.id
+    `digital_resource_id`       INT UNSIGNED    NOT NULL,                     -- FK to lib_digital_resources.id (specific file)
+    `access_request_id`         INT UNSIGNED    NULL,                         -- FK to lib_digital_access_requests.id (originating request, NULL if direct-grant)
+
+    -- ── Access Window ─────────────────────────────────────────────────────────
+    `access_type`               ENUM('View_Online', 'Download', 'Stream', 'Read_Online') NOT NULL DEFAULT 'View_Online',  -- How the resource is being accessed
+    `access_start_at`           DATETIME        NOT NULL,                     -- When access was granted
+    `access_expires_at`         DATETIME        NULL,                         -- When access expires (NULL = no expiry / permanent access)
+    `last_accessed_at`          DATETIME        NULL,                         -- Last time member performed any action on this access
+
+    -- ── Download Tracking ────────────────────────────────────────────────────
+    `is_downloaded`             TINYINT(1)      NOT NULL DEFAULT 0,           -- Whether file was downloaded at least once
+    `download_count`            SMALLINT UNSIGNED NOT NULL DEFAULT 0,         -- Total number of times the file was downloaded
+    `first_downloaded_at`       DATETIME        NULL,                         -- Timestamp of first download
+    `last_downloaded_at`        DATETIME        NULL,                         -- Timestamp of most recent download
+    `last_download_ip`          VARCHAR(45)     NULL,                         -- IP address of most recent download (IPv4 or IPv6)
+    `last_download_device`      ENUM('Desktop', 'Mobile', 'Tablet', 'Kiosk', 'Other') NULL,  -- Device type of most recent download
+    `last_download_user_agent`  VARCHAR(500)    NULL,                         -- Browser / app user-agent of most recent download
+    `download_history_json`     JSON            NULL,                         -- Full log: [{downloaded_at, ip, device, user_agent}, ...] one entry per download event
+
+    -- ── Online View Tracking ─────────────────────────────────────────────────
+    `view_count`                SMALLINT UNSIGNED NOT NULL DEFAULT 0,         -- Number of times opened/viewed online (without download)
+    `total_view_duration_sec`   INT UNSIGNED    NOT NULL DEFAULT 0,           -- Cumulative seconds the member has spent reading/viewing online
+    `last_view_ip`              VARCHAR(45)     NULL,                         -- IP address of most recent online view session
+    `last_view_device`          ENUM('Desktop', 'Mobile', 'Tablet', 'Kiosk', 'Other') NULL,  -- Device type of most recent online view
+
+    -- ── Access Grant & Revocation ─────────────────────────────────────────────
+    `granted_by_id`             INT UNSIGNED    NULL,                         -- FK sys_users.id — Staff who manually granted (NULL if auto-approved via request)
+    `revoked_by_id`             INT UNSIGNED    NULL,                         -- FK sys_users.id — Staff who revoked access early
+    `revoked_at`                DATETIME        NULL,                         -- When access was revoked
+    `revocation_reason`         VARCHAR(255)    NULL,                         -- Reason for early revocation
+
+    -- ── Status & Notes ────────────────────────────────────────────────────────
+    `status`                    SMALLINT UNSIGNED NOT NULL,                   -- FK lib_library_status_masters.id ('Active', 'Expired', 'Revoked', 'Completed')
+    `notes`                     TEXT            NULL,
+
+    -- ── Audit ─────────────────────────────────────────────────────────────────
+    `created_at`                TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`                TIMESTAMP       DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at`                TIMESTAMP       NULL,
+
+    -- ── FK Constraints ────────────────────────────────────────────────────────
+    CONSTRAINT `fk_digAccTx_memberId`      FOREIGN KEY (`member_id`)           REFERENCES `lib_members`(`id`)                    ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT `fk_digAccTx_bookId`        FOREIGN KEY (`book_id`)             REFERENCES `lib_books_master`(`id`)               ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT `fk_digAccTx_digResId`      FOREIGN KEY (`digital_resource_id`) REFERENCES `lib_digital_resources`(`id`)          ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT `fk_digAccTx_accReqId`      FOREIGN KEY (`access_request_id`)   REFERENCES `lib_digital_access_requests`(`id`)    ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT `fk_digAccTx_grantedById`   FOREIGN KEY (`granted_by_id`)       REFERENCES `sys_users`(`id`)                      ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT `fk_digAccTx_revokedById`   FOREIGN KEY (`revoked_by_id`)       REFERENCES `sys_users`(`id`)                      ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT `fk_digAccTx_status`        FOREIGN KEY (`status`)              REFERENCES `lib_library_status_masters`(`id`),
+
+    -- ── Indexes ───────────────────────────────────────────────────────────────
+    INDEX `idx_digAccTx_member_status`     (`member_id`, `status`),           -- Member's active/expired access list
+    INDEX `idx_digAccTx_book_member`       (`book_id`, `member_id`),          -- Has this member accessed this book?
+    INDEX `idx_digAccTx_digRes`            (`digital_resource_id`, `status`), -- All access records per resource file
+    INDEX `idx_digAccTx_accessReq`         (`access_request_id`),             -- Trace back to originating request
+    INDEX `idx_digAccTx_accessWindow`      (`access_start_at`, `access_expires_at`),  -- Expiry sweep queries
+    INDEX `idx_digAccTx_downloaded`        (`is_downloaded`, `download_count`),       -- Report: who downloaded and how often
+    INDEX `idx_digAccTx_lastDownloaded`    (`last_downloaded_at`),            -- Recent download audit
+    INDEX `idx_digAccTx_lastDownloadIp`    (`last_download_ip`)               -- Security: search by IP
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  -- Conditions :
+  --   • One row per granted access window. If a member requests access again after expiry, a new row is created.
+  --   • `download_count` increments on every download event; `download_history_json` appends a new object each time.
+  --   • `view_count` increments when the member opens the resource online without downloading.
+  --   • `total_view_duration_sec` is updated via the application on session close (heartbeat approach).
+  --   • `last_download_ip` / `last_view_ip` store the most recent IP; full history is in `download_history_json`.
+  --   • Status transitions: Active → Expired (by scheduled job when access_expires_at < NOW())
+  --                         Active → Revoked  (manual staff action, sets revoked_by_id + revoked_at)
+  --                         Active → Completed (member explicitly closes access or license consumed)
 
   CREATE TABLE IF NOT EXISTS `lib_fines` (
-    `id`                    INT PRIMARY KEY AUTO_INCREMENT,                                 -- Unique identifier for each fine
-    `transaction_id`        BIGINT NOT NULL,                                               -- Reference to lib_transactions
-    `member_id`             INT NOT NULL,                                                  -- Reference to lib_members
-    `fine_type`             ENUM('Late Return', 'Lost Book', 'Damaged Book', 'Processing Fee') NOT NULL, -- Type of fine
-    `amount`                DECIMAL(10,2) NOT NULL CHECK (amount >= 0),                    -- Fine amount
-    `days_overdue`          INT NOT NULL DEFAULT 0,                                        -- Number of days overdue (for late returns)
-    `calculated_from`       DATE NOT NULL,                                                 -- Start date for fine calculation
-    `calculated_to`         DATE NOT NULL,                                                 -- End date for fine calculation
-    `fine_slab_config_id`   INT NULL COMMENT 'Reference to slab used for calculation',    -- Reference to fine slab used for calculation
-    `calculation_breakdown` JSON COMMENT 'Stores day-wise breakdown of fine calculation',  -- JSON storing day-wise breakdown of fine calculation
-    `waived_amount`         DECIMAL(10,2) DEFAULT 0.00 CHECK (waived_amount >= 0),         -- Amount waived
-    `waived_by_id`          INT NULL,                                                      -- User ID who waived the fine
-    `waived_reason`         TEXT NULL,                                                     -- Reason for waiving
-    `waived_at`             DATETIME NULL,                                                 -- When fine was waived
+    `id`                    INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    `transaction_id`        INT NOT NULL,                                           -- Reference to lib_transactions
+    `member_id`             INT NOT NULL,                                           -- Reference to lib_members
+    `fine_type`             SMALLINT UNSIGNED NOT NULL,                             -- FK to `lib_fine_type` (Late Return, Lost Book, Damaged Book, etc.)
+    `amount`                DECIMAL(10,2) NOT NULL CHECK (amount >= 0),             -- Fine amount
+    `days_overdue`          INT NOT NULL DEFAULT 0,                                 -- Number of days overdue (for late returns)
+    `calculated_from`       DATE NOT NULL,                                          -- Start date for fine calculation
+    `calculated_to`         DATE NOT NULL,                                          -- End date for fine calculation
+    `fine_slab_config_id`   INT NULL,                                               -- FK to `lib_fine_slab_config`. Reference to fine slab used for calculation
+    `calculation_breakdown` JSON,                                                   -- JSON storing day-wise breakdown of fine calculation
+    `waived_amount`         DECIMAL(10,2) DEFAULT 0.00 CHECK (waived_amount >= 0),  -- Amount waived
+    `waived_by_id`          INT NULL,                                               -- User ID who waived the fine
+    `waived_reason`         TEXT NULL,                                              -- Reason for waiving
+    `waived_at`             DATETIME NULL,                                          -- When fine was waived
     `status`                SMALLINT UNSIGNED NOT NULL,  -- FK to `lib_library_status_masters`. Fine status ('Pending', 'Paid', 'Waived', 'Overdue')
-    `notes`                 TEXT,                                                          -- Additional notes
-    `created_at`            TIMESTAMP DEFAULT CURRENT_TIMESTAMP,                           -- Record creation timestamp
+    `notes`                 TEXT,                                                   -- Additional notes
+    `created_at`            TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at`            TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (`transaction_id`) REFERENCES `lib_transactions`(`id`),
     FOREIGN KEY (`member_id`) REFERENCES `lib_members`(`id`),
@@ -651,7 +906,7 @@
 
 
   CREATE TABLE IF NOT EXISTS `lib_fine_payments` (
-    `id`                INT PRIMARY KEY AUTO_INCREMENT,                                     -- Unique identifier for each payment
+    `id`                INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,                                     -- Unique identifier for each payment
     `fine_id`           INT NOT NULL,                                                      -- Reference to lib_fines
     `amount_paid`       DECIMAL(10,2) NOT NULL CHECK (amount_paid > 0),                    -- Amount paid
     `payment_method`    ENUM('Cash', 'Card', 'Online', 'Waiver') NOT NULL,                 -- Method (cash, card, online, waiver)
@@ -663,7 +918,7 @@
     `created_at`        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at`        TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`        TIMESTAMP NULL,
-    UNIQUE KEY `uk_payment_receipt` (`receipt_number`),
+    UNIQUE KEY `uq_payment_receipt` (`receipt_number`),
     FOREIGN KEY (`fine_id`) REFERENCES `lib_fines`(`fine_id`),
     FOREIGN KEY (`received_by_id`) REFERENCES `users`(id),
     INDEX `idx_payment_fine` (`fine_id`),
@@ -673,70 +928,70 @@
 
 
 
-  -- ----------------------------------------------------------------------------
-  -- AUDIT AND HISTORY
-  -- ----------------------------------------------------------------------------
-  -- 
-    CREATE TABLE IF NOT EXISTS `lib_transaction_history` (
-      `id`             INT PRIMARY KEY AUTO_INCREMENT,                                       -- Unique identifier for each history record
-      `transaction_id` INT NOT NULL,                                                         -- Reference to lib_transactions
-      `action_type`    ENUM('issued', 'returned', 'renewed', 'marked_lost', 'condition_updated') NOT NULL, -- Type of action performed
-      `old_value`      JSON,                                                                 -- Previous values as JSON
-      `new_value`      JSON,                                                                 -- New values as JSON
-      `performed_by_id` INT NOT NULL,                                                        -- User ID who performed the action
-      `performed_at`   DATETIME DEFAULT CURRENT_TIMESTAMP,                                   -- When action was performed
-      `notes`          TEXT,                                                                 -- Additional notes
-      `created_at`     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,                                  -- Record creation timestamp
-      `updated_at`     TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,      -- Last update timestamp
-      `deleted_at`     TIMESTAMP NULL,                                                       -- Soft delete timestamp
-      FOREIGN KEY (`transaction_id`) REFERENCES `lib_transactions`(`transaction_id`),
-      FOREIGN KEY (`performed_by`) REFERENCES `users`(id),
-      INDEX `idx_history_transaction` (`transaction_id`),
-      INDEX `idx_history_performed` (`performed_at`)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- ----------------------------------------------------------------------------
+-- AUDIT AND HISTORY
+-- ----------------------------------------------------------------------------
 
-    CREATE TABLE IF NOT EXISTS `lib_inventory_audit` (
-      `id`               INT PRIMARY KEY AUTO_INCREMENT,                                      -- Unique identifier for each audit
-      `uuid`             CHAR(36) NOT NULL UNIQUE,                                           -- UUID for distributed tracing
-      `audit_date`       DATE NOT NULL,                                                      -- Date of audit
-      `performed_by_id`  INT NOT NULL,                                                       -- User ID who performed the audit
-      `total_scanned`    INT DEFAULT 0,                                                      -- Total copies scanned
-      `total_expected`   INT DEFAULT 0,                                                      -- Total copies expected in collection
-      `missing_copies`   INT DEFAULT 0,                                                      -- Number of copies not found
-      `misplaced_copies` INT DEFAULT 0,                                                      -- Number of copies found in wrong location
-      `damaged_copies`   INT DEFAULT 0,                                                      -- Number of copies found damaged
-      `status`             SMALLINT UNSIGNED NOT NULL,  -- FK to `lib_library_status_masters`. Audit status ('In Progress', 'Completed', 'Cancelled')
-      `completed_at`     DATETIME NULL,                                                      -- When audit was completed
-      `notes`            TEXT,                                                               -- Additional notes
-      `created_at`       TIMESTAMP DEFAULT CURRENT_TIMESTAMP,                                -- Record creation timestamp
-      `updated_at`       TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,    -- Last update timestamp
-      `deleted_at`       TIMESTAMP NULL,                                                     -- Soft delete timestamp
-      FOREIGN KEY (`performed_by`) REFERENCES `users`(id),
-      FOREIGN KEY (`status`) REFERENCES `lib_library_status_masters`(`id`),
-      INDEX `idx_audit_date` (`audit_date`),
-      INDEX `idx_audit_status` (`status`)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- This table will store the history of transactions
+  CREATE TABLE IF NOT EXISTS `lib_transaction_history` (
+    `id`             INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,                                       -- Unique identifier for each history record
+    `transaction_id` INT NOT NULL,                                                         -- Reference to lib_transactions
+    `action_type`    ENUM('issued', 'returned', 'renewed', 'marked_lost', 'condition_updated') NOT NULL, -- Type of action performed
+    `old_value`      JSON,                                                                 -- Previous values as JSON
+    `new_value`      JSON,                                                                 -- New values as JSON
+    `performed_by_id` INT NOT NULL,                                                        -- User ID who performed the action
+    `performed_at`   DATETIME DEFAULT CURRENT_TIMESTAMP,                                   -- When action was performed
+    `notes`          TEXT,                                                                 -- Additional notes
+    `created_at`     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,                                  -- Record creation timestamp
+    `updated_at`     TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,      -- Last update timestamp
+    `deleted_at`     TIMESTAMP NULL,                                                       -- Soft delete timestamp
+    FOREIGN KEY (`transaction_id`) REFERENCES `lib_transactions`(`transaction_id`),
+    FOREIGN KEY (`performed_by`) REFERENCES `users`(id),
+    INDEX `idx_history_transaction` (`transaction_id`),
+    INDEX `idx_history_performed` (`performed_at`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-    CREATE TABLE IF NOT EXISTS `lib_inventory_audit_details` (
-      `id`                   BIGINT PRIMARY KEY AUTO_INCREMENT,                               -- Unique identifier for each audit detail
-      `audit_id`             BIGINT NOT NULL,                                                -- Reference to lib_inventory_audit
-      `copy_id`              INT NOT NULL,                                                   -- Reference to lib_book_copies
-      `expected_location_id` INT,                                                            -- Where copy should be located
-      `actual_location_id`   INT,                                                            -- Where copy was actually found
-      `scanned_at`           DATETIME NOT NULL,                                              -- When this copy was scanned
-      `condition_id`         INT,                                                            -- Observed condition of the copy
-      `status`               SMALLINT UNSIGNED NOT NULL,  -- FK to `lib_library_status_masters`. Status os this copy during audit ('found', 'missing', 'misplaced', 'damaged')
-      `notes`                TEXT,                                                           -- Additional notes
-      FOREIGN KEY (`audit_id`) REFERENCES `lib_inventory_audit`(`audit_id`) ON DELETE CASCADE,
-      FOREIGN KEY (`copy_id`) REFERENCES `lib_book_copies`(`copy_id`),
-      FOREIGN KEY (`expected_location_id`) REFERENCES `lib_shelf_locations`(`shelf_location_id`),
-      FOREIGN KEY (`actual_location_id`) REFERENCES `lib_shelf_locations`(`shelf_location_id`),
-      FOREIGN KEY (`condition_id`) REFERENCES `lib_book_conditions`(`condition_id`),
-      FOREIGN KEY (`status`) REFERENCES `lib_library_status_masters`(`id`),
-      INDEX `idx_audit_details_audit` (`audit_id`),
-      INDEX `idx_audit_details_copy` (`copy_id`),
-      UNIQUE KEY `uk_audit_copy` (`audit_id`, `copy_id`)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  CREATE TABLE IF NOT EXISTS `lib_inventory_audit` (
+    `id`               INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    `audit_date`       DATE NOT NULL,               -- Date of audit
+    `performed_by_id`  INT NOT NULL,                -- User ID who performed the audit
+    `total_scanned`    INT DEFAULT 0,               -- Total copies scanned
+    `total_expected`   INT DEFAULT 0,               -- Total copies expected in collection
+    `missing_copies`   INT DEFAULT 0,               -- Number of copies not found
+    `misplaced_copies` INT DEFAULT 0,               -- Number of copies found in wrong location
+    `damaged_copies`   INT DEFAULT 0,               -- Number of copies found damaged
+    `status`           SMALLINT UNSIGNED NOT NULL,  -- FK to `lib_library_status_masters`. Audit status ('In Progress', 'Completed', 'Cancelled')
+    `completed_at`     DATETIME NULL,               -- When audit was completed
+    `notes`            TEXT,                        -- Additional notes
+    `created_at`       TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`       TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at`       TIMESTAMP NULL,
+    FOREIGN KEY (`performed_by`) REFERENCES `users`(id),
+    FOREIGN KEY (`status`) REFERENCES `lib_library_status_masters`(`id`),
+    INDEX `idx_audit_date` (`audit_date`),
+    INDEX `idx_audit_status` (`status`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+  CREATE TABLE IF NOT EXISTS `lib_inventory_audit_details` (
+    `id`                   INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,                               -- Unique identifier for each audit detail
+    `audit_id`             INT NOT NULL,                                                -- Reference to lib_inventory_audit
+    `copy_id`              INT NOT NULL,                                                   -- Reference to lib_book_copies
+    `expected_location_id` INT,                                                            -- Where copy should be located
+    `actual_location_id`   INT,                                                            -- Where copy was actually found
+    `scanned_at`           DATETIME NOT NULL,                                              -- When this copy was scanned
+    `condition_id`         INT,                                                            -- Observed condition of the copy
+    `status`               SMALLINT UNSIGNED NOT NULL,  -- FK to `lib_library_status_masters`. Status os this copy during audit ('found', 'missing', 'misplaced', 'damaged')
+    `notes`                TEXT,                                                           -- Additional notes
+    FOREIGN KEY (`audit_id`) REFERENCES `lib_inventory_audit`(`audit_id`) ON DELETE CASCADE,
+    FOREIGN KEY (`copy_id`) REFERENCES `lib_book_copies`(`copy_id`),
+    FOREIGN KEY (`expected_location_id`) REFERENCES `lib_shelf_locations`(`shelf_location_id`),
+    FOREIGN KEY (`actual_location_id`) REFERENCES `lib_shelf_locations`(`shelf_location_id`),
+    FOREIGN KEY (`condition_id`) REFERENCES `lib_book_conditions`(`condition_id`),
+    FOREIGN KEY (`status`) REFERENCES `lib_library_status_masters`(`id`),
+    INDEX `idx_audit_details_audit` (`audit_id`),
+    INDEX `idx_audit_details_copy` (`copy_id`),
+    UNIQUE KEY `uq_audit_copy` (`audit_id`, `copy_id`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 
@@ -748,7 +1003,7 @@
 
     -- Tracks individual member reading patterns, preferences, and behavior metrics for personalized recommendations and engagement analysis.
     CREATE TABLE IF NOT EXISTS `lib_reading_behavior_analytics` (
-      `id`                        BIGINT PRIMARY KEY AUTO_INCREMENT,                          -- Unique identifier for each reading behavior record
+      `id`                        BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,                -- Unique identifier for each reading behavior record
       `member_id`                 INT NOT NULL,                                              -- Reference to lib_members
       `academic_year`             VARCHAR(20) NOT NULL,                                      -- Academic year this analytics record covers
       `total_books_read`          INT DEFAULT 0,                                             -- Total books read in the academic year
@@ -781,7 +1036,7 @@
 
     -- Tracks real-time and historical popularity metrics for books to optimize acquisition and shelving decisions.
     CREATE TABLE IF NOT EXISTS `lib_book_popularity_trends` (
-      `id`                   BIGINT PRIMARY KEY AUTO_INCREMENT,                               -- Unique identifier for each popularity trend record
+      `id`                   BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,                               -- Unique identifier for each popularity trend record
       `book_id`              INT NOT NULL,                                                   -- Reference to lib_books_master
       `tracking_date`        DATE NOT NULL,                                                  -- Date for which metrics are recorded
       `daily_requests`       INT DEFAULT 0,                                                  -- Total requests (issue + reservation) on this date
@@ -801,7 +1056,7 @@
       `created_at`           TIMESTAMP DEFAULT CURRENT_TIMESTAMP,                            -- Record creation timestamp
       `updated_at`           TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,-- Last update timestamp
       FOREIGN KEY (`book_id`) REFERENCES `lib_books_master`(`book_id`),
-      UNIQUE KEY `uk_book_daily_trend` (`book_id`, `tracking_date`),
+      UNIQUE KEY `uq_book_daily_trend` (`book_id`, `tracking_date`),
       INDEX `idx_popularity_date` (`tracking_date`),
       INDEX `idx_popularity_score` (`popularity_score`),
       INDEX `idx_popularity_trend` (`trend_direction`, `velocity_score`)
@@ -809,7 +1064,7 @@
 
     -- Provides comprehensive metrics on the health, diversity, and utilization of the library collection.
     CREATE TABLE IF NOT EXISTS `lib_collection_health_metrics` (
-      `id`                          BIGINT PRIMARY KEY AUTO_INCREMENT,                        -- Unique identifier for each health metric record
+      `id`                          BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,                        -- Unique identifier for each health metric record
       `metric_date`                 DATE NOT NULL,                                           -- Date for which metrics are recorded
       `category_id`                 INT,                                                     -- Category scope (NULL = across all categories)
       `genre_id`                    INT,                                                     -- Genre scope (NULL = across all genres)
@@ -840,7 +1095,7 @@
 
     -- Stores predictive model outputs for demand forecasting, member churn prediction, and resource optimization.
     CREATE TABLE IF NOT EXISTS `lib_predictive_analytics` (
-      `id`                      BIGINT PRIMARY KEY AUTO_INCREMENT,                            -- Unique identifier for each prediction record
+      `id`                      BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,                            -- Unique identifier for each prediction record
       `prediction_date`         DATE NOT NULL,                                               -- Date on which prediction was generated
       `prediction_type`         ENUM('Demand_Forecast', 'Member_Churn', 'Resource_Optimization', 'Acquisition_Recommendation', 'Seasonal_Pattern', 'Budget_Projection') NOT NULL, -- Category of prediction
       `target_entity_type`      ENUM('Book', 'Category', 'Genre', 'Member', 'Department', 'All') NOT NULL, -- Type of entity the prediction targets
@@ -866,7 +1121,7 @@
 
     -- Tracks how well library resources align with curriculum requirements and academic schedules.
     CREATE TABLE IF NOT EXISTS `lib_curricular_alignment` (
-      `id`                    BIGINT PRIMARY KEY AUTO_INCREMENT,                              -- Unique identifier for each alignment record
+      `id`                    BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,                              -- Unique identifier for each alignment record
       `academic_year`         VARCHAR(20) NOT NULL,                                          -- Academic year for this alignment record
       `class_id`              INT NOT NULL,                                                  -- Reference to sch_classes
       `subject_id`            INT NOT NULL,                                                  -- Reference to sch_subjects
@@ -886,14 +1141,14 @@
       FOREIGN KEY (`class_id`) REFERENCES `sch_classes`(`class_id`),
       FOREIGN KEY (`subject_id`) REFERENCES `sch_subjects`(`subject_id`),
       FOREIGN KEY (`book_id`) REFERENCES `lib_books_master`(`book_id`),
-      UNIQUE KEY `uk_curricular_book` (`academic_year`, `class_id`, `subject_id`, `book_id`),
+      UNIQUE KEY `uq_curricular_book` (`academic_year`, `class_id`, `subject_id`, `book_id`),
       INDEX `idx_curricular_alignment` (`alignment_score`),
       INDEX `idx_curricular_priority` (`priority_level`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
     -- Tracks granular user interactions with the library system for detailed behavior analysis.
     CREATE TABLE IF NOT EXISTS `lib_engagement_events` (
-      `id`                   BIGINT PRIMARY KEY AUTO_INCREMENT,                               -- Unique identifier for each engagement event
+      `id`                   BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,                               -- Unique identifier for each engagement event
       `member_id`            INT NOT NULL,                                                   -- Reference to lib_members
       `event_type`           ENUM('Search','Browse','View_Details','Add_Reservation','Cancel_Reservation','Renew_Online','Digital_View','Digital_Download','Read_Online','Share_Resource','Add_Review','Rate_Book','Save_To_Wishlist','Request_Purchase','Ask_Librarian','Attend_Event') NOT NULL, -- Type of engagement event
       `book_id`              INT,                                                            -- Reference to lib_books_master (if applicable)
@@ -1243,6 +1498,9 @@
   -- Dropdown Table Entry
   -- use existing Dropdown table of table-name - bok_books column_name - language
 
+-- Required Background Services for Library
+  INSERT INTO lib_background_services (service_name, service_url, service_interval) VALUES
+    ('Book Condition Update', 'https://library.example.com/update_book_conditions', 1440); -- 24 hours
 
 -- --------------------------------------------------------------------------------------------------------------------------------------------------
 -- Change Log
@@ -1250,5 +1508,9 @@
 -- Added Field in Table : lib_book_condition_jnt ; Filed Name : book_copy_id
 -- Modfied Field in Table : lib_book_copies ; Filed Name : `rfid_tag`; Old : NOT NULL; New : NULL
 -- New table : lib_library_status_masters
--- New table : lib_book_purchases (2 table)
+-- New table : `lib_book_purchases` & `lib_book_purchases_items`
+-- New table : `lib_fine_type`
+-- New table : `lib_location_master`
 -- New Fields in Table : lib_digital_resources  ; Filed Name : `can_student_download`, `can_teacher_download`, `can_staff_download`
+-- Remove Field in Table : lib_inventory_audit ; Filed Name : uuid
+-- Remove Field in Table : `lib_digital_resources` ; Filed Name : `access_restriction`

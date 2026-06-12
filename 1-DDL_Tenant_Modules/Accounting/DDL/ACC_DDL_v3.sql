@@ -105,7 +105,7 @@ CREATE TABLE IF NOT EXISTS `acc_account_groups` (
 	`updated_at`            TIMESTAMP NULL DEFAULT NULL,
 	`deleted_at`            TIMESTAMP NULL DEFAULT NULL,
 	PRIMARY KEY (`id`),
-	UNIQUE KEY `uq_acc_ag_code` (`code`, `deleted_at`),
+	UNIQUE KEY `uq_acc_ag_code` (`code`),
 	INDEX `idx_acc_ag_parent` (`parent_id`),
 	INDEX `idx_acc_ag_nature` (`nature`),
 	INDEX `idx_acc_ag_system` (`is_system`),

@@ -1,24 +1,11 @@
 -- =============================================================================
--- PPT (Parent Portal) Module — DDL v1
+-- PPT (Parent Portal) Module — DDL v2
 -- Tables: 6 new ppt_* tables
--- Date: 2026-03-27
+-- Date: 2026-Jun-04
 -- DB: tenant_db | Engine: InnoDB | Charset: utf8mb4_unicode_ci
---
--- KEY DDL DECISIONS (verified against tenant_db_v2.sql):
---   ✅ All ppt_* PKs = INT UNSIGNED AUTO_INCREMENT (NOT BIGINT)
---   ✅ FKs to std_guardians, std_students = INT UNSIGNED (tenant-local tables)
---   ✅ sender_user_id / recipient_user_id = INT UNSIGNED (sys_users.id = INT UNSIGNED)
---   ✅ reviewed_by_user_id = INT UNSIGNED (sys_users.id = INT UNSIGNED)
---   ⚠️  created_by = BIGINT UNSIGNED (platform standard per prompt spec)
---   ✅ No inter-ppt_ FKs — all 6 tables are Layer 1; create in any order
---   ✅ ppt_consent_form_responses: NO deleted_at (immutable after signing)
---   ✅ ppt_event_rsvps: NO deleted_at (RSVPs updated, not soft-deleted)
---   ✅ ppt_parent_sessions: NO deleted_at (use is_active=0 on logout)
---   ✅ ppt_messages, ppt_leave_applications, ppt_document_requests: HAS deleted_at
 -- =============================================================================
 
 -- -----------------------------------------------------------------------
--- Table 1: ppt_parent_sessions
 -- Purpose: Per-device portal state — active child, push tokens, prefs
 -- Rows per tenant: ~3–5 per guardian (multi-device); medium volume
 -- -----------------------------------------------------------------------
@@ -50,14 +37,13 @@ CREATE TABLE IF NOT EXISTS `ppt_parent_sessions` (
   COMMENT='Per-device portal state: active child, push tokens, notification preferences';
 
 
-
-
 -- -----------------------------------------------------------------------
--- Table 4: ppt_event_rsvps
 -- Purpose: Parent RSVPs and volunteer sign-ups for school events
 -- Rows per tenant: medium (events × guardians)
 -- UNIQUE on (event_id, guardian_id) enforces BR-PPT-016
 -- NO deleted_at — RSVPs updated in-place (rsvp_status changed)
+-- Brijesh : Currently thsi Table is on Hold. It is being used in ParentPortal (view only) but there is not Table to Ceate a Event, for which this Table is required t respond.
+-- I need to create a new Table for Event or even a small Module to register Upcomming Events in the School for which Student/Parents can Register themself.
 -- -----------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `ppt_event_rsvps` (
   `id`                INT UNSIGNED        NOT NULL AUTO_INCREMENT,
@@ -87,7 +73,6 @@ CREATE TABLE IF NOT EXISTS `ppt_event_rsvps` (
 
 
 -- -----------------------------------------------------------------------
--- Table 5: ppt_document_requests
 -- Purpose: Online requests for duplicate certificates and official documents
 -- Rows per tenant: low-medium (10–30 per student lifetime)
 -- payment_reference UNIQUE (nullable) = idempotency guard for Razorpay
@@ -127,18 +112,17 @@ CREATE TABLE IF NOT EXISTS `ppt_document_requests` (
 
 
 -- -----------------------------------------------------------------------
--- Table 6: ppt_consent_forms
 -- Purpose: Parent consent forms
 -- Rows per tenant: low-medium (10–30 per student lifetime)
 -- -----------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `ppt_consent_forms` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `title` VARCHAR(200) NOT NULL,
-  `content` LONGTEXT NOT NULL COMMENT 'HTML body of the form',
-  `class_id` BIGINT UNSIGNED NULL COMMENT 'FK → sch_classes.id — null = all classes',
-  `section_id` BIGINT UNSIGNED NULL COMMENT 'FK → sch_sections.id — null = all sections in class',
-  `deadline` TIMESTAMP NOT NULL COMMENT 'Parents cannot sign after this',
-  `allow_decline` TINYINT(1) NOT NULL DEFAULT 1,
+  `content` LONGTEXT NOT NULL COMMENT 'HTML body of the form',  -- Complete Consent Form, which Parents need to respond to.
+  `class_id` BIGINT UNSIGNED NULL COMMENT 'FK → sch_classes.id — null = all classes',  -- null = all classes
+  `section_id` BIGINT UNSIGNED NULL COMMENT 'FK → sch_sections.id — null = all sections in class',  -- null = all sections
+  `deadline` TIMESTAMP NOT NULL COMMENT 'Parents cannot sign after this',  -- null = no deadline
+  `allow_decline` TINYINT(1) NOT NULL DEFAULT 1,  -- allow parents to opt-out
   `status` ENUM('Draft', 'Published', 'Closed') NOT NULL DEFAULT 'Published',
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
   `created_by` BIGINT UNSIGNED NULL,
@@ -154,7 +138,6 @@ CREATE TABLE IF NOT EXISTS `ppt_consent_forms` (
   COMMENT='School digital consent forms (IMMUTABLE)';
 
 -- -----------------------------------------------------------------------
--- Table 7: ppt_consent_form_responses
 -- Purpose: Parent responses to school digital consent forms (IMMUTABLE)
 -- Rows per tenant: low-medium (forms × students × parents)
 -- CRITICAL: NO deleted_at — consent responses are immutable after creation
@@ -163,13 +146,13 @@ CREATE TABLE IF NOT EXISTS `ppt_consent_forms` (
 -- -----------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `ppt_consent_form_responses` (
   `id`                INT UNSIGNED        NOT NULL AUTO_INCREMENT,
-  `consent_form_id`   INT UNSIGNED        NOT NULL,                                  -- FK to school's consent form (Event/Activity module)
+  `consent_form_id`   INT UNSIGNED        NOT NULL,                                  -- FK to ppt_consent_forms.id; school's consent form (Event/Activity module)
   `student_id`        INT UNSIGNED        NOT NULL,                                  -- FK → std_students.id
   `guardian_id`       INT UNSIGNED        NOT NULL,                                  -- FK → std_guardians.id
   `response`          ENUM('Signed','Declined') NOT NULL,
-  `decline_reason`    TEXT                NULL,                                       -- required when response=Declined (FormRequest enforced)
+  `decline_reason`    TEXT                NULL,                                      -- required when response=Declined (FormRequest enforced)
   `signer_name`       VARCHAR(150)        NOT NULL,                                  -- parent's typed name (e-signature)
-  `signed_ip`         VARCHAR(45)         NULL,                                       -- IPv4/IPv6 at time of signing
+  `signed_ip`         VARCHAR(45)         NULL,                                      -- IPv4/IPv6 at time of signing
   `signed_at`         TIMESTAMP           NOT NULL DEFAULT CURRENT_TIMESTAMP,        -- BUSINESS timestamp (immutable); separate from created_at
   `is_active`         TINYINT(1)          NOT NULL DEFAULT 1,
   `created_by`        BIGINT UNSIGNED     NULL,
@@ -182,6 +165,7 @@ CREATE TABLE IF NOT EXISTS `ppt_consent_form_responses` (
   INDEX       `idx_ppt_consent_student`     (`student_id`),
   INDEX       `idx_ppt_consent_guardian`    (`guardian_id`),
   INDEX       `idx_ppt_consent_form`        (`consent_form_id`),
+  CONSTRAINT `fk_ppt_consent_form` FOREIGN KEY (`consent_form_id`) REFERENCES `ppt_consent_forms` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_ppt_consent_student` FOREIGN KEY (`student_id`)  REFERENCES `std_students`  (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_ppt_consent_guardian` FOREIGN KEY (`guardian_id`) REFERENCES `std_guardians` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci

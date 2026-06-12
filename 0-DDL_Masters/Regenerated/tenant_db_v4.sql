@@ -104,7 +104,7 @@
     `last_login_at` datetime DEFAULT NULL,                        -- Last Login Timestamp
     `super_admin_flag` tinyint GENERATED ALWAYS AS ((case when (`is_super_admin` = 1) then 1 else NULL end)) STORED,  -- To ensure only one super admin
     `remember_token` varchar(100) DEFAULT NULL,                   -- For "Remember Me" functionality
-    `prefered_language` INT unsigned NOT NULL,                 -- fk to glb_languages
+    `prefered_language` INT unsigned NOT NULL,                    -- fk to glb_languages
     `is_active` tinyint(1) NOT NULL DEFAULT '1',
     `is_pg_user` tinyint(1) NOT NULL DEFAULT '0',
     `created_at` timestamp NULL DEFAULT NULL,

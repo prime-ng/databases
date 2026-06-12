@@ -3,9 +3,9 @@
 -- MySQL 8 Compatible
 -- =====================================================
 
- -- ----------------------------------------------------------------------------
- -- 1. CORE LOOKUP TABLES (System Dropdowns)
- -- ----------------------------------------------------------------------------
+-- ----------------------------------------------------------------------------
+-- 1. CORE LOOKUP TABLES (System Dropdowns)
+-- ----------------------------------------------------------------------------
 
   -- Defines different types of library memberships with their associated privileges and rules. Controls borrowing limits, loan periods, and fine calculations.
   CREATE TABLE IF NOT EXISTS `lib_membership_types` (
@@ -26,6 +26,21 @@
     INDEX `idx_membership_active` (`is_active`, `is_deleted`),
     INDEX `idx_membership_priority` (`priority_level`),
     UNIQUE KEY `uk_membership_type_code` (`code`),
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  
+    CREATE TABLE IF NOT EXISTS `lib_resource_types` (
+    `id` INT PRIMARY KEY AUTO_INCREMENT,
+    `code` VARCHAR(30) NOT NULL UNIQUE,  -- Unique code for the resource type
+    `name` VARCHAR(100) NOT NULL,
+    `is_physical` TINYINT(1) NOT NULL DEFAULT 1,
+    `is_digital` TINYINT(1) NOT NULL DEFAULT 0,
+    `is_audio_books` TINYINT(1) NOT NULL DEFAULT 0,
+    `is_borrowable` TINYINT(1) NOT NULL DEFAULT 1,
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL,
+    INDEX `idx_restype_active` (`is_active`, `is_deleted`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   -- Hierarchical classification of books/resources (e.g., Fiction → Science Fiction → Space Opera). Supports multi-level categorization.
@@ -60,41 +75,21 @@
     INDEX `idx_genre_active` (`is_active`, `is_deleted`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-  -- Master list of publishers for books and resources.
-  CREATE TABLE IF NOT EXISTS `lib_publishers` ( 
+   -- Standardized condition states for physical books to track wear and tear, damage, and usability.
+  CREATE TABLE IF NOT EXISTS `lib_book_conditions` (
     `id` INT PRIMARY KEY AUTO_INCREMENT,
-    `code` VARCHAR(30) NOT NULL UNIQUE,
-    `name` VARCHAR(200) NOT NULL,
-    `address` TEXT,
-    `contact` VARCHAR(100),
-    `email` VARCHAR(100),
-    `phone` VARCHAR(20),
-    `website` VARCHAR(255),
-    `is_active` TINYINT(1) DEFAULT TRUE,
-    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    `deleted_at` TIMESTAMP NULL,
-    INDEX `idx_publisher_active` (`is_active`, `is_deleted`)
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-  -- Classification of resource formats (physical books, e-books, PDFs, audio books, etc.) to handle different media types appropriately.
-  CREATE TABLE IF NOT EXISTS `lib_resource_types` (
-    `id` INT PRIMARY KEY AUTO_INCREMENT,
-    `code` VARCHAR(30) NOT NULL UNIQUE,  -- Unique code for the resource type
-    `name` VARCHAR(100) NOT NULL,
-    `is_physical` TINYINT(1) NOT NULL DEFAULT 1,
-    `is_digital` TINYINT(1) NOT NULL DEFAULT 0,
-    `is_audio_books` TINYINT(1) NOT NULL DEFAULT 0,
-    `is_borrowable` TINYINT(1) NOT NULL DEFAULT 1,
+    `code` VARCHAR(30) NOT NULL UNIQUE,  -- Unique code for the condition (e.g. New, Good, Fair, Poor)
+    `name` VARCHAR(50) NOT NULL,
+    `description` VARCHAR(255),
+    `is_borrowable` TINYINT(1) NOT NULL DEFAULT 1,  -- Whether books in this condition can be issued
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at` TIMESTAMP NULL,
-    INDEX `idx_restype_active` (`is_active`, `is_deleted`)
+    INDEX `idx_condition_active` (`is_active`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-  -- Physical location mapping for books in the library, enabling efficient shelving and retrieval. 
-  CREATE TABLE IF NOT EXISTS `lib_shelf_locations` (
+    CREATE TABLE IF NOT EXISTS `lib_shelf_locations` (
     `id` INT PRIMARY KEY AUTO_INCREMENT,
     `code` VARCHAR(30) NOT NULL UNIQUE,
     `aisle_number` VARCHAR(20) NOT NULL,  -- These numbers are listed on signs at the end of shelves (e.g., Aisle 1, Side A)
@@ -120,23 +115,49 @@
   -- description - A description is a spoken or written representation or account of a person, object, or event.
   -- Physical location mapping for books in the library, enabling efficient shelving and retrieval.
 
-  -- Standardized condition states for physical books to track wear and tear, damage, and usability.
-  CREATE TABLE IF NOT EXISTS `lib_book_conditions` (
+  -- Master list of publishers for books and resources.
+  CREATE TABLE IF NOT EXISTS `lib_publishers` ( 
     `id` INT PRIMARY KEY AUTO_INCREMENT,
-    `code` VARCHAR(30) NOT NULL UNIQUE,  -- Unique code for the condition (e.g. New, Good, Fair, Poor)
-    `name` VARCHAR(50) NOT NULL,
-    `description` VARCHAR(255),
-    `is_borrowable` TINYINT(1) NOT NULL DEFAULT 1,  -- Whether books in this condition can be issued
+    `code` VARCHAR(30) NOT NULL UNIQUE,
+    `name` VARCHAR(200) NOT NULL,
+    `address` TEXT,
+    `contact` VARCHAR(100),
+    `email` VARCHAR(100),
+    `phone` VARCHAR(20),
+    `website` VARCHAR(255),
+    `is_active` TINYINT(1) DEFAULT TRUE,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL,
+    INDEX `idx_publisher_active` (`is_active`, `is_deleted`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+  CREATE TABLE IF NOT EXISTS `lib_authors` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `short_name` VARCHAR(50) NOT NULL,
+    `author_name` VARCHAR(200) NOT NULL,
+    `country` VARCHAR(120),  -- FK to glb_countries
+    `primary_genre_id` INT,  -- FK to lib_genres
+    `notes` TEXT DEFAULT NULL,
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at` TIMESTAMP NULL,
-    INDEX `idx_condition_active` (`is_active`)
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    UNIQUE KEY `uq_author_shortName` (`short_name`),
+    UNIQUE KEY `uq_author_name` (`author_name`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
- -- ----------------------------------------------------------------------------
- -- 2. MASTER TABLES
- -- ----------------------------------------------------------------------------
+
+
+  -- Classification of resource formats (physical books, e-books, PDFs, audio books, etc.) to handle different media types appropriately.
+  -- Physical location mapping for books in the library, enabling efficient shelving and retrieval. 
+
+
+ 
+
+-- ----------------------------------------------------------------------------
+-- 2. MASTER TABLES
+-- ----------------------------------------------------------------------------
 
   -- Master catalog of all books and resources owned by the library.
   CREATE TABLE IF NOT EXISTS `lib_books_master` (
@@ -185,20 +206,6 @@
     FULLTEXT INDEX `ft_book_search` (`title`, `subtitle`, `summary`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-  CREATE TABLE IF NOT EXISTS `lib_authors` (
-    `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `short_name` VARCHAR(50) NOT NULL,
-    `author_name` VARCHAR(200) NOT NULL,
-    `country` VARCHAR(120),  -- FK to glb_countries
-    `primary_genre_id` INT,  -- FK to lib_genres
-    `notes` TEXT DEFAULT NULL,
-    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    `deleted_at` TIMESTAMP NULL,
-    UNIQUE KEY `uq_author_shortName` (`short_name`),
-    UNIQUE KEY `uq_author_name` (`author_name`)
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
   -- Junction table to link books with their authors (many-to-many).
   CREATE TABLE IF NOT EXISTS `lib_book_author_jnt` (
