@@ -1,0 +1,1014 @@
+# Priority Configuration
+
+Prioritising activities that will break the timetable if delayed.
+
+1. Number of Qualified Teachers (Scarcity Index)
+   - Here we will count the number of qualified teachers for a subject+Study Format for Every Class+Section
+   - Fewer teachers ⇒ higher priority
+   - Instead of “count is high”, use inverse scarcity:
+
+    Teacher_Scarcity_Score = 1 / Qualified_Teacher_Count
+
+   - Why?
+   - 1 teacher → extremely risky
+   - 5 teachers → flexible
+   - Keep this parameter very high weight
+
+2. Required Periods per Week
+   - More required periods ⇒ higher priority
+   - Good, but refine it:
+   - Weekly_Load_Ratio = Required_Periods / Total_Weekly_Slots
+   - This avoids bias toward subjects that simply have longer syllabi.
+
+3. Teacher Availability Ratio (TAR)
+   - Lower availability ⇒ higher priority
+   - Perfect. Also add minimum TAR, not just sum:
+   - Min_TAR among qualified teachers
+   - One teacher with TAR = 95% can destroy feasibility even if others are free.
+   - TAR = (Total Allocated Periods / Weekly Available Working Periods) * 100
+
+New: Critical Parameters we Must Add (These Matter a LOT)
+4. Time Window Constraints (Rigidity Score)
+   - If an activity can happen only in limited slots, it must go first.
+   - This is one of the most important parameters.
+   - **Examples:**
+        - Lab only in periods 3–6
+        - PT only morning
+        - Art only twice a week after lunch
+   - **Formula:**
+        - Rigidity_Score = Allowed_Slots / Total_Slots
+        - Priority ∝ 1 / Rigidity_Score
+
+
+5. Room / Resource Scarcity
+   - Especially for:
+        - Labs
+        - Computer rooms
+        - Sports ground
+        - Music / Dance rooms
+   - Resource_Scarcity = Required_Resource_Count / Available_Resources
+   - If only 1 lab serves 8 sections, this activity must be placed early.
+
+6. Activity Type (Hard vs Soft)
+   - Assign base priority by activity nature:
+
+| Activity Type             | Base Priority |
+|---------------------------|---------------|
+| Lab (double/triple period)| Very High     |
+| Core Subject              | High          |
+| Elective                  | Medium        |
+| Co-curricular             | Low           |
+| Library / Club            | Very Low      |
+
+Reason:
+   - Labs fragment the grid
+   - Doubles are harder than singles
+
+7. Period Contiguity Requirement
+   - If activity requires:
+   - Double period
+   - Triple period
+   - Fixed adjacency
+   - Contiguity_Penalty = Required_Continuous_Periods
+   - Higher contiguity ⇒ higher priority.
+
+8. Class / Section Load Pressure
+   - If a section already has:
+   - High total weekly load
+   - Many constrained subjects
+   - Then remaining activities become harder.
+   - Section_Pressure = Total_Required_Periods_for_Section / Total_Slots
+   - This avoids painting a section into a corner.
+
+9. Teacher Multi-Section Coupling
+   - If same teacher teaches:
+   - Same subject
+   - Across many sections / classes
+   - Then those activities are coupled and should be scheduled early.
+   - Coupling_Score = Number_of_Activities_Sharing_Same_Teacher
+   - This is critical for:
+      - Maths
+      - English
+      - Science teachers
+
+10. Class Grouping / Blocking Constraints
+   - Examples:
+   - Optional subjects running in parallel
+   - Group A / Group B splits
+   - Common electives across sections
+   - Grouped activities must be prioritised together.
+   - Group_Size_Factor = Number_of_Activities_in_Group
+
+11. Pedagogical Preferences (Soft but Important)
+   - Examples:
+   - Maths not last period
+   - Labs not after lunch
+   - PT not first period
+   - Even if “soft”, violating many soft rules causes dissatisfaction.
+   - Track:
+   - Soft_Constraint_Count
+
+12. Historical Failure / Backtracking Cost (Advanced)
+   - If in previous iterations this activity:
+   - Causes backtracking
+   - Gets frequently reshuffled
+   - Increase its priority dynamically.
+   - This makes your engine self-learning.
+
+### Suggested Priority Matrix Structure
+
+Create a weighted score:
+
+Priority_Score =
+  w1 * Teacher_Scarcity
++ w2 * Weekly_Load_Ratio
++ w3 * (1 / Min_TAR)
++ w4 * (1 / Time_Window_Rigidity)
++ w5 * Resource_Scarcity
++ w6 * Activity_Type_Base
++ w7 * Contiguity_Penalty
++ w8 * Section_Pressure
++ w9 * Teacher_Coupling
++ w10 * Group_Size_Factor
++ w11 * Soft_Constraint_Count
+
+
+Then:
+
+Sort Activities DESC by Priority_Score
+Allocate in that order
+
+### Practical Weighting Recommendation (Starting Point)
+
+| Parameter                | Weight |
+|--------------------------|--------|
+| Teacher Scarcity         | 25     |
+| Time Window Rigidity     | 20     |
+| Resource Scarcity        | 15     |
+| Required Periods         | 10     |
+| TAR                      | 10     |
+| Contiguity               | 8      |
+| Teacher Coupling         | 7      |
+| Section Pressure         | 5      |
+
+Tune after dry-runs.
+
+### Final Architectural Advice (Important)
+
+👉 Do NOT calculate priority once.
+Recalculate after every allocation.
+
+Because:
+   - TAR changes
+   - Slot availability shrinks
+   - Coupling impact increases
+
+This turns your scheduler into a constraint-aware greedy + backtracking hybrid (enterprise grade).
+
+--------------------------------------------------------------------------------------------------------------------------------------------
+
+
+#### sch_teacher_capabilities.priority_weight
+    “Even if teachers are available, how important is THIS activity to the school?” This is business / academic importance.
+
+**Typical meanings**
+
+| Weight	| Meaning
+|-----------|---------------------------
+| 10	    | Board class, core subject
+| 8	        | Senior class, exam-heavy
+| 6	        | Normal academic subject
+| 4	        | Co-curricular
+| 2	        | Activity / club
+| 1	        | Optional
+
+#### sch_teacher_capabilities.scarcity_index
+    - “If I don’t allocate this activity early, how badly can I get stuck later?” This is supply-side pressure.
+    - “How many teachers can teach this activity?” This is resource availability.
+
+How it is derived (system-calculated)
+    For a given Activity
+    (class + section + subject + study_format)
+
+    teacher_count = number of active teachers capable
+    scarcity_index =
+        CASE
+            WHEN teacher_count = 1 THEN 10
+            WHEN teacher_count = 2 THEN 8
+            WHEN teacher_count = 3 THEN 6
+            WHEN teacher_count = 4 THEN 4
+            ELSE 1
+        END
+
+**Typical meanings** 
+Real examples
+
+| Activity	                    | Capable Teachers	| scarcity_index
+|-------------------------------|-------------------|----------------
+| Class 12 Physics Lab	        | 1	                | 10
+| Class 10 Maths	            | 2	                | 8
+| Class 6 English	            | 5	                | 1
+| Sports	                    | 7	                | 1
+
+
+#### sch_teacher_capabilities.is_hard_constraint
+    (is_hard_constraint TINYINT(1) DEFAULT 0)
+
+    - Set is_hard_constraint = 1 when violating this rule is unacceptable, even if timetable fails.
+
+**Real examples**
+
+| Scenario                               | Why HARD
+|----------------------------------------|---------------------------
+| Physics Lab teacher for Class 12       | Legal / academic requirement
+| Board exam subject                     | Cannot be compromised
+| Only one certified lab teacher         | No alternative exists
+| Language teacher for a specific medium | Compliance
+
+
+#### sch_teacher_capabilities.allocation_strictness
+    (allocation_strictness ENUM('hard','medium','soft') DEFAULT 'medium')
+
+    - “How much flexibility does the system have if needed?”
+
+Meaning of values
+-----------------
+| Value	    | Behaviour
+|-----------|---------------------------
+| hard	    | Same as is_hard_constraint = 1
+| medium	| Prefer strongly, relax if unavoidable
+| soft	    | Best-effort only
+
+
+Why both fields exist
+---------------------
+  - is_hard_constraint → absolute
+  - allocation_strictness → relative priority
+
+
+
+#### sch_teacher_capabilities.historical_success_rate
+    (historical_success_rate TINYINT UNSIGNED DEFAULT NULL)
+
+    - “How often does this activity get scheduled without issues in past timetables?”
+    - This is a system-calculated metric (not user-set).
+
+
+How it is derived (For a given Activity):
+---------------------------------------
+historical_success_rate = ( sessions_completed_without_change /  total_sessions_allocated ) * 100
+
+Typical values
+--------------
+| Rate	| Meaning
+|-------|---------------------------
+| 1.0	| Always succeeds
+| 0.8	| 80% success rate
+| 0.5	| 50% success rate (problematic)
+| 0.2	| Very difficult
+
+
+#### sch_teacher_capabilities.last_allocation_score
+    - “How hard was it to schedule this activity last time?”
+    - This is a system-calculated metric (not user-set).
+    - (last_allocation_score TINYINT UNSIGNED DEFAULT NULL)
+
+
+How it is derived (For a given Activity):
+-----------------------------------------
+last_allocation_score = (priority_score_at_allocation) / (max_possible_priority_score)
+
+
+
+
+ 
+#### sch_teacher_capabilities.is_soft_constraint
+    - Set is_soft_constraint = 1 when violating this rule is acceptable, but causes dissatisfaction.
+
+Real examples
+-------------
+| Scenario                               | Why SOFT
+|----------------------------------------|---------------------------
+| Maths not last period                  | Reduces student fatigue
+| Labs not after lunch                   | Improves concentration
+| PT not first period                    | Better engagement
+| Teacher preference for certain slots   | Improves morale
+
+
+#### sch_teacher_capabilities.is_mandatory
+    - Set is_mandatory = 1 when this activity must be scheduled.
+
+Real examples
+-------------
+| Scenario                               | Why MANDATORY
+|----------------------------------------|---------------------------
+| Class 12 Physics                       | Board exam subject
+| Class 10 Maths                         | Core academic
+| Class 6 English                        | Mandatory subject
+| Sports                                 | Required by school policy
+
+
+Real examples
+-------------
+| Scenario                               | Why HARD
+|----------------------------------------|---------------------------
+| Physics Lab teacher for Class 12       | Legal / academic requirement
+| Board exam subject                     | Cannot be compromised
+| Only one certified lab teacher         | No alternative exists
+| Language teacher for a specific medium | Compliance
+
+
+#### sch_teacher_capabilities.is_soft_constraint
+    - Set is_soft_constraint = 1 when violating this rule is acceptable, but causes dissatisfaction.
+
+Real examples
+-------------
+| Scenario                               | Why SOFT
+|----------------------------------------|---------------------------
+| Maths not last period                  | Reduces student fatigue
+| Labs not after lunch                   | Improves concentration
+| PT not first period                    | Better engagement
+| Teacher preference for certain slots   | Improves morale
+
+
+#### sch_teacher_capabilities.is_mandatory
+    - Set is_mandatory = 1 when this activity must be scheduled.
+
+Real examples
+-------------
+| Scenario                               | Why MANDATORY
+|----------------------------------------|---------------------------
+| Class 12 Physics                       | Board exam subject
+| Class 10 Maths                         | Core academic
+| Class 6 English                        | Mandatory subject
+| Sports                                 | Required by school policy
+
+
+#### sch_teacher_capabilities.is_optional
+    - Set is_optional = 1 when this activity can be skipped.
+
+Real examples
+-------------
+| Scenario                               | Why OPTIONAL
+|----------------------------------------|---------------------------
+| Class 12 Art                           | Non-exam subject
+| Class 10 Music                         | Hobby class
+| Class 6 Computer Science               | Elective
+| Sports                                 | Can be skipped if student is absent
+
+
+
+#### sch_teacher_capabilities.teacher_count
+    - “How many teachers can teach this activity?”
+    - Example:
+        - Class 12 Physics: 5 sections × 3 periods = 15 activities (high coupling)
+        - Class 6 English: 1 section × 5 periods = 5 activities (low coupling)
+
+
+#### sch_teacher_capabilities.min_tar
+    - “How many days must this activity run?”
+    - Example:
+        - Maths: 5 days/week
+        - English: 5 days/week
+        - Physics: 3 days/week
+
+#### sch_teacher_capabilities.time_window_rigidity
+    - “How flexible is the scheduling window for this activity?”
+    - Example:
+        - Class 12 Physics Lab: Must be Mon/Wed/Fri afternoon (very rigid)
+        - Class 6 English: Any time (very flexible)
+
+
+#### sch_teacher_capabilities.resource_scarcity
+    - “How many resources does this activity need?”
+    - Example:
+        - Class 12 Physics Lab: Needs Lab + Lab Assistant (scarce)
+        - Class 6 English: Needs only Classroom (abundant)
+
+
+#### sch_teacher_capabilities.activity_type_base
+    - “Is this a core academic subject or an optional activity?”
+    - Example:
+        - Class 12 Physics: Core academic (high priority)
+        - Class 6 Art: Optional activity (low priority)
+
+
+#### sch_teacher_capabilities.contiguity_penalty
+    - “How many consecutive periods does this activity need?”
+    - Example:
+        - Class 12 Physics: 2 consecutive periods (high penalty)
+        - Class 6 English: 1 period at a time (low penalty)
+
+
+#### sch_teacher_capabilities.section_pressure
+    - “How many sections does this activity need?”
+    - Example:
+        - Class 12 Physics: 5 sections (high pressure)
+        - Class 6 English: 1 section (low pressure)
+
+
+#### sch_teacher_capabilities.teacher_coupling
+    - “How many activities share the same teacher?”
+    - Example:
+        - Class 12 Physics: 5 sections × 3 periods = 15 activities (high coupling)
+        - Class 6 English: 1 section × 5 periods = 5 activities (low coupling)
+
+
+#### sch_teacher_capabilities.group_size_factor
+    - “How many groups does this activity have?”
+    - Example:
+        - Class 12 Physics: 5 sections × 3 periods = 15 activities (high coupling)
+        - Class 6 English: 1 section × 5 periods = 5 activities (low coupling)
+
+
+#### sch_teacher_capabilities.soft_constraint_count
+    - “How many soft constraints does this activity have?”
+    - Example:
+        - Class 12 Physics: 5 sections × 3 periods = 15 activities (high coupling)
+        - Class 6 English: 1 section × 5 periods = 5 activities (low coupling)
+
+
+#### sch_teacher_capabilities.hard_constraint_count
+    - “How many hard constraints does this activity have?”
+    - Example:
+        - Class 12 Physics: 5 sections × 3 periods = 15 activities (high coupling)
+        - Class 6 English: 1 section × 5 periods = 5 activities (low coupling)
+
+
+#### sch_teacher_capabilities.total_periods_required
+    - “How many periods does this activity need?”
+    - Example:
+        - Class 12 Physics: 5 sections × 3 periods = 15 activities (high coupling)
+        - Class 6 English: 1 section × 5 periods = 5 activities (low coupling)
+
+
+#### sch_teacher_capabilities.total_teacher_hours
+    - “How many teacher hours does this activity need?”
+    - Example:
+        - Class 12 Physics: 5 sections × 3 periods = 15 activities (high coupling)
+        - Class 6 English: 1 section × 5 periods = 5 activities (low coupling)
+
+
+
+
+--------------------------------------------------------------------------------------------------------------------------------------------
+
+2. Activity Duration (Total Hours)
+   - Longer activities → higher priority
+   - Formula:
+
+Activity_Duration_Score = Total_Hours_Per_Week
+
+   - Why?
+   - 1 hour → easy to fit
+   - 10 hours → must be scheduled early
+   - High weight
+
+3. Number of Groups (Breadth of Impact)
+   - More groups → higher priority
+   - Formula:
+
+Group_Impact_Score = Number_of_Groups
+
+   - Why?
+   - 1 group → only one class affected
+   - 10 groups → 10 classes affected
+   - Medium-high weight
+
+4. Teacher Workload Balance (Anti-Collision)
+   - Activities with many teachers → higher priority
+   - Formula:
+
+Workload_Balance_Score = Total_Teacher_Hours
+
+   - Why?
+   - Many teachers = many constraints
+   - Harder to schedule later
+   - Medium weight
+
+5. Required Room Type (Resource Constraint)
+   - Special rooms → higher priority
+   - Formula:
+
+Room_Type_Score = 
+    1 if Special_Room (Lab, Gym, Music)
+    0 if Normal_Classroom
+
+   - Why?
+   - Labs/Gyms are limited
+   - Normal classrooms are abundant
+   - Medium weight
+
+6. Activity Type (Subject Category)
+   - Core subjects → higher priority
+   - Formula:
+
+Subject_Type_Score = 
+    1 if Core (Math, Science, English)
+    0 if Optional/Elective
+
+   - Why?
+   - Core subjects are mandatory
+   - Optional subjects can be flexible
+   - Low-medium weight
+
+7. Teacher Availability (Flexibility Index)
+   - Fewer available slots → higher priority
+   - Formula:
+
+Availability_Score = 1 / Available_Slots
+
+   - Why?
+   - Very limited availability = must schedule early
+   - High weight
+
+8. Student Availability (Group Constraints)
+   - More constraints → higher priority
+   - Formula:
+
+Student_Constraint_Score = Number_of_Group_Constraints
+
+   - Why?
+   - Many groups = many conflicts
+   - Harder to schedule later
+   - Medium weight
+
+9. Activity Duration Distribution (Anti-Fragmentation)
+   - Activities that should be continuous → higher priority
+   - Formula:
+
+Continuity_Score = 
+    1 if Continuous_Activity
+    0 if Normal_Activity
+
+   - Why?
+   - Continuous activities must be scheduled together
+   - Harder to fit later
+   - Medium weight
+
+10. Activity Priority Level (Manual Override)
+    - User-defined priority → highest weight
+    - Formula:
+
+Manual_Priority_Score = User_Priority_Level
+
+    - Why?
+    - User knows best
+    - Override all other factors
+    - Highest weight
+
+11. Activity Complexity (Internal Constraints)
+    - More internal constraints → higher priority
+    - Formula:
+
+Complexity_Score = Number_of_Internal_Constraints
+
+    - Why?
+    - Complex activities = harder to schedule
+    - Medium weight
+
+12. Activity Dependencies (Precedence)
+    - Dependent activities → higher priority
+    - Formula:
+
+Dependency_Score = Number_of_Dependencies
+
+    - Why?
+    - Must schedule before dependent activities
+    - High weight
+
+13. Activity Frequency (Total Slots)
+    - More frequent → higher priority
+    - Formula:
+
+Frequency_Score = Total_Slots_Required
+
+    - Why?
+    - More slots = more opportunities to schedule
+    - Medium weight
+
+14. Activity Duration Variance (Anti-Fragmentation)
+    - More variable duration → higher priority
+    - Formula:
+
+Duration_Variance_Score = Standard_Deviation_of_Durations
+
+    - Why?
+    - Variable durations = harder to fit
+    - Medium weight
+
+15. Activity Type Distribution (Balance)
+    - Balanced distribution → higher priority
+    - Formula:
+
+Type_Balance_Score = 1 / (Max_Type_Count - Min_Type_Count + 1)
+
+    - Why?
+    - Balanced = easier to schedule
+    - Medium weight
+
+16. Activity Start Time Preference (User Preference)
+    - Early preference → higher priority
+    - Formula:
+
+Start_Time_Score = 1 / (Preferred_Start_Time - Earliest_Possible_Time + 1)
+
+    - Why?
+    - User preference = important
+    - Medium weight
+
+17. Activity End Time Preference (User Preference)
+    - Late preference → higher priority
+    - Formula:
+
+End_Time_Score = 1 / (Latest_Possible_Time - Preferred_End_Time + 1)
+
+    - Why?
+    - User preference = important
+    - Medium weight
+
+18. Activity Duration Preference (User Preference)
+    - Preferred duration → higher priority
+    - Formula:
+
+Duration_Preference_Score = 1 / (Preferred_Duration - Min_Duration + 1)
+
+    - Why?
+    - User preference = important
+    - Medium weight
+
+19. Activity Gap Preference (User Preference)
+    - Preferred gap → higher priority
+    - Formula:
+
+Gap_Preference_Score = 1 / (Preferred_Gap - Min_Gap + 1)
+
+    - Why?
+    - User preference = important
+    - Medium weight
+
+20. Activity Spread Preference (User Preference)
+    - Preferred spread → higher priority
+    - Formula:
+
+Spread_Preference_Score = 1 / (Preferred_Spread - Min_Spread + 1)
+
+    - Why?
+    - User preference = important
+    - Medium weight
+
+21. Activity Clustering Preference (User Preference)
+    - Preferred clustering → higher priority
+    - Formula:
+
+Clustering_Preference_Score = 1 / (Preferred_Clustering - Min_Clustering + 1)
+
+    - Why?
+    - User preference = important
+    - Medium weight
+
+22. Activity Sequence Preference (User Preference)
+    - Preferred sequence → higher priority
+    - Formula:
+
+Sequence_Preference_Score = 1 / (Preferred_Sequence - Min_Sequence + 1)
+
+    - Why?
+    - User preference = important
+    - Medium weight
+
+23. Activity Grouping Preference (User Preference)
+    - Preferred grouping → higher priority
+    - Formula:
+
+Grouping_Preference_Score = 1 / (Preferred_Grouping - Min_Grouping + 1)
+
+    - Why?
+    - User preference = important
+    - Medium weight
+
+24. Activity Room Preference (User Preference)
+    - Preferred room → higher priority
+    - Formula:
+
+Room_Preference_Score = 1 / (Preferred_Room - Min_Room + 1)
+
+    - Why?
+    - User preference = important
+    - Medium weight
+
+25. Activity Teacher Preference (User Preference)
+    - Preferred teacher → higher priority
+    - Formula:
+
+Teacher_Preference_Score = 1 / (Preferred_Teacher - Min_Teacher + 1)
+
+    - Why?
+    - User preference = important
+    - Medium weight
+
+26. Activity Student Preference (User Preference)
+    - Preferred student → higher priority
+    - Formula:
+
+Student_Preference_Score = 1 / (Preferred_Student - Min_Student + 1)
+
+    - Why?
+    - User preference = important
+    - Medium weight
+
+27. Activity Constraint Preference (User Preference)
+    - Preferred constraint → higher priority
+    - Formula:
+
+Constraint_Preference_Score = 1 / (Preferred_Constraint - Min_Constraint + 1)
+
+    - Why?
+    - User preference = important
+    - Medium weight
+
+28. Activity Dependency Preference (User Preference)
+    - Preferred dependency → higher priority
+    - Formula:
+
+Dependency_Preference_Score = 1 / (Preferred_Dependency - Min_Dependency + 1)
+
+    - Why?
+    - User preference = important
+    - Medium weight
+
+29. Activity Frequency Preference (User Preference)
+    - Preferred frequency → higher priority
+    - Formula:
+
+Frequency_Preference_Score = 1 / (Preferred_Frequency - Min_Frequency + 1)
+
+    - Why?
+    - User preference = important
+    - Medium weight
+
+30. Activity Duration Variance Preference (User Preference)
+    - Preferred duration variance → higher priority
+    - Formula:
+
+Duration_Variance_Preference_Score = 1 / (Preferred_Duration_Variance - Min_Duration_Variance + 1)
+
+    - Why?
+    - User preference = important
+    - Medium weight
+
+31. Activity Type Distribution Preference (User Preference)
+    - Preferred type distribution → higher priority
+    - Formula:
+
+Type_Distribution_Preference_Score = 1 / (Preferred_Type_Distribution - Min_Type_Distribution + 1)
+
+    - Why?
+    - User preference = important
+    - Medium weight
+
+32. Activity Start Time Preference (User Preference)
+    - Preferred start time → higher priority
+    - Formula:
+
+Start_Time_Preference_Score = 1 / (Preferred_Start_Time - Min_Start_Time + 1)
+
+    - Why?
+    - User preference = important
+    - Medium weight
+
+33. Activity End Time Preference (User Preference)
+    - Preferred end time → higher priority
+    - Formula:
+
+End_Time_Preference_Score = 1 / (Preferred_End_Time - Min_End_Time + 1)
+
+    - Why?
+    - User preference = important
+    - Medium weight
+
+34. Activity Duration Preference (User Preference)
+    - Preferred duration → higher priority
+    - Formula:
+
+Duration_Preference_Score = 1 / (Preferred_Duration - Min_Duration + 1)
+
+    - Why?
+    - User preference = important
+    - Medium weight
+
+35. Activity Gap Preference (User Preference)
+    - Preferred gap → higher priority
+    - Formula:
+
+Gap_Preference_Score = 1 / (Preferred_Gap - Min_Gap + 1)
+
+    - Why?
+    - User preference = important
+    - Medium weight
+
+36. Activity Spread Preference (User Preference)
+    - Preferred spread → higher priority
+    - Formula:
+
+Spread_Preference_Score = 1 / (Preferred_Spread - Min_Spread + 1)
+
+    - Why?
+    - User preference = important
+    - Medium weight
+
+37. Activity Clustering Preference (User Preference)
+    - Preferred clustering → higher priority
+    - Formula:
+
+Clustering_Preference_Score = 1 / (Preferred_Clustering - Min_Clustering + 1)
+
+    - Why?
+    - User preference = important
+    - Medium weight
+
+38. Activity Sequence Preference (User Preference)
+    - Preferred sequence → higher priority
+    - Formula:
+
+Sequence_Preference_Score = 1 / (Preferred_Sequence - Min_Sequence + 1)
+
+    - Why?
+    - User preference = important
+    - Medium weight
+
+39. Activity Grouping Preference (User Preference)
+    - Preferred grouping → higher priority
+    - Formula:
+
+Grouping_Preference_Score = 1 / (Preferred_Grouping - Min_Grouping + 1)
+
+    - Why?
+    - User preference = important
+    - Medium weight
+
+40. Activity Room Preference (User Preference)
+    - Preferred room → higher priority
+    - Formula:
+
+Room_Preference_Score = 1 / (Preferred_Room - Min_Room + 1)
+
+    - Why?
+    - User preference = important
+    - Medium weight
+
+41. Activity Teacher Preference (User Preference)
+    - Preferred teacher → higher priority
+    - Formula:
+
+Teacher_Preference_Score = 1 / (Preferred_Teacher - Min_Teacher + 1)
+
+    - Why?
+    - User preference = important
+    - Medium weight
+
+42. Activity Student Preference (User Preference)
+    - Preferred student → higher priority
+    - Formula:
+
+Student_Preference_Score = 1 / (Preferred_Student - Min_Student + 1)
+
+    - Why?
+    - User preference = important
+    - Medium weight
+
+43. Activity Constraint Preference (User Preference)
+    - Preferred constraint → higher priority
+    - Formula:
+
+Constraint_Preference_Score = 1 / (Preferred_Constraint - Min_Constraint + 1)
+
+    - Why?
+    - User preference = important
+    - Medium weight
+
+44. Activity Dependency Preference (User Preference)
+    - Preferred dependency → higher priority
+    - Formula:
+
+Dependency_Preference_Score = 1 / (Preferred_Dependency - Min_Dependency + 1)
+
+    - Why?
+    - User preference = important
+    - Medium weight
+
+45. Activity Frequency Preference (User Preference)
+    - Preferred frequency → higher priority
+    - Formula:
+
+Frequency_Preference_Score = 1 / (Preferred_Frequency - Min_Frequency + 1)
+
+    - Why?
+    - User preference = important
+    - Medium weight
+
+46. Activity Duration Variance Preference (User Preference)
+    - Preferred duration variance → higher priority
+    - Formula:
+
+Duration_Variance_Preference_Score = 1 / (Preferred_Duration_Variance - Min_Duration_Variance + 1)
+
+    - Why?
+    - User preference = important
+    - Medium weight
+
+47. Activity Type Distribution Preference (User Preference)
+    - Preferred type distribution → higher priority
+    - Formula:
+
+Type_Distribution_Preference_Score = 1 / (Preferred_Type_Distribution - Min_Type_Distribution + 1)
+
+    - Why?
+    - User preference = important
+    - Medium weight
+
+48. Activity Start Time Preference (User Preference)
+    - Preferred start time → higher priority
+    - Formula:
+
+Start_Time_Preference_Score = 1 / (Preferred_Start_Time - Min_Start_Time + 1)
+
+    - Why?
+    - User preference = important
+    - Medium weight
+
+49. Activity End Time Preference (User Preference)
+    - Preferred end time → higher priority
+    - Formula:
+
+End_Time_Preference_Score = 1 / (Preferred_End_Time - Min_End_Time + 1)
+
+    - Why?
+    - User preference = important
+    - Medium weight
+
+50. Activity Duration Preference (User Preference)
+    - Preferred duration → higher priority
+    - Formula:
+
+Duration_Preference_Score = 1 / (Preferred_Duration - Min_Duration + 1)
+
+    - Why?
+    - User preference = important
+    - Medium weight
+
+51. Activity Gap Preference (User Preference)
+    - Preferred gap → higher priority
+    - Formula:
+
+Gap_Preference_Score = 1 / (Preferred_Gap - Min_Gap + 1)
+
+    - Why?
+    - User preference = important
+    - Medium weight
+
+52. Activity Spread Preference (User Preference)
+    - Preferred spread → higher priority
+    - Formula:
+
+Spread_Preference_Score = 1 / (Preferred_Spread - Min_Spread + 1)
+
+    - Why?
+    - User preference = important
+    - Medium weight
+
+53. Activity Clustering Preference (User Preference)
+    - Preferred clustering → higher priority
+    - Formula:
+
+Clustering_Preference_Score = 1 / (Preferred_Clustering - Min_Clustering + 1)
+
+    - Why?
+    - User preference = important
+    - Medium weight
+
+54. Activity Sequence Preference (User Preference)
+    - Preferred sequence → higher priority
+    - Formula:
+
+Sequence_Preference_Score = 1 / (Preferred_Sequence - Min_Sequence + 1)
+
+    - Why?
+    - User preference = important
+    - Medium weight
+
+55. Activity Grouping Preference (User Preference)
+    - Preferred grouping → higher priority
+    - Formula:
+
+Grouping_Preference_Score = 1 / (Preferred_Grouping - Min_Grouping + 1)
+
+    - Why?
+    - User preference = important
+    - Medium weight
+
+56. Activity Room Preference (User Preference)
+    - Preferred room → higher priority
+    - Formula:
+
+Room_Preference_Score = 1 / (Preferred_Room -

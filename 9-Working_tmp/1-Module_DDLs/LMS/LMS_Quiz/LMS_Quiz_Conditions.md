@@ -1,0 +1,159 @@
+## QUIZ MANAGEMENT
+
+  ## Process Flow & Functionalities
+  - Teacher creates Quiz to accomodate set of questions.
+    Quiz will always cover a Topic/Sub-Topic,Mini Topic/Micro Topic & whatever Topic Level comes underneeth that topic/sub-topic.
+    - Difficulty Distribution Config:
+      - Difficulty Distribution Config will be used to balance the questions dificulty level on the basis of the difficulty configuration.
+      - difficulty_distribution_config will have following attributes:
+        - Id
+        - Code (e.g. EASY, MEDIUM, HARD)
+        - Name (e.g. Easy, Medium, Hard)
+        - Description (e.g. Easy, Medium, Hard)
+        - used_for FK to qns_question_usage_type (e.g. 'QUIZ','QUEST','ONLINE_EXAM','OFFLINE_EXAM','UT_TEST')
+      - difficulty_distribution_config_details will have following attributes:
+        - Id
+        - Difficulty Distribution Configuration Id
+        - Question Type (e.g. MCQ, Short Answer, Long Answer)
+        - Complexity Type (e.g. Easy, Medium, Hard)
+        - Complexity Level (e.g. 1, 2, 3)
+        - Min. Percentage of Total Questions
+        - Max. Percentage of Total Questions
+        - Marks for Each Complexity Level
+  - Adding Questions to the Quiz
+    - Teacher / Admin can Add questions to the Quiz by:
+      - Manual selection of questions from Question Bank by filtering on - 
+        - Bloom's Taxonomy
+        - Cognitive Skill
+        - Question Type Specificity
+        - Complexity Level
+        - Quiz_Difficulty_Level
+        - Topic hierarchy (up to Topic → Sub Topic → Micro Topic → Ultra Topic)
+        - Question Source & Reference
+        - Question Status
+        - Question Usage Scope
+        - Question Availability
+      - AI based selection of questions from Question Bank
+        - AI will consider all the parameters of Question Bank for selection of questions
+        - AI based selection of questions from Question Bank based on 
+          - Bloom's Taxonomy
+          - Cognitive Skill
+          - Question Type Specificity
+          - Complexity Level
+          - Question Type
+          - Difficulty Level
+          - Difficulty Distribution
+          - Anti-Cheating Indicators
+          - Tags
+          - Topic hierarchy (up to Ultra Topic)
+          - Performance Category
+          - Recommendation Type
+          - Question Source & Reference
+          - Question Status
+          - Question Usage Scope
+          - Question Ownership
+          - Question Availability
+      - Mix of manual and AI based selection of questions from Question Bank
+        - AI will consider all the parameters of Question Bank for selection of questions
+        - AI based selection of questions from Question Bank based on 
+          - Bloom's Taxonomy
+          - Cognitive Skill
+          - Question Type Specificity
+          - Complexity Level
+          - Question Type
+          - Difficulty Level
+          - Difficulty Distribution
+          - Anti-Cheating Indicators
+          - Tags
+          - Topic hierarchy (up to Ultra Topic)
+          - Performance Category
+          - Recommendation Type
+          - Question Source & Reference
+          - Question Status
+          - Question Usage Scope
+          - Question Ownership
+          - Question Availability
+        - Then Teacher can select questions manually from the list provided by AI
+        - Teacher can add questions manually from Question Bank
+        - Teacher can reorder questions manually from the list provided by AI
+  - Quiz Assignment:
+    - Quiz Assignment will have following parameters:
+      - Assigned to Class
+      - Assigned to Section
+      - Assigned to Group of Student
+      - Assigned to Individual Student
+      - Assigned to Subject
+      - Assigned to Topic hierarchy (up to Topic → Sub Topic → Micro Topic → Ultra Topic)
+      - Assigned to Performance Category
+      - Assigned to Recommendation Type
+    - Different type of quizzes for different student groups of same class/section. Quiz can be Assigned to:
+      - Class
+      - Section
+      - Group of Student
+      - Individual Student
+  - Quiz Scheduling:
+    - Quiz can be auto-assigned / manually assigned
+      - If set for Auto-Assigned - 
+        - When aligned Topic/Sub-Topic/Mini/Micro Topic is marked **Completed**, 
+        - Quiz will be auto-assigned to the students of that class/section
+      - If set for Manual-Assigned - 
+        - Teacher can manually assign the Quiz to the students of that class/section
+        - Teacher need to manually change the status of Topic/Sub-Topic/Mini/Micro Topic to **Completed**
+        - Teacher ccan also assigning Quiz on a specified date to a class/section
+    - Quiz auto-assigned when topic marked completed
+      - Teacher will Mark the Topic/Sub-Topic/Mini/Micro Topic as **Completed**
+      - Auto-assigned quiz will be assigned to the students of the class/section/group/individual student who have completed the topic
+    - Quiz can be scheduled for specific date
+      - Teacher can assign Quiz on a specified date to a class/section/group/individual student
+      - Teacher can assign Quiz Manually to a class/section/group/individual student
+  - Quiz instructions support:
+    - TEXT
+    - HTML
+    - MARKDOWN
+    - LATEX
+    - JSON
+  - System will capture behavioral parameters:
+    - Time per question
+    - Review behavior
+    - Answer changes
+    - Attempt patterns
+  - System will provide Recommendations or can re-assign Quiz as per the Performance Rules:
+    - Read (pdf,url)
+    - Watch (video, video url)
+    - Practice (quiz)
+      - If the performance Rules suggested `practice`, then AI will create a new quiz with similer deficulty level but with different questions.
+      - newly created quiz will be re-assigned to the students.
+    - Re-Test (quiz)
+      - If the performance Rules suggested `re-test`, then AI will create a new quiz with similer deficulty level but with different questions.
+      - newly created quiz will be re-assigned to the students.
+    - Performance Rules will be set by the Teacher / Admin:
+      - Different level of performance may have different type of Recommendations.
+      - Different level of performance may have different type of Re-Assignment:
+        - Challenge
+        - Enrichment
+        - Practice
+        - Revision
+        - Re-Test
+        - Diagnostic
+        - Remedial
+    - Recommendations will be provided using Recommendation Module:
+      - Recommendation will be identifies using Rules defined in rec_recommendation_rules
+      - Student wise Recommendations will be registered in Recommendation Module
+      - Recommendations will be provided to the students based on the performance rules
+      - Recommendations will be provided to the students based on the performance rules
+  - Performance auto-rating will use the Performance Rating configuration
+  - Quiz difficulty balancing
+    - System will check required difficulty level for the quiz and balance the difficulty level using difficulty_distribution_config. 
+  - Teacher can:
+    - View Attempted Quiz
+    - View Attempted Quiz Result
+    - Add remarks
+    - Re-assign Quiz if unsatisfactory
+    - See who all submitted OR Not submitted the Quiz
+    - Extend the Due date of Quiz
+    - Extend the Last Submission Date of Quiz
+  - Student can: 
+    - View Attempted Quiz
+    - View Attempted Quiz Result
+    - View all Quiz Due on him
+    - Attempt the Quiz

@@ -84,6 +84,7 @@
     CONSTRAINT `fk_modelHasRoles_modelId_modelType` FOREIGN KEY (`model_id`) REFERENCES `sys_models` (`id`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+
 -- ------------------------------------------------ Checked till Here -----------------------------------------------------
 
 
@@ -282,6 +283,8 @@
     KEY `idx_media_modelType_modelId` (`model_type`,`model_id`),
     KEY `idx_media_orderColumn` (`order_column`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
 
 -- ===========================================================================
 -- 2 - EVENT ENGINE (sys)
@@ -10168,26 +10171,3 @@
 -- =====================================================================================================================
 -- Change Log
 -- =====================================================================================================================
-  -- Change table Name - Table (sch_subject_study_format_class_subj_types_jnt) to (sch_class_groups_jnt)
-  -- Change the condition implemented into Screen Design of table (sch_subject_study_format_class_subj_types_jnt)
-  -- We have to keep collecting Section Information optional without any condition of 'SubjectGroup_Used_For_All_Sections' from 'sys_settings' table.
-  -- If user want to have Class_Groups Section wise Separately then while creating Class_Groups they have to select Section also.
-  -- If user want to have Class_Groups for all sections of a class then while creating Class_Groups they can keep Section as NULL.
-  -- Because while creating Timetable we have to know which subject is taught in which section.
-  -- So, we have to keep section_id as NOT NULL field in the table (sch_subject_study_format_class_subj_types_jnt)
-  -- Change Field Name - 'clas_subj_stdformat_Subjtyp_code' to 'code' in table (sch_subject_study_format_class_subj_types_jnt)
-  -- Updated Constraint Names in table (sch_subject_study_format_class_subj_types_jnt)
-  -- ===========================================================================================================================================
-  -- Updated Field in Table (sch_subject_group_subject_jnt) Field Name - 'class_subj_stdformat_Subjtyp_id' to 'class_group_id'
-  -- Update Constraint Name in Table (sch_subject_group_subject_jnt) - 'fk_subjGrpSubj_classSubjStdFmtSubjtypId' to 'fk_subjGrpSubj_classGroup'
-  -- updated Foreign Key Reference in Table (sch_subject_group_subject_jnt) - 'sch_subject_study_format_class_subj_types_jnt' to 'sch_class_groups_jnt'
-  -- ===========================================================================================================================================
-  -- Changed on 2025-12-21
-  -- Enhanced `sys_dropdown_table` to accomodate Menu Details (Category,Main Menu, Sub-Menu) for Easy identification. 
-  -- Added New table `sys_dropdown_needs` to capture Dropdown Needs for Easy identification. 
-  -- ===========================================================================================================================================
-  -- Changed on 2025-12-29
-  -- Added New Field `user_id` in table `std_student_sessions_jnt` to capture User ID of the Student. This is required to Get Student details Directly from `sch_user` table.
-  -- Changed table name from 'std_student_detail' to 'std_student_personal_details'
-  -- Changed on 20255-01-06
-  -- Modify Table (sch_class_groups_jnt) - `section_id` int NULL, to NOT NULL

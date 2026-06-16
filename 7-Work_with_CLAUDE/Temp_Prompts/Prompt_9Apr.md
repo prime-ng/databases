@@ -248,3 +248,10 @@ Priviously I have created DDL Schema for HR & Payrol in File "
 
 ---------------------------------------------------------------------------------------------
 Read "old_db/1-DDL_Tenant_Modules/Library/DDL/Library_ddl_v4.sql" and evaluate the DDL Schema 
+
+ Create a file to provide Calculation Process with Formulas for all the Fields (Which needs to be Calculated by App) in all the Tables in DDL
+  "/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/1-DDL_Tenant_Modules/Library/DDL/Library_ddl_v6.sql". Save the file as
+  "/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/1-DDL_Tenant_Modules/Library/Design/Calculation_Formulas.md". This should include all required detail SQL Queries, Stored procedure, Views, or anything which is required to get those Calculated Field filled with the required values.
+
+---------------------------------------------------------------------------------------------
+

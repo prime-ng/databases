@@ -1,0 +1,159 @@
+# DATA DICTIONARY
+=================
+--
+-- =====================================================================
+-- TABLE 1: tmp_template_purposes
+-- =====================================================================
+-- Schema:      tenant_db
+-- Module:      Template
+-- Domain:      Lookup
+-- Purpose:     Registry of output purposes a template can serve
+--
+-- +---------------+-----------------+----------+---------+-------------------------+--------------------------------------------------+
+-- | Column        | Data Type       | Nullable | Default | FK Reference            | Business Meaning                                 |
+-- +---------------+-----------------+----------+---------+-------------------------+--------------------------------------------------+
+-- | id            | INT UNSIGNED    | NO       | AUTO    | PK                      | Primary key                                      |
+-- | code          | VARCHAR(30)     | NO       | —       | —                       | Machine code (MARKSHEET_PRINT, STUDENT_ID_CARD)  |
+-- | name          | VARCHAR(100)    | NO       | —       | —                       | Display name                                     |
+-- | description   | VARCHAR(255)    | YES      | NULL    | —                       | Optional description                             |
+-- | scope_type_id | INT UNSIGNED    | NO       | —       | sys_dropdown_table.id   | CLASS_SCOPED or SCHOOL_WIDE                      |
+-- | display_order | SMALLINT UNS.   | NO       | 1       | —                       | Sort order in UI                                 |
+-- | is_system     | TINYINT(1)      | NO       | 0       | —                       | 1 = seeded, 0 = school-created                   |
+-- | is_active     | TINYINT(1)      | NO       | 1       | —                       | Soft active flag                                 |
+-- | created_by    | INT UNSIGNED    | YES      | NULL    | sys_users.id            | Creator                                          |
+-- | updated_by    | INT UNSIGNED    | YES      | NULL    | sys_users.id            | Last editor                                      |
+-- | created_at    | TIMESTAMP       | YES      | NOW()   | —                       | Creation timestamp                               |
+-- | updated_at    | TIMESTAMP       | YES      | NOW()   | —                       | Last update timestamp                            |
+-- | deleted_at    | TIMESTAMP       | YES      | NULL    | —                       | Soft delete timestamp                            |
+-- +---------------+-----------------+----------+---------+-------------------------+--------------------------------------------------+
+--
+-- Indexes:
+-- +----------------------+---------------+--------+------------------------------------+
+-- | Name                 | Columns       | Type   | Purpose                            |
+-- +----------------------+---------------+--------+------------------------------------+
+-- | PRIMARY              | id            | PK     | —                                  |
+-- | uq_tmp_tp_code       | code          | UNIQUE | No duplicate purpose codes         |
+-- | idx_tmp_tp_scope_type| scope_type_id | INDEX  | FK lookup                          |
+-- | idx_tmp_tp_is_active | is_active     | INDEX  | Soft-delete scope queries          |
+-- +----------------------+---------------+--------+------------------------------------+
+--
+-- Sample Data:
+-- +----+---------------------+----------------------+---------------+--------+
+-- | id | code                | name                 | scope_type_id | is_sys |
+-- +----+---------------------+----------------------+---------------+--------+
+-- | 1  | MARKSHEET_PRINT     | Marksheet Printing   | {CLASS_SCOPED}| 1      |
+-- | 2  | STUDENT_ID_CARD     | Student ID Card      | {CLASS_SCOPED}| 1      |
+-- | 3  | STAFF_ID_CARD       | Staff ID Card        | {SCHOOL_WIDE} | 1      |
+-- | 4  | TRANSFER_CERTIFICATE| Transfer Certificate | {SCHOOL_WIDE} | 1      |
+-- | 5  | ADMISSION_LETTER    | Admission Letter     | {SCHOOL_WIDE} | 1      |
+-- | 6  | FEE_RECEIPT         | Fee Receipt          | {SCHOOL_WIDE} | 1      |
+-- | 7  | BONAFIDE_CERTIFICATE| Bonafide Certificate | {SCHOOL_WIDE} | 1      |
+-- +----+---------------------+----------------------+---------------+--------+
+--
+--
+-- =====================================================================
+-- TABLE 2: tmp_template_assignments
+-- =====================================================================
+-- Schema:      tenant_db
+-- Module:      Template
+-- Domain:      Configuration
+-- Purpose:     Scope-based template-to-purpose assignment per session
+--
+-- +---------------------+-------------------+----------+---------+-------------------------------+----------------------------------------------------+
+-- | Column              | Data Type         | Nullable | Default | FK Reference                  | Business Meaning                                   |
+-- +---------------------+-------------------+----------+---------+-------------------------------+----------------------------------------------------+
+-- | id                  | INT UNSIGNED      | NO       | AUTO    | PK                            | Primary key                                        |
+-- | template_id         | BIGINT UNSIGNED   | NO       | —       | tmp_templates.id              | Which visual template to use                       |
+-- | purpose_id          | INT UNSIGNED      | NO       | —       | tmp_template_purposes.id      | For what output purpose                            |
+-- | academic_session_id | SMALLINT UNSIGNED | NO       | —       | sch_org_academic_sessions_jnt | Which academic session                             |
+-- | class_id            | INT UNSIGNED      | YES      | NULL    | sch_classes.id                | Direct class (priority 1). NULL if group/school    |
+-- | class_group_id      | INT UNSIGNED      | YES      | NULL    | msh_class_groups.id           | Class group (priority 2). NULL if class/school     |
+-- | scope_hash          | VARCHAR(80)       | NO       | GEN.    | — (generated stored)          | Deterministic hash for uniqueness enforcement      |
+-- | is_active           | TINYINT(1)        | NO       | 1       | —                             | Soft active flag                                   |
+-- | created_by          | INT UNSIGNED      | YES      | NULL    | sys_users.id                  | Creator                                            |
+-- | updated_by          | INT UNSIGNED      | YES      | NULL    | sys_users.id                  | Last editor                                        |
+-- | created_at          | TIMESTAMP         | YES      | NOW()   | —                             | Creation timestamp                                 |
+-- | updated_at          | TIMESTAMP         | YES      | NOW()   | —                             | Last update timestamp                              |
+-- | deleted_at          | TIMESTAMP         | YES      | NULL    | —                             | Soft delete timestamp                              |
+-- +---------------------+-------------------+----------+---------+-------------------------------+----------------------------------------------------+
+--
+-- Indexes:
+-- +--------------------------------------+---------------------------------------+--------+----------------------------------------------+
+-- | Name                                 | Columns                               | Type   | Purpose                                      |
+-- +--------------------------------------+---------------------------------------+--------+----------------------------------------------+
+-- | PRIMARY                              | id                                    | PK     | —                                            |
+-- | uq_tmp_ta_scope                      | scope_hash                            | UNIQUE | Prevents duplicate assignments per scope     |
+-- | idx_tmp_ta_template                  | template_id                           | INDEX  | FK lookup                                    |
+-- | idx_tmp_ta_purpose                   | purpose_id                            | INDEX  | FK lookup                                    |
+-- | idx_tmp_ta_session                   | academic_session_id                   | INDEX  | FK lookup                                    |
+-- | idx_tmp_ta_class                     | class_id                              | INDEX  | FK lookup + resolution query                 |
+-- | idx_tmp_ta_class_group               | class_group_id                        | INDEX  | FK lookup + resolution query                 |
+-- | idx_tmp_ta_purpose_session_class     | purpose_id, academic_session_id, ...  | INDEX  | Composite for class resolution               |
+-- | idx_tmp_ta_purpose_session_group     | purpose_id, academic_session_id, ...  | INDEX  | Composite for group resolution               |
+-- | idx_tmp_ta_is_active                 | is_active                             | INDEX  | Soft-delete scope queries                    |
+-- +--------------------------------------+---------------------------------------+--------+----------------------------------------------+
+--
+-- CHECK Constraints:
+-- +-------------------------+-----------------------------------------------------------+
+-- | Name                    | Rule                                                      |
+-- +-------------------------+-----------------------------------------------------------+
+-- | chk_tmp_ta_scope_target | NOT (class_id IS NOT NULL AND class_group_id IS NOT NULL)  |
+-- |                         | Ensures at most ONE scope target is set.                   |
+-- |                         | Both NULL = school-wide. One set = targeted.               |
+-- +-------------------------+-----------------------------------------------------------+
+--
+-- Scope Rules:
+-- +-------------------+-------------------+---------------------+----------+
+-- | Scope             | class_id          | class_group_id      | Priority |
+-- +-------------------+-------------------+---------------------+----------+
+-- | Direct Class      | NOT NULL          | NULL                | 1 (high) |
+-- | Class Group       | NULL              | NOT NULL            | 2        |
+-- | School-wide       | NULL              | NULL                | 3 (low)  |
+-- | INVALID           | NOT NULL          | NOT NULL            | blocked  |
+-- +-------------------+-------------------+---------------------+----------+
+--
+-- Sample Data:
+-- +----+-------------+------------+----------+----------+----------------+-------------------+
+-- | id | template_id | purpose_id | sess_id  | class_id | class_group_id | scope_hash        |
+-- +----+-------------+------------+----------+----------+----------------+-------------------+
+-- | 1  | 5           | 1 (MRKSH)  | 3 (25-26)| NULL     | 1 (Primary)    | 1:3:G1            |
+-- | 2  | 8           | 1 (MRKSH)  | 3 (25-26)| NULL     | 2 (Secondary)  | 1:3:G2            |
+-- | 3  | 12          | 1 (MRKSH)  | 3 (25-26)| 10 (X)  | NULL           | 1:3:C10           |
+-- | 4  | 15          | 2 (STD_ID) | 3 (25-26)| NULL     | NULL           | 2:3:SCHOOL        |
+-- | 5  | 20          | 3 (STAFF)  | 3 (25-26)| NULL     | NULL           | 3:3:SCHOOL        |
+-- +----+-------------+------------+----------+----------+----------------+-------------------+
+--
+-- Business Rule References:
+--   BR-TMP-001: For a given purpose + session + scope, only ONE active assignment exists.
+--               Enforced by UNIQUE(scope_hash).
+--   BR-TMP-002: Direct class assignment (class_id) takes priority over class group (class_group_id).
+--               Enforced at application layer during template resolution.
+--   BR-TMP-003: School-wide assignment is the final fallback when no class or group match exists.
+--   BR-TMP-004: SCHOOL_WIDE purpose types should never have class_id or class_group_id set.
+--               Enforced at application layer (form hides class/group selectors for SCHOOL_WIDE purposes).
+--   BR-TMP-005: Soft-deleted assignments retain their scope_hash, preventing duplicate assignments
+--               for the same scope. To reassign, restore and update the existing record, or force-delete it.
+-- =========================================================================
+
+
+-- =========================================================================
+-- SELF-CHECK EVALUATION
+-- =========================================================================
+-- [x] Every FK column type matches the referenced PK type exactly
+--       template_id     = BIGINT UNSIGNED  (matches tmp_templates.id)
+--       purpose_id      = INT UNSIGNED     (matches tmp_template_purposes.id)
+--       academic_session_id = SMALLINT UNSIGNED (matches sch_org_academic_sessions_jnt.id)
+--       class_id        = INT UNSIGNED     (matches sch_classes.id)
+--       class_group_id  = INT UNSIGNED     (matches msh_class_groups.id)
+--       scope_type_id   = INT UNSIGNED     (matches sys_dropdown_table.id)
+--       created_by      = INT UNSIGNED     (matches sys_users.id)
+-- [x] No ENUMs used — scope_type uses sys_dropdown_table FK
+-- [x] No tenant_id column anywhere
+-- [x] Every table has: id, is_active, created_by, created_at, updated_at, deleted_at
+-- [x] CHECK constraint enforces scope target rule (no dual-target)
+-- [x] Uniqueness constraint prevents duplicate assignments (scope_hash UNIQUE)
+-- [x] Seed data covers 7 standard purposes
+-- [x] Resolution logic documented (Section 4)
+-- [x] No changes to any existing tables (pure additive)
+-- [x] class_group_id FK references msh_class_groups.id (D-TMP-001)
+-- =========================================================================

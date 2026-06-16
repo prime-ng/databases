@@ -1,0 +1,100 @@
+# Dropdown Table Design
+
+
+
+┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│  PRIME ERP  |  LMS Masters                                                                                                       [User Profile] │
+├─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                                                      Breadcrumb: ....>...>..... │
+│┌─Tabs──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐│
+││ [Set_Difficulty_Level]   [Asessment_Type]   [LMS-Trigger_Event]   [LMS-Action_Type]   [LMS-Rule_Engine_Configuration]                         ││
+│└───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘│
+│                                                                                                                                                 │
+│                                                                                                                                                 │
+│                                                                                                                                                 │
+│                                                                                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│  PRIME ERP  |  LMS Quiz/Quest/Exam Creation                                                                                      [User Profile] │
+├─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                                                      Breadcrumb: ....>...>..... │
+│┌─Tabs──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐│
+││ [Homework]    [Quiz]    [Quest]    [Online-Exam]    [Offline-Exam]                                                                            ││
+│└───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘│
+│                                                                                                                                                 │
+│                                                                                                                                                 │
+│                                                                                                                                                 │
+│                                                                                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│  LMS QUIZ                                                                                                                                       │
+├─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                                                                                 │
+│ Aca. Session : [ Aca. Session         ▼ ]  *Class : [ Class  ▼ ]  *Subject : [ Subject           ▼ ] Quiz Type : [ Quiz Type                ▼ ] │
+│ *Lesson : [ Lesson                    ▼ ]  *Topic : [ Topic                                      ▼ ]                   [Search] [Add] [📝] [❌] │
+├─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Class | Subject | Lesson                | Topic                             | Quiz Type   | Quiz Code                    | Status      | Action │
+├─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ 7th   | Science | Lesson -1             | Topic - 1.1                       | Easy        | QUIZ_9TH_SCI_L01_SUB08_EASY  | Active      |+📝❌   │
+│ 7th   | Science | Lesson -1             | Topic - 1.1                       | Easy        | QUIZ_9TH_SCI_L01_SUB08_EASY  | Active      |+📝❌   │
+│ 7th   | Science | Lesson -1             | Topic - 1.1                       | Easy        | QUIZ_9TH_SCI_L01_SUB08_EASY  | Active      |+📝❌   │
+│ 7th   | Science | Lesson -1             | Topic - 1.1                       | Easy        | QUIZ_9TH_SCI_L01_SUB08_EASY  | Active      |+📝❌   │
+│ 7th   | Science | Lesson -1             | Topic - 1.1                       | Easy        | QUIZ_9TH_SCI_L01_SUB08_EASY  | Active      |+📝❌   │
+│ 7th   | Science | Lesson -1             | Topic - 1.1                       | Easy        | QUIZ_9TH_SCI_L01_SUB08_EASY  | Active      |+📝❌   │
+│ 7th   | Science | Lesson -1             | Topic - 1.1                       | Easy        | QUIZ_9TH_SCI_L01_SUB08_EASY  | Active      |+📝❌   │
+└─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+
+ACTION (Homework) :
++ View Homework
++ Add Homework
++ Edit Homework
++ Delete Homework
++ Assign to Student
++ View Homework Status
+
+
+ACTION (Quiz) :
++ View Quiz
++ Add Quiz
++ Edit Quiz
++ Delete Quiz
++ Add Questions
++ Assign to Student
++ View Quiz Status
+
+ACTION (Quest) :
++ View Quest
++ Add Quest
++ Edit Quest
++ Delete Quest
++ Add Scope
++ Add Questions
++ Assign to Student
++ View Quest Status
+
+ACTION (Online-Exam) :
++ View Online-Exam
++ Add Online-Exam
++ Edit Online-Exam
++ Delete Online-Exam
++ Add Questions
++ Assign to Student
++ View Online-Exam Status
+
+ACTION (Offline-Exam) :
++ View Offline-Exam
++ Add Offline-Exam
++ Edit Offline-Exam
++ Delete Offline-Exam
++ Add Questions
++ Assign to Student
++ View Offline-Exam Status
+
+
+
