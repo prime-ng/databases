@@ -3,7 +3,7 @@
 		{
 			"name": "old_db",
 			"path": "/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db"
-		}
+		},
 		{
 			"name": "pgdatabase",
 			"path": "/Users/bkwork/WorkFolder/2-New_Primedb/pgdatabase"
@@ -16,6 +16,14 @@
 			"name": "local_workspace",
 			"path": "/Users/bkwork/WorkFolder/3-Local_Workspace"
 		},
+		{
+			"name": "tarun_prime_context",
+			"path": "/Users/bkwork/Herd/tarun_prime_context"
+		},
+		{
+			"name": "prime_testing",
+			"path": "/Users/bkwork/Herd/prime_testing"
+		}
 	],
 	"settings": {
 		"search.exclude": {

@@ -65,28 +65,28 @@ Modules/ModuleName/
 └── vite.config.js
 ```
 
-## All Modules (37)
-> **Audited:** 2026-04-09 against `prime_ai` / branch `student-portal` (code-only re-count).
-> Previous audit: 2026-04-02 against `prime_ai` / branch current. Prior: 2026-03-22 on `prime_ai_tarun`.
+## All Modules (45)
+> **Audited:** 2026-06-21 against `prime_ai` / branch `Brijesh` (code-only re-count).
+> Previous audit: 2026-04-09 against `prime_ai` / branch `student-portal`. Prior: 2026-04-02 against `prime_ai`.
 > Controllers counted recursively under `app/Http/Controllers/`.
 > Services count = unique .php files under `app/Services/` (recursive).
 > Route lines = sum of line counts across all `*.php` in `Modules/{Name}/routes/` (web.php + api.php).
 > Tests = files inside each module's own `tests/` folder only (excludes central `tests/Unit|Feature|Browser/`).
 
-### Global Statistics (2026-04-09 re-count)
-| Metric | Count | Δ vs 2026-04-02 |
+### Global Statistics (2026-06-21 re-count)
+| Metric | Count | Δ vs 2026-04-09 |
 |--------|-------|-----------------|
-| Total Modules | 37 (5 central + 32 tenant, Feedback DDL-only) | — |
-| Total Models | 616 | −51 (previous total was inconsistent with row-sum) |
-| Total Controllers | 467 | −39 (previous total inconsistent with row-sum) |
-| Total Services | 194 (SmartTimetable: 108, HrStaff: 15, Inventory: 14, Hpc: 10, Library: 9, Cafeteria/Admission: 6, FrontOffice: 4, TimetableFoundation/Certificate: 3, others) | −32 |
-| Total Views | 2,569 blade files | +316 |
-| Total FormRequests | 288 | −4 |
-| Total Policies | ~230 (not re-counted — last audit 2026-03-22) | — |
-| Tenant Migrations | 375 files in `database/migrations/tenant/` | +26 |
-| Module Route Lines | 5,384 across all `routes/*.php` in module dirs | +1,827 (prev count was only counting a subset of files) |
-| Module-level Test Files | 80 (excludes central tests/Unit|Feature|Browser/) | −17 (likely previous over-count — some central files were previously attributed here) |
-| Total Jobs | 8 (Billing, Certificate, FrontOffice, Hpc, Inventory, Prime, SmartTimetable, Vendor — 1 each) | −3 |
+| Total Modules | 45 (5 central + 40 tenant) | +8 (BehaviouralAssessment, CommonChat, Hostel, ParentPortal, Ptm added; MarksheetGeneration + Feedback graduated from DDL-only) |
+| Total Models | 806 | +190 |
+| Total Controllers | 747 | +280 |
+| Total Services | 318 | +124 |
+| Total Views | 3,764 blade files | +1,195 |
+| Total FormRequests | 451 | +163 |
+| Total Policies | ~230 (not re-counted) | — |
+| Tenant Migrations | 608 files in `database/migrations/tenant/` | +233 |
+| Module Route Lines | 8,315 across all `routes/*.php` in module dirs | +2,931 |
+| Module-level Test Files | 80 (not re-counted) | — |
+| Total Jobs | 13 (Billing, Certificate, FrontOffice, Hpc, Hostel×2, Inventory, MarksheetGeneration, Payment, Prime, SmartTimetable, SystemConfig, Vendor) | +5 |
 | EnsureTenantHasModule usage | 1 (across entire tenant.php) | — |
 
 ### Central-Scoped Modules (run on central domain, access prime_db/global_db)
@@ -94,7 +94,7 @@ Modules/ModuleName/
 |--------|-------------|--------|----------|----------|-------|---------|-------------|-------|-------------|
 | **Prime** | 22 | 27 | 1 | 7 | 97 | 2 | 244 | 9 | Tenant CRUD, plans, billing, users, roles, modules, menus, geography |
 | **GlobalMaster** | 15 | 12 | 0 | 10 | 55 | 3 | 52 | 4 | Countries, states, cities, boards, languages, plans, dropdowns |
-| **SystemConfig** | 4 | 3 | 0 | 1 | 8 | 2 | 29 | 1 | Settings, menus, translations |
+| **SystemConfig** | 13 | 8 | 2 | 4 | 36 | 2 | 50 | 1 | Settings, menus, translations |
 | **Billing** | 7 | 6 | 0 | 3 | 43 | 1 | 18 | 1 | Invoice generation, payment tracking, billing cycles |
 | **Documentation** | 3 | 2 | 0 | 2 | 15 | 3 | 16 | 1 | Knowledge base, help docs |
 
@@ -103,41 +103,46 @@ Modules/ModuleName/
 
 | Module | Controllers | Models | Services | Requests | Views | Jobs | Seeders | Route Lines | Tests | Description |
 |--------|-------------|--------|----------|----------|-------|------|---------|-------------|-------|-------------|
-| **SchoolSetup** | 41 | 42 | 0 | 27 | 223 | 0 | 7 | 585 | 0 | School structure, classes, sections, subjects, teachers, rooms, buildings |
-| **SmartTimetable** | 19 | 65 | 108 | 7 | 177 | 1 | 14 | 41 | 0 | AI timetable: FET solver, 24 Hard + 60+ Soft constraint classes, analytics, refinement, substitution |
-| **TimetableFoundation** | 24 | 32 | 3 | 4 | 158 | 0 | 1 | 294 | 7 | Shared timetable config: period sets, day types, configurations, academic terms |
-| **Transport** | 31 | 36 | 0 | 20 | 151 | 0 | 1 | 296 | 0 | Vehicles, routes, trips, drivers, pickup points, student allocation, inspections |
+| **SchoolSetup** | 70 | 69 | 3 | 31 | 357 | 0 | 8 | 823 | 0 | School structure, classes, sections, subjects, teachers, rooms, buildings. Employee leave management DDL (25 tables). PTM DDL v2 (10 tables). |
+| **SmartTimetable** | 18 | 63 | 111 | 13 | 178 | 1 | 14 | 188 | 0 | AI timetable: FET solver, 24 Hard + 60+ Soft constraint classes, analytics, refinement, substitution |
+| **TimetableFoundation** | 27 | 34 | 5 | 4 | 172 | 0 | 1 | 333 | 7 | Shared timetable config: period sets, day types, configurations, academic terms |
+| **Transport** | 32 | 36 | 0 | 20 | 151 | 0 | 2 | 364 | 0 | Vehicles, routes, trips, drivers, pickup points, student allocation, inspections |
 | **Hpc** | 23 | 32 | 10 | 14 | 242 | 1 | 0 | 270 | 0 | Holistic Progress Card: 4 PDF templates, approval workflow, student/parent/peer portals |
-| **Library** | 26 | 35 | 9 | 19 | 140 | 0 | 1 | 274 | 0 | Book catalog, members, transactions, fines, reservations, digital resources, reports |
-| **StudentProfile** | 5 | 18 | 1 | 0 | 45 | 0 | 1 | 162 | 0 | Student CRUD, guardians, attendance, medical incidents; +Leave* models (LeaveApplication/Type/Document/Remark — 4 new models since 2026-04-02) |
-| **StudentFee** | 15 | 23 | 0 | 0 | 89 | 0 | 1 | 151 | 24 | Fee heads, invoices, receipts, concessions, scholarships, fines, assignments |
-| **Syllabus** | 15 | 22 | 1 | 14 | 90 | 0 | 1 | 183 | 0 | Lessons, topics, competencies, bloom taxonomy, cognitive skills, schedules |
-| **QuestionBank** | 7 | 16 | 0 | 6 | 38 | 0 | 1 | 96 | 0 | Questions with bloom/cognitive/complexity tagging, AI generation, search. **Stats spec (2026-04-10):** `1-DDL_Tenant_Modules/51-QuestionBank/DDL/statistics_help.md` — full CTT/IRT calculation contract for all 6 metrics in `qns_question_statistics` (difficulty_index, discrimination_index, guessing_factor, min/max/avg_time_taken_seconds, total_attempts). See D31. |
-| **LmsExam** | 13 | 11 | 1 | 11 | 73 | 0 | 2 | 170 | 0 | Exam blueprints, paper sets, allocations, scopes, student groups; +GrievanceReviewController, +PaperSetQuestionController, +ExamQueryService, +LmsExamPaperCheckSeeder |
-| **LmsQuiz** | 6 | 6 | 1 | 5 | 39 | 0 | 1 | 84 | 0 | Quizzes, questions, allocations, assessment types, difficulty distribution |
-| **LmsHomework** | 2 | 3 | 1 | 3 | 20 | 0 | 1 | 65 | 1 | Homework, submissions, action types, trigger events, rule engine |
-| **LmsQuests** | 4 | 4 | 1 | 4 | 27 | 0 | 1 | 77 | 0 | Quests, questions, scopes, allocations |
+| **Library** | 39 | 51 | 12 | 27 | 210 | 0 | 3 | 401 | 0 | Book catalog, members, transactions, fines, reservations, digital resources, reports |
+| **StudentProfile** | 9 | 19 | 1 | 1 | 70 | 0 | 1 | 215 | 0 | Student CRUD, guardians, attendance, medical incidents; Leave subsystem (models only, no routes) |
+| **StudentFee** | 15 | 24 | 3 | 0 | 89 | 0 | 1 | 151 | 24 | Fee heads, invoices, receipts, concessions, scholarships, fines, assignments |
+| **Syllabus** | 15 | 22 | 1 | 15 | 90 | 0 | 1 | 183 | 0 | Lessons, topics, competencies, bloom taxonomy, cognitive skills, schedules |
+| **QuestionBank** | 7 | 16 | 2 | 6 | 45 | 0 | 1 | 116 | 0 | Questions with bloom/cognitive/complexity tagging, AI generation, search. Stats spec: `51-QuestionBank/DDL/statistics_help.md`. |
+| **LmsExam** | 13 | 13 | 11 | 12 | 91 | 0 | 3 | 214 | 0 | Exam blueprints, paper sets, allocations, scopes, student groups; GrievanceReviewController; PaperSetQuestionController; ExamQueryService |
+| **LmsQuiz** | 6 | 6 | 7 | 5 | 42 | 0 | 1 | 94 | 0 | Quizzes, questions, allocations, assessment types, difficulty distribution |
+| **LmsHomework** | 2 | 3 | 2 | 3 | 20 | 0 | 1 | 67 | 1 | Homework, submissions, action types, trigger events, rule engine |
+| **LmsQuests** | 4 | 4 | 5 | 4 | 30 | 0 | 1 | 85 | 0 | Quests, questions, scopes, allocations |
 | **Notification** | 12 | 14 | 2 | 10 | 64 | 0 | 1 | 119 | 0 | Channels, templates, targets, delivery; routes currently COMMENTED OUT |
-| **Complaint** | 8 | 6 | 2 | 0 | 34 | 0 | 1 | 187 | 0 | Complaints, categories, actions, SLA, AI insights, dashboard |
+| **Complaint** | 10 | 6 | 2 | 2 | 36 | 0 | 1 | 220 | 0 | Complaints, categories, actions, SLA, AI insights, dashboard |
 | **Vendor** | 8 | 8 | 0 | 3 | 42 | 1 | 2 | 84 | 0 | Vendors, agreements, invoices, payments, inspections |
-| **Payment** | 2 | 5 | 2 | 1 | 9 | 0 | 1 | 27 | 8 | Payment gateway (Razorpay), processing, callbacks |
-| **Recommendation** | 10 | 11 | 0 | 0 | 53 | 0 | 1 | 101 | 0 | Rules, materials, student recommendations |
-| **SyllabusBooks** | 4 | 6 | 0 | 3 | 17 | 0 | 1 | 59 | 0 | Books, book-topic mapping, authors |
-| **Accounting** | 18 | 21 | 0 | 15 | 124 | 0 | 2 | 202 | 14 | Tally-inspired voucher engine, chart of accounts, ledgers, journal entries |
+| **Payment** | 4 | 8 | 4 | 3 | 9 | 1 | 1 | 52 | 8 | Payment gateway (Razorpay), processing, callbacks |
+| **Recommendation** | 10 | 10 | 1 | 18 | 49 | 0 | 1 | 111 | 0 | Rules, materials, student recommendations |
+| **SyllabusBooks** | 11 | 13 | 3 | 8 | 30 | 0 | 1 | 112 | 0 | Books, book-topic mapping, authors |
+| **Accounting** | 21 | 25 | 7 | 17 | 141 | 0 | 2 | 228 | 14 | Tally-inspired voucher engine, chart of accounts, ledgers, journal entries |
 | **StandardTimetable** | 1 | 0 | 0 | 0 | 3 | 0 | 1 | 38 | 0 | Standard timetable views (skeleton) |
-| **StudentPortal** | 14 | 11 | 1 | 5 | 80 | 0 | 1 | 170 | 9 | Student-facing portal — significant growth since 2026-04-02 (was 7/0/0/0). 14 controllers (Notification, ParentResults, ExamAttempt, Grievance, Homework, Leave, Lms, Complaint, Progress, QuestAttempt, QuizAttempt, Teachers, Timetable, Portal). 11 own models (ExamAttempt, QuizQuestAttempt, AttemptActivityLog, AttemptCheckpoint, ExamMarksEntry, ExamResult, ExamGrievance, etc.). 5 FormRequests (RespondToLeaveRemark, SaveAnswer, StartAttempt, StoreLeaveApplication, SubmitAttempt). 1 AllocationService. **Prompt:** `5-Work-In-Progress/StudentPortal/1-Claude_Prompt/STP_2step_Prompt1.md` |
-| **Dashboard** | 1 | 0 | 0 | 0 | 8 | 0 | 1 | 39 | 0 | Admin dashboards |
+| **StudentPortal** | 37 | 11 | 1 | 5 | 98 | 0 | 1 | 304 | 9 | Student-facing portal. 37 controllers (major growth). Includes Api/ and Mobile/ sub-dirs. |
+| **Dashboard** | 26 | 0 | 0 | 0 | 85 | 0 | 1 | 142 | 0 | Admin dashboards — major growth (was 1 ctrl, now 26) |
 | **Scheduler** | 1 | 2 | 2 | 1 | 6 | 0 | 1 | 14 | 1 | Job scheduling |
 | **EventEngine** | 4 | 3 | 0 | 3 | 17 | 0 | 1 | 39 | 0 | Cross-module event system (~20% done) |
-| **Admission** | 15 | 20 | 6 | 20 | 46 | 0 | 3 | 220 | 0 | Enquiry→application→shortlist→enroll funnel. Scaffold complete; +3 FormRequests and +12 views since 2026-04-02. **Prompt:** `5-Work-In-Progress/FrontOffice/1-Claude_Prompt/ADM_2step_Prompt1.md` |
-| **Cafeteria** | 16 | 21 | 6 | 16 | 62 | 0 | 3 | 169 | 0 | POS counter, meal cards, FSSAI compliance. Scaffold complete. **Prompt:** `5-Work-In-Progress/Cafeteria/1-Claude_Prompt/CAF_2step_Prompt1.md` |
-| **Certificate** | 9 | 10 | 3 | 10 | 36 | 1 | 4 | 134 | 0 | Bonafide/TC/Character/Achievement/ID cert lifecycle, HMAC-SHA256 QR. Scaffold complete. **Prompt:** `5-Work-In-Progress/Certificates/1-Claude_Prompt/CRT_2step_Prompt1.md` |
-| **FrontOffice** | 20 | 22 | 4 | 3 | 78 | 1 | 3 | 223 | 0 | Reception, postal register, circulars, gate pass, early departure. Scaffold complete. **Prompt:** `5-Work-In-Progress/FrontOffice/1-Claude_Prompt/FOF_2step_Prompt1.md` |
-| **HrStaff** | 22 | 33 | 15 | 23 | 92 | 0 | 9 | 240 | 0 | HR + Payroll. PF/ESI/TDS, leave FSM, payroll integration. Scaffold complete. **Prompt:** `5-Work-In-Progress/HrStaff/1-Claude_Prompt/HRS_2step_Prompt1.md` |
-| **Inventory** | 20 | 28 | 14 | 18 | 68 | 1 | 5 | 212 | 0 | GRN, stock issue, reorder, vendor integration. Services nearly doubled (7→14): Asset, Godown, GrnPosting, InventoryReport, PurchaseOrder, PurchaseRequisition, Quotation, RateContract, ReorderAlert, StockAdjustment, StockGroup, StockIssue, StockLedger, StockValuation. **Prompt:** `5-Work-In-Progress/22-Inventory/1-Claude_Prompt/INV_2step_Prompt1.md` |
-| **Template** | 1 | 1 | 0 | 2 | 11 | 0 | 1 | 16 | 0 | Visual template builder (canvas/HTML). `tmp_templates` exists (Model + Controller + Routes + Views). Template Output Config DDL designed (2026-04-16): `tmp_template_purposes` + `tmp_template_assignments`. tmp_templates migration MISSING. |
-| **MarksheetGeneration** | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | **DDL ONLY (2026-04-13)** — Marksheet computation & result storage (`msh_*`, 23 tables). Config templates, exam groups, class groups, student results, IA marks, co-scholastic. DDL: `1-DDL_Tenant_Modules/LMS_MarksheetGeneration/DDL/MSG_DDL_v1.sql`. Code not yet implemented. |
-| **Feedback** | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | **DDL ONLY (2026-04-09)** — Generic cross-entity feedback module (`fbk_*`, 11 tables). Supports Student/Parent→Teacher, NEP 2020 Teacher→Student, NEP 2020 Student→Peer, Student→non-teaching staff (Transport/Canteen/Library/Hostel/Security/Coach), Admin→Teacher, Teacher 360°, Self-Reflection. DDL: `1-DDL_Tenant_Modules/39-Feedback/StudentFeedback_ddl_v2.sql`. Code not yet implemented. |
+| **Admission** | 18 | 20 | 6 | 24 | 84 | 0 | 3 | 259 | 0 | Enquiry→application→shortlist→enroll funnel. All 18 controllers routed. **Prompt:** `5-Work-In-Progress/FrontOffice/1-Claude_Prompt/ADM_2step_Prompt1.md` |
+| **Cafeteria** | 16 | 21 | 6 | 19 | 95 | 0 | 6 | 189 | 0 | POS counter, meal cards, FSSAI compliance. **Prompt:** `5-Work-In-Progress/Cafeteria/1-Claude_Prompt/CAF_2step_Prompt1.md` |
+| **Certificate** | 10 | 10 | 3 | 10 | 39 | 1 | 4 | 142 | 0 | Bonafide/TC/Character/Achievement/ID cert lifecycle, HMAC-SHA256 QR. **Prompt:** `5-Work-In-Progress/Certificates/1-Claude_Prompt/CRT_2step_Prompt1.md` |
+| **FrontOffice** | 21 | 22 | 4 | 10 | 118 | 1 | 3 | 310 | 0 | Reception, postal register, circulars, gate pass, early departure. **Prompt:** `5-Work-In-Progress/FrontOffice/1-Claude_Prompt/FOF_2step_Prompt1.md` |
+| **HrStaff** | 22 | 33 | 15 | 23 | 93 | 0 | 9 | 242 | 0 | HR + Payroll. PF/ESI/TDS, leave FSM, payroll integration. **Prompt:** `5-Work-In-Progress/HrStaff/1-Claude_Prompt/HRS_2step_Prompt1.md` |
+| **Inventory** | 20 | 28 | 14 | 18 | 77 | 1 | 5 | 229 | 0 | GRN, stock issue, reorder, vendor integration. **Prompt:** `5-Work-In-Progress/22-Inventory/1-Claude_Prompt/INV_2step_Prompt1.md` |
+| **Template** | 5 | 6 | 3 | 10 | 31 | 0 | 4 | 63 | 0 | Visual template builder (canvas/HTML). `tmp_templates` migration MISSING. |
+| **MarksheetGeneration** | 21 | 24 | 33 | 19 | 98 | 1 | 4 | 180 | 0 | **Graduated from DDL-only (2026-06-21).** Marksheet computation & result storage (`msh_*`, 23 tables). Full code scaffold now present. DDL: `1-DDL_Tenant_Modules/55h-MarksheetGeneration/`. |
+| **Feedback** | 10 | 11 | 6 | 1 | 51 | 0 | 4 | 171 | 0 | **Graduated from DDL-only (2026-06-21).** Generic cross-entity feedback (`fbk_*`, 11 tables). Code scaffold now present. DDL: `1-DDL_Tenant_Modules/39-Feedback/StudentFeedback_ddl_v2.sql`. |
+| **Hostel** | 53 | 44 | 22 | 38 | 278 | 2 | 8 | 573 | 0 | **NEW (2026-06-21).** Hostel Management — buildings, floors, rooms, beds, allotments, attendance, mess, fee, complaints, sick bay. 36-table DDL (HST_DDL_v3.sql). Prefix: `hst_`. **Prompt:** `5-Work-In-Progress/Hostel/1-Claude_Prompt/HST_2step_Prompt1.md` |
+| **ParentPortal** | 28 | 6 | 1 | 0 | 45 | 0 | 1 | 267 | 0 | **NEW (2026-06-21).** Parent Portal — attendance, results, homework, fees, timetable, leave, notifications for linked children. OTP login. Prefix: `ppt_`. **Prompt:** `5-Work-In-Progress/ParentPortal/1-Claude_Prompt/PPT_2step_Prompt1.md` |
+| **BehaviouralAssessment** | 12 | 16 | 0 | 5 | 65 | 0 | 4 | 119 | 0 | **NEW (2026-06-21).** Student behavioral assessment and tracking (`ba_*` prefix). Code scaffold present, not yet audited. |
+| **CommonChat** | 15 | 9 | 1 | 5 | 19 | 0 | 1 | 121 | 0 | **NEW (2026-06-21).** Standalone direct-messaging and group-chat for all registered users within a school tenant. |
+| **Ptm** | 11 | 9 | 6 | 18 | 58 | 0 | 1 | 103 | 0 | **NEW (2026-06-21).** Parent-Teacher Meeting scheduling. Previously a sub-module DDL of SchoolSetup (ptm_setup_ddl_v2.sql), now a standalone module. Prefix: `ptm_`. |
 
 ### Route & Policy Registration Architecture (Post-Migration 2026-04-02)
 
