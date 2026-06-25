@@ -2,7 +2,7 @@
 
 ---
 
-## 📋 CONFIGURATION (Edit once, used by both prompts)
+## CONFIGURATION (Edit once, used by both prompts)
 
 ```yaml
 CONTEXT_STORAGE_DIR : "/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/.ai-contexts"    # Folder where context files are saved (relative to project root)
