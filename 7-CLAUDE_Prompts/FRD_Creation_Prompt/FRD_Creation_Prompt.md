@@ -6,21 +6,24 @@
 ## CONFIGURATION VARIABLES
 
 ```yaml
-MODULE_NAME         : "Complaint"
-MODULE_CODE         : "CMP"
-MODULE_PREFIX       : "cmp_"
+MODULE_NAME         : "Library"
+MODULE_CODE         : "LIB"
+MODULE_PREFIX       : "lib_"
 
 # Input Files (provide what you have — Claude will work with missing files)
-PRELIMINARY_REQ_FILE : "/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/4-Requirement_Module_wise/2-Detailed_Requirements/V2/{MODULE_CODE}_{MODULE_NAME}_Requirement.md"
-DDL_FILE             : "/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/1-DDL_Tenant_Modules/{MODULE_NAME}/DDL/{MODULE_NAME}_DDL_v2.sql"
-CODE_PATH            : "/Users/bkwork/Herd/prime_ai/Modules/{MODULE_NAME}/"
-TECH_REQ_FILE        : "/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/4-Requirement_Module_wise/1-High_Level_Requirements/"
+PRELIMINARY_REQ_FILE : /Users/bkwork/Herd/prime_testing/Doc_Analysis/4-Module_Requirement/{MODULE_NAME}*.md
+CORE_DDL_FILE        : /Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/0-DDL_Masters/tenant_db_v3.sql
+DDL_FILE             : /Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/2-DDL_Tenant_Consolidated/{MODULE_NAME}_DDL*.sql
+CODE_PATH            : /Users/bkwork/Herd/prime_ai/Modules/{MODULE_NAME}/
+TECH_REQ_FILE        : /Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/4-Requirement_Module_wise/2-Detailed_Requirements/V2/{MODULE_CODE}_{MODULE_NAME}_Requirement*.md
 TEST_CASES_FILE      : ""   # Leave empty if not available
 
-# Output
-OUTPUT_FILE          : "/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/5-FRD_Documents/{MODULE_NAME}/{MODULE_CODE}_FRD_v1.md"
-```
+TECH_REQ_FILE        : /Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/4-Requirement_Module_wise/1-High_Level_Requirements/
 
+# Output
+OUTPUT_FILE          : "/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/4-Requirement_Module_wise/0-FRD_Documents/{MODULE_NAME}/{MODULE_CODE}_FRD_v1.md"
+```
+/Users/bkwork/Herd/prime_testing/Doc_Analysis/4-Module_Requirement
 ---
 
 ---
@@ -51,6 +54,13 @@ plain business language.
      (If missing, note it and continue from what you can infer)
 
   2. DDL Schema File:
+    2.1. Foundational DDL:
+     {CORE_DDL_FILE}
+     (Read table and column names to understand what data entities exist.
+      These tables will be used in FK reference accrosed all the Modules.
+      Do NOT expose column names in the FRD — translate to business terms)
+
+    2.2. Module DDL File:
      {DDL_FILE}
      (Read table and column names to understand what data entities exist.
       Do NOT expose column names in the FRD — translate to business terms)
