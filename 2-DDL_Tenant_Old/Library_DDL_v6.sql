@@ -783,13 +783,13 @@
     `updated_at`              TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`              TIMESTAMP NULL,
     UNIQUE KEY `uq_lib_reserve_book_member_status` (`book_id`, `member_id`, `status`),
-    INDEX `idx_lib_reserve_book_status_queue`   (`book_id`, `status`, `queue_position`),
+    INDEX `idx_lib_reserve_book_status_queue`   (`book_id`, `status`),
     INDEX `idx_lib_reserve_member_status` (`member_id`, `status`),
     INDEX `idx_lib_reserve_status_date` (`status`, `pickup_by_date`),
     CONSTRAINT `fk_lib_reservation_bookId`       FOREIGN KEY (`book_id`)              REFERENCES `lib_books_master`(`id`),
     CONSTRAINT `fk_lib_reservation_memberId`     FOREIGN KEY (`member_id`)            REFERENCES `lib_members`(`id`),
     CONSTRAINT `fk_lib_reservation_status`       FOREIGN KEY (`status`)               REFERENCES `lib_library_status_masters`(`id`),
-    CONSTRAINT `fk_lib_reservation_transId` FOREIGN KEY (`transaction_id`)  REFERENCES `lib_transactions`(`id`);
+    CONSTRAINT `fk_lib_reservation_transId` FOREIGN KEY (`transaction_id`)  REFERENCES `lib_transactions`(`id`),
     CONSTRAINT `fk_lib_reservation_approvedById` FOREIGN KEY (`renewal_approved_by_id`) REFERENCES `sys_users`(`id`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
   -- Condition :
