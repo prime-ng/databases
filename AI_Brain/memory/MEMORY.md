@@ -45,6 +45,10 @@
 
 - [known-bugs-and-roadmap.md](known-bugs-and-roadmap.md) — **Comprehensive issues file**: 8 bugs (2 critical), 12 security issues (4 critical), 11 performance anti-patterns, 13 N+1 issues, 4-phase improvement roadmap, missing features list, **HPC 20-issue section (2026-03-16)**
 
+## Deployment & Operations
+
+- [deployment-config.md](deployment-config.md) — **Deployment configuration reference** (2026-06-25): queue names and workload map, environment variable checklist, Horizon configuration, known deployment risks, storage setup, pre-flight checklist. Used by Technical Auditor (Layer 5) and DevOps agent.
+
 ---
 
 ## Critical Files to Check Before Any Work

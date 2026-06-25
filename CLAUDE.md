@@ -21,6 +21,9 @@ All agent role guides live in `AI_Brain/agents/`.
 | "act as School Agent" | `AI_Brain/agents/school-agent.md` |
 | "act as Test Agent" | `AI_Brain/agents/test-agent.md` |
 | "act as DevOps" | `AI_Brain/agents/devops-deployer.md` |
+| "act as Technical Auditor" | `AI_Brain/agents/technical-auditor.md` |
+| "act as Testing Architect" | `AI_Brain/agents/testing-architect.md` |
+| "act as Status Analyzer" | `AI_Brain/agents/status-analyzer.md` |
 
 You can also use `/agent {name}` — the skill does the same thing.
 

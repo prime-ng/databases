@@ -99,13 +99,20 @@ AI_Brain/
 │
 ├── agents/                ← Role-specific AI instructions
 │   ├── developer.md         General Laravel + modular dev guide
+│   ├── backend-developer.md Backend specialist (API, services, queues)
+│   ├── frontend-developer.md Blade/Livewire/JS specialist
 │   ├── db-architect.md      Database design specialist
 │   ├── module-agent.md      Module creation specialist
 │   ├── tenancy-agent.md     Tenancy specialist
 │   ├── api-builder.md       REST API builder
 │   ├── debugger.md          Debugging specialist
 │   ├── school-agent.md      School domain expert
-│   └── test-agent.md        Testing specialist (Pest 4.x)
+│   ├── test-agent.md        Testing specialist (Pest 4.x)
+│   ├── enterprise-architect.md System architecture, ADRs, cross-module design
+│   ├── business-analyst.md  Requirements, gap analysis, user stories
+│   ├── technical-auditor.md 5-layer audit: schema → code → security → perf → deploy
+│   ├── testing-architect.md Full test strategy: Pest 4.x, CI, coverage gap analysis
+│   └── status-analyzer.md  Requirements-driven completeness scoring (A/B/C formula)
 │
 ├── lessons/               ← Hard-won knowledge, bugs, pitfalls
 │   └── known-issues.md      Known bugs, gotchas, and fixes
@@ -150,6 +157,10 @@ AI_Brain/
 | Debug a tenancy issue               | agents/tenancy-agent.md + rules/tenancy-rules.md |
 | Write a unit test                   | agents/test-agent.md + templates/test-unit.md |
 | Write a tenant feature test         | agents/test-agent.md + templates/test-feature-tenant.md |
+| Full test strategy + CI setup       | agents/testing-architect.md        |
+| Audit a module (bugs/security/perf) | agents/technical-auditor.md        |
+| Check module completion %           | agents/status-analyzer.md + 7-CLAUDE_Prompts/Dev_Completness_Status_Prompt/Dev_Completness_Calculation_Process.md |
+| Pre-deployment checklist            | agents/technical-auditor.md + memory/deployment-config.md |
 | Check what's done / in progress     | state/progress.md                  |
 | Understand an architectural choice  | state/decisions.md                 |
 | Know school business rules          | agents/school-agent.md + memory/school-domain.md |

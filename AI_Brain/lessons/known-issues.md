@@ -1142,3 +1142,84 @@
 | DEAD-PTM-001 | Ptm | **`PtmCombinedViewController::scheduling()` is an orphaned method with no route** — `web.php` routes `combined.scheduling` to `PtmManagementController::index`, not to `CombinedViewController`; the method at line 109 is unreachable dead code. | `Modules/Ptm/app/Http/Controllers/PtmCombinedViewController.php:109` |
 | DEAD-MSG-001 | MarksheetGeneration | **`StudentResultController::printStudentMarksheet()` is an empty unreachable method** — empty body, no route points to it (route uses `print` → real `print()` at line 177); dead code that will silently return null if ever reached. | `Modules/MarksheetGeneration/app/Http/Controllers/StudentResultController.php:162-165` |
 | DEAD-FBK-001 | Feedback | **`FbkEligibilityService` injected but never called** — declared in constructor (line 23), never referenced elsewhere in the file; instantiated on every request for no effect while the eligibility gate it provides is completely bypassed. | `Modules/Feedback/app/Http/Controllers/FbkResponseController.php:23` |
+
+---
+
+## Deep Audit — Complaint Module (2026-06-23, all 5 layers)
+
+> Full re-audit of Complaint module after context reset. Prior codes BUG-CMP-001/002 were registered twice (March and April 2026) for conflicting issues — see notes below. New codes start from safe offsets.
+> Prior open: BUG-CMP-001–003 (partial fixes), BUG-CMP-005, BUG-CMP-013, SEC-CMP-001–003 (partial), SEC-CMP-006.
+
+### Complaint — Layer 1: DDL Schema
+
+| Code | Severity | Issue | DDL File:Line |
+|------|----------|-------|---------------|
+| SCH-CMP-001 | P1 | `KEY idx_cmp_status (status)` — column `status` does not exist; should be `status_id` | `Complaint_ddl_v2.sql:~160` |
+| SCH-CMP-002 | P0 | `fk_cmp_medical_check FOREIGN KEY (is_medical_check_required) REFERENCES cmp_medical_checks(id)` — `is_medical_check_required` is TINYINT(1) boolean, cannot FK to INT PK. DDL will fail on CREATE TABLE. | `Complaint_ddl_v2.sql:~177` |
+| SCH-CMP-003 | P0 | `fk_med_result FOREIGN KEY (result) REFERENCES sys_dropdown_table(id)` — `result` is VARCHAR(20), FK references INT id. Type mismatch, DDL will error. | `Complaint_ddl_v2.sql:~226` |
+| SCH-CMP-004 | P1 | Column name mismatch: code uses `expected_resolution_hours`, `escalation_hours_l1`–`l5` on `cmp_complaint_categories`; DDL defines `default_expected_resolution_hours`, `default_escalation_hours_l1`–`l5`. All category escalation queries return null. | DDL vs `ComplaintCategoryController.php`, `DepartmentSlaRequest.php` |
+| SCH-CMP-005 | P2 | Missing audit/soft-delete columns: `cmp_complaint_categories`, `cmp_department_sla`, `cmp_complaint_actions`, `cmp_ai_insights` missing `created_by`/`updated_by`; `cmp_medical_checks` missing `updated_at` and `deleted_at`; `cmp_complaint_actions` missing `deleted_at`. | `Complaint_ddl_v2.sql` |
+| SCH-CMP-006 | P1 | DDL FK constraints reference `sys_dropdown_table`; all application code queries `sys_dropdowns`. Table name mismatch throughout. | DDL vs all Complaint controllers |
+| SCH-CMP-007 | P0 | No tenant migration files exist in `Modules/Complaint/database/migrations/`. Tables cannot be created for new tenants. | `Modules/Complaint/database/migrations/` (empty) |
+
+### Complaint — Layer 2: Code Quality / Bugs
+
+| Code | Severity | Issue | File:Line |
+|------|----------|-------|-----------|
+| BUG-CMP-014 | P0 | `ComplaintActionController::restore()` and `forceDelete()` methods do not exist. Routes `GET complaint-actions/{id}/restore` and `DELETE complaint-actions/{id}/force-delete` throw 500. | `routes/web.php:141–149` |
+| BUG-CMP-015 | P1 | `GET complaints/manage` (no `{id}` segment) registered AFTER `Route::resource('complaints', ...)` — Laravel matches resource `show` route first with `manage` as `{complaint}`. `Complaint::findOrFail('manage')` → 404. Manage view permanently unreachable. | `routes/web.php:104,127–130` |
+| BUG-CMP-016 | P1 | ComplaintController missing 4 methods: `trashed()`, `restore()`, `forceDelete()`, `toggleStatus()`. All 4 are registered routes — each returns 500. | `routes/web.php:107–125` |
+| BUG-CMP-017 | P1 | `routes/api.php` registers web `ComplaintController` as `apiResource`. This controller renders Blade views. All 7 REST API routes return HTML. | `routes/api.php` |
+| BUG-CMP-018 | P2 | `Complaint::targetable()` uses `morphTo('targetable', 'target_table_name', ...)` — table name as morph type key is non-standard. Laravel morphs resolve by model class name (or registered alias), not table name. Runtime resolution always fails. | `Modules/Complaint/app/Models/Complaint.php` |
+| DEAD-CMP-001 | P0 | `AiInsightController` is a complete stub: `show()`/`store()`/`update()` are empty `{}`, `forceDelete()` missing. All 4 are wired to live routes. Zero Gate::authorize. | `AiInsightController.php` |
+| DEAD-CMP-002 | P2 | `ComplaintDashboardController` is a complete stub. Route is commented out in web.php — currently harmless. | `ComplaintDashboardController.php` |
+| DEAD-CMP-003 | P2 | Commented-out `dd($request->all())` debug code in `MedicalCheckController::store()`. | `MedicalCheckController.php:71–76` |
+| DEAD-CMP-004 | P2 | `ComplaintReportController::baseParetoQuery()` private method defined but never called — `getParetoReport()` uses an inline query instead. | `ComplaintReportController.php` |
+| DEAD-CMP-005 | P2 | `ComplaintController::getFilteredDashboardData()` private method declared but never called. | `ComplaintController.php` |
+| DEAD-CMP-006 | P2 | `aiRiskSentimentReport` appears twice in `compact()` call — duplicate variable reference, indicates incomplete refactor. | `ComplaintReportController.php:88–89` |
+
+### Complaint — Layer 3: Security
+
+| Code | Severity | Issue | File:Line |
+|------|----------|-------|-----------|
+| SEC-CMP-007 | P0 | `ComplaintController::store()` has NO `Gate::authorize()`. Any authenticated tenant user can create a complaint. `create()` is gated but `store()` (lines 209–430) is not. Prior SEC-CMP-001–003 noted this partially; still unresolved. | `ComplaintController.php:209` |
+| SEC-CMP-008 | P0 | `DocumentRequestController` — zero `Gate::authorize` on all 3 methods (index, show, update). Any authenticated user can list, view, and update parent document request status. | `DocumentRequestController.php` |
+| SEC-CMP-009 | P1 | Cross-module hard dependency: `DocumentRequestController` imports `Modules\ParentPortal\Models\ParentDocumentRequest`. Complaint module must not depend on ParentPortal. Breaks module isolation. | `DocumentRequestController.php:1` |
+| SEC-CMP-010 | P1 | `ComplaintMobileController` — zero `Gate::authorize` on 7 of 9 methods: `dashboard()`, `index()`, `show()`, `categories()`, `subcategories()`, `dropdowns()`, `users()`. Any `auth:sanctum` user sees all complaint data. | `Mobile/ComplaintMobileController.php` |
+| SEC-CMP-011 | P1 | `ComplaintActionController` uses wrong Gate permission prefix `complaint.complaint.*` (e.g. `complaint.complaint.view`) instead of `tenant.complaint-action.*`. All Gate checks silently mismatch seeded permissions — effective authorization is zero on all methods that have Gate calls. | `ComplaintActionController.php` |
+| SEC-CMP-012 | P1 | Cross-layer imports: `Modules\Prime\Models\Dropdown` used in `ComplaintController`, `ComplaintReportController`, `ComplaintMobileController`; `Modules\GlobalMaster\Models\Dropdown` in `ComplaintCategoryController`; `App\Models\User` in `MedicalCheckController`, `DepartmentSlaController`. Central models queried from tenant context violate tenancy isolation. | Multiple controllers |
+| SEC-CMP-013 | P2 | `ComplaintController::getTableColumns($table)` has no `Gate::authorize`. Any authenticated user can enumerate the schema of allowed tables. | `ComplaintController.php` getTableColumns() |
+| SEC-CMP-014 | P2 | Mobile API RSP applies only `['api', InitializeTenancyByDomain, PreventAccessFromCentralDomains]` — missing `EnsureTenantIsActive`. Deactivated tenants' users can still access the mobile API. | `Modules/Complaint/app/Providers/RouteServiceProvider.php` |
+
+### Complaint — Layer 4: Performance
+
+| Code | Severity | Issue | File:Line |
+|------|----------|-------|-----------|
+| PERF-CMP-001 | P2 | N+1: `getComplaintsWithEscalation()` fires `DB::table('sys_dropdowns')->where('id', $complaint->status_id)->value('value')` inside `.map()` — 1 query per complaint. | `ComplaintController.php` getComplaintsWithEscalation() |
+| PERF-CMP-002 | P2 | `index()` fires 15+ queries per request: `DepartmentSla::all()`, `ComplaintCategory::all()`, two unbounded `User::get()`, `Role::all()`, `Department::all()`, `Designation::all()`. All uncached. | `ComplaintController.php` index() |
+| PERF-CMP-003 | P2 | `getComplaintActionsData()` calls `User::orderBy('name')->get(['id','name'])` twice — duplicate identical query. | `ComplaintController.php` getComplaintActionsData() |
+| PERF-CMP-004 | P2 | `DepartmentSlaController::create()` and `edit()` each fire 7 unbounded queries: `Vehicle::all()`, `Vendor::all()`, `User::all()`, `Role::all()`, `Department::all()`, `Designation::all()`, `EntityGroup::all()`. | `DepartmentSlaController.php` |
+| PERF-CMP-005 | P2 | N+1: `getComplainantHotspotReport()` fires 3 additional `DB::table` queries per hotspot row inside `.map()`. 20 rows = 60 extra queries. | `ComplaintReportController.php` getComplainantHotspotReport() |
+| PERF-CMP-006 | P2 | `DB::select('SHOW TABLES')` and `DB::getSchemaBuilder()->getColumnListing($table)` called in `create()`, `edit()`, and `getTableData()` — schema introspection on every request, uncached. | `ComplaintController.php` |
+| PERF-CMP-007 | P2 | `MedicalCheckController::create()` and `edit()` call `Complaint::all()` and `User::all()` — unbounded. | `MedicalCheckController.php` |
+| PERF-CMP-008 | P2 | `ComplaintMobileController::show()`: `Role::orderBy->get()->map(fn => $role->users()->count())` — N+1 per role. | `Mobile/ComplaintMobileController.php` show() |
+
+### Complaint — Layer 5: Deployment
+
+| Code | Severity | Issue |
+|------|----------|-------|
+| DEPLOY-CMP-01 | P0 | No migration files. Tenant creation cannot provision Complaint tables. Manual DDL also blocked by SCH-CMP-002 and SCH-CMP-003. |
+| DEPLOY-CMP-02 | P1 | `routes/api.php` maps web `ComplaintController` as `apiResource`. All API routes return HTML. Should use `ComplaintMobileController` or a dedicated API controller. |
+
+### Status Updates for Prior CMP Codes (2026-06-23)
+
+| Old Code | Status |
+|----------|--------|
+| BUG-CMP-001 (Mar 2026 — `dd()` in store catch) | Unverified in this audit — check `grep -n "dd(" ComplaintController.php` |
+| BUG-CMP-001 (Apr 2026 — 4 missing ComplaintController methods) | **CONFIRMED STILL PRESENT** → tracked as BUG-CMP-016 |
+| BUG-CMP-002 (Mar 2026 — `dd('FILTER HIT')` in filter()) | Unverified — filter() still routed via `/dashboard-data` |
+| BUG-CMP-002 (Apr 2026 — 2 missing ComplaintActionController methods) | **CONFIRMED STILL PRESENT** → tracked as BUG-CMP-014 |
+| BUG-CMP-003 (3 stub controllers) | **PARTIALLY FIXED**: ComplaintAction partially implemented. AiInsight still full stub (P0). ComplaintDashboard still stub (route commented). |
+| SEC-CMP-001–003 (show/edit/store/update no Gate) | **PARTIALLY FIXED**: show/edit/update now have Gate. store() STILL MISSING Gate → SEC-CMP-007. |
+| SEC-CMP-006 (ComplaintReportController zero auth) | **CONFIRMED STILL PRESENT** → all report methods still unguarded. |
+| BUG-CMP-005 / BUG-CMP-013 (dummy_table_name dropdown keys) | **CONFIRMED STILL PRESENT** in MedicalCheckController. |
