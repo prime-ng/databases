@@ -16,7 +16,7 @@ CORE_DDL_FILE        : /Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/0-DDL_Maste
 DDL_FILE             : /Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/2-DDL_Tenant_Consolidated/{MODULE_NAME}_DDL*.sql
 CODE_PATH            : /Users/bkwork/Herd/prime_ai/Modules/{MODULE_NAME}/
 TECH_REQ_FILE        : /Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/4-Requirement_Module_wise/2-Detailed_Requirements/V2/{MODULE_CODE}_{MODULE_NAME}_Requirement*.md
-TEST_CASES_FILE      : ""   # Leave empty if not available
+TEST_CASES_FILE      : "/Users/bkwork/Herd/prime_testing/tests/Browser/Modules/Library/*/*.md"   # Leave empty if not available
 
 # Output
 OUTPUT_FILE          : "/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/4-Requirement_Module_wise/0-FRD_Documents/{MODULE_NAME}/{MODULE_CODE}_FRD_v1.md"
