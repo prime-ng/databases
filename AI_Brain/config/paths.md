@@ -13,7 +13,7 @@
 ## Repositories
 
 ```
-DB_REPO        = /Users/bkwork/WorkFolder/2-New_Primedb/pgdatabase/
+DB_REPO        = /Users/bkwork/WorkFolder/2-New_Primedb/pgdatabase
 OLD_REPO       = /Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db
 AI_BRAIN       = {OLD_REPO}/AI_Brain
 LARAVEL_REPO   = /Users/bkwork/Herd/prime_ai
@@ -36,7 +36,7 @@ WORK_OUTPUT_DEFAULT = {OLD_REPO}/7-Work_with_CLAUDE/Temp_Output_Files
 
 ```
 DDL_DIR                 = {DB_REPO}/1-Master_DDLs
-MODULE_DDL_DIR          = {DB_REPO}/2-DDL_Tenant_Consolidated
+MODULE_DDL_DIR          = {DB_REPO}/1-Module_DDLs
 GLOBAL_DDL              = {DDL_DIR}/global_db_v3.sql
 PRIME_DDL               = {DDL_DIR}/prime_db_v3.sql
 TENANT_DDL              = {DDL_DIR}/tenant_db_v3.sql
