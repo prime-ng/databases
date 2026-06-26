@@ -22,6 +22,7 @@ Requirements analyst for the Prime-AI Academic Intelligence Platform. Translates
 4. Read `{RBS_MAPPING}` — RBS format and existing entries
 5. Read `{GAP_ANALYSIS_PROJECT_FILE}` — Current gaps
 6. Read `{PROJECT_DOCS}/01-project-overview.md` — Module list + table prefixes
+7. **If working on a specific module:** Check for `AI_Brain/module-knowledge/{MODULE_CODE}_{MODULE_NAME}.md` — if it exists, read it to recall all accumulated knowledge about that module before starting any analysis or generation
 
 ## First Decision: Scope
 
@@ -296,6 +297,161 @@ FRD saved. What would you like to do next?
 The exact downstream prompts for each handoff are in the section
 "HOW THE FRD ENABLES THE SIX GAP ANALYSES" in:
 `7-CLAUDE_Prompts/FRD_Creation_Prompt/FRD_Creation_Prompt.md`
+
+---
+
+---
+
+## Module Knowledge Seeding
+
+### When to Trigger
+The user says: `"seed module knowledge for {MODULE_NAME}"`
+
+Use this to create a module knowledge file **from scratch** using existing project documents — no prior session work needed.
+
+### What to Do
+
+**Step 1 — Resolve module identifiers**
+
+From the user's module name, resolve:
+- `MODULE_CODE` — look for `{CODE}_{MODULE}_Requirement.md` in `4-Requirement_Module_wise/2-Detailed_Requirements/V2/` — the prefix before the underscore is the code (e.g., `TPT_Transport_Requirement.md` → code = `TPT`)
+- `MODULE_NAME` — the name as it appears in folder/file names
+- `MODULE_PREFIX` — check `AI_Brain/memory/conventions.md` or infer from DDL table names
+
+**Step 2 — Locate source files**
+
+| Source | Path Pattern |
+|--------|-------------|
+| V2 Requirement | `4-Requirement_Module_wise/2-Detailed_Requirements/V2/{CODE}_{MODULE}_Requirement.md` |
+| Consolidated DDL | `2-DDL_Tenant_Consolidated/{MODULE}_DDL_v*.sql` |
+| Module code | `{LARAVEL_REPO}/Modules/{MODULE}/` (optional — for controller/model counts) |
+
+**Step 3 — Read source files and extract facts**
+
+From the **V2 Requirement file**, extract:
+- Overall completion % (usually stated in the header or gap analysis section)
+- Controller list and count
+- Model list and count
+- Service, FormRequest, Policy, Test counts
+- Route file reference and line range
+- Known gaps and open issues documented in the requirement
+- Cross-module dependencies listed
+
+From the **DDL file**, extract:
+- Total table count (count `CREATE TABLE` statements)
+- Table prefix
+- Key tables and their purpose (from table names and comments)
+
+**Step 4 — Check if file already exists**
+
+- If `AI_Brain/module-knowledge/{CODE}_{MODULE}.md` exists → read it first, then merge new extracted facts without overwriting existing session learnings
+- If it does not exist → create fresh
+
+**Step 5 — Write the knowledge file**
+
+Create `AI_Brain/module-knowledge/{CODE}_{MODULE}.md` using this structure:
+
+```markdown
+# Module Knowledge: {MODULE_NAME} ({MODULE_CODE})
+# Last Updated: {DATE}
+# Completion Status: {%} (sourced from V2 requirement doc)
+
+---
+
+## Module Facts
+
+| Item | Value |
+|------|-------|
+| Table prefix | `{prefix}_*` |
+| DDL (canonical) | `2-DDL_Tenant_Consolidated/{MODULE}_DDL_v{X}.sql` — {N} tables |
+| Routes | `routes/tenant.php` lines {X}–{Y}` (if documented in V2 req) |
+| Controllers | {N} |
+| Models | {N} |
+| Services | {N} |
+| FormRequests | {N} |
+| Policies | {N} |
+| Dusk Tests | {N} |
+| FRD | Not yet generated |
+
+---
+
+## Known Gaps & Open Issues
+
+### (sourced from V2 requirement gap analysis section)
+
+---
+
+## Design Decisions Made
+
+(empty until FRD or audit sessions populate this)
+
+---
+
+## Cross-Module Dependencies
+
+| Dependency | Integration Point |
+|------------|-------------------|
+| (from V2 requirement dependencies section) |
+
+---
+
+## Lessons Learned
+
+(empty until session work populates this)
+
+---
+
+## Pending Next Steps
+
+- [ ] Generate FRD → `act as Business Analyst` → "create an FRD for {MODULE_NAME}"
+
+---
+
+## Version History
+
+| Date | Agent | Work Done |
+|------|-------|-----------|
+| {DATE} | Business Analyst | Knowledge file seeded from V2 requirement doc + DDL. No session work yet. |
+```
+
+**Step 6 — Confirm to the user:**
+```
+Module knowledge seeded: AI_Brain/module-knowledge/{CODE}_{MODULE}.md
+Source: {V2_req_filename} + {DDL_filename}
+Tables: {N} | Controllers: {N} | Completion: ~{%}
+```
+
+---
+
+## Module Knowledge Update
+
+### When to Trigger
+The user says: `"update module knowledge for {MODULE_NAME}"`
+
+### What to Do
+
+1. **Identify the module** — resolve MODULE_CODE and MODULE_NAME
+2. **Read the existing file** (if it exists): `AI_Brain/module-knowledge/{MODULE_CODE}_{MODULE_NAME}.md`
+3. **Review this session's work** — identify what is new or changed:
+   - New facts discovered (table counts, controller status, etc.)
+   - New design decisions made and why
+   - New gaps or issues found
+   - New lessons learned (tag with the agent that produced them: FRD, Audit, Code Review, etc.)
+4. **Update the file** — append or revise the relevant sections:
+   - `## Module Facts` — update counts and status
+   - `## Known Gaps & Open Issues` — add new gaps, mark resolved ones
+   - `## Design Decisions Made` — append new decisions
+   - `## Lessons Learned` — append new entries with `[YYYY-MM-DD | Agent]` prefix
+   - `## Version History` — add one line for this session
+5. **If the file does not exist yet** — create it from this template:
+
+```
+AI_Brain/module-knowledge/{MODULE_CODE}_{MODULE_NAME}.md
+```
+
+Sections to include: Module Facts, FRD Summary (if FRD exists), Known Gaps & Open Issues, Design Decisions Made, Cross-Module Dependencies, Lessons Learned, Version History.
+
+6. **Confirm to the user:** `Module knowledge updated: AI_Brain/module-knowledge/{MODULE_CODE}_{MODULE_NAME}.md`
 
 ---
 

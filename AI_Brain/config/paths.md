@@ -1,5 +1,5 @@
 # AI Brain — Path Configuration
-# ============================================================
+# ================================================================================
 # SINGLE SOURCE OF TRUTH for all file/folder locations.
 # All AI_Brain files use {VARIABLE} syntax instead of hardcoded paths.
 #
@@ -8,7 +8,7 @@
 #
 # VARIABLE RESOLUTION: Variables can reference other variables using {VAR}.
 #   {DDL_DIR} = {DB_REPO}/1-Master_DDLs  resolves to full absolute path.
-# ============================================================
+# ================================================================================
 
 ## Repositories
 
@@ -23,7 +23,7 @@ LARAVEL_CLAUDE = {LARAVEL_REPO}/.claude/rules
 ## Rules
 
 ```
-WORK_OUTPUT_DEFAULT = {OLD_REPO}/8-Temp_Output
+WORK_OUTPUT_DEFAULT = {OLD_REPO}/7-Work_with_CLAUDE/Temp_Output_Files
 ```
 
 > **Rule:** All Claude work output (analysis, prompts, context files, gap reports, etc.) goes into `{OLD_REPO}` by default. 
@@ -37,10 +37,10 @@ WORK_OUTPUT_DEFAULT = {OLD_REPO}/8-Temp_Output
 ```
 DDL_DIR                 = {DB_REPO}/1-Master_DDLs
 MODULE_DDL_DIR          = {DB_REPO}/2-DDL_Tenant_Consolidated
-GLOBAL_DDL              = {DDL_DIR}/global_db_v2.sql
-PRIME_DDL               = {DDL_DIR}/prime_db_v2.sql
-TENANT_DDL              = {DDL_DIR}/tenant_db_v2.sql
-CONFIG_TABLES           = {DB_REPO}/2-Config_Tables
+GLOBAL_DDL              = {DDL_DIR}/global_db_v3.sql
+PRIME_DDL               = {DDL_DIR}/prime_db_v3.sql
+TENANT_DDL              = {DDL_DIR}/tenant_db_v3.sql
+CONFIG_TABLES           = {DB_REPO}/3-Config_Tables
 POLICIES                = {DB_REPO}/3-Policies
 WORK_ON_MODULES         = {DB_REPO}/7-Work_on_Modules
 TEAM_WORK               = {DB_REPO}/8-Team_Work
@@ -52,15 +52,15 @@ DB_SUPPORT              = {DB_REPO}/9-Support
 ```
 OLD_DDL_DIR           = {OLD_REPO}/0-DDL_Masters
 OLD_PRIME_DDL_DIR     = {OLD_REPO}/1-DDL_Prime_Modules
-OLD_TENANT_DDL_DIR    = {OLD_REPO}/1-DDL_Tenant_Modules
+OLD_TENANT_DDL_DIR    = {OLD_REPO}/2-DDL_Tenant_Consolidated
 ```
 
 ## Key Locations — OLD_REPO (working repo / Claude output, continued)
 ```
-PROJECT_PLAN              = {OLD_REPO}/3-Project_Planning
+PROJECT_PLAN              = {OLD_REPO}/5-Project_Planning
 PROJECT_DOCS              = {PROJECT_PLAN}/Project_Docs
 RBS_DIR                   = {PROJECT_PLAN}/1-RBS
-REQUIREMENT_HIGH_level    = {OLD_REPO}/2-Requirement_Module_wise/1-HighLevel_Requirements
+REQUIREMENT_HIGH_level    = {OLD_REPO}/4-Requirement_Module_wise/1-HighLevel_Requirements
 REQUIRE_DETAIL_DEV_DONE   = {OLD_REPO}/2-Requirement_Module_wise/2-Detailed_Requirements/V1/Dev_Done
 REQUIRE_DETAIL_DEV_PEND   = {OLD_REPO}/2-Requirement_Module_wise/2-Detailed_Requirements/V1/Dev_Pending
 REQUIRE_DETAIL_V2         = {OLD_REPO}/2-Requirement_Module_wise/2-Detailed_Requirements/V2

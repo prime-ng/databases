@@ -12,9 +12,9 @@ Which audit scope? (a) Full platform  (b) Specific module(s)  (c) Specific layer
 
 ## Execution Commands
 ---------------------
-OUTPUT_FOLDER = Library
+AUDIT_MODULE = Library
 OUTPUT_PATH   = /Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/3-Audit_Modules/V1_22Jun2026/
-OUTPUT_FOLDER = {OUTPUT_PATH}/{OUTPUT_FOLDER}
+OUTPUT_FOLDER = {OUTPUT_PATH}/{AUDIT_MODULE}
 act as Technical Auditor
 Audit the {AUDIT_MODULE} module. All layers. Save output into folder {OUTPUT_FOLDER}
 

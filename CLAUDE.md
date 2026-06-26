@@ -34,6 +34,16 @@ After reading the file, confirm: `Active role: {Agent Name}. Ready.`
 All path variables are defined in `AI_Brain/config/paths.md`.
 Always resolve `{AI_BRAIN}`, `{TENANT_DDL}`, `{LARAVEL_REPO}`, etc. from that file.
 
+## Utility Commands
+
+**When the user says any of the following, execute the corresponding action:**
+
+| User Says | Action |
+|-----------|--------|
+| "save context" | Read and execute `7-CLAUDE_Prompts/0-Important_Prompts/Save_Context.md` |
+| "update module knowledge for {MODULE}" | Follow the Module Knowledge Update process in `AI_Brain/agents/business-analyst.md` — update `AI_Brain/module-knowledge/{MODULE_CODE}_{MODULE_NAME}.md` with learnings from this session |
+| "seed module knowledge for {MODULE}" | Follow the Module Knowledge Seeding process in `AI_Brain/agents/business-analyst.md` — read DDL + V2 requirement docs and create `AI_Brain/module-knowledge/{MODULE_CODE}_{MODULE_NAME}.md` from scratch |
+
 ## Key Rules
 
 - Always use v2 DDL files only — never reference non-v2 or module subfolder DDLs
