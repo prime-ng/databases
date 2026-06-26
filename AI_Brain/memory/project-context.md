@@ -1,10 +1,11 @@
 # Project Context — Prime-AI Academic Intelligence Platform
 
 ## Application Purpose
-SaaS platform for managing Indian K-12 schools (Class 2-12). Each school is an isolated tenant with its own database. The platform covers:
+**Academic Intelligence Platform** for Indian K-12 schools — not a traditional ERP. The goal is to enable schools to make better, data-driven decisions by providing deep insights and intelligent decision support. Each school is an isolated tenant with its own database. The platform covers:
 - **ERP:** School administration, staff, students, fees, transport, vendors, complaints
 - **LMS:** Homework, quizzes, exams, question bank, syllabus management
 - **LXP:** Personalized learning paths, recommendations, analytics, HPC (Holistic Progress Card)
+- **Intelligence Layer:** Data insights, AI-driven recommendations, decision support across all modules
 
 ## Tenancy Strategy
 - **Package:** stancl/tenancy v3.9
@@ -50,11 +51,14 @@ Per-school isolated data organized by prefix (see consolidated DDL for full list
 - `quz_*` — Quiz/Assessment
 - And more (refer to consolidated DDL for complete list)
 
-> **Schema Reference (CANONICAL — v2 files only):**
-> - `{GLOBAL_DDL}`
-> - `{PRIME_DDL}`
-> - `{TENANT_DDL}`
-> **NEVER use old DDL files in subfolders (`2-Prime_Modules/`, `2-Tenant_Modules/`, etc.)**
+> **Schema Reference (CANONICAL — v4 DEV files for all AI work):**
+> - `{DEV_GLOBAL_DDL}` — global_db development schema
+> - `{DEV_PRIME_DDL}` — prime_db development schema
+> - `{DEV_TENANT_DDL}` — tenant_db development schema (includes global_db copies for dev)
+> - `{DEV_MODULE_DDL_DIR}/{MODULE_NAME}_DDL*.sql` — per-module tenant DDL files
+>
+> Production v3 files (`{GLOBAL_DDL}`, `{PRIME_DDL}`, `{TENANT_DDL}`) live in `{DB_REPO}` — used by Laravel, not for AI analysis.
+> **NEVER use files from `0-DDL_Masters_Old/`, `2-DDL_Tenant_Old/`, or any `*_Old*` subfolder.**
 
 ## External Services
 - **Payment Gateway:** Razorpay (`razorpay/razorpay` v2.9)

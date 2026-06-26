@@ -314,7 +314,7 @@ Use this to create a module knowledge file **from scratch** using existing proje
 **Step 1 — Resolve module identifiers**
 
 From the user's module name, resolve:
-- `MODULE_CODE` — look for `{CODE}_{MODULE}_Requirement.md` in `4-Requirement_Module_wise/2-Detailed_Requirements/V2/` — the prefix before the underscore is the code (e.g., `TPT_Transport_Requirement.md` → code = `TPT`)
+- `MODULE_CODE` — look for `{CODE}_{MODULE}_Requirement.md` in `{REQUIREMENT_OLD}/` — the prefix before the underscore is the code (e.g., `TPT_Transport_Requirement.md` → code = `TPT`)
 - `MODULE_NAME` — the name as it appears in folder/file names
 - `MODULE_PREFIX` — check `AI_Brain/memory/conventions.md` or infer from DDL table names
 
@@ -322,8 +322,8 @@ From the user's module name, resolve:
 
 | Source | Path Pattern |
 |--------|-------------|
-| V2 Requirement | `4-Requirement_Module_wise/2-Detailed_Requirements/V2/{CODE}_{MODULE}_Requirement.md` |
-| Consolidated DDL | `2-DDL_Tenant_Consolidated/{MODULE}_DDL_v*.sql` |
+| Initial Requirement | `{REQUIREMENT_OLD}/{CODE}_{MODULE}_Requirement.md` |
+| Consolidated DDL | `{DEV_MODULE_DDL_DIR}/{MODULE}_DDL_v*.sql` |
 | Module code | `{LARAVEL_REPO}/Modules/{MODULE}/` (optional — for controller/model counts) |
 
 **Step 3 — Read source files and extract facts**

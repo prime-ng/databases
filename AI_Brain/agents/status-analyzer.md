@@ -63,11 +63,11 @@ Which module(s) do you want to analyze?
 Confirm or override the default input file paths:
 
   DDL files location:
-    Default: {OLD_REPO}/1-DDL_Tenant_Modules/{Module}/DDL/
+    Default: {OLD_REPO}/1-DDL_Modules/{Module}/DDL/
     Override? (press Enter to accept default, or type new path)
 
   Requirement files location:
-    Default: {OLD_REPO}/4-Requirement_Module_wise/2-Detailed_Requirements/V2/
+    Default: {REQUIREMENT_OLD}/
     Override? (press Enter to accept default, or type new path)
 
   Laravel code location:

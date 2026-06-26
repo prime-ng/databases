@@ -1,20 +1,45 @@
 # Database Schema Reference
 
-> **Last Updated:** 2026-03-12
-> **Source:** Consolidated DDL files (v2 versions are authoritative)
+> **Last Updated:** 2026-06-27
+> **Source:** v4 DEV DDL files in `{OLD_REPO}/0-DDL_Masters/` are authoritative for all AI work
 
 ## CANONICAL DDL FILE PATHS
 
-| Database | File | Tables |
-|----------|------|--------|
-| `global_db` | `{GLOBAL_DDL}` | 12 |
-| `prime_db` | `{PRIME_DDL}` | 27 |
-| `tenant_db` | `{TENANT_DDL}` | 368 |
+### Development Schema (v4 — use these for all AI analysis and schema work)
 
-> **CRITICAL WARNING:** NEVER reference old DDL files from any other location:
-> - Do NOT use files in `2-Prime_Modules/`, `2-Tenant_Modules/`, `0-Policies/`, `Working/`, or any other subfolder
-> - Do NOT use the original `global_db.sql`, `prime_db.sql`, or `tenant_db.sql` (non-v2 versions)
-> - The only authoritative schema source is the 3 v2 files listed above
+| Database | File | Purpose |
+|----------|------|---------|
+| `global_db` | `{DEV_GLOBAL_DDL}` | Shared reference data |
+| `prime_db` | `{DEV_PRIME_DDL}` | Prime team / SaaS management |
+| `tenant_db` | `{DEV_TENANT_DDL}` | Common tenant schema + global_db copies (dev) |
+| Per-module DDLs | `{DEV_MODULE_DDL_DIR}/{MODULE_NAME}_DDL*.sql` | Module-specific tenant tables |
+
+### Production Schema (v3 — in `{DB_REPO}`, used by Laravel app)
+| Database | File |
+|----------|------|
+| `global_db` | `{GLOBAL_DDL}` |
+| `prime_db` | `{PRIME_DDL}` |
+| `tenant_db` | `{TENANT_DDL}` |
+
+> **CRITICAL WARNING:** For AI work always use v4 DEV files above. Production v3 files are for reference only.
+> - Do NOT use files from `0-DDL_Masters_Old/`, `2-DDL_Tenant_Old/`, `2-DDL_Tenant_Enhanced/`, or any `*_Old*` subfolder
+> - Do NOT use non-v4 versions of master DDL files
+
+## Module → Database Assignment
+
+| Module(s) | Database | File |
+|-----------|----------|------|
+| Billing, Prime, SystemConfig | `prime_db` | `{DEV_PRIME_DDL}` |
+| GlobalMaster | `global_db` | `{DEV_GLOBAL_DDL}` |
+| All other tenant modules | `tenant_db` + per-module DDL | `{DEV_TENANT_DDL}` + `{DEV_MODULE_DDL_DIR}/{MODULE_NAME}_DDL*.sql` |
+
+## Dev vs Production — tenant_db Architecture
+
+In **Dev environment**: `tenant_db` contains a **full copy** of `global_db` table schemas (for ease of independent development and enhancement).
+
+In **Production**: `tenant_db` will have **Views** into `global_db` tables so that reference data is controlled from one place but accessible to all tenants.
+
+> This means: in dev, `global_db` tables (`glb_countries`, `glb_boards`, etc.) appear directly in `tenant_db`. Do not treat this as the production design.
 
 ---
 
