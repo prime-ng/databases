@@ -1223,3 +1223,51 @@
 | SEC-CMP-001–003 (show/edit/store/update no Gate) | **PARTIALLY FIXED**: show/edit/update now have Gate. store() STILL MISSING Gate → SEC-CMP-007. |
 | SEC-CMP-006 (ComplaintReportController zero auth) | **CONFIRMED STILL PRESENT** → all report methods still unguarded. |
 | BUG-CMP-005 / BUG-CMP-013 (dummy_table_name dropdown keys) | **CONFIRMED STILL PRESENT** in MedicalCheckController. |
+
+---
+
+## Mode B+C Audit — Complaint Module (2026-06-27)
+
+> FRD-Driven Gap Analysis + Business Rule Enforcement.
+> Prior codes: SCH-CMP-007 | BUG-CMP-018 | SEC-CMP-014 | PERF-CMP-008 | DEAD-CMP-006 | DEPLOY-CMP-02.
+> Full report: `6-Dev_Gap_Analysis_Status/Deep_Analysis/2026-06-27/Complaint_Technical_Audit_2026-06-27.md`
+
+### Complaint — Validation Issues (VAL-CMP-*)
+
+| Code | Severity | Issue | File:Line |
+|------|----------|-------|-----------|
+| VAL-CMP-001 | P1 | `default_escalation_hours_l1` validated as `integer` only — not required `gt:default_expected_resolution_hours`. L1 can be ≤ expected hours, violating BR-CMP-002. Same gap in `DepartmentSlaRequest` for `dept_escalation_hours_l1` (BR-CMP-005). | `ComplaintCategoryRequest.php:69`, `DepartmentSlaRequest.php:63` |
+| VAL-CMP-002 | P2 | For anonymous complaints, `complainant_name` defaults to `'Anonymous'` when not provided — does not require a real name from the operator. BR-CMP-008 requires a name to be explicitly provided. | `ComplaintController.php:235` |
+| VAL-CMP-003 | P1 | `store()` and `update()` accept `severity_level_id` and `priority_score_id` from `$request` — staff can override category defaults. BR-CMP-009 requires auto-assignment from category only. | `ComplaintController.php:260,360` |
+| VAL-CMP-004 | P0 | No conditional validation that `resolution_summary` and `actual_resolved_at` are required when `status_id` = Resolved. Both fields are `nullable`. A complaint can be marked Resolved with no summary and no date, violating BR-CMP-012. | `ComplaintController.php:586,589` |
+| VAL-CMP-005 | P0 | No status-transition FSM. `status_id` accepted as `nullable|integer` with no transition gate. Any status → any status (e.g., Open → Closed, Resolved → Open without formal reopen). Violates BR-CMP-014. | `ComplaintController.php:582` |
+| VAL-CMP-006 | P1 | `MedicalCheckController.store()` does not verify `complaint->is_medical_check_required = true` before allowing medical check creation. Any complaint can receive a medical check, violating BR-CMP-017. | `MedicalCheckController.php:68` |
+
+### Complaint — Bug Issues (BUG-CMP-019 to 025)
+
+| Code | Severity | Issue | File:Line |
+|------|----------|-------|-----------|
+| BUG-CMP-019 | P0 | `resolution_due_at` never calculated or stored during complaint creation. `Complaint::create()` in `store()` has no `resolution_due_at` field. Edit-form calculates display value but does not persist. Violates BR-CMP-010 — every ticket has no SLA deadline. | `ComplaintController.php:339` |
+| BUG-CMP-020 | P2 | `logAction()` inserts timeline entries using `'created_at' => now()`. DDL column for timeline time is `action_timestamp`. Using the wrong column violates DDL design intent (BR-CMP-016 partial). | `ComplaintController.php:1257` |
+| BUG-CMP-021 | P1 | `ComplaintReportController::getSlaViolationReport()` → `excludeRejectedAndClosed()` excludes 'Rejected' and 'Closed' but not 'Resolved'. Resolved complaints appear in the SLA Violation Report, violating BR-CMP-020. | `ComplaintReportController.php:200` |
+| BUG-CMP-022 | P0 | No `reopen()` method exists in any Complaint controller. REQ-CMP-012 (Complaint Reopening) entirely unimplemented. BR-CMP-022 (reopen only from Resolved) and BR-CMP-023 (clear resolution fields + log reason) are both missing. | Feature absent |
+| BUG-CMP-023 | P0 | No scheduled escalation job. `Modules/Complaint/app/Jobs/` is empty. `current_escalation_level` on `cmp_complaints` never auto-updated. REQ-CMP-013 and BR-CMP-024 entirely unimplemented. | Jobs/ empty |
+| BUG-CMP-024 | P1 | Complaint creation notification sent to `User::role('Super Admin')` not School Admin. FRD Step 1 specifies School Admin. Notification class `StudentPortalComplaintRegistered` imported from `App\Notifications\` (cross-layer dependency). | `ComplaintController.php:384` |
+| BUG-CMP-025 | P1 | `update()` logs the assignment action but sends no notification to the assigned user or role. REQ-CMP-004 AC4 requires notification on assignment. | `ComplaintController.php:692` |
+
+### Complaint — Security Issues (SEC-CMP-015 to 016)
+
+| Code | Severity | Issue | File:Line |
+|------|----------|-------|-----------|
+| SEC-CMP-015 | P0 | Private notes (`is_private_note = true`) stored correctly but `ComplaintController.show()` loads complaint actions without filtering by `is_private_note` based on role. All authenticated roles receive private notes. BR-CMP-015 requires enforcement at query layer, not view layer. | `ComplaintController.php:442` |
+| SEC-CMP-016 | P1 | Anonymous complaint masking (BR-CMP-021) not enforced at query layer. `show()` and `index()` return `complainant_name` and `complainant_contact` regardless of `is_anonymous` flag or requesting user's role. Any staff member sees anonymous complainant identity. | `ComplaintController.php:442,35` |
+
+### Status Updates — Prior CMP Codes (2026-06-27)
+
+| Code | Status |
+|------|--------|
+| BUG-CMP-019 (resolution_due_at) | NEW — OPEN |
+| SEC-CMP-007 (store() no Gate) | **STILL PRESENT** — confirmed again |
+| DEAD-CMP-001 (AiInsightController stub) | **STILL PRESENT** — all methods still empty |
+| BUG-CMP-016 (4 missing ComplaintController methods: trashed/restore/forceDelete/toggleStatus) | **UNVERIFIED** in this audit — routes were not re-checked |
+| ComplaintCategoryRequest / DepartmentSlaRequest `authorize() { return true; }` | **OPEN** — both requests bypass auth |

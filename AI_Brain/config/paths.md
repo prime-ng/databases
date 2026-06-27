@@ -68,9 +68,9 @@ REQUIREMENT_OLD           = {OLD_REPO}/4-Requirement_Module_wise/4-Initial_Requi
 REQUIRE_DETAIL_V1         = {OLD_REPO}/4-Requirement_Module_wise/2-Module_Requirement_V1/[MODULE]*
 REQUIRE_DETAIL_V2         = {FRD_DIR}/[MODULE]
 REQUIREMENT_CONDITIONS    = {OLD_REPO}/4-Requirement_Module_wise/5-Requirement_Conditions
-GAP_ANALYSIS              = {OLD_REPO}/6-Dev_Status_Analysis/Modules_Gap_Analysis
-DEEP_ANALYSIS             = {OLD_REPO}/6-Dev_Status_Analysis/Deep_Analysis
-WORK_STATUS               = {OLD_REPO}/6-Dev_Status_Analysis/Progress_Status
+GAP_ANALYSIS              = {OLD_REPO}/6-Dev_Gap_Analysis_Status/Modules_Gap_Analysis
+DEEP_ANALYSIS             = {OLD_REPO}/3-Audit_Reports
+WORK_STATUS               = {OLD_REPO}/6-Dev_Gap_Analysis_Status/Progress_Status
 DESIGN_ARCH               = {OLD_REPO}/5-Design_Architecture
 ```
 

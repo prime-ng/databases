@@ -140,7 +140,7 @@ Modules/ModuleName/
 | **Feedback** | 10 | 11 | 6 | 1 | 51 | 0 | 4 | 171 | 0 | **Graduated from DDL-only (2026-06-21).** Generic cross-entity feedback (`fbk_*`, 11 tables). Code scaffold now present. DDL: `1-DDL_Tenant_Modules/39-Feedback/StudentFeedback_ddl_v2.sql`. |
 | **Hostel** | 53 | 44 | 22 | 38 | 278 | 2 | 8 | 573 | 0 | **NEW (2026-06-21).** Hostel Management — buildings, floors, rooms, beds, allotments, attendance, mess, fee, complaints, sick bay. 36-table DDL (HST_DDL_v3.sql). Prefix: `hst_`. **Prompt:** `5-Work-In-Progress/Hostel/1-Claude_Prompt/HST_2step_Prompt1.md` |
 | **ParentPortal** | 28 | 6 | 1 | 0 | 45 | 0 | 1 | 267 | 0 | **NEW (2026-06-21).** Parent Portal — attendance, results, homework, fees, timetable, leave, notifications for linked children. OTP login. Prefix: `ppt_`. **Prompt:** `5-Work-In-Progress/ParentPortal/1-Claude_Prompt/PPT_2step_Prompt1.md` |
-| **BehaviouralAssessment** | 12 | 16 | 0 | 5 | 65 | 0 | 4 | 119 | 0 | **NEW (2026-06-21).** Student behavioral assessment and tracking (`ba_*` prefix). Code scaffold present, not yet audited. |
+| **BehaviouralAssessment** | 12 | 16 | 0 | 5 | 65 | 0 | 4 | 119 | 0 | **NEW (2026-06-21).** Student behavioral assessment and tracking (`bha_*` prefix). Code scaffold present, not yet audited. |
 | **CommonChat** | 15 | 9 | 1 | 5 | 19 | 0 | 1 | 121 | 0 | **NEW (2026-06-21).** Standalone direct-messaging and group-chat for all registered users within a school tenant. |
 | **Ptm** | 11 | 9 | 6 | 18 | 58 | 0 | 1 | 103 | 0 | **NEW (2026-06-21).** Parent-Teacher Meeting scheduling. Previously a sub-module DDL of SchoolSetup (ptm_setup_ddl_v2.sql), now a standalone module. Prefix: `ptm_`. |
 

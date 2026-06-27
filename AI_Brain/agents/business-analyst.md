@@ -212,17 +212,18 @@ Activate when the user says any of:
 - "document the {MODULE_NAME} module"
 - "write the functional requirements for {MODULE_NAME}"
 
-### Step 1 — Collect Configuration
+### Step 1 — Resolve Module Identifiers
 
-Before reading any files, confirm these three variables:
+The user only needs to say the module name. Look up everything else automatically:
 
-| Variable | Example | Description |
-|----------|---------|-------------|
-| `MODULE_NAME` | `Library` | Full module name (matches folder names in paths) |
-| `MODULE_CODE` | `LIB` | 2–4 letter code — used for REQ/BR/RPT ID prefixes |
-| `MODULE_PREFIX` | `lib_` | DB table prefix for this module |
+1. Read `{OLD_REPO}/0-Prime_Ai_Detail/module_list.md`
+2. Find the row where `MODULE_NAME` matches what the user said (case-insensitive)
+3. Extract `MODULE_CODE` and `MODULE_PREFIX` from that row
+4. Confirm to the user before proceeding:
+   > "Module identified: **{MODULE_NAME}** | Code: `{MODULE_CODE}` | Prefix: `{MODULE_PREFIX}_`"
 
-If the user has not provided all three, ask before proceeding.
+If no match is found, list the available module names and ask the user to clarify.
+Do NOT ask the user to provide MODULE_CODE or MODULE_PREFIX manually.
 
 ### Step 2 — Execute the FRD Process
 
@@ -281,12 +282,65 @@ Always verify these cross-module dependencies before writing Section 3:
 | P1 — Standard | Expected in every school deployment |
 | P2 — Enhanced | Value-add, client-specific, or future roadmap item |
 
-### Step 4 — Post-FRD Handoffs
+### Step 4 — Update Module Knowledge File (MANDATORY)
 
-After confirming the FRD is saved, always offer these next steps:
+After the FRD is saved and before offering any handoffs, always update the module knowledge file.
+This is automatic — do NOT wait for the user to say "update module knowledge".
+
+**File:** `AI_Brain/module-knowledge/{MODULE_CODE}_{MODULE_NAME}.md`
+
+#### If the file exists — update it:
+
+Append or update these sections:
+
+1. **`## FRD Summary`** — add (or update) an FRD Summary block:
+   ```markdown
+   ## FRD Summary
+   | Item | Value |
+   |------|-------|
+   | FRD File | `{MODULE_CODE}_FRD_{YYYY-MM-DD}.md` |
+   | Generated | {DATE} |
+   | Total REQ- entries | {count} |
+   | Total BR- entries | {count} |
+   | Total Workflows | {count} |
+   | Total Reports | {count} |
+   | Total Enhancements | {count} |
+   | P0 Requirements | {count} (REQ-{CODE}-001 to REQ-{CODE}-00N) |
+   | P1 Requirements | {count} |
+   | P2 Requirements | {count} |
+   ```
+
+2. **`## Pending Next Steps`** — replace with post-FRD recommended actions:
+   ```markdown
+   ## Pending Next Steps
+   - [ ] DDL Gap Analysis → `act as DB Architect` — compare FRD Section 10.1 vs DDL file
+   - [ ] Code Gap Analysis → `act as Technical Auditor` — Mode B (FRD-driven)
+   - [ ] Business Rule Enforcement → `act as Technical Auditor` — Mode C
+   - [ ] Test Coverage Gap → `act as Testing Architect`
+   ```
+
+3. **`## Version History`** — append one line:
+   ```
+   | {DATE} | Business Analyst | FRD generated (`{MODULE_CODE}_FRD_{YYYY-MM-DD}.md`) — {N} REQ, {N} BR, {N} reports, {N} enhancements |
+   ```
+
+#### If the file does NOT exist — create it:
+
+Run the full **Module Knowledge Seeding** process (defined below) using the FRD just generated as the primary source alongside the DDL. This ensures every module with an FRD has a knowledge file.
+
+#### Confirm to the user:
+```
+Module knowledge updated: AI_Brain/module-knowledge/{MODULE_CODE}_{MODULE_NAME}.md
+```
+
+---
+
+### Step 5 — Post-FRD Handoffs
+
+After the module knowledge file is confirmed saved, offer next steps:
 
 ```
-FRD saved. What would you like to do next?
+FRD saved. Module knowledge updated. What would you like to do next?
 
 1. DDL Gap Analysis     → act as DB Architect
 2. Code Gap Analysis    → act as Technical Auditor
@@ -313,10 +367,9 @@ Use this to create a module knowledge file **from scratch** using existing proje
 
 **Step 1 — Resolve module identifiers**
 
-From the user's module name, resolve:
-- `MODULE_CODE` — look for `{CODE}_{MODULE}_Requirement.md` in `{REQUIREMENT_OLD}/` — the prefix before the underscore is the code (e.g., `TPT_Transport_Requirement.md` → code = `TPT`)
-- `MODULE_NAME` — the name as it appears in folder/file names
-- `MODULE_PREFIX` — check `AI_Brain/memory/conventions.md` or infer from DDL table names
+Read `{OLD_REPO}/0-Prime_Ai_Detail/module_list.md` and find the row matching the user's module name.
+Extract `MODULE_CODE` and `MODULE_PREFIX` directly from that file — do not ask the user.
+Fallback: if not found in module_list.md, look for `{CODE}_{MODULE}_Requirement.md` in `{REQUIREMENT_OLD}/`.
 
 **Step 2 — Locate source files**
 

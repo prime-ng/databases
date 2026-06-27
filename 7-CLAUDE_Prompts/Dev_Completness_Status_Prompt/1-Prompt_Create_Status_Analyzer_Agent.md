@@ -456,7 +456,7 @@ hen inferring from DDL, assume each table → 1 CRUD set = 5 Feature Functions (
 
 | Output | Location |
 |--------|----------|
-| Full audit report with scorecard | `{OLD_REPO}/3-Audit_Modules/V1_{Date}/{Module}/` |
+| Full audit report with scorecard | `{OLD_REPO}/3-Audit_Reports/V1_{Date}/{Module}/` |
 | Updated completion % | `{OLD_REPO}/AI_Brain/state/progress.md` — replace old entry with new scorecard |
 | New issue codes | Append to `{OLD_REPO}/AI_Brain/lessons/known-issues.md` |
 
@@ -709,7 +709,7 @@ Confirm or override the default input file paths:
 ```
 Where should I save the Status Report?
 
-  Default: {OLD_REPO}/6-Dev_Status_Analysis/Progress_Status/
+  Default: {OLD_REPO}/6-Dev_Gap_Analysis_Status/Progress_Status/
   Override? (press Enter to accept default, or type new path)
 
   Report filename format: {Module}_Status_{YYYY-MM-DD}.md
@@ -1062,7 +1062,7 @@ Then the agent will ask you:
 |------|---------|
 | `AI_Brain/agents/status-analyzer.md` | Agent definition (created by the prompt above) |
 | `7-CLAUDE_Prompts/Dev_Completness_Status_Prompt/Dev_Completness_Calculation_Process.md` | The scoring formula the agent reads |
-| `6-Dev_Status_Analysis/Progress_Status/` | Default output folder for reports |
+| `6-Dev_Gap_Analysis_Status/Progress_Status/` | Default output folder for reports |
 | `AI_Brain/state/progress.md` | Updated with new scores after each run |
 
 ---

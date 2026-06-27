@@ -27,7 +27,7 @@ Read "old_db/1-DDL_Tenant_Modules/Library/DDL/Library_ddl_v4.sql" and evaluate t
   "/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/1-DDL_Tenant_Modules/Library/Design/Calculation_Formulas.md". This should include all required detail SQL Queries, Stored procedure, Views, or anything which is required to get those Calculated Field filled with the required values.
 
 ---------------------------------------------------------------------------------------------
-Yesterday when I asked you to update AI_brain, you have also created a file "/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/6-Dev_Status_Analysis/Deep_Analysis/2026-06-21/known-issues.md", where you have provide analysis of the code, whatever gaps you found along with security concerns. Read the file to understand what you have done over there. Now I want you to Provide me 2 Prompts for performing a Very Deep Analysis of my entire Application (Prime_AI). This Prompt should cover every possible aspects 
+Yesterday when I asked you to update AI_brain, you have also created a file "/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/6-Dev_Gap_Analysis_Status/Deep_Analysis/2026-06-21/known-issues.md", where you have provide analysis of the code, whatever gaps you found along with security concerns. Read the file to understand what you have done over there. Now I want you to Provide me 2 Prompts for performing a Very Deep Analysis of my entire Application (Prime_AI). This Prompt should cover every possible aspects 
 
 ---------------------------------------------------------------------------------------------
 

@@ -432,7 +432,7 @@ When inferring from DDL, assume each table → 1 CRUD set = 5 Feature Functions 
 
 | Output | Location |
 |--------|----------|
-| Full audit report with scorecard | `{OLD_REPO}/3-Audit_Modules/V1_{Date}/{Module}/` |
+| Full audit report with scorecard | `{OLD_REPO}/3-Audit_Reports/V1_{Date}/{Module}/` |
 | Updated completion % | `{OLD_REPO}/AI_Brain/state/progress.md` — replace old entry with new scorecard |
 | New issue codes | Append to `{OLD_REPO}/AI_Brain/lessons/known-issues.md` |
 

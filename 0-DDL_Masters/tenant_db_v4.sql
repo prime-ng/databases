@@ -1,11 +1,11 @@
 -- ===========================================================================
--- Tenant Database (tenant_db_v3)
+-- Tenant Database (tenant_db_v4)
 -- ===========================================================================
 -- FOUNDATIONAL & CORE MODULE — VERSION 3.0 (PRODUCTION-GRADE)
--- Enhanced from tenant_db_v2.sql
+-- Enhanced from tenant_db_v3.sql
 -- Target: MySQL 8.x | Stack: PHP + Laravel
 -- Architecture: Multi-tenant (runs inside tenant_db)
--- Creation Date: 15-Jun-2026
+-- Creation Date: 25-Jun-2026
 -- This DDL have Tables which will be used in all the Modules
 -- ===========================================================================
 
@@ -119,7 +119,6 @@
     UNIQUE KEY `uq_academicBoard_shortName` (`short_name`)
   ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-  -- ----------------------------------------------------------------------------------------------------------
   CREATE TABLE IF NOT EXISTS `glb_languages` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `code` VARCHAR(10) NOT NULL,                  -- ISO code: en, hi, fr, ar
@@ -152,31 +151,33 @@
     CONSTRAINT `chk_is_category_parentId` CHECK ((((`is_category` = 1) and (`parent_id` is NULL)) or (`is_category` = 0)))
   ) ENGINE=InnoDB AUTO_INCREMENT=29 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-  CREATE TABLE IF NOT EXISTS `glb_modules` (
-    `id` INT unsigned NOT NULL AUTO_INCREMENT,
-    `parent_id` INT unsigned DEFAULT NULL,    -- fk to self
-    `name` varchar(50) NOT NULL,
-    `version` tinyint NOT NULL DEFAULT '1',
-    `is_sub_module` tinyint(1) NOT NULL DEFAULT '0',    -- kept for CONSTRAINT `chk_isSubModule_parentId`
-    `description` varchar(500) DEFAULT NULL,
-    `is_core` tinyint(1) NOT NULL DEFAULT '0',              -- Is this a core module (If Yes, cannot be removed from plans, will be considered as must have module)
-    `default_visible` tinyint(1) NOT NULL DEFAULT '1',      -- Whether this module is visible by default
-    `available_perm_view` tinyint(1) NOT NULL DEFAULT '1',  -- Whether View permission is available on this module
-    `available_perm_add` tinyint(1) NOT NULL DEFAULT '1',   -- Whether Add permission is available on this module
-    `available_perm_edit` tinyint(1) NOT NULL DEFAULT '1',  -- Whether Edit permission is available on this module
-    `available_perm_delete` tinyint(1) NOT NULL DEFAULT '1',  -- Whether Delete permission is available on this module
-    `available_perm_export` tinyint(1) NOT NULL DEFAULT '1',  -- Whether Export permission is available on this module
-    `available_perm_import` tinyint(1) NOT NULL DEFAULT '1',  -- Whether Import permission is available on this module
-    `available_perm_print` tinyint(1) NOT NULL DEFAULT '1',   -- Whether Print permission is available on this module
-    `is_active` tinyint(1) NOT NULL DEFAULT '1',
-    `deleted_at` timestamp NULL DEFAULT NULL,
-    `created_at` timestamp NULL DEFAULT NULL,
-    `updated_at` timestamp NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_module_parentId_name_version` (`parent_id`,`name`,`version`),
-    CONSTRAINT `fk_module_parentId` FOREIGN KEY (`parent_id`) REFERENCES `glb_modules` (`id`) ON DELETE RESTRICT,
-    CONSTRAINT `chk_isSubModule_parentId` CHECK ((`is_sub_module` = 1 AND `parent_id` IS NOT NULL) OR (`is_sub_module` = 0 AND `parent_id` IS NULL))
-  ) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS `glb_modules` (
+  `id` INT unsigned NOT NULL AUTO_INCREMENT,
+  `parent_id` INT unsigned DEFAULT NULL,    -- fk to self
+  `code` varchar(6) NOT NULL,               -- Code will be Unique (3 Letter Module Code + 3 Letter Module Version) e.g. 'GLB001', 'GLB002', 'LIB001', 'LIB002'
+  `name` varchar(50) NOT NULL,
+  `version` tinyint NOT NULL DEFAULT '1',
+  `is_sub_module` tinyint(1) NOT NULL DEFAULT '0',    -- kept for CONSTRAINT `chk_isSubModule_parentId`
+  `description` varchar(500) DEFAULT NULL,
+  `is_core` tinyint(1) NOT NULL DEFAULT '0',              -- Is this a core module (If Yes, cannot be removed from plans, will be considered as must have module)
+  `default_visible` tinyint(1) NOT NULL DEFAULT '1',      -- Whether this module is visible by default
+  `available_perm_view` tinyint(1) NOT NULL DEFAULT '1',  -- Whether View permission is available on this module
+  `available_perm_add` tinyint(1) NOT NULL DEFAULT '1',   -- Whether Add permission is available on this module
+  `available_perm_edit` tinyint(1) NOT NULL DEFAULT '1',  -- Whether Edit permission is available on this module
+  `available_perm_delete` tinyint(1) NOT NULL DEFAULT '1',  -- Whether Delete permission is available on this module
+  `available_perm_export` tinyint(1) NOT NULL DEFAULT '1',  -- Whether Export permission is available on this module
+  `available_perm_import` tinyint(1) NOT NULL DEFAULT '1',  -- Whether Import permission is available on this module
+  `available_perm_print` tinyint(1) NOT NULL DEFAULT '1',   -- Whether Print permission is available on this module
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_module_parentId_name_version` (`parent_id`,`name`,`version`),
+  UNIQUE KEY `uq_module_code_version` (`code`),
+  CONSTRAINT `fk_module_parentId` FOREIGN KEY (`parent_id`) REFERENCES `glb_modules` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `chk_isSubModule_parentId` CHECK ((`is_sub_module` = 1 AND `parent_id` IS NOT NULL) OR (`is_sub_module` = 0 AND `parent_id` IS NULL))
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `glb_menu_model_jnt` (
     `id` INT unsigned NOT NULL AUTO_INCREMENT,
@@ -186,19 +187,6 @@
     CONSTRAINT `fk_menuModel_menuId` FOREIGN KEY (`menu_id`) REFERENCES `glb_menus` (`id`)  ON DELETE RESTRICT,
     CONSTRAINT `fk_menuModel_moduleId` FOREIGN KEY (`module_id`) REFERENCES `glb_modules` (`id`)  ON DELETE RESTRICT
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-  -- For MultiLingual Support
-  -- ------------------------------------------------------------------
-    -- Old_Table - Need to be verified
-    -- CREATE TABLE IF NOT EXISTS `sys_masters_translations` (
-    --   `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    --   `model_type` VARCHAR(190) NOT NULL,   -- Laravel morph type (e.g., 'App\\Models\\Menu')
-    --   `model_id` INT UNSIGNED NOT NULL,  -- The actual record ID in that model
-    --   `language_code` VARCHAR(10) NOT NULL, -- e.g., 'en', 'hi', 'fr'
-    --   `field_name` VARCHAR(100) NOT NULL,   -- e.g., 'name', 'description', 'title'
-    --   `translated_value` TEXT NOT NULL,     -- the actual translation
-    --   UNIQUE KEY `uq_mastersTrans_modelType_modelId_lang_field` (`model_type`, `model_id`, `language_code`, `field_name`)
-    -- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS `glb_translations` (
     `id` INT unsigned NOT NULL AUTO_INCREMENT,
@@ -330,7 +318,9 @@
   -- Data Seed for sch_config
     -- INSERT INTO `sch_config` (`module_id`,`ordinal`,`key`,`key_name`,`value`,`value_type`,`description`,`additional_info`,`tenant_can_modify`,`mandatory`,`used_by_app`,`is_active`,`deleted_at`,`created_at`,`updated_at`) VALUES
     -- (`LMS`,1,'performance_percentage_threshold_to_reassign_quiz', 'Performance Percentage Threshold to Reassign Quiz to a Student', '35', 'NUMBER', 'If Student Performance falls below this threshold, system will generate a new Quiz and will reassign it to the student', NULL, 1, 1, 1, 1, NULL, NULL, NULL),
-    -- (`SLB`,1,'performance_percentage_threshold_to_reassign_quiz', 'Performance Percentage Threshold to Reassign Quiz to a Student', '35', 'NUMBER', 'If Student Performance falls below this threshold, system will generate a new Quiz and will reassign it to the student', NULL, 1, 1, 1, 1, NULL, NULL, NULL),
+    -- (`SLB`,2,'performance_percentage_threshold_to_reassign_quiz', 'Performance Percentage Threshold to Reassign Quiz to a Student', '35', 'NUMBER', 'If Student Performance falls below this threshold, system will generate a new Quiz and will reassign it to the student', NULL, 1, 1, 1, 1, NULL, NULL, NULL),
+    -- (`SLB`,3,'syllabus_teaching_estimation_level_for_lesson_planning', 'At which level (Lesson/Topic/Sub-Topic/Mini-Topic) teacher will provide Syllabus Teaching Estimation', 'Topic', 'STRING', 'At which level (Lesson/Topic/Sub-Topic/Mini-Topic) teacher will provide Syllabus Teaching Estimation', NULL, 1, 1, 1, 1, NULL, NULL, NULL),
+
 
   -- This Table will be used to capture Departments
   -- ----------------------------------------------------------------------------------------

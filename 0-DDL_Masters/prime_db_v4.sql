@@ -1,6 +1,12 @@
--- prime_db (v3)
--- -------------
-
+-- ===========================================================================
+-- prime Database (prime_db_v4)
+-- ===========================================================================
+-- FOUNDATIONAL & CORE MODULE — VERSION 4.0 (PRODUCTION-GRADE)
+-- Enhanced from prime_db_v3.sql
+-- Target: MySQL 8.x | Stack: PHP + Laravel
+-- Architecture: Multi-tenant
+-- Creation Date: 25-Jun-2026
+-- ===========================================================================
 -- Prefix Abbreviation Detail used for Tables Name to distinguish them
 -- -------------------------------------------------------------------
   -- sys - System Configuration
@@ -268,7 +274,6 @@ CREATE VIEW glb_translations AS SELECT * FROM global_master.glb_translations;
     CONSTRAINT `fk_dropdownNeedTableJnt_dropdownNeedsId` FOREIGN KEY (`dropdown_needs_id`) REFERENCES `sys_dropdown_needs` (`id`),
     CONSTRAINT `fk_dropdownNeedTableJnt_dropdownTableId` FOREIGN KEY (`dropdown_table_id`) REFERENCES `sys_dropdown_table` (`id`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 
   CREATE TABLE IF NOT EXISTS `sys_media` (
     `id` INT unsigned NOT NULL AUTO_INCREMENT,
@@ -642,8 +647,7 @@ CREATE VIEW glb_translations AS SELECT * FROM global_master.glb_translations;
 -- ===============================================================================================================
 -- Change Log
 -- ===============================================================================================================
-  -- Changed on 2025-12-21
-  -- Enhanced `sys_dropdown_table` to accomodate Menu Details (Category,Main Menu, Sub-Menu) for Easy identification. 
-  -- Added New table `sys_dropdown_needs` to capture Dropdown Needs for Easy identification. 
+  -- Changed on 2026-06-25
+  -- 
 
 

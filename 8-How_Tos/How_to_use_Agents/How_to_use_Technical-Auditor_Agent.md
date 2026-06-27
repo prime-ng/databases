@@ -13,7 +13,7 @@ Which audit scope? (a) Full platform  (b) Specific module(s)  (c) Specific layer
 ## Execution Commands
 ---------------------
 AUDIT_MODULE = Library
-OUTPUT_PATH   = /Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/3-Audit_Modules/V1_22Jun2026/
+OUTPUT_PATH   = /Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/3-Audit_Reports/V1_22Jun2026/
 OUTPUT_FOLDER = {OUTPUT_PATH}/{AUDIT_MODULE}
 act as Technical Auditor
 Audit the {AUDIT_MODULE} module. All layers. Save output into folder {OUTPUT_FOLDER}
@@ -55,7 +55,7 @@ Claude reads ParentResultController.php:156 and reports current state.
 You:    act as Technical Auditor
 Claude: Active role: Technical Auditor. Ready. Which scope?
 
-You:    Audit the CommonChat module. All layers. Save output into folder "/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/3-Audit_Modules/V1_22Jun2026"
+You:    Audit the CommonChat module. All layers. Save output into folder "/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/3-Audit_Reports/V1_22Jun2026"
 Claude: [runs greps, reads files, produces findings]
         New findings: SEC-CCH-002, PERF-CCH-004, VAL-CCH-002
         known-issues.md updated. progress.md updated.

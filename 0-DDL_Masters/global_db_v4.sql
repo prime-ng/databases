@@ -168,16 +168,16 @@ CREATE TABLE IF NOT EXISTS `glb_menu_model_jnt` (
 
 -- For MultiLingual Support
 -- ------------------------------------------------------------------
--- Old_Table - Need to be verified
--- CREATE TABLE IF NOT EXISTS `sys_masters_translations` (
---   `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
---   `model_type` VARCHAR(190) NOT NULL,   -- Laravel morph type (e.g., 'App\\Models\\Menu')
---   `model_id` INT UNSIGNED NOT NULL,  -- The actual record ID in that model
---   `language_code` VARCHAR(10) NOT NULL, -- e.g., 'en', 'hi', 'fr'
---   `field_name` VARCHAR(100) NOT NULL,   -- e.g., 'name', 'description', 'title'
---   `translated_value` TEXT NOT NULL,     -- the actual translation
---   UNIQUE KEY `uq_mastersTrans_modelType_modelId_lang_field` (`model_type`, `model_id`, `language_code`, `field_name`)
--- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  -- Old_Table - Need to be verified
+  -- CREATE TABLE IF NOT EXISTS `sys_masters_translations` (
+  --   `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  --   `model_type` VARCHAR(190) NOT NULL,   -- Laravel morph type (e.g., 'App\\Models\\Menu')
+  --   `model_id` INT UNSIGNED NOT NULL,  -- The actual record ID in that model
+  --   `language_code` VARCHAR(10) NOT NULL, -- e.g., 'en', 'hi', 'fr'
+  --   `field_name` VARCHAR(100) NOT NULL,   -- e.g., 'name', 'description', 'title'
+  --   `translated_value` TEXT NOT NULL,     -- the actual translation
+  --   UNIQUE KEY `uq_mastersTrans_modelType_modelId_lang_field` (`model_type`, `model_id`, `language_code`, `field_name`)
+  -- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `glb_translations` (
   `id` INT unsigned NOT NULL AUTO_INCREMENT,

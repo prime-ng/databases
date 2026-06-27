@@ -79,7 +79,7 @@ Confirm or override the default input file paths:
 ```
 Where should I save the Status Report?
 
-  Default: {OLD_REPO}/6-Dev_Status_Analysis/Progress_Status/
+  Default: {OLD_REPO}/6-Dev_Gap_Analysis_Status/Progress_Status/
   Override? (press Enter to accept default, or type new path)
 
   Report filename format: {Module}_Status_{YYYY-MM-DD}.md

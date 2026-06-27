@@ -51,6 +51,15 @@
 
 ---
 
+## Module Knowledge Files (`AI_Brain/module-knowledge/`)
+
+> Per-module accumulated knowledge — read before any FRD, audit, or code session on that module.
+> Seeded by Business Analyst; updated after every significant session (FRD, audit, code review).
+
+- [../module-knowledge/CMP_Complaint.md](../module-knowledge/CMP_Complaint.md) — Complaint (CMP): ~40% complete, 6 tables, 8 P0 blockers (dd() calls, empty destroy, wrong policy gate, hardcoded IDs), 3 stub controllers, 15 schema mismatches. FRD generated 2026-06-27.
+
+---
+
 ## Critical Files to Check Before Any Work
 
 | What You're Doing | Files to Read |

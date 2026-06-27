@@ -63,38 +63,51 @@ CREATE VIEW glb_states    AS SELECT * FROM global_master.glb_states;
 
 ## Table Prefix Guide
 
-| Prefix | Count | Module | Database |
-|--------|-------|--------|----------|
-| `glb_` | 12 | GlobalMaster | global_db |
-| `prm_` | ~8 | Prime | prime_db |
-| `bil_` | ~5 | Billing | prime_db |
-| `sys_` | ~12 | System Config / RBAC | prime_db + tenant_db |
-| `sch_` | ~33 | SchoolSetup | tenant_db |
-| `tt_` | ~45 | SmartTimetable | tenant_db |
-| `std_` | ~14 | StudentProfile | tenant_db |
-| `slb_` | ~17 | Syllabus | tenant_db |
-| `qns_` | ~8 | QuestionBank | tenant_db |
-| `bok_` | ~8 | SyllabusBooks | tenant_db |
-| `tpt_` | ~35 | Transport | tenant_db |
-| `vnd_` | ~7 | Vendor | tenant_db |
-| `cmp_` | ~6 | Complaint | tenant_db |
-| `rec_` | ~10 | Recommendation | tenant_db |
-| `ntf_` | ~13 | Notification | tenant_db |
-| `fin_` | ~21 | StudentFee | tenant_db |
-| `pmt_` | ~5 | Payment | tenant_db |
-| `hpc_` | ~12 | HPC | tenant_db |
-| `lms_` | ~26 | LMS (Exam/Quiz/Homework/Quests) | tenant_db |
-| `doc_` | ~3 | Documentation | tenant_db |
-| `lib_` | ~20 | Library (pending) | tenant_db |
-| `acc_` | 21 (planned) | Accounting — new voucher-based schema replacing old 31-table journal-based draft | tenant_db |
-| `prl_` | 19 (planned) | Payroll — pay heads, salary structures, payroll runs, leave, attendance, appraisals, training | tenant_db |
-| `inv_` | 19 (planned) | Inventory — stock groups, items, godowns, procurement (PR/PO/GRN), issue requests | tenant_db |
-| `beh_` | — | Behaviour (reserved) | tenant_db |
-| `hst_` | 36 (DDL v3 — 2026-05-04) | Hostel | tenant_db |
-| `mes_` | — | Mess (reserved) | tenant_db |
-| `tmp_` | 3 (1 existing + 2 new) | Template — visual template builder + output config assignments | tenant_db |
-| `msh_` | 23 | MarksheetGeneration — config, schedules, results, audit | tenant_db |
-| `fbk_` | 11 (planned) | Feedback — generic cross-entity feedback module (NEP 2020 compliant) | tenant_db |
+> **Source of truth:** DDL v4 files in `{DEV_MODULE_DDL_DIR}/`. All prefixes verified against actual DDL.
+
+| Prefix | Module | Code | Database |
+|--------|--------|------|----------|
+| `glb_` | GlobalMaster | GLB | global_db |
+| `prm_` | Prime | PRM | prime_db |
+| `bil_` | Billing | BIL | prime_db |
+| `sys_` | SystemConfig / RBAC | SYS | prime_db + tenant_db |
+| `sch_` | SchoolSetup (ClassSetup, CoreSetup, EmployeeSetup, InfraSetup) | SCC/SCO/SCE/SCI | tenant_db |
+| `ptm_` | PTM (Parent-Teacher Meeting) | PTM | tenant_db |
+| `cht_` | CommonChat | COM | tenant_db |
+| `tt_` | SmartTimetable | STT | tenant_db |
+| `ttf_` | TimetableFoundation | TTF | tenant_db |
+| `tts_` | StandardTimetable | TTS | tenant_db |
+| `std_` | StudentProfile | STD | tenant_db |
+| `adm_` | Admission Mgmt. | ADM | tenant_db |
+| `slb_` | Syllabus + SyllabusBooks | SLB / SLK | tenant_db |
+| `qns_` | QuestionBank | QNS | tenant_db |
+| `tpt_` | Transport | TPT | tenant_db |
+| `vnd_` | Vendor | VND | tenant_db |
+| `cmp_` | Complaint | CMP | tenant_db |
+| `rec_` | Recommendation | REC | tenant_db |
+| `ntf_` | Notification | NTF | tenant_db |
+| `fee_` | StudentFee | FIN | tenant_db |
+| `pmt_` | Payment | PAY | tenant_db |
+| `hpc_` | Hpc | HPC | tenant_db |
+| `lms_` | LmsExam / LmsQuiz / LmsHomework / LmsQuests | EXM/QUZ/HMW/QST | tenant_db |
+| `msh_` | MarksheetGeneration | MSH | tenant_db |
+| `doc_` | Documentation | DOC | tenant_db |
+| `lib_` | Library | LIB | tenant_db |
+| `acc_` | Accounting | ACC | tenant_db |
+| `prl_` | Payroll (planned) | — | tenant_db |
+| `inv_` | Inventory | INV | tenant_db |
+| `bha_` | BehaviouralAssessment | BHA | tenant_db |
+| `hst_` | Hostel | HST | tenant_db |
+| `fbk_` | Feedback | FBK | tenant_db |
+| `ppt_` | ParentPortal | PPT | tenant_db |
+| `stp_` | StudentPortal | STP | tenant_db |
+| `fof_` | FrontOffice | FOF | tenant_db |
+| `caf_` | Cafeteria | CAF | tenant_db |
+| `crt_` | Certificate | CRT | tenant_db |
+| `hrs_` | HrStaff | HRS | tenant_db |
+| `tmp_` | Template | TMP | tenant_db |
+| `dsh_` | Dashboard | DSH | tenant_db |
+| `mes_` | Mess (reserved) | — | tenant_db |
 
 ---
 
