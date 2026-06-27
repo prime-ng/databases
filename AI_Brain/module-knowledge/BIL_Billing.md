@@ -1,6 +1,6 @@
 # Module Knowledge: Billing (BIL)
-# Last Updated: 2026-06-25
-# Completion Status: ~55% | 40 total gap issues (7 × P0 critical)
+# Last Updated: 2026-06-27 (update pass — file counts re-verified against Herd/prime_ai)
+# Completion Status: ~55% | 40 total gap issues (7 × P0 critical) — P0 resolution status unverified; needs Technical Audit
 
 ---
 
@@ -22,18 +22,20 @@
 | Table prefix | `bil_*` |
 | DDL location | `prime_db_v2.sql` (no standalone DDL file) |
 | Laravel Module Path | `Modules/Billing/` |
-| Controllers | 6 (`BillingManagementController` is GOD controller ~800+ lines; `InvoicingController` is empty stub) |
-| Models | 6 |
-| FormRequests | 3 (all partial — see gaps) |
+| Controllers | **7** (re-verified 2026-06-27): BillingCycleController, BillingManagementController *(GOD — ~800+ lines)*, EmailScheduleController, InvoicingAuditLogController, InvoicingController *(empty stub)*, InvoicingPaymentController, SubscriptionController |
+| Models | 6 (re-verified 2026-06-27) |
+| FormRequests | 3 (re-verified 2026-06-27 — all partial; see FRQ gaps) |
 | Jobs | 1 (`SendInvoiceEmailJob` — ShouldQueue) |
 | Mail Classes | 1 (`InvoiceMail`) |
-| Policies | 7 (**ALL BROKEN** — duplicate policy registrations) |
-| Unit Tests | 1 file (~55 test cases, Pest syntax) |
+| Policies | **8** (re-verified 2026-06-27 — **ALL BROKEN due to duplicate registrations**): BillingCyclePolicy *(new)*, BillingManagementPolicy, ConsolidatedPaymentPolicy, InvoicingAuditLogPolicy, InvoicingPaymentPolicy, InvoicingPolicy, PaymentReconciliationPolicy, SubscriptionPolicy |
+| Unit Tests | 1 file (`tests/Unit/BillingModuleTest.php`, ~55 test cases, Pest syntax) |
 | Feature Tests | 0 |
-| Web Routes | 49 (in app `routes/web.php` — **duplicated 3× for 3 central domains**) |
+| Module Route Lines | **11** lines in `Modules/Billing/routes/web.php` (post-2026-04-02 route migration; central `routes/web.php` previously had 49 billing routes duplicated 3× — check if those are still present) |
 | API Routes | 0 (api.php is empty) |
-| Views | 27+ blade files |
-| V2 Requirement | `4-Requirement_Module_wise/2-Detailed_Requirements/V2/BIL_Billing_Requirement.md` |
+| Views | **43** blade files (re-verified 2026-06-27; prior "27+" was an undercount) |
+| Migrations | 0 (module bootstrapped via prime_db DDL directly) |
+| V2 Requirement | `4-Requirement_Module_wise/4-Initial_Requirements/V2/BIL_Billing_Requirement.md` |
+| Screen-spec folder | `4-Requirement_Module_wise/2-Module_Requirement_V1/Billing_v1/` |
 
 ---
 
@@ -255,4 +257,5 @@
 
 | Date | Agent | Work Done |
 |------|-------|-----------|
-| 2026-06-25 | Business Analyst | Knowledge file seeded from `BIL_Billing_Requirement.md` (V2, 2026-03-26). No DDL file exists — tables are in prime_db_v2.sql. No session work yet. |
+| 2026-06-25 | Business Analyst | Knowledge file seeded from `BIL_Billing_Requirement.md` (V2, 2026-03-26). No DDL file exists — tables are in prime_db_v2.sql. No session work yet. Controller count recorded as 6 (undercounted — BillingCycleController missed). Views recorded as "27+" (undercount). |
+| 2026-06-27 | Business Analyst | Update pass: re-verified all file counts. Corrections: controllers 6→7 (BillingCycleController confirmed), policies 7→8 (BillingCyclePolicy found), views 27+→43, routes clarified (11 lines in module web.php post-migration). Both requirement formats confirmed: consolidated V2 (`BIL_Billing_Requirement.md`) + screen-spec folder (`Billing_v1/`). P0 issues from seeding audit remain open — resolution status unverified. Needs Technical Audit to confirm whether POL-01, DB-01, ERR-01/02, SEC-01–09 have been addressed. |

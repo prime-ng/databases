@@ -12,7 +12,7 @@
 ## ⚙️ Configuration
 
 ```
-PARALLEL_LIMIT = 2
+PARALLEL_LIMIT = 1
 ```
 
 > **PARALLEL_LIMIT** controls how many modules are seeded at the same time.

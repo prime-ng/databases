@@ -1,6 +1,6 @@
 # Module Knowledge: Inventory (INV)
-# Last Updated: 2026-06-27
-# Completion Status: 0% — Greenfield (no implementation started)
+# Last Updated: 2026-06-27 (update pass — file counts verified against Herd/prime_ai)
+# Completion Status: ~55–65% (all controllers/models/services/policies present; 77 views; 0 tests critical; 4 of 8 events; 0 migrations)
 
 ---
 
@@ -11,16 +11,20 @@
 | Table prefix | `inv_*` |
 | DDL (canonical) | `2-DDL_Tenant_Consolidated/Inventory_DDL_v1.sql` — 28 tables |
 | V2 Requirement | `4-Requirement_Module_wise/4-Initial_Requirements/V2/INV_Inventory_Requirement.md` |
-| Routes | `routes/tenant.php` under `inventory/` prefix (~65 routes) |
-| Controllers | 18 proposed |
-| Models | 28 proposed (one per table) |
-| Services | 7 proposed |
-| FormRequests | 13 proposed |
-| Policies | 13 proposed |
-| Blade Views | ~65 proposed |
-| Seeders | 3 (StockGroups×10, UOM×10, Godowns×5) |
-| Events | 8 domain events |
-| Artisan Commands | 4 proposed |
+| Routes | **221 lines** in `Modules/Inventory/routes/web.php` (143 named route entries; re-verified 2026-06-27) |
+| Controllers | **20** actual (**corrected from 18 proposed**; extras: `InventoryController` base, `InvMenuController`) |
+| Models | **28** actual (matches DDL table count exactly — re-verified) |
+| Services | **14** actual (**corrected from 7 proposed** — 2× proposed count): AssetService, GodownService, GrnPostingService, InventoryReportService, PurchaseOrderService, PurchaseRequisitionService, QuotationService, RateContractService, ReorderAlertService, StockAdjustmentService, StockGroupService, StockIssueService, **StockLedgerService**, **StockValuationService** |
+| FormRequests | **18** actual (corrected from 13 proposed; extras: StoreUomRequest, StoreUomConversionRequest, StoreItemVendorRequest, UpdateAssetRequest, UpdateItemVendorRequest) |
+| Policies | **16** actual (corrected from 13 proposed; extras: AssetCategoryPolicy, StockEntryPolicy, UomPolicy) |
+| Blade Views | **77** actual (corrected from ~65 proposed) |
+| Tests | **0** — Feature/ and Unit/ directories exist but contain no test files (critical gap) |
+| Jobs | **1** actual: `ReorderAlertJob` (proposed as Artisan command — implemented as queued job instead) |
+| Events | **4** of 8 proposed: `AssetDisposed`, `GrnAccepted`, `StockAdjusted`, `StockIssued` — **missing 4**: `StockTransferred`, `ReorderThresholdReached`, `RateContractExpiringSoon`, `MaintenanceOverdue` |
+| Listeners | **0** — no `Listeners/` directory in INV module |
+| Artisan Commands | **1** actual: `MaintenanceOverdueCommand` (3 of 4 proposed commands missing) |
+| Seeders | **35** actual (3 proposed) — includes **5 cross-module placeholder seeders** for ACC + VND prerequisite bypass |
+| Migrations | **0** — module uses DDL directly |
 | FRD | Not yet generated |
 
 ---
@@ -154,18 +158,72 @@ The DDL is V1 but the requirement doc is V2. The V1→V2 delta added:
 
 ---
 
+## Cross-Module Placeholder Seeders (Key Discovery)
+
+The module contains **5 cross-module placeholder seeders** — a workaround for implementation blockers listed in the Knowledge file. These create fake records in ACC and VND tables so INV can be tested standalone:
+
+| Placeholder Seeder | Bypasses Blocker |
+|--------------------|-----------------|
+| `AccVoucherPlaceholderSeeder` | P1 — `VoucherServiceInterface` / `acc_vouchers` FK |
+| `AccLedgerPlaceholderSeeder` | P2 — `acc_ledgers` FK on stock items |
+| `AccTaxRatePlaceholderSeeder` | P2 — `acc_tax_rates` FK on PO lines |
+| `AccFixedAssetPlaceholderSeeder` | P2 — `acc_fixed_assets` FK on assets |
+| `VendorPlaceholderSeeder` | P3 — `vnd_vendors` FK on PO/GRN/rate contracts |
+
+**Implication:** INV module is functionally testable standalone despite the prerequisite blockers. When ACC and VND modules are fully implemented, placeholder seeders must be removed and replaced with real cross-module data.
+
+---
+
+## Route Duplication Issue
+
+`toggleStatus` is registered under **two different URL patterns** for at least 4 resources (stock-groups, uoms, stock-items, godowns):
+
+```
+Route::post('stock-groups/{id}/toggle-status', ...)   // kebab-case URL
+Route::post('stock-groups/{id}/toggleStatus', ...)    // camelCase URL — DUPLICATE
+```
+
+Both point to the same controller method. This is a DRY violation and wastes route table entries. Should be standardised to one pattern (kebab-case preferred) and the other removed.
+
+---
+
+## Known Gaps & Open Issues (as of 2026-06-27)
+
+| Priority | Gap | Detail |
+|----------|-----|--------|
+| P1 | **0 test files** | Feature/ and Unit/ directories exist but contain no test files. `SELECT...FOR UPDATE` on `inv_stock_balances`, FIFO batch selection in `StockValuationService`, GRN acceptance event dispatch, and stock adjustment approval flow are all high-risk without tests. |
+| P1 | **0 migrations** | Cannot bootstrap a fresh tenant via `artisan migrate`. All 28 tables exist only in DDL. |
+| P1 | **4 of 8 domain events missing** | `StockTransferred`, `ReorderThresholdReached`, `RateContractExpiringSoon`, `MaintenanceOverdue` not created. Without these: godown-to-godown transfers don't notify Accounting; reorder alerts don't fire; rate contract expiry goes undetected. |
+| P1 | **0 Listeners directory** | Decision D21 (event-driven Accounting integration) requires ACC to subscribe to INV events. No `Listeners/` in INV — ACC module must own those listeners. Verify ACC has them before assuming D21 is implemented. |
+| P2 | **3 of 4 Artisan commands missing** | `inventory:recalculate-balances`, `inventory:check-reorder-levels`, `inventory:expire-rate-contracts` not created. Only `MaintenanceOverdueCommand` exists. `ReorderAlertJob` exists but the scheduled command that dispatches it is missing. |
+| P2 | **Route duplication** | `toggle-status` and `toggleStatus` both registered for same method on ≥4 resources. Standardise to kebab-case. |
+| P2 | **Controller logic completeness unknown** | 20 controllers present but internal logic (FIFO valuation, PR→PO→GRN workflow, concurrency on stock_balances) unverified. Technical Audit needed. |
+| P2 | **FK constraints commented out in DDL** | `acc_vouchers`, `vnd_vendors`, `sch_department`, `sch_employees`, `acc_fixed_assets` FKs intentionally commented out. Must be uncommented once prerequisite modules are complete — no automated reminder exists. |
+| P3 | **`StockValuationService` and `StockLedgerService` undocumented** | Both services are not in V2 requirement doc. Method signatures and integration with `GrnPostingService` unknown. Technical Audit needed. |
+
+---
+
 ## Lessons Learned
 
-(empty until session work populates this)
+- [2026-06-27 | Update] Module was seeded as "0% Greenfield" without filesystem check. Actual state: 20 controllers, 28 models, 14 services, 16 policies, 18 FormRequests, 77 views, 221 route lines — ~55–65% complete. Standard update pass pattern applied.
+- [2026-06-27 | Update] Services count UNDER-counted in req doc (7 proposed vs 14 actual) — reverse of ACC/BHA pattern. The extra 7 services (`StockLedgerService`, `StockValuationService`, `ReorderAlertService`, etc.) implement architectural decisions beyond what the req doc proposed. Verify actual `app/Services/` always.
+- [2026-06-27 | Update] **5 cross-module placeholder seeders** enable standalone INV testing despite ACC/VND blockers. When ACC/VND modules are production-ready, placeholder seeders must be removed. Document this as a tech debt item.
+- [2026-06-27 | Update] `ReorderAlertJob` was proposed as an Artisan command in the req doc; implemented as a queued Job instead. Req doc is not a reliable guide for implementation class type (Command vs Job vs Service).
 
 ---
 
 ## Pending Next Steps
 
 - [ ] Generate FRD → `act as Business Analyst` → "create an FRD for Inventory"
-- [ ] DDL Gap Analysis → `act as DB Architect` — verify 28 DDL tables vs requirement data model
-- [ ] Ensure prerequisite modules (Vendor, SchoolSetup, Accounting) DDLs are in place before implementing FK constraints
+- [ ] Create 4 missing domain events: `StockTransferred`, `ReorderThresholdReached`, `RateContractExpiringSoon`, `MaintenanceOverdue`
+- [ ] Create 3 missing Artisan commands: `inventory:recalculate-balances`, `inventory:check-reorder-levels`, `inventory:expire-rate-contracts`
+- [ ] Verify ACC module has Listeners for INV events (`GrnAccepted`, `StockIssued`, etc.) as per Decision D21
+- [ ] Create 28 tenant migrations (DDL layer order)
+- [ ] Uncomment FK constraints in DDL after ACC + VND + SCH modules are production-ready
+- [ ] Add tests: `StockValuationService` (FIFO), `StockBalance` (SELECT...FOR UPDATE concurrency), GRN posting event dispatch
+- [ ] Fix route duplication: standardise `toggle-status` vs `toggleStatus` to one pattern
 - [ ] Code Gap Analysis → `act as Technical Auditor` — Mode B (FRD-driven) after FRD is generated
+- [ ] Remove placeholder seeders when ACC/VND modules are production-ready
 
 ---
 
@@ -173,4 +231,5 @@ The DDL is V1 but the requirement doc is V2. The V1→V2 delta added:
 
 | Date | Agent | Work Done |
 |------|-------|-----------|
-| 2026-06-27 | Business Analyst | Knowledge file seeded from V2 requirement doc (INV_Inventory_Requirement.md v2) + DDL (Inventory_DDL_v1.sql). No session work yet. |
+| 2026-06-27 | Business Analyst | Knowledge file seeded from V2 requirement doc (INV_Inventory_Requirement.md v2) + DDL (Inventory_DDL_v1.sql). Status incorrectly recorded as 0% Greenfield — actual code not checked at seeding. |
+| 2026-06-27 | Business Analyst | Update pass: verified all file counts against prime_ai/Modules/Inventory/. Status corrected to ~55–65%. Controllers 18→20, models 28→28 (confirmed), services 7→14 (2× proposed), FormRequests 13→18, policies 13→16, views 65→77, routes 221 lines. Discovered: 5 cross-module placeholder seeders (ACC+VND bypass), 35 total seeders, 4 of 8 domain events implemented, 1 Artisan command, 1 queued Job, 0 Listeners, 0 tests, 0 migrations. Route duplication noted. StockLedgerService + StockValuationService found (not in V2 req). |

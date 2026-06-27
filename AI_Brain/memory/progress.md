@@ -6,7 +6,7 @@
 - [x] **Prime** — Tenant management, plans, billing, users, roles, modules, menus, geography
 - [x] **GlobalMaster** — Countries, states, cities, boards, languages, plans, dropdowns
 - [x] **SystemConfig** — Settings, menus, translations
-- [x] **Billing** — Invoice generation, payment tracking, billing cycles
+- [ ] **Billing** (~55%) — PRIME module (prime_db). 7 controllers, 43 views. 7 P0 critical: silent auth bypass (duplicate policy registrations), audit log FK mismatch, open DB transactions, 9 unauth'd methods. 0 services, 0 migrations. Knowledge: `AI_Brain/module-knowledge/BIL_Billing.md`
 - [x] **Dashboard** — Admin dashboards
 - [x] **Documentation** — Knowledge base, help docs
 
@@ -57,22 +57,31 @@
 - [ ] **Standard Timetable** (~70%) — Standard views and scheduling
 - [ ] **Event Engine** (~20%) — Cross-module event system
 
-## Pending Modules
+## In Progress / Code Scaffold Present (features incomplete)
 
-- [ ] **Behavioral Assessment** — Student behavior tracking and analysis
-- [ ] **Analytical Reports** — Cross-module analytics and reporting
-- [ ] **Student/Parent Portal** — Student and parent facing portal
-- [ ] **Accounting** — Double-entry bookkeeping, financial reports
-- [ ] **HR & Payroll** — Staff payroll, leave management
-- [ ] **Inventory Management** — School inventory tracking
-- [ ] **Hostel Management** — Hostel rooms, allocation, fees
-- [ ] **Mess/Canteen** — Meal planning, attendance, billing
-- [ ] **Admission Enquiry** — Online admission process
-- [ ] **Visitor Management** — Visitor registration, tracking
-- [ ] **FrontDesk** — Reception management
-- [ ] **Template & Certificate** — Dynamic certificate generation
-- [ ] **Help Desk** — Support ticket system
-- [ ] **Library** — Book circulation, fines (module exists, features pending)
+- [ ] **BehaviouralAssessment** (~50–55%) — 12 ctrl, 16 models, 1 service (BehaviouralScoreService only), 5 FormRequests, 17 policies, 65 views. 0 tests (critical — immutable audit log + CBSE CCE compliance). ComputeSchoolScoresJob missing. 3 FormRequests missing (Assessment, Incident, ClassCategory). Knowledge: `AI_Brain/module-knowledge/BHA_BehaviouralAssessment.md`
+- [ ] **Accounting** (~60–70%) — 21 ctrl, 25 models, **7 services** (corrected from 10), 17 FormRequests, 19 policies, 141 views, 220 route lines. 28 tables (DDL v3, 6 domains). Generic event engine (4 tables D6) confirmed implemented: ModuleEventController + EventVoucherConfigController + RemoteEntryService (not in V2 req). FAC7/FAC8/FAC10 (GST/TDS/YearEnd) not built — also absent from DDL v3. 0 migrations. Old module code was FAC. Knowledge: `AI_Brain/module-knowledge/ACC_Accounting.md`
+- [ ] **HrStaff** — 22 ctrl, 15 services. PF/ESI/TDS, leave FSM, payroll integration
+- [ ] **Inventory** (~55–65%) — 20 ctrl, 28 models, **14 services** (corrected from 7 proposed; includes StockLedgerService + StockValuationService not in V2 req), 18 FormRequests, 16 policies, 77 views, 221 route lines, 35 seeders (incl. 5 cross-module ACC/VND placeholders). 4 of 8 domain events implemented. 0 Listeners. 1 Job (ReorderAlertJob), 1 Artisan command (MaintenanceOverdue). 0 tests (critical — SELECT...FOR UPDATE on stock_balances). 0 migrations. FK constraints for ACC/VND/SCH commented out in DDL. Knowledge: `AI_Brain/module-knowledge/INV_Inventory.md`
+- [ ] **Hostel** — 53 ctrl, 22 services. DDL v3 (36 tables). Major new module (2026-06-21)
+- [ ] **Cafeteria** (~60–65%) — 16 ctrl, 21 models, 6 services, 19 FormRequests, 14 policies, 95 views. POS + FSSAI + meal cards + subscriptions scaffolded. 1 test file only (critical — concurrency/cutoff untest'd). 0 jobs (NTF dispatch, FSSAI expiry alerts all unqueued). 0 migrations. Knowledge: `AI_Brain/module-knowledge/CAF_Cafeteria.md`
+- [ ] **Certificate** (~55–60%) — 10 ctrl, 10 models, 3 services, 10 FormRequests, 7 policies, 39 views, 4 seeders, 1 job. HMAC-SHA256 QR verification, SELECT...FOR UPDATE serial counters, DomPDF. 0 tests (30 proposed — critical). DmsService never created (P0). 2 DDL gaps (crt_verification_logs, crt_id_card_issued). std_students.tc_issued ALTER needed. Knowledge: `AI_Brain/module-knowledge/CRT_Certificate.md`
+- [ ] **FrontOffice** (~55–65%) — 21 ctrl, 22 models, **4 services** (corrected from 6; FeedbackService + CertificateIssuanceService missing), 10 FormRequests, **13 policies** (corrected from 4 proposed — 3× undercount), 118 views, 302 route lines. 1 test (AppointmentControllerTest). 1 Job (EarlyDepartureAttSyncJob — queued). `fof:flag-overstay` Artisan command NOT found. 0 Events, 0 migrations. Knowledge: `AI_Brain/module-knowledge/FOF_FrontOffice.md`
+- [ ] **Admission** (~60–65%) — 18 ctrl, 20 models, 6 services, 24 FormRequests, 13 policies, 84 views. Full pipeline scaffolded (enquiry→application→shortlist→enroll→promotion→TC). 0 tests (critical), PromoteExpiredOffersJob missing, 0 migrations. Knowledge: `AI_Brain/module-knowledge/ADM_Admission.md`
+- [ ] **ParentPortal** — 28 ctrl, ~5% done. OTP login, multi-child context
+- [ ] **Library** — Book circulation, fines, reservations (39 ctrl, 12 services — features pending)
+- [ ] **StudentPortal** — ~55% (see student-parent-portal.md)
+
+## Not Yet Started (no code scaffold)
+
+- [ ] **Communication** — DLT-compliant SMS, 7-state delivery FSM
+- [ ] **LearningExperience** — Personalized paths, gamification
+- [ ] **PredictiveAnalytics** — Dropout/fee/attendance prediction, PAN→REC pipeline
+- [ ] **VisitorSecurity** — Gate security, contractor access, lockdown mode
+- [ ] **Maintenance** — Ticketed facility helpdesk + PM + AMC contracts
+- [ ] **Attendance** — Full attendance module (supersedes STD's zero-auth AttendanceController)
+- [ ] **Academics** — Lesson plans, teaching diary, academic alerts
+- [ ] **Examination** — Offline exams, mark entry, report cards (distinct from LmsExam)
 
 ## Current Work
 - Template Output Configuration — DDL schema complete, migration pending (Branch: Brijesh, 2026-04-16)

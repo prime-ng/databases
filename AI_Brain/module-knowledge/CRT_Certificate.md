@@ -1,6 +1,6 @@
 # Module Knowledge: Certificate (CRT)
-# Last Updated: 2026-06-27
-# Completion Status: 0% — Greenfield (RBS_ONLY, no implementation started)
+# Last Updated: 2026-06-27 (update pass — file counts verified against Herd/prime_ai)
+# Completion Status: ~55–60% (all models/controllers/services/policies present; 39 views; 4 seeders; 0 tests critical; DmsService not created)
 
 ---
 
@@ -11,15 +11,19 @@
 | Table prefix | `crt_*` |
 | DDL (canonical) | `2-DDL_Tenant_Consolidated/Certificates_DDL_v1.sql` — 10 tables |
 | V2 Requirement | `4-Requirement_Module_wise/4-Initial_Requirements/V2/CRT_Certificate_Requirement.md` |
-| Routes | `routes/tenant.php` under `certificate/` prefix (~58 web + 1 public + 1 API) |
-| Controllers | 9 proposed |
-| Models | 10 |
-| Services | 3 proposed (CertificateGenerationService, QrVerificationService, DmsService) |
-| Jobs | 1 (BulkGenerateCertificatesJob) |
-| Blade Views | ~30 proposed |
+| Routes | **134 lines** in `Modules/Certificate/routes/web.php` (re-verified 2026-06-27; prior estimate ~59) |
+| Controllers | **10** actual (re-verified — **corrected from 9**; extra: `CertificateController` as base/main controller): BulkGenerationController, CertificateController, CertificateIssuedController, CertificateReportController, CertificateRequestController, CertificateTemplateController, CertificateTypeController, IdCardConfigController, StudentDocumentController, VerificationController |
+| Models | **10** actual (re-verified — matches DDL table count): BulkJob, CertificateRequest, CertificateTemplate, CertificateType, IdCardConfig, IssuedCertificate, SerialCounter, StudentDocument, TcRegister, TemplateVersion |
+| Services | **3** actual (re-verified — **composition differs from proposal**): CertificateGenerationService ✅, QrVerificationService ✅, **IdCardGenerationService** ✅ — `DmsService` was proposed but **NOT created**; ID card gets its own service instead |
+| FormRequests | **10** actual (not counted in seeding): ApproveCertificateRequest, BulkGenerateCertificates, RejectCertificateRequest, RevokeCertificate, StoreCertificateRequest, StoreCertificateTemplate, StoreCertificateType, StoreIdCardConfig, StoreStudentDocument, VerifyStudentDocument |
+| Policies | **7** actual (not counted in seeding): BulkGeneration, CertificateIssued, CertificateRequest, CertificateTemplate, CertificateType, IdCardConfig, StudentDocument |
+| Jobs | **1** actual: `BulkGenerateCertificatesJob` ✅ |
+| Seeders | **4** actual: CertificateDatabaseSeeder, CrtCertificateTypeSeeder, CrtSeederRunner, CrtTemplateSeeder |
+| Blade Views | **39** actual (re-verified; prior estimate ~30) |
+| Tests | **0** actual (**30 test cases proposed — none implemented**; critical gap) |
+| Migrations | **0** — module uses DDL directly |
 | Functional Requirements | 12 (FR-CRT-001 … FR-CRT-012) |
 | Business Rules | 15 (BR-CRT-001 … BR-CRT-015) |
-| Test Cases | 30 (T01–T30) |
 | FRD | Not yet generated |
 
 ---
@@ -344,6 +348,22 @@ Default: `{TYPE_CODE}-{YYYY}-{SEQ6}` → `BON-2026-000042`
 
 ---
 
+## Known Gaps & Open Issues (as of 2026-06-27)
+
+| Priority | Gap | Detail |
+|----------|-----|--------|
+| P0 | **`crt_verification_logs` table missing from DDL** | QR scan logging (`VerificationController::logs()`, `QrVerificationService::verifyHash()`) cannot write logs — table undefined. Must be added to DDL v2 before Phase 6 implementation. |
+| P0 | **`DmsService` not created** | The seeded knowledge file included full DmsService method signatures (uploadDocument, verifyDocument, getDocumentsByStudent, hasVerifiedDocument). Actual code has no DmsService — `StudentDocumentController` likely handles DMS logic directly (fat controller risk). Needs audit. |
+| P1 | **0 test files** | 30 test cases specified (T01–T30); none implemented. HMAC-SHA256 hash uniqueness, `SELECT...FOR UPDATE` on serial counters, bulk threshold enforcement (>200), duplicate certificate detection, and TC fee-clearance check are all high-risk without tests. |
+| P1 | **`crt_id_card_issued` table missing from DDL** | ID card handover tracking (FR-CRT-008, BR requirement AC6) unimplementable. `IdCardGenerationService` exists but cannot record issued status. |
+| P1 | **`std_students.tc_issued` column missing** | BR-CRT-011 requires writing this column after TC generation. Column must be added via `ALTER TABLE` migration before Phase 5 implementation. |
+| P1 | **0 migrations** | Module uses DDL directly; cannot bootstrap a fresh tenant via `artisan migrate`. |
+| P2 | **`IdCardGenerationService` service signature unknown** | This service was not in the V2 requirement — no documented method signatures. Needs Technical Audit to understand what it generates and how it interacts with `IdCardConfigController`. |
+| P2 | **Controller logic completeness unknown** | 10 controllers present but all 11 implementation phases are complex (concurrency, FSM, HMAC, PDF generation). Technical Audit needed to assess stub vs. implemented. |
+| P3 | **Rate limiting on `/verify/{hash}` unconfirmed** | BR-CRT-010 + verification API require rate limiting (60 req/min for API key endpoint). Not confirmed in routes or middleware. |
+
+---
+
 ## Pending Next Steps
 
 - [ ] DB Architect: Add `crt_verification_logs` + `crt_id_card_issued` tables to DDL v2
@@ -361,4 +381,5 @@ Default: `{TYPE_CODE}-{YYYY}-{SEQ6}` → `BON-2026-000042`
 
 | Date | Agent | Work Done |
 |------|-------|-----------|
-| 2026-06-27 | Business Analyst | Knowledge file seeded from V2 requirement doc (CRT_Certificate_Requirement.md v2) + DDL (Certificates_DDL_v1.sql). Identified 2 DDL gaps (crt_verification_logs, crt_id_card_issued), cross-module schema change (std_students.tc_issued), and platform type corrections. |
+| 2026-06-27 | Business Analyst | Knowledge file seeded from V2 requirement doc (CRT_Certificate_Requirement.md v2) + DDL (Certificates_DDL_v1.sql). Identified 2 DDL gaps (crt_verification_logs, crt_id_card_issued), cross-module schema change (std_students.tc_issued). Status incorrectly recorded as 0% Greenfield — code not checked at seeding. DmsService method signatures documented but service was never created. |
+| 2026-06-27 | Business Analyst | Update pass: verified actual file counts against prime_ai/Modules/Certificate/. Status corrected to ~55–60%. Corrections: controllers 9→10 (CertificateController found), services composition differs (IdCardGenerationService present, DmsService absent — P0 gap). Added: 10 FormRequests, 7 policies, 4 seeders (not counted at seeding). Views ~30→39, routes ~59→134 lines. 0 tests (30 proposed — critical). DDL gaps from seeding still open. |

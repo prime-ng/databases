@@ -320,7 +320,10 @@ CREATE TABLE IF NOT EXISTS `glb_modules` (
     -- (`LMS`,1,'performance_percentage_threshold_to_reassign_quiz', 'Performance Percentage Threshold to Reassign Quiz to a Student', '35', 'NUMBER', 'If Student Performance falls below this threshold, system will generate a new Quiz and will reassign it to the student', NULL, 1, 1, 1, 1, NULL, NULL, NULL),
     -- (`SLB`,2,'performance_percentage_threshold_to_reassign_quiz', 'Performance Percentage Threshold to Reassign Quiz to a Student', '35', 'NUMBER', 'If Student Performance falls below this threshold, system will generate a new Quiz and will reassign it to the student', NULL, 1, 1, 1, 1, NULL, NULL, NULL),
     -- (`SLB`,3,'syllabus_teaching_estimation_level_for_lesson_planning', 'At which level (Lesson/Topic/Sub-Topic/Mini-Topic) teacher will provide Syllabus Teaching Estimation', 'Topic', 'STRING', 'At which level (Lesson/Topic/Sub-Topic/Mini-Topic) teacher will provide Syllabus Teaching Estimation', NULL, 1, 1, 1, 1, NULL, NULL, NULL),
-
+    -- (`SLB`,4,'homework_released_on_syllabus_level', 'At which level (Lesson/Topic/Sub-Topic/Mini-Topic/Micro-Topic/Nano-Topic) homework will be released', 'Topic', 'STRING', 'At which level (Lesson/Topic/Sub-Topic/Mini-Topic/Micro-Topic/Nano-Topic) homework will be released', NULL, 1, 1, 1, 1, NULL, NULL, NULL),
+    -- (`SLB`,5,'quiz_released_on_syllabus_level', 'At which level (Lesson/Topic/Sub-Topic/Mini-Topic/Micro-Topic/Nano-Topic) Quiz will be released', 'Topic', 'STRING', 'At which level (Lesson/Topic/Sub-Topic/Mini-Topic/Micro-Topic/Nano-Topic) Quiz will be released', NULL, 1, 1, 1, 1, NULL, NULL, NULL),
+    -- (`SLB`,6,'quest_released_on_syllabus_level', 'At which level (Lesson/Topic/Sub-Topic/Mini-Topic/Micro-Topic/Nano-Topic) Quest will be released', 'Topic', 'STRING', 'At which level (Lesson/Topic/Sub-Topic/Mini-Topic/Micro-Topic/Nano-Topic) Quest will be released', NULL, 1, 1, 1, 1, NULL, NULL, NULL),
+  
 
   -- This Table will be used to capture Departments
   -- ----------------------------------------------------------------------------------------

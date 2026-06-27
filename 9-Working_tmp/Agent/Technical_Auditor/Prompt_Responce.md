@@ -861,4 +861,53 @@ I want to create a Prompt which can perform below tasks :
 Create a Prompt to achive the above tasks and save that Promt as "/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/6-Dev_Gap_Analysis_Status/1-Prompts/Create_Module_Knowledge/Generate_Module_Knowledge_Prompt.md"
 
 ## Responce:
+Done
+
+----------------------------------------------------------------------------------------------------------------------------------------------------
+## Prompt:
+Check "Business Analyst" Agent and "/old_db/7-CLAUDE_Prompts/FRD_Creation_Prompt/FRD_Creation_Prompt.md", whether both are configured to read below files before generating "module knowledge" file in AI_Brain or not :
+
+```
+- READ AI_BRAIN paths.md
+- Read Module File from {REQUIREMENT_OLD}{MODULE_CODE}_{MODULE_NAME}*.md  **(few Modules may missing here)**
+- Read Module file from {REQUIRE_DETAIL_V1}
+- Read Module DDL file from {DEV_MODULE_DDL_DIR}
+```
+
+if not then Update both to read all above files before generating "module knowledge" file in AI_Brain for all the Modules.
+
+## Responce:
+Done. Here's a precise summary of every change made:
+
+---
+Changes Made
+
+AI_Brain/agents/business-analyst.md
+
+"Before Starting Any Analysis" section:
+- Added paths.md as item 1 (moved everything else down by one) with the label "ALWAYS FIRST" and an explanation that all {VARIABLE} references in subsequent steps depend on it
+
+Module Knowledge Seeding — new Step 0:
+- Added an explicit Step 0 — Read paths.md (MANDATORY FIRST) block before Step 1, listing exactly which variables must be resolved ({OLD_REPO}, {REQUIREMENT_OLD}, {REQUIRE_DETAIL_V1}, {DEV_MODULE_DDL_DIR}, {LARAVEL_REPO}) before any file lookups proceed
+
+---
+7-CLAUDE_Prompts/FRD_Creation_Prompt/FRD_Creation_Prompt.md
+
+CONFIGURATION VARIABLES block (top of file):
+- Replaced hardcoded absolute paths with {VARIABLE} references resolved from paths.md
+- TECH_REQ_FILE (consolidated V2) and PRELIMINARY_REQ_FILE (screen-spec folder) are now clearly labelled with priority order
+- Added PATHS_CONFIG = AI_Brain/config/paths.md as the first entry
+
+STEP 0 — expanded from 1 step to 2:
+- 0.1 — Read AI_Brain/config/paths.md and resolve the 4 path variables before doing anything else
+- 0.2 — (previously the only step) Look up module identifiers from module_list.md
+
+STEP 1 — Requirement file reads restructured:
+- 1a — Consolidated V2 file at {REQUIREMENT_OLD} (1st priority, ~35 modules)
+- 1b — Screen-spec folder at {REQUIRE_DETAIL_V1} (fallback, ~40 modules) with the exact ls | grep command
+- 2.2 — DDL file now uses {DEV_MODULE_DDL_DIR} instead of hardcoded path
+- 3 — Code path now uses {LARAVEL_REPO} instead of hardcoded path
+
+-----------------------------------------------
+
 

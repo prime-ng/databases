@@ -104,18 +104,27 @@ Analytics:
 
 ## Service Layer Architecture
 
-### Current State: 12 Services Total (6 Modules)
+### Current State: 318 Services Total (as of 2026-06-21)
 
-| Module | Services | Quality |
-|--------|----------|---------|
-| SmartTimetable | ActivityScoreService, RoomAvailabilityService, SubActivityService, TimetableStorageService, DatabaseConstraintService + solver components | Best practice — atomic persistence, scoring formula |
-| Complaint | ComplaintAIInsightEngine, ComplaintDashboardService | Good — business logic extracted |
-| Notification | NotificationService | Minimal |
-| Payment | PaymentService, GatewayManager | Good — pluggable gateway pattern |
-| Scheduler | JobRegistry, SchedulerService | Good |
-| Prime | TenantPlanAssigner | Minimal |
+> Significant growth since 2026-03-12 baseline (was 12 services across 6 modules). See `modules-map.md` for per-module service counts.
 
-**23 modules have ZERO service classes.** All business logic lives directly in controllers.
+| Module | Services | Notes |
+|--------|----------|-------|
+| SmartTimetable | 111 | FET solver, constraint classes, analytics, refinement, substitution |
+| MarksheetGeneration | 33 | Computation + result storage |
+| Hostel | 22 | Rooms, beds, allotments, mess, fee |
+| Inventory | 14 | GRN, stock, reorder |
+| Library | 12 | Circulation, fines, reservations |
+| LmsExam | 11 | Exam query, grading, grievance |
+| HrStaff | 15 | PF/ESI/TDS, leave FSM, payroll |
+| Hpc | 10 | PDF generation, data services |
+| Complaint | 2 | AIInsightEngine, DashboardService |
+| Notification | 2 | NotificationService + channel dispatch |
+| Payment | 4 | PaymentService, GatewayManager (pluggable Razorpay) |
+| Scheduler | 2 | JobRegistry, SchedulerService |
+| (many others) | ... | See modules-map.md |
+
+**Many modules still have business logic directly in controllers — service extraction is ongoing.**
 
 ### Major Controllers (Lines of Code)
 | Controller | Size | Issue |
@@ -189,8 +198,8 @@ Queue: QueueTenancyBootstrapper passes tenant context to jobs
 |--------|--------------|-------------|---------|
 | Multi-Tenancy | 4/5 | 5/5 | env() direct usage in routes |
 | Modularity | 3/5 | 5/5 | Circular deps, tight coupling |
-| Service Layer | 1/5 | 4/5 | 23 modules have zero services |
-| Testing | 1/5 | 4/5 | ~5 tests for 381 models |
+| Service Layer | 2/5 | 4/5 | 318 services total but heavily concentrated (SmartTimetable: 111); many controllers still fat |
+| Testing | 1/5 | 4/5 | 80 module-level test files for 806 models — BHA has 0 tests (compliance module) |
 | Caching | 0/5 | 4/5 | Zero application caching |
 | API Design | 2/5 | 4/5 | No transformers, no docs |
 | Event Architecture | 1/5 | 3/5 | Only 3 events total |

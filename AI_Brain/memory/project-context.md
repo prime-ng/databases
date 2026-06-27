@@ -88,22 +88,23 @@ Per-school isolated data organized by prefix (see consolidated DDL for full list
 - Alpine.js 3.4
 - Vite 7.0 build tool
 
-## Key Statistics (re-verified 2026-03-15 against `prime_ai_shailesh` branch `Brijesh_HPC`)
+## Key Statistics (re-verified 2026-06-21 against `prime_ai` branch `Brijesh`)
 | Metric | Count |
 |--------|-------|
-| Modules | 27 (5 central + 22 tenant) |
-| Total Models | ~470 |
-| Total Controllers | ~290 |
-| Total Services | ~40 (SmartTimetable: 21, Library: 9, others) |
-| Tenant DB Tables | 370 |
+| Modules | 45 (5 central + 40 tenant) |
+| Total Models | 806 |
+| Total Controllers | 747 |
+| Total Services | 318 |
+| Total FormRequests | 451 |
+| Total Blade Views | 3,764 |
+| Tenant DB Tables | 370+ |
 | Central DB Tables | ~39 (global + prime) |
-| Authorization Policies | 195+ |
-| Tenant Migrations | 278 files in `database/migrations/tenant/` |
+| Authorization Policies | ~230 |
+| Tenant Migrations | 608 files in `database/migrations/tenant/` |
 | Central Migrations | 5 files in `database/migrations/` + 37 in `Modules/Prime/database/migrations/` |
-| Tenant Route Lines | 2,715 (1,328 Route:: calls) |
-| Blade Views (total) | ~1,800+ |
-| Shared Components | `resources/views/components/backend/` (8 dirs), `prime/` (6 dirs), `frontend/` (2 dirs) |
-| **Overall platform completion** | **~31%** of RBS (1112 sub-tasks), **~70%** of built modules' CRUD |
+| Module Route Lines | 8,315 across all `routes/*.php` in module dirs |
+| Module-level Test Files | 80 |
+| **Overall platform completion** | **~31%** of RBS (1112 sub-tasks); stats re-verified 2026-06-21 |
 | **Full project docs** | `{PROJECT_DOCS}/` (12 files — overview, guides, reference) |
 
 ## Key Business Workflows

@@ -6,9 +6,9 @@
 ┌─────────────────────────────┬─────────────┬───────────────┬──────────────────┬──────────────┬─────────────┬────────────┬────────────┬────────────┐
 │ MODULE_NAME                 │ MODULE_CODE │ MODULE_PREFIX │ Module Knowledge │ FRD Creation │ Tech. Audit │            │            │            │
 ├─────────────────────────────┼─────────────┼───────────────┼──────────────────┼──────────────┼─────────────┼────────────┼────────────┼────────────┤
-│ Accounting                  │ ACC         │ acc_          │                  │              │             │            │            │            │
-│ Admission Mgmt.             │ ADM         │ adm_          │  Done            │              │             │            │            │            │
-│ BehaviouralAssessment       │ BHA         │ bha_          │                  │              │             │            │            │            │
+│ Accounting                  │ ACC         │ acc_          │  Done            │              │             │            │            │            │
+│ Admission                   │ ADM         │ adm_          │  Done            │              │             │            │            │            │
+│ BehaviouralAssessment       │ BHA         │ bha_          │  Done            │              │             │            │            │            │
 │ Billing                     │ BIL         │ bil_          │  Done            │              │             │            │            │            │
 │ Cafeteria                   │ CAF         │ caf_          │  Done            │              │             │            │            │            │
 │ Certificate                 │ CRT         │ crt_          │  Done            │              │             │            │            │            │
@@ -52,7 +52,7 @@
 │ SystemConfig                │ SYS         │ sys_          │                  │              │             │            │            │            │
 │ Template                    │ TMP         │ tmp_          │                  │              │             │            │            │            │
 │ TimetableFoundation         │ TTF         │ ttf_          │                  │              │             │            │            │            │
-│ Transport                   │ TPT         │ tpt_          │   Done           │              │             │            │            │            │
+│ Transport                   │ TPT         │ tpt_          │   Done /clear          │              │             │            │            │            │
 │ Vendor                      │ VND         │ vnd_          │                  │              │             │            │            │            │
 └─────────────────────────────┴─────────────┴───────────────┴──────────────────┴──────────────┴─────────────┴────────────┴────────────┴────────────┘
 

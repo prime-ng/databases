@@ -272,8 +272,22 @@ Quests: `lms_quests`, `lms_quest_questions`, `lms_quest_allocations`, `lms_quest
 ### Library (lib_* — ~20 tables, pending)
 `lib_membership_types`, `lib_categories`, `lib_genres`, `lib_books`, `lib_book_copies`, `lib_members`, `lib_transactions`, `lib_fines`, `lib_reservations`, `lib_digital_resources`, `lib_inventory_audit`, and more
 
-### Accounting (acc_* — ~25 tables, reserved)
-`acc_account_groups`, `acc_ledgers`, `acc_fiscal_years`, `acc_journals`, `acc_journal_entries`, and more
+### Accounting (acc_* — 28 tables, DDL v3 — seeded 2026-06-27)
+> Old module code: `FAC` (V1 used `fac_*` prefix; V2 req file still named `FAC_FinanceAccounting_Requirement.md`). Module now unified as `ACC` with `acc_*` prefix.
+> DDL source: `{DEV_MODULE_DDL_DIR}/Accounting_DDL_v3.sql`
+
+| Domain | Tables (count) | Purpose |
+|--------|----------------|---------|
+| D0 — Infrastructure | 3 | `acc_accounting_status_masters`, `acc_voucher_modules`, `acc_voucher_category` — status master pattern (avoids ENUM changes) + module registry |
+| D1 — Core Accounting | 12 | `acc_financial_years`, `acc_account_groups`, `acc_ledgers`, `acc_voucher_types`, `acc_vouchers`, `acc_voucher_items`, `acc_cost_centers`, `acc_budgets`, `acc_tax_rates`, `acc_ledger_mappings`, `acc_recurring_templates`, `acc_recurring_template_lines` |
+| D2 — Banking | 2 | `acc_bank_reconciliations`, `acc_bank_statement_entries` |
+| D3 — Fixed Assets | 3 | `acc_asset_categories`, `acc_fixed_assets`, `acc_depreciation_entries` |
+| D4 — Expense Claims | 2 | `acc_expense_claims`, `acc_expense_claim_lines` |
+| D5 — Tally Integration | 2 | `acc_tally_export_logs`, `acc_tally_ledger_mappings` |
+| D6 — Generic Event Engine | 4 | `acc_module_events`, `acc_event_voucher_configs`, `acc_event_voucher_line_templates`, `acc_event_processing_log` — **NOT in V2 req**; runtime ledger resolution + full retry audit |
+
+> Schema gaps vs V2 req: `acc_gst_details`, `acc_tds_entries`, `acc_year_end_closings` proposed in V2 req but NOT in DDL v3.
+> See `AI_Brain/module-knowledge/ACC_Accounting.md` for full knowledge including architecture decisions and gaps.
 
 ### Template (tmp_* — 3 tables, DDL v1 — 2026-04-16)
 `tmp_templates` (existing — visual template builder, canvas/HTML), `tmp_template_purposes` (output purpose registry — Marksheet Print, Student ID Card, Staff ID Card, etc.), `tmp_template_assignments` (scope-based template-to-purpose assignment per session — class, class-group, or school-wide)
@@ -283,6 +297,44 @@ Quests: `lms_quests`, `lms_quest_questions`, `lms_quest_allocations`, `lms_quest
 > Scope uniqueness enforced via generated `scope_hash` column (Decision D-TMP-003)
 > `tmp_templates` migration DOES NOT EXIST yet — only `.gitkeep` in `Modules/Template/database/migrations/`
 > `tmp_templates.created_by` is BIGINT UNSIGNED but `sys_users.id` is INT UNSIGNED — type mismatch to fix
+
+### Admission Mgmt. (adm_* — 20 tables, DDL v1 — documented 2026-06-27)
+> DDL source: `{DEV_MODULE_DDL_DIR}/Admission_DDL_v1.sql`
+> Req source: `{REQUIREMENT_OLD}/ADM_Admission_Requirement.md` (consolidated V2)
+> Code: ~60–65% complete. All 18 controllers, 20 models, 6 services, 24 FormRequests, 13 policies, 84 views present. 0 tests. PromoteExpiredOffersJob missing. 0 migrations.
+
+| Layer | Tables (count) | Key Tables |
+|-------|----------------|------------|
+| L1 — Cycle foundation | 1 | `adm_admission_cycles` |
+| L2 — Cycle config | 4 | `adm_document_checklist`, `adm_quota_config`, `adm_seat_capacity`, `adm_entrance_tests` |
+| L3 — Lead / enquiry | 2 | `adm_enquiries`, `adm_merit_lists` |
+| L4 — Application | 2 | `adm_follow_ups`, `adm_applications` |
+| L5 — Application detail | 4 | `adm_application_documents`, `adm_application_stages`, `adm_entrance_test_candidates`, `adm_merit_list_entries` |
+| L6 — Allotment | 2 | `adm_allotments`, `adm_promotion_batches` |
+| L7 — Post-allotment | 2 | `adm_withdrawals`, `adm_promotion_records` |
+| L8 — TC / Incident | 2 | `adm_transfer_certificates`, `adm_behavior_incidents` |
+| L9 — Incident action | 1 | `adm_behavior_actions` |
+
+> 5 DDL deviations vs V2 req documented: aadhar_no is non-unique index (service-layer check only); created_by/updated_by are NOT NULL; adm_merit_lists has extra sibling_bonus_score + cutoff_score; adm_document_checklist.admission_cycle_id nullable (for system templates); FK type INT vs BIGINT UNSIGNED for sys_users references.
+> Key FSMs: Application (Draft→Submitted→Verified→Shortlisted→Allotted/Waitlisted→Enrolled→Withdrawn), Allotment Offer (Offered→Accepted/Declined/Expired), Enquiry Lead (New→Contacted→Converted/Not_Interested).
+> Critical integration: `EnrollmentService::enrollStudent()` does cross-module writes (sys_users + std_students + std_student_academic_sessions) in a single DB::transaction().
+> See `AI_Brain/module-knowledge/ADM_Admission.md` for full knowledge including FSMs, business rules, and DDL deviations.
+
+### BehaviouralAssessment (bha_* — 16 tables, DDL v2 — seeded 2026-06-27)
+> DDL source: `{DEV_MODULE_DDL_DIR}/BehaviouralAssess_DDL_v2.sql` (very well-documented with per-table comments)
+> Req source: 24 screen files in `{REQUIRE_DETAIL_V1}/BehaviouralAssessment_v2/` — no consolidated V2 req file.
+
+| Layer | Tables (count) | Purpose |
+|-------|----------------|---------|
+| L1 — Foundation | 3 | `bha_rating_scales`, `bha_categories` (polarity: positive/negative), `bha_interventions` |
+| L2 — Detail | 2 | `bha_rating_levels`, `bha_criteria` (58 seeded across 9 categories) |
+| L3 — Configuration | 3 | `bha_class_category_jnt`, `bha_assessment_periods`, `bha_config` |
+| L4 — Transaction Headers | 2 | `bha_assessments`, `bha_audit_log` (**immutable** — no updated_at/deleted_at; CBSE/ICSE CCE compliance) |
+| L5 — Core Transaction | 4 | `bha_assessment_ratings` (core fact), `bha_student_remarks`, `bha_computed_scores` (materialised cache), `bha_incidents` |
+| L6 — Junctions | 2 | `bha_incident_witnesses_jnt`, `bha_incident_intervention_jnt` |
+
+> Key design: negative polarity inversion at service layer; pull-based result integration via `BehaviouralScoreService::getBulkScores()`.
+> See `AI_Brain/module-knowledge/BHA_BehaviouralAssessment.md` for full knowledge including FSMs and seeded data.
 
 ### MarksheetGeneration (msh_* — 23 tables, DDL v1 — 2026-04-13)
 `msh_marksheet_types`, `msh_source_components`, `msh_ia_component_types`, `msh_class_groups`, `msh_class_group_items_jnt`, `msh_exam_groups`, `msh_exam_group_items_jnt`, `msh_config_templates`, `msh_template_scholastic_components`, `msh_template_exam_weightages`, `msh_template_ia_components`, `msh_template_coscholastic_components`, `msh_class_config_jnt`, `msh_subject_practical_configs`, `msh_marksheet_schedules`, `msh_schedule_class_jnt`, `msh_student_results`, `msh_student_subject_results`, `msh_student_subject_exam_marks`, `msh_student_ia_marks`, `msh_student_coscholastic_results`, `msh_student_attendance`, `msh_computation_logs`

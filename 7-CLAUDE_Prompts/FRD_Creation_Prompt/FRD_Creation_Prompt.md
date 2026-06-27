@@ -9,27 +9,29 @@
 > Just tell Claude which module you want: *"create an FRD for Library"* — it does the rest.
 
 ```yaml
+# --- STEP 0: READ THIS FILE FIRST ---
+PATHS_CONFIG   = AI_Brain/config/paths.md   # ← resolves ALL variables below
+
 # --- AUTO-RESOLVED FROM MODULE LIST ---
-# Claude reads: /Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/0-Prime_Ai_Detail/module_list.md
+# Claude reads: {OLD_REPO}/0-Prime_Ai_Detail/module_list.md
 # Finds the row matching the module name the user requested.
 # Extracts:
 MODULE_NAME    = <looked up from module_list.md>
 MODULE_CODE    = <looked up from module_list.md>
 MODULE_PREFIX  = <looked up from module_list.md>
 
-# --- INPUT FILES (resolved after lookup) ---
-OLD_REPO             = /Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db
-MODULE_LIST          = {OLD_REPO}/0-Prime_Ai_Detail/module_list.md
-PRELIMINARY_REQ_FILE = {OLD_REPO}/4-Requirement_Module_wise/2-Module_Requirement_V1/{MODULE_NAME}*
-CORE_DDL_FILE        = {OLD_REPO}/0-DDL_Masters/tenant_db_v4.sql
-DDL_FILE             = {OLD_REPO}/2-DDL_Tenant_Consolidated/{MODULE_NAME}_DDL*.sql
-CODE_PATH            = /Users/bkwork/Herd/prime_ai/Modules/{MODULE_NAME}/
-TECH_REQ_FILE        = {OLD_REPO}/4-Requirement_Module_wise/4-Initial_Requirements/V2/{MODULE_CODE}_{MODULE_NAME}_Requirement*.md
-FRD_FILE             = {OLD_REPO}/4-Requirement_Module_wise/0-FRD_Documents/{MODULE_CODE}_FRD_*.md
-TEST_CASES_FILE      = /Users/bkwork/Herd/prime_testing/tests/Browser/Modules/{MODULE_NAME}/*/*.md
+# --- INPUT FILES (all paths resolved from AI_Brain/config/paths.md) ---
+MODULE_LIST           = {OLD_REPO}/0-Prime_Ai_Detail/module_list.md
+TECH_REQ_FILE         = {REQUIREMENT_OLD}/{MODULE_CODE}_{MODULE_NAME}_Requirement*.md    # consolidated V2 (1st priority)
+PRELIMINARY_REQ_FILE  = {REQUIRE_DETAIL_V1}/{MODULE_NAME}_v*/                            # screen-spec folder (fallback)
+CORE_DDL_FILE         = {OLD_REPO}/0-DDL_Masters/tenant_db_v4.sql
+DDL_FILE              = {DEV_MODULE_DDL_DIR}/{MODULE_NAME}_DDL*.sql
+CODE_PATH             = {LARAVEL_REPO}/Modules/{MODULE_NAME}/
+TEST_CASES_FILE       = /Users/bkwork/Herd/prime_testing/tests/Browser/Modules/{MODULE_NAME}/*/*.md
+FRD_FILE              = {FRD_DIR}/{MODULE_CODE}_FRD_*.md
 
 # --- OUTPUT ---
-OUTPUT_FILE          = {OLD_REPO}/4-Requirement_Module_wise/0-FRD_Documents/{MODULE_CODE}_FRD_{YYYY-MM-DD}.md
+OUTPUT_FILE           = {FRD_DIR}/{MODULE_CODE}_FRD_{YYYY-MM-DD}.md
 ```
 
 ---
@@ -50,11 +52,25 @@ Your task is to generate a complete, non-technical FRD for the {MODULE_NAME} mod
 
 ---
 
-STEP 0 — RESOLVE MODULE IDENTIFIERS (ALWAYS FIRST)
+STEP 0 — RESOLVE PATHS AND MODULE IDENTIFIERS (ALWAYS FIRST)
 
-Before reading any other file, open the module list and look up the module:
+0.1 — Read the paths configuration file BEFORE anything else:
 
-  File: /Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/0-Prime_Ai_Detail/module_list.md
+  File: /Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/AI_Brain/config/paths.md
+
+  This file is the single source of truth for all folder locations.
+  Resolve the following variables from it before proceeding:
+    {OLD_REPO}            — root of the working repository
+    {REQUIREMENT_OLD}     — path to consolidated V2 requirement files
+    {REQUIRE_DETAIL_V1}   — path to detailed per-screen requirement folders
+    {DEV_MODULE_DDL_DIR}  — path to per-module DDL files
+
+  Do NOT hardcode paths. Use the values from paths.md so that path changes
+  propagate automatically.
+
+0.2 — Resolve module identifiers:
+
+  File: {OLD_REPO}/0-Prime_Ai_Detail/module_list.md
 
   Find the row where MODULE_NAME matches what the user requested (case-insensitive).
   Extract MODULE_CODE and MODULE_PREFIX from that row.
@@ -74,34 +90,41 @@ what the module is supposed to do, what data it manages, and what has already
 been built. Do NOT copy-paste from these files — synthesize and rewrite in
 plain business language.
 
-  1. Preliminary / Existing Requirement File:
-     {PRELIMINARY_REQ_FILE}
-     (If missing, note it and continue from what you can infer)
+  1. Requirement Files — check BOTH formats; use whichever is found:
 
-  2. DDL Schema File:
-    2.1. Foundational DDL:
-     {CORE_DDL_FILE}
-     (Read table and column names to understand what data entities exist.
-      These tables will be used in FK reference accrosed all the Modules.
-      Do NOT expose column names in the FRD — translate to business terms)
+    1a. Consolidated V2 requirement file (single file — ~35 modules have this):
+        {REQUIREMENT_OLD}/{MODULE_CODE}_{MODULE_NAME}_Requirement*.md
+        (If found: extract completion %, component counts, gaps, cross-module deps)
 
-    2.2. Module DDL File:
-     {DDL_FILE}
-     (Read table and column names to understand what data entities exist.
-      Do NOT expose column names in the FRD — translate to business terms)
+    1b. Detailed screen-spec folder (fallback — ~40 modules use this format):
+        {REQUIRE_DETAIL_V1}/{MODULE_NAME}_v*/
+        Run: ls {REQUIRE_DETAIL_V1}/ | grep -i {MODULE_NAME}  to find the folder.
+        Read ALL .md files in the folder (one file per screen).
+        (If found: extract screen names, business rules, field detail, workflows)
+
+    NOTE: Some modules have BOTH; some have only one; some have neither.
+    If neither found, note it in the FRD and proceed from DDL + code inference.
+
+  2. DDL Schema Files:
+
+    2.1. Foundational DDL (cross-module FK reference tables):
+         {OLD_REPO}/0-DDL_Masters/tenant_db_v4.sql
+         (Read table and column names to understand shared FK targets.
+          Do NOT expose column names in the FRD — translate to business terms)
+
+    2.2. Module-specific DDL file:
+         {DEV_MODULE_DDL_DIR}/{MODULE_NAME}_DDL*.sql
+         (Read table and column names to understand what data entities exist.
+          Do NOT expose column names in the FRD — translate to business terms)
 
   3. Application Code:
-     {CODE_PATH}
+     {LARAVEL_REPO}/Modules/{MODULE_NAME}/
      (Read controllers, models, routes to understand what has been implemented.
       Do NOT expose class names or method signatures in the FRD — translate to
       business terms only)
 
-  4. High-Level Technical Requirements:
-     {TECH_REQ_FILE}
-     (Scan for any mention of {MODULE_NAME} or {MODULE_CODE})
-
-  5. Test Cases File (if available):
-     {TEST_CASES_FILE}
+  4. Test Cases File (if available):
+     /Users/bkwork/Herd/prime_testing/tests/Browser/Modules/{MODULE_NAME}/*/*.md
 
 ---
 

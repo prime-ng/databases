@@ -199,6 +199,25 @@ Route::domain(config('app.central_domain'))->middleware(['auth'])->group(functio
 - Components for reusable UI elements
 - Vite for asset bundling
 
+## Requirement File Structure
+
+Two distinct formats exist — always check both before concluding a module has no requirements:
+
+| Format | Path | Variable | Coverage | File Pattern |
+|--------|------|----------|----------|--------------|
+| Consolidated V2 | `4-Requirement_Module_wise/4-Initial_Requirements/V2/` | `{REQUIREMENT_OLD}` | ~35 modules | `{CODE}_{MODULE}_Requirement.md` (single file) |
+| Detailed screen-specs | `4-Requirement_Module_wise/2-Module_Requirement_V1/` | `{REQUIRE_DETAIL_V1}` | ~40 modules | `{ModuleName}_v2/` folder with one `.md` per screen |
+
+**Lookup rule:** Check `{REQUIREMENT_OLD}` first. If no consolidated file found, run `ls {REQUIRE_DETAIL_V1}/ | grep -i {MODULE_NAME}` to find the screen-spec folder.
+
+**Important naming quirk:** The top-level folder is called `2-Module_Requirement_V1` but its subfolders use `_v2` suffixes (e.g., `BehaviouralAssessment_v2/`). The `V1` in the folder name refers to the *format* (detailed per-screen), not the content version. These `_v2` subfolders contain current, up-to-date screen-level specs.
+
+**Modules known to use screen-spec format only (no consolidated V2 file):**
+- BehaviouralAssessment → `BehaviouralAssessment_v2/` (24 screen files)
+- (Others may exist — always check both paths)
+
+---
+
 ## Database Conventions
 - All tables: `created_at`, `updated_at` (timestamps)
 - All tables: `deleted_at` (soft deletes)

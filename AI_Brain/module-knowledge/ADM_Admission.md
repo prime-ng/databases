@@ -1,6 +1,6 @@
 # Module Knowledge: Admission Management (ADM)
-# Last Updated: 2026-06-27
-# Completion Status: 0% — Greenfield (RBS_ONLY, no implementation started)
+# Last Updated: 2026-06-27 (update pass — file counts verified against Herd/prime_ai)
+# Completion Status: ~60–65% estimated (all models/services/controllers/policies present; views substantial; 0 tests; PromoteExpiredOffersJob missing; controller logic completeness unverified)
 
 ---
 
@@ -12,17 +12,19 @@
 | DDL (canonical) | `2-DDL_Tenant_Consolidated/AdmissionMgmt_DDL_v1.sql` — 20 tables |
 | V2 Requirement | `4-Requirement_Module_wise/4-Initial_Requirements/V2/ADM_Admission_Requirement.md` |
 | Module scope | `tenant_db` — no `tenant_id` columns |
-| Implementation status | 0% — All tables 📐 New |
+| Implementation status | ~60–65% (re-verified 2026-06-27) |
 | Functional Requirements | 15 (FR-ADM-01 to FR-ADM-15) |
 | Business Rules | 15 (BR-ADM-001 to BR-ADM-015) |
-| Controllers | 14 proposed |
-| Models | 20 proposed |
-| Services | 6 proposed |
-| Jobs | 1 proposed (`PromoteExpiredOffersJob`) |
-| Web Routes | ~47 + 3 public (unauthenticated) |
-| API Routes | ~7 |
-| UI Screens | 25 |
-| Test Scenarios | 25 |
+| Controllers | **18** actual (req proposed 14; 4 extras: AdmissionAnalyticsController, AdmMenuController, AdmSettingsController, AlumniController) |
+| Models | **20** actual (matches proposed 20 exactly) |
+| Services | **6** actual (matches proposed 6 exactly) |
+| FormRequests | **24** actual (Store + Update for most entities; not in req doc's proposed count) |
+| Policies | **13** actual (all major entities covered; not in req doc's proposed count) |
+| Tests | **0** — critical gap (25 scenarios specified, none implemented) |
+| Blade Views | **84** actual (req doc said 25 screens; views created exceed screen count) |
+| Web Routes | **251 lines** in `web.php` (req doc estimated ~47 + 3 public + ~7 API) |
+| Jobs | **0** actual — `PromoteExpiredOffersJob` proposed but not created |
+| Migrations | **0** — module bootstrapped via tenant DDL directly |
 | FRD | Not yet generated |
 
 ---
@@ -320,14 +322,31 @@ If any step fails → full rollback. No partial enrollment records.
 
 ---
 
+## Known Gaps & Open Issues (as of 2026-06-27)
+
+| Priority | Gap | Notes |
+|----------|-----|-------|
+| P1 | **0 test files** | 25 test scenarios specified in V2 req; none implemented. EnrollmentService (cross-module writes), MeritListService (complex scoring), and FSM transitions are high-risk without tests. |
+| P1 | **`PromoteExpiredOffersJob` missing** | Proposed in V2 req for waitlist auto-promotion when offer expires. Without this, expired offers are never promoted — admins would need to manually trigger. No Jobs/ directory in module. |
+| P1 | **0 migrations** | Module uses DDL directly; tenant migrations directory empty. Cannot run `artisan migrate` to bootstrap the module in a fresh tenant. |
+| P2 | **Controller logic completeness unknown** | 18 controllers present but contents unverified — could be stubs. Technical Audit needed. |
+| P2 | **Aadhar encryption not confirmed** | V2 req requires AES-256 at-rest encryption for `adm_applications.aadhar_no`. No accessor/mutator or encryption service found in this pass — needs code review. |
+| P2 | **EnrollmentService cross-module writes** | Writes to `sys_users`, `std_students`, `std_student_academic_sessions`, `std_siblings_jnt` across modules in a single transaction. High-risk — needs integration test. |
+| P3 | **AlumniController vs TransferCertificateController overlap** | Both exist. Alumni management (FR-ADM-11) was expected to be handled via TC. Scope of AlumniController vs TC needs clarification. |
+| P3 | **No Events or Listeners** | V2 req specified NTF notifications at each stage transition. No `Events/` or `Listeners/` directory found. Notifications may be fired directly from controllers rather than via events — needs audit. |
+
+---
+
 ## Pending Next Steps
 
 - [ ] Generate FRD → `act as Business Analyst` → "create an FRD for Admission Mgmt."
-- [ ] DDL Gap Analysis → `act as DB Architect` — verify all 20 tables, especially aadhar_no index strategy
-- [ ] Confirm `sys_users.id` = INT UNSIGNED before migration to ensure FK types match (DDL-005)
+- [ ] Code Gap Analysis → `act as Technical Auditor` — verify controller logic completeness, Aadhar encryption, notification dispatch pattern, and EnrollmentService transaction safety
 - [ ] Implement `PromoteExpiredOffersJob` as a daily scheduled command
-- [ ] Decide on Aadhar encryption strategy before migration (model mutator vs application-level)
-- [ ] Validate that `std_student_academic_sessions` UNIQUE constraint exists in STD DDL (roll_no enforcement, BR-ADM-008, BR-ADM-010)
+- [ ] Create tenant migrations for all 20 ADM tables
+- [ ] Add tests: EnrollmentService (transaction rollback), MeritListService (quota + scoring), ApplicationFSM (state transitions), PromotionService (idempotency)
+- [ ] Clarify AlumniController scope vs TransferCertificateController
+- [ ] Confirm `sys_users.id` = INT UNSIGNED before migration (DDL-005)
+- [ ] Validate `std_student_academic_sessions` UNIQUE constraint in STD DDL (BR-ADM-008, BR-ADM-010)
 
 ---
 
@@ -335,4 +354,5 @@ If any step fails → full rollback. No partial enrollment records.
 
 | Date | Agent | Work Done |
 |------|-------|-----------|
-| 2026-06-27 | Business Analyst | Knowledge file seeded from ADM_Admission_Requirement.md v2 + AdmissionMgmt_DDL_v1.sql (20 tables). 5 DDL deviations documented. |
+| 2026-06-27 | Business Analyst | Knowledge file seeded from ADM_Admission_Requirement.md v2 + AdmissionMgmt_DDL_v1.sql (20 tables). 5 DDL deviations documented. Status incorrectly recorded as 0% Greenfield — actual code was not checked at seeding time. |
+| 2026-06-27 | Business Analyst | Update pass: verified actual file counts against prime_ai/Modules/Admission/. Status corrected to ~60–65%. All 20 models, 6 services, 18 controllers (4 extra vs proposed), 24 FormRequests, 13 policies, 84 views, 251 route lines confirmed. Gaps: 0 tests (critical), PromoteExpiredOffersJob missing, 0 migrations, Aadhar encryption unconfirmed, controller logic completeness unknown. |

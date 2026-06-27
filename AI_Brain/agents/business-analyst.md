@@ -16,13 +16,14 @@ Requirements analyst for the Prime-AI Academic Intelligence Platform. Translates
 
 ## Before Starting Any Analysis
 
-1. Read `AI_Brain/memory/project-context.md` — Project purpose, tech stack, workflows
-2. Read `AI_Brain/memory/modules-map.md` — All 27 modules, what exists, completion %
-3. Read `AI_Brain/memory/school-domain.md` — School entity relationships
-4. Read `{RBS_MAPPING}` — RBS format and existing entries
-5. Read `{GAP_ANALYSIS_PROJECT_FILE}` — Current gaps
-6. Read `{PROJECT_DOCS}/01-project-overview.md` — Module list + table prefixes
-7. **If working on a specific module:** Check for `AI_Brain/module-knowledge/{MODULE_CODE}_{MODULE_NAME}.md` — if it exists, read it to recall all accumulated knowledge about that module before starting any analysis or generation
+1. Read `AI_Brain/config/paths.md` — **ALWAYS FIRST.** Resolves all `{VARIABLE}` references used in every subsequent step. Without this, no file paths can be correctly constructed.
+2. Read `AI_Brain/memory/project-context.md` — Project purpose, tech stack, workflows
+3. Read `AI_Brain/memory/modules-map.md` — All modules, what exists, completion %
+4. Read `AI_Brain/memory/school-domain.md` — School entity relationships
+5. Read `{RBS_MAPPING}` — RBS format and existing entries
+6. Read `{GAP_ANALYSIS_PROJECT_FILE}` — Current gaps
+7. Read `{PROJECT_DOCS}/01-project-overview.md` — Module list + table prefixes
+8. **If working on a specific module:** Check for `AI_Brain/module-knowledge/{MODULE_CODE}_{MODULE_NAME}.md` — if it exists, read it to recall all accumulated knowledge about that module before starting any analysis or generation
 
 ## First Decision: Scope
 
@@ -365,6 +366,12 @@ Use this to create a module knowledge file **from scratch** using existing proje
 
 ### What to Do
 
+**Step 0 — Read paths.md (MANDATORY FIRST)**
+
+Before reading any source files, read `AI_Brain/config/paths.md` to resolve all path variables.
+Every path used in Steps 1–5 (`{OLD_REPO}`, `{REQUIREMENT_OLD}`, `{REQUIRE_DETAIL_V1}`, `{DEV_MODULE_DDL_DIR}`, `{LARAVEL_REPO}`) is defined there.
+Do NOT proceed to Step 1 until paths.md has been read.
+
 **Step 1 — Resolve module identifiers**
 
 Read `{OLD_REPO}/0-Prime_Ai_Detail/module_list.md` and find the row matching the user's module name.
@@ -373,15 +380,21 @@ Fallback: if not found in module_list.md, look for `{CODE}_{MODULE}_Requirement.
 
 **Step 2 — Locate source files**
 
-| Source | Path Pattern |
-|--------|-------------|
-| Initial Requirement | `{REQUIREMENT_OLD}/{CODE}_{MODULE}_Requirement.md` |
-| Consolidated DDL | `{DEV_MODULE_DDL_DIR}/{MODULE}_DDL_v*.sql` |
-| Module code | `{LARAVEL_REPO}/Modules/{MODULE}/` (optional — for controller/model counts) |
+Requirement files exist in TWO distinct formats. Check in order — use whichever is found:
+
+| Priority | Source | Path Pattern | Notes |
+|----------|--------|-------------|-------|
+| 1st | Consolidated V2 requirement | `{REQUIREMENT_OLD}/{CODE}_{MODULE}_Requirement.md` | Single file; ~35 modules covered |
+| 2nd (fallback) | Detailed screen-spec folder | `{REQUIRE_DETAIL_V1}/{MODULE_NAME}_v*/` | Folder of per-screen `.md` files; ~40 modules covered |
+| — | Consolidated DDL | `{DEV_MODULE_DDL_DIR}/{MODULE}_DDL_v*.sql` | Always check regardless of requirement source |
+| — | Module code | `{LARAVEL_REPO}/Modules/{MODULE}/` | Optional — for controller/model counts |
+
+**Fallback resolution rule:** If no consolidated V2 file exists at `{REQUIREMENT_OLD}`, run:
+`ls {REQUIRE_DETAIL_V1}/ | grep -i {MODULE_NAME}` to find the matching folder (folder names use `{ModuleName}_v2` or `{ModuleName}_v1` suffix). Read all `.md` files in that folder as the requirement source. Note in the knowledge file that source was the detailed screen-spec folder, not a consolidated V2 file.
 
 **Step 3 — Read source files and extract facts**
 
-From the **V2 Requirement file**, extract:
+From a **consolidated V2 requirement file**, extract:
 - Overall completion % (usually stated in the header or gap analysis section)
 - Controller list and count
 - Model list and count
@@ -389,6 +402,13 @@ From the **V2 Requirement file**, extract:
 - Route file reference and line range
 - Known gaps and open issues documented in the requirement
 - Cross-module dependencies listed
+
+From **detailed screen-spec files** (fallback source), extract:
+- Screen names and count (one file = one screen typically)
+- Business rules mentioned per screen
+- Field-level detail, dropdown sources, and status workflows
+- Cross-module dependencies named in the files
+- Note: completion % and component counts are NOT in these files — get counts from the Laravel module directory instead
 
 From the **DDL file**, extract:
 - Total table count (count `CREATE TABLE` statements)

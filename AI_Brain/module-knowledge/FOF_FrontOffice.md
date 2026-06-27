@@ -1,6 +1,6 @@
 # Module Knowledge: FrontOffice (FOF)
-# Last Updated: 2026-06-27
-# Completion Status: 0% — Greenfield (RBS_ONLY, no implementation started)
+# Last Updated: 2026-06-27 (update pass — file counts verified against Herd/prime_ai)
+# Completion Status: ~55–65% (all controllers/models/policies present; 118 views; 4 services only; 1 test; 0 migrations)
 
 ---
 
@@ -11,15 +11,20 @@
 | Table prefix | `fof_*` |
 | DDL (canonical) | `2-DDL_Tenant_Consolidated/FrontOffice_DDL_v1.sql` — 22 tables |
 | V2 Requirement | `4-Requirement_Module_wise/4-Initial_Requirements/V2/FOF_FrontOffice_Requirement.md` |
-| Routes | `routes/tenant.php` under `front-office/` prefix (~75 web + ~20 API) |
-| Controllers | 16 proposed (18 per file list including Dashboard) |
-| Models | ~22 proposed |
-| Services | 6 proposed |
-| FormRequests | ~10 proposed |
-| Policies | 4 proposed |
+| Routes | **302 lines** in `Modules/FrontOffice/routes/web.php` (221 named route entries; re-verified 2026-06-27) |
+| Controllers | **21** actual (**corrected from 16–18 proposed**; extras: `FrontOfficeController` base, `FofMenuController`, `VisitorPurposeController` as standalone) |
+| Models | **22** actual (matches DDL table count exactly): Appointment, CertificateRequest, Circular, CircularDistribution, CommunicationLog, DispatchRegister, EarlyDeparture, EmailTemplate, EmergencyContact, FeedbackForm, FeedbackResponse, FofComplaint, GatePass, KeyRegister, LostFound, Notice, PhoneDiary, PostalRegister, SchoolEvent, SmsLog, Visitor, VisitorPurpose |
+| Services | **4** actual (**corrected from 6 proposed**): CircularService, EarlyDepartureService, GatePassService, VisitorService — **missing: FeedbackService, CertificateIssuanceService** |
+| FormRequests | **10** actual (matches ~10 proposed): AppointmentRequest, DispatchRegisterRequest, EarlyDepartureRequest, IssueGatePassRequest, KeyRegisterRequest, LostFoundRequest, PhoneDiaryRequest, PostalRegisterRequest, RegisterVisitorRequest, StoreVisitorPurposeRequest |
+| Policies | **13** actual (**corrected from 4 proposed** — 3× undercount): AppointmentPolicy, CertificateRequestPolicy, CircularPolicy, CommunicationPolicy, EarlyDeparturePolicy, EmergencyContactPolicy, FeedbackFormPolicy, FofComplaintPolicy, GatePassPolicy, NoticePolicy, SchoolEventPolicy, VisitorPolicy, VisitorPurposePolicy |
+| Blade Views | **118** actual (corrected from ~28-screen estimate — 4× screen count) |
+| Tests | **1 file** (`tests/Feature/AppointmentControllerTest.php`) |
+| Jobs | **1** actual: `EarlyDepartureAttSyncJob` (ATT sync is queued — not synchronous as req doc implied) |
+| Events | **0** — no Events/ directory |
+| Seeders | **3** actual (`FofSeederRunner`, `FofVisitorPurposeSeeder`, `FrontOfficeDatabaseSeeder`) |
+| Artisan Commands | **0 confirmed** — `fof:flag-overstay` proposed but not found as Command file |
+| Migrations | **0** — module uses DDL directly |
 | UI Screens | 28 |
-| Seeders | 2 (VisitorPurposeSeeder ×8, EmergencyContactSeeder) |
-| Artisan Commands | 1 (`fof:flag-overstay`) |
 | Business Rules | 15 (BR-FOF-001 to BR-FOF-015) |
 | FRD | Not yet generated |
 
@@ -177,18 +182,42 @@ RBS spec (Module M appendix) uses prefix `fro_`. The platform standardizes on `f
 
 ---
 
+## Known Gaps & Open Issues (as of 2026-06-27)
+
+| Priority | Gap | Detail |
+|----------|-----|--------|
+| P1 | **Only 1 test file** | `AppointmentControllerTest` only. Gate pass concurrency (BR-FOF-004 — one active pass per student), circular approval FSM, visitor overstay flagging, anonymous feedback null enforcement, and certificate fee-clearance check (BR-FOF-005) are all high-risk without coverage. |
+| P1 | **`FeedbackService` not created** | `FeedbackController` likely handles all feedback logic directly — fat controller risk. `FeedbackFormPolicy` exists but no service to encapsulate form lifecycle, token generation, or response aggregation. |
+| P1 | **`CertificateIssuanceService` not created** | Design Decision D10 references `CertificateIssuanceService` checking StudentFee module for fee clearance before PDF generation. No such service file found — this logic is likely in `CertificateRequestController` directly. Fee-clearance check for TC_Copy/Migration certs is P1 risk without service isolation. |
+| P1 | **`fof:flag-overstay` Artisan command not found** | Proposed as daily cron to auto-flag visitors not checked out by school closing time. Without it, `Overstay` status is never set — visitor FSM terminal state is unreachable. |
+| P1 | **0 migrations** | Cannot bootstrap a fresh tenant via `artisan migrate`. 22 tables exist only in DDL. |
+| P2 | **0 Events/Listeners** | No Events/ directory. NTF dispatch for gate pass parent alerts, circular distribution, and cert notifications (listed in cross-module map) likely called directly from controllers. |
+| P2 | **Controller logic completeness unknown** | 21 controllers present but FSM enforcement, fee-clearance checks, ATT sync, and CMP escalation logic depth unverified. Technical Audit needed. |
+| P2 | **`EarlyDepartureAttSyncJob` — ATT dependency** | ATT sync implemented as a queued job (not synchronous as req doc implied). Good design — but requires ATT module to be fully operational. If ATT is not ready, the job fails silently and `att_sync_status` stays `pending`. |
+| P3 | **VSM FK still omitted** | `vsm_visitor_id` FK on `fof_visitors` remains commented out — VSM module does not yet exist. |
+| P3 | **`FrontOfficeController` scope unknown** | Base controller exists but its role is unclear — navigation hub or GOD controller risk? |
+
+---
+
 ## Lessons Learned
 
-(empty until session work populates this)
+- [2026-06-27 | Update] Module was seeded as "0% Greenfield" without filesystem check. Actual: 21 ctrl, 22 models, 4 services, 13 policies, 10 FormRequests, 118 views, 302 route lines — ~55–65% complete. Standard pattern repeated.
+- [2026-06-27 | Update] **Policy count: 4 proposed → 13 actual** — biggest proportional seeding error in this category across all modules audited. Req docs rarely list all policy classes; only "notable" ones mentioned. Always `ls app/Policies/`.
+- [2026-06-27 | Update] **Services can be OVER-counted AND under-counted.** FOF proposed 6 services; only 4 exist. Two proposed services (`FeedbackService`, `CertificateIssuanceService`) named in design decisions but not created as files. Design Decision references are not the same as implemented files.
+- [2026-06-27 | Update] **Views are 4× screen count (118 views vs 28 screens).** Consistent with all other modules in audit. Screen count is not a usable proxy for blade file count.
+- [2026-06-27 | Update] **`EarlyDepartureAttSyncJob` as queued Job (not synchronous call)** is the correct pattern for cross-module side effects — avoids blocking the receptionist's save action. Req doc implied synchronous call; actual implementation is better. Always verify implementation class type.
 
 ---
 
 ## Pending Next Steps
 
 - [ ] Generate FRD → `act as Business Analyst` → "create an FRD for FrontOffice"
-- [ ] DDL Gap Analysis → `act as DB Architect` — verify 22 DDL tables vs requirement data model
-- [ ] Add `vsm_visitor_id` FK once VSM module DDL is in place
-- [ ] Code Gap Analysis → `act as Technical Auditor` — after FRD generated
+- [ ] Create `FeedbackService` — extract token generation, form lifecycle, response aggregation from controller
+- [ ] Create `CertificateIssuanceService` — extract certificate PDF generation + FIN fee-clearance check from `CertificateRequestController`
+- [ ] Create `fof:flag-overstay` Artisan command (daily scheduler for visitor overstay detection)
+- [ ] Create 22 tenant migrations (4-layer order; `vsm_visitor_id` FK migration remains commented until VSM ready)
+- [ ] Add tests: gate pass one-active-per-student guard (BR-FOF-004), anonymous feedback null user_id (BR-FOF-010), postal register lock after acknowledgement (BR-FOF-009), visitor overstay FSM
+- [ ] Code Gap Analysis → `act as Technical Auditor` — verify controller logic completeness, fee-clearance chain, CMP escalation integration, NTF dispatch pattern
 
 ---
 
@@ -196,4 +225,5 @@ RBS spec (Module M appendix) uses prefix `fro_`. The platform standardizes on `f
 
 | Date | Agent | Work Done |
 |------|-------|-----------|
-| 2026-06-27 | Business Analyst | Knowledge file seeded from V2 requirement doc (FOF_FrontOffice_Requirement.md v2) + DDL (FrontOffice_DDL_v1.sql). No session work yet. |
+| 2026-06-27 | Business Analyst | Knowledge file seeded from V2 requirement doc (FOF_FrontOffice_Requirement.md v2) + DDL (FrontOffice_DDL_v1.sql). Status incorrectly recorded as 0% Greenfield — actual code not checked at seeding. |
+| 2026-06-27 | Business Analyst | Update pass: verified all file counts against prime_ai/Modules/FrontOffice/. Status corrected to ~55–65%. Controllers 16→21, models ~22→22 (confirmed), services 6→4 (FeedbackService + CertificateIssuanceService missing), policies 4→13 (3× undercount), FormRequests ~10→10 (confirmed), views 28-screen estimate→118, routes 302 lines/221 named. Jobs: 1 (EarlyDepartureAttSyncJob as queued — not synchronous). Artisan command `fof:flag-overstay` NOT found as file. 0 Events, 1 test file (AppointmentControllerTest), 0 migrations. |

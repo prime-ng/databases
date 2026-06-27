@@ -1,6 +1,6 @@
 # Module Knowledge: Cafeteria (CAF)
-# Last Updated: 2026-06-27
-# Completion Status: 0% — Greenfield (RBS_ONLY, no implementation started)
+# Last Updated: 2026-06-27 (update pass — file counts verified against Herd/prime_ai)
+# Completion Status: ~60–65% (all controllers/services/policies present; 95 views; 21 models; 1 test only — critical gap; 0 jobs)
 
 ---
 
@@ -11,18 +11,25 @@
 | Table prefix | `caf_*` |
 | DDL (canonical) | `2-DDL_Tenant_Consolidated/Cafeteria_DDL_v1.sql` — 21 tables |
 | V2 Requirement | `4-Requirement_Module_wise/4-Initial_Requirements/V2/CAF_Cafeteria_Requirement.md` |
-| Routes | `routes/tenant.php` under `cafeteria/` prefix (~62 web + ~15 API) |
-| Controllers | 16 proposed |
-| Models | 17 (21 tables but some share models / jnt tables are pivot-only) |
-| Services | 6 proposed |
-| FormRequests | 16 proposed |
-| Policies | 14 proposed |
-| Blade Views | ~50 proposed |
-| Artisan Commands | None specified (scheduler hooks via service layer checks) |
+| Routes | **147 lines** in `Modules/Cafeteria/routes/web.php` (re-verified 2026-06-27; prior estimate was ~77) |
+| Controllers | **16** actual (re-verified — matches proposed exactly) |
+| Models | **21** actual (re-verified — **corrected from 17**; all DDL tables have dedicated models including junctions/logs) |
+| Services | **6** actual (re-verified — matches proposed exactly): CafeteriaReportService, MealCardService, MenuService, OrderService, PosService, StockService |
+| FormRequests | **19** actual (re-verified — **corrected from 16**; 3 extra: TopUpMealCardRequest, UpdateMealCardRequest, UpdateSubscriptionEnrollmentRequest) |
+| Policies | **14** actual (re-verified — matches proposed exactly) |
+| Blade Views | **95** actual (re-verified — **corrected from ~50**; nearly double the proposed count) |
+| Tests | **1 file** actual (`tests/Feature/CafeteriaReportControllerTest.php` — **22 proposed, only 1 exists**) |
+| Jobs | **0** actual — no queued jobs created (NTF alerts, FSSAI expiry, menu archive all unqueued) |
+| Migrations | **0** — module uses DDL directly |
 | Business Rules | 19 (BR-CAF-001 to BR-CAF-019) |
-| Test Classes | 22 proposed |
 | Permissions | 21 permission slugs |
 | FRD | Not yet generated |
+
+**Model inventory (all 21):**
+`ConsumptionLog`, `DailyMenu`, `DailyMenuItemJnt`, `DietaryProfile`, `EventMeal`, `EventMealItemJnt`, `FssaiRecord`, `MealAttendance`, `MealCard`, `MealCardTransaction`, `MenuCategory`, `MenuItem`, `Order`, `OrderItem`, `PosSession`, `PosTransaction`, `StaffMealLog`, `StockItem`, `SubscriptionEnrollment`, `SubscriptionPlan`, `Supplier`
+
+**FormRequest inventory (all 19):**
+Store: MenuCategory, MenuItem, DailyMenu, EventMeal, DietaryProfile, FssaiRecord, SubscriptionPlan, SubscriptionEnrollment *(+Update)*, Order, StockItem, PosSession, PosTransaction, Supplier; MealCard specific: IssueMealCard, UpdateMealCard, DeductMealCard, TopUpMealCard; Consumption: LogConsumption
 
 ---
 
@@ -231,19 +238,36 @@
 
 ---
 
+## Known Gaps & Open Issues (as of 2026-06-27)
+
+| Priority | Gap | Detail |
+|----------|-----|--------|
+| P1 | **1 test file only** | 22 test classes proposed; only `CafeteriaReportControllerTest` exists. Meal card balance deduction (`SELECT...FOR UPDATE` concurrency), order cutoff enforcement, dietary conflict logic, webhook idempotency, and QR scan deduplication are all high-risk without tests. |
+| P1 | **0 queued jobs** | Menu publish notification, low-balance parent alert, FSSAI expiry alert (30d/7d), and menu auto-archive were specified as queued operations. No `Jobs/` directory exists — these are likely fired synchronously from controllers or not implemented. |
+| P1 | **0 migrations** | Module uses DDL directly; tenant migrations directory empty. Cannot bootstrap a fresh tenant via `artisan migrate`. |
+| P2 | **No Events/Listeners** | No `Events/` or `Listeners/` directory. NTF dispatch on menu publish (BR-CAF-005/006) and hostel mess plan auto-enrollment (BR-CAF-015) may be called directly from controllers rather than via Laravel events — needs audit. |
+| P2 | **Controller logic completeness unknown** | 16 controllers present but internal logic (cutoff enforcement, concurrency locks, FSM transitions) unverified. Technical Audit needed. |
+| P2 | **Razorpay webhook not confirmed** | Meal card top-up via Razorpay (`TopUpMealCardRequest` exists) — webhook route and signature verification implementation unverified. |
+| P3 | **HST bridge service** | `BR-CAF-015` requires HST module to trigger CAF auto-enrollment on hostel admission. No bridge service or listener found; depends on HST module completion status. |
+| P3 | **INV bridge** | Stock reorder → INV purchase requisition bridge (when `caf_inv_integration = true`) — not confirmed implemented. |
+
+---
+
 ## Lessons Learned
 
-(empty until session work populates this)
+- [2026-06-27 | Update] Seeding recorded models as "17" based on req doc assumption that jnt/log tables share parent models. Actual is 21 — every DDL table has its own dedicated model class (including `DailyMenuItemJnt`, `EventMealItemJnt`, `ConsumptionLog`, `OrderItem`, `StaffMealLog`). In this codebase, junction and log tables always get their own Model.
+- [2026-06-27 | Update] View count in seeding (50 proposed) was a large undercount — 95 blade files found. Seeded view estimates from req docs are typically 50–100% lower than actuals because req docs count screens, not individual blade partials.
 
 ---
 
 ## Pending Next Steps
 
 - [ ] Generate FRD → `act as Business Analyst` → "create an FRD for Cafeteria"
-- [ ] DDL Gap Analysis → `act as DB Architect` — verify 21 DDL tables vs requirement data model
-- [ ] Verify `sys_users.id` type across all module DDLs (CAF DDL corrects the req doc's BIGINT claim)
-- [ ] Add `caf_inv_integration` school setting handling in StockService (INV bridge)
-- [ ] Code Gap Analysis → `act as Technical Auditor` — after FRD generated
+- [ ] Code Gap Analysis → `act as Technical Auditor` — verify controller logic completeness, job implementations (or lack thereof), NTF dispatch pattern, Razorpay webhook, HST/INV bridge services
+- [ ] Create queued jobs: MenuPublishNotificationJob, LowBalanceAlertJob, FssaiExpiryAlertJob, MenuArchiveJob
+- [ ] Expand test coverage: MealCardService (concurrency + double-spend), OrderService (cutoff enforcement), QR scan deduplication, Razorpay webhook idempotency
+- [ ] Create migrations for all 21 CAF tables
+- [ ] Verify `sys_users.id` type = INT UNSIGNED before migration (DDL corrects req doc's BIGINT claim)
 
 ---
 
@@ -251,4 +275,5 @@
 
 | Date | Agent | Work Done |
 |------|-------|-----------|
-| 2026-06-27 | Business Analyst | Knowledge file seeded from V2 requirement doc (CAF_Cafeteria_Requirement.md v2) + DDL (Cafeteria_DDL_v1.sql). No session work yet. |
+| 2026-06-27 | Business Analyst | Knowledge file seeded from V2 requirement doc (CAF_Cafeteria_Requirement.md v2) + DDL (Cafeteria_DDL_v1.sql). Status incorrectly recorded as 0% Greenfield — actual code not checked at seeding. Models recorded as 17 (undercount). |
+| 2026-06-27 | Business Analyst | Update pass: verified actual file counts against prime_ai/Modules/Cafeteria/. Status corrected to ~60–65%. Corrections: models 17→21 (all tables have dedicated models), FormRequests 16→19 (TopUp/Update/UpdateEnrollment added), views ~50→95, routes ~77→147 lines. Confirmed: 16 ctrl, 6 services, 14 policies all match proposed. Gaps: 1 test file only (22 proposed), 0 jobs, 0 migrations, Events/Listeners missing. |
