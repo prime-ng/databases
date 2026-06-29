@@ -1,6 +1,14 @@
 # Module Knowledge: Certificate (CRT)
-# Last Updated: 2026-06-27 (update pass — file counts verified against Herd/prime_ai)
-# Completion Status: ~55–60% (all models/controllers/services/policies present; 39 views; 4 seeders; 0 tests critical; DmsService not created)
+# Last Updated: 2026-06-29 (FRD pass — live-tree re-verification: migrations, tests, rate-limit, verification logging, API stub)
+# Completion Status: ~70–75% (10 live tenant migrations; all 12 features have controllers+routes+views; generation/TC/verification/serial-lock/rate-limit/DMS-gating implemented; keyed verify API is a stub; ID-card handover store absent; 0 in-module unit/feature tests but ~45-method Dusk suite exists)
+
+> 2026-06-29 CORRECTIONS to prior (2026-06-27) seeding/update — verified against live tree:
+> - **Migrations: 0 → 10** `crt_*` create migrations live in `database/migrations/tenant/` (NOT the module's own empty `database/migrations/`), plus `2026_06_15_155842_add_tc_issued_to_std_students_table`. The module CAN bootstrap a fresh tenant. Prior "0 migrations / uses DDL directly" was WRONG.
+> - **`std_students.tc_issued` gap RESOLVED** — alter migration exists (boolean default false). No longer a blocker.
+> - **`crt_verification_logs` is NOT a P0 gap** — verification logging is BY DESIGN routed to `sys_activity_logs` (event `certificate.verify.qr`) via `QrVerificationService::logVerification()`; admin reader `VerificationController::logs()` queries `sys_activity_logs`. Reclassified from gap → design decision.
+> - **Rate limiting IMPLEMENTED** — public `/certificate/verify/{hash}` route carries `throttle:20,60` (20/IP/hour). Prior "P3 unconfirmed" → resolved.
+> - **Tests: not zero for browser** — a Dusk suite exists at `tests/Browser/Modules/Certificate/` (10 test classes: CertificateType, CertificateTemplate, CertificateRequest, CertificateIssued, CertificateReport, IdCardConfig, Verification, StudentDocument, BulkGeneration, CertificateStub; ~45 test methods). Still 0 PHPUnit/Pest unit/feature tests in-module.
+> - **API `CertificateController` confirmed a non-functional stub** (`routes/api.php` → `apiResource('certificates', CertificateController)`; empty store/update/destroy, view-returning index/show). The keyed third-party verify interface (FR/REQ-CRT-007 AC4) is therefore NOT functional.
 
 ---
 
@@ -10,21 +18,22 @@
 |------|-------|
 | Table prefix | `crt_*` |
 | DDL (canonical) | `2-DDL_Tenant_Consolidated/Certificates_DDL_v1.sql` — 10 tables |
+| Migrations (LIVE) | **10** `crt_*` create migrations in `database/migrations/tenant/` (`2026_06_16_083558…083607`) + `add_tc_issued_to_std_students` (`2026_06_15_155842`). Module's own `database/migrations/` is empty (.gitkeep). Three-way reconcile DDL↔migration↔model PASSES; PK/FK = INT UNSIGNED (`increments()`/`unsignedInteger()`) consistent with DDL. |
 | V2 Requirement | `4-Requirement_Module_wise/4-Initial_Requirements/V2/CRT_Certificate_Requirement.md` |
-| Routes | **134 lines** in `Modules/Certificate/routes/web.php` (re-verified 2026-06-27; prior estimate ~59) |
-| Controllers | **10** actual (re-verified — **corrected from 9**; extra: `CertificateController` as base/main controller): BulkGenerationController, CertificateController, CertificateIssuedController, CertificateReportController, CertificateRequestController, CertificateTemplateController, CertificateTypeController, IdCardConfigController, StudentDocumentController, VerificationController |
-| Models | **10** actual (re-verified — matches DDL table count): BulkJob, CertificateRequest, CertificateTemplate, CertificateType, IdCardConfig, IssuedCertificate, SerialCounter, StudentDocument, TcRegister, TemplateVersion |
-| Services | **3** actual (re-verified — **composition differs from proposal**): CertificateGenerationService ✅, QrVerificationService ✅, **IdCardGenerationService** ✅ — `DmsService` was proposed but **NOT created**; ID card gets its own service instead |
-| FormRequests | **10** actual (not counted in seeding): ApproveCertificateRequest, BulkGenerateCertificates, RejectCertificateRequest, RevokeCertificate, StoreCertificateRequest, StoreCertificateTemplate, StoreCertificateType, StoreIdCardConfig, StoreStudentDocument, VerifyStudentDocument |
-| Policies | **7** actual (not counted in seeding): BulkGeneration, CertificateIssued, CertificateRequest, CertificateTemplate, CertificateType, IdCardConfig, StudentDocument |
-| Jobs | **1** actual: `BulkGenerateCertificatesJob` ✅ |
-| Seeders | **4** actual: CertificateDatabaseSeeder, CrtCertificateTypeSeeder, CrtSeederRunner, CrtTemplateSeeder |
-| Blade Views | **39** actual (re-verified; prior estimate ~30) |
-| Tests | **0** actual (**30 test cases proposed — none implemented**; critical gap) |
-| Migrations | **0** — module uses DDL directly |
-| Functional Requirements | 12 (FR-CRT-001 … FR-CRT-012) |
-| Business Rules | 15 (BR-CRT-001 … BR-CRT-015) |
-| FRD | Not yet generated |
+| V1 screen specs | `4-Requirement_Module_wise/2-Module_Requirement_V1/Certificate_v2/` — 13 files (00-Overview … 12-Type_Analytics) |
+| Routes | **134 lines** `web.php` + **8 lines** `api.php` (verified 2026-06-29) |
+| Controllers | **10**: BulkGenerationController, CertificateController (API stub), CertificateIssuedController, CertificateReportController, CertificateRequestController, CertificateTemplateController, CertificateTypeController, IdCardConfigController, StudentDocumentController, VerificationController. Note: V2-proposed `IdCardController` + `DocumentManagementController` were NOT used — replaced by `IdCardConfigController` + `StudentDocumentController`. |
+| Models | **10** (matches DDL): BulkJob, CertificateRequest, CertificateTemplate, CertificateType, IdCardConfig, IssuedCertificate, SerialCounter, StudentDocument, TcRegister, TemplateVersion |
+| Services | **3**: CertificateGenerationService ✅, QrVerificationService ✅ (also holds serial-counter `lockForUpdate` + TC `sl_no` increment + cert-number formatting + HMAC + QR), IdCardGenerationService ✅. `DmsService` proposed but **NOT created** — DMS logic lives in `StudentDocumentController` + TC gate in `CertificateGenerationService::generateTC()`. |
+| FormRequests | **10**: ApproveCertificateRequest, BulkGenerateCertificates, RejectCertificateRequest, RevokeCertificate, StoreCertificateRequest, StoreCertificateTemplate, StoreCertificateType, StoreIdCardConfig, StoreStudentDocument, VerifyStudentDocument |
+| Policies | **7**: BulkGeneration, CertificateIssued, CertificateRequest, CertificateTemplate, CertificateType, IdCardConfig, StudentDocument |
+| Jobs | **1**: `BulkGenerateCertificatesJob` ✅ |
+| Seeders | **4**: CertificateDatabaseSeeder, CrtCertificateTypeSeeder, CrtSeederRunner, CrtTemplateSeeder |
+| Blade Views | **39** |
+| Exports | **1**: `app/Exports/TcRegisterExport.php` (maatwebsite/excel TC register export) |
+| Tests (in-module) | **0** PHPUnit/Pest |
+| Tests (Dusk browser) | **~45 methods / 10 classes** at `tests/Browser/Modules/Certificate/` |
+| FRD | **Complete FRD generated 2026-06-29** → `0-FRD_Documents/CRT_FRD_Complete_2026-06-29.md` (REQ-/BR-/RPT- IDs assigned — see FRD Summary) |
 
 ---
 
@@ -61,14 +70,14 @@
 
 ---
 
-## DDL Gaps (Requirement references tables not in DDL v1)
+## DDL Gaps (Requirement references tables not in DDL/migrations) — REASSESSED 2026-06-29
 
-| Gap ID | Table | Referenced In | Impact |
-|--------|-------|--------------|--------|
-| DDL-001 | `crt_verification_logs` | FR-CRT-007 — every public QR scan + API call must be logged (IP, user-agent, method, result) | **P0** — VerificationController::logs() admin screen and QrVerificationService::verifyHash() cannot write logs without this table |
-| DDL-002 | `crt_id_card_issued` | FR-CRT-008 — handover tracking (`card_received`, date, student_id, config_id, issued_by) | **P1** — ID card handover marking (BR-CRT requirement AC6) is unimplementable without this table |
+| Gap ID | Table | Referenced In | Status (2026-06-29) |
+|--------|-------|--------------|---------------------|
+| DDL-001 | `crt_verification_logs` | FR/REQ-CRT-007 — log every QR scan + keyed call | **RESOLVED / NOT A GAP — by design.** Logging goes to `sys_activity_logs` (event `certificate.verify.qr`); `VerificationController::logs()` reads from there. No table needed. |
+| DDL-002 | `crt_id_card_issued` | FR/REQ-CRT-008 — handover tracking (card_received, date, student, config, issued_by) | **OPEN (P2).** No data store exists; ID-card handover/mark-received is unimplemented. No `markReceived` route. Tracked as ENH-CRT-011. |
 
-**Action required**: DB Architect must add these 2 tables to DDL v2 before implementation.
+**Action required**: only DDL-002 remains, and it is now a P2 enhancement (handover tracking), not a build blocker.
 
 ---
 
@@ -348,32 +357,58 @@ Default: `{TYPE_CODE}-{YYYY}-{SEQ6}` → `BON-2026-000042`
 
 ---
 
-## Known Gaps & Open Issues (as of 2026-06-27)
+## Technical Audit — Mode X (2026-06-29) — Authoritative 12-layer findings
+
+> Code gap analysis completed against `CRT_FRD_Complete_2026-06-29.md`. Report:
+> `3-Audit_Reports/V1_Jun-2026/Certificate_Complete_Audit_2026-06-29.md`.
+> **Health 66/100 (Amber) — no P0 (uncapped). P0=0 · P1=6 · P2=6 · P3=5.**
+> Structurally sound + well-gated module undermined by a cluster of wrong-table/column DB refs.
+
+**Runtime-broken core features (P1) — wrong table/column refs verified against live tenant migrations:**
+- **BUG-CRT-001** — TC fee gate queries `fin_fee_invoices` (table is `fee_invoices`; no `student_id`/`payment_status`/`net_payable` — linkage is `student_assignment_id`, col is `status` enum `'Paid'`, amount `balance_amount`). `generateTC()` throws `42S02` at the fee gate every time → REQ-CRT-005 non-functional. `CertificateGenerationService.php:91`.
+- **BUG-CRT-002** — `generateTC()` snapshot joins `std_students.class_id/section_id` (absent — class/section is via `std_student_academic_sessions`→`sch_class_section_jnt`), reads `std_students.date_of_birth` (col is `dob`), queries `std_profiles` (table is `std_student_profiles`). `:119-146`.
+- **BUG-CRT-003** — `IdCardGenerationService.php:82-94` repeats the same wrong joins (`class_id/section_id`, `std_profiles`, `date_of_birth`) → ID-card sheet generation (REQ-CRT-008) throws.
+- **BUG-CRT-004** — `StudentDocumentController::store()` inserts `media_id => 0` into a `NOT NULL` FK→`sys_media` column → `23000` FK violation; DMS upload (REQ-CRT-009) fails for every doc, breaking the BR-CRT-008 TC gate dependency.
+- **VAL-CRT-001** — BR-CRT-023 not enforced: `ApproveCertificateRequestRequest` marks `date_of_leaving`/`reason_for_leaving` nullable and `approve()` substitutes silent defaults (`today()`/`'Transfer'`).
+- **SEC-CRT-001** — keyed verify API (REQ-CRT-007 AC4 / BR-CRT-027) is the empty scaffold `CertificateController` (`apiResource` returns Blade views). = ENH-CRT-012 / RISK-CRT-003.
+
+**P2:** BUG-CRT-005 (restore/forceDelete always 403 on Issued/Request/Template — policies lack those abilities, no `before()`); DATA-CRT-001 ({{father_name}}/{{mother_name}}/{{blood_group}} always blank — `std_student_profiles` has no such cols; {{nationality}}/{{religion}} emit raw FK ids); SEC-CRT-002 (no `EnsureTenantHasModule`); DEAD-CRT-001 (scaffold controller); PERF-CRT-001 (BR-CRT-033 overdue highlight missing); SCH-CRT-001 (D29 ~10 enums).
+
+**CORRECTIONS to prior notes (verified against live tenant migrations 2026-06-29):**
+- `sys_dropdowns` **does exist in tenant_db** (created as `sys_dropdown_table`, renamed by `...145407_rename_sys_dropdown_table_to_sys_dropdowns`). The Section-20 "category → sys_dropdown_table" note and the "status-master table name" open item are RESOLVED — code uses `sys_dropdowns` correctly.
+- `sys_activity_logs` **exists** (migration file `create_activity_logs_table.php` but `Schema::create('sys_activity_logs')`). Verification + download logging target a real table.
+- **RISK-CRT-005 (PDF storage isolation) — FALSE POSITIVE / RESOLVED.** `config/tenancy.php` enables `FilesystemTenancyBootstrapper` + `suffix_storage_path => true`, so `storage_path('app/tenant_certificates/...')` is per-tenant (`storage/tenant<id>/`). No cross-tenant collision. (Hygiene note: relies on implicit suffixing, not an explicit `Storage::disk('tenant')`.)
+- Job tenancy is **correct** (QueueTenancyBootstrapper enabled + dispatched in tenant context); only `tries=1`/no backoff remains (P3). Bulk inherits the platform `queue=database` vs Horizon `redis` mismatch (DEPLOY-HRZ-01).
+
+---
+
+## Known Gaps & Open Issues (REASSESSED 2026-06-29)
 
 | Priority | Gap | Detail |
 |----------|-----|--------|
-| P0 | **`crt_verification_logs` table missing from DDL** | QR scan logging (`VerificationController::logs()`, `QrVerificationService::verifyHash()`) cannot write logs — table undefined. Must be added to DDL v2 before Phase 6 implementation. |
-| P0 | **`DmsService` not created** | The seeded knowledge file included full DmsService method signatures (uploadDocument, verifyDocument, getDocumentsByStudent, hasVerifiedDocument). Actual code has no DmsService — `StudentDocumentController` likely handles DMS logic directly (fat controller risk). Needs audit. |
-| P1 | **0 test files** | 30 test cases specified (T01–T30); none implemented. HMAC-SHA256 hash uniqueness, `SELECT...FOR UPDATE` on serial counters, bulk threshold enforcement (>200), duplicate certificate detection, and TC fee-clearance check are all high-risk without tests. |
-| P1 | **`crt_id_card_issued` table missing from DDL** | ID card handover tracking (FR-CRT-008, BR requirement AC6) unimplementable. `IdCardGenerationService` exists but cannot record issued status. |
-| P1 | **`std_students.tc_issued` column missing** | BR-CRT-011 requires writing this column after TC generation. Column must be added via `ALTER TABLE` migration before Phase 5 implementation. |
-| P1 | **0 migrations** | Module uses DDL directly; cannot bootstrap a fresh tenant via `artisan migrate`. |
-| P2 | **`IdCardGenerationService` service signature unknown** | This service was not in the V2 requirement — no documented method signatures. Needs Technical Audit to understand what it generates and how it interacts with `IdCardConfigController`. |
-| P2 | **Controller logic completeness unknown** | 10 controllers present but all 11 implementation phases are complex (concurrency, FSM, HMAC, PDF generation). Technical Audit needed to assess stub vs. implemented. |
-| P3 | **Rate limiting on `/verify/{hash}` unconfirmed** | BR-CRT-010 + verification API require rate limiting (60 req/min for API key endpoint). Not confirmed in routes or middleware. |
+| P1 | **TC fee-override path NOT implemented** | BR-CRT-001 allows an admin override on fee dues, but `CertificateGenerationService::generateTC()` throws unconditionally when dues > 0 (`fin_fee_invoices` sum of `net_payable` where `payment_status != 'paid'`). No override capture. (RISK-CRT-002, Sprint task 1.) |
+| P1 | **Keyed third-party verification interface is a non-functional stub** | `routes/api.php` → `apiResource('certificates', CertificateController)`; `CertificateController` has empty store/update/destroy and view-returning index/show. REQ-CRT-007 AC4 keyed verify is not functional. (RISK-CRT-003, ENH-CRT-012.) |
+| P1 | **Certificate file storage not tenant-scoped** | PDFs written to `storage_path('app/tenant_certificates/...')` (local), not the stancl tenant-scoped disk implied by NFR-CRT-006. Confirm isolation. (RISK-CRT-005.) |
+| P1 | **0 in-module unit/feature tests** | Concurrency-critical logic (serial-counter `lockForUpdate`, duplicate detection, >200 bulk threshold, TC fee/doc gate) untested by PHPUnit/Pest. ~45-method Dusk suite exists but covers UI flows, not the locking/HMAC internals. |
+| P2 | **ID card handover tracking absent** | No `crt_id_card_issued` store and no mark-received route; REQ-CRT-008 handover unimplemented. (ENH-CRT-011.) |
+| P2 | **`DmsService` not created** | DMS logic lives in `StudentDocumentController` + the TC gate in `CertificateGenerationService::generateTC()` (rejected-doc count check). Not a defect, just a composition difference; audit for fat-controller risk. |
+| P2 | **Status-master table name** | TC withdrawal resolves via `sys_dropdowns` (key `student_status`, value `Withdrawn`); confirm this matches the platform status master (vs `sys_dropdown_table`). |
+| P0(gov) | **Cross-module TC / request overlap** | Separate `adm_transfer_certificates` (Admission) and `fof_certificate_requests` (Front Office) tables exist in parallel with CRT's TC register & request flow. Two legal TC registers risk conflict. Decide authoritative owner. (RISK-CRT-001; FRD Q-CRT-1, Q-CRT-2.) |
+
+> CLOSED since 2026-06-27: `crt_verification_logs` (by-design → sys_activity_logs), `std_students.tc_issued` (migration added), "0 migrations" (10 exist), rate-limiting (throttle:20,60 present).
 
 ---
 
 ## Pending Next Steps
 
-- [ ] DB Architect: Add `crt_verification_logs` + `crt_id_card_issued` tables to DDL v2
-- [ ] DB Architect: Confirm `crt_tc_register.sl_no SMALLINT UNSIGNED` — state boards with > 32,767 TCs/year need INT UNSIGNED
-- [ ] Generate FRD → `act as Business Analyst` → "create an FRD for Certificate"
-- [ ] CRT_Migration.php: Include `ALTER TABLE std_students ADD COLUMN tc_issued` in `up()`
-- [ ] Verify `maatwebsite/excel` installation (required for FR-CRT-011 export)
-- [ ] Implement rate limiting on public `/verify/{hash}` endpoint (BR-CRT-010 + S06 suggestion)
-- [ ] Seed 5 pre-built templates (Bonafide, TC government format, Character, Sports landscape, ID CR80) as DB seeders (S03 suggestion)
-- [ ] Code Gap Analysis → `act as Technical Auditor` — after FRD generated
+- [ ] **Code Gap Analysis** → `act as Technical Auditor` against `CRT_FRD_Complete_2026-06-29.md` (12-layer, reuse REQ-/BR- IDs)
+- [ ] Implement TC fee-override capture + audit (BR-CRT-001 / Sprint task 1)
+- [ ] Implement or remove the keyed third-party verify interface (REQ-CRT-007 / ENH-CRT-012)
+- [ ] Confirm/repair tenant-scoped certificate file storage (NFR-CRT-006 / RISK-CRT-005)
+- [ ] Add feature/unit tests for serial-counter lock, duplicate, bulk threshold, TC gate
+- [ ] Governance: resolve CRT-vs-Admission TC and CRT-vs-FrontOffice request overlap (Q-CRT-1, Q-CRT-2)
+- [ ] DB Architect: confirm `crt_tc_register.sl_no SMALLINT UNSIGNED` — state boards with > 32,767 TCs/year need INT UNSIGNED
+- [ ] Seed pre-built templates (Bonafide, TC, Character, Sports, ID CR80) — S03/ENH-CRT-003
 
 ---
 
@@ -383,3 +418,4 @@ Default: `{TYPE_CODE}-{YYYY}-{SEQ6}` → `BON-2026-000042`
 |------|-------|-----------|
 | 2026-06-27 | Business Analyst | Knowledge file seeded from V2 requirement doc (CRT_Certificate_Requirement.md v2) + DDL (Certificates_DDL_v1.sql). Identified 2 DDL gaps (crt_verification_logs, crt_id_card_issued), cross-module schema change (std_students.tc_issued). Status incorrectly recorded as 0% Greenfield — code not checked at seeding. DmsService method signatures documented but service was never created. |
 | 2026-06-27 | Business Analyst | Update pass: verified actual file counts against prime_ai/Modules/Certificate/. Status corrected to ~55–60%. Corrections: controllers 9→10 (CertificateController found), services composition differs (IdCardGenerationService present, DmsService absent — P0 gap). Added: 10 FormRequests, 7 policies, 4 seeders (not counted at seeding). Views ~30→39, routes ~59→134 lines. 0 tests (30 proposed — critical). DDL gaps from seeding still open. |
+| 2026-06-29 | Technical Auditor | Mode X complete audit vs CRT_FRD_Complete. Health 66/100 (no P0). Found P1 cluster: TC/ID-card/DMS broken at runtime via wrong table/column refs (BUG-CRT-001..004), BR-CRT-023 not enforced (VAL-CRT-001), keyed verify API stub (SEC-CRT-001). P2: restore/forceDelete 403 (BUG-CRT-005), blank merge fields (DATA-CRT-001), no module-plan middleware (SEC-CRT-002), D29 enums. Corrected stale notes: sys_dropdowns/sys_activity_logs exist in tenant; RISK-CRT-005 false positive (suffix_storage_path=true); job tenancy OK. Report at 3-Audit_Reports/V1_Jun-2026/Certificate_Complete_Audit_2026-06-29.md. |

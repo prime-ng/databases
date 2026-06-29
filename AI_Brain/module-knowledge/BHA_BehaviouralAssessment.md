@@ -1,6 +1,25 @@
-# Module Knowledge: BehaviouralAssessment (BHA)
-# Last Updated: 2026-06-27 (re-seeded — file counts re-verified, DDL + screen specs re-confirmed)
-# Completion Status: ~50–55% (models/controllers/policies all present; 65 views; core service done; 0 tests critical; ComputeSchoolScoresJob missing; FormRequest coverage incomplete)
+# Module Knowledge: BehaviouralAssessment (BA / BHA)
+# Last Updated: 2026-06-29 (BA Complete Analysis Pack run — counts re-verified, **prefix corrected bha_→ba_**, migrations discovered, FRD + Complete FRD produced)
+# Completion Status: ~55–60% (16 models + 16 tenant migrations + 12 controllers + 17 policies + 65 views all present; core score service done; 0 tests; events/listeners + queued recompute job NOT wired; 3 critical FormRequests missing)
+
+---
+
+## ⚠️ CRITICAL CORRECTION — Table Prefix is `ba_`, NOT `bha_`
+
+The single most important correction from the 2026-06-29 verification:
+
+| Claim source | Prefix used | Authoritative? |
+|--------------|-------------|----------------|
+| Live tenant **migrations** (`database/migrations/tenant/…create_ba_*`) | `ba_` | **YES (rank 1–2)** |
+| Live **Eloquent models** (all 16 `protected $table = 'ba_*'`) | `ba_` | **YES (rank 1–2)** |
+| **V1 screen specs** (`BehaviouralAssessment_v2/00-Module-Overview.md`) | `ba_` | YES (rank 4) |
+| Module DDL doc `2-DDL_Tenant_Consolidated/BehaviouralAssess_DDL_v2.sql` | `bha_` | **NO — divergent / stale** |
+| Project `CLAUDE.md` prefix table | (does not list BA) | n/a |
+| Prior versions of THIS knowledge file | `bha_` | **WRONG — corrected** |
+
+**Resolution (per source-precedence ladder):** code + migrations beat the DDL doc for *what exists*. The deployed schema uses **`ba_`**. Every table reference below uses `ba_`. The `BehaviouralAssess_DDL_v2.sql` file (Apr 2026, `bha_`) is **out of sync with the live `ba_` migrations (16 Jun 2026)** and should be regenerated or retired by the DB Architect. Structures otherwise match column-for-column.
+
+The master `0-DDL_Masters/tenant_db_v4.sql` contains **0** BA tables (neither `ba_` nor `bha_`); the BA schema lives only in the module's tenant migrations.
 
 ---
 
@@ -8,28 +27,33 @@
 
 | Item | Value |
 |------|-------|
-| Table prefix | `bha_*` |
+| Table prefix (LIVE) | **`ba_*`** (16 tables) |
+| Table prefix (stale DDL doc) | `bha_*` — do not trust |
 | Module path | `Modules/BehaviouralAssessment/` |
-| DDL (canonical) | `2-DDL_Tenant_Consolidated/BehaviouralAssess_DDL_v2.sql` — 16 tables |
-| Consolidated V2 Req | Not present in `4-Initial_Requirements/V2/` |
-| Detailed Screen Specs | `4-Requirement_Module_wise/2-Module_Requirement_V1/BehaviouralAssessment_v2/` — 24 screen files **(primary req source)** |
-| Database | `tenant_db` |
-| Controllers | **12** (re-verified 2026-06-27) |
-| Models | **16** (re-verified 2026-06-27 — matches DDL table count exactly) |
-| Services | **1** (re-verified 2026-06-27 — **corrected from prior 4**; only `BehaviouralScoreService.php` exists) |
-| FormRequests | **5** (re-verified 2026-06-27 — covers 5 of 12 controllers; assessment + incident entry unvalidated) |
-| Policies | **17** (re-verified 2026-06-27) |
-| Tests | **0** (re-verified 2026-06-27) |
-| Blade Views | **65** (re-verified 2026-06-27 — not recorded at seeding) |
-| Routes | **111 lines** in `web.php` (not recorded at seeding) |
-| Jobs | **0** — `ComputeSchoolScoresJob` referenced in D3 but not created |
-| Migrations | **0** — module uses DDL directly |
-| FRD | Not yet generated |
+| Database | `tenant_db` (database-per-tenant; no `tenant_id` column) |
+| Schema source (LIVE) | **16 tenant migrations** at `database/migrations/tenant/2026_06_16_1306xx_create_ba_*` |
+| DDL doc (reference, stale prefix) | `2-DDL_Tenant_Consolidated/BehaviouralAssess_DDL_v2.sql` (16 `CREATE TABLE`, `bha_`) |
+| Consolidated V2 Req | **Not present** in `4-Initial_Requirements/V2/` |
+| Detailed Screen Specs | `2-Module_Requirement_V1/BehaviouralAssessment_v2/` — 24 screen files **(primary requirement source)** |
+| Controllers | **12** (verified 2026-06-29) |
+| Models | **16** (verified — matches table count exactly) |
+| Services | **1** — `BehaviouralScoreService` only |
+| FormRequests | **5** (covers 5 of 12 controllers) |
+| Policies | **17** (in module's own `app/Policies/`) |
+| Tests | **0** (`tests/Feature` + `tests/Unit` contain only `.gitkeep`) |
+| Blade Views | **65** |
+| Routes | `web.php` (113 lines) + `api.php` (1 apiResource, sanctum) |
+| Jobs | **0** — `ComputeSchoolScoresJob` referenced in design but NOT created |
+| Events / Listeners | **0** — `EventServiceProvider.$listen = []`; no `AssessmentApproved`/`IncidentCreated` dispatched |
+| Observers | **0** — audit logging is done inline in controllers, not via an Eloquent Observer |
+| Migrations | **16 tenant migrations** (prior knowledge said "0 migrations" — WRONG) |
+| Seeders | **5** — `BaCategorySeeder`, `BaInterventionSeeder`, `BaRatingScaleSeeder`, `BaDemoSeeder`, `BehaviouralAssessmentDatabaseSeeder` |
+| FRD | **Generated 2026-06-29** → `0-FRD_Documents/BHA_FRD_Complete_2026-06-29.md` (Complete Analysis Pack) |
 
-**Service inventory (all 1):**
+**Service inventory (1):**
 | Service | Covers |
 |---------|--------|
-| `BehaviouralScoreService` | Core score computation (polarity inversion, weighted avg, grade mapping); `getBulkScores()` for pull-based result integration |
+| `BehaviouralScoreService` | `computeForPeriod()`, `computeStudentScore()` (multi-teacher avg, polarity inversion, weighted category + overall, grade mapping), `getStudentScore()`, `getBulkScores()` (pull-based result integration). Called **synchronously** — no queued job. |
 
 **FormRequest coverage map:**
 | Controller | FormRequest | Status |
@@ -39,152 +63,88 @@
 | BaInterventionController | BaInterventionRequest | ✅ |
 | BaAssessmentPeriodController | BaAssessmentPeriodRequest | ✅ |
 | BaConfigController | BaConfigRequest | ✅ |
-| BaAssessmentController | — | ❌ Missing (core rating entry) |
-| BaIncidentController | — | ❌ Missing (incident creation/update) |
+| BaAssessmentController | — | ❌ Missing (core rating entry / submit / approve / send-back) |
+| BaIncidentController | — | ❌ Missing (incident creation/update/follow-up) |
 | BaClassCategoryController | — | ❌ Missing (class-category mapping) |
-| BaDashboardController | — | N/A (read-only) |
-| BaReportController | — | N/A (read-only) |
-| BaAuditLogController | — | N/A (read-only) |
-| BehaviouralAssessmentController | — | N/A (base/navigation) |
-
-**Note:** No consolidated V2 requirement file exists for this module. The 24 screen-spec files in `2-Module_Requirement_V1/BehaviouralAssessment_v2/` are the primary requirement source. The DDL (BehaviouralAssess_DDL_v2.sql, April 2026) is well-documented with per-table comments and a full dependency architecture diagram. Test coverage is zero — critical gap for a module with an immutable audit trail requirement.
+| BaDashboardController / BaReportController / BaAuditLogController / BehaviouralAssessmentController | — | N/A (read-only / navigation) |
 
 ---
 
-## DDL Table Inventory (16 tables — 6 Dependency Layers)
+## DDL Table Inventory (16 tables — 6 Dependency Layers) — LIVE `ba_` prefix
 
-### Layer 1 — Foundation (no deps on other bha_* tables)
+### Layer 1 — Foundation
 | Table | Purpose |
 |-------|---------|
-| `bha_rating_scales` | Configurable rating scales (5-Point, 3-Point, etc.); `min_rating`/`max_rating` drive score normalisation and negative polarity inversion |
-| `bha_categories` | Behavioural categories with `polarity` (positive/negative) and `weight`; 9 seeded (5 positive, 4 negative); supports self-referencing hierarchy |
-| `bha_interventions` | Master list of 9 predefined interventions: 3 reward, 4 corrective, 2 counselling |
+| `ba_rating_scales` | Configurable scales; `code`, `grade_type`, `min_rating`/`max_rating` drive normalisation + negative-polarity inversion; `is_default`, soft-delete |
+| `ba_categories` | Categories with `polarity` (positive/negative ENUM) + proportional `weight`; self-ref `parent_id` (ON DELETE SET NULL) |
+| `ba_interventions` | Master interventions; `intervention_type` ENUM(reward/corrective/counselling) |
 
-### Layer 2 — Detail (depends on Layer 1)
+### Layer 2 — Detail
 | Table | Purpose |
 |-------|---------|
-| `bha_rating_levels` | Individual levels within a scale (e.g., Outstanding=5, Good=3); `numeric_value` feeds score computation |
-| `bha_criteria` | Observable behavioural criteria within categories; 58 seeded across 9 categories; `weight` determines contribution to category score |
+| `ba_rating_levels` | Levels within a scale; `numeric_value`; UNIQUE(rating_scale_id, sort_order); CASCADE from scale |
+| `ba_criteria` | Observable criteria within a category; proportional `weight`; CASCADE from category; ratings RESTRICT delete |
 
-### Layer 3 — Configuration (depends on sch_* + Layer 1)
+### Layer 3 — Configuration
 | Table | Purpose |
 |-------|---------|
-| `bha_class_category_jnt` | Maps which categories apply to which classes (`sch_classes`); permissive default (all categories if no mapping) |
-| `bha_assessment_periods` | Time windows for teacher data entry; lifecycle: `open → closed → locked`; optional link to `sch_academic_term` |
-| `bha_config` | One record per academic session; active rating scale, result integration toggle (default OFF), weightage % (5–20%), aggregation method, parent notification threshold |
+| `ba_class_category_jnt` | Maps categories → `sch_classes` (grade level). UNIQUE(class_id, category_id). Permissive default: no mapping ⇒ all categories apply |
+| `ba_assessment_periods` | Data-entry windows; lifecycle `open → closed → locked`; REQUIRED `academic_session_id`, OPTIONAL `academic_term_id` |
+| `ba_config` | One row per academic session (UNIQUE); active rating scale, `is_result_integration_enabled` (default 0), `weightage_percent` (5–20), `aggregation_method`, `parent_notification_threshold` (severity) |
 
-### Layer 4 — Transaction Headers (depends on Layer 3 + sch_*)
+### Layer 4 — Transaction Headers
 | Table | Purpose |
 |-------|---------|
-| `bha_assessments` | Assessment header per teacher per class-section per period; UNIQUE(teacher_id, class_section_id, period_id); workflow: `draft → submitted → reviewed → locked` with send-back |
-| `bha_audit_log` | **Immutable** audit trail for rating changes and status transitions; no `updated_at`, no `deleted_at`; required for CBSE/ICSE CCE compliance |
+| `ba_assessments` | Header per teacher × class-section × period; UNIQUE(teacher_id, class_section_id, period_id); FSM `draft → submitted → reviewed → locked` + send-back |
+| `ba_audit_log` | **IMMUTABLE** (`$timestamps=false`, no `updated_at`/`deleted_at`); polymorphic `entity_type`(assessment_rating/assessment/incident)+`entity_id`; CBSE/ICSE CCE compliance |
 
-### Layer 5 — Core Transaction Data (depends on Layer 4 + Layer 2 + sch_*)
+### Layer 5 — Core Transaction Data
 | Table | Purpose |
 |-------|---------|
-| `bha_assessment_ratings` | **Core fact table** — one row per student per criterion per assessment; `rating_level_id` NULL = not yet rated; auto-saved every 30s; UNIQUE(assessment_id, student_id, criterion_id) |
-| `bha_student_remarks` | Overall teacher remarks per student per assessment (separate from per-criterion remarks); appears on report card |
-| `bha_computed_scores` | **Materialised score cache** — computed scores per student per category per period; UPSERT on recomputation; consumed by Exam/Result module via `BehaviouralScoreService::getBulkScores()` |
-| `bha_incidents` | Ad-hoc positive/negative behavioural events; core fields immutable after creation; location tracking (8 locations); severity: minor/moderate/major/critical; attachments via `attachments_json` JSON column |
+| `ba_assessment_ratings` | **Core fact table** — one row per student × criterion × assessment; `rating_level_id` NULL = not rated; auto-save ~30s; UNIQUE(assessment_id, student_id, criterion_id) |
+| `ba_student_remarks` | Overall teacher remark per student per assessment (distinct from per-criterion `remark`); UNIQUE(assessment_id, student_id) |
+| `ba_computed_scores` | **Materialised score cache** per student × category × period; overall stored on first category row; UPSERT on recompute; read by Exam/Result via `getBulkScores()` |
+| `ba_incidents` | Ad-hoc positive/negative events; `severity` (negative only), 8 `location`s, `attachments_json`; core fields immutable; follow-up fields appendable |
 
-### Layer 6 — Junction Tables (depends on Layer 5 + Layer 1)
+### Layer 6 — Junction
 | Table | Purpose |
 |-------|---------|
-| `bha_incident_witnesses_jnt` | Polymorphic witnesses (student or staff) for incidents; no DB-level FK — app-layer enforced |
-| `bha_incident_intervention_jnt` | N:M mapping of incidents to interventions applied; per-application `notes` field |
+| `ba_incident_witnesses_jnt` | Polymorphic witnesses (student/staff) — NO DB FK on `witness_id`, app-enforced |
+| `ba_incident_intervention_jnt` | N:M incidents ↔ interventions, per-application `notes`; RESTRICT delete on intervention |
 
 ---
 
-## Architecture Decisions
+## Architecture Decisions (embedded in schema + code)
 
-### D1 — Polarity Inversion for Negative Categories
-Negative categories (e.g., "Disruptive Behaviours", "Bullying") score inversely: `inverted_score = (max_scale_value + 1) - raw_rating`. So a student rated 5 (worst) on "Bullying" gets inverted score of 1. Handled at service layer, not DB.
-
-### D2 — Weighted Average Score Computation Flow
-```
-bha_assessment_ratings (raw ratings per student per criterion)
-  → GROUP BY criterion → AVG across all teachers (multi-teacher averaging)
-  → For negative polarity criteria: invert
-  → GROUP criteria BY category → WEIGHTED_AVG(criterion.weight) → category_score
-  → WEIGHTED_AVG(category.weight, per aggregation_method) → overall_score
-  → Map to grade via bha_rating_scales min/max boundaries
-  → UPSERT to bha_computed_scores
-```
-
-### D3 — Computed Score Cache (`bha_computed_scores`)
-Scores are never computed at query time. They are materialised into `bha_computed_scores` and served from there. Triggers: `AssessmentApproved` event (per class-section) or manual "Recompute" → `ComputeSchoolScoresJob`.
-
-### D4 — Result Integration is Pull-Based
-The Exam/Result module calls `BehaviouralScoreService::getBulkScores()` — the BA module never writes to `exm_*` tables. Integration is gated by `bha_config.is_result_integration_enabled` (default OFF).
-
-### D5 — Assessment Period vs Academic Term
-`bha_assessment_periods` has optional `academic_term_id → sch_academic_term`. When linked, behavioural scores appear alongside term-wise exam results. If NULL, period is independent (e.g., monthly review).
-
-### D6 — Incident Immutability (BR-BA-008)
-Core incident fields (student_id, date, type, severity, description, location) CANNOT be modified after creation. Only `follow_up_notes`, `follow_up_date`, `is_follow_up_required`, `is_notified` can be updated. Enforced at service layer.
-
-### D7 — `bha_class_category_jnt` Maps to `sch_classes` Not `sch_class_groups_jnt`
-`sch_class_groups_jnt` is a class+section+subject+studyFormat junction for Timetable — NOT a primary/secondary grouping. The correct table for grade-level mapping is `sch_classes`.
-
-### D8 — `bha_audit_log` is Immutable
-No `updated_at`, no `deleted_at`. Once a row is inserted it is never modified. Required for CBSE/ICSE CCE compliance.
+- **D1 — Polarity inversion** for negative categories: `inverted = (max_rating + 1) − raw`; at service layer.
+- **D2 — Weighted-average computation**: ratings → AVG across teachers per criterion → invert negatives → weighted-avg per category → weighted-avg overall (per `aggregation_method`) → grade map → UPSERT `ba_computed_scores`. Implemented in `BehaviouralScoreService::computeStudentScore()`.
+- **D3 — Score cache**: scores never computed at query time; materialised in `ba_computed_scores`. **Recompute is synchronous** (no `ComputeSchoolScoresJob`, no event). GAP.
+- **D4 — Result integration is pull-based**: Exam/Result calls `BehaviouralScoreService::getBulkScores()`; gated by `ba_config.is_result_integration_enabled` (default OFF). BA never writes `exm_*`.
+- **D5 — Period vs Term**: `ba_assessment_periods.academic_term_id → sch_academic_term` optional; NULL ⇒ independent review cycle.
+- **D6 — Incident immutability**: core fields (student/date/type/severity/description/location) immutable after creation; only follow-up fields mutable. App-layer enforced (no DB trigger).
+- **D7 — `ba_class_category_jnt` maps `sch_classes`** (grade level), NOT `sch_class_groups_jnt` (Timetable subject junction).
+- **D8 — `ba_audit_log` immutable** — model has `$timestamps=false`, no soft-delete; insert-only.
 
 ---
 
-## Seeded Data (provisioned on tenant onboarding)
+## Seeded Data (tenant onboarding)
+- 1 rating scale "5-Point Behavioural Scale" (code `5_POINT`, min 1.0 / max 5.0) + 5 levels (Outstanding 5 → Unsatisfactory 1).
+- 9 categories (5 positive + 4 negative) + 58 criteria.
+- 9 interventions (3 reward, 4 corrective, 2 counselling).
+- `ba_config` **NOT seeded** — auto-created with defaults on first access; result integration OFF.
 
-| Data | Detail |
-|------|--------|
-| Rating scale | 1 scale: "5-Point Behavioural Scale" (code: 5_POINT); min 1.0, max 5.0 |
-| Rating levels | 5 levels: Outstanding(5), Very Good(4), Good(3), Needs Improvement(2), Unsatisfactory(1) |
-| Categories | 9 total: 5 positive + 4 negative (see below) |
-| Criteria | 58 total across 9 categories |
-| Interventions | 9: 3 reward (Award/Certificate, Public Recognition, Extra Privileges), 4 corrective (Verbal Warning, Written Warning, Detention, Suspension), 2 counselling (Parent Meeting, Counselling Referral) |
-| bha_config | **NOT seeded** — auto-created with defaults on first access |
-
-**9 Categories:**
-- Positive (5): Classroom Engagement (8 criteria), Respect & Responsibility (8), Cooperation & Collaboration (7), Emotional & Social Development (6), Leadership & Initiative (6)
-- Negative (4): Disruptive Behaviours (7), Aggressive/Bullying (6), Academic Misconduct (6), Health & Safety Violations (4)
+**9 Categories:** Positive(5): Classroom Engagement(8), Respect & Responsibility(8), Cooperation & Collaboration(7), Emotional & Social Development(6), Leadership & Initiative(6). Negative(4): Disruptive Behaviours(7), Aggressive/Bullying(6), Academic Misconduct(6), Health & Safety Violations(4).
 
 ---
 
-## Assessment Workflow FSMs
-
-**Assessment:** `draft → submitted → reviewed → locked` (send-back: reviewed/submitted → draft with remarks)
-
-**Assessment Period:** `open → closed → locked` (reopen: closed → open)
+## FSMs
+- **Assessment:** `draft → submitted → reviewed → locked` (send-back: submitted/reviewed → draft with reviewer remarks). Migration enum: draft, submitted, reviewed, locked.
+- **Assessment Period:** `open → closed → locked` (reopen: closed → open). Migration enum: open, closed, locked.
 
 ---
 
-## V1 Screen Inventory (24 screens — in BehaviouralAssessment_v2/ folder)
-
-| File | Screen |
-|------|--------|
-| 00-Module-Overview.md | Module overview |
-| 01-Dashboard.md | Dashboard |
-| 02-Rating-Scales.md | Rating scale management |
-| 03-Categories.md | Category management |
-| 04-Interventions.md | Intervention master |
-| 05-Class-Mapping.md | Class-category mapping |
-| 06-Periods.md | Assessment period management |
-| 07-Configuration.md | Module configuration |
-| 08-My-Assessments.md | Teacher's assessment list |
-| 09-Ratings.md | Rating grid (core data entry) |
-| 10-Remarks.md | Student remarks |
-| 11-Review-Queue.md | Principal/HOD review queue |
-| 12-Incident-Log.md | Incident log |
-| 13-Witnesses.md | Witness management |
-| 14-Interventions-Applied.md | Intervention application |
-| 15-Reports-Hub.md | Reports hub |
-| 16-Student-Scores-Report.md | Student scores report |
-| 17-Category-Summary.md | Category summary |
-| 18-Period-Report.md | Period report |
-| 19-Audit-Trail.md | Audit trail view |
-| 20-Student-Report.md | Student report card |
-| 21-Class-Analysis.md | Class-level analysis |
-| 22-Period-Progress.md | Period progress tracker |
-| 23-Category-Performance.md | Category performance report |
-| 24-Incident-Report.md | Incident analytics report |
+## V1 Screen Inventory (24 screens — `BehaviouralAssessment_v2/`)
+Dashboard(01); Masters: Rating-Scales(02), Categories(03), Interventions(04); Setup: Class-Mapping(05), Periods(06), Configuration(07); Assessments: My-Assessments(08), Ratings(09), Remarks(10), Review-Queue(11); Incidents: Incident-Log(12), Witnesses(13), Interventions-Applied(14); Reports Hub: Reports-Hub(15), Student-Scores(16), Category-Summary(17), Period-Report(18), Audit-Trail(19); Standalone: Student-Report(20), Class-Analysis(21), Period-Progress(22), Category-Performance(23), Incident-Report(24). Overview(00).
 
 ---
 
@@ -192,61 +152,82 @@ No `updated_at`, no `deleted_at`. Once a row is inserted it is never modified. R
 
 | Priority | Gap | Detail |
 |----------|-----|--------|
-| P1 | **0 tests** | No test files in `tests/`. Immutable `bha_audit_log` (CBSE/ICSE CCE compliance), polarity inversion, weighted avg computation, and FSM transitions are all high-risk without coverage. |
-| P1 | **Missing `BaAssessmentRequest`** | Core data entry (rating grid) has no FormRequest — no server-side validation on assessment submissions. |
-| P1 | **Missing `BaIncidentRequest`** | Incident creation/update has no FormRequest — severity, student, date unvalidated at request layer. |
-| P1 | **`ComputeSchoolScoresJob` not created** | D3 describes this job (`AssessmentApproved` event or manual "Recompute" → job). No Jobs directory exists. Score recomputation may be called synchronously from a controller — needs audit. |
-| P2 | **Only 1 service** | `BehaviouralScoreService` is the only service file. No dedicated `AssessmentService`, `IncidentService`, or `ReportService` — business logic likely in controllers (fat controller risk). |
-| P2 | **Missing `BaClassCategoryRequest`** | Class-category mapping (which categories apply to which class) has no FormRequest. |
-| P2 | **`bha_config` not seeded** | Config is auto-created on first access; result integration is OFF by default. Must be explicitly enabled per school per session — needs documentation for school onboarding. |
-| P3 | **No consolidated V2 req** | No `BHA_BehaviouralAssessment_Requirement.md` in `4-Initial_Requirements/V2/`. FRD generation must read all 24 files in `2-Module_Requirement_V1/BehaviouralAssessment_v2/` + DDL. |
-| P3 | **Events/Listeners missing** | D3 references `AssessmentApproved` event. No `Events/` or `Listeners/` directory found — event may be dispatched differently or not at all. |
+| P0 | **DDL doc / live schema prefix divergence** | `BehaviouralAssess_DDL_v2.sql` uses `bha_`; live migrations + models use `ba_`. Regenerate the DDL doc from the `ba_` migrations (DB Architect) so downstream audits don't chase phantom `bha_` tables. |
+| P1 | **0 tests** | Immutable audit log, polarity inversion, weighted-avg, FSM transitions, incident immutability — all high-risk, zero coverage. |
+| P1 | **Missing `BaAssessmentRequest`** | Core rating entry + submit/approve/send-back unvalidated at request layer. |
+| P1 | **Missing `BaIncidentRequest`** | Incident create/update/follow-up unvalidated (severity-required-when-negative rule not enforced at request layer). |
+| P1 | **`ComputeSchoolScoresJob` absent + recompute synchronous** | School-wide recompute runs in-request; risk of timeout for large schools. No `Jobs/` dir. |
+| P1 | **Events/Listeners not wired** | `EventServiceProvider.$listen = []`; `AssessmentApproved` / `IncidentCreated` not dispatched ⇒ parent-notification + auto-recompute flows depend on inline controller calls; verify they actually fire. |
+| P2 | **Only 1 service (fat-controller risk)** | No `AssessmentService` / `IncidentService` / `ReportService`; logic likely in controllers. |
+| P2 | **Missing `BaClassCategoryRequest`** | Class-category mapping unvalidated. |
+| P2 | **`ba_config` not seeded** | Auto-created on first access; result integration OFF — needs onboarding doc. |
+| P2 | **V1 intent not in schema** | V1 Configuration screen describes a *count-based* "Incident Escalation Threshold (default 3)" and a multi-checkbox notification set (Email HOD / Daily Digest to Principal). Live `ba_config` only has a *severity-based* `parent_notification_threshold`. → ENH-BA-001/002. |
+| P3 | **No consolidated V2 req** | FRD built from 24 V1 screens + migrations/DDL. |
+
+### Technical-Auditor Mode X findings (2026-06-29) — see `3-Audit_Reports/V1_Jun-2026/BehaviouralAssessment_Complete_Audit_2026-06-29.md`
+Health **57/100 Amber**, Deploy **GO (conditional)**, **no P0**. Web routes ARE protected (RSP full tenancy+auth+verified stack) — prior `SEC-BEH-002` is a FALSE POSITIVE, retired. Clean on D17/D24/D25/6.2/cross-DB-FK; D36 N/A (no GENERATED cols).
+
+| Priority | Gap | Code |
+|----------|-----|------|
+| P1 | Ratings editable after submit/approve/lock; period-lock never cascades to assessments → published scores diverge | BUG-BA-001 |
+| P1 | Period FSM broken: open→locked allowed, locked→closed allowed, no `close()` action (open→closed unreachable) | BUG-BA-002 |
+| P1 | Severe-incident parent notification ENTIRELY ABSENT (REQ-BA-015/BR-BA-013) — no Notification/event anywhere; `is_notified` never set | SEC-BA-001 |
+| P1 | BR-BA-029 scale-lock-after-ratings not enforced | DATA-BA-001 |
+| P2 | BR-BA-006/030/005 delete guards + cascade missing; BR-BA-009 permissive default missing (empty grid); BR-BA-028 multi-default scale; follow-up notes overwritten | BUG-BA-004..009 |
+| P2 | Level value not range-checked; duplicate student-witness 500s; no incident transaction; soft-delete+unique 500 | VAL-BA-002, DATA-BA-003/004 |
+
+**Mode C:** 30 BR → 15 ENFORCED · 6 PARTIAL · 9 MISSING (BR-005,006,009,012,013,025,028,029,030). **BR-BA-025 (auto-publish when approval workflow disabled) is NOT implemented** — there is no config flag/branch. Formula (inversion + multi-teacher avg + weighted category/overall) is CORRECT in `BehaviouralScoreService`. Incident core-field immutability (INC-2) and severity-required (INC-1) ARE enforced.
 
 ---
 
-## Design Decisions Made
+## Cross-Module Dependencies (all read-only — BA never writes external tables)
 
-(No session-level decisions recorded yet — seeded from DDL v2 comments and V1 screen specs. See Architecture Decisions D1–D8 above for design decisions embedded in the DDL.)
-
----
-
-## Cross-Module Dependencies
-
-| Dependency | Table | PK Type | BA Usage |
-|------------|-------|---------|---------|
-| StudentProfile (STD) | `std_students` | INT UNSIGNED | Student being assessed/incident subject |
-| SchoolSetup (SCE) | `sch_employees` | INT UNSIGNED | Teacher (assessor), reviewer, incident reporter |
-| SchoolSetup (SCC) | `sch_class_section_jnt` | INT UNSIGNED | Class+section scope for assessments |
-| SchoolSetup (SCO) | `sch_classes` | INT UNSIGNED | Category applicability mapping |
-| SchoolSetup (SCO) | `sch_org_academic_sessions_jnt` | SMALLINT UNSIGNED | Session scoping for periods + config |
-| SchoolSetup (SCO) | `sch_academic_term` | SMALLINT UNSIGNED | Optional link from assessment periods to exam terms |
-| LmsExam (EXM) | (read-only consumer) | — | Exam/Result module calls BehaviouralScoreService for result integration |
-| Notification (NTF) | (event consumer) | — | `IncidentCreated` event → parent notification when severity ≥ threshold |
-
-**All BA dependencies are read-only — BA never writes to external module tables.**
+| Dependency | Table | Usage |
+|------------|-------|-------|
+| StudentProfile | `std_students` (INT UNSIGNED) | Student assessed / incident subject / witness |
+| SchoolSetup | `sch_employees` (INT UNSIGNED) | Teacher (assessor), reviewer, incident reporter |
+| SchoolSetup | `sch_class_section_jnt` (INT UNSIGNED) | Class+section scope of an assessment |
+| SchoolSetup | `sch_classes` (INT UNSIGNED) | Class–category applicability mapping |
+| SchoolSetup | `sch_org_academic_sessions_jnt` (SMALLINT) | Session scoping for periods + config |
+| SchoolSetup | `sch_academic_term` (SMALLINT) | Optional period→term link |
+| LmsExam/Result | (consumer) | Calls `BehaviouralScoreService::getBulkScores()` for weighted result integration |
+| Notification | (consumer) | Severe-incident parent alert (when wired) |
 
 ---
 
 ## Lessons Learned
+- [2026-06-29 | Business Analyst] **Never trust a module DDL doc's prefix over the live migrations.** BA's `BehaviouralAssess_DDL_v2.sql` says `bha_`, but all 16 tenant migrations, all 16 models, and the V1 screen specs say `ba_`. The prior knowledge file propagated `bha_` everywhere. Always `grep "protected \$table"` across models and `ls database/migrations/tenant | grep create_<prefix>` before recording a prefix.
+- [2026-06-29 | Business Analyst] Prior file claimed "0 migrations — uses DDL directly." False — 16 tenant migrations exist (`2026_06_16_1306xx`). Verify migration presence, don't assume DDL-only.
+- [2026-06-29 | Business Analyst] V1 Configuration screen's "escalation threshold (count of 3 incidents)" and multi-channel notification checkboxes are **business intent not present in the live schema**; logged as ENH rather than REQ to avoid implying they exist.
+- [2026-06-29 | Technical Auditor] **`SEC-BEH-002` was a false positive.** Web routes ARE auth/tenancy-protected — the stack lives in the module `RouteServiceProvider::map()` (`web, InitializeTenancyByDomain, PreventAccessFromCentralDomains, EnsureTenantIsActive, auth, verified`), NOT in `web.php`. Before flagging "no middleware on routes", always read the module's `RouteServiceProvider`, not just the route file.
+- [2026-06-29 | Technical Auditor] **The real risk surface here is workflow/data-integrity, not security.** The lock/read-only guard checks only `assessment.status==='locked'`, but NO code ever sets that status — period `lock()` updates only the *period* row. Net effect: "locked" periods don't actually freeze ratings, and approved scores can be silently edited out of sync with the cache + audit trail (BUG-BA-001). When auditing FSM modules, trace every terminal-state guard back to the code that is supposed to SET that state.
+- [2026-06-29 | Technical Auditor] **Severe-incident parent notification is entirely absent** (not merely "events unwired"): `grep -rn "Notification|notify|dispatch|event(" app/` returns zero. `parent_notification_threshold` is dead config and `is_notified` is never written. A "P0 requirement exists in the FRD" does not mean any code implements it — verify with a grep, not by reading the schema.
 
-(Empty — no session work yet. Will populate after FRD or audit sessions.)
+---
+
+## FRD Summary
+- **File:** `0-FRD_Documents/BHA_FRD_Complete_2026-06-29.md` (Complete Analysis Pack — FRD + RTM + BR register + conditions + validation + flows + FSM + data dictionary + dependency map + NFR + risk + prioritization + estimation + user stories + reporting/KPI).
+- **Counts:** 18 REQ · 30 BR · 10 RPT · 4 ENH · 2 FSM · 6 workflows · 12 NFR · 8 RISK · 18 user stories.
+- **REQ priority split:** P0 = 10, P1 = 8, P2 = 0 (the 4 ENH are the P2 backlog).
+- **Stable IDs assigned (do not renumber):** REQ-BA-001…018, BR-BA-001…030, RPT-BA-001…010, ENH-BA-001…004.
 
 ---
 
 ## Pending Next Steps
-
-- [ ] Generate FRD → `act as Business Analyst` → "create an FRD for BehaviouralAssessment"
-- [ ] Code Gap Analysis → `act as Technical Auditor` — verify if controller logic is in controllers or nowhere (fat controller risk), confirm how/where `ComputeSchoolScoresJob` is triggered, check if `AssessmentApproved` event is dispatched
-- [ ] Create missing FormRequests: `BaAssessmentRequest`, `BaIncidentRequest`, `BaClassCategoryRequest`
-- [ ] Create `ComputeSchoolScoresJob` (queued, triggered on `AssessmentApproved` or manual recompute)
-- [ ] Test Coverage → `act as Testing Architect` — 0 tests is critical; priority: polarity inversion logic, weighted avg computation, immutable audit log enforcement, Assessment FSM transitions
-- [ ] Decide on service extraction: `AssessmentService` (rating grid save, FSM), `IncidentService` (create/update + witness/intervention linking) — currently only `BehaviouralScoreService` exists
+- [ ] DB Architect: regenerate `BehaviouralAssess_DDL` from live `ba_` migrations (retire `bha_` doc).
+- [ ] Technical Auditor (Mode B/C, FRD-driven): confirm where recompute + parent-notification actually fire; verify incident immutability + audit-log inserts; fat-controller check.
+- [ ] Create missing FormRequests: `BaAssessmentRequest`, `BaIncidentRequest`, `BaClassCategoryRequest`.
+- [ ] Build `ComputeSchoolScoresJob` (queued) + wire `AssessmentApproved` / `IncidentCreated` events.
+- [ ] Testing Architect: cover polarity inversion, weighted avg, immutable audit, FSM, incident immutability (0 tests today).
 
 ---
 
 ## Version History
-
 | Date | Agent | Work Done |
 |------|-------|-----------|
-| 2026-06-27 | Business Analyst | Knowledge file seeded from BehaviouralAssess_DDL_v2.sql (16 tables) + detailed screen specs in `2-Module_Requirement_V1/BehaviouralAssessment_v2/` (24 screens). No consolidated V2 requirement file. File counts recorded as: 12 ctrl, 16 models, 4 services (later corrected), 5 FormRequests, 17 policies, 0 tests. Initial seeding had wrong requirement path (fixed in business-analyst.md). |
-| 2026-06-27 | Business Analyst | Re-seed pass: re-verified all file counts against prime_ai/Modules/BehaviouralAssessment/. Corrections: services = 1 (not 4 — only BehaviouralScoreService exists). Added: 65 blade views, 111 route lines, 0 jobs. Added FormRequest coverage map (3 critical FormRequests missing). Added ComputeSchoolScoresJob as P1 gap. Completion estimate set to ~50–55%. |
+| 2026-06-27 | Business Analyst | Seeded from DDL v2 (16 tables) + 24 V1 screen specs. Recorded prefix as `bha_` (later found WRONG). |
+| 2026-06-27 | Business Analyst | Re-seed: file counts re-verified; services corrected 4→1; added 65 views, 111 route lines, 0 jobs, FormRequest map; completion ~50–55%. Still recorded `bha_`, claimed 0 migrations. |
+| 2026-06-29 | Business Analyst | **Complete Analysis Pack run.** CORRECTED prefix `bha_`→`ba_` (migrations + models + V1 authoritative). Discovered 16 tenant migrations (not "0"). Found EventServiceProvider empty, no observers, no jobs, recompute synchronous, 5 seeders. Logged DDL-doc divergence as P0. Produced FRD Complete with 18 REQ / 30 BR / 10 RPT / 4 ENH. |
+| 2026-06-29 | Technical Auditor | **Mode X Complete Audit** (A+B+C+G+scoped-D) → `3-Audit_Reports/V1_Jun-2026/BehaviouralAssessment_Complete_Audit_2026-06-29.md`. Health 57/100 Amber, Deploy GO (conditional), no P0. Assigned `*-BA-*` codes (BUG-BA-001..012, SEC-BA-001..003, DATA-BA-001..004, VAL-BA-001..003, MIG-BA-001, DEAD-BA-001, DOC-BA-001). Retired SEC-BEH-002 (false positive — RSP carries tenancy+auth). Mode C: 30 BR → 15 ENFORCED / 6 PARTIAL / 9 MISSING. Confirmed clean on D17/D24/D25/6.2/cross-DB-FK; D36 N/A. |
+</content>
+</invoke>

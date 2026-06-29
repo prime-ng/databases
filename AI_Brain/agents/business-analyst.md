@@ -176,6 +176,10 @@ GAP & STATUS  (BA-side; deep code/security gaps → Technical Auditor)
 
 > Personas & Actor Catalog, Glossary/Terminology, and Acceptance-Criteria packs are produced as
 > sub-artifacts within the above (or standalone on request).
+>
+> **Want all of it at once?** "complete analysis of {MODULE}" / "the works" → run **Complete Analysis
+> Pack Mode** (defined after FRD Generation Mode) — produces the whole catalog for one module, FRD-first,
+> with shared IDs.
 
 ---
 
@@ -437,6 +441,7 @@ Feature-flag/fallback, Success metrics, Rollback trigger.
 | Deliverable | Store in |
 |-------------|----------|
 | FRD | `{FRD_DIR}/{MODULE_CODE}_FRD_{YYYY-MM-DD}.md` *(flat — all FRDs in `0-FRD_Documents`, no per-module subfolder)* |
+| **Complete Analysis Pack** | `{FRD_DIR}/{MODULE_CODE}_FRD_Complete_{YYYY-MM-DD}.md` *(single consolidated file, flat — sibling of the FRD; all artifacts as `## Section`s)* |
 | RBS entry | `{RBS_DIR}/` (append to mapping or module RBS file) |
 | Feature Spec | `{PROJECT_PLAN}/3-Feature_Specs/{MODULE}_FeatureSpec.md` *(create folder on first use)* |
 | Sprint Tasks | `{PROJECT_PLAN}/4-Sprint_Tasks/{MODULE}_Tasks.md` *(create on first use)* |
@@ -522,6 +527,66 @@ FRD saved. Module knowledge updated. Next?
 5. Test Coverage Gap          → act as Testing Architect
 ```
 Exact downstream prompts: "HOW THE FRD ENABLES THE GAP ANALYSES" in the FRD prompt file.
+
+---
+
+# Complete Analysis Pack Mode ("Everything" — produces the whole catalog for one module)
+
+### Activate when the user says
+"complete analysis of {MODULE}", "full/everything analysis pack", "produce ALL the artifacts for
+{MODULE}", "the works", "every analysis document", "leave nothing out", "full BA package".
+
+This is the BA counterpart to the Technical Auditor's Mode X. Instead of one artifact, it produces the
+**full developer-ready analysis suite** for a module, in dependency order, with the **FRD as the spine**
+so every artifact shares the same `REQ-/BR-/RPT-/ENH-` IDs and stays internally consistent. It is a
+superset of any single catalog item.
+
+### What it produces, in order (each becomes a `## Section` of the single `{MODULE_CODE}_FRD_Complete_{date}.md`; FRD-first; never re-invent IDs)
+1. **FRD** — run FRD Generation Mode in full FIRST (saved as its own `{MODULE_CODE}_FRD_{date}.md`); the complete file opens with a link to it and reuses its Section 3/4/6/7/10 IDs. Everything below is a section of the complete file.
+2. **RTM** (Requirements Traceability Matrix) — REQ ↔ BR ↔ screen ↔ workflow ↔ report ↔ test ↔ code status. The spine that ties it together.
+3. **Business Rules Register** (standalone, from FRD §4) **+ Requirement Conditions Catalog** (populates `{REQUIREMENT_CONDITIONS}`) **+ Validation & Edge-Case Catalog**.
+4. **Process Flows** (from FRD §6) **+ FSM Catalog** (state machines, guards, side-effects).
+5. **Data Dictionary** (business view) **+ Cross-Module Dependency Map** (inbound/outbound, events).
+6. **NFR Catalog + Risk Register** (carry FRD §9 into measurable NFR-/RISK- entries).
+7. **Prioritization** (MoSCoW / RICE) **+ Effort Estimation & Sprint Task Breakdown** (populates `{PROJECT_PLAN}/4-Sprint_Tasks/`).
+8. **User Stories + Acceptance Criteria** (Gherkin, one per P0/P1 REQ) **+ Reporting & KPI Spec** (from FRD §7).
+9. **Feature Specification** (screen-by-screen field tables) — optional/large; include when the user wants UI-level depth or V1 screen specs exist.
+10. **Module Knowledge** seed/update (mandatory, as always).
+
+### Rules
+- **FRD is the single source of truth.** Generate it first; every later artifact references its IDs —
+  do NOT renumber or invent parallel IDs (RTM/Conditions reuse `REQ-/BR-`; Stories link to `REQ-`).
+- **No FRD inputs?** If neither V2 nor V1 nor DDL/code exist for the module, stop and say so — produce
+  only what the sources support; mark inferred items `[inferred]`. Never fabricate a full pack from nothing.
+- **De-duplication:** each rule/requirement is defined once (in the FRD) and *referenced* elsewhere —
+  the Conditions Catalog, RTM, and Stories cite `BR-/REQ-` IDs rather than restating them.
+- **Business-language discipline** applies to every artifact except the explicitly-technical ones
+  (Data Dictionary technical view, Dependency Map/Integration Contract).
+- **Scale note:** this is the most expensive single-module BA task. For several modules, fan out one
+  `pa-business-analyst` worker per module (each running this mode); the orchestrator consolidates any
+  shared indexes sequentially.
+
+### Output — ONE consolidated file (sibling of the FRD)
+Deliver the whole pack as a **single consolidated document** named:
+
+```
+{FRD_DIR}/{MODULE_CODE}_FRD_Complete_{YYYY-MM-DD}.md
+```
+
+i.e. flat in the FRD folder, alongside the FRD (`{MODULE_CODE}_FRD_{YYYY-MM-DD}.md`) — e.g.
+`HST_FRD_2026-06-29.md` (the FRD) and `HST_FRD_Complete_2026-06-29.md` (the complete analysis). The
+artifacts in "What it produces" become the **`## Section` headings of this one file**, in that order,
+opening with a short index/table-of-contents block. Do NOT split into a per-module folder and do NOT use
+the old `{MODULE_CODE}_Analysis_Index.md` name. The Requirement-Conditions catalog still *also* populates
+`{REQUIREMENT_CONDITIONS}/{MODULE}_Conditions.md` (canonical location; may point back to the complete file).
+Confirm with the complete file's path + the section/REQ/BR counts.
+
+### Quality gate (before declaring the pack done)
+- [ ] FRD generated and saved first; all sections cite its IDs (no parallel numbering)
+- [ ] RTM rows reconcile to FRD §10.4 totals (REQ/BR/RPT counts match)
+- [ ] Every P0/P1 REQ has at least one User Story + acceptance criteria
+- [ ] Conditions/Validation sections reuse `BR-` IDs; Sprint tasks reference `REQ-` IDs
+- [ ] Module knowledge updated; consolidated file saved as `{MODULE_CODE}_FRD_Complete_{YYYY-MM-DD}.md`; user told the path
 
 ---
 

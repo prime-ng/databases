@@ -1,6 +1,28 @@
 # Module Knowledge: HPC (Holistic Progress Card)
-# Last Updated: 2026-06-27
-# Completion Status: ~59% — Active implementation (core form, PDF, workflow done; multi-actor views partial)
+# Last Updated: 2026-06-29
+# Completion Status: ~45-50% — Core template/form/PDF/workflow/email built; ALL multi-actor (student/parent/peer) and curriculum-analytics features lack database tables and/or implementation
+
+---
+
+## ⚠️ 2026-06-29 Reconciliation Note (READ FIRST)
+
+The prior (2026-06-27) version of this file carried **inflated and partly invented** counts.
+Every figure below was re-verified against the live tree (`Modules/Hpc/`), the central tenant
+migrations (`database/migrations/tenant/`), and the canonical DDL (`HPC_DDL_v2.sql`). Corrections:
+
+| Item | Old (stale) claim | Live (verified 2026-06-29) |
+|------|-------------------|----------------------------|
+| Controllers | 22 / 23 | **11** |
+| Models | 32 | **16** |
+| Services | 10 | **10** (correct) |
+| FormRequests | 14 existing | **4** |
+| Policies (in module) | "10 registered" / "9 missing" | **0** — no Policy classes exist; no `registerPolicies()` |
+| Blade views | "~4 PDF + partial" | **192** blade files |
+| Tests | "6 files, 393 lines" | **0** test files in `Modules/Hpc/tests` |
+| Jobs | implied | **1** (`SendHpcReportEmail`) + 1 Mailable (`HpcReportMail`) |
+| `HpcCreditConfig` model/controller | "production-active" | **does NOT exist** (only `HpcCreditCalculatorService` exists, using code constants) |
+| `HpcReportComment` model | "exists" | **does NOT exist** |
+| Curriculum-analytics models (ability params, circular goals, learning outcomes, evaluation, knowledge graph) | "exist (FR-002–006 Done)" | **NONE exist** — not built in HPC module code |
 
 ---
 
@@ -11,339 +33,290 @@
 | Full name | Holistic Progress Card |
 | Module code | HPC |
 | Table prefix | `hpc_*` |
-| DDL (canonical v2) | `2-DDL_Tenant_Consolidated/HPC_DDL_v2.sql` — 11 tables (Template + Report layers only) |
-| DDL (HPC extensions) | `1-DDL_Modules/HPC/Old_DDL/syllabus_HPC_v1.1.sql` — 14 additional tables (Curriculum Analytics + ASC + Snapshot layers) |
-| V2 Requirement | `4-Requirement_Module_wise/4-Initial_Requirements/V2/HPC_Hpc_Requirement.md` |
-| Scope | Tenant (database-per-tenant; no tenant_id columns) |
+| Scope | Tenant (database-per-tenant; no `tenant_id` columns) |
 | Framework alignment | NEP 2020 / PARAKH-compliant holistic assessment |
-| Controllers | 22 (HpcController is 2,610-line god controller — split required) |
-| Models | 32 (including 6 with DDL missing) |
-| Services | 10 implemented |
-| FormRequests | 14 existing; 9 missing (GAP-FR-001 through GAP-FR-009) |
-| Functional Requirements | 19 (FR-HPC-001 through FR-HPC-019) |
-| Business Rules | 12 (BR-HPC-001 through BR-HPC-012) |
-| FRD status | Not yet generated |
-| Overall completion | ~59% |
-| NEP grade bands covered | 4 (Foundational, Preparatory, Middle, Secondary) |
-| PDF templates | 4 Blade views (first_form/second_form/third_form/fourth_form) via DomPDF v3.1 |
+| Canonical DDL | `2-DDL_Tenant_Consolidated/HPC_DDL_v2.sql` — **11 tables** (template + report layers only) |
+| Extension DDL (spec only) | `1-DDL_Modules/HPC/Old_DDL/syllabus_HPC_v1.1.sql` — curriculum-analytics/ASC spec; **NOT migrated, no models** |
+| Tenant migrations | **16 files** → create **13 tables** (11 from DDL v2 + `hpc_curriculum_change_request` + `hpc_lesson_version_control`) + 3 ALTER migrations |
+| V2 Requirement | `4-Requirement_Module_wise/4-Initial_Requirements/V2/HPC_Hpc_Requirement.md` (76 KB) |
+| V1 screen specs | `4-Requirement_Module_wise/2-Module_Requirement_V1/HPC_v2/` — 10 tab specs |
+| Controllers | **11** (`HpcController` = 2,611-line god controller) |
+| Models | **16** |
+| Services | **10** |
+| FormRequests | **4** (template-CRUD only) |
+| Policies | **0** in module (authorization is via inline `Gate::authorize('tenant.hpc.*')` strings, not Policy classes) |
+| Jobs / Mail | 1 Job (`SendHpcReportEmail`), 1 Mailable (`HpcReportMail`) |
+| Blade views | 192 (`hpc_form` partials dominate: ~150 page partials across 4 form sets) |
+| Tests | **0** in module |
+| FRD status | **Complete FRD generated 2026-06-29** (`HPC_FRD_Complete_2026-06-29.md`) |
+| REQ / BR / RPT counts (FRD) | 19 REQ, 16 BR, 6 RPT |
+| Overall completion | **~45-50%** (down from claimed 59% once missing tables for built features are counted) |
+| NEP grade bands | 4 (Foundational T1, Preparatory T2, Middle T3, Secondary T4) |
+| PDF templates | 4 Blade PDF views (`pdf/first_pdf`…`fourth_pdf`) via DomPDF v3.1 |
 
 ---
 
-## DDL Layer Structure
+## Verified Controller Inventory (11)
 
-The HPC DDL spans two files — the v2 consolidated file (core HPC) and the `syllabus_HPC_v1.1.sql` extension file (curriculum analytics + ASC + snapshot). Together they define 25 tables in DDL (plus 7 missing from DDL but used in code).
+| Controller | Responsibility | Auth note |
+|------------|----------------|-----------|
+| `HpcController` (2,611 lines) | God controller: index dashboard, teacher form load/save, PDF (single + bulk ZIP), email (single + bulk), 6-state workflow actions, public PDF view | 21 `Gate::authorize` calls — but see **BUG-HPC-016** |
+| `HpcTemplatesController` | Template master CRUD (+ trash/restore/force-delete/toggle) | 10 gate calls |
+| `HpcTemplatePartsController` | Template page CRUD | 10 gate calls |
+| `HpcTemplateSectionsController` | Template section CRUD | 10 gate calls |
+| `HpcTemplateRubricsController` | Template rubric CRUD | 10 gate calls |
+| `StudentHpcFormController` | Student self-assessment dashboard + form save/submit | 4 gate calls |
+| `StudentGoalsController` | Student goals & aspirations wizard (T4) | 2 gate calls |
+| `PeerHpcFormController` | Peer review form + teacher peer-assignment endpoints | 4 gate calls |
+| `ParentHpcFormController` | Public token parent form + teacher parent-link endpoints | 2 gate calls (public routes are token-only) |
+| `HpcActivityAssessmentController` | Multi-actor activity assessment overview | 1 gate call |
+| `HpcAttendanceController` | Working-days config + attendance summary | 4 gate calls |
 
-| Layer | Tables | Source File |
-|-------|--------|-------------|
-| Layer 1 — Template Masters (no hpc_* deps) | `hpc_templates`, `hpc_ability_parameters`, `hpc_performance_descriptors`, `hpc_learning_activity_type`, `hpc_circular_goals` | HPC_DDL_v2.sql + syllabus_HPC_v1.1.sql |
-| Layer 2 — Template Structure (dep Layer 1) | `hpc_template_parts`, `hpc_template_sections`, `hpc_template_rubrics`, `hpc_learning_outcomes`, `hpc_topic_equivalency`, `hpc_syllabus_coverage_snapshot` | HPC_DDL_v2.sql + syllabus_HPC_v1.1.sql |
-| Layer 3 — Template Detail (dep Layer 2) | `hpc_template_parts_items`, `hpc_template_section_items`, `hpc_template_rubrics` (section_id FK), `hpc_circular_goal_competency_jnt`, `hpc_outcome_entity_jnt`, `hpc_knowledge_graph_validation`, `hpc_learning_activities` | HPC_DDL_v2.sql + syllabus_HPC_v1.1.sql |
-| Layer 4 — Template Leaf (dep Layer 3) | `hpc_template_section_table`, `hpc_template_rubric_items`, `hpc_outcome_question_jnt` | HPC_DDL_v2.sql + syllabus_HPC_v1.1.sql |
-| Layer 5 — Report Base (dep Layer 1 + cross-module) | `hpc_reports`, `hpc_student_evaluation`, `hpc_student_hpc_snapshot` | HPC_DDL_v2.sql + syllabus_HPC_v1.1.sql |
-| Layer 6 — Report Detail (dep Layer 5) | `hpc_report_items`, `hpc_report_table` | HPC_DDL_v2.sql |
-| Missing from DDL (models + code exist) | `hpc_credit_config`, `hpc_parent_form_tokens`, `hpc_peer_assignments`, `hpc_peer_responses`, `hpc_report_comments`, `student_form_submissions` | — DDL GAP — |
-| Isolated / orphaned (in Syllabus DDL) | `hpc_curriculum_change_request`, `hpc_lesson_version_control` | `2-DDL_Tenant_Consolidated/Syllabus_DDL_v1.1.sql` |
-
----
-
-## Feature Groups
-
-| FR | Feature | Tables | Priority |
-|----|---------|--------|----------|
-| FR-HPC-001 | Template Management (CRUD for 4 hierarchy levels) | `hpc_templates`, `hpc_template_parts`, `hpc_template_sections`, `hpc_template_rubrics`, `hpc_template_rubric_items`, `hpc_template_section_items`, `hpc_template_section_table`, `hpc_template_parts_items` | Critical |
-| FR-HPC-002 | HPC Parameter Configuration (ASC ability + BPD descriptors) | `hpc_ability_parameters`, `hpc_performance_descriptors` | Critical |
-| FR-HPC-003 | Circular Goals & Competency Mapping | `hpc_circular_goals`, `hpc_circular_goal_competency_jnt` | High |
-| FR-HPC-004 | Learning Outcomes & Question Mapping | `hpc_learning_outcomes`, `hpc_outcome_entity_jnt`, `hpc_outcome_question_jnt` | High |
-| FR-HPC-005 | Learning Activities | `hpc_learning_activities`, `hpc_learning_activity_type` | High |
-| FR-HPC-006 | Curriculum Analytics (graph validation, topic equivalency, coverage) | `hpc_knowledge_graph_validation`, `hpc_topic_equivalency`, `hpc_syllabus_coverage_snapshot` | Medium |
-| FR-HPC-007 | Student HPC Evaluation (ASC Framework) | `hpc_student_evaluation` | Critical |
-| FR-HPC-008 | Teacher Data Entry Form (multi-page, 7 input types) | `hpc_reports`, `hpc_report_items`, `hpc_report_table` | Critical |
-| FR-HPC-009 | Student Self-Assessment Portal | `hpc_reports` (student_sections_complete), `student_form_submissions` | High |
-| FR-HPC-010 | Parent Input Collection (token-based) | `hpc_parent_form_tokens`, `hpc_report_comments`, `hpc_reports` (parent_sections_complete) | High |
-| FR-HPC-011 | Peer Assessment Workflow | `hpc_peer_assignments`, `hpc_peer_responses` | High |
-| FR-HPC-012 | PDF Report Generation (DomPDF, 4 templates, bulk ZIP) | `hpc_report_items`, `hpc_report_table`, `hpc_reports` | Critical |
-| FR-HPC-013 | Approval Workflow (6-state machine) | `hpc_reports` (status + audit timestamps) | Critical |
-| FR-HPC-014 | Email Distribution (queued job, URL link, not PDF attachment) | `hpc_reports` | High |
-| FR-HPC-015 | Student HPC Snapshot | `hpc_student_hpc_snapshot` | Medium |
-| FR-HPC-016 | Attendance Configuration (working days per month) | `sys_settings` key `hpc_working_days_per_month` | High |
-| FR-HPC-017 | NCrF Credit Configuration | `hpc_credit_config` (DDL MISSING) | High |
-| FR-HPC-018 | Activity Assessment Overview | `hpc_reports`, `hpc_peer_assignments`, `hpc_parent_form_tokens` | Medium |
-| FR-HPC-019 | Curriculum Change Request Workflow | `hpc_curriculum_change_request` (isolated in Syllabus DDL) | Low |
+Trait: `Http/Controllers/Traits/HpcIndexDataTrait.php`.
 
 ---
 
-## DDL Gaps
+## Verified Model Inventory (16) — and the table-existence reconciliation
 
-Tables referenced in the requirement but NOT defined in `HPC_DDL_v2.sql` or `syllabus_HPC_v1.1.sql`:
+| Model | Backing table | Migration? | DDL v2? | Status |
+|-------|---------------|-----------|---------|--------|
+| `HpcTemplates` | `hpc_templates` | ✅ | ✅ | OK |
+| `HpcTemplateParts` | `hpc_template_parts` | ✅ | ✅ | OK |
+| `HpcTemplatePartsItems` | `hpc_template_parts_items` | ✅ | ✅ | OK |
+| `HpcTemplateSections` | `hpc_template_sections` | ✅ | ✅ | OK |
+| `HpcTemplateSectionItems` | `hpc_template_section_items` | ✅ | ✅ | OK |
+| `HpcTemplateSectionTable` | `hpc_template_section_table` | ✅ | ✅ | OK |
+| `HpcTemplateRubrics` | `hpc_template_rubrics` | ✅ | ✅ | OK |
+| `HpcTemplateRubricItems` | `hpc_template_rubric_items` | ✅ (+ALTERs) | ✅ | OK |
+| `HpcReport` | `hpc_reports` | ✅ | ✅ | OK (see status-ENUM gap) |
+| `HpcReportItem` | `hpc_report_items` | ✅ | ✅ | OK |
+| `HpcReportTable` | `hpc_report_table` | ✅ | ✅ | OK |
+| `ParentFormToken` | `hpc_parent_form_tokens` | ❌ | ❌ | **NO TABLE — runtime failure** (GAP-DB-004b) |
+| `PeerAssignment` | `hpc_peer_assignments` | ❌ | ❌ | **NO TABLE — runtime failure** (GAP-DB-004c) |
+| `PeerResponse` | `hpc_peer_responses` | ❌ | ❌ | **NO TABLE — runtime failure** (GAP-DB-004d) |
+| `StudentFormSubmission` | `student_form_submissions` (no `hpc_` prefix) | ❌ | ❌ | **NO TABLE — runtime failure** (GAP-DB-005) |
+| `StudentHpcSnapshot` | `hpc_student_hpc_snapshot` | ❌ | ❌ | **NO TABLE — feature inert** (GAP-DB-006) |
 
-| Table | Severity | Gap ID | Models / Code Using It | Notes |
-|-------|----------|--------|------------------------|-------|
-| `hpc_credit_config` | P0 | GAP-DB-002 | `HpcCreditConfig`, `HpcCreditConfigController`, `HpcCreditCalculatorService` | Controller and service are production-active; DDL migration required immediately |
-| `hpc_report_comments` | P0 | GAP-DB-004a | `HpcReportComment` model, `ParentHpcFormController` | Bidirectional parent-teacher comment thread; blocks FR-HPC-010.7 |
-| `hpc_parent_form_tokens` | P0 | GAP-DB-004b | `ParentFormToken`, `ParentHpcFormController`, `ParentHpcFormService` | Token-based parent access is actively used in production |
-| `hpc_peer_assignments` | P0 | GAP-DB-004c | `PeerAssignment`, `PeerHpcFormController`, `PeerAssignmentService` | Peer review workflow cannot function without this table |
-| `hpc_peer_responses` | P0 | GAP-DB-004d | `PeerResponse`, `PeerHpcFormController` | Peer reviewer answers stored here; missing from all DDL files |
-| `student_form_submissions` | P1 | GAP-DB-005 | `StudentFormSubmission`, `StudentHpcFormService` | Missing `hpc_` prefix AND missing from DDL; should be renamed `hpc_student_form_submissions` |
+**Orphan tables** (migration exists, no model/controller, unused by code):
+- `hpc_curriculum_change_request` — migration `2026_06_16_132249`
+- `hpc_lesson_version_control` — migration `2026_06_16_132300`
 
-Additional DDL issues in existing tables:
-
-| Table | Issue | Gap ID | Severity |
-|-------|-------|--------|----------|
-| `hpc_reports.status` | DDL ENUM has only 4 values ('Draft','Final','Published','Archived'); model uses 6 ('draft','submitted','under_review','final','published','archived') | GAP-DB-003 | P0 |
-| `hpc_reports` FK `term_id` | DDL references `cbse_terms(id)` — legacy table; should reference `sch_academic_term(id)` | DDL-CORR-001 | P0 |
-| `hpc_circular_goal_competency_jnt` FK | References `slb_circular_goals(id)` — wrong table; should be `hpc_circular_goals(id)` | DDL-CORR-002 | P1 |
-| `hpc_outcome_entity_jnt` | FK `fk_outcome_entity_outcome` references `slb_learning_outcomes(id)` — should be `hpc_learning_outcomes(id)` | DDL-CORR-003 | P1 |
-| `hpc_outcome_question_jnt` | FK references `slb_learning_outcomes(id)` — should be `hpc_learning_outcomes(id)` | DDL-CORR-004 | P1 |
-| `hpc_student_evaluation` | FKs reference `slb_academic_sessions`, `slb_students`, `slb_subjects`, `slb_users` — all should be `std_*` / `sch_*` / `sys_*` equivalents | DDL-CORR-005 | P0 |
-| `hpc_syllabus_coverage_snapshot` | FK references `slb_academic_sessions(id)` — should be `sch_org_academic_sessions_jnt(id)` (SMALLINT UNSIGNED PK) | DDL-CORR-006 | P0 |
-| `hpc_student_hpc_snapshot` | FK references `slb_academic_sessions(id)` — should be `sch_org_academic_sessions_jnt(id)` | DDL-CORR-007 | P0 |
-| `hpc_report_items.id` | Defined as `BIGINT AUTO_INCREMENT` — platform standard is `INT UNSIGNED AUTO_INCREMENT`; correct to INT | DDL-CORR-008 | P1 |
-| `hpc_curriculum_change_request`, `hpc_lesson_version_control` | Defined in Syllabus DDL (`Syllabus_DDL_v1.1.sql`), not in HPC DDL; should be moved to HPC DDL | GAP-DB-001 | P1 |
-
----
-
-## DDL Corrections & Platform Deviations
-
-| # | Table.Column | DDL Value | Correct Value | Reason |
-|---|-------------|-----------|---------------|--------|
-| 1 | `hpc_reports.term_id` FK | `cbse_terms(id)` | `sch_academic_term(id)` | `cbse_terms` is a legacy table not in current schema |
-| 2 | `hpc_reports.status` ENUM | `'Draft','Final','Published','Archived'` | `'draft','submitted','under_review','final','published','archived'` | Model uses 6 states; DDL is out of sync; casing also wrong (lowercase per PHP model convention) |
-| 3 | `hpc_reports.prepared_by` FK | `sys_users(id)` | `sys_users(id)` — correct | No change needed here |
-| 4 | `hpc_report_items.id` | `BIGINT AUTO_INCREMENT` | `INT UNSIGNED AUTO_INCREMENT` | Platform standard is INT UNSIGNED for all PKs/FKs (verified against tenant_db) |
-| 5 | `hpc_circular_goal_competency_jnt.circular_goal_id` FK | `slb_circular_goals(id)` | `hpc_circular_goals(id)` | FK must point to HPC's own goals table, not Syllabus module's non-existent `slb_circular_goals` |
-| 6 | `hpc_outcome_entity_jnt.outcome_id` FK | `slb_learning_outcomes(id)` | `hpc_learning_outcomes(id)` | Outcome is defined in HPC, not in Syllabus module |
-| 7 | `hpc_outcome_question_jnt.outcome_id` FK | `slb_learning_outcomes(id)` | `hpc_learning_outcomes(id)` | Same issue as above |
-| 8 | `hpc_student_evaluation.academic_session_id` FK | `slb_academic_sessions(id)` | `sch_org_academic_sessions_jnt(id)` (SMALLINT UNSIGNED) | Platform uses `sch_org_academic_sessions_jnt` for academic session reference; `slb_academic_sessions` does not exist |
-| 9 | `hpc_student_evaluation.student_id` FK | `slb_students(id)` | `std_students(id)` | Students are in `std_students`, not `slb_students` |
-| 10 | `hpc_student_evaluation.assessed_by` FK | `slb_users(id)` | `sys_users(id)` | Platform user table is `sys_users` |
-| 11 | `hpc_syllabus_coverage_snapshot.academic_session_id` FK | `slb_academic_sessions(id)` | `sch_org_academic_sessions_jnt(id)` | Same platform correction as #8 |
-| 12 | `hpc_student_hpc_snapshot.academic_session_id` FK | `slb_academic_sessions(id)` | `sch_org_academic_sessions_jnt(id)` | Same platform correction |
-| 13 | `hpc_student_evaluation` (multiple FKs) | Reference `slb_subjects`, `slb_competencies` | `sch_subjects(id)`, `slb_competencies(id)` | Subjects in `sch_subjects` not `slb_subjects` |
-| 14 | `hpc_learning_outcomes.domain` FK | `sys_dropdown_table(id)` | `sys_dropdown_table(id)` — correct type, but missing comma before CONSTRAINT in DDL syntax | Syntax error — missing comma before CONSTRAINT `fk_lo_domain` |
-| 15 | `hpc_reports` — missing columns | DDL lacks: `submitted_at`, `reviewed_by`, `reviewed_at`, `review_comments`, `published_by`, `published_at`, `student_sections_complete`, `parent_sections_complete` | Add all 8 columns | Required by approval workflow and multi-actor tracking |
+**Tables/models that the stale file claimed but DO NOT exist anywhere:** `hpc_credit_config` /
+`HpcCreditConfig`, `hpc_report_comments` / `HpcReportComment`, and all curriculum-analytics tables
+(`hpc_ability_parameters`, `hpc_performance_descriptors`, `hpc_circular_goals`,
+`hpc_learning_outcomes`, `hpc_learning_activities`, `hpc_learning_activity_type`,
+`hpc_student_evaluation`, `hpc_knowledge_graph_validation`, `hpc_topic_equivalency`,
+`hpc_syllabus_coverage_snapshot`, junctions). These appear only in the `syllabus_HPC_v1.1.sql`
+**spec** and the V2 requirement; **no migration, no model, no controller** in the HPC module.
 
 ---
 
-## Key Design Decisions
+## Three-Way Reconciliation Summary (DDL ↔ Migration ↔ Model)
 
-1. **$hpcData pattern (Decision D18)**: PDF Blade templates consume `$hpcData` containing `$savedValues` (keyed by `html_object_name`, lowercased) and `$savedTableData` (grid cell values). This makes all 4 PDF templates template-agnostic — no hard-coded field lookups in PHP. `html_object_name` is the universal key across form HTML, storage, and PDF rendering.
+| Bucket | Tables | Meaning |
+|--------|--------|---------|
+| Fully aligned (DDL + migration + model) | 11 template/report tables | The genuinely working core |
+| Migration only (no DDL v2, no model) | `hpc_curriculum_change_request`, `hpc_lesson_version_control` | Created in tenant DB but dead — no code uses them |
+| Model only (no migration, no DDL) | `hpc_parent_form_tokens`, `hpc_peer_assignments`, `hpc_peer_responses`, `student_form_submissions`, `hpc_student_hpc_snapshot` | **Code references tables that do not exist** → multi-actor features throw on first DB hit |
+| Spec only (DDL spec file, never migrated, no model) | all curriculum-analytics / ASC tables | FR-002–006, FR-007 are documentation, not implementation |
 
-2. **Report storage in separate tables, not in `hpc_reports`**: `hpc_reports` stores only the header (student, session, term, template, status, audit timestamps). All field values go to `hpc_report_items` (key-value with typed columns) or `hpc_report_table` (grid cells). This allows any template to work without DDL changes.
-
-3. **7-input-type storage pattern in `hpc_report_items`**: Each row stores one field's input AND output values across 8 typed column pairs (numeric, text, boolean, selected, image, filename, filepath, json) plus `remark`. The correct column is selected by the `input_type` of the associated `hpc_template_rubric_items` record. The pair approach enables auditable before/after comparison.
-
-4. **Email sends URL link, not PDF attachment (Decision D22)**: `SendHpcReportEmail` job sends a web view URL (`hpc.hpc-form.view` route with encrypted student_id) plus an access code (`HPC-{studentId}-{guardianId}-{sha1_8chars}`). This reduces email size, allows live report viewing, and avoids attachment storage overhead.
-
-5. **Parent access via UUID token, not login**: `hpc_parent_form_tokens` stores a UUID with `expires_at` (7-day TTL) and `completed_at`. Parent routes sit outside the auth middleware group intentionally. Token expiry and replay prevention must be validated server-side on every request (GET and POST).
-
-6. **Tenant job re-initialization**: `SendHpcReportEmail` (ShouldQueue) calls `tenancy()->initialize($this->tenantId)` on handle and `tenancy()->end()` in a `finally` block to re-enter the correct tenant database context after queue worker picks up the job.
-
-7. **Attendance computed twice**: Attendance data from `std_student_attendance` is aggregated on form load (pre-fill) AND re-computed at PDF generation time. This ensures accuracy even if attendance was updated after the form was last saved. `HpcAttendanceService::MONTH_ORDER` uses April-to-March Indian academic year ordering.
-
-8. **Template hierarchy drives the form**: The teacher data entry form is entirely data-driven from `hpc_template_parts` (pages/tabs), `hpc_template_sections` (content blocks), and `hpc_template_rubrics` (scored fields). No page structure is hard-coded in PHP. Each tab = one `page_no` from `hpc_template_parts`.
-
-9. **`updateOrCreate()` on form save**: `HpcReportService::saveReport()` calls `updateOrCreate` with the UNIQUE key `(academic_session_id, term_id, student_id)` to ensure one report per student per term. This enforces BR-HPC-002 at the application layer, with the database UNIQUE constraint as a safety net.
-
-10. **Encrypted student_id for public PDF view**: `GET /hpc/hpc-view/{student_id?}` accepts both `Crypt::encryptString($studentId)` (email link, public route) and plain integer (authenticated teacher preview). This dual-mode access creates the SEC-HPC-002 vulnerability — encrypted-ID-only is insufficient protection.
-
-11. **Peer assignment constraint algorithm**: `PeerAssignmentService::autoAssignPeers()` uses shuffled selection with two hard constraints: no self-review (`peer_student_id != student_id`), no review cycles (if A reviews B, B must not review A in the same cycle). Template 2 assigns 2 peers per student; Templates 3 and 4 assign 1 peer per activity cycle (9 cycles T3; 8 cycles T4).
-
-12. **NCrF credit defaults as code constants**: If no `hpc_credit_config` records exist for a school, `HpcCreditCalculatorService` uses national defaults built into the service as constants (BV1=0.05 through Gr12=4.5). School-specific overrides in `hpc_credit_config` override per grade code.
-
-13. **`has_items` flag drives storage routing**: Both `hpc_template_parts` and `hpc_template_sections` have a `has_items` flag. When `has_items=1` on a part, `hpc_template_parts_items` is used. When `has_items=0`, the part is a container for sections only. Sections can have both items AND rubrics simultaneously.
-
-14. **4 separate Blade form views**: Template selection maps to `first_form`, `second_form`, `third_form`, `fourth_form` Blade views (not one generic view). `HpcReportService::resolveTemplateId()` maps student class ordinal to template ID. PDF generation has a parallel 4-template if/elseif chain that should be refactored to `HpcPdfFactory::getView(int $templateId)`.
-
-15. **Bulk PDF is synchronous with 50-student hard limit**: Current implementation loops synchronously. Until `GenerateHpcReportsBulkJob` (FR-HPC-012.9) is implemented, a hard limit of 50 students per request (BR-HPC-009) must be enforced to prevent PHP 30s timeout.
-
-16. **ZIP streaming with deleteFileAfterSend(true)**: Bulk PDF ZIP files are written to `storage/app/public/hpc-reports/zip/` then streamed with `deleteFileAfterSend(true)` — the file is deleted after download. The `downloadZip()` endpoint must sanitize the filename parameter to alphanumeric + underscore + hyphen + dot only (BR-HPC-011).
+**Net:** of the 19 documented features, only ~7 are genuinely end-to-end functional
+(Template Mgmt, Teacher Form, PDF, Workflow, Email, Attendance, Activity Overview). Student/Parent/
+Peer/Snapshot are coded against missing tables; Curriculum analytics, Evaluation, Credit-config,
+and Curriculum-Change-Request are not implemented (or table-orphaned).
 
 ---
 
-## Business Rules
+## Known Issue — BUG-HPC-016 (STILL PRESENT, confirmed 2026-06-29)
 
-| BR ID | Rule Summary | Enforcement Point |
-|-------|-------------|-------------------|
-| BR-HPC-001 | Template-to-grade assignment is resolved by `HpcReportService::resolveTemplateId()` from student's class ordinal; changing class mid-term does not auto-change template | `HpcReportService::resolveTemplateId()` |
-| BR-HPC-002 | At most one HPC report per student per academic term; UNIQUE on `(academic_session_id, term_id, student_id)` | DB UNIQUE constraint + `updateOrCreate()` in `HpcReportService::saveReport()` |
-| BR-HPC-003 | Each template section/rubric has an implicit actor owner (teacher/student/parent/peer); submitted fields not belonging to the actor's role are stripped and logged | `HpcSectionRoleService::filterPayloadByRole()` in all actor form controllers |
-| BR-HPC-004 | `HpcReport::TRANSITIONS` defines all valid state transitions; invalid transitions return HTTP 422; published and archived are terminal states with no rollback | `HpcWorkflowService` — all transition methods |
-| BR-HPC-005 | Parent form tokens expire 7 days after creation; every request (GET + POST) must verify token not expired AND not previously completed (`completed_at` is null); completed tokens cannot be reused | `ParentHpcFormController` / `ParentHpcFormService` |
-| BR-HPC-006 | Peer assignment must prevent self-review and avoid A→B + B→A cycles in the same cycle; auto-assignment uses shuffled selection | `PeerAssignmentService::autoAssignPeers()` |
-| BR-HPC-007 | Attendance aggregated April-to-March (Indian academic year); `HpcAttendanceService::MONTH_ORDER` defines this; re-computed at both form load and PDF generation | `HpcAttendanceService::aggregateAttendance()` |
-| BR-HPC-008 | LMS data feed (`HpcLmsIntegrationService::getAllLmsData()`) must use try/catch with graceful fallback; if LMS modules absent or have no data, form opens with empty LMS sections (no exception) | `HpcLmsIntegrationService::getAllLmsData()` |
-| BR-HPC-009 | Bulk PDF generation hard limit: 50 students per request until queue job (FR-HPC-012.9) implemented; enforce via FormRequest validation | `HpcGeneratePdfRequest` (to be created) |
-| BR-HPC-010 | Guardian emails receive a view URL, not a PDF attachment; access code format: `HPC-{studentId}-{guardianId}-{sha1_8chars}`; 30-day expiry is display-only, not enforced in URL | `SendHpcReportEmail` job |
-| BR-HPC-011 | `downloadZip()` must sanitize filename: allow only alphanumeric, underscore, hyphen, dot; any other character causes 400 error | `HpcController::downloadZip()` (or future `HpcPdfController`) |
-| BR-HPC-012 | If no school-specific `hpc_credit_config` rows exist, `HpcCreditCalculatorService` uses national NCrF defaults (BV1=0.05 … Gr12=4.5); school values override per grade code | `HpcCreditCalculatorService::calculateCredits()` |
+`HpcController::generateReportPdf()` — **now at line 1255** (was reported at 1232; shifted, not
+fixed). The method jumps straight from signature → `$request->validate([...])` → bulk PDF
+generation with **NO `Gate::authorize()` call**. Its sibling `generateSingleStudentPdf()`
+(line 2290) *does* call `Gate::authorize('tenant.hpc.view')`. Any authenticated user can therefore
+generate (and via the email actions, distribute) PDF reports for arbitrary `student_ids`.
+**Status: OPEN / P0.** Fix: add `Gate::authorize('tenant.hpc.view')` (or a dedicated
+`tenant.hpc.generate-pdf`) as the first statement of `generateReportPdf()`.
+
+Note: the FormRequest-fallback defence-in-depth (decisions.md D30) does **not** cover this method —
+it uses inline `$request->validate()`, not a FormRequest, so there is no authorization layer at all.
 
 ---
 
-## State Machine Summaries
+## Feature → Requirement Map (FRD REQ IDs)
 
-| FSM | States | Terminal States |
-|-----|--------|-----------------|
-| HPC Report Approval (`hpc_reports.status`) | `draft` → `submitted` → `under_review` → `final` → `published` → `archived`; from `under_review` principal can send back to `submitted` or `draft` | `published`, `archived` |
-| Parent Form Token | `pending` (token created, `completed_at` null) → `expired` (past `expires_at`) / `completed` (`completed_at` set); completed tokens are permanently locked | `expired`, `completed` |
-| Peer Assignment (`hpc_peer_assignments.status`) | `pending` → `in_progress` → `completed` | `completed` |
-| Student Section Completion (`hpc_reports.student_sections_complete`) | `false` (default) → `true` (set by `StudentHpcFormController::submit()`); Boolean flag, not a multi-state FSM | `true` |
-| Parent Section Completion (`hpc_reports.parent_sections_complete`) | `false` (default) → `true` (set on parent final submission); Boolean flag | `true` |
-| Curriculum Change Request (`hpc_curriculum_change_request.status`) | `DRAFT` → `SUBMITTED` → `APPROVED` / `REJECTED` | `APPROVED`, `REJECTED` |
+| REQ (FRD) | Feature | Real code status | Backing tables |
+|-----------|---------|------------------|----------------|
+| REQ-HPC-001 | Template Management (4-level CRUD) | **Built** | template hierarchy (8 tables) |
+| REQ-HPC-002 | Assessment Parameter Config (ability/descriptors) | **Not built** | spec only |
+| REQ-HPC-003 | Circular Goals & Competency Mapping | **Not built** | spec only |
+| REQ-HPC-004 | Learning Outcomes & Question Mapping | **Not built** | spec only |
+| REQ-HPC-005 | Learning Activities | **Not built** | spec only |
+| REQ-HPC-006 | Curriculum Analytics Tools | **Not built** | spec only |
+| REQ-HPC-007 | Student Holistic Evaluation (ASC) | **Not built** | spec only |
+| REQ-HPC-008 | Teacher Data Entry Form | **Built** | `hpc_reports`, `hpc_report_items`, `hpc_report_table` |
+| REQ-HPC-009 | Student Self-Assessment Portal | **Partial — no table** | `student_form_submissions` (missing) |
+| REQ-HPC-010 | Parent Input Collection (token) | **Partial — no table** | `hpc_parent_form_tokens` (missing) |
+| REQ-HPC-011 | Peer Assessment Workflow | **Partial — no table** | `hpc_peer_assignments`, `hpc_peer_responses` (missing) |
+| REQ-HPC-012 | PDF Report Generation (single + bulk ZIP) | **Built** | report tables |
+| REQ-HPC-013 | Approval Workflow (6-state) | **Built** | `hpc_reports.status` + audit cols |
+| REQ-HPC-014 | Email Distribution (link, not attachment) | **Built** | `hpc_reports` |
+| REQ-HPC-015 | Student HPC Snapshot | **Not built — no table** | `hpc_student_hpc_snapshot` (missing) |
+| REQ-HPC-016 | Attendance Configuration & Aggregation | **Built** | `sys_settings` + `std_student_attendance` |
+| REQ-HPC-017 | NCrF Credit Configuration & Calculation | **Partial — service only** | no config table |
+| REQ-HPC-018 | Activity Assessment Overview | **Partial** | report + (missing) peer/parent tables |
+| REQ-HPC-019 | Curriculum Change Request Workflow | **Not built** | `hpc_curriculum_change_request` (orphan table) |
+
+---
+
+## DDL / Schema Gaps (verified)
+
+| Gap ID | Table / Issue | Severity | Evidence |
+|--------|---------------|----------|----------|
+| GAP-DB-004b | `hpc_parent_form_tokens` missing (model+ctrl+service+views exist) | P0 | no migration; `ParentFormToken` model present |
+| GAP-DB-004c | `hpc_peer_assignments` missing | P0 | no migration; `PeerAssignment` model present |
+| GAP-DB-004d | `hpc_peer_responses` missing | P0 | no migration; `PeerResponse` model present |
+| GAP-DB-005 | `student_form_submissions` missing AND lacks `hpc_` prefix | P0 | no migration; `StudentFormSubmission` model present |
+| GAP-DB-006 | `hpc_student_hpc_snapshot` missing | P1 | no migration; `StudentHpcSnapshot` model present |
+| GAP-DB-002 | `hpc_credit_config` not built (no table/model/ctrl) | P1 | only `HpcCreditCalculatorService` w/ code constants |
+| GAP-DB-003 | `hpc_reports.status` ENUM has 4 values in DDL (`Draft/Final/Published/Archived`) vs 6 lowercase states in model FSM (`draft/submitted/under_review/final/published/archived`); workflow also needs audit cols (`submitted_at`, `reviewed_by/at`, `review_comments`, `published_by/at`, `student_sections_complete`, `parent_sections_complete`) | P0 | DDL vs `HpcReport::TRANSITIONS` — verify against migration `..._create_hpc_reports_table` |
+| GAP-DB-001 | `hpc_curriculum_change_request`, `hpc_lesson_version_control` are orphan tables (migrated, no model/controller) | P2 | migrations `2026_06_16_*` exist; no usage |
+
+> Note: the 2026-06-27 file listed 15 "DDL FK corrections" sourced from the `syllabus_HPC_v1.1.sql`
+> spec (slb_* references etc.). Those tables are **not migrated and not modelled in HPC**, so the
+> corrections are spec-level only and out of scope for the live module until/unless analytics is built.
+
+---
+
+## Security Findings
+
+| ID | Severity | Issue | Status 2026-06-29 |
+|----|----------|-------|-------------------|
+| BUG-HPC-016 | P0 / CRITICAL | `generateReportPdf()` (line 1255) missing `Gate::authorize()` | **OPEN — confirmed** |
+| SEC-HPC-001 | CRITICAL | Verify `EnsureTenantHasModule:HPC` on the HPC route group | needs re-confirm at app `routes/tenant.php` registration (module `web.php` group uses only `auth`,`verified`) |
+| SEC-HPC-002 | HIGH | Public route `GET /hpc/hpc-view/{student_id?}` → `viewPdfPage` outside auth; relies on encrypted-ID only | present in module `web.php` (lines 16-18) |
+| SEC-HPC-003 | HIGH | Public parent routes token-only; must enforce `expires_at` + `completed_at` server-side every request | present (lines 133-137) |
+| SEC-HPC-004 | MEDIUM | No class-teacher ownership check on `hpc_form/{student_id}` | guessable integer student_id |
+| SEC-HPC-005 | MEDIUM | Bulk email endpoint no rate-limit | `send-bulk-report-email` route |
+| SEC-HPC-006 | MEDIUM | `downloadZip(filename)` path-traversal risk; sanitize to `[A-Za-z0-9_\-.]` | BR-HPC-011 |
+
+> **Technical Auditor corrections (2026-06-29, Mode X):**
+> - **SEC-HPC-006 → effectively MITIGATED (P3):** `downloadZip()` already does `preg_replace('/[^A-Za-z0-9_\-\.]/','',$filename)` AND `Gate::authorize('tenant.hpc.viewAny')`. Slashes are stripped → no traversal. Only deviation from FRD: it *strips* rather than *rejects with 400*.
+> - **SEC-HPC-003 → REGRESSED:** `EnsureTenantHasModule:Hpc` is NOT applied (module RSP applies only `web,InitializeTenancyByDomain,PreventAccessFromCentralDomains,EnsureTenantIsActive`; `web.php` group adds only `auth,verified`). Prior "FIXED" status is stale.
+> - **BR-HPC-009 (50-cap) → NOT ENFORCED:** `generateReportPdf()` validates `student_ids` with `min:1` only, no `max:50`/count guard. The Design-Decisions/BR claim that it is inline-enforced is **wrong** — tracked as VAL-HPC-001 (P2).
+> - **`HpcWorkflowService` writes audit columns + lowercase statuses** the `hpc_reports` migration lacks → workflow is non-functional today (DAT-HPC-001 + MIG-HPC-001, both P0). GAP-DB-003 upgraded to a confirmed runtime blocker.
+
+---
+
+## Key Design Decisions (verified still valid)
+
+1. **`$hpcData` template-agnostic rendering** — `HpcReportService::getSavedValues()` returns
+   `$savedValues` (keyed by lowercased `html_object_name`) + `$savedTableData`; all 4 PDF Blades
+   reference fields generically. `html_object_name` is the universal key across form HTML, storage, PDF.
+2. **Header/value separation** — `hpc_reports` stores only header (student, session, term, template,
+   status, audit). Field values → `hpc_report_items` (typed key-value), grid cells → `hpc_report_table`.
+   Any template works without DDL changes.
+3. **Typed-pair storage in `hpc_report_items`** — input + output values across typed column pairs
+   (numeric/text/boolean/selected/image/filename/filepath/json) + `remark`; column chosen by
+   `input_type` of the rubric item.
+4. **Email sends a URL link, not a PDF attachment** — `SendHpcReportEmail` sends `hpc-form.view`
+   URL with `Crypt::encryptString(studentId)` + access code `HPC-{studentId}-{guardianId}-{sha1_8}`.
+5. **Parent access via UUID token, not login** — token TTL 7 days; public routes outside auth group.
+6. **Tenant job re-init** — `SendHpcReportEmail` (ShouldQueue) calls `tenancy()->initialize()` /
+   `tenancy()->end()` in finally.
+7. **Attendance computed twice** — aggregated on form load and re-computed at PDF time;
+   `HpcAttendanceService::MONTH_ORDER` = Apr→Mar.
+8. **Template hierarchy drives the form** — pages from `hpc_template_parts`, blocks from
+   `hpc_template_sections`, scored fields from `hpc_template_rubrics`; no hard-coded structure.
+9. **`updateOrCreate()` on save** — UNIQUE `(academic_session_id, term_id, student_id)` → one report
+   per student per term (BR-HPC-002).
+10. **4 separate form Blade sets** (`first/second/thread/fourth_form`) + parallel 4-template PDF
+    if/elseif — refactor target `HpcPdfFactory::getView(int $templateId)`.
+11. **Peer auto-assign constraints** — no self-review, no A↔B cycle; `PeerAssignmentService` —
+    *but backing tables do not exist*, so this is presently non-functional.
+12. **NCrF credit defaults as code constants** — `HpcCreditCalculatorService` uses national defaults
+    (BV1=0.05 … Gr12=4.5); there is **no** `hpc_credit_config` override table.
+13. **Bulk PDF synchronous, 50-student cap** (BR-HPC-009) until a queued job exists.
+14. **ZIP streamed with `deleteFileAfterSend(true)`**; filename sanitized (BR-HPC-011).
+
+---
+
+## Business Rules (12) — see FRD §4 for canonical wording
+
+| BR ID | Rule | Enforcement |
+|-------|------|-------------|
+| BR-HPC-001 | Template resolved from student class ordinal; mid-term class change does not auto-reassign | `HpcReportService::resolveTemplateId()` |
+| BR-HPC-002 | One report per student per term (UNIQUE) | DB UNIQUE + `updateOrCreate()` |
+| BR-HPC-003 | Actor field ownership; non-owned fields stripped + logged | `HpcSectionRoleService::filterPayloadByRole()` |
+| BR-HPC-004 | Valid transitions only; invalid → 422; published/archived terminal | `HpcWorkflowService` |
+| BR-HPC-005 | Parent token expires 7 days; verify not expired AND not completed on every GET/POST | `ParentHpcFormService` |
+| BR-HPC-006 | Peer assignment: no self-review, no A↔B cycle | `PeerAssignmentService::autoAssignPeers()` |
+| BR-HPC-007 | Attendance Apr→Mar; recomputed at load + PDF | `HpcAttendanceService` |
+| BR-HPC-008 | LMS feed graceful fallback (empty sections, no exception) | `HpcLmsIntegrationService::getAllLmsData()` |
+| BR-HPC-009 | Bulk PDF ≤ 50 students/request | inline validation in `generateReportPdf()` |
+| BR-HPC-010 | Guardian email = view URL not attachment; access code format fixed | `SendHpcReportEmail` |
+| BR-HPC-011 | `downloadZip` filename sanitized to `[A-Za-z0-9_\-.]`, else 400 | `HpcController::downloadZip()` |
+| BR-HPC-012 | No `hpc_credit_config` rows → national NCrF defaults | `HpcCreditCalculatorService` |
+
+---
+
+## State Machines
+
+| FSM | States | Terminal |
+|-----|--------|----------|
+| HPC Report Approval (`hpc_reports.status`) | draft → submitted → under_review → final → published → archived; under_review → (back to) submitted/draft | published, archived |
+| Parent Form Token | pending → expired / completed | expired, completed (*table missing*) |
+| Peer Assignment | pending → in_progress → completed | completed (*table missing*) |
+| Student/Parent section-complete flags | false → true (boolean) | true |
+| Curriculum Change Request | DRAFT → SUBMITTED → APPROVED/REJECTED | APPROVED, REJECTED (*orphan table, no code*) |
 
 ---
 
 ## Cross-Module Dependencies
 
-### Inbound (HPC reads from)
+### Inbound (HPC reads)
+| Module | Tables/Channels | Use |
+|--------|-----------------|-----|
+| SchoolSetup (SCH) | `sch_classes`, `sch_sections`, `sch_subjects`, `sch_academic_term`, `sch_org_academic_sessions_jnt` | class/section/term resolution, template mapping, year scoping |
+| StudentProfile (STD) | `std_students`, `std_student_attendance`, guardians/sessions | student lookup, attendance aggregation, guardian email |
+| SystemConfig (SYS) | `sys_users`, `sys_dropdown_table`, `sys_settings` | auth FKs, domain enums, `hpc_working_days_per_month` config |
+| LMS (EXM/QUZ/HMW) | via `HpcLmsIntegrationService` (soft, graceful fallback) | pre-fill exam/quiz/homework data |
+| Syllabus/QuestionBank | spec-level only (analytics not built) | — |
 
-| Module | Tables / Channels | Data Used by HPC |
-|--------|------------------|------------------|
-| SchoolSetup (SCH) | `sch_classes`, `sch_sections`, `sch_subjects`, `sch_academic_term`, `sch_org_academic_sessions_jnt` | Student class/section resolution, template mapping, term scoping |
-| StudentProfile (STD) | `std_students`, `std_student_academic_sessions`, `std_student_attendance` | Student lookup, academic session FK, attendance aggregation |
-| Syllabus (SLB) | `slb_competencies`, `slb_bloom_taxonomy`, `slb_topics`, `slb_lessons` | Circular goal competency mapping, learning outcome Bloom classification, topic-based activities |
-| QuestionBank (QNS) | `qns_questions_bank` | Outcome-to-question weightage mapping (FR-HPC-004.3) |
-| SystemConfig (SYS) | `sys_users`, `sys_dropdown_table`, `sys_settings` | Auth FKs (`created_by`, `assessed_by`, `prepared_by`), domain enums (evidence_type, entity_type), attendance working days config |
-| LMS-Exam (EXM) | Auto-feed via `HpcLmsIntegrationService` | Exam scores pre-filled in report form fields; graceful fallback if absent |
-| LMS-Quiz (QUZ) | Auto-feed via `HpcLmsIntegrationService` | Quiz results pre-filled; graceful fallback |
-| LMS-Homework (HMW) | Auto-feed via `HpcLmsIntegrationService` | Homework completion pre-filled; graceful fallback |
-
-### Outbound (What HPC writes / triggers)
-
-| Module | What HPC Produces |
-|--------|------------------|
-| Email subsystem | `SendHpcReportEmail` job dispatches guardian emails with view link via Laravel Queue |
-| Spatie MediaLibrary | File uploads on `HpcReport` model (`hpc_report_files` collection) |
-| ZIP storage | Bulk PDF ZIPs written to `storage/app/public/hpc-reports/zip/` then deleted after download |
-| Student Portal | Student self-assessment form (`StudentHpcFormController`) writes back to `hpc_report_items` |
-| Parent Portal (token-based) | Parent form (`ParentHpcFormController`) writes to `hpc_report_items` and `hpc_report_comments` |
+### Outbound (HPC writes/triggers)
+| Target | What |
+|--------|------|
+| Email/Queue | `SendHpcReportEmail` → guardian view-link emails |
+| Spatie MediaLibrary | file uploads on `HpcReport` (`hpc_report_files` collection) |
+| ZIP storage | bulk PDFs to `storage/app/public/hpc-reports/zip/`, deleted after download |
 
 ---
 
-## Technology Stack Notes
+## Services (10, verified)
 
-| Package | Version | Usage in HPC |
-|---------|---------|--------------|
-| `barryvdh/laravel-dompdf` | ^3.1 | PDF generation for all 4 HPC template types (Blade → HTML → PDF) |
-| `spatie/laravel-medialibrary` | Latest | File uploads attached to `HpcReport` model (`hpc_report_files` collection) |
-| `stancl/tenancy` | v3.9 | Database-per-tenant isolation; `SendHpcReportEmail` job re-initializes tenancy context |
-| `nwidart/laravel-modules` | v12 | Module structure for HPC |
-| `ZipArchive` (PHP built-in) | — | Bulk PDF packaging to ZIP for download |
-| `Crypt::encryptString()` (Laravel) | — | Encrypted student_id in emailed report view URLs |
-| Laravel Queue | Database driver | `SendHpcReportEmail` job (3 retries, 120s timeout) |
+`HpcReportService` (core save/load/resolveTemplateId), `HpcWorkflowService` (6-state FSM),
+`HpcAttendanceService` (Apr–Mar aggregation), `HpcCreditCalculatorService` (NCrF, code constants),
+`HpcLmsIntegrationService` (LMS feed + fallback), `PeerAssignmentService` (auto-assign — table
+missing), `HpcSectionRoleService` (role field filtering), `HpcDataMappingService` (evaluation→report
+mapping, partial), `StudentHpcFormService` (student page filtering), `ParentHpcFormService`
+(token gen/validate — table missing).
 
-**Key service dependencies:**
-- `HpcReportService` (870 lines) — core pipeline: `getSavedValues()`, `saveReport()`, `resolveTemplateId()`
-- `HpcWorkflowService` (163 lines) — state machine for 6-state approval workflow
-- `HpcAttendanceService` (211 lines) — April-March working days aggregation
-- `HpcCreditCalculatorService` (227 lines) — NCrF credit auto-calculation
-- `HpcLmsIntegrationService` (234 lines) — LMS data feed with graceful fallback
-- `PeerAssignmentService` (275 lines) — auto-assign + save + completion matrix
-- `HpcSectionRoleService` (~150 lines) — role-based field filtering
-- `HpcDataMappingService` (~130 lines) — evaluation-to-report field mapping
-- `StudentHpcFormService` (167 lines) — student page filtering + progress tracking
-- `ParentHpcFormService` (~120 lines) — token generation/validation + parent response
-
-**Sys settings used:**
-- `hpc_working_days_per_month` — JSON array of 12 integers (Apr–Mar); stored in `sys_settings`
+Sys setting used: `hpc_working_days_per_month` (JSON array of 12 ints, Apr–Mar) in `sys_settings`.
 
 ---
 
-## Implementation Blockers / Prerequisites
+## Pending Next Steps (re-prioritised 2026-06-29)
 
-| # | Prerequisite | Owner Module | Blocks |
-|---|-------------|-------------|--------|
-| 1 | `sch_classes`, `sch_sections`, `sch_subjects`, `sch_academic_term` complete | SchoolSetup (SCH) | FR-HPC-001 (template mapping), FR-HPC-003, FR-HPC-008 (form load) |
-| 2 | `std_students`, `std_student_academic_sessions` complete | StudentProfile (STD) | FR-HPC-008 (form), FR-HPC-009 (student portal), FR-HPC-012 (PDF) |
-| 3 | `std_student_attendance` complete and populated | StudentProfile (STD) | FR-HPC-008.7 and FR-HPC-016 (attendance auto-feed) |
-| 4 | `sys_users` complete (INT UNSIGNED PK) | System (SYS) | All `created_by`, `assessed_by`, `prepared_by`, `reviewed_by`, `published_by` FKs |
-| 5 | `slb_competencies`, `slb_topics`, `slb_lessons` complete | Syllabus (SLB) | FR-HPC-003, FR-HPC-004, FR-HPC-005, FR-HPC-006 |
-| 6 | `qns_questions_bank` available | QuestionBank (QNS) | FR-HPC-004.3 (outcome-question mapping) — soft dependency |
-| 7 | LMS-Exam, LMS-Quiz, LMS-Homework tables populated | LMS (EXM, QUZ, HMW) | FR-HPC-008.5 (LMS auto-feed) — soft dependency with graceful fallback |
-| 8 | SEC-HPC-001 fix: Add `EnsureTenantHasModule:HPC` middleware | HPC (internal) | ALL authenticated HPC routes — P0 security blocker |
-| 9 | GAP-DB-003 fix: Alter `hpc_reports.status` ENUM to 6 values + add 8 missing columns | HPC (internal DDL migration) | FR-HPC-009, FR-HPC-010, FR-HPC-013 (workflow logic references missing columns) |
-| 10 | GAP-DB-004 fix: Create `hpc_parent_form_tokens`, `hpc_peer_assignments`, `hpc_peer_responses`, `hpc_report_comments` | HPC (internal DDL migration) | FR-HPC-010 (parent), FR-HPC-011 (peer) |
-| 11 | GAP-DB-002 fix: Create `hpc_credit_config` | HPC (internal DDL migration) | FR-HPC-017 (NCrF credits) |
-| 12 | Laravel Queue configured (database driver minimum) | DevOps / SYS | FR-HPC-014 (email dispatch) |
-
----
-
-## Implementation Sequence
-
-| Phase | Components | Notes |
-|-------|-----------|-------|
-| Phase 0 — DDL Corrections | Fix all P0 DDL corrections (FK corrections, status ENUM expansion, missing columns on `hpc_reports`); create 6 missing tables via migrations | Must happen before any feature development |
-| Phase 1 — Security Fixes | Add `EnsureTenantHasModule:HPC` middleware (SEC-HPC-001); fix PDF view route (SEC-HPC-002); add student ownership check (SEC-HPC-004) | P0 — must fix before production |
-| Phase 2 — Masters | `hpc_ability_parameters`, `hpc_performance_descriptors`, `hpc_learning_activity_type`, `hpc_templates` hierarchy (FR-HPC-001, FR-HPC-002) | Seeds for all subsequent work |
-| Phase 3 — Curriculum Layer | `hpc_circular_goals`, `hpc_learning_outcomes`, `hpc_learning_activities`, `hpc_outcome_entity_jnt`, `hpc_outcome_question_jnt` (FR-HPC-003, FR-HPC-004, FR-HPC-005) | Requires SLB module complete |
-| Phase 4 — Student Evaluation | `hpc_student_evaluation` CRUD (FR-HPC-007); fix `HpcDataMappingService` mapping completeness (~40% → 100%) | Feeds into teacher form |
-| Phase 5 — Teacher Form | Multi-page teacher data entry form, form save pipeline, LMS auto-feed, NCrF credit calculation, attendance aggregation (FR-HPC-008) | Core HPC feature; depends on Phase 2–4 |
-| Phase 6 — Approval Workflow | State machine already done; add 8 missing columns to `hpc_reports`; notification stubs (FR-HPC-013.9) | Fix DDL gap first |
-| Phase 7 — PDF Generation | PDF already working; move bulk to queue job (FR-HPC-012.9); implement `HpcPdfFactory` | Performance improvement |
-| Phase 8 — Multi-Actor | Parent token form (FR-HPC-010), student self-assessment (FR-HPC-009), peer assessment (FR-HPC-011); complete Blade views | Views not confirmed complete |
-| Phase 9 — Email Distribution | Already working; add rate limiting (FR-HPC-014.9) | P1 security hardening |
-| Phase 10 — Controller Split | Decompose `HpcController` into `HpcDashboardController`, `HpcFormController`, `HpcPdfController`, `HpcEmailController` (NFR-HPC-03) | Refactoring; 15-20h effort |
-| Phase 11 — Test Coverage | Create 9 missing FormRequests; write 60+ feature test scenarios; minimum 60% service coverage (NFR-HPC-07, NFR-HPC-08) | Quality gate before release |
-| Phase 12 — Analytics | `hpc_knowledge_graph_validation`, `hpc_topic_equivalency`, `hpc_syllabus_coverage_snapshot` (FR-HPC-006); snapshot controller (FR-HPC-015.3) | Lower priority analytics features |
-| Phase 13 — Curriculum Change Request | Implement controller + approval workflow for `hpc_curriculum_change_request` (FR-HPC-019) | Table exists in Syllabus DDL; model and controller missing |
-
----
-
-## Immutable / Special Records
-
-| Table | Special Property | Reason |
-|-------|-----------------|--------|
-| `hpc_student_evaluation` | No `deleted_at` in old DDL (has `deleted_at` in extended DDL) | Assessment record — soft-delete via `is_active` flag only in old version |
-| `hpc_student_hpc_snapshot` | `generated_at` is the primary timestamp; no `updated_at` semantic | Point-in-time snapshot — once generated, content should not be overwritten; UNIQUE on `(academic_session_id, student_id)` |
-| `hpc_report_items` | Has `assessed_by` + `assessed_at` audit fields | Assessment records with auditor identity — should not be silently deleted |
-| `hpc_parent_form_tokens` (missing from DDL) | `completed_at` set once and must not be cleared | Replay prevention — completed tokens are permanently locked |
-| `hpc_knowledge_graph_validation` | `detected_at` is auto-set; `resolved_at` is set once on resolution | Audit trail for curriculum integrity issues |
-
----
-
-## Security Findings (All Critical / High)
-
-| ID | Severity | Issue | Fix |
-|----|----------|-------|-----|
-| SEC-HPC-001 | CRITICAL | No `EnsureTenantHasModule` middleware on HPC route group — any tenant can access HPC | Add `EnsureTenantHasModule:HPC` to route group in `routes/tenant.php` (30 min effort) |
-| SEC-HPC-002 | HIGH | `GET /hpc/hpc-view/{student_id?}` is publicly accessible; encrypted ID is the only protection | Move behind auth middleware OR add Gate check + rate limiting (2-4h effort) |
-| SEC-HPC-003 | HIGH | Parent routes rely solely on token — expiry and revocation must be enforced server-side on every request | Validate `expires_at` and `completed_at` checks in `ParentHpcFormController` middleware |
-| SEC-HPC-004 | MEDIUM | `student_id` in HPC form is a guessable integer — no ownership check verifying teacher is class teacher | Add `Gate::authorize('tenant.hpc.form', $student)` check in `hpc_form()` |
-| SEC-HPC-005 | MEDIUM | Bulk email endpoint has no rate limiting | Add `throttle:1,10` to bulk email route; max 100 students per request |
-| SEC-HPC-006 | MEDIUM | Download ZIP `filename` parameter has potential path traversal | Validate: only `[a-zA-Z0-9_\-.]` allowed; return 400 otherwise |
-
----
-
-## Pending Next Steps
-
-- [ ] P0: Fix `hpc_reports` DDL — add 8 missing columns (`submitted_at`, `reviewed_by`, `reviewed_at`, `review_comments`, `published_by`, `published_at`, `student_sections_complete`, `parent_sections_complete`) and expand `status` ENUM to 6 values (lowercase)
-- [ ] P0: Create 6 missing DDL migrations: `hpc_credit_config`, `hpc_parent_form_tokens`, `hpc_peer_assignments`, `hpc_peer_responses`, `hpc_report_comments`, `hpc_student_form_submissions` (renamed from `student_form_submissions`)
-- [ ] P0: Fix FK: `hpc_reports.term_id` → `sch_academic_term(id)` (drop `cbse_terms` reference)
-- [ ] P0: Fix FK: `hpc_circular_goal_competency_jnt.circular_goal_id` → `hpc_circular_goals(id)` (not `slb_circular_goals`)
-- [ ] P0: Fix FKs in `hpc_student_evaluation` — replace all `slb_*` references with correct `std_*` / `sch_*` / `sys_*` equivalents
-- [ ] P0: Fix FKs in `hpc_syllabus_coverage_snapshot` and `hpc_student_hpc_snapshot` — `slb_academic_sessions` → `sch_org_academic_sessions_jnt`
-- [ ] P0: Correct `hpc_report_items.id` from `BIGINT` to `INT UNSIGNED`
-- [ ] P0: Fix syntax error in `hpc_learning_outcomes` — add missing comma before `CONSTRAINT fk_lo_domain`
-- [ ] P0: Add `EnsureTenantHasModule:HPC` middleware to HPC route group (SEC-HPC-001)
-- [ ] P0: Secure `hpc-view/{student_id?}` route (SEC-HPC-002)
-- [ ] P1: Move `hpc_curriculum_change_request` and `hpc_lesson_version_control` from Syllabus DDL to HPC DDL
-- [ ] P1: Create 9 missing FormRequests (GAP-FR-001 through GAP-FR-009) — see Section 14.3 of requirement
-- [ ] P1: Add 5 missing Policies — `HpcFormPolicy`, `HpcPdfPolicy`, `HpcWorkflowPolicy`, `StudentHpcFormPolicy`, `PeerAssignmentPolicy`
-- [ ] P1: Add rate limiting to bulk email (`throttle:1,10`) and bulk PDF (`throttle:3,1`) routes
-- [ ] P1: Complete missing Blade views — parent form, student self-assessment, peer review forms
-- [ ] P1: Complete `HpcDataMappingService` evaluation-to-report field mapping (currently ~40%)
-- [ ] P1: Implement workflow state change notifications (FR-HPC-013.9 — currently TODO stubs)
-- [ ] P2: Decompose `HpcController` (2,610 lines) into 4 focused controllers (15-20h effort)
-- [ ] P2: Move bulk PDF generation to `GenerateHpcReportsBulkJob` queued job (FR-HPC-012.9)
-- [ ] P2: Implement `HpcPdfFactory::getView(int $templateId)` to replace 4-template if/elseif chains
-- [ ] P2: Cache template hierarchies: `Cache::remember('hpc_template_{id}', 86400, ...)` (NFR-HPC-05)
-- [ ] P2: Implement `SnapshotController` for `hpc_student_hpc_snapshot` (FR-HPC-015.3)
-- [ ] P2: Implement `hpc_curriculum_change_request` model and workflow controller (FR-HPC-019)
-- [ ] P2: Write 60+ feature test scenarios (TS-HPC-001 through TS-HPC-012) (NFR-HPC-07)
-- [ ] P3: Translate Hindi comment at `HpcController` line 171 to English
-- [ ] P3: Remove any `dd()` / `var_dump()` calls from production code
-- [ ] P3: Implement or stub-out `HpcController::store()`, `update()`, `destroy()` empty methods (405 response)
-- [ ] P3: Cache `Organization::first()` call during PDF generation (PERF-HPC-006)
-- [ ] Generate FRD → `act as Business Analyst` → "create an FRD for HPC"
+- [ ] **P0 BUG-HPC-016:** add `Gate::authorize()` to `generateReportPdf()` (line 1255)
+- [ ] **P0 GAP-DB-004/005:** create migrations for `hpc_parent_form_tokens`, `hpc_peer_assignments`, `hpc_peer_responses`, `hpc_student_form_submissions` (rename from `student_form_submissions`) — without these, parent/peer/student-portal features fail at runtime
+- [ ] **P1 GAP-DB-006:** create `hpc_student_hpc_snapshot` migration
+- [ ] **P0 GAP-DB-003:** reconcile `hpc_reports.status` ENUM (6 lowercase states) + confirm 8 workflow audit columns exist in the migration
+- [ ] **P0 SEC-HPC-001/002:** confirm `EnsureTenantHasModule:HPC` is applied at app route registration; secure public `hpc-view` route
+- [ ] **P1:** create FormRequests for the 7 inline-validated actions in `HpcController` (form save, generate PDF, email, etc.)
+- [ ] **P1:** introduce Policy classes (or document that inline Gate strings are the chosen pattern)
+- [ ] **P2:** decide fate of orphan tables `hpc_curriculum_change_request`, `hpc_lesson_version_control` (build FR-019 or drop)
+- [ ] **P2:** decompose 2,611-line `HpcController`; `HpcPdfFactory`; move bulk PDF to a queued job
+- [ ] **P2/P3:** write feature tests (0 today); curriculum-analytics (FR-002–007) is greenfield if pursued
+- [ ] Downstream: run Technical Auditor (Mode B FRD-driven) + Status_Analyzer 6-dim scoring against this FRD
 
 ---
 
@@ -351,4 +324,8 @@ Additional DDL issues in existing tables:
 
 | Date | Agent | Work Done |
 |------|-------|-----------|
-| 2026-06-27 | Business Analyst | Knowledge file seeded from V2 requirement doc (`HPC_Hpc_Requirement.md` v2) + DDL (`HPC_DDL_v2.sql` 295 lines + `syllabus_HPC_v1.1.sql` 297 lines). Identified 7 DDL gaps (6 missing tables + 1 status ENUM mismatch), 15 DDL corrections (FK type errors, wrong table references, platform deviations), 6 security findings, 32 models, 22 controllers, 10 services, 12 business rules, 5 FSMs, 13 implementation phases. |
+| 2026-06-27 | Business Analyst | Seeded from V2 requirement + DDL (counts later found inflated/invented) |
+| 2026-06-29 | Business Analyst | **Full live-tree re-verification.** Corrected counts (11 ctrl / 16 mdl / 4 req / 0 policy / 192 views / 0 tests). Three-way DDL↔migration↔model reconcile: 11 aligned, 2 orphan tables, 5 model-only (no table) → multi-actor features inert. Removed invented `HpcCreditConfig`/`HpcReportComment`/curriculum-analytics model claims. **Confirmed BUG-HPC-016 still OPEN** at line 1255. Generated Complete FRD (`HPC_FRD_Complete_2026-06-29.md`): 19 REQ / 16 BR / 6 RPT. Revised completion to ~45-50%. |
+| 2026-06-29 | Technical Auditor | **Mode X Complete Audit** → `3-Audit_Reports/V1_Jun-2026/Hpc_Complete_Audit_2026-06-29.md`. Health 40/100 (P0-capped), Deploy NO-GO. 4 P0: BUG-HPC-016 (confirmed); **DAT-HPC-001** (`hpc_reports.status` enum 4-PascalCase vs model 6-lowercase FSM → workflow can't persist); **MIG-HPC-001** (`hpc_reports` missing 9 model columns → `42S22` on every workflow update); **DAT-HPC-002** (5 model-only tables = GAP-DB-004b/c/d,005,006 → `42S02` on live student/parent/peer routes). P1: SEC-HPC-002 still open, QUAL-HPC-001 (2,611-line god ctrl). P2: SEC-HPC-003 **regressed** (no `EnsureTenantHasModule:Hpc`), VAL-HPC-001 (BR-HPC-009 50-cap NOT enforced — prior "enforced" claim was wrong), DEAD-HPC-001. **Refuted/clean:** Layer 6 tenancy, D25, D30 (4 FormRequests gate properly), D24, BR-HPC-011 (downloadZip sanitizes+gates). |
+</content>
+</invoke>

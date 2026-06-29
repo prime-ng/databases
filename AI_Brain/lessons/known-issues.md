@@ -912,6 +912,16 @@ Scheduler & EventEngine now FIXED (verify SystemConfig/GlobalMaster only).
 | SEC-ACC-005 | Accounting | **ExpenseClaimController race condition** — claim number via `count() + 1` | `ExpenseClaimController.php:29` |
 | SEC-HR-001 | HrStaff | **Arbitrary column override via field_name in payroll** — `$detail->{$fieldName}` | `PayrollController.php:93` |
 | SEC-CAF-001 | Cafeteria | **Student IDOR in apiIndex()** — student_id from query string unverified | `OrderController.php:73` |
+| DATA-ACC-002 | Accounting | **`acc_ledgers.current_balance`/`current_balance_type` written by model+VoucherService+RemoteEntryService but ABSENT from DDL** — every post/cancel throws `SQLSTATE 42S22` under schema-of-record (0 migrations) | `Ledger.php:42`, `VoucherService.php:104-110`, `RemoteEntryService.php:191` |
+| DATA-ACC-001 | Accounting | **`status` is `INT UNSIGNED` FK→`acc_accounting_status_masters` in DDL (5 tables) but code uses string literals + `string` cast** — status writes/filters break | `Voucher.php:50`, `VoucherService.php:69`, `ReportService.php:31`, DDL:234/252 |
+| BUG-ACC-003 | Accounting | **Expense-claim approval + depreciation 500** — services look up VoucherType code `'JRN'` but seeder creates `'JNL'` → `firstOrFail()` ModelNotFound (uncaught) | `ExpenseClaimService.php:32`, `DepreciationService.php:32`, `AccountingSeeder.php:358` |
+| BUG-ACC-004 | Accounting | **Approving a voucher removes it from all financial reports** — `approve()` sets status='approved' but ReportService filters status='posted' only | `VoucherController.php:189`, `ReportService.php:31,65,104` |
+| BUG-ACC-005 | Accounting | **Cancel reverses ledger directly with NO reversal voucher (BR-ACC-020) + no locked-year guard on post/cancel/approve/destroy (BR-016/022)** | `VoucherService.php:73-93`, `VoucherController.php:115-130` |
+| BUG-ACC-006 | Accounting | **Event engine has no duplicate-event guard (BR-ACC-043)** — same source event processed twice → duplicate vouchers | `RemoteEntryService.php:36-96` |
+| SEC-ACC-007 | Accounting | **RemoteEntryService re-throws after logging Failed** — propagates to caller, can roll back/block source module (NFR-ACC-006/BR-044) | `RemoteEntryService.php:94` |
+| SEC-ACC-006 | Accounting | **Expense-claim edit/submit IDOR** — gate uses string ability, no instance/ownership check (BR-ACC-041) | `ExpenseClaimController.php:90-148` |
+| BUG-ACC-007 | Accounting | **Financial-year lock skips draft-voucher pre-check (BR-ACC-009)** | `FinancialYearController.php:91-100` |
+| DATA-ACC-004 | Accounting | **Depreciation not idempotent (BR-ACC-039) + no SLM salvage floor (BR-ACC-038)** — re-run duplicates entries & double-depreciates | `DepreciationService.php:15-62` |
 
 ### P2 — PERFORMANCE / VALIDATION
 
@@ -933,6 +943,14 @@ Scheduler & EventEngine now FIXED (verify SystemConfig/GlobalMaster only).
 | SEC-FEE-001 | StudentFee | **14 seeder methods (~1,200 lines) in production controller** | `StudentFeeController.php:92–1374` |
 | BUG-ACC-001 | Accounting | **matchEntry/unmatchEntry route wildcard mismatch** — 500 error | `BankReconciliationController.php:133` |
 | BUG-ACC-002 | Accounting | **runDepreciation missing {fixed_asset} in route URI** — 500 error | `web.php:112` |
+| BUG-ACC-008 | Accounting | **Bank recon completes on "no unmatched", not zero-difference vs closing_balance (BR-034); no override (BR-035)** | `ReconciliationService.php:154-164` |
+| VAL-ACC-001 | Accounting | **17/17 FormRequests `authorize(){return true;}` (D30)** — controllers gate, so defense-in-depth gap | `app/Http/Requests/*.php` |
+| BUG-ACC-009 | Accounting | **Expense-claim reject reason discarded** — `reject($claim,$reason)` ignores `$reason`, never persisted (BR-041) | `ExpenseClaimService.php:79-85` |
+| BUG-ACC-010 | Accounting | **Budget approval workflow (WF4) + 90% over-budget alert (BR-030) not implemented** | `BudgetController.php` |
+| DATA-ACC-003 | Accounting | **`acc_vouchers.source_module` is BIGINT FK→`acc_voucher_modules` in DDL but cast/validated/written as string** | `Voucher.php:51`, `VoucherRequest.php:28`, `RemoteEntryService.php:155` |
+| PERF-ACC-007 | Accounting | **Bank auto-match has no narration-keyword/confidence score (BR-033 partial)** | `ReconciliationService.php:88-128` |
+| ARCH-ACC-001 | Accounting | **Two divergent ledger-posting paths** — VoucherService raw `DB::raw` vs RemoteEntryService `increment/decrement` | `VoucherService.php:99-112`, `RemoteEntryService.php:182-196` |
+| DEAD-ACC-001 | Accounting | **AccountingController REST stub returns `[]` on all 5 methods** — wired via api.php apiResource | `AccountingController.php:9-32` |
 
 ### P3 — DEAD CODE / CLEANUP
 
@@ -1456,3 +1474,457 @@ Scheduler & EventEngine now FIXED (verify SystemConfig/GlobalMaster only).
 **Tracked under D36, module code to confirm before coding:** EmployeeSetup `sch_employees_profile.active_flag`, `sch_employee_shift_assignments.active_flag`, `sch_teacher_capabilities.active_flag` (unique-active, P1) and `sch_employee_leave_balance.available_balance` (DDL `GENERATED…opening+carry-used`, leave-balance integrity / D26, P1).
 **Absent entirely (flag when module ships):** CommonChat `cht_*.dm_pair_hash`; Timetable `tt_*.no_of_days_not_available`.
 **Excluded (name-collision false positives, verified plain in own DDL):** 10× `total_amount` (acc_/caf_/inv_/tpt_/fee_), 4× `duration_minutes` (lms_/slb_ user-input).
+
+### Transport (TPT) — Mode A Deep Audit (2026-06-29)
+> Full report: `3-Audit_Reports/V1_Jun-2026/Transport_Technical_Audit_2026-06-29.md`. Health 38/100 (P0 cap). Verified vs LIVE code.
+
+| Code | Severity | Issue | File:Line |
+|------|----------|-------|-----------|
+| BUG-TPT-011 | P0 | `dd($e)` in the live bulk trip-update catch block — halts request + dumps stack | `TripController.php:587` |
+| FE-TPT-001 | P1 | Hardcoded Google Maps API key shipped to browser (committed secret) in 3 views | `pickup_point/create.blade.php:165`, `edit.blade.php:171`, `pickup_point.blade.php:94` |
+| VAL-TPT-001 | P1 | All 19 FormRequests `authorize(){return true;}` (D30) | `app/Http/Requests/*.php` |
+| PERF-TPT-001 | P1 | God controllers (Mobile 1984 / Report 1054 / Trip 800) + eager tab loads + unbounded `::all()`; 0 service classes for 30 controllers | `Mobile/MobileTransportController.php`; tab controllers |
+| MIG-TPT-001 | P2 | `tpt_trip.status` is free-text `string(20)` not a dropdown FK; trip FSM compares string literals; `is_active` missing on `tpt_trip` (DB-03/10..13) | `migrations/tenant/...create_tpt_trip_table.php:24` |
+| DEAD-TPT-002 | P2 | Orphan `TransportController.php-old` committed (prior dead route ref) | `app/Http/Controllers/TransportController.php-old` |
+
+**Re-confirmed OPEN (2026-06-29):** SEC-TPT-004 (`updateLastSeen()` ungated + force-sets `is_active=true`, `AttendanceDeviceController` ~:261); SEC-TPT-005 (Aadhaar/licence plaintext — `DriverHelper` `$casts` has no `encrypted`, `id_no:31`/`license_no:36`); TEN-RTG-001 (Transport among 25/26 module groups with no `EnsureTenantHasModule` — RSP stack lacks it).
+
+**FIXED since 2026-06-25 snapshot (verified live):** SEC-TPT-003 / SEC-TPT-010 (`tested.` gate typo on `AttendanceDeviceController` → now `tenant.attendance-device.*` on all 10 gated methods); capacity enforcement IMPLEMENTED (`StudentAllocationController:137`, BR-TPT-001 100% block); allocation atomic (`DB::transaction` at `:74,488`, BR-TPT-009); D29 baseline "tpt 19 enums" wrong → **0 enums** in tpt migrations (status is VARCHAR, MIG-TPT-001). D36 N/A (no GENERATED columns in TPT).
+
+---
+
+## Complete Audit — Admission (ADM) — 2026-06-29 (Mode X)
+
+Full report: `3-Audit_Reports/V1_Jun-2026/Admission_Complete_Audit_2026-06-29.md`. Health 40/100 (P0 cap). DEPLOY: NO-GO. Strong tenancy + per-controller authz; defects are module-local logic + unbuilt automation.
+
+| Code | Sev | Issue | Location |
+|------|-----|-------|----------|
+| BUG-ADM-004 | P0 | App FSM transitions to `'Under Review'`/`'Selected'` — neither is in `adm_applications.status` ENUM; `'Selected'` is the required pre-state for `Enrolled` → enrolment pipeline (REQ-ADM-015) cannot complete | `AdmissionPipelineService.php:18-28,96,120`; migration `...083610...:59`; `EnrollmentService.php:155` |
+| DATA-ADM-001 | P1 | Seat over-allotment guard (BR-ADM-013) absent; cited `MeritListService::allotSeat()` does not exist; `seats_allotted` never incremented; no lock | `AllotmentController.php:60-74` |
+| BUG-ADM-005 | P1 | `admission_no` never generated at offer/allotment; offer-letter PDF prints NULL admission no | `AllotmentController.php:60-74,150-159` |
+| SEC-ADM-001 | P1 | Aadhar/PII plaintext (no `encrypted` cast); copied plaintext to `std_students.aadhar_id` (NFR-ADM-005/010) | `Application.php:59,103-114`; `EnrollmentService.php:103` |
+| BUG-ADM-006 | P1 | Merit scoring wrong: interview computed but excluded from composite; weights hardcoded 0.40+0.40+0.30; criteria_json ignored; no cutoff→Rejected / seat→Waitlist (BR-010c/010d) | `MeritListService.php:56-103` |
+| BUG-ADM-007 | P1 | TC fee-clearance gate (BR-ADM-004) is a stub — logs warning and issues anyway; no fin_invoices check | `TransferCertificateService.php:38-44` |
+| JOB-ADM-001 | P1 | Waitlist auto-promotion/offer-expiry unbuilt (REQ-ADM-013/BR-014); no Jobs/Console; decline doesn't free seat | module-wide |
+| VAL-ADM-001 | P1 | Age eligibility (BR-ADM-001) not enforced; `age_rules_json` never read | `StoreApplicationRequest.php:31`, `StoreEnquiryRequest.php:21` |
+| VAL-ADM-002 | P1 | Aadhar service-layer uniqueness (BR-ADM-012) not implemented | application create path |
+| SEC-ADM-003 | P1 | D30 — 24/24 FormRequests `authorize(){return true;}` (downgraded: controllers do gate) | `app/Http/Requests/*.php` |
+| DATA-ADM-002 | P2 | Number generators + enrolment lack row locks (race / double-enrol) | `Application.php:19-38`; `EnrollmentService.php:61-65,185-204` |
+| SEC-ADM-002 | P2 | TC PDF to `Storage::disk('local')`, un-prefixed path (cross-tenant risk); media_id never persisted | `TransferCertificateService.php:65-66` |
+| DATA-ADM-003 | P2 | 29 `->enum()` columns in ADM migrations (D29) | adm migrations |
+| BUG-ADM-008 | P2 | Notifications entirely unimplemented; EventServiceProvider `$listen=[]` (RISK-ADM-005; BR-018b/022 cannot fire) | module-wide; `EventServiceProvider.php:14` |
+| DEAD-ADM-001 | P2 | Stub `AdmissionController` apiResource (empty store/update/destroy) on live auth route | `AdmissionController.php:29,50,55`; `api.php:6-8` |
+| PERF-ADM-001 | P2 | `lockForUpdate` on compute step (read-only) instead of the allotment path | `MeritListService.php:46-49` |
+
+**RESOLVED since prior snapshot (verified live 2026-06-29):** BUG-ADM-003 — `AdmissionPipelineService` now uses `$application->admission_cycle_id` (`:74`); old `cycle_id` reference gone.
+**Snapshot CORRECTION:** "ADM has 0 migrations" is WRONG — 20 ADM tenant migrations exist (`database/migrations/tenant/2026_06_16_0836*_create_adm_*_table.php`). Cross-DB FK / INT-PK / D24 / D25 / 6.2-leak all CLEAN in ADM (better than platform norm).
+
+## Complete Audit — BehaviouralAssessment (BA) — 2026-06-29 (Mode X: A+B+C+G + scoped D)
+Report: `3-Audit_Reports/V1_Jun-2026/BehaviouralAssessment_Complete_Audit_2026-06-29.md`. Health **57/100 (Amber)**, Deploy **GO (conditional)**, **no P0**. New codes use the `*-BA-*` prefix (prior partial audit used `*-BEH-*`; same defects cross-referenced, not double-counted). Strengths (better than platform norm): web RSP carries full tenancy+auth+verified stack; every controller method `Gate::authorize`d with a uniform `tenant.behavioural-assessment.*` prefix (no D24/D25/6.2/D17/cross-DB-FK). DDL has no GENERATED columns → D36 N/A. Worst area = workflow/data-integrity, not security.
+
+**CORRECTION to prior snapshot:** `SEC-BEH-002` ("no auth middleware on web routes") is a **FALSE POSITIVE** — auth/tenancy live in `Modules/BehaviouralAssessment/app/Providers/RouteServiceProvider.php:24-31` (`web, InitializeTenancyByDomain, PreventAccessFromCentralDomains, EnsureTenantIsActive, auth, verified`), not in `web.php`. Web routes ARE protected. Retire SEC-BEH-002.
+
+| Code | Severity | Issue | Location |
+|------|----------|-------|----------|
+| BUG-BA-001 | P1 (P0 if integration on) | Ratings editable after submit/approve/lock; `bulkRate`/`autoSave` only block `status==='locked'` which is never set; period `lock()` doesn't cascade to assessments → published scores diverge from audit trail (BR-BA-026/012/019) | `BaAssessmentController.php:285,452`; `BaAssessment.php:86-89`; `BaAssessmentPeriodController.php:147-161` |
+| BUG-BA-002 | P1 | Period FSM violated — `lock()` allows open→locked, `unlock()` locked→closed (FRD: locked terminal); no `close()` action exists so open→closed (BR-BA-012) is unreachable | `BaAssessmentPeriodController.php:147-177` |
+| SEC-BA-001 | P1 | Severe-incident parent notification (REQ-BA-015/BR-BA-013, P0 req) ENTIRELY ABSENT — zero `Notification`/event/`dispatch` in module; `is_notified` never set; `parent_notification_threshold` is dead config (ENH-BA-004) | `BaIncidentController.php:74-133`; module-wide |
+| DATA-BA-001 | P1 | BR-BA-029 not enforced — `rating_scale_id` freely updatable after ratings exist (corrupts score interpretation) | `BaConfigController.php:65-74`; `BaConfigRequest.php:25-33` |
+| VAL-BA-001 | P1 | No FormRequests for BaAssessment/BaIncident/BaClassCategory; 20-rule block copy-pasted across incident store/update (= VAL-BEH-001/002) | `BaAssessmentController.php:55,289,456`; `BaIncidentController.php:52,159`; `BaClassCategoryController.php:20` |
+| SEC-BA-002 | P1 (systemic D30) | All 5 FormRequest `authorize()` return bare `true` — mitigated by controller gates (defense-in-depth gap, not open hole) (= SEC-BEH-001) | `app/Http/Requests/*Request.php:12-15` |
+| BUG-BA-004 | P2 | BR-BA-006 not enforced — criterion with ratings can be soft-deleted | `BaCategoryController.php:190-196` |
+| BUG-BA-005 | P2 | BR-BA-030 not enforced — in-use intervention can be soft-deleted | `BaInterventionController.php:69-81` |
+| BUG-BA-006 | P2 | BR-BA-005 — category soft-delete does not cascade to criteria | `BaCategoryController.php:74-86` |
+| BUG-BA-007 | P2 | BR-BA-009 permissive default missing — unmapped class → empty grid (`whereIn([])`) | `BaAssessmentController.php:115-121,379-381` |
+| BUG-BA-008 | P2 | Follow-up notes overwritten not appended (REQ-BA-012) | `BaIncidentController.php:340-345` |
+| BUG-BA-009 | P2 | BR-BA-028 not enforced — multiple `is_default` scales possible | `BaRatingScaleController.php:31-64` |
+| VAL-BA-002 | P2 | Level `numeric_value` not range-checked vs scale [min,max] (BR-BA-003); duplicate student witness 500s (no `distinct`, uses `create()` not `firstOrCreate`) | `BaRatingScaleController.php:132-150`; `BaIncidentController.php:68,107-116` |
+| DATA-BA-002 | P2 | Score recompute synchronous in approve() request; no queued job (ENH-BA-003/RISK-BA-003) | `BaAssessmentController.php:413`; `BehaviouralScoreService.php:24-76` |
+| DATA-BA-003 | P2 | Soft-delete + UNIQUE without `deleted_at` (uq_ba_assessment/_rating/_score/_witness) → recreate-after-delete 500 | BA create migrations |
+| DATA-BA-004 | P2 | Incident create not wrapped in DB::transaction (incident+jnts+4 audit logs) | `BaIncidentController.php:74-129` |
+| MIG-BA-001 | P2 (D29) | 11 ENUM columns in migrations (match DDL; FSM enums defensible, location/severity are dropdown candidates) | BA create migrations |
+| DEAD-BA-001 | P2 | Empty scaffold `BehaviouralAssessmentController` behind live `auth:sanctum` apiResource with NO tenancy middleware (= BUG-BEH-001/DEAD-BEH-001) | `BehaviouralAssessmentController.php:29,50,55`; `api.php:6-8` |
+| BUG-BA-011 | P2 | `BaReportController::export()` permanent `abort(501)` on live route (= BUG-BEH-002) | `BaReportController.php:475-479` |
+| VAL-BA-003 | P3 | BR-BA-010 boundary: `after_or_equal` allows start==end (FRD: start<end) | `BaAssessmentPeriodRequest.php:23` |
+| SEC-BA-003 | P3 | `status` settable directly via `BaAssessmentPeriodRequest` (back-door around lock/unlock FSM) | `BaAssessmentPeriodRequest.php:25` |
+| DOC-BA-001 | P3 | DDL doc `BehaviouralAssess_DDL_v2.sql` stale `bha_` vs live `ba_` (structures match) — regenerate (RISK-BA-001) | `2-DDL_Tenant_Consolidated/BehaviouralAssess_DDL_v2.sql` |
+
+**Mode C tally:** 30 BR → 15 ENFORCED · 6 PARTIAL · 9 MISSING (missing: BR-005,006,009,012,013,025,028,029,030). **Tests: 0** (RISK-BA-002). PERF-BEH-001..004 re-confirmed (referenced as PERF-BA-001..004).
+
+## Certificate (CRT) — Technical Audit Mode X (2026-06-29)
+
+> Report: `3-Audit_Reports/V1_Jun-2026/Certificate_Complete_Audit_2026-06-29.md`. **Health 66/100, no P0 (uncapped). P0=0 · P1=6 · P2=6 · P3=5.** Well-gated, full tenancy stack, correct serial `lockForUpdate`; undermined by a wrong-table/column cluster in integration paths. **0 in-module Pest tests** (Dusk ~45 only) — a single seeded feature test would have caught BUG-CRT-001..004 (RISK-CRT-004).
+
+| Code | Sev | Issue | Location |
+|------|-----|-------|----------|
+| BUG-CRT-001 | P1 | TC fee gate hits non-existent `fin_fee_invoices`/`payment_status`/`net_payable`/`student_id` (table is `fee_invoices`, linkage `student_assignment_id`, col `status='Paid'`, amt `balance_amount`) → `generateTC()` always throws; REQ-CRT-005 dead; BR-CRT-001 override never built | `CertificateGenerationService.php:91-94` |
+| BUG-CRT-002 | P1 | `generateTC()` joins `std_students.class_id/section_id` (absent), reads `date_of_birth` (col `dob`), queries `std_profiles` (table is `std_student_profiles`) | `CertificateGenerationService.php:119-146` |
+| BUG-CRT-003 | P1 | ID-card sheet gen repeats same wrong joins (`class_id/section_id`,`std_profiles`,`date_of_birth`) → REQ-CRT-008 generate throws | `IdCardGenerationService.php:82-94` |
+| BUG-CRT-004 | P1 | DMS upload inserts `media_id=>0` into NOT NULL FK→sys_media → 23000 FK violation; REQ-CRT-009 store() fails for every doc | `StudentDocumentController.php:65-81`; migration `...083600:30-31` |
+| VAL-CRT-001 | P1 | BR-CRT-023 not enforced — TC leaving date/reason nullable + silent defaults (`today()`/`'Transfer'`) | `ApproveCertificateRequestRequest.php:18-22`; `CertificateRequestController.php:144-154` |
+| SEC-CRT-001 | P1 | Keyed verify API (REQ-CRT-007 AC4/BR-CRT-027) = empty scaffold `CertificateController`; apiResource returns Blade views | `CertificateController.php`; `api.php:6` |
+| BUG-CRT-005 | P2 | restore/forceDelete always 403 on Issued/Request/Template (policies lack those abilities, no `before()`); fail-closed | `Certificate{Issued,Request,Template}Policy.php`; controllers `:150,161 / :202,213 / :297,308` |
+| DATA-CRT-001 | P2 | {{father_name}}/{{mother_name}}/{{blood_group}} always blank (`std_student_profiles` lacks cols); {{nationality}}/{{religion}} emit raw FK ids; BR-CRT-007 unenforced | `CertificateGenerationService.php:262,280-284` |
+| SEC-CRT-002 | P2 | No `EnsureTenantHasModule` (TEN-RTG-001) — off-plan tenants can access CRT | `RouteServiceProvider.php:28-44` |
+| DEAD-CRT-001 | P2 | Dead scaffold `CertificateController` (missing views, empty writers) | `CertificateController.php` |
+| PERF-CRT-001 | P2 | BR-CRT-033 overdue-request highlight not implemented (RPT-CRT-002 partial) | `CertificateReportController.php` |
+| SCH-CRT-001 | P2 (D29) | ~10 ENUM cols (status/category/card_*/recipient_type) | crt create migrations |
+| VAL-CRT-002 / DAT-CRT-002 / SCH-CRT-002 / JOB-CRT-001 / BUG-CRT-006 | P3 | D30 10/10 (gated); serial first-of-year race; INT PK; bulk `tries=1`; merge `academic_year` precedence smell | (see report) |
+
+**Mode C tally:** 34 BR → 26 ENFORCED · 2 PARTIAL (BR-007,028) · 5 MISSING/BROKEN (BR-001,023,027,033 + BR-008 reachable-only) · 1 N/A (BR-034, portal). **Cleaner than baseline:** 0 `$request->all()`, 0 D17, 0 prefix typos, 0 cross-DB FK, 0 initialize leaks, job tenancy correct.
+**FALSE POSITIVES corrected:** `sys_dropdowns` & `sys_activity_logs` exist in tenant_db (verified); RISK-CRT-005 mitigated by `suffix_storage_path=true`.
+
+---
+## CommonChat (COM / cht_) — Technical Auditor Mode X — 2026-06-29
+Source: 3-Audit_Reports/V1_Jun-2026/CommonChat_Complete_Audit_2026-06-29.md
+
+### P0
+- **MIG-COM-001** — `cht_permission_config` declares 2 FKs to `sys_roles` (migration `2026_06_16_100703...:32,:36`); `sys_roles` has NO create migration anywhere → `tenants:migrate` fails errno 150/1824. Deploy blocker. (Layer 2.5 systemic; +2 to the platform `sys_roles` FK count.)
+
+### P1
+- **SEC-COM-001** — Attachments stored on `public` disk + served via `Storage::disk('public')->url()` (`ChatAjaxController.php:479,506,508`); no auth/membership gate → confidential files world-readable by URL (violates NFR-COM-006/REQ-COM-007).
+- **JOB-COM-001** — `chat:purge-old-messages` scheduled in CENTRAL context (`CommonChatServiceProvider.php:82`), no `tenants:run`/tenancy init → retention purge never runs per-tenant (REQ-COM-020 non-functional). No withoutOverlapping/onOneServer.
+- **BUG-COM-001** — `ChatService::deleteMessage:365` hardcodes `hasAnyRole(['super-admin','principal'])`; inconsistent with policy `tenant.chat.moderate` and `canInitiateDm` short_names → admin moderation/delete fails for valid moderators.
+- **BUG-COM-002** — `createGroup:224` `count(memberIds) >= maxMembers` off-by-one; blocks below the configured cap (BR-COM-010). GAP-COM-008.
+- **DAT-COM-001** — `cht_messages.body` is VARCHAR(2000) but StoreMessageRequest/AJAX/BR-COM-016 allow 5000 chars → 2001–5000-char messages truncate/SQLSTATE 22001.
+- **VAL-COM-001** — Reply integrity unenforced: `parent_message_id` only `exists:cht_messages,id`; no same-conversation check (BR-COM-018) and no depth-1 check (BR-COM-019). Cross-conversation reply + content leak possible.
+- **BUG-COM-003** — PII `Log::debug` of user ids/names/roles on every user search (`ChatController.php:210,218,227`).
+- **BUG-COM-004** — Moderation/audit writes to `sys_activity_logs` (+SHA-256 body hash) not implemented (REQ-COM-019/BR-COM-037/038). GAP-COM-003.
+- **BUG-COM-005** — Notification (NTF) integration absent; `EventServiceProvider $listen=[]` (REQ-COM-012). GAP-COM-004.
+- **BUG-COM-006** — Seeder uses role display-names, service uses short_name, deleteMessage uses hyphen slugs → permission resolution inconsistent. GAP-COM-005.
+
+### P2
+- **DATA-COM-002** — `cht_messages.message_type` ENUM default `'text'` invalid vs members `Attachment/System/Text`. GAP-COM-006.
+- **SEC-COM-002** — `is_deactivated_by_admin` not enforced in send/receive (REQ-COM-022/BR-COM-040). GAP-COM-010.
+- **VAL-COM-002** — permission-config uniqueness (BR-COM-036) not validated at request layer (DB index only → 500 on dup).
+- **SEC-COM-003** — `ChatAjaxController` bypasses Policy gates (only abort_unless+participant firstOrFail); announcement post-restriction (BR-COM-014) not enforced on AJAX/service path.
+- **PERF-COM-001** — message search `LIKE %term%`, no FULLTEXT (GAP-COM-012).
+- **SCH-COM-001** — D29: 3 ENUMs (conversation_type, participant role, message_type).
+- **TEST-COM-001** — zero tests (GAP-COM-001).
+
+### P3
+- **DEAD-COM-001** — `CommonChatController` scaffold stub (empty store/update/destroy; returns nonexistent create/edit/show views); `api.php commonchats` group has no tenancy middleware. GAP-COM-011.
+- Notes: `$request->all()` into service (4 sites, filtered, P3); `is_deactivated_by_admin` in personalization fillable (latent); `increments('id')` on 2 cht tables.
+
+### Good patterns (not findings)
+- All 5 FormRequests delegate `authorize()` to policies (not bare `true` — beats D30 norm).
+- `dm_pair_hash` VIRTUAL generated col + UNIQUE correctly emitted (beats D36 norm).
+- Web RSP + mobile (`tenant.mobile`) carry full tenancy stack; `{!! nl2br(e($body)) !!}` escapes safely.
+
+---
+
+## Billing (BIL) — Technical Audit (Mode X) — 2026-06-29
+
+Report: `3-Audit_Reports/V1_Jun-2026/Billing_Complete_Audit_2026-06-29.md`. Central/prime_db module. Health **37/100 (P0 cap), DEPLOY: NO-GO**. Schema authority = `prime_db_v4.sql` (0 migrations). NEW codes (existing SEC-BIL-001/002/005, BUG-BIL-005 reused — see report).
+
+| Code | Severity | Issue | File:Line |
+|------|----------|-------|-----------|
+| MIG-BIL-001 | P0 | SoftDeletes + default timestamps on every model, but `prm_billing_cycles`/`bil_*` tables have no `deleted_at` (cycles: no timestamps either; audit_logs: no `updated_at`) → all CRUD throws Unknown column on DDL-fresh DB | Models *.php:12-16 vs prime_db_v4.sql:405,545,603,623 |
+| DATA-BIL-001 | P0 | Audit-log model/relations/6 inserts use `tenant_invoicing_id`; DDL col is `tenant_invoice_id`; also no `updated_at` | InvoicingAuditLog.php:17,32 ; inserts InvoicingPaymentController:79,221 + BillingManagementController:500,564,795,923 |
+| DATA-BIL-002 | P0 | BilTenantInvoice `$fillable` phantom `invoice_amount` (not in DDL) + 8 duplicated fields | BilTenantInvoice.php:20-69 |
+| SEC-BIL-001/002 | P0 | Payment `store()`/`consolidatedStore()` open DB transaction with no rollback; consolidatedStore early-returns inside open tx | InvoicingPaymentController.php:52,100,158,164,247 |
+| SEC-BIL-005 | P1 | `Tenancy::initialize()/end()` without try/finally inside generation tx (context-leak risk) | BillingManagementController.php:670-674 |
+| SEC-BIL-010 | P1 | 9 routed methods no Gate::authorize incl. a note-edit WRITE (auth'd users only, not anon) | InvoicingPaymentController:108,257,307 ; InvoicingAuditLogController:78,87,101,113 ; SubscriptionController:92,105 |
+| SEC-BIL-011 | P1 | Raw `$request->all()` stored in audit `event_info` (BR-BIL-022 violation) | InvoicingPaymentController.php:94 |
+| BUG-BIL-010 | P1 | Invoice status taken from request, not derived from cumulative paid (BR-BIL-023) | InvoicingPaymentController.php:75 |
+| BUG-BIL-011 | P1 | generateInvoiceForOrganization returns bool false but store() reads $result['status']/['message'] | BillingManagementController.php:646 vs 612-617 |
+| BUG-BIL-015 | P1 | Invoice number `count()+1` race, no lock (BR-BIL-006) | BillingManagementController.php:660-662 |
+| BUG-BIL-005 | P2 | Consolidated print: getCollection() on Collection + isNotEmpty() on float → fatal (RPT-BIL-003) | BillingManagementController.php:171-173 |
+| BUG-BIL-013 | P2 | Broken route billing-management.view → @view (no method) | routes/web.php:332 |
+| BUG-BIL-014 | P2 | Central billing route block registered 3× | routes/web.php:312,559,889+ |
+| DATA-BIL-003 | P2 | Missing created_by/is_active; email-schedule no FK on invoice_id; modules_jnt FK→glb_modules VIEW | prime_db_v4.sql:594,636 |
+| VAL-BIL-001 | P2 | ConsolidatedPaymentRequest no array rules; both payment FormRequests authorize()=true (D30) | ConsolidatedPaymentRequest.php:9 ; StoreInvoicePaymentRequest.php:12 |
+| JOB-BIL-001 | P2 | SendInvoiceEmailJob no tries/backoff/timeout/failed(); auth()->id() null on worker | SendInvoiceEmailJob.php:17-52 |
+| PERF-BIL-001 | P2 | Sync ZIP + temp PDFs never unlinked; index Tenant::get()+User::get() unbounded | BillingManagementController.php:489-525,118 ; SubscriptionController.php:74-84 |
+| DEAD-BIL-001 | P2 | Dead policies (last-wins reg) + imports of non-existent App\Models\ConsolidatedPayment/PaymentReconciliation | BillingServiceProvider.php:64-70 |
+
+### Good patterns / refuted (not findings)
+- Auth NOT bypassed: Spatie/super-admin `Gate::before` at `app/Providers/AppServiceProvider.php:65-74` resolves dotted abilities; policies are dead but harmless.
+- Invoice generation IS atomic (`DB::transaction` closure, BillingManagementController:636) and BR-007/009/010/011/012 formulas match the FRD exactly.
+- BillingCycleRequest is a clean FormRequest (beats D30 norm).
+
+---
+
+## Complete Audit — HPC (Mode X) — 2026-06-29
+
+> Technical Auditor read-only Mode X (A+B+C+G + scoped D) against `HPC_FRD_Complete_2026-06-29.md`.
+> Report: `3-Audit_Reports/V1_Jun-2026/Hpc_Complete_Audit_2026-06-29.md`. Health 40/100 (P0-capped). **Deploy: NO-GO.**
+> New codes continue the existing HPC series (prior max: BUG-HPC-016, SEC-HPC-004, PERF-HPC-004).
+
+| Code | Severity | Issue | Location |
+|------|----------|-------|----------|
+| BUG-HPC-016 | P0 | **CONFIRMED OPEN** — `generateReportPdf()` has no `Gate::authorize()`; any authenticated user generates/distributes any student's confidential card. Sibling `generateSingleStudentPdf()` (line 2290) gates correctly. | `Modules/Hpc/app/Http/Controllers/HpcController.php:1255` |
+| DAT-HPC-001 | P0 | `hpc_reports.status` ENUM = 4 PascalCase values (`Archived,Draft,Final,Published`) but model FSM writes 6 lowercase states (`submitted,under_review,…`); default `'Draft'` is not a `TRANSITIONS` key → workflow aborts 422 / MySQL rejects out-of-enum writes. Breaks "Built" REQ-HPC-013. D29+D17. (BA: GAP-DB-003) | migration `…create_hpc_reports_table.php:17`; `HpcReport.php:24-48`; `HpcWorkflowService.php:16-129` |
+| MIG-HPC-001 | P0 | `hpc_reports` migration missing 9 columns the model/workflow write: `submitted_at, reviewed_by, reviewed_at, review_comments, published_by, published_at, student_sections_complete, parent_sections_complete, created_by` → every workflow `update()` throws `42S22 Unknown column`. D17. (BA: GAP-DB-003) | migration `…create_hpc_reports_table.php` vs `HpcReport.php:50-69` |
+| DAT-HPC-002 | P0 | 5 model-backed tables do not exist (no migration): `hpc_parent_form_tokens`, `hpc_peer_assignments`, `hpc_peer_responses`, `hpc_student_form_submissions`, `hpc_student_hpc_snapshot`. Live-routed student/parent/peer services hit them → `42S02 table not found`. D17. (BA: GAP-DB-004b/c/d, 005, 006) | `ParentHpcFormService`, `PeerAssignmentService`, `StudentHpcFormService` |
+| SEC-HPC-002 | P1 | **STILL OPEN** — public `GET /hpc/hpc-view/{id?}` decrypts an encrypted student-id and serves the card with no access-code / no expiry check (REQ-HPC-014.4 unmet). Confidential child data, unauthenticated, indefinite. | `routes/web.php:16-18` → `HpcController::viewPdfPage()` line 1998 |
+| QUAL-HPC-001 | P1 | `HpcController` = 2,611 lines (Layer 4.4 >2000 = urgent decompose); BUG-HPC-016 is a direct symptom. | `HpcController.php` |
+| SEC-HPC-003 | P2 | **REGRESSED** (was marked FIXED) — `EnsureTenantHasModule:Hpc` middleware exists but is NOT applied in the module RSP/web.php; tenant without HPC entitlement can access all features (NFR-HPC-04). | `Modules/Hpc/app/Providers/RouteServiceProvider.php:41-47`; `routes/web.php:21` |
+| VAL-HPC-001 | P2 | BR-HPC-009 50-student bulk cap NOT enforced (`generateReportPdf` validates only `min:1`); unbounded synchronous PDF gen → timeout/OOM. Module-knowledge claim of inline enforcement was stale. | `HpcController.php:1257-1261` |
+| DEAD-HPC-001 | P2/P3 | Orphan tables `hpc_curriculum_change_request`, `hpc_lesson_version_control` migrated with ENUMs (D29), no model/controller/route (REQ-HPC-019 Not Built). | migrations `2026_06_16_132249`, `2026_06_16_132300` |
+
+### Good patterns / refuted (not findings) — HPC
+- **Tenancy clean (Layer 6):** module `RouteServiceProvider` applies `InitializeTenancyByDomain + PreventAccessFromCentralDomains + EnsureTenantIsActive`; `SendHpcReportEmail` re-inits tenancy and ends in `finally` (baseline "good template").
+- **D25 clean:** the 4 `$request->all()` hits are safe `->paginate()->appends()`; `formStore` uses `$request->except()`.
+- **D30 clean:** the 4 template FormRequests carry real conditional `Gate` logic (not bare `return true`).
+- **D24 clean:** all gates use `tenant.hpc*` consistently; no typos/dup prefixes.
+- **BR-HPC-011 enforced:** `downloadZip()` sanitizes filename `[A-Za-z0-9_\-.]` + gates `tenant.hpc.viewAny` (SEC-HPC-006 effectively mitigated; strip-vs-reject deviation is P3).
+- **SEC-HPC-002/003 numbering note:** the `module-knowledge/HPC_Hpc.md` SEC-HPC-001..006 local numbering diverges from this registry's SEC-HPC-001..004; this audit uses the **registry** numbering.
+
+---
+
+## Documentation (DOC) — Complete (Mode X) Audit, 2026-06-29
+
+> Central module. Report: `3-Audit_Reports/V1_Jun-2026/Documentation_Complete_Audit_2026-06-29.md`.
+> Health 40/100 (P0-capped). Deploy NO-GO. 1 P0 · 7 P1 · 5 P2 · 2 P3. (No prior DOC-* codes existed.)
+
+### [SEC-DOC-001] Stored XSS — unsanitised article HTML rendered raw (P0)
+- **Module/Area:** Documentation reader/show + content store
+- **Symptom:** Summernote `content` stored verbatim and emitted via `{!! $article->content !!}` (main-doc/index.blade.php:97, article/show.blade.php:128) and base64→`atob`→`innerHTML` (footer.blade.php:239); `mews/purifier` not installed.
+- **Root Cause:** No sanitisation at save (DocumentationArticleController.php:65; ValidateArticleRequest 'content'=>'required|string') nor at render.
+- **Fix:** Install/clean with purifier at save + safe render; stop base64→innerHTML; restrict Summernote tags.
+- **Prevention:** Any rich-text field needs sanitise-at-save AND safe render. Maps REQ-DOC-012/BR-DOC-014.
+
+### [DATA-DOC-001] Reader orderBy('sort_order') on doc_articles — column absent (P1)
+- **Symptom:** mainDoc (DocumentationController.php:90) + getArticlesByCategory (:117) → SQL 42S22, reader 500.
+- **Root Cause:** Migration creates no sort_order on doc_articles; column also (wrongly) in Article::$fillable (D17).
+- **Fix:** Add doc_articles.sort_order migration (or drop orderBy + fillable entry).
+
+### [BUG-DOC-001] store() gates on ungranted '.store' ability — non-super-admins locked out of create (P1)
+- **Symptom:** Article/Category `store()` 403 for App Maintenance/Content Author roles.
+- **Root Cause:** `prime.documentation-*.store` not in `config/permissionslist.php $crud` → never flattened/seeded; Gate::before bypasses Super Admin only.
+- **Fix:** Change both store() gates to `.create`. (BR-DOC-022)
+- **Prevention:** Verify Gate strings against `$crud` vocabulary, not just seeder role groups.
+
+### [BUG-DOC-002] Article create form posts categories[] but handler reads category_ids (P1)
+- **Symptom:** Category selection silently lost on article create (edit works).
+- **Fix:** Rename create.blade.php:84 field to `category_ids[]` (+ old('categories') refs). (BR-DOC-020)
+
+### [SEC-DOC-002] Category@index missing Gate (P1) · [SEC-DOC-003] both uploadImage() missing Gate (P1)
+- DocumentationCategoryController@index:18-41 and both uploadImage() (article:91, category:80) lack Gate::authorize; reachable by any authenticated central user. Fix: add `.viewAny`/`.create` gates. (BR-DOC-016)
+
+### [VAL-DOC-001] Image upload max:20048 (~20MB) + SVG allowed (P1)
+- Both uploadImage() use `image|max:20048`, no mime allowlist (SVG = XSS). Fix: `mimes:jpg,jpeg,png,gif,webp|max:2048`. (BR-DOC-015)
+
+### [SEC-DOC-004] Both FormRequests authorize() return bare true (P1, systemic D30)
+- ValidateArticleRequest:12, ValidateCategoryRequest:11. Fix: return matching Gate::allows().
+
+### P2/P3
+- **DATA-DOC-002 (P2)** Category::$fillable omits sort_order (column exists, validated → dropped). BR-DOC-019.
+- **DEAD-DOC-001 (P2)** DocumentationController@store/update/destroy no-op stubs + create/show/edit point at missing views; exposed by module `documentations` resource (routes/web.php:7, api.php:7). REQ-DOC-015/BR-DOC-024.
+- **BUG-DOC-003 (P2)** reader visibility honours only `public` (safe-hidden; client/developer/internal unsupported). BR-DOC-017.
+- **DAT-DOC-003 (P2)** store/update multi-write without DB::transaction.
+- **PERF-DOC-001 (P2)** getArticlesByCategory unpaginated + uncached category tree.
+- **ORM-DOC-001 (P3)** models lack $connection. **BUG-DOC-004 (P3)** created_by set in FormRequest::prepareForValidation (not a spoof).
+
+---
+
+## Dashboard (DSH) — Complete Audit additions (2026-06-29, Technical Auditor, Mode X)
+
+> No P0 (read-only, fails closed, no cross-tenant leak). Health 65/100 (Amber). Deploy: GO platform / NO-GO feature.
+> New codes this pass: BUG-DSH-007, SEC-DSH-008, SEC-DSH-009, DATA-DSH-001, DATA-DSH-002. Existing codes confirmed (not duplicated): PERF-DSH-001/005, BUG-DSH-006, DEAD-DSH-001.
+> Reconciliation of stale entries: SEC-DSH-006/007 ("no authorization in any controller") are PARTIALLY SUPERSEDED — the live controllers now carry Gate/role checks; residual risk moved to the mis-wiring findings below. SEC-DSH-002 (main dashboard ungated) is by FRD design (landing for all staff) — downgrade.
+
+| Code | Sev | Issue | Evidence |
+|------|-----|-------|----------|
+| BUG-DSH-007 | P1 | **Role-name drift — 4 of 7 role dashboards gate on Spatie roles no seeder creates → permanent 403 for everyone, incl. the real platform operator.** Checks `hasRole('Accounts')`/`'Transport'`/`'Management'`/`'SuperAdmin')`; canonical seeded roles (database/seeders/TenantRolePermissionSeeder.php:20-74) are `Accountant`, `Super Admin` (with space), and no `Transport`/`Management`. `abort_unless(hasRole())` is a direct role check so the AppServiceProvider Gate::before super-admin bypass does NOT apply. | `Accounts/AccountsDashboardController.php:16`, `Transport/TransportDashboardController.php:16`, `Management/ManagementDashboardController.php:17`, `SuperAdmin/SuperAdminDashboardController.php:16` |
+| SEC-DSH-008 | P1 | **Foundational-Setup detail pages have NO authorization** — `schoolProfile()`/`sessionBoard()`/`billing()` lack `Gate::authorize` (only `index()` has it). Any authenticated+verified tenant user can read the school's plan, trial flag, invoices, and next bill (Confidential per FRD). | `FoundationalSetup/FoundationalSetupDashboardController.php:56,109,164` (vs gated :18); routes `Dashboard/routes/web.php:43-48` |
+| SEC-DSH-009 | P1 | **`tenant.dashboard.viewAny` permission never seeded** → all 15 area hubs inaccessible to non-super-admin staff. Referenced by 16 controllers, defined by 0 seeders (grep across database/, Modules/*/database/, app/). config/permission.php:104 register_permission_check_method=true. | hub controllers e.g. `Finance/FinanceDashboardController.php:17`; seeding: none |
+| DATA-DSH-001 | P2 | **Resilient reads swallow exceptions with zero logging** — `safeCount`/`safeSum` catch `\Exception`→return 0, no Log. 129 call-sites. Broken/renamed source table shows believable 0 forever (RISK-DSH-004). | `BaseDashboardController.php:31-33,50-52` |
+| DATA-DSH-002 | P2 | **No academic-session/year scoping on any aggregation** → cross-session over-counting on multi-year tenants (students, LMS counts, KPIs). | `DashboardController.php:31-55` and all hub counts |
+
+**Reading-discipline catch (false positive avoided):** Dashboard queries `prm_tenant_plan_billing_schedules` (plural) which matches the LIVE migration `Modules/Prime/database/migrations/2025_12_02_051744_*` and model `Prime/app/Models/TenantPlanBillingSchedule.php:15`. The DDL master `0-DDL_Masters/prime_db_v4.sql` has the SINGULAR `prm_tenant_plan_billing_schedule` — the DDL master is stale; the Dashboard code is correct. Flag the DDL-master drift to DB Architect (not a DSH bug).
+
+---
+
+## EventEngine (EVT) — Complete Audit additions (2026-06-29, Technical Auditor, Mode X)
+
+> Module is a **non-runnable config-CRUD scaffold**: code is competent but its 3 tables have 0 migrations + 0 DDL. Health 18/100 (P0 cap). Deploy: **NO-GO**.
+> New codes this pass: DATA-EVT-001/002/003, BUG-EVT-001/002/003/004, DEAD-EVT-001/002, VAL-EVT-001, SEC-EVT-001.
+> **Reconciliation:** **SEC-EVT-002 ("No tenancy middleware in RSP") is RESOLVED / STALE** — live `RouteServiceProvider.php:41-48` carries the full stack (InitializeTenancyByDomain + PreventAccessFromCentralDomains + EnsureTenantIsActive + auth + verified). D23 is RESOLVED for EVT. Same correction applies to `progress.md` "runs on wrong DB". Did NOT reuse SEC-EVT-002.
+
+| Code | Sev | Issue | Evidence |
+|------|-----|-------|----------|
+| DATA-EVT-001 | P0 | **3 model tables have NO migration and NO DDL anywhere** → module non-runnable; every screen + every `unique:`/`exists:` rule 500s on a clean tenant (`SQLSTATE 42S02`). | `database/migrations/` only `.gitkeep`; `grep lms_trigger_event\|lms_action_type\|lms_rule_engine_configs tenant_db_v4.sql`=0; models `TriggerEvent.php:16`, `ActionType.php:14`, `RuleEngineConfig.php:17` |
+| BUG-EVT-001 | P1 | **RuleEngineConfig policy bound to non-existent `Modules\LmsHomework\Policies\RuleEngineConfigPolicy`** (LmsHomework has only Homework* policies). Real class is `App\Policies\RuleEngineConfigPolicy`. Latent fatal: dormant while gates are string-ability based; Class-not-found 500 the moment model-policy authz is used. | `EventEngineServiceProvider.php:13,56` |
+| DATA-EVT-002 | P1 | **Prefix divergence:** registry `module_list.md:17` says `sys_`; code uses `lms_*`. Must decide before authoring migrations (DATA-EVT-001). | models vs `module_list.md` |
+| SEC-EVT-001 | P1 | **D30: all 3 FormRequests `authorize(){return true;}`** — mitigated (every controller action has a `Gate::authorize('tenant.*')`). | `TriggerEventRequest.php:11`, `ActionTypeRequest.php:10`, `RuleEngineConfigRequest.php:13` |
+| DEAD-EVT-001 | P2 | **Resource `index()` actions dead/unreachable** — `TriggerEventController::index():19` `abort(404)` then unreachable redirect+query; Action/Rule `index()` early-return redirect with unreachable body. `trigger-events.index` route returns 404 (inconsistent with siblings). | `TriggerEventController.php:17-37`, `ActionTypeController.php:17-36`, `RuleEngineConfigController.php:20-54` |
+| BUG-EVT-002 | P2 | **`logic_config` hardcoded `{min_score:'1'}`, never editable** (omitted on update); `event_logic`/`action_logic` echo code/name/description. BR-EVT-018 unmet. | `RuleEngineConfigController.php:87-89,145-153` |
+| BUG-EVT-003 | P2 | **API resource stub** — `apiResource('eventengines')` → `store/update/destroy` empty bodies; `show()` returns nonexistent `eventengine::show` view (500). | `routes/api.php:6-8`, `EventEngineController.php:110,131,136,115-118` |
+| VAL-EVT-001 | P2 | **`required_parameters` persisted from raw request, no validation rule** (field absent from `ActionTypeRequest::rules()`). | `ActionTypeController.php:64`, `ActionTypeRequest.php:25-36` |
+| DEAD-EVT-002 | P3 | **Stray unused `use Modules\LmsHomework\Models\TriggerEvent;`** — copy-paste origin (same as BUG-EVT-001). | `TriggerEventRequest.php:7` |
+| BUG-EVT-004 | P3 | **`activityLog()` emitted before `save()`** in toggle/destroy → false-success audit on save failure. | `TriggerEventController.php:227`, `ActionTypeController.php:228`, `RuleEngineConfigController.php:252` |
+| DATA-EVT-003 | P3 | **Non-transactional two-write destroy** (set inactive + soft-delete); `restore()` leaves record inactive (intended for Rules per BR-016, undocumented for others). | `TriggerEventController.php:151-153,179-193` |
+
+---
+
+## Feedback (FBK) — Complete Audit additions (2026-06-29, Technical Auditor, Mode X)
+
+> No P0 (full tenancy stack, no cross-tenant leak, no module-owned deploy blocker). Health 54/100 (Amber).
+> Deploy: GO platform-safety / NO-GO feature-readiness (P1 functional blockers). Report:
+> `3-Audit_Reports/V1_Jun-2026/Feedback_Complete_Audit_2026-06-29.md`.
+> New codes this pass: BUG-FBK-003/004/005/006, SEC-FBK-003/004/005, VAL-FBK-003, DEAD-FBK-002, JOB-FBK-001, ORM-FBK-001.
+> **Reconciliation (live tree updated 2026-06-27, after the 2026-06-21 audit):** SEC-FBK-001 ("0 authz in 9 ctrls")
+> REMEDIATED — all 9 admin controllers now carry `can:tenant.feedback.viewAny`. SEC-FBK-002 / DEAD-FBK-001
+> ("eligibility service never called") REMEDIATED — now called at FbkResponseController.php:71,88. VAL-FBK-002
+> OUTDATED — every store/update now validates inline (downgraded P3). "0 tests" (FRD Q5) CORRECTED — 9 Browser
+> test files exist (~6,230 LOC); Pest unit/feature still empty. BUG-FBK-001/002, PERF-FBK-001, VAL-FBK-001 CONFIRMED.
+
+| Code | Sev | Issue | Evidence |
+|------|-----|-------|----------|
+| BUG-FBK-003 | P1 | **Eligibility + auto-population broken** — `FbkEligibilityService` matches on `$relationship->context_required`, but the attribute is `context_required_id` (dropdown FK). match() always hits default → isEligible()=false (every submit 403) and resolveEligibleTargets()=[] (0 targets). v2-string vs v3-FK service drift. | `FbkEligibilityService.php:82,102`; `FbkRelationshipType.php:25,46`; mig `2026_04_09_100002_*:19` |
+| SEC-FBK-004 | P1 | **`tenant.feedback.*` / `tenant.consent-forms.*` permissions never seeded** → with Gate::before super-admin bypass, whole module is super-admin-only; Admin/Principal/Teacher get 403. RISK-FBK-003. Same pattern as SEC-DSH-009. | controllers e.g. `FbkCycleController.php:21`, `FbkMenuController.php:29`; seeding: 0 rows in `database/seeders/TenantRolePermissionSeeder.php`, `Prime/.../RolePermissionSeeder.php` |
+| SEC-FBK-005 | P1 | **Peer/NEP anonymity not locked at config** — `FbkAnonymityService::enforceAnonymityRules()` never called; admin can save a peer relationship/flow with anonymity OFF (BR-007/008). Mitigant: CFT defaults anonymous=true; no target-facing read path yet. | `FbkRelationshipTypeController.php:37-79`; `FbkCycleFeedbackTypeController.php:66-153`; `FbkAnonymityService.php:77` |
+| BUG-FBK-004 | P1 | **Reverse scoring (BR-013) never applied** — computeOverallRating uses raw getNumericValue()*weight; FbkAnswer doesn't snapshot `is_reverse_scored`/invert. Aggregates wrong for reverse items. | `FbkResponseService.php:166-190`; `FbkAnswer.php:60-67`; syncAnswers `:136-150` |
+| SEC-FBK-003 | P1 | **Coarse authorization** — single `can:tenant.feedback.viewAny` gates all mutations (store/update/destroy/activate/publish/forceDelete). View grant = full manage. 0 Fbk Policy classes. | `FbkCycleController.php:21`, `FbkTemplateController.php:22`, `FbkCategoryController.php:19`, et al. |
+| VAL-FBK-003 | P2 | **BR-020/021/022 unenforced** — no check exactly one respondent/target identity; `student_academic_session_id` from request never matched to cycle session. | `FbkResponseController.php:123-152` |
+| DEAD-FBK-002 | P2 | **FbkAnonymityService injected but never invoked** — entire anonymity/k-anon layer is dead; BR-008/009/010 unenforced if a target view is added. Replaces resolved DEAD-FBK-001. | `FbkResponseController.php:24`; `FbkAnonymityService.php` (no callers) |
+| BUG-FBK-005 | P2 | **Submitted response can be overwritten** — submit() updateOrCreate on natural key with no guard that status≠Submitted → repeat POST rewrites answers/rating (violates BR-016). | `FbkResponseService.php:71-95` |
+| JOB-FBK-001 | P2 | **No scheduled cycle transitions** (BR-015 date-driven / ENH-002). registerCommandSchedules() empty; cycles never auto-activate/close. RISK-FBK-004. | `FeedbackServiceProvider.php:56-62` |
+| ORM-FBK-001 | P3 | FbkResponse/FbkSummary declare BOTH `$fillable` and `$guarded`; `$guarded` ignored when `$fillable` set (redundant/misleading; `_uq` cols already protected). | `FbkResponse.php:19-68`; `FbkSummary.php:14-61` |
+| BUG-FBK-006 | P3 | Cycle window boundary — date-cast start/end + `now()->between()` closes a cycle from 00:00 of end_date (excludes final day). | `FbkCycle.php:94-98` |
+
+**Positive (beats platform baseline):** D36 generated dedup columns correct — 13 `_uq` cols `GENERATED ALWAYS … VIRTUAL`
++ `uq_fbk_r_dedup`/`uq_fbk_s_dedup` UNIQUE (mig 100009:41-47,64; 100011:27-32,53), vs platform 1/19. D29-clean (0 enum).
+
+<!-- ===== GlobalMaster (GLB) Mode-X Complete Audit — 2026-06-29 | Technical Auditor ===== -->
+| Code | Sev | Issue | Location |
+|------|-----|-------|----------|
+| BUG-GLB-001 | P0 | **Missing `AcademicSession` model** — `AcademicSessionController` + `SessionBoardSetupController` import `Modules\GlobalMaster\Models\AcademicSession` (class absent; only `Modules\Prime\Models\AcademicSession` exists) → every academic-session route AND the session-board hub 500. Breaks REQ-GLB-007/013, BR-GLB-019. | `AcademicSessionController.php:10`; `SessionBoardSetupController.php:8,22` |
+| SEC-GLB-010 | P0 | **LanguageController create/store/edit/update have NO `Gate::authorize`** — any authenticated central user can create/edit platform languages (BR-GLB-020); FormRequest authorize() also `true`. Distinct from SEC-GLB-005 (prefix mismatch). | `LanguageController.php:29-32,37-41,55-59,64-68` |
+| SEC-GLB-012 | P1 | **`PlanController::planDetails()` AJAX ungated** — any auth user reads plan+module pricing (FRD §5.6 Internal; REQ-GLB-010 AC4). | `PlanController.php:239-251` |
+| BUG-GLB-002 | P1 | **Current academic session deletable** — `if (!$session->is_active === true)` operator-precedence bug AND `glb_academic_sessions` has no `is_active` column → always deletes (BR-GLB-009). Extends DEAD-GLB-002 with root cause. | `AcademicSessionController.php:124` |
+| BUG-GLB-003 | P1 | **Single-current-session broken at app layer** — toggleStatus writes phantom `is_active`, never sets `is_current`; BR-GLB-007/008 rely on DB generated `current_flag` the app never populates. | `AcademicSessionController.php:181-217` |
+| VAL-GLB-001 | P1 | **DropdownRequest validates only `value`+`is_active`** — `key/type/org_id` unvalidated; store() reads them from `validated()` (undefined keys) → rows saved with null key/type; stale `table_name.column_name` unique rule keys off null. Breaks BR-GLB-026/029. | `DropdownRequest.php:41-56`; `DropdownController.php:54-67` |
+| VAL-GLB-002 | P1 | **AcademicSessionRequest missing `start_date`/`end_date` + cross-field** (BR-GLB-010); `is_current` unvalidated. | `AcademicSessionRequest.php:17-33` |
+| BUG-GLB-004 | P1 | **Country deactivation cascade omits cities** — only states+districts cascade; cities stay active under inactive country (BR-GLB-001). | `CountryController.php:180-219` |
+| SEC-GLB-013 | P1 | **Activity log written before guards/success** — State toggle logs at :197 before parent-active check at :201; AcademicSession toggle logs before save → blocked toggles log as success (BR-GLB-005). | `StateController.php:197`; `AcademicSessionController.php:201` |
+| BUG-GLB-005 | P1 | **3 routed methods do not exist** → 500: `StateController::getStatesByCountry` (route get-states/{countryId}), `DropdownController::search`, `ActivityLogController::search`. Breaks REQ-GLB-002 dependent dropdown. | root `web.php:236,263,269` |
+| BUG-GLB-006 | P1 | **LanguageController imports wrong `Language` model** (`Modules\Prime\Models\Language`); forceDelete logs event `'Stored'`; update returns raw `'update.language'` not `flash()`. | `LanguageController.php:9,67,119` |
+| BUG-GLB-007 | P2 | District `forceDelete` uses `prime.district.delete` instead of `…forceDelete` (BR-GLB-021). | `DistrictController.php:162` |
+| BUG-GLB-008 | P2 | Duplicate `activityLog()` per update → double audit rows. | `StateController.php:97-111`; `ModuleController.php:113-127` |
+| VAL-GLB-003 | P2 | `ModuleRequest`: `is_sub_module` typed string (should bool); no sub-module⇒parent rule (BR-GLB-012); name-only unique contradicts composite `(parent,name,version)` (BR-GLB-017). | `ModuleRequest.php:23,34` |
+| PERF-GLB-002 | P2 | Unbounded geography loads (`Country::has('states')->with(...)->get()`) on workspace/state/district screens (NFR-GLB-001). | `GeographySetupController.php:73-74`; `StateController.php:21`; `DistrictController.php:21-23` |
+| SEC-GLB-014 | P2 | LIKE search wildcards unescaped + no rate limiting on search/AJAX (BR-GLB-023/024). | `GeographySetupController.php:47,142-148` |
+| BUG-GLB-009 | P2 | Dropdown `org_id` set to `auth()->user()->id`; ordinal per-org not per-key (BR-GLB-028); destroy/restore log strings say "module". | `DropdownController.php:57,61,115` |
+| DATA-GLB-001 | P2 | Schema/name drift: `glb_menu_module_jnt` (live) vs `glb_menu_model_jnt` (DDL master); `glb_module_plan_jnt` (live) vs `prm_module_plan_jnt` (V2); Dropdown→`sys_dropdowns` vs V2 `sys_dropdown_table`. | migrations vs `global_db_v4.sql` |
+| DATA-GLB-002 | P2 | `glb_academic_sessions` lacks `is_active` though 3 controller paths read/write it (root cause of BUG-GLB-002/003). | `2025_10_15_094805_create_academic_sessions_table.php` |
+| MIG-GLB-001 | P2 | Dead `activity_logs` migration creates a table no code uses (model targets `sys_activity_logs`). | `2025_11_02_071024_create_activity_logs_table.php:13` |
+| ARCH-GLB-001 | P2 | No service layer; global `activityLog()` helper hard-imports GLB `ActivityLog` → platform-wide audit blast radius (RISK-GLB-008). | `app/Helpers/activityLog.php:4` |
+| DEAD-GLB-003 | P3 | `Dropdown.php.bkk` backup + rogue duplicate `Dropdown.php`; stale `App\Models\V1\GlobalMaster\{District,State}` imports; GLB `NotificationController` unrouted (Prime's is wired). | `Models/Dropdown.php(.bkk)`; `CountryController.php:6-7` |
+| DATA-GLB-003 | P3 | Un-prefixed `organization_academic_sessions` table; empty `down()`; single-current unique index commented out; `sch_board_organization_jnt` defined inside GLB. | `2025_10_18_101401_make_organization_academic_sessions_table.php` |
+| ORM-GLB-001 | P3 | `Country` model no `$casts` (`is_active` not bool); `$connection` inconsistent across geography models (works only via prime_db VIEWs). | `Models/Country.php`; `Models/District.php` |
+
+**GLB Mode-X totals:** P0=2 · P1=10 · P2=10 · P3=3. **Positive vs baseline:** D29-clean (0 enum in migrations); `glb_academic_sessions.current_flag` is a correct `GENERATED ALWAYS … STORED` column (D36-compliant). Central module — Layer 6 tenancy correctly N/A. Report: `3-Audit_Reports/V1_Jun-2026/GlobalMaster_Complete_Audit_2026-06-29.md`.
+
+---
+
+### HrStaff (HRS) — Mode X Complete Audit (2026-06-29, Technical Auditor)
+
+Health **40/100 (P0-capped; uncapped ≈63)**. Module is genuinely ~85% built and ABOVE platform norms on the
+high-risk layers: tenancy stack correct (no D23), **0 `$request->all()`**, **0 debug**, **0 `Schema::`
+introspection**, **0 `initialize()` leaks**, all PKs `bigIncrements` (not INT), encryption casts applied,
+and salary/payslip/leave endpoints have proper ownership checks (**no IDOR**). 33 DDL = 33 migrations = 33
+models, **no drift** (BA's "no drift" verified live). Issue codes namespaced **HRS** (the `PAY` token is owned
+by the Payment module — `SEC-PAY-001..008` already exist; never reused).
+
+- **DATA-HRS-001 (P0):** `LeaveService::initializeBalances()` runs unconditional `LeaveBalance::withTrashed()
+  ->where('academic_year_id',$y)->forceDelete()` before recreating → permanent loss of accrued `used_days`/
+  `carry_forward`/adjustments + orphaned `hrs_leave_balance_adjustments` FK; violates BR-HRS-023. Live route.
+- **BUG-HRS-001 (P1):** `EventServiceProvider $listen=[]` + `$shouldDiscoverEvents=true` but **no `app/Listeners/`
+  dir exists** → PayrollApproved/PayrollLocked/LeaveApproved/Rejected/AppraisalFinalized fire into nothing →
+  Accounting Journal Voucher (REQ-HRS-029) never created; leave/payslip notifications never sent.
+- **BUG-HRS-002 (P1):** PF computed from hardcoded `min(gross*0.50,15000)` approximation, not actual Basic
+  component → wrong statutory PF/ECR (BR-PAY-004); applicability from `applicable_flag` not basic≤15k (BR-HRS-012).
+- **BUG-HRS-003 (P1):** `PayrollComputationService::computeRun()` catches per-employee "no assignment"
+  DomainException and continues → run reaches `computed` with employees silently skipped (BR-PAY-002 not enforced).
+- **BUG-HRS-004 (P1):** `Form16Controller::generateAll()` is a no-op stub (logs + "queued", produces nothing);
+  no April-15 guard (BR-PAY-009); REQ-HRS-038 non-functional on a live route.
+- **SEC-HRS-001 (P1):** payslip PDFs NOT password-protected (`PayslipService::generate` outputs plain DomPDF) —
+  NFR-HRS-007/REQ-HRS-031; raw `$media->getPath()` download (not signed, NFR-006) though behind auth+ownership.
+- **PERF-HRS-001 / JOB-HRS-001 (P1):** bulk payslip/Form16/email run synchronously in-request; **no `app/Jobs/`**
+  layer (NFR-HRS-004); will time out at 200-500 staff. Blocked by platform DEPLOY-HRZ-01 (queue=db vs Horizon=redis).
+- **VAL-HRS-001 (P1):** leave apply skips BR-HRS-005 (medical cert), BR-HRS-006 (gender), BR-HRS-007 (min service);
+  `calculateDays()` called without `applicableTo` (holiday applicability ignored).
+- **P2:** DATA-HRS-002 overlap predicate misses enclosing-range leave (BR-HRS-002); VAL-HRS-002 `SalaryAssignment
+  ::update()` bypasses service so CTC band (BR-HRS-011)/single-active not re-checked; DATA-HRS-003 missing
+  `lockForUpdate` on leave balance + single-active assignment (concurrency); SEC-HRS-002 27/27 FormRequests
+  `authorize(){return true}` (D30); MIG-HRS-001 27 `->enum()` over 20 migrations (D29) + `applicable_to` casing
+  drift `['All','Non-Teaching','Teaching']` vs lowercase; SEC-HRS-003 perms use `hrs.*`/`pay.*` not `tenant.*`
+  (D24) + dead unused `tenant.hrs-*` set in config/permissionslist.php; SEC-HRS-004 FRD actor roles "HR Manager"/
+  "Payroll Manager" not in HrsPermissionSeeder role map (D39-adjacent — only Principal/VP/Accountant/Teacher/Staff
+  mapped); TEN-HRS-001 RSP lacks `EnsureTenantHasModule` (TEN-RTG-001 pattern).
+- **Verified ENFORCED:** BR-PAY-010 LWP formula `(gross/working)*lop` ✅; BR-PAY-003 lock immutability (service
+  guard `guardEditable` + override `abort_if isLocked`) ✅; BR-HRS-015 encryption (`bank_account_number` &
+  PAN/`reference_number` cast `encrypted`) ✅; BR-PAY-001 one-run-per-month (DB unique `uq_pay_run_month_type`) ✅;
+  BR-HRS-008 cancel-restore ✅; BR-HRS-024 remarks required (FormRequest `min:5`) ✅; BR-HRS-013 ESI gross≤21k ✅.
+- **Lesson (reusable):** a module-local `EventServiceProvider` with `$shouldDiscoverEvents=true` but no
+  `app/Listeners/` directory silently has NO listeners — events dispatch and vanish. Grep `app/Listeners/`
+  existence before clearing any event-driven integration (Accounting/Notification) as "wired".
+- **Architecture (Enterprise Architect, unchanged):** dual leave engine `hrs_leave_*` vs SCE `sch_employee_leave_*`
+  (RISK-HRS-001). Tests: 0 (`tests/` has only `.gitkeep`, RISK-HRS-007).
+
+Deploy: **NO-GO** (DATA-HRS-001 + inherited platform P0s).
+Report: `3-Audit_Reports/V1_Jun-2026/HrStaff_Complete_Audit_2026-06-29.md`.
+
+---
+
+## LmsExam (EXM) — Mode X Complete Audit (2026-06-29, Technical Auditor)
+> Report: `3-Audit_Reports/V1_Jun-2026/LmsExam_Complete_Audit_2026-06-29.md`. Health 40/100 (P0-capped). Deploy: NO-GO.
+
+### P0
+| Code | Issue | File:Line |
+|------|-------|-----------|
+| SEC-EXM-005 (confirmed+extended) | **GrievanceReviewController ZERO Gate on ALL 5 methods** (index/store/show/resolve/toggleStatus). resolve() rewrites published `lms_exam_results.total_marks_obtained`/`percentage` for any student; GrievanceRequest::authorize()=true → no auth at any layer. Sibling controllers have 10–27 gates. | `GrievanceReviewController.php:21,69,101,117,187` |
+
+### P1
+| Code | Issue | File:Line |
+|------|-------|-----------|
+| SEC-EXM-008 (supersedes SEC-EXM-006 scope) | All 12 FormRequest `authorize()` return hardcoded true (D30). | `app/Http/Requests/*.php` (12) |
+| SEC-EXM-009 | **Policy-overwrite:** `Gate::policy(Exam::class, …)` registered 13× → only LmsActivityDashboardPolicy survives; ExamPolicy + ~11 report/assessment policies dead. ExamScopePolicy/ExamBlueprintPolicy/AnswerSheetOnlineExam unregistered. Imports `HwSubmissionTrackerPolicy`/`HwPerformanceAnalysisPolicy` reference non-existent classes (files are Homework*Policy). | `LmsExamServiceProvider.php:87–108,41–42` |
+| SEC-EXM-010 | Advanced-reports hub (6 reports, 798 lines) gated by single WRONG permission `tenant.hw-submission-tracker.view`; no per-exam-report gates; model policies dead via SEC-EXM-009. | `ExamAdvancedReportController.php:38` |
+| SEC-EXM-011 | No module-license guard (hasModule:EXM) → REQ-EXM-019/NFR-009 fails; unsubscribed schools reach all screens. | `RouteServiceProvider.php:41–48` |
+| BUG-EXM-003 (still present) | `ExamStudentGroupMemberController::toggleStatus()` missing → route returns 500. Open since 2026-04-02 (route now line 171). | `routes/web.php:171` |
+| BUG-EXM-004 | Grievance resolve recomputes only marks+percentage; grade/division/rank NOT recomputed → stale published results (BR-EXM-031/033/034 partial). | `GrievanceReviewController.php:142–159` |
+| PERF-LMS-002 (still present) | Unbounded dashboard queries in index + God controllers (LmsExamController 3767, PaperSetQuestionController 1465; no domain service layer). | `LmsExamController.php:~148–180` |
+
+### P2
+| Code | Issue | File:Line |
+|------|-------|-----------|
+| DATA-EXM-001 | created_by missing on 5 config tables+models (ExamType/ExamStatusEvent/ExamScope/ExamBlueprint/ExamStudentGroup); owned DDL has created_by on only 2 of 11 tables. NFR-EXM-006. | `app/Models/*`, `LmsExam_DDL_v6.sql` |
+| SCH-EXM-001 | 6 ENUM columns in owned DDL (D29) — event_type, result_published, mode, offline_entry_mode, allocation_type. | `LmsExam_DDL_v6.sql:37,114,146,172,290` |
+| DAT-EXM-002 (StudentAttempt-owned) | DDL spec anomalies — `attemp_activity_event_types` missing comma before UNIQUE KEY + misspelled name; `lms_offline_exam_upload_detail` uq/idx reference phantom `attempt_id`/`is_active`. **CORRECTION: live migrations ship CORRECTLY** (real cols/indexes); risk only if provisioning from raw .sql. Attribute fix to StudentAttempt DDL owner. | `StudentAttempt_DDL_v4.sql` |
+| DEAD-EXM-003 | `ReleaseScheduledExamResults` console command imported (SP:49) but never registered (dead) AND queries removed/commented column `show_result_type` → would error; duplicates live `lms-exam:publish-results`. | `app/Console/ReleaseScheduledExamResults.php` |
+
+### Reassessed / cleared
+- **SEC-EXM-007** (ExamQueryService "no explicit tenant scoping") → **non-issue** under database-per-tenant: the connection is swapped per tenant, there is no tenant_id column to scope. No action.
+- EXM is ABOVE platform baseline: D24 single clean `tenant.` prefix (no `tennat.`), D25 0 `$request->all()` sites, no privilege fields in fillable, no committed secrets, no module route closures, zero debug statements.
+
+---
+
+## LmsHomework (HMW) — Mode X Complete Audit (Technical Auditor, 2026-06-29)
+Health **60/100 (Amber)**, **no P0**, **DEPLOY: GO** (no cross-tenant write hole / committed secret / migration blocker). Strengths over platform baseline: **0** `$request->all()` (D25), **0** bare-`true` FormRequests (D30), `DB::transaction`+`lockForUpdate` on submission uniqueness (BR-024). New codes (no prior `HMW`-prefixed entries; historical `HWK`/`LMS` codes referenced a since-removed `StudentHomeworkController`):
+
+**P1**
+- **BUG-HMW-001** — `LmsHomeworkController::publish()` (`:886-921`) computes `$isReleased/$releasedAt/$statusId` for the scheduled/on-topic branch but the `updateOrCreate` payload **hardcodes** `is_released=true, released_at=now(), status_id=ASSIGNED` → ON_SCHEDULED_DATE / ON_TOPIC_COMPLETE homework released immediately. Breaks REQ-HMW-003, BR-011/012 (DDL spec v5:309-311).
+- **SEC-HMW-001** — Permission-string mismatch (A-AUTH-1): FormRequests check `tenant.homework.create` / `tenant.homework-submission.create` / `grade-homework`, but controller+5 policies+views use `tenant.home-work.*`. Grep found the FormRequest strings defined **nowhere** → `can()` fails closed for non-super-admins (or defense-in-depth fully bypassed under a super-admin gate). `HomeworkRequest:23-26`, `HomeworkSubmissionRequest:19-23`, `HomeworkReviewRequest:17`. (D24 family.) **P0 if** perms truly undefined in prod (blocks legit create/grade).
+- **BUG-HMW-002** — Late submission not hard-blocked when effective `allow_late_submission=0` (A-FN-1, BR-028). `HomeworkSubmissionController::store():153-194` flags `is_late` but never rejects.
+- **BUG-HMW-003** — Every `NotificationTarget::create` is commented out (A-FN-2): `LmsHomeworkController:1495-1510,1602-1609,1664-1669,1710-1715,2326-2331`; `HomeworkSubmissionController:492-497`. Notifications written with no recipients → never delivered (REQ-HMW-020/BR-045).
+- **BUG-HMW-004** — `SyllabusScheduleObserver:30-47` queries dropdown key `'homework_status'` value `RELEASED`/`PENDING`, but HMW uses key `lms_homework.status_id` values DRAFT/PUBLISHED/ARCHIVED → on-topic auto-release never fires (A-FN-3).
+- **BUG-HMW-005** — `UpdateHomeworkStatus` (`:30-49`, scheduled `routes/console.php:51`) has **no per-tenant `tenancy()->initialize()`** (unlike `ReleaseScheduledHomework` which loops `Tenant::all()`) AND reads `ASSIGNMENT_STATUS_ALT` (`lms_homework.homework_assignment_status`) where no statuses are seeded → overdue marking runs on central DB and resolves null status. Doubly dead (BR-041). Layer 6.2 + 10.2.
+
+**P2**
+- **VAL-HMW-001** — `assignmentsGrade():1401-1404` + `saveCheck():1904-1910` validate `marks_obtained` min:0 with **no max** → marks can exceed homework max (BR-031 partial; only `HomeworkReviewRequest` caps max).
+- **BUG-HMW-006** — `store():425`/`update():614` call `syncAssignments()` unconditionally → IMMEDIATE homework auto-publishes at creation (BR-005 "new=Draft" / BR-007 "publish only from Draft" undermined).
+- **DATA-HMW-001** — migration `...122811_create_lms_homework_table.php:26` sets `release_condition` ENUM **default `ON_TOPIC_COMPLETE`** (the dead path); should be `IMMEDIATE`.
+- **PERF-HMW-001** — `index():70-71` unbounded `Topic::get()` + `Student::get()` on the hub render.
+- **TEN-HMW-001** — `routes/api.php:6-8` `apiResource('lmshomeworks', LmsHomeworkController)` runs under `api`+`auth:sanctum` with **no tenancy init** and points at view-returning web controller methods → non-functional cross-DB surface (A-CODE-3).
+- **SCH-DDL-001** — DDL v5 not runnable: typo `realease_condition` (`:66`), dangling FK `fk_hw_release_cond`/`fk_hwa_release_cond`→`release_condition_id` (nonexistent, `:92,174`), `sys_dropdown_table` vs migration `sys_dropdowns`, `hw_attachment_media_id Json UNSIGNED` (`:54`). Migrations authoritative; emit DDL v6.
+- **BUG-HMW-007** — `assignmentsIndex():1359` `Dropdown::where('type','homework_assignment_status')` queries wrong column → status filter always empty (should be `where('key', ASSIGNMENT_STATUS)`).
+
+**P3** — DEAD-HMW-001 dead Rule-Engine imports in `Homework.php:9-11`; DEAD-HMW-002 unrouted `seedTestData()` fixture `LmsHomeworkController:2160`; ORM-HMW-001 three policies bound to `Homework::class` (last wins) `LmsHomeworkServiceProvider:59,62,63`; DEAD-HMW-003 duplicated `calculateIsLateForSubmission()` in both controllers; DATA-HMW-002 `is_resubmission_requested` unsignedInteger NOT NULL no default vs boolean cast.
+
+**Lesson (reusable):** a console command with a `tenant:` signature is NOT automatically per-tenant — if `handle()` lacks `Tenant::all()->each(... tenancy()->initialize/run ...)` it runs once in CENTRAL context against tenant tables (finds nothing / errors). Within one module, `ReleaseScheduledHomework` does this correctly while `UpdateHomeworkStatus` does not (BUG-HMW-005). Always read `handle()` before treating a scheduled `tenant:*` command as working.
+
+Report: `3-Audit_Reports/V1_Jun-2026/LmsHomework_Complete_Audit_2026-06-29.md`.

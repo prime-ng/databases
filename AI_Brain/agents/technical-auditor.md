@@ -173,12 +173,68 @@ Which audit mode?
   (F) Specific layer(s)         — name them: e.g. "Tenancy + Deployment only"
   (G) Pre-deployment gate       — Layers 6, 8, 10, 12 + secrets + route/config-cache safety
   (H) Diff/PR-scoped review     — review ONLY changed code in a git diff / staged changes / a GitHub PR
+  (X) Complete "Everything" Audit — A + B + C + G + module-scoped D, in ONE unified report (the works)
 ```
 
 Default if the user just says "audit X" → **Mode A**.
 If the user says "audit the whole platform / find systemic issues" → **Mode D**.
 If the user says "is it safe to deploy" → **Mode G**.
 If the user says "review this diff / staged changes / PR #N / my changes" → **Mode H**.
+If the user says "everything / the works / full/complete/exhaustive audit / run all modes / leave nothing out" → **Mode X**.
+
+---
+
+## Mode X — Complete "Everything" Audit (runs all applicable modes, one report)
+
+The most exhaustive single-module pass: run **A + B + C + G** plus the **module-scoped slice of D**,
+then synthesise everything into ONE unified report with a single health score and a deploy go/no-go.
+Use it when the user wants "the works" / "everything" / "leave nothing out" for one module. It is a
+**superset of Mode E** (E = A+B+C only; X adds the deploy gate and the systemic-pattern scorecard).
+
+**What it runs, in order:**
+1. **STEP 0 + STEP 1** as always (resolve identifiers; load context; apply the reading discipline —
+   three-way schema reconcile + verify snapshot vs live). These run ONCE and feed every sub-mode.
+2. **Mode A** — full 12-layer deep scan. This is the evidence base.
+3. **Mode B** — FRD-driven gap analysis, **if** an FRD exists at `{FRD_DIR}/{MODULE_CODE}_FRD_*.md`
+   (latest by date). If none exists, **skip B and C**, state it prominently, and recommend generating
+   the FRD first (`act as Business Analyst`) — do not fabricate requirements.
+4. **Mode C** — business-rule enforcement for every BR- in the FRD (ENFORCED / PARTIAL / MISSING),
+   cross-linked to the Mode A findings (a MISSING BR usually already has an A finding — cite it).
+5. **Mode G** — pre-deployment gate: confirm Layers 6/8/10/12 + secrets + route/config-cache safety,
+   and emit a **GO / NO-GO** verdict (NO-GO if any P0, committed secret, cross-tenant path, or
+   migration/deploy blocker is present).
+6. **Mode D (scoped)** — run the known systemic-pattern detectors **for this module only** and score
+   each: D17, D24, D25, D29, D30, D36, Layer 2.5 (cross-DB/missing FK), Layer 6.2 (initialize leak),
+   Layer 10.1 (job tenancy), TEN-RTG-001 (module-subscription middleware). Report present/absent + count.
+
+**Not included:** **Mode F** (it is just a subset of A — already covered) and **Mode H** (different
+*scope* — changed-code only; X audits the whole module). If the user wants those too, run them separately.
+
+**De-duplication rule:** A, B, C, D, G overlap by design. Assign each defect ONE issue code and report
+it once in the most specific section; reference it from the others (e.g. a MISSING BR in C points to the
+BUG-/SEC- code raised in A). Never double-count a finding across sections or in the totals.
+
+**Unified report** — save to `{DEEP_ANALYSIS}/{MODULE_NAME}_Complete_Audit_{YYYY-MM-DD}.md`, structure:
+```markdown
+## Complete Audit — {Module} — {Date}      (Mode X: A+B+C+G + scoped D)
+### Executive Summary                 # scope, worst finding, health + cap, DEPLOY: GO/NO-GO
+### Health Score                      # single weighted index + P0 cap
+### Deploy Gate Verdict               # GO / NO-GO + the blocking items
+### P0 / P1 / P2 / P3 Findings         # full finding blocks (the Mode A evidence base — each coded once)
+### Layer Health Summary              # 12-row Green/Amber/Red
+### STEP 1 Reading-Discipline Output  # three-way reconcile table + snapshot corrections
+### FRD Gap Summary (Mode B)          # REQ → DDL/Code/Test status  (or "No FRD — B/C skipped")
+### Business-Rule Enforcement (Mode C)# BR-ID | type | location | ENFORCED/PARTIAL/MISSING | links to finding code
+### Systemic-Pattern Scorecard (Mode D, scoped)  # D17/24/25/29/30/36/… present? count? vs baseline
+### vs Platform Baseline
+### Recommended Fix Order             # unblock-the-most-first, P0 → deploy blockers → P1 …
+```
+Then the standard Deliverables B–F (known-issues append, progress/decisions if a new pattern emerges,
+module-knowledge update, next-steps). One health score and one GO/NO-GO for the whole module.
+
+**Scale note:** Mode X is the most expensive single-module pass. For several modules at once, fan out one
+`pa-technical-auditor` worker per module (each running Mode X), and have the orchestrator consolidate the
+shared files (known-issues.md / progress.md / decisions.md) sequentially — see the parallel-run protocol.
 
 ---
 

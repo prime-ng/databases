@@ -400,3 +400,38 @@
   ```
 - **Fix:** in the create migration, restore `->storedAs('<expr>')` / `->virtualAs('<expr>')` for each column (matching the DDL expression); for uniqueness-key columns keep the UNIQUE index on the generated column; never add the column to `$fillable`. Where a generated column is impractical in Laravel, the owning Service must compute and persist it inside the same locked transaction (and the model must guard it). Sweep all modules — do not fix only the two that surfaced first.
 - **Severity guidance:** failure-mode 1 on a money/seat/bed/booking table = P0 (DAT). Failure-mode 2 on a financial balance = P1 (MIG/DAT). Failure-mode 3 = P2 (MIG).
+
+### D37: "Status-master FK declared in DDL but code uses string literals" — code/schema status divergence (2026-06-29)
+- **Discovered:** Accounting Mode X audit. The DDL models status columns as `INT UNSIGNED` FK → a generic status master (`acc_accounting_status_masters`) on 5 tables (D4 pattern), but **every model casts `status` to `string` and all services/controllers/scopes write and compare string literals** (`'draft'/'posted'/'cancelled'/'Completed'/'Approved'/'Skipped'/...`). Same for `acc_vouchers.source_module` (BIGINT FK used as a string).
+- **Why it matters:** under the DDL schema, writing a label into an INT FK column errors (strict mode) or coerces to `0` (FK violation `errno 1452`), and `WHERE status = 'posted'` coerces the column to `0` — so status filtering silently matches the wrong rows. With 0 migrations the DDL IS the schema-of-record, making this a functional P0, not cosmetic.
+- **Generalises beyond Accounting:** the "generic status master FK" (D4) pattern is attractive in DDL but is frequently NOT implemented in code. Any module that declares an INT FK status against a status-master table must be checked: does the model cast it to int and resolve labels via the master, or does it cheat with string literals? Audit detector: grep models for `'status' => 'string'` alongside a DDL `status INT ... FK`.
+- **Fix guidance:** pick ONE source of truth — either resolve status IDs from the master (add `status_id` int + a string accessor, seed the master, refactor scopes), or, if a VARCHAR/ENUM status is actually intended, correct the DDL to match and document it. Do not ship the contradiction. Sibling to D17 (fillable references missing column) and D36 (generated column degraded).
+- **Severity:** P0 when it breaks a posting/balance/report path (Accounting); P1/P2 for peripheral status fields.
+
+### D38: "SoftDeletes/default-timestamps declared against tables lacking deleted_at/timestamps" — model-trait vs DDL divergence (2026-06-29)
+- **Discovered:** Billing Mode X audit (MIG-BIL-001). Every Billing model uses `SoftDeletes` + default `$timestamps`, but `prm_billing_cycles` has no created_at/updated_at/deleted_at, `bil_tenant_invoices`/`_payments` have no `deleted_at`, and `bil_tenant_invoicing_audit_logs` has `created_at` only.
+- **Why it matters:** SoftDeletes silently appends `WHERE deleted_at IS NULL` to every query and default timestamps write created_at/updated_at on insert/update — so on a schema-of-record (DDL, 0 migrations) the whole module's CRUD throws `SQLSTATE 42S22 Unknown column`. This is a DISTINCT failure mode from D17 ($fillable references a missing column): here the breaking columns are added by the trait/base-model, not by the developer's array, so a $fillable-only reconcile misses it.
+- **Audit detector:** for each model, check `use SoftDeletes` ⇒ table has `deleted_at`; and `$timestamps !== false` ⇒ table has BOTH created_at AND updated_at. Add to the Layer-2 three-way reconcile.
+- **Severity:** P0 when it breaks core CRUD against the schema authority (Billing); degrade to P1 only if the live DB was hand-patched out-of-band. Sibling to D17 / D36 / D37.
+
+---
+
+### D39 — "Permission referenced but never seeded" → effectively super-admin-only (cross-module pattern)
+
+**Observed (2026-06-29, Technical Auditor):** controllers gate with `can:<ability>` / `Gate::authorize('<ability>')`
+where the ability is **never defined by any seeder**. Combined with the `Gate::before` super-admin bypass
+(`app/Providers/AppServiceProvider.php:65-67`, returns true for `is_super_admin && super_admin_flag`), the result is
+that the entire feature surface is reachable **only by super-admins** — every intended role (Admin/Principal/Teacher/
+Staff) silently receives 403. Confirmed in **Feedback** (SEC-FBK-004: `tenant.feedback.*`, `tenant.consent-forms.*`)
+and **Dashboard** (SEC-DSH-009: `tenant.dashboard.viewAny`). Likely present in other recently-built modules.
+
+**Rule for auditors:** a `can:`/`Gate::authorize` string is NOT proof of working authorization — grep the seeders
+(`database/seeders/TenantRolePermissionSeeder.php`, `Modules/*/database/seeders/*Permission*`) for the ability before
+clearing Layer 5. If undefined → P1 (module non-functional for intended roles), not "secured".
+**Rule for developers:** every new module must ship a permission seeder defining its abilities and mapping them to roles.
+
+### D23 reconciliation — EventEngine RSP tenancy is FIXED (2026-06-29, Technical Auditor, EVT Mode X)
+- D23 (line ~263) lists EventEngine's RSP as missing tenancy middleware. **Live code disproves this for EVT:** `Modules/EventEngine/app/Providers/RouteServiceProvider.php:41-48` applies the full stack (`InitializeTenancyByDomain` + `PreventAccessFromCentralDomains` + `EnsureTenantIsActive` + `auth` + `verified`). D23 is **RESOLVED for EventEngine** (and per the auditor baseline, also for Scheduler). Consequently `known-issues.md` **SEC-EVT-002 is STALE/RESOLVED** and `progress.md`'s "runs on wrong DB" for EVT is corrected. EVT's real blocker is schema, not tenancy: DATA-EVT-001 (0 migrations + 0 DDL for `lms_trigger_event`/`lms_action_type`/`lms_rule_engine_configs`). No new systemic pattern — module-local schema gap (sibling to the Layer-2.5 missing-FK-target class).
+
+### D39 — Platform audit trail is hard-coupled to GlobalMaster's ActivityLog model (observation, 2026-06-29 | Technical Auditor)
+The global helper `app/Helpers/activityLog.php` does `use Modules\GlobalMaster\Models\ActivityLog;` and writes every module's audit entry through that concrete class. Consequence: **every module's auditing depends on GLB's `ActivityLog` staying present, named, and stable** — a module-boundary inversion (a cross-cutting concern owned by a feature module). The GLB Mode-X audit surfaced how brittle GLB's class-name resolution already is (the `AcademicSession` model is referenced by two controllers but does not exist → guaranteed 500s; the `activity_logs` migration vs `sys_activity_logs` model drift). Recommendation when remediating: bind the audit writer behind an interface (e.g. `App\Contracts\ActivityLogger`) resolved from the container, so the helper does not hard-depend on a feature module's concrete model. Tracked as ARCH-GLB-001 / RISK-GLB-008. No code change made (read-only audit).

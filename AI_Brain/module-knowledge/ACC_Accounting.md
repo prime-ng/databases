@@ -1,6 +1,6 @@
 # Module Knowledge: Accounting (ACC)
-# Last Updated: 2026-06-27 (update pass — file counts re-verified against Herd/prime_ai)
-# Completion Status: ~60–70% estimated (views + services + controllers present; migrations missing; GST/TDS/YearEnd tables absent)
+# Last Updated: 2026-06-29 (FRD + Complete Analysis Pack generated; counts re-verified against Herd/prime_ai; 3-way DDL↔migration↔model reconcile done)
+# Completion Status: ~60–70% estimated (views + services + controllers present; migrations missing — schema applied via tenant DDL; GST/TDS/YearEnd tables absent)
 
 ---
 
@@ -14,16 +14,26 @@
 | DDL (canonical) | `2-DDL_Tenant_Consolidated/Accounting_DDL_v3.sql` — 28 tables |
 | V2 Requirement | `4-Requirement_Module_wise/4-Initial_Requirements/V2/FAC_FinanceAccounting_Requirement.md` |
 | Database | `tenant_db` |
-| Routes | `web.php` — 220 lines (V2 req cited 18 controller registrations; ~65 named routes was an undercount) |
-| Controllers | 21 (re-verified 2026-06-27; V2 req cited 18) |
-| Models | 25 (re-verified 2026-06-27; V2 req cited 21) |
-| Services | 7 (re-verified 2026-06-27; **corrected from prior 10** — see service inventory below) |
-| FormRequests | 17 (re-verified 2026-06-27) |
-| Policies | 19 (re-verified 2026-06-27) |
-| Tests | 21 (re-verified 2026-06-27) |
-| Blade Views | 141 (re-verified 2026-06-27; V2 req said 29 screens needed, no views confirmed in March 2026) |
-| Migrations | 0 (re-verified 2026-06-27; likely handled by tenant DDL applied directly) |
-| FRD | Not yet generated |
+| Routes | `web.php` — 220 lines; **87 named routes + 15 `Route::resource` groups** (re-verified 2026-06-29; V2 req's ~65 was an undercount). `api.php` — 8 lines, 0 named routes. Menu groups: setupMasters, transactions, assetsIntegration, reports |
+| Controllers | 21 (re-verified 2026-06-29; V2 req cited 18) |
+| Models | 25 (re-verified 2026-06-29; V2 req cited 21) — map cleanly to 25 of the 28 DDL tables |
+| Services | 7 (re-verified 2026-06-29; **corrected from prior 10** — see service inventory below) |
+| FormRequests | 17 (re-verified 2026-06-29) |
+| Policies | 19 (re-verified 2026-06-29; live in module's own `app/Policies/`, not central) |
+| Tests | 21 (re-verified 2026-06-29; Unit + Feature dirs) |
+| Blade Views | 141 (re-verified 2026-06-29; V2 req said 29 screens needed, no views confirmed in March 2026) |
+| Migrations | 0 (re-verified 2026-06-29; **no `database/migrations/` dir** — schema applied via tenant DDL directly. DDL is the authoritative schema source) |
+| FRD | ✅ Generated 2026-06-29 — `ACC_FRD_Complete_2026-06-29.md` (Complete Analysis Pack) |
+
+**3-Way Reconcile (DDL ↔ migration ↔ model) — done 2026-06-29:**
+- DDL v3 = **28 `CREATE TABLE`** statements; migrations = **0**; models = **25**.
+- The 3 DDL tables with **no Eloquent model**: `acc_accounting_status_masters`, `acc_voucher_modules`, `acc_voucher_category` (infrastructure/registry tables — likely accessed via query builder or seeded config).
+- Key DDL-vs-V2 schema divergences (DDL/code win for *what exists*):
+  - **Status fields are FK → `acc_accounting_status_masters`** (INT), not the ENUMs shown in V2 §5 (`status ENUM('draft','posted','locked')`). Applies to `acc_vouchers`, `acc_bank_reconciliations`, `acc_expense_claims`, `acc_tally_export_logs`, `acc_event_processing_log`.
+  - **`acc_voucher_items.type` = ENUM('debit','credit')** in DDL — NOT `side ENUM('Dr','Cr')` as V2 §5 described.
+  - **`acc_account_groups.nature` = ENUM('Asset','Liability','Equity','Income','Expense')** (single 5-value nature) + `affects_gross_profit` flag — NOT the V2 `group_type`+`nature(Dr/Cr)` two-column design.
+  - **`acc_voucher_types` / `acc_vouchers` carry `voucher_category_id` FK → `acc_voucher_category`** (DDL change log) — the V2 `category ENUM` was removed.
+  - Cross-module integration uses the **generic 4-table event engine**, NOT the 4 hardcoded Laravel listeners V2 §11 described.
 
 **Service inventory (all 7):**
 | Service | Covers |
@@ -146,6 +156,26 @@ V1 used `fac_*` prefix and module code `FAC`. V2 unified to `acc_*` under `Modul
 ### Schema Gaps (DDL v3 vs V2 Req)
 3 tables proposed in V2 req still missing from DDL v3: `acc_gst_details`, `acc_tds_entries`, `acc_year_end_closings`. These cover GST compliance (FAC7), TDS management (FAC8), and year-end close audit trail (FAC10). No controller or service for these areas found in code either — these sub-modules are genuinely incomplete.
 
+### Technical Audit Findings (2026-06-29, Mode X — Health 38/100, DEPLOY: NO-GO)
+Report: `3-Audit_Reports/V1_Jun-2026/Accounting_Complete_Audit_2026-06-29.md`
+
+**P0 — schema↔code contradictions (DDL is schema-of-record; 0 migrations):**
+- **DATA-ACC-002** — `acc_ledgers` has **no `current_balance`/`current_balance_type` column** in DDL v3, yet `Ledger` fillable + `VoucherService::applyItemsToLedgers` + `RemoteEntryService` write running balances to it → every voucher post/cancel throws `Unknown column 'current_balance'`. Add the column (or derive from `acc_voucher_items` as ReportService does).
+- **DATA-ACC-001** — `status` is `INT UNSIGNED` FK → `acc_accounting_status_masters` on `acc_vouchers`/`acc_bank_reconciliations`/`acc_expense_claims`/`acc_tally_export_logs`/`acc_event_processing_log`, but **every model+service uses string literals** (`'draft'/'posted'/...`) and a `string` cast. The "status master FK" is in the DDL but **NOT honoured by code** — correct the prior knowledge note that called this a clean implementation. Pick ONE source of truth.
+
+**P1:**
+- **BUG-ACC-003** — `ExpenseClaimService.php:32` and `DepreciationService.php:32` look up VoucherType code `'JRN'`, but `AccountingSeeder.php:358` seeds `'JNL'` → `firstOrFail()` 500s. **Expense-claim approval and depreciation are both completely broken.**
+- **BUG-ACC-004** — `approve()` sets status `'approved'`; `ReportService` includes only `status='posted'` → approved vouchers vanish from TB/P&L/BS.
+- **DATA-ACC-004** — depreciation not idempotent (BR-039) and no SLM salvage floor (BR-038) → re-run duplicates + double-depreciates.
+- **BUG-ACC-005** — `cancel()` reverses ledgers directly, never creates a reversal voucher (BR-020); no locked-year guard on post/cancel/approve/destroy (BR-016/022).
+- **BUG-ACC-006 / SEC-ACC-007** — event engine has no duplicate-event guard (BR-043) and re-throws on failure (blocks source module — NFR-006/BR-044).
+- **SEC-ACC-006** — expense-claim edit/submit have no ownership check (IDOR, BR-041).
+- **BUG-ACC-007** — FY lock skips the draft-voucher pre-check (BR-009).
+
+**P2:** BUG-ACC-008 (recon completes on no-unmatched not zero-diff), VAL-ACC-001 (17/17 FormRequests `authorize()=true`), BUG-ACC-009 (reject reason discarded), BUG-ACC-010 (no budget approval workflow / 90% alert), DATA-ACC-003 (`source_module` FK-vs-string), PERF-ACC-006 (dashboard unbounded), ARCH-ACC-001 (two posting paths).
+
+**Clean (better than baseline):** full tenancy stack in RouteServiceProvider, no `$request->all()`, no permission-prefix typos, no `initialize()` leak, `lockForUpdate` on voucher numbering + ledger writes, tenant-safe scheduled command.
+
 ### Verification Needed
 A Technical Audit (Mode A) is needed to assess:
 - Internal logic completeness of the 21 controllers (stubs vs. full logic)
@@ -201,6 +231,12 @@ Tally export logic is in `TallyExportController` and `TallyLedgerMappingControll
 
 ## Lessons Learned
 
+### From Technical Audit (2026-06-29, Technical Auditor)
+- **A DDL "feature" is only real if the code honours it.** The status-master FK and `source_module` FK exist in DDL v3, but the code ignores them and uses strings — what looked like a clean D4 status pattern is actually a P0 contradiction. Always verify the code path, not just the DDL.
+- **`current_balance` is a recurring D17 trap here** — the model fillable and two services write a column the DDL never defines. With 0 migrations, the DDL is the schema-of-record, so this is a functional blocker, not cosmetic.
+- **Snapshot correction:** prior notes said "0 job/command files; recurring/depreciation jobs may not be implemented." FALSE — `RunRecurringTemplatesCommand` exists and is **scheduled daily 01:00** via `AccountingServiceProvider::registerCommandSchedules`, and is tenant-safe (`Tenant::all()->each(fn → $tenant->run(...))`). Monthly-depreciation and budget-breach jobs are still absent.
+- **Seeded codes vs lookup codes must match:** journal type is seeded as `JNL` but two services query `JRN` — a one-letter mismatch that silently kills two whole workflows. Grep seeder codes when auditing `where('code', ...)` lookups.
+
 ### From Seeding + Update Pass (2026-06-27, Business Analyst)
 - **Old module code persists in file names:** The V2 requirement file is still `FAC_FinanceAccounting_Requirement.md` — always search by both `FAC` and `ACC` when looking for Accounting artifacts.
 - **Service count can be wrong from indirect sources:** The initial seed said "10 services" (sourced from V2 req baseline plus proposed additions). Actual `ls` shows 7. Always re-verify counts by reading the filesystem directly.
@@ -209,11 +245,27 @@ Tally export logic is in `TallyExportController` and `TallyLedgerMappingControll
 
 ---
 
+## FRD Summary
+
+| Item | Value |
+|------|-------|
+| FRD file | `4-Requirement_Module_wise/0-FRD_Documents/ACC_FRD_Complete_2026-06-29.md` (Complete Analysis Pack — single consolidated file) |
+| Date | 2026-06-29 |
+| Functional Requirements (REQ-ACC) | 22 |
+| Business Rules (BR-ACC) | 40 |
+| Reports (RPT-ACC) | 14 |
+| Enhancements (ENH-ACC) | 6 |
+| Workflows | 5 (Voucher lifecycle, Bank recon, Expense claim, Budget approval, Cross-module event) |
+| NFRs (NFR-ACC) | 12 |
+| Risks (RISK-ACC) | 8 |
+| Priority split (REQ) | P0 = 9, P1 = 13, P2 = 0 (lower-value items live in ENH log) |
+| ID contract | REQ-/BR-/RPT-/ENH- IDs are stable — downstream technical audit MUST reuse, never renumber |
+
 ## Pending Next Steps
 
-- [ ] Generate FRD → `act as Business Analyst` → "create an FRD for Accounting"
-- [ ] Code Gap Analysis → `act as Technical Auditor` — Mode A (actual vs V2 req) to assess controller logic completeness (stubs vs. implemented), test coverage, and RemoteEntryService integration
-- [ ] DDL Gap Decision → `act as DB Architect` — decide whether to add `acc_gst_details` / `acc_tds_entries` / `acc_year_end_closings` to DDL v4 or defer FAC7/FAC8/FAC10 entirely
+- [x] ~~Generate FRD~~ — **DONE** (2026-06-29): Complete Analysis Pack created
+- [ ] Code Gap Analysis → `act as Technical Auditor` — Mode A/B (FRD-driven) to assess controller logic completeness (stubs vs. implemented) per REQ-ACC IDs, test coverage, and RemoteEntryService↔event-engine integration
+- [ ] DDL Gap Decision → `act as DB Architect` — decide whether to add `acc_gst_details` / `acc_tds_entries` / `acc_year_end_closings` to DDL v4 or defer ENH-ACC-001/002/003 (FAC7/FAC8/FAC10)
 - [ ] ~~Verify generic event engine~~ — **DONE** (2026-06-27): confirmed implemented via ModuleEventController + EventVoucherConfigController + RemoteEntryService
 
 ---
@@ -224,3 +276,5 @@ Tally export logic is in `TallyExportController` and `TallyLedgerMappingControll
 |------|-------|-----------|
 | 2026-06-27 | Business Analyst | Knowledge file seeded from FAC_FinanceAccounting_Requirement.md (V2, 2026-03-26) + Accounting_DDL_v3.sql. Actual file counts as of seeding: 21 ctrl, 25 models, 10 services (later corrected), 17 FormRequests, 19 policies, 21 tests. |
 | 2026-06-27 | Business Analyst | Update pass: re-verified all file counts against prime_ai/Modules/Accounting/. Corrections: services = 7 (not 10); 141 blade views confirmed (was unknown); 220 route lines; generic event engine confirmed implemented; 0 migrations confirmed. Gaps resolved: views, ReconciliationService, DepreciationService, cross-module event engine. Remaining gaps: FAC7 (GST), FAC8 (TDS), FAC10 (Year-End DDL), controller logic completeness. Completion estimate revised to ~60–70%. |
+| 2026-06-29 | Technical Auditor | Mode X complete audit. Health **38/100 (capped — P0)**, DEPLOY **NO-GO**. 2 P0 (DATA-ACC-001 status INT-vs-string, DATA-ACC-002 missing `current_balance`), 8 P1 (BUG-ACC-003 JNL/JRN breaks approval+depreciation, BUG-ACC-004 approved vouchers dropped from reports, DATA-ACC-004 depreciation non-idempotent, BUG-ACC-005 no reversal voucher/locked-year guard, BUG-ACC-006/SEC-ACC-007 event engine dup-guard/re-throw, SEC-ACC-006 expense IDOR, BUG-ACC-007 FY lock), 7 P2, 5 P3. Report at `3-Audit_Reports/V1_Jun-2026/Accounting_Complete_Audit_2026-06-29.md`. Corrected snapshot: recurring command exists+scheduled; status-master FK not honoured by code. |
+| 2026-06-29 | Business Analyst | FRD + Complete Analysis Pack generated (`ACC_FRD_Complete_2026-06-29.md`): 22 REQ, 40 BR, 14 RPT, 6 ENH, 5 workflows, 12 NFR, 8 RISK. Performed 3-way DDL↔migration↔model reconcile: 28 DDL tables, 0 migrations, 25 models; 3 infra tables (status master, voucher_modules, voucher_category) are model-less. Documented DDL-vs-V2 divergences (status-master FK pattern, `type` debit/credit, single 5-value `nature`, `voucher_category_id` FK, generic event engine). Route count refined: 87 named + 15 resource. |

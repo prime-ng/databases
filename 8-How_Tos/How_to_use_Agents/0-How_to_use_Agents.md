@@ -3,6 +3,26 @@
 
 ## Direct Command (Can be used without providing file path, already configured in CLUADE.MD)
 --------------------------------------------------------------------------------------------
+seed module knowledge for {MODULE} 
+update module knowledge for {MODULE}
+
+`/agent business-analyst` → "Complete analysis of Hostel"
+`use pa-business-analyst` → "produce FRD for Inventory, Cafeteria, Hostel, Library modules"
+`/agent technical-auditor` → "Complete audit of Transport"
+`use pa-technical-auditor` → "Complete Audit Inventory, FrontOffice, Cafeteria, Hostel, Library"
+
+
+
+Admission
+BehaviouralAssessment
+Billing
+CommonChat
+Certificate
+HPC
+
+Transport
+
+
 ┌────────────────────────────────────────────────────┬───────────────────────────────────────────────────────────────────────────────────────┐
 │               Command                              │                        When to Use                                                    │
 ├────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────┤

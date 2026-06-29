@@ -1,532 +1,270 @@
-# Module Knowledge: CommonChat (CHT) + Communication (COM)
-# Last Updated: 2026-06-27
-# Completion Status: 0% — Greenfield (no implementation started)
+# Module Knowledge: CommonChat (COM)
+# Last Updated: 2026-06-29
+# Completion Status: ~70% BUILT (schema + service + web/mobile controllers + views live; tests, notification wiring, moderation audit, reply-depth guard outstanding)
 
 ---
 
-> **IMPORTANT — Two Distinct Modules Covered By This File**
+> **CORRECTION NOTICE (2026-06-29) — supersedes the 2026-06-27 seed.**
+> The prior version of this file claimed "0% Greenfield" and described TWO modules: CommonChat
+> (`cht_`) and a separate broadcast "Communication" (`com_`) module with 14 proposed tables, SMS/DLT,
+> WhatsApp, email campaigns, circulars, emergency alerts, etc. **That `com_` broadcast module does NOT
+> exist in the live codebase.** There is no `Modules/Communication`, no `com_*` migration, and no `com_*`
+> DDL. The seed conflated the real CommonChat chat module with an unrelated/aspirational broadcast spec.
+> This file is rewritten to describe ONLY the live module that exists:
 >
-> The DDL source (`Sch_CommonChat_DDL_v1.sql`) defines the **CommonChat** module with prefix `cht_`.
-> The requirement source (`COM_Communication_Requirement.md`) defines the **Communication** module with prefix `com_`.
-> These are architecturally separate but tightly linked: COM handles broadcast/campaign messaging (circulars, SMS, email, WhatsApp, emergency alerts); CHT handles real-time in-app chat (conversations, read receipts, presence). Both live in `tenant_db`. This file captures facts from both sources until a separate COM knowledge file is created.
+> | Identifier | Value |
+> |------------|-------|
+> | Module Name | **CommonChat** (real-time in-app chat) |
+> | Module Code (this knowledge/FRD set) | **COM** |
+> | Table prefix | **`cht_`** (chat) |
+> | Namespace | `Modules\CommonChat` |
+> | App path | `Modules/CommonChat/` |
+> | Route prefix | `chat/` (web), `api/v1/` (sanctum stub), mobile `admin/chat/` |
+> | DB layer | `tenant_db` (per-school isolated; NO `tenant_id` column) |
+>
+> CODE = COM, PREFIX = `cht_` is the intentional, verified pairing. Do not re-introduce the `com_`
+> broadcast tables — if school-wide SMS/email/circular broadcast is needed it is a *different, future*
+> module and must not be merged here.
 
 ---
 
-## Module Facts
+## Module Facts (verified against live tree 2026-06-29)
 
-### CHT — CommonChat (Real-Time Chat)
-
-| Item | Value |
-|------|-------|
-| Module Code | CHT |
-| Module Name | CommonChat |
-| Table prefix | `cht_*` |
-| DDL (canonical) | `2-DDL_Tenant_Consolidated/Sch_CommonChat_DDL_v1.sql` — 8 tables |
-| V2 Requirement | None linked in DDL header (DDL references `CHT_Requirements_v1.md` — not the COM req) |
-| Migration file | `2026_05_14_000001_create_cht_common_chat_tables.php` |
-| Seeder | `ChtSettingsSeeder` (seeds 1 row in `cht_settings` with all defaults) |
-| DB | `tenant_db` (per-school; no tenant_id columns) |
-| Models | 8 (one per table) |
-| FRD status | Not yet generated |
-| Business Rules | BR-CHT-001 to BR-CHT-016 referenced in DDL comments |
-
-### COM — Communication (Broadcast Messaging)
-
-| Item | Value |
-|------|-------|
-| Module Code | COM |
-| Module Name | Communication |
-| Table prefix | `com_*` |
-| DDL (canonical) | Not yet written — V2 requirement proposes 14 new `com_*` tables |
-| V2 Requirement | `4-Requirement_Module_wise/4-Initial_Requirements/V2/COM_Communication_Requirement.md` |
-| Module Namespace | `Modules\Communication` |
-| Module Path | `Modules/Communication/` |
-| Route Prefix | `communication/` |
-| DB | `tenant_db` (per-school; no tenant_id columns) |
-| Processing Mode | RBS_ONLY |
-| RBS Sub-Modules | N1 (SMS), N2 (Email), N3 (Push), N4 (In-App DM), N5 (Circular/Notice Board), N6 (Emergency), N7 (Preferences), N8 (Event Triggers) |
-| Queue Names | `communications` (dedicated) + `emergency` (highest priority) |
-| Controllers | 18 proposed (13 web + 4 API + 1 webhook) |
-| Models | 18 proposed |
-| Services | 11 proposed |
-| Jobs | 9 proposed |
-| FormRequests | 26 proposed |
-| Policies | 13 proposed |
-| Blade Views | ~85 proposed |
-| API endpoints (mobile) | 18 proposed |
-| Test cases | 22 proposed |
-| FRs count | 25 (FR-COM-001 to FR-COM-025) |
-| BRs count | 18 (BR-COM-001 to BR-COM-018) |
-| Permissions | 24 (`com.*` namespace) |
-| FRD status | Not yet generated |
+| Item | Value | Evidence |
+|------|-------|----------|
+| Module Code | COM | task assignment |
+| Module Name | CommonChat | `Modules/CommonChat/module.json` |
+| Table prefix | `cht_` | migrations |
+| DDL (reference) | `2-DDL_Tenant_Consolidated/Sch_CommonChat_DDL_v1.sql` (header: "Requirement: CHT_Requirements_v1.md") | DDL file |
+| Live migrations | **9** tenant migrations dated `2026_06_16_1007xx` | `database/migrations/tenant/` |
+| DB | `tenant_db` (per-school) | migration targets `sys_users`/`sys_roles` |
+| Tables | **9** `cht_*` tables | migrations |
+| Models | **9** (one per table) | `app/Models/` |
+| Controllers | **15** = 9 web + 6 mobile | `app/Http/Controllers/` |
+| Services | **1** — `ChatService` (559 LOC, 15 public/private methods) | `app/Services/` |
+| Policies | **4** — Conversation, Message, Participant, PermissionConfig | `app/Policies/` (module-local) |
+| FormRequests | **5** — CreateDm, CreateGroup, MarkAsRead, StoreMessage, UpdateParticipant | `app/Http/Requests/` |
+| Blade views | **19** | `resources/views/` |
+| Seeders | **2** — `CommonChatDatabaseSeeder` (1 row in `cht_settings`), `ChatPermissionConfigSeeder` (role-pair defaults) | `database/seeders/` |
+| Console commands | **1** — `chat:purge-old-messages` (`PurgeOldChatMessages`), scheduled `->daily()` | `app/Console/Commands/` + ServiceProvider |
+| Route files | **3** — `web.php` (full CRUD+ajax), `api.php` (sanctum `apiResource commonchats` stub), `mobile_api.php` (admin/chat endpoints) | `routes/` |
+| Tests | **0** — `tests/Feature` and `tests/Unit` empty | filesystem |
+| FRD status | **Generated 2026-06-29** — `COM_FRD_Complete_2026-06-29.md` | this run |
+| Permission strings | `tenant.chat.create`, `tenant.chat.message`, `tenant.chat.moderate`, `tenant.chat.settings`, `tenant.chat-permission-config.{view,create,update,delete,restore,status}` | grep of policies/controllers |
 
 ---
 
-## DDL Layer Structure
+## DDL / Schema — Live Table Inventory (9 tables, from migrations)
 
-### CHT — CommonChat (8 tables)
+| # | Table | Layer | PK | Purpose | Notable columns |
+|---|-------|-------|----|---------|-----------------|
+| 1 | `cht_settings` | L1 | `id` **UNSIGNED TINYINT default 1** (singleton) | School-level chat config (1 row) | `max_group_members` (default 100), `max_file/audio/video_attachment_size_mb`, `message_retention_days` (0=forever), default_* preference flags, capability defaults (`can_*`) |
+| 2 | `cht_permission_config` | L1 | `id` UNSIGNED INT | Role-pair / user-override permission matrix | `permission_for_role_id` FK→sys_roles, `permission_for_user_id` FK→sys_users (NULL=role rule), `allowed_whom_to_connect_with` FK→sys_roles, capability flags, `is_active`, softDeletes. UNIQUE(role,user,allowed) |
+| 3 | `cht_personalization_settings` | L1 | `id` UNSIGNED INT | Per-user chat preferences + privacy | `show_online_status`, `notify_on_new_message`, `notify_on_mention`, `show_message_preview_in_notif`, `show_read_receipt_enabled`, `is_deactivated_by_admin`, `is_active`, `created_by` (NO `updated_by`), `role_id` FK, `user_id` FK, softDeletes. UNIQUE(role_id,user_id) |
+| 4 | `cht_user_presence` | L1 | **`user_id`** (no surrogate; upsert) | Heartbeat presence | `last_seen_at`, `device_type`. No `is_active`/`created_by`/`deleted_at` |
+| 5 | `cht_conversations` | L2 | `id` BIGINT | DM / Group / Announcement header | `conversation_type` ENUM('Announcement','Direct','Group') default Direct, `name`, `description`, `avatar_media_id`, `last_message_at`, `last_message_preview`, `is_archived`, `user_a_id`/`user_b_id` FK→sys_users, **`dm_pair_hash` VIRTUAL generated col** + UNIQUE, composite UNIQUE(created_by,type,name,deleted_at), CHECK on name-by-type, softDeletes |
+| 6 | `cht_participants` | L3 | `id` BIGINT | Membership + per-user state | `conversation_id` FK cascade, `user_id` FK cascade, `role` ENUM('Admin','Member'), `joined_at`, `left_at`, `muted_until`, `is_pinned`, `pin_order` (TINYINT), `unread_count`, `archived_at`, softDeletes. UNIQUE(conversation_id,user_id) |
+| 7 | `cht_messages` | L4 | `id` BIGINT | Messages | `body` VARCHAR(2000), `message_type` ENUM('Attachment','System','Text') **default 'text' (lowercase — see BUG below)**, `is_deleted`, `conversation_id` FK cascade, `sender_id` FK set-null, `parent_message_id` self-FK null-on-delete, `deleted_by` FK set-null, softDeletes |
+| 8 | `cht_attachments` | L5 | `id` BIGINT | File metadata per message | `file_name`, `file_path` (500), `file_size`, `mime_type`, `media_id`, `thumbnail_media_id`, `is_active`, `created_by`, `updated_by`, `message_id` FK cascade. **No `deleted_at`** (follows message lifecycle) |
+| 9 | `cht_message_receipts` | L5 | `id` BIGINT | Per-recipient read receipt | `read_at` NULL, **HAS `created_at`/`updated_at`** but NO `created_by`/`updated_by`/`deleted_at`, `message_id` FK cascade, `user_id` FK cascade. UNIQUE(message_id,user_id) |
 
-| Layer | Tables | Notes |
-|-------|--------|-------|
-| Layer 1 (no cht_* deps) | `cht_settings` | Singleton config; PK is `TINYINT UNSIGNED DEFAULT 1` (not standard BIGINT AI) |
-| Layer 1 (no cht_* deps) | `cht_permission_config` | Role-pair permission matrix; FKs only to `sys_roles` + `sys_users` |
-| Layer 1 (no cht_* deps) | `cht_personalization_settings` | Per-user preferences; FKs only to `sys_users` + `sys_roles` |
-| Layer 1 (no cht_* deps) | `cht_user_presence` | Ephemeral heartbeat table; PK = `user_id` (upsert pattern — not surrogate) |
-| Layer 2 (deps Layer 1) | `cht_conversations` | DM / Group / Announcement header; STORED generated `dm_pair_hash` column |
-| Layer 3 (deps Layer 2) | `cht_participants` | User-conversation membership; one row per user per conversation |
-| Layer 4 (deps Layer 3) | `cht_messages` | Individual messages within a conversation; soft-delete clears body |
-| Layer 5 (deps Layer 4) | `cht_message_receipts` | Per-message per-recipient read receipts; append-only |
-| Layer 5 (deps Layer 4) | `cht_attachments` | File metadata for message attachments |
+> **There is NO dedicated `cht_activity_log` table.** Moderation/admin audit is intended to flow to the
+> system-wide `sys_activity_logs` (per V1 tab-10) — but see GAP-COM-003: that write is not yet implemented.
 
-### COM — Communication Proposed Tables (14 com_* tables — DDL not yet written)
-
-| Layer | Tables |
-|-------|--------|
-| Layer 1 (no com_* deps) | `com_gateway_configs`, `com_sms_dlt_templates`, `com_message_templates`, `com_whatsapp_templates`, `com_groups`, `com_school_settings` |
-| Layer 2 (deps Layer 1) | `com_message_template_translations`, `com_group_members_jnt`, `com_recurring_rules`, `com_event_trigger_rules`, `com_user_preferences` |
-| Layer 3 (deps Layer 2) | `com_messages`, `com_circulars` |
-| Layer 4 (deps Layer 3) | `com_message_recipients_jnt`, `com_circular_targets_jnt`, `com_circular_acknowledgements`, `com_emergency_alerts`, `com_message_flags` |
-
-> Note: The requirement document states "14 DDL tables" for `com_*`. The Layer 4 derivative/junction tables bring the effective total to 18 distinct tables. The "14" count excludes some junction and log tables.
-
----
-
-## Feature Groups
-
-### CHT — CommonChat
-
-| FR | Feature | Tables | Priority |
-|----|---------|--------|----------|
-| F-CHT-01 | School-level chat configuration | `cht_settings` | Critical |
-| F-CHT-02 | Role-pair permission matrix (who can message whom) | `cht_permission_config` | Critical |
-| F-CHT-03 | Per-user chat personalization + privacy | `cht_personalization_settings` | High |
-| F-CHT-04 | Online/offline presence tracking | `cht_user_presence` | High |
-| F-CHT-05 | Direct (1:1) conversations | `cht_conversations`, `cht_participants` | Critical |
-| F-CHT-06 | Group conversations | `cht_conversations`, `cht_participants` | High |
-| F-CHT-07 | Announcement broadcast threads (one-way) | `cht_conversations`, `cht_participants` | High |
-| F-CHT-08 | Message send + reply threading (depth 1) | `cht_messages` | Critical |
-| F-CHT-09 | File attachments on messages | `cht_attachments` | High |
-| F-CHT-10 | Read receipts per message per recipient | `cht_message_receipts` | High |
-| F-CHT-11 | Message soft-delete (body cleared, row retained) | `cht_messages.is_deleted` | Critical |
-| F-CHT-12 | Mute / Pin / Archive per user | `cht_participants` (`muted_until`, `is_pinned`, `archived_at`) | Medium |
-| F-CHT-13 | Admin chat access revocation | `cht_personalization_settings.is_deactivated_by_admin` | Medium |
-| F-CHT-14 | Message retention auto-purge | `cht_settings.message_retention_days` + `ChtPurgeOldMessagesJob` | Medium |
-
-### COM — Communication
-
-| FR# | Feature | Tables | Priority |
-|-----|---------|--------|----------|
-| FR-COM-001 | SMS Gateway Configuration (DLT-compliant) | `com_gateway_configs` | P1 |
-| FR-COM-002 | DLT Template Registration (TRAI NCPR) | `com_sms_dlt_templates` | P1 |
-| FR-COM-003 | Compose and Send SMS Campaign | `com_messages`, `com_message_recipients_jnt` | P1 |
-| FR-COM-004 | Bulk SMS via CSV Upload (max 5,000 rows) | `com_messages`, `com_message_recipients_jnt` | P1 |
-| FR-COM-005 | SMS Delivery Tracking + Webhook | `com_message_recipients_jnt` | P1 |
-| FR-COM-006 | Email Sending Configuration (SMTP/SES/Mailgun) | `com_gateway_configs` | P1 |
-| FR-COM-007 | Compose and Send Email Campaign | `com_messages`, `com_message_recipients_jnt` | P1 |
-| FR-COM-008 | Email Template Management (versioned) | `com_message_templates`, `com_message_template_translations` | P1 |
-| FR-COM-009 | Recurring Email/SMS Rules | `com_recurring_rules` | P1 |
-| FR-COM-010 | Communication-Initiated Push Notifications | `com_messages`, `com_message_recipients_jnt` | P2 |
-| FR-COM-011 | One-to-One In-App Direct Messaging | `com_messages`, `com_message_recipients_jnt` | P1 |
-| FR-COM-012 | Group Messaging | `com_messages`, `com_message_recipients_jnt`, `com_groups` | P1 |
-| FR-COM-013 | Message Moderation + Flagging | `com_message_flags` | P1 |
-| FR-COM-014 | Create and Distribute Circular | `com_circulars`, `com_circular_targets_jnt` | P1 |
-| FR-COM-015 | Circular Acknowledgement Tracking | `com_circular_acknowledgements` | P1 |
-| FR-COM-016 | Notice Board Display (role-filtered, paginated) | `com_circulars`, `com_circular_targets_jnt` | P1 |
-| FR-COM-017 | Emergency Alert Broadcast (multi-channel) | `com_emergency_alerts`, `com_messages` | P0 |
-| FR-COM-018 | Emergency Alert Delivery Tracking | `com_emergency_alerts` | P0 |
-| FR-COM-019 | User Notification Preference Management | `com_user_preferences` | P2 |
-| FR-COM-020 | Event-Driven Trigger Contract (N8) | `com_event_trigger_rules`, `com_messages` | P2 |
-| FR-COM-021 | Communication Group Management | `com_groups` | P1 |
-| FR-COM-022 | Group Membership Management | `com_group_members_jnt` | P1 |
-| FR-COM-023 | Schedule Messages for Future Delivery | `com_messages` (`scheduled_at`) | P1 |
-| FR-COM-024 | Communication Analytics Dashboard | `com_messages`, `com_message_recipients_jnt` (aggregated) | P2 |
-| FR-COM-025 | Communication Reports (PDF + CSV) | All com_* tables | P2 |
+### Three-way reconciliation (DDL ↔ migration ↔ model)
+- **DM uniqueness:** migration creates `dm_pair_hash` as a **VIRTUAL** generated column (not STORED as the
+  old seed claimed). MySQL 8.0+ still required (`LEAST`/`GREATEST` in generated column). Service
+  (`createDm`) also sets `user_a_id=LEAST`, `user_b_id=GREATEST` and pre-checks for an existing row.
+- **`cht_settings` singleton:** live migration declares `primary('id')` only — the "missing comma /
+  duplicate UNIQUE" syntax error noted against the raw .sql in the old seed does **not** exist in the
+  live migration. Seeder uses `firstOrCreate(['id'=>1])`.
+- **`message_type` ENUM default bug:** column default is `'text'` (lowercase) but the ENUM members are
+  `'Attachment','System','Text'` (capitalised). MySQL will reject/normalise the default — confirmed
+  schema smell. Service always writes a capitalised value via a `match`, so runtime inserts are safe,
+  but the column default is invalid. → GAP-COM-006.
 
 ---
 
-## DDL Gaps
+## Feature → Table → Code Map (live)
 
-### CHT — Tables Referenced but Not in DDL
-
-| Gap | Reference Location | Impact | Priority |
-|-----|--------------------|--------|----------|
-| `CHT_Requirements_v1.md` not read | DDL header references this requirement file — it is NOT the COM req | If CHT requirement specifies additional tables (reactions, @mention tracking, etc.) they may not be in this DDL | P1 — read CHT req before coding |
-| `sys_roles` | Referenced by `cht_permission_config.permission_for_role_id` and `cht_personalization_settings.role_id` | Must exist and be seeded before any `cht_permission_config` inserts | P0 — SYS prerequisite |
-| `sys_users` | Referenced by all FKs for `user_id`, `created_by`, `sender_id`, `deleted_by`, etc. | Must be complete before any CHT table can be populated | P0 — SYS prerequisite |
-| Spatie Media Library `spatie_media` | Referenced logically by `cht_attachments.media_id` and `cht_conversations.avatar_media_id` (INT UNSIGNED; no FK constraint) | Package must be installed and its migration run before CHT is fully functional | P0 |
-
-### COM — Tables Referenced in Requirement but DDL Not Yet Written
-
-All 14+ proposed `com_*` tables are gaps since no DDL file exists. Key structural issues to fix when writing DDL:
-
-| Gap Table | Issue | Priority |
-|-----------|-------|----------|
-| ALL `com_*` tables | Requirement uses `BIGINT UNSIGNED` for PKs — must be corrected to `INT UNSIGNED` per platform standard | P0 |
-| ALL `com_*` tables | `created_by` / `updated_by` columns shown as `BIGINT UNSIGNED FK→sys_users` — must be `INT UNSIGNED` (sys_users.id = INT UNSIGNED) | P0 |
-| `com_group_members_jnt` | `group_id` FK — if `com_groups.id` uses INT UNSIGNED PK, FK must also be INT UNSIGNED; same for `user_id`, `added_by` | P0 |
-| `com_messages` | `sender_id`, `created_by` → INT UNSIGNED; `group_id`, `template_id`, `dlt_template_id`, `whatsapp_template_id`, `parent_message_id`, `event_trigger_rule_id` → INT UNSIGNED (matching their parent table PKs) | P0 |
-| `com_message_recipients_jnt` | `message_id`, `recipient_id` → INT UNSIGNED | P0 |
-| `com_event_trigger_rules` | Requirement proposal has no `updated_by` column — verify at DDL write time | P1 |
-| `com_circular_targets_jnt` | No `created_by` / `deleted_at` in req proposal — confirm intentional at DDL write time | P1 |
-| `com_user_preferences` | No `deleted_at` in req — correct: preference rows are never soft-deleted; `is_opted_in` toggle is the lifecycle | P1 |
-| `com_message_flags` | No `deleted_at` in req — confirm intentional (flag is immutable moderation audit record) | P1 |
-| `com_message_template_translations` | No `deleted_at` in req — deactivation via `is_active = 0` only; confirm at DDL write | P1 |
-
----
-
-## DDL Corrections & Platform Deviations
-
-### CHT DDL — Issues Found
-
-| Issue | Location | Correction |
-|-------|----------|------------|
-| `cht_settings.id` is `TINYINT UNSIGNED NOT NULL DEFAULT 1` — not the standard `BIGINT UNSIGNED AUTO_INCREMENT` | `cht_settings` PK | **Intentional** — singleton table (exactly 1 row per tenant). Do not change. |
-| `cht_user_presence` — PK is `user_id INT UNSIGNED` (not a surrogate `id`) | `cht_user_presence` | **Intentional** — upsert-by-user pattern. Do not add a surrogate PK. |
-| Missing comma in `cht_settings` DDL: `UNIQUE \`uq_cht_setting\` (\`id\`)` appears immediately after `PRIMARY KEY (\`id\`)` without a preceding comma | `cht_settings` DDL near line 61 | **Syntax error** — must add comma between `PRIMARY KEY` clause and `UNIQUE` clause. Fix before running migration. |
-| `cht_permission_config` closing `) ENGINE=InnoDB ...` statement is missing in the file as read | `cht_permission_config` DDL | **Possible truncation or syntax error** — verify in the actual file and add closing statement if missing. |
-| `cht_personalization_settings` has `created_by INT UNSIGNED NULL` but NO `updated_by` column | `cht_personalization_settings` | **Intentional** — single-user record; `updated_by` is redundant. Note in model. |
-| `cht_messages.deleted_by INT UNSIGNED NULL` — extra audit column not in standard convention | `cht_messages` | **Intentional** — required to distinguish "deleted by sender" vs "deleted by admin" for UI label. Keep. |
-| `cht_attachments.media_id` / `thumbnail_media_id` — `INT UNSIGNED NULL` references Spatie media but no FK constraint | `cht_attachments` | **Intentional** — Spatie Media Library manages its own table lifecycle; FK omitted by design. |
-| `cht_message_receipts` — no `deleted_at`, no `created_by`, no `updated_by` | `cht_message_receipts` | **Intentional** — immutable append-only receipt log. Do not add these columns. |
-| `cht_attachments` — no `deleted_at` | `cht_attachments` | **Intentional** — follows parent message lifecycle (cascade from cht_messages). |
-| All CHT FKs referencing `sys_users.id` use `INT UNSIGNED` | All cht_* tables | **Correct** — consistent with platform standard (sys_users.id = INT UNSIGNED). |
-
-### COM Requirement vs Platform Standard
-
-| Claim in Requirement | Platform Correction |
-|---------------------|---------------------|
-| All `com_*` PKs: `BIGINT UNSIGNED` | Must be `INT UNSIGNED` per platform standard |
-| `created_by` / `updated_by`: `BIGINT UNSIGNED FK→sys_users` | Must be `INT UNSIGNED` (sys_users.id is INT UNSIGNED in tenant_db) |
-| `com_groups.class_id` / `section_id`: `INT UNSIGNED` | Correct — `sch_classes.id` and `sch_sections.id` are INT UNSIGNED |
-| `com_emergency_alerts.audience_class_id` / `audience_section_id`: `INT UNSIGNED` | Correct |
-| No `academic_session_id` on `com_messages` | Correct — messages are not session-scoped; the design is right as specified |
+| REQ (FRD) | Feature | Key tables | Primary code | Status |
+|-----------|---------|-----------|--------------|--------|
+| REQ-COM-001 | Chat dashboard / conversation list | participants, conversations | `ChatController@index/conversations`, `ChatService::getConversationsForUser` | BUILT |
+| REQ-COM-002 | Direct (1:1) messaging | conversations, participants, messages | `ChatService::createDm/canInitiateDm` | BUILT |
+| REQ-COM-003 | Group chat | conversations, participants | `ChatService::createGroup` | BUILT |
+| REQ-COM-004 | Group membership mgmt (add/remove/leave/transfer/auto-promote) | participants | `ChatParticipantController`, `ChatService::addParticipant/removeParticipant/leaveGroup` | PARTIAL (no system-message events) |
+| REQ-COM-005 | Announcement threads (one-way) | conversations, participants | `ChatService` (isAnnouncement branches) | PARTIAL (create-announcement view exists; send-restriction logic thin) |
+| REQ-COM-006 | Composer: send + reply threading | messages | `ChatMessageController@store`, `ChatService::sendMessage`, `StoreMessageRequest` | PARTIAL (reply-depth cap NOT enforced) |
+| REQ-COM-007 | File & media attachments | attachments | `StoreMessageRequest` (file rule) | PARTIAL (MIME allow-list + per-setting size not enforced; one-per-msg) |
+| REQ-COM-008 | Read receipts & status | message_receipts | `ChatService::sendMessage` (receipt fan-out), markAsRead | BUILT |
+| REQ-COM-009 | Unread count + mark-as-read | participants, message_receipts | `ChatService::markAsRead` | BUILT |
+| REQ-COM-010 | Message search & history | messages | `ChatMessageController@search` | BUILT (LIKE search) |
+| REQ-COM-011 | Mute / Pin / Archive (per-user) | participants | `ChatService::pin/mute/archiveConversation` | BUILT |
+| REQ-COM-012 | Notifications & alerts (NTF integration) | participants, personalization | — | NOT BUILT (no NTF dispatch anywhere) |
+| REQ-COM-013 | Online/offline presence | user_presence | `ChatAjaxController@ping`, `MobileChatPresenceController` | BUILT |
+| REQ-COM-014 | Message soft-delete (sender + admin) | messages | `ChatService::deleteMessage` | BUILT (no audit write) |
+| REQ-COM-015 | Personalization & privacy settings | personalization_settings | `ChatPersonalizationController` | BUILT |
+| REQ-COM-016 | School chat configuration | settings | `ChatSettingsController` | BUILT |
+| REQ-COM-017 | Permission config matrix + user override | permission_config | `ChatPermissionConfigController` (full CRUD+trash+restore+toggle) | BUILT |
+| REQ-COM-018 | Admin moderation console | messages, conversations | `ChatModerationController` | PARTIAL (view + admin-delete; flagging UI thin) |
+| REQ-COM-019 | Activity log & audit trail | sys_activity_logs (intended) | — | NOT BUILT (no sys_activity_logs writes) |
+| REQ-COM-020 | Retention auto-purge | settings, messages | `PurgeOldChatMessages` cmd (daily) | BUILT |
+| REQ-COM-021 | Mobile chat API | all | `Mobile/*` (6 controllers) | BUILT |
+| REQ-COM-022 | Admin chat access revocation | personalization_settings | `is_deactivated_by_admin` column | PARTIAL (column present; enforcement guard not in send path) |
 
 ---
 
-## Key Design Decisions
+## Known Gaps & Open Issues
 
-### CHT — CommonChat
+> **Technical Auditor Mode X (2026-06-29)** confirmed/added the issues below. Report:
+> `3-Audit_Reports/V1_Jun-2026/CommonChat_Complete_Audit_2026-06-29.md`. New auditor-coded items:
+> - **P0 MIG-COM-001** — `cht_permission_config` FKs to `sys_roles` (migration `...100703:32,:36`); `sys_roles`
+>   has NO create migration anywhere → `tenants:migrate` fails errno 150/1824. DEPLOY BLOCKER (Layer-2.5 systemic).
+> - **P1 SEC-COM-001** — attachments on `public` disk, served via `Storage::disk('public')->url()`
+>   (`ChatAjaxController:479,506,508`), no auth/membership gate → confidential files world-readable by URL.
+> - **P1 JOB-COM-001** — `chat:purge-old-messages` scheduled in CENTRAL context (`CommonChatServiceProvider:82`),
+>   no `tenants:run`/tenancy init → retention purge never runs per-tenant (REQ-COM-020 non-functional).
+> - **P1 BUG-COM-001** — `ChatService::deleteMessage:365` hardcodes `hasAnyRole(['super-admin','principal'])`;
+>   conflicts with policy `tenant.chat.moderate` + service short_names → moderation/admin-delete fails.
+> - **P1 DAT-COM-001** — `cht_messages.body` VARCHAR(2000) vs validation/BR-COM-016 max 5000 → truncation/SQL 22001.
+> - **P1 VAL-COM-001** — reply integrity unenforced: no same-conversation (BR-COM-018) and no depth-1 (BR-COM-019)
+>   check on `parent_message_id` → cross-conversation reply + content leak. (supersedes scope of GAP-COM-002)
+> - **P1 BUG-COM-003** — PII `Log::debug` on every user search (`ChatController:210,218,227`).
+> - **P2 SEC-COM-003** — `ChatAjaxController` bypasses Policy gates; announcement post-restriction (BR-COM-014)
+>   only in policy, not in `ChatService::sendMessage` → AJAX/mobile send path doesn't enforce it.
+> - **P2 VAL-COM-002** — permission-config uniqueness (BR-COM-036) not validated at request layer (DB index only → 500).
+> - **P3 DEAD-COM-001** — `CommonChatController` scaffold stub + `api.php commonchats` group has no tenancy middleware.
+> - **Snapshot correction:** attachment MIME allow-list + per-setting size **ARE** enforced and `cht_attachments`
+>   rows **ARE** created on the AJAX/mobile path (`ChatAjaxController:167-194,481`) — GAP-COM-007 applies only to the
+>   web `StoreMessageRequest`/`ChatService::sendMessage` path (hardcoded `max:10240`, no persistence there).
+> - **Good (not gaps):** all 5 FormRequests delegate `authorize()` to policies (beats D30); `dm_pair_hash` VIRTUAL
+>   generated col correctly emitted (beats D36); web+mobile tenancy stack present.
 
-1. **DM uniqueness via STORED generated column `dm_pair_hash`**: The service layer guarantees `user_a_id = LEAST(userId, recipientId)` and `user_b_id = GREATEST(userId, recipientId)` before insert. The UNIQUE constraint on `dm_pair_hash` enforces exactly one conversation per user pair at the DB level. Requires MySQL 8.0+ (`LEAST`/`GREATEST` in STORED generated columns not available on 5.7).
+### P0
+- **GAP-COM-001 — No automated tests.** `tests/Feature` and `tests/Unit` are empty. Zero coverage on DM
+  uniqueness, permission resolution, receipt fan-out, retention purge.
+- **GAP-COM-002 — Reply-depth cap (BR-COM) NOT enforced.** `StoreMessageRequest` only checks
+  `parent_message_id` exists; neither the FormRequest nor `ChatService::sendMessage` verifies the parent
+  is top-level (`parent_message_id IS NULL`). Reply-to-reply is currently possible.
+- **GAP-COM-003 — Moderation audit not written.** `deleteMessage` sets `is_deleted/deleted_by` but does
+  NOT write to `sys_activity_logs` and does NOT store the SHA-256 body hash that V1 tab-10 mandates.
+  The "Activity Log & Audit Trail" screen (REQ-COM-019) has no backing data source.
 
-2. **Single `cht_conversations` table covers all three conversation types**: `Direct`, `Group`, and `Announcement` are discriminated by `conversation_type` ENUM. A CHECK constraint enforces `name IS NOT NULL` for Group/Announcement and `name IS NULL` for Direct. Avoids three separate tables while enabling per-type query filtering.
+### P1
+- **GAP-COM-004 — Notification integration absent.** V1 tab-8 specifies in-app notifications + NTF
+  fallback on new message / @mention. No NTF dispatch exists in `ChatService` or any listener
+  (`EventServiceProvider` has empty `$listen`). Only `unread_count` increments.
+- **GAP-COM-005 — Role-name mismatch between seeder and service.** `ChatPermissionConfigSeeder` keys on
+  role **display names** ("Super Admin", "School Admin", "Teacher", "Student", "Parent"). But
+  `ChatService::canInitiateDm` branches on role **`short_name`** values ("super_admin", "principal",
+  "vice_principal", "teacher", "staff", "accountant", "librarian", "student", "parent"). "School Admin"
+  has no short_name branch; "principal/vice_principal" are not seeded. Permission resolution is
+  inconsistent across the two layers.
+- **GAP-COM-006 — `cht_messages.message_type` invalid column default** (`'text'` lowercase vs ENUM
+  members capitalised). Cosmetic at runtime (service writes capitalised) but invalid schema default.
+- **GAP-COM-007 — Attachment validation thin.** `StoreMessageRequest` hardcodes `file max:10240` (10 MB)
+  rather than reading `cht_settings.max_file_attachment_size_mb`; no MIME allow-list (JPEG/PNG/GIF/WebP/
+  PDF/DOC/DOCX/XLS/XLSX) enforced; no server-side content sniffing; no `cht_attachments` row creation
+  observed in `ChatService::sendMessage` (attachment persistence path incomplete).
+- **GAP-COM-008 — Group max-member off-by-one.** `createGroup` rejects when `count(memberIds) >= maxMembers`,
+  blocking at `maxMembers-1` additional members instead of allowing exactly `maxMembers` total.
+- **GAP-COM-009 — System messages for group events not generated.** No `message_type='System'` rows for
+  join/leave/admin-transfer/rename/archive (V1 tab-3 spec).
+- **GAP-COM-010 — `is_deactivated_by_admin` not enforced in send/receive path.** Column exists; no guard
+  in `ChatService::sendMessage` / message policy.
 
-3. **`cht_participants` carries all per-user state**: Unread count, mute, pin order, and per-user archive are on the participant row — NOT on conversations. This ensures per-user personalisation without affecting other participants in the same conversation.
-
-4. **Conversation-level archive vs participant-level archive**: `cht_conversations.is_archived = 1` makes the conversation read-only school-wide (admin action). `cht_participants.archived_at` is a per-user UI-only hiding mechanism that does not affect other participants.
-
-5. **Soft-delete clears message body for privacy**: `cht_messages.is_deleted = 1` + `body = NULL`. Row retained for thread integrity and audit. `deleted_by` column enables two UI labels: if `deleted_by = sender_id` → "This message was deleted"; if `deleted_by != sender_id` (admin) → "Removed by Admin".
-
-6. **Reply depth capped at 1 level** (BR-CHT-016): `parent_message_id` can only reference a top-level message (one with `parent_message_id IS NULL`). Service layer rejects reply-to-reply before insert. Prevents unbounded nesting complexity.
-
-7. **`cht_message_receipts` is append-only**: No `deleted_at`, no `created_by`, no `updated_by`. `read_at` is set once and never cleared. High-volume table — indexed on `(message_id, user_id)` and `(user_id, read_at)` for the two primary query patterns.
-
-8. **`cht_attachments` follows message lifecycle**: No `deleted_at` on `cht_attachments`. When message is soft-deleted, the `ChatAttachment` model accessor returns `NULL` for URL. When message is hard-deleted by admin, attachment cascades via FK. Attachment rows are never independently soft-deleted.
-
-9. **`cht_user_presence` upsert pattern**: No surrogate PK; `user_id` IS the PK. Every 30-second heartbeat does `INSERT ... ON DUPLICATE KEY UPDATE last_seen_at = NOW()`. Online threshold = `last_seen_at > UTC_TIMESTAMP() - INTERVAL 60 SECOND`. No `deleted_at` or `created_by` — ephemeral state only.
-
-10. **Permission resolution priority** (three-tier): User-specific `cht_permission_config` row (where `permission_for_user_id IS NOT NULL`) overrides role-level row (where `permission_for_user_id IS NULL`), which overrides global defaults in `cht_settings`. Fallback chain enforced at service layer — never bypass to `cht_settings` if a role row exists.
-
-11. **Phase-1 one-attachment-per-message** with Phase-2 multi-attachment path: `cht_attachments` has an INDEX (not UNIQUE) on `message_id`. UNIQUE constraint deliberately omitted so Phase-2 can support multiple attachments without schema change. Service layer enforces Phase-1 limit.
-
-12. **Group avatar via Spatie Media Library**: `cht_conversations.avatar_media_id INT UNSIGNED NULL` references Spatie's media table by ID. No FK constraint (Spatie manages its own lifecycle). Same pattern for `thumbnail_media_id` on `cht_attachments`.
-
-### COM — Communication
-
-13. **Two-step confirmation mandatory for emergency alerts** (BR-COM-015): `POST /emergency/preview` creates `com_emergency_alerts` with `status = 'pending_confirmation'` and returns `{alert_id, preview_html}`. `POST /emergency/confirm` (with `alert_id`) sets `status = 'dispatching'`. No single-step endpoint exists. Prevents accidental school-wide alerts.
-
-14. **Emergency bypasses `com_user_preferences` entirely** (BR-COM-002): Emergency category rows always have `is_opted_in = 1` enforced at application layer; user cannot set to `0`. Emergency dispatches additionally bypass the entire preference filter in `CommunicationService` — no per-user exclusion even for opted-out channels.
-
-15. **Pre-materialize recipients ≤ 500; async above 500** (BR-COM-018): `com_message_recipients_jnt` rows created synchronously for campaigns ≤ 500 recipients. `PrepareRecipientsJob` handles larger campaigns async; message stays `dispatching` until job completes. Pre-materialization chosen over lazy-resolve to enable per-recipient status tracking.
-
-16. **Template versioning via parent chain**: Editing a `com_message_templates` record creates a NEW row with `version + 1` and `parent_template_id` pointing to the previous version. Original is archived (`is_active = 0`), never deleted. Full version history traceable via `parent_template_id` chain.
-
-17. **DLT body reconstruction validates against registered skeleton** (BR-COM-001): Before SMS dispatch, `SmsService::reconstructBody()` substitutes each `{#var#}` in position order from `variable_mapping_json`. If the reconstructed skeleton (stripped of substituted values) differs from the stored `body_template`, dispatch is rejected with a TRAI compliance error.
-
-18. **Auto-sync groups resolve dynamically at send time** (BR-COM-009): Groups with `auto_sync = 1` do not store member rows in `com_group_members_jnt`. Membership is resolved by `CommunicationGroupService` at dispatch based on `group_type` (class/section/role). Manual member add to auto-sync groups returns HTTP 422.
-
-19. **`com_messages` is the unified record for ALL channels**: One table covers email, SMS, in-app, WhatsApp, and push. Channel-specific FKs (`dlt_template_id`, `whatsapp_template_id`, `ntf_notification_ref_id`) are nullable and populated only when relevant.
-
-20. **Dedicated `emergency` queue worker — queue isolation**: Normal campaigns use `communications` queue. Emergency alerts use `emergency` queue. Workers must NEVER process both on the same process — a large SMS campaign on `communications` must not block emergency dispatch.
-
-21. **WhatsApp `components_json` stored locally** (not fetched from Meta at runtime): `com_whatsapp_templates.components_json` stores the full Meta template component structure locally. Meta API responses can change; local copy ensures rendering stability without a runtime API dependency.
-
-22. **DND filter uses Redis cache with 6-hour TTL**: Avoids a per-SMS DND scrub API call per recipient. Cache key = phone number; value = DND status. `DndFilterService` manages cache population and expiry.
-
-23. **Gateway credentials encrypted at rest with Laravel `encrypt()`** (AES-256-CBC): `api_key_encrypted`, `api_secret_encrypted`, `webhook_token_encrypted`, `smtp_password_encrypted` — never stored in plain text. Only decrypted in memory during dispatch.
-
----
-
-## Business Rules
-
-### CHT — CommonChat
-
-| BR ID | Rule Summary | Enforcement Point |
-|-------|-------------|-------------------|
-| BR-CHT-001 | Only one DM conversation allowed between any two users | DB UNIQUE KEY on `cht_conversations.dm_pair_hash` |
-| BR-CHT-003 | Group/Announcement `name` must NOT be NULL; DM `name` must be NULL | DB CHECK constraint on `cht_conversations` |
-| BR-CHT-004 | Soft-delete sets `is_deleted = 1` and clears `body = NULL`; row retained | `ChatService` (service layer write) |
-| BR-CHT-005 | One receipt row per message per recipient | DB UNIQUE KEY `uq_cht_message_receipts_msg_user (message_id, user_id)` |
-| BR-CHT-006 | Mute indefinitely = `muted_until = '9999-12-31 23:59:59'`; prevents unread increment + notification | `ChatService` (mute check before unread increment) |
-| BR-CHT-012 | Mark-read resets `cht_participants.unread_count = 0` in same `DB::transaction()` as setting `read_at` | `ChatService::markRead()` |
-| BR-CHT-013 | User with `left_at IS NOT NULL` cannot send or receive new messages in that conversation | `MessagePolicy` + API middleware |
-| BR-CHT-015 | Max 5 pinned conversations per user | `ChatService` (count check before pin, not DB-enforced) |
-| BR-CHT-016 | Reply depth capped at 1 level — reply to a reply is rejected | `ChatService` / FormRequest (check `parent_message_id` of target) |
-| BR-CHT-017 | `cht_settings` has exactly 1 row (`id = 1`); seeded on tenant create; never inserted again | DB PK + UNIQUE KEY; `ChtSettingsSeeder` |
-| BR-CHT-018 | `is_deactivated_by_admin = 1` blocks all send and receive but preserves history | `MessagePolicy` / `ChatService` guard |
-
-### COM — Communication
-
-| BR ID | Rule Summary | Enforcement Point |
-|-------|-------------|-------------------|
-| BR-COM-001 | SMS MUST use a DLT-registered template; free-text SMS not permitted | `SmsService` — rejects dispatch if `dlt_template_id IS NULL` |
-| BR-COM-002 | Emergency alerts bypass `com_user_preferences`; `emergency` category always `is_opted_in = 1` | `EmergencyAlertService` + `UserPreference` model setter (cannot set to 0) |
-| BR-COM-003 | WhatsApp messages must use Meta-approved template (`approval_status = 'approved'`) | `WhatsAppService` — HTTP 422 if not approved |
-| BR-COM-004 | Circular acknowledgement only for users who appear in `com_circular_targets_jnt` audience | `CircularPolicy::acknowledge()` — audience membership check |
-| BR-COM-005 | User cannot acknowledge same circular twice | DB UNIQUE KEY `uq_circular_ack (circular_id, user_id)` → HTTP 422 on duplicate |
-| BR-COM-006 | `scheduled_at` must be at least 2 minutes in the future at save time | FormRequest validation |
-| BR-COM-007 | Bulk SMS CSV upload: max 5,000 rows; entire upload rejected if exceeded before any processing | `SmsCampaignController` early-exit validation |
-| BR-COM-008 | In-app message body sanitized with HTMLPurifier before storage | `InAppMessageService::store()` |
-| BR-COM-009 | Auto-sync groups (`auto_sync = 1`) cannot have manual `com_group_members_jnt` entries | `CommunicationGroupService` — HTTP 422 on attempt |
-| BR-COM-010 | Message cancellable only if `status IN ('draft','scheduled')` AND `sent_at IS NULL` | `CommunicationService::cancel()` — rejects otherwise |
-| BR-COM-011 | Delivery retry: max 3 attempts; exponential backoff 1 min → 5 min → 15 min; after 3 failures stays `failed` | `DeliveryStatusPollerJob` retry logic |
-| BR-COM-012 | Circular `expiry_date` must be >= `issued_date` if provided | FormRequest → HTTP 422 on violation |
-| BR-COM-013 | Teachers can only send in-app messages to parents of students in their own class/section(s) | `MessagePolicy` → HTTP 403 |
-| BR-COM-014 | Template `body_template` must contain a `{{variable}}` placeholder if `variables_json` is non-empty | Template FormRequest save validation |
-| BR-COM-015 | Emergency alert requires two-step: `POST /emergency/preview` then `POST /emergency/confirm` with returned `alert_id` | `EmergencyAlertController` — no single-step endpoint exists |
-| BR-COM-016 | DLT `{#var#}` variable values exceeding declared `max_length` are truncated with a dispatch warning | `SmsService::reconstructBody()` + warning to `sys_activity_logs` |
-| BR-COM-017 | WhatsApp webhook must be HMAC-SHA256 verified before processing | `WebhookController` — returns HTTP 403 and logs on failure |
-| BR-COM-018 | Campaigns > 500 recipients use `PrepareRecipientsJob` async; message stays `dispatching` until complete | `CommunicationService` (count check before sync/async split) |
+### P2
+- **GAP-COM-011 — `api.php` `commonchats` apiResource is a scaffold stub** (`CommonChatController`) with no
+  real chat semantics; either implement or remove.
+- **GAP-COM-012 — Search uses `LIKE %term%`** with no FULLTEXT index; will not scale; attachment/file-name
+  search out of Phase-1 scope.
+- **GAP-COM-013 — Typing indicator** (`cht_settings.default_typing_indicator_enabled`, mobile `typing`
+  endpoint) has no persistent backing; ephemeral only.
 
 ---
 
-## State Machine Summaries
+## Key Design Decisions (verified)
 
-### CHT — CommonChat
-
-| FSM | States |
-|-----|--------|
-| Message lifecycle | `is_deleted = 0` (active) → `is_deleted = 1, body = NULL` (soft-deleted). No further state. Row retained permanently (or until `ChtPurgeOldMessagesJob` per retention setting). |
-| User presence | `(online)` if `last_seen_at > UTC_TIMESTAMP() - INTERVAL 60 SECOND`, else `(offline)`. Updated by 30-second heartbeat upsert. |
-| Conversation archive | `is_archived = 0` (active, read-write) → `is_archived = 1` (read-only school-wide). Admin only; no reverse specified. |
-| Participant membership | `joined_at SET, left_at NULL` (active) → `left_at SET` (left group; cannot send/receive). No re-join specified. |
-| Mute state | `muted_until NULL` (unmuted) → `muted_until = future timestamp` (time-limited mute) or `'9999-12-31'` (indefinite) → `NULL` (unmuted). |
-| Read receipt | `read_at NULL` (unread) → `read_at SET` (read). Immutable — never rolled back to unread. |
-
-### COM — Communication
-
-| FSM | States |
-|-----|--------|
-| Message status (`com_messages.status`) | `draft` → `scheduled` or `dispatching`; `scheduled` → `dispatching` or `cancelled`; `dispatching` → `sent` or `partial_failure` or `failed`. Terminal: `sent`, `partial_failure`, `failed`, `cancelled`. |
-| Recipient delivery (`com_message_recipients_jnt.delivery_status`) | `queued` → `dispatched` → `delivered` → `read` (in-app); `queued` → `skipped` (DND/opted-out/no FCM token); `dispatched` → `failed` → (retry if `retry_count < 3`) → back to `queued`; `dispatched` → `bounced` (email hard bounce / permanent SMS failure). Terminal: `read`, `skipped`, `bounced`, `failed` (after 3 retries). |
-| Emergency alert status (`com_emergency_alerts.status`) | `pending_confirmation` → `dispatching` → `sent` or `partial_failure` or `failed`. Terminal: `sent`, `partial_failure`, `failed`. |
-| WhatsApp template approval (`com_whatsapp_templates.approval_status`) | `pending_approval` → `approved` or `rejected`; `approved` → `paused` or `disabled`. Only `approved` templates can be dispatched. |
-| Circular acknowledgement | Not a state machine — `com_circular_acknowledgements` row is created once and is immutable (UNIQUE prevents duplication). |
+1. **DM uniqueness — VIRTUAL generated `dm_pair_hash`.** `CONCAT(LEAST(a,b),'_',GREATEST(a,b))` for Direct
+   only; UNIQUE index enforces one DM per pair at DB level. Service also normalises a/b and pre-checks.
+   Requires MySQL 8.0+.
+2. **Single `cht_conversations` table for all three types** (Direct/Group/Announcement), discriminated by
+   `conversation_type`; CHECK enforces `name NULL` for Direct, `name NOT NULL` for Group/Announcement.
+3. **All per-user state lives on `cht_participants`** (unread_count, mute, pin, archive, left_at, role) —
+   never on the conversation header — so personalisation never leaks across participants.
+4. **Two-level archive:** `cht_conversations.is_archived` = school-wide read-only (admin); `cht_participants.archived_at`
+   = per-user hide only.
+5. **Soft-delete clears body:** `is_deleted=1`, `body=NULL`, `deleted_by` set; row retained for thread
+   integrity. `deleted_by` distinguishes sender-delete vs admin-removal for UI labelling.
+6. **Receipt fan-out at send time:** one `cht_message_receipts` row per non-sender active participant,
+   `read_at=NULL`; `unread_count` incremented only for non-muted participants; all inside one transaction.
+7. **Mark-read in one transaction:** bulk `read_at=now()` on the user's NULL receipts for the conversation,
+   then `unread_count=0`.
+8. **Mute via single `muted_until` timestamp:** future = timed mute, `9999-12-31` = permanent; no separate
+   `is_muted` flag. Mute suppresses unread increment + (intended) notifications, not receipt tracking.
+9. **Three-tier permission resolution:** user-specific `cht_permission_config` row → role-pair row →
+   `cht_settings` defaults; `can_message_anyone` short-circuits. (Built in `checkPermissionConfig`, but see
+   GAP-COM-005 role-name mismatch.)
+10. **Retention purge:** `chat:purge-old-messages` daily; hard-`forceDelete()` messages older than
+    `message_retention_days` (0 = never); receipts + attachments cascade via FK.
+11. **Presence upsert:** `cht_user_presence` PK = `user_id`; 30s heartbeat; online threshold ~60s; ephemeral.
+12. **Pin cap = 5** per user (service-enforced, not DB).
+13. **Spatie Media** referenced by `avatar_media_id` / `media_id` / `thumbnail_media_id` (INT UNSIGNED,
+    no FK — Spatie manages its own lifecycle).
 
 ---
 
 ## Cross-Module Dependencies
 
-### CHT — CommonChat
+### Inbound (CommonChat reads from)
+| Module | Table | Used for |
+|--------|-------|----------|
+| System | `sys_users` | sender/participant identity, active check, created_by/deleted_by |
+| System | `sys_roles` | role-pair permission config; role short_name in `canInitiateDm` |
+| StudentProfile | `std_student_guardian_jnt` | parent→child link (parent-teacher DM gating) |
+| SchoolSetup | `sch_academic_sessions`, `std_student_academic_sessions`, `sch_class_section_jnt` | resolve teacher-of-parent's-child for DM permission |
+| Spatie Media Library | media (logical) | group avatar + attachment thumbnails |
 
-#### Inbound (CHT reads from)
-
-| Module | Table | Data Used |
-|--------|-------|-----------|
-| System (SYS) | `sys_users` | User identity for sender, participants, `created_by`, `deleted_by`, `updated_by` |
-| System (SYS) | `sys_roles` | Role-pair permission configuration in `cht_permission_config` and `cht_personalization_settings` |
-| Spatie Media Library | `spatie_media` (logical) | Group avatar (`avatar_media_id`) and attachment thumbnails (`thumbnail_media_id`) |
-
-#### Outbound (what CHT triggers / what modules read from CHT)
-
-| Module | Integration |
-|--------|-------------|
-| Notification (NTF) | CHT triggers NTF push notifications for new messages when `notify_on_new_message = 1` and `notify_on_mention = 1` |
-| Student Portal (STP) | Reads `cht_conversations`, `cht_messages`, `cht_participants` for student chat UI |
-| Parent Portal (PPT) | Reads same tables for parent chat with teachers |
-
-### COM — Communication
-
-#### Inbound (COM reads from)
-
-| Module | Table | Data Used |
-|--------|-------|-----------|
-| System (SYS) | `sys_users` | Sender identity, recipient phone/email, role assignments |
-| System (SYS) | `sys_media` | File attachments for messages and circulars |
-| System (SYS) | `sys_activity_logs` | Audit writes for all dispatch events, config changes, emergency confirmations |
-| SchoolSetup (SCH) | `sch_classes`, `sch_sections` | Class/section-based audience targeting |
-| StudentMgmt (STD) | `std_students`, `std_student_parents_jnt` | Parent-of-student relationship for class-level parent targeting |
-| Notification (NTF) | `ntf_user_devices` | FCM device tokens for push dispatch (read-only) |
-| Notification (NTF) | `ntf_notifications` | Push dispatch cross-reference (`ntf_notification_ref_id` on `com_messages`) |
-| Notification (NTF) | `ntf_channels`, `ntf_templates` | Channel config and automated template references |
-
-#### Outbound — Modules That Trigger COM
-
-| Module | Event Key | Trigger Condition |
-|--------|-----------|-------------------|
-| StudentFee | `fee.due_reminder` | 7 days + 1 day before fee due date |
-| StudentFee | `fee.overdue_notice` | 1 day after due if unpaid |
-| StudentFee | `fee.receipt_issued` | On payment confirmation |
-| Attendance | `attendance.absent_alert` | Same day 4 PM if student marked absent |
-| Attendance | `attendance.low_attendance` | Weekly if attendance < school threshold |
-| Examination | `exam.timetable_released` | On timetable publish |
-| Examination | `exam.result_published` | On result publish |
-| Events/Calendar | `ptm.reminder` | 7 days + 1 day before PTM |
-| Admission | `admission.welcome` | On admission confirmation |
-| Homework (LMS) | `homework.assigned` | On homework publish |
-| Hostel | `hostel.fee_due` | 7 days before hostel fee due |
-
-All triggers call `CommunicationEventService::trigger(string $event, array $context)` — no direct `com_*` table writes from external modules.
-
-#### Outbound (what COM calls externally)
-
-| Direction | Target | What |
-|-----------|--------|------|
-| COM → NTF | `NotificationService::dispatchBulkPush()` | All push channel deliveries delegated to NTF; COM never calls FCM directly |
-| COM → SYS | `sys_activity_logs` | Audit records for dispatches, gateway config changes, emergency alert confirmations |
-| COM → NTF | `ntf_user_devices` (read-only) | FCM token lookup before push dispatch |
-
----
-
-## Technology Stack Notes
-
-### CHT — CommonChat
-
-- **Spatie Media Library**: Group avatars (`avatar_media_id` on `cht_conversations`) and attachment thumbnails (`thumbnail_media_id` on `cht_attachments`). Library manages its own `spatie_media` table; FK constraints intentionally absent.
-- **Storage path**: Chat attachments stored at `storage/tenant_{uuid}/chat-attachments/`. Path in `cht_attachments.file_path` is relative to tenant disk root.
-- **Presence polling**: Client pings heartbeat endpoint every 30 seconds. Online threshold = `last_seen_at > NOW() - 60 seconds`. No WebSocket dependency in Phase 1.
-- **MySQL 8.0+ required**: `dm_pair_hash` uses a STORED generated column with `LEAST()`/`GREATEST()` functions — not available on MySQL 5.7. Block migration on MySQL < 8.0.
-- **Concurrency for unread count**: `unread_count` on `cht_participants` incremented via `DB::transaction()` to prevent concurrent double-increment.
-- **Scheduled job**: `ChtPurgeOldMessagesJob` runs daily; hard-deletes messages older than `cht_settings.message_retention_days` (0 = keep forever).
-- **Large-group receipts**: `cht_message_receipts` is highest-volume table; batched insert when sending to groups.
-
-### COM — Communication
-
-- **Two queue workers required**: `communications` (normal campaigns) and `emergency` (isolated highest priority). Never process on the same worker process.
-- **Batch sizes**: SMS 100/batch, Email 50/batch, WhatsApp 50/batch. All bulk dispatch via queued jobs; HTTP request returns < 2 seconds after queuing.
-- **SMS providers**: MSG91, Twilio, Kaleyra, Textlocal, Fast2SMS (selectable via `provider_name`; adapter pattern).
-- **Email drivers**: SMTP, SES, Mailgun, SendGrid, Postmark (selectable via `driver_name`; Laravel Mail dynamic transport).
-- **WhatsApp**: Meta Cloud API (or BSP via `base_url`); outbound template messages only; delivery status webhooks.
-- **DomPDF**: PDF report generation (delivery reports, acknowledgement reports, SMS usage, emergency alert reports).
-- **fputcsv**: CSV report generation — all report types.
-- **HTMLPurifier**: In-app message body sanitization before storage; strips `<script>`, `<iframe>`, `javascript:` hrefs, inline event handlers.
-- **Emogrifier**: CSS inlining for email Blade templates before dispatch (email client compatibility).
-- **Laravel `encrypt()` (AES-256-CBC)**: Gateway API keys, WhatsApp tokens, SMTP passwords encrypted at rest; decrypted in memory during dispatch only.
-- **HMAC-SHA256**: Webhook signature verification for WhatsApp + SMS gateway delivery callbacks.
-- **Redis cache**: DND filter results cached with 6-hour TTL per phone number.
-- **Rate limiting**: `max_per_second` (default 10) on `com_gateway_configs`; webhook endpoints throttled 1000 req/min per IP via Laravel throttle middleware.
-- **Sanctum auth**: All mobile API endpoints use `auth:sanctum` middleware.
-- **TRAI DLT compliance**: DLT Template ID, Sender ID, and DLT Entity ID in every SMS API call headers. NCPR (DND registry) filter mandatory.
-- **Scheduled jobs**: `ProcessScheduledMessagesJob` (every 5 min; `withoutOverlapping()` lock); `ProcessRecurringRulesJob` (every 15 min); `DeliveryStatusPollerJob` (every 15 min; polls for up to 24 hours); `SyncCommunicationGroupsJob` (daily midnight); `CircularDeadlineJob` (daily 8 AM).
+### Outbound (CommonChat feeds / should feed)
+| Module | Mechanism | Status |
+|--------|-----------|--------|
+| Notification (NTF) | new-message / @mention push | **NOT wired (GAP-COM-004)** |
+| System | `sys_activity_logs` (moderation/audit) | **NOT wired (GAP-COM-003)** |
+| Student/Parent portals | read `cht_*` for chat UI | consumer-side |
 
 ---
 
 ## Implementation Blockers / Prerequisites
-
-### CHT — CommonChat
-
-| # | Prerequisite | Owner Module | Blocks |
-|---|-------------|-------------|--------|
-| 1 | `sys_users` table complete + seeded | System (SYS) | All cht_* tables (sender_id, user_id, created_by, deleted_by) |
-| 2 | `sys_roles` table seeded with all school roles | System (SYS) | `cht_permission_config` (FK on permission_for_role_id, allowed_whom_to_connect_with) |
-| 3 | Spatie Media Library installed + migrations run | SYS / DevOps | `cht_conversations.avatar_media_id`, `cht_attachments.media_id` |
-| 4 | MySQL 8.0+ confirmed | DevOps | `dm_pair_hash` STORED generated column (`LEAST`/`GREATEST`) |
-| 5 | DDL syntax errors fixed | DB Architect | Migration cannot run as-is (missing comma in `cht_settings`; verify `cht_permission_config` closing statement) |
-| 6 | `CHT_Requirements_v1.md` read | Business Analyst | Full CHT feature scope may exceed what DDL covers; may need additional tables |
-| 7 | NTF module push dispatch functional | Notification (NTF) | CHT new-message push notifications |
-
-### COM — Communication
-
-| # | Prerequisite | Owner Module | Blocks |
-|---|-------------|-------------|--------|
-| 1 | NTF-GAP-001: Fix gate prefix `prime.*` → `tenant.*` | NTF | All ntf_* permission checks used by COM |
-| 2 | NTF-GAP-002: Uncomment ntf_* routes (Phase 1 first) | NTF | COM push channel integration |
-| 3 | NTF-GAP-005: Implement `NotificationService::dispatchBulkPush()` with real FCM | NTF | FR-COM-010 push channel |
-| 4 | NTF-GAP-007: Seed standard notification templates | NTF | Event-triggered automated notifications |
-| 5 | NTF-GAP-006: Add `polling_until` to `ntf_deliveries` | NTF | Delivery status polling integration |
-| 6 | `sys_users`, `sys_media` complete | SYS | All com_* created_by, sender_id, recipient_id, attachment storage |
-| 7 | `sch_classes`, `sch_sections` complete | SCH | Audience targeting (class/section) |
-| 8 | `std_students`, `std_student_parents_jnt` complete | STD | Parent-of-student targeting for class-level messages |
-| 9 | `com_*` DDL file written and reviewed | DB Architect | All COM development blocked until DDL exists |
-| 10 | DLT registration completed by school admin | School Admin / External | FR-COM-001 to FR-COM-005 (SMS channel); 2–7 business days per step |
-| 11 | WABA approval (6+ weeks lead time) | School Admin / Meta | WhatsApp channel (Phase 4); must begin before Phase 4 sprint starts |
-
----
-
-## Implementation Sequence
-
-### CHT — CommonChat (Recommended)
-
-| Phase | Components |
-|-------|-----------|
-| Prerequisites | SYS (`sys_users`, `sys_roles`) complete; Spatie Media Library installed; DDL syntax errors fixed; MySQL 8.0+ confirmed |
-| CHT Phase 1 | Core tables migrated; `ChtSettingsSeeder` + `cht_permission_config` seeded with school role pair defaults |
-| CHT Phase 2 | `cht_personalization_settings` (lazy create on first chat access); presence tracking (`cht_user_presence` heartbeat endpoint) |
-| CHT Phase 3 | Conversations (DM + Group + Announcement) + Participants; DM uniqueness enforcement via `dm_pair_hash` |
-| CHT Phase 4 | Messages (send + reply threading + soft-delete); `cht_message_receipts` (read receipts); unread count management in `cht_participants` |
-| CHT Phase 5 | Attachments (`cht_attachments`); file upload + thumbnail generation via Spatie |
-| CHT Phase 6 | Mute / Pin / Archive per user; admin access revocation (`is_deactivated_by_admin`) |
-| CHT Phase 7 | Mobile API endpoints; push notification integration with NTF; `ChtPurgeOldMessagesJob` |
-
-### COM — Communication (from V2 Requirement Section 16)
-
-| Phase | Sprint | Components | Est. Effort |
-|-------|--------|-----------|-------------|
-| Phase 0 | Sprint 0 | NTF module prerequisite fixes (NTF-GAP-001 to NTF-GAP-007) | 6 days |
-| Phase 1 | Sprint 1–2 | `com_*` DDL migrations + seeders; Group Management (FR-COM-021, 022); Circular Management (FR-COM-014, 015, 016); In-App Direct Messaging (FR-COM-011, 012); Message Moderation (FR-COM-013) | ~15 days |
-| Phase 2 | Sprint 3–4 | SMS Gateway + DLT Templates (FR-COM-001, 002); SMS Compose + Delivery Tracking (FR-COM-003, 004, 005); Email Gateway (FR-COM-006); Email Campaign + Templates (FR-COM-007, 008) | ~13 days |
-| Phase 3 | Sprint 5 | Message Scheduling (FR-COM-023); Recurring Rules (FR-COM-009); Push Notifications (FR-COM-010); User Preferences (FR-COM-019); Emergency Alert Broadcast (FR-COM-017, 018) | ~12 days |
-| Phase 4 | Sprint 6–7 | Event Trigger Contract (FR-COM-020) + module integrations; WhatsApp Gateway + Templates; Analytics Dashboard (FR-COM-024); Reports (FR-COM-025); Mobile API (18 endpoints) | ~17 days |
-
----
-
-## Immutable / Special Records
-
-### CHT — CommonChat
-
-| Table | Reason | Missing Standard Columns |
-|-------|--------|--------------------------|
-| `cht_message_receipts` | Immutable delivery audit log; append-only | No `deleted_at`, no `created_by`, no `updated_by`, no `is_active` |
-| `cht_attachments` | Follows message lifecycle via FK cascade; not independently soft-deleted | No `deleted_at` |
-| `cht_user_presence` | Ephemeral state; no audit trail needed | No `deleted_at`, no `created_by`, no `updated_by`, no `is_active` |
-| `cht_settings` | Singleton; `id = 1` always exists; never deleted | No `deleted_at`, no `is_active` |
-| `cht_personalization_settings` | Has `created_by` but no `updated_by` | No `updated_by` |
-
-### COM — Communication
-
-| Table | Reason | Missing Standard Columns |
-|-------|--------|--------------------------|
-| `com_message_recipients_jnt` | Per-recipient delivery log; rows retained for audit | No `deleted_at` |
-| `com_circular_acknowledgements` | Immutable acknowledgement record; UNIQUE enforces one-per-user | No `deleted_at` |
-| `com_message_flags` | Immutable moderation audit record | No `deleted_at` |
-| `com_message_template_translations` | Deactivation via `is_active = 0` only; not soft-deleted | No `deleted_at` |
-| `com_user_preferences` | Preference rows are never removed; only `is_opted_in` toggled | No `deleted_at` |
-| `com_circular_targets_jnt` | Audience targeting snapshot; no per-target soft-delete needed | No `deleted_at`, no `created_by` (per req proposal) |
-| `com_event_trigger_rules` | System rules (`is_system = 1`) are not deletable; deactivate via `is_active = 0` | No `deleted_at` (per req proposal) |
-| `com_school_settings` | Key-value store; no lifecycle management | No `deleted_at`, no `is_active` |
+| # | Prerequisite | Owner | Blocks |
+|---|--------------|-------|--------|
+| 1 | MySQL 8.0+ on all tenant DB servers | DevOps | `dm_pair_hash` generated column |
+| 2 | `sys_users` + `sys_roles` seeded with consistent `short_name` values | SYS | permission resolution (GAP-COM-005) |
+| 3 | Spatie Media Library installed + tenant disk routing | DevOps | attachments (REQ-COM-007) |
+| 4 | NTF push dispatch functional | NTF | notification integration (REQ-COM-012) |
 
 ---
 
 ## Pending Next Steps
-
-- [ ] **Fix CHT DDL syntax errors**: missing comma after `PRIMARY KEY` in `cht_settings`; verify `cht_permission_config` closing statement in `Sch_CommonChat_DDL_v1.sql`
-- [ ] **Read `CHT_Requirements_v1.md`** — the actual CHT requirement file (not the COM req) to verify DDL covers all CHT features (reactions? @mention tracking table? search index?)
-- [ ] **Write `com_*` DDL** — `act as DB Architect` — create DDL for all 14+ proposed COM tables; apply INT UNSIGNED type corrections throughout
-- [ ] **Validate CHT DDL vs CHT requirement** — confirm no missing tables beyond the 8 in DDL
-- [ ] **Generate FRD for CHT** — `act as Business Analyst` → "create an FRD for CommonChat"
-- [ ] **Generate FRD for COM** — `act as Business Analyst` → "create an FRD for Communication"
-- [ ] **Resolve NTF module gaps** (NTF-GAP-001 to NTF-GAP-007) before starting COM Phase 0
-- [ ] **Clarify module code alignment**: status file uses "COM" for CommonChat (cht_* prefix); V2 req doc is for a different "Communication" module (com_* prefix) — determine if these should be two separate entries in the status file
-- [ ] **Confirm MySQL 8.0+** on all tenant database servers before running CHT migration
-- [ ] **Decide WebSocket vs polling** for real-time CHT message delivery (DDL supports both; affects infra choice)
-- [ ] **Verify Spatie Media Library** multi-tenant disk routing for `chat-attachments/` (tenant UUID disk path)
-- [ ] **Code Gap Analysis** — after FRDs generated — `act as Technical Auditor`
+- [ ] Write Pest tests (GAP-COM-001) — DM uniqueness, permission matrix, receipt fan-out, purge.
+- [ ] Enforce reply-depth cap (GAP-COM-002) in `StoreMessageRequest` + `ChatService::sendMessage`.
+- [ ] Implement moderation/audit writes to `sys_activity_logs` with SHA-256 body hash (GAP-COM-003) to
+      back REQ-COM-019.
+- [ ] Wire NTF dispatch for new-message/@mention with graceful degradation (GAP-COM-004).
+- [ ] Reconcile role display-name vs short_name across seeder and service (GAP-COM-005).
+- [ ] Fix `cht_messages.message_type` column default (GAP-COM-006).
+- [ ] Harden attachment validation + complete `cht_attachments` persistence (GAP-COM-007).
+- [ ] Fix group max-member off-by-one (GAP-COM-008); add group system messages (GAP-COM-009).
+- [ ] Enforce `is_deactivated_by_admin` in send/receive guard (GAP-COM-010).
+- [ ] Decide WebSocket vs polling for real-time delivery (currently polling).
+- [ ] Run Technical Auditor (12-layer) against this FRD's Section 10 coverage flags.
 
 ---
 
 ## Version History
-
 | Date | Agent | Work Done |
 |------|-------|-----------|
-| 2026-06-27 | Business Analyst | Initial seed: CHT DDL facts from `Sch_CommonChat_DDL_v1.sql` (8 cht_* tables) + COM V2 requirement facts from `COM_Communication_Requirement.md` (25 FRs, 18 BRs, 14 proposed com_* tables). Two distinct modules documented. DDL syntax errors identified. INT UNSIGNED type corrections catalogued for COM DDL write. State machines, business rules, cross-module dependencies, and implementation sequence extracted from both sources. |
-| 2026-06-27 | Business Analyst | File updated with full 15-section format matching CAF_Cafeteria.md reference format. Additional design decisions, DDL gaps table, and immutable records section added. |
+| 2026-06-27 | Business Analyst | Initial seed — INACCURATE: claimed 0% greenfield and merged a non-existent `com_` broadcast module. |
+| 2026-06-29 | Technical Auditor | **Mode X complete audit.** Health 40/100 (capped — 1 P0). DEPLOY: NO-GO. P0×1 (MIG-COM-001 sys_roles FK), P1×10, P2×7, P3×3. Three-way reconcile found body 2000-vs-5000 mismatch (DAT-COM-001) and invalid enum default; confirmed sys_roles FK deploy blocker; found public-disk attachment exposure (SEC-COM-001), central-scheduled purge (JOB-COM-001), moderation role-slug bug (BUG-COM-001), unenforced reply integrity (VAL-COM-001), PII logging (BUG-COM-003). Corrected stale attachment-validation snapshot (AJAX path enforces MIME/size + persists). |
+| 2026-06-29 | Business Analyst | **Full rewrite from live code.** Verified 9 `cht_*` migrations, 15 controllers, 9 models, 1 service (559 LOC), 4 policies, 5 FormRequests, 19 views, 2 seeders, 1 scheduled command, 0 tests. Removed the bogus `com_` broadcast content. Three-way reconciled DDL↔migration↔model (dm_pair_hash VIRTUAL not STORED; receipts have timestamps; message_type default bug). Catalogued 13 gaps (GAP-COM-001..013). Generated Complete FRD (`COM_FRD_Complete_2026-06-29.md`): 22 REQ, 30 BR, 5 RPT, workflows, FSMs, RTM, NFR/risk, sprint plan, user stories. |
+</content>
+</invoke>

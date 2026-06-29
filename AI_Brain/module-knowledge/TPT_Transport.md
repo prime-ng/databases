@@ -1,5 +1,5 @@
 # Module Knowledge: Transport (TPT)
-# Last Updated: 2026-06-25
+# Last Updated: 2026-06-29 (FRD generated)
 # Completion Status: ~55% (readiness score 5.5/10 — V2 requirement, March 2026)
 
 ---
@@ -17,7 +17,7 @@
 | FormRequests | 18 |
 | Policies | 42+ |
 | Dusk Tests | **0** — all test directories contain only `.gitkeep` files |
-| FRD | Not yet generated |
+| FRD | `4-Requirement_Module_wise/0-FRD_Documents/TPT_FRD_2026-06-29.md` (v1.0) — generated 2026-06-29 |
 
 **Note on table count:** V2 requirement (March 2026) listed 25 tables. DDL v2.3 (May 2026) has 27 tables — adds `tpt_fine_category` (May 2026 change log) and reconciles Dec 2025 boarding + notification log additions.
 
@@ -281,3 +281,70 @@ All views present in `report/` directory. Service layer for report queries (`Tra
 | Date | Agent | Work Done |
 |------|-------|-----------|
 | 2026-06-25 | Business Analyst | Knowledge file seeded from `TPT_Transport_Requirement.md` (V2, 2026-03-26) + `Transport_DDL_v2.3.sql`. No session work yet. |
+
+---
+
+## FRD Summary (2026-06-29)
+
+| Item | Value |
+|------|-------|
+| FRD File | `4-Requirement_Module_wise/0-FRD_Documents/TPT_FRD_2026-06-29.md` (v1.0, flat folder) |
+| Total REQ- | 23 (REQ-TPT-001..023, mapped from the 12 V2 FR groups + reports/dashboard/GPS/ML split out) |
+| Total BR- | 26 (BR-TPT-001..026; derived fresh from 001 per ID-hygiene — NOT copied from V2's BR-TPT-01..12) |
+| Workflows | 6 (boarding scan, trip lifecycle, inspection→service→maintenance, driver attendance, allocation+stop-change, fee charging) |
+| Reports | 11 (RPT-TPT-001..011) |
+| Enhancements | 10 (ENH-TPT-001..010 — GPS, ML, multi-channel notif, batch trips, shift seeder, ACC vouchers, portal stop-change, parent live-view, unverified-block toggle, student event log) |
+| Priority split | P0 = 8 · P1 = 13 · P2 = 2 |
+
+> **ID note:** No prior TPT FRD existed; REQ-/BR- numbered fresh from 001. The V2 doc's `FR-TPT-01..12` and `BR-TPT-01..12` are NOT the FRD contract — the FRD's `REQ-TPT-*`/`BR-TPT-*` are. Key BRs encode the safety/finance core: BR-TPT-002/003 (compliance/licence gating), BR-TPT-005/006 (trip FSM + approval), BR-TPT-009 (allocation atomicity), BR-TPT-014 (boarding-scan validation), BR-TPT-021 (Aadhaar/PII encryption), BR-TPT-022 (module-subscription gate).
+
+> **Cross-ref to audit findings:** the FRD's Section 10.1 is the new baseline for gap analysis. Open audit items already known (SEC-TPT-01 Aadhaar plaintext, SEC-TPT-02 `tested.` gate typo on AttendanceDevice, RT-01 missing module middleware, 0 service classes, `TripController.php:587 dd($e)`, hardcoded Maps key in 3 pickup_point blades, 19/19 FormRequests authorize()=true) map directly onto BR-TPT-021/022, REQ-TPT-005, and the NFRs — a Mode B/C pass against this FRD is the natural next step.
+
+## Pending Next Steps
+
+- [ ] DDL Schema Gap → `act as DB Architect` — FRD §10.1 (25 entities incl. the 5 missing-DDL GPS/ML tables MD-05/06/07) vs `Transport_DDL_v2.3.sql`
+- [ ] Application Code Gap → `act as Technical Auditor` (Mode B) — 23 REQ vs 30 controllers / 0 services
+- [ ] Business-Rule Enforcement → `act as Technical Auditor` (Mode C) — 26 BRs, esp. BR-TPT-002/003/005/009/014/021/022
+- [ ] Complete the in-progress Mode A audit (started 2026-06-29: confirmed `dd($e)` at TripController:587, Maps key in 3 blades, 19/19 FormRequests true, 0 enum in tpt migrations vs baseline's "19")
+
+## Version History
+
+| Date | Agent | Work Done |
+|------|-------|-----------|
+| 2026-06-29 | Business Analyst | FRD v1.0 generated (`TPT_FRD_2026-06-29.md`) — 23 REQ, 26 BR, 6 workflows, 11 reports, 10 ENH. Synthesised from V2 req + 41 V1 screen specs + DDL (25 tables) + live code + this knowledge file. Saved to flat FRD folder. |
+
+---
+
+## Mode A Deep Audit (2026-06-29)
+
+> Report: `3-Audit_Reports/V1_Jun-2026/Transport_Technical_Audit_2026-06-29.md` · Health **38/100** (P0 cap) · verified vs LIVE code.
+
+### New codes
+- **BUG-TPT-011 (P0):** `dd($e)` live in bulk trip-update catch (`TripController.php:587`).
+- **FE-TPT-001 (P1):** committed Google Maps key in 3 pickup_point blades.
+- **VAL-TPT-001 (P1):** 19/19 FormRequests `authorize()=true` (D30).
+- **PERF-TPT-001 (P1):** god controllers (Mobile 1984/Report 1054/Trip 800) + eager tabs + unbounded `::all()`; 0 services.
+- **MIG-TPT-001 (P2):** `tpt_trip.status` VARCHAR not dropdown FK; `is_active` missing (DB-03/10..13).
+- **DEAD-TPT-002 (P2):** `TransportController.php-old` orphan.
+
+### Re-confirmed OPEN
+SEC-TPT-004 (`updateLastSeen` ungated + force-enables device), SEC-TPT-005 (Aadhaar/licence plaintext — no `encrypted` cast), TEN-RTG-001 (no `EnsureTenantHasModule` on transport group).
+
+### ⚠ Snapshot corrections (this file was STALE — fixed against live code)
+- **`tested.` gate typo (P0 #2 above) is FIXED** — `AttendanceDeviceController` now uses `tenant.attendance-device.*` on all 10 gated methods. *(Update the "P0 Production-Blocking Issues #2" section — it is resolved.)*
+- **"Route capacity enforcement missing" is WRONG** — it IS implemented (`StudentAllocationController:137`, 100% block via `allow_extra_student_in_vehicale_beyond_capacity` setting; only the explicit 90% warning is absent).
+- **Allocation atomicity present** — store/toggle wrapped in `DB::transaction` (`:74,488`).
+- **D29 "tpt 19 enums" is WRONG** — tpt migrations have **0** `->enum()`; status columns are free-text VARCHAR (MIG-TPT-001).
+- D36 generated-column degradation N/A (Transport DDL has no GENERATED columns).
+- Still true: **0 service classes** (confirmed), Aadhaar plaintext, RT-01/TEN-RTG-001 module-middleware gap, `dd($e)`.
+
+### Lessons Learned
+- [2026-06-29 | Technical Auditor] Two of this file's four "P0 production blockers" were stale: the `tested.` gate typo and the missing capacity check were both already fixed/implemented in live code. Always re-verify snapshot P0s against the tree before reporting (STEP 1 reading discipline). Net live posture: 1 new P0 (dd) + 1 legal P0 (Aadhaar plaintext) remain.
+
+## Version History (audit)
+
+| Date | Agent | Work Done |
+|------|-------|-----------|
+| 2026-06-29 | Technical Auditor | Mode A 12-layer audit vs live code. Health 38/100. New: BUG-TPT-011, FE-TPT-001, VAL-TPT-001, PERF-TPT-001, MIG-TPT-001, DEAD-TPT-002. Re-confirmed SEC-TPT-004/005, TEN-RTG-001. Corrected stale snapshot: `tested.` typo FIXED, capacity enforced, allocation atomic, 0 enums. Report in `3-Audit_Reports/V1_Jun-2026/`. |
+
+> **Mode X Complete Audit (2026-06-29):** `3-Audit_Reports/V1_Jun-2026/Transport_Complete_Audit_2026-06-29.md` — A+B+C+G+scoped-D unified. Deploy: NO-GO. BR enforcement 9 ENFORCED / 7 PARTIAL / 9 MISSING (+1 N/A). FRD code-gaps cluster in automation (notifications/expiry jobs), cross-module hand-offs (vendor bill/usage log), and boarding-scan validation; 0/23 REQ tested.
