@@ -1,6 +1,23 @@
 # Module Knowledge: Library (LIB)
-# Last Updated: 2026-06-27
+# Last Updated: 2026-06-29
 # Completion Status: ~55% — Partially Implemented (business logic flows done; security, services, scheduled jobs missing)
+
+---
+
+## FRD Summary
+
+| Item | Value |
+|------|-------|
+| FRD File (current) | `4-Requirement_Module_wise/0-FRD_Documents/LIB_FRD_2026-06-29.md` (v2.0, flat layout) |
+| Supersedes | `LIB_FRD_Old_v1.md` (v1.0, 2026-06-25) |
+| Total Functional Requirements (REQ-) | 13 |
+| Total Business Rules (BR-) | 60 |
+| Total Workflows | 4 |
+| Total Reports (RPT-) | 6 |
+| Total Enhancements (ENH-) | 15 |
+| Priority Split (REQ) | P0 = 8 · P1 = 5 · P2 = 0 |
+| Design lessons honored | Catalog (REQ-LIB-002) kept separate from Acquisition/Copy Registration (REQ-LIB-003); Fine Config (REQ-LIB-009) kept separate from Fine Collection & Waiver (REQ-LIB-010, Librarian-collects/Supervisor-waives split preserved in BR-LIB-048) |
+| v2.0 accuracy fix | Section 10.4 P0/P1 split corrected 6/7 → 8/5 (REQ-LIB-009 & 010 are Core/P0); all IDs and denominators preserved — no renumbering |
 
 ---
 
@@ -11,7 +28,7 @@
 | Table prefix | `lib_*` |
 | DDL (canonical) | `2-DDL_Tenant_Consolidated/Library_ddl_v7.sql` — **48 tables** + 3 triggers + 1 MySQL Event + 5 views |
 | V2 Requirement | `4-Requirement_Module_wise/4-Initial_Requirements/V2/LIB_Library_Requirement.md` |
-| FRD (exists) | `4-Requirement_Module_wise/0-FRD_Documents/Library/LIB_FRD_v1.md` |
+| FRD (current) | `4-Requirement_Module_wise/0-FRD_Documents/LIB_FRD_2026-06-29.md` (v2.0; flat layout; supersedes `LIB_FRD_Old_v1.md`) |
 | Namespace | `Modules\Library` |
 | Route Prefix | `library/` |
 | Routes | `routes/tenant.php` lines 2719–2967 (~120+ routes) |
@@ -215,6 +232,27 @@
 - `IsbnLookupService` has no timeout or error handling on external API calls
 - `LibCirculationReportService` uses in-memory collection iteration — performance risk at 5,000+ records
 
+### Technical Audit 2026-06-29 — New Confirmed Findings (Mode A, live code)
+
+| Code | Sev | Finding | File:Line |
+|------|-----|---------|-----------|
+| BUG-LIB-012 | P0 | `dd($e);` in the LIVE `update()` catch block — dumps stack trace + halts before `DB::rollBack()` runs | `LibBookMasterController.php:481` |
+| SEC-LIB-012 | P1 | Fine **waiver** gated by generic `tenant.lib-fines.update` (same perm as pay) — any Librarian can waive, violating BR-LIB-048 (Supervisor-only). FormRequest authorize() also `true`. | `LibFineController.php:339,321` |
+| SEC-LIB-013 | P1 | `$transaction->update($request->all())` mass-assignment (D25); `LibTransaction` fillable exposes `member_id,status,due_date,return_date` → circulation tampering. +3 sites. | `LibTransactionController.php:314`; `LibInventoryAuditDetailController.php:437`; `LibFineSlabDetailController.php:50,94` |
+| BUG-LIB-013 | P1 | Fine payment uses `$payment->amount` but column is `amount_paid` → `increment/decrement` by NULL; member `outstanding_fines` NOT reduced (BR-LIB-047 broken on partial-payment path). | `LibFinePaymentController.php:46-47` |
+| DAT-LIB-001 | P1 | Checkout (`store()`) eligibility is unlocked read-modify-write (copy-available CHECK-1; max-books CHECK-4) with no `lockForUpdate` and no surrounding `DB::transaction` → double-issue / over-limit race (BR-LIB-019/021); 3 writes non-atomic. | `LibTransactionController.php:94-224` |
+| VAL-LIB-003 | P1 | Fine payment amount only `min:0.01` — no validation vs remaining balance (BR-LIB-044) and store() never auto-settles fine to Paid (BR-LIB-046). | `LibFinePaymentRequest.php:14-23`; `LibFinePaymentController.php:36-58` |
+| DAT-LIB-002 | P2 | Unlocked fine settlement; two divergent payment paths (`LibFine::markPaid` vs `LibFinePaymentController`) can both run for one Pending fine → double-decrement reachable. | `LibFine.php:143,176`; `LibFineController.php:196-261` |
+| SEC-LIB-014 | P2 | Library route group lacks `tenant.module:Library` subscription gate (tenancy isolation itself is intact — full stancl stack present). | `RouteServiceProvider.php:41-50` |
+| DEAD-LIB-014 | P3 | Unused `use Modules\Vendor\Models\Vendor;` import in 18 controllers (only the acquisition/copy flow needs it). | `app/Http/Controllers/` (17 redundant) |
+
+**Corrections to prior knowledge (verified live 2026-06-29):**
+- **Tenancy is correctly wired** — `RouteServiceProvider.php:41-50` applies `web, InitializeTenancyByDomain, PreventAccessFromCentralDomains, EnsureTenantIsActive, auth, verified` to all `/library/*` routes. Earlier "Library not wired into tenancy" note (known-issues line 138) is OUTDATED — routes are now module-owned (D22) under the full stack. The remaining gap is only the `tenant.module:Library` subscription gate (SEC-LIB-014, P2) — downgraded from the prior "P0".
+- **`LibFineController` is NOT zero-auth** — every action (incl. `waive` :339, `markPaid` :293) now has `Gate::authorize`. The real issue is permission *granularity* (SEC-LIB-012), not absence. The module-knowledge "LibFineController — HIGH RISK: no auth" line is stale.
+- **Layer-5.2 "commented gates in LibInventoryAuditController (5 sites)" is a FALSE POSITIVE** — those `//Gate::authorize` lines are inside fully commented-out alternate method bodies; the live methods below carry active gates. It is dead code (DEAD-LIB-002), not an auth hole.
+- **D30 count is now 28/28 FormRequests returning `true`** (was 27 — `StoreLibBookPurchaseRequest` added). Still tracked under SEC-LIB-011.
+- Health this pass: **capped 40/100 (P0 present)**. Tenancy Green; Layers 4/5/7/8 Red.
+
 ### Not Yet Built (DDL v7 tables with zero implementation)
 - `lib_book_purchases` + `lib_book_purchases_items` — acquisition workflow
 - `lib_digital_access_requests` + `lib_digital_access_transactions` — digital access workflow
@@ -391,6 +429,11 @@
 - [2026-06-25 | FRD] The V2 technical requirement doc gives field-level accuracy; preliminary screen files give UX context — both are needed. V2 alone produces technically accurate but UX-thin FRD sections.
 - [2026-06-27 | DDL Seed] `lib_reservations` was renamed to `lib_physical_book_requests` in DDL v7 but views + indexes in the same file still reference the old name — must audit all DDL cross-references when renaming tables.
 - [2026-06-27 | DDL Seed] DDL v7 removes `lib_membership_types.fine_rate_per_day` from table definition but the seed data and `lib_view_overdue_books` still use it — column removal must cascade to views, seeds, and Laravel fallback logic.
+- [2026-06-29 | Technical Auditor] A `dd($e)` can hide in a catch block that otherwise looks correct (it sits ABOVE `DB::rollBack()` + `Log::error()`), so the method reads as production-safe at a glance — always read the first line of every catch, not just the last. (`LibBookMasterController.php:481`)
+- [2026-06-29 | Technical Auditor] Atomic `increment()/decrement()` protects the *counter write* but NOT the *eligibility decision*: the borrow-limit/copy-available checks in checkout are a separate read-modify-write and need `lockForUpdate` + a transaction. Counting `->increment()` as "concurrency-safe" is a trap.
+- [2026-06-29 | Technical Auditor] Column-name drift is a silent money bug: `$payment->amount` vs the real `amount_paid` column makes `decrement('outstanding_fines', null)` no-op — fines never clear and no error surfaces in the happy path. Always diff controller attribute reads against the model `$fillable` + migration.
+- [2026-06-29 | Technical Auditor] "Has a Gate::authorize" ≠ "correctly authorized". `LibFineController::waive` is gated, but on the *pay* permission — a business-rule (BR-LIB-048 Supervisor-only) breach that a presence-only authz grep misses. Cross-check each gate string against the FRD role matrix.
+- [2026-06-29 | Technical Auditor] Guardrail win: commented `//Gate::authorize` lines flagged by a Layer-5.2 grep were inside fully commented-out alternate method bodies (dead code), not disabled gates on live methods — confirm the surrounding method is live before raising a SEC finding.
 
 ---
 
@@ -407,7 +450,8 @@
 | 7 | Build `TransactionService`, `ReservationService`, `FineCalculationService` | `act as Developer` | P1 |
 | 8 | Book Acquisition workflow (new controller + service for `lib_book_purchases`) | `act as Developer` | P2 |
 | 9 | Digital Access workflow (new controller + service for `lib_digital_access_requests`) | `act as Developer` | P2 |
-| 10 | Update FRD v1 to include DDL v7 new tables | `act as Business Analyst` | P2 |
+| 10 | DDL v7 new tables (purchases, digital-access workflow, reviews, wishlist, config) remain captured as REQ-LIB-003/011 + ENH backlog in FRD v2.0; promote relevant ENH- items to REQ- when scoped for a release | `act as Business Analyst` | P2 |
+| 11 | Run DDL + Code gap analysis against FRD v2.0 Section 10.1 coverage flags (now with corrected P0/P1 split) | `act as DB Architect` / `act as Technical Auditor` | P1 |
 
 ---
 
@@ -417,3 +461,5 @@
 |------|-------|-----------|
 | 2026-06-25 | Business Analyst | FRD v1.0 generated (13 REQ, 60 BR, 4 workflows, 6 reports, 15 enhancements). Module knowledge file v1 created from FRD + code audit. |
 | 2026-06-27 | Business Analyst | Knowledge file rebuilt from V2 requirement doc + DDL v7 (48 tables). DDL v7 gaps documented (table rename, missing triggers/views in req doc, new 13 tables, critical DDL migration blockers). Preserved all code-audit findings from v1. |
+| 2026-06-29 | Business Analyst | FRD superseded → `LIB_FRD_2026-06-29.md` (v2.0, flat layout). Preserved all 13 REQ / 60 BR / 6 RPT / 15 ENH IDs and denominators (no renumbering). Fixed Section 10.4 P0/P1 miscount (6/7 → 8/5). Honored Library design lessons (catalog vs acquisition; fine config vs collection). Added FRD Summary block; refreshed FRD path reference and Pending Next Steps. |
+| 2026-06-29 | Technical Auditor | Mode A 12-layer deep audit (live code). 9 new codes: BUG-LIB-012 (P0 dd in live catch), SEC-LIB-012/013, BUG-LIB-013, DAT-LIB-001, VAL-LIB-003 (P1), DAT-LIB-002/SEC-LIB-014 (P2), DEAD-LIB-014 (P3). Health capped 40/100 (P0). Corrected stale notes: tenancy IS wired (full stancl stack); LibFineController IS gated (granularity issue only); Layer-5.2 commented-gate flag = false positive (dead code). Report: `3-Audit_Reports/V1_Jun-2026/Library_Technical_Audit_2026-06-29.md`. |

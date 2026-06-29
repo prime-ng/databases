@@ -109,8 +109,8 @@ AI_Brain/
 │   ├── school-agent.md      School domain expert
 │   ├── test-agent.md        Testing specialist (Pest 4.x)
 │   ├── enterprise-architect.md System architecture, ADRs, cross-module design
-│   ├── business-analyst.md  Requirements, gap analysis, user stories
-│   ├── technical-auditor.md 5-layer audit: schema → code → security → perf → deploy
+│   ├── business-analyst.md  Max-detail analysis: 22-artifact catalog (FRD/BRD/SRS/RBS/user-stories/RTM/FSM/NFR/risk/estimation/etc.) + FRD pipeline + module-knowledge seed/update
+│   ├── technical-auditor.md 12-layer deep audit: DDL→migration↔model→ORM→code→authz→tenancy→validation→data-integrity→perf→jobs→frontend→deploy (+ FRD gap, BR enforcement, platform systemic sweep)
 │   ├── testing-architect.md Full test strategy: Pest 4.x, CI, coverage gap analysis
 │   └── status-analyzer.md  Requirements-driven completeness scoring (A/B/C formula)
 │
@@ -155,10 +155,13 @@ AI_Brain/
 | Add a DB table                      | agents/db-architect.md + templates/tenant-migration.md |
 | Build an API endpoint               | agents/api-builder.md + templates/api-response.md |
 | Debug a tenancy issue               | agents/tenancy-agent.md + rules/tenancy-rules.md |
+| Produce ANY analysis artifact (FRD/user stories/RTM/FSM/data dictionary/NFR/risk/estimation…) | agents/business-analyst.md (Analysis Mode Catalog) |
+| Generate a module FRD               | agents/business-analyst.md + 7-CLAUDE_Prompts/FRD_Creation_Prompt/FRD_Creation_Prompt.md |
 | Write a unit test                   | agents/test-agent.md + templates/test-unit.md |
 | Write a tenant feature test         | agents/test-agent.md + templates/test-feature-tenant.md |
 | Full test strategy + CI setup       | agents/testing-architect.md        |
-| Audit a module (bugs/security/perf) | agents/technical-auditor.md        |
+| Audit a module (12-layer: bugs/security/tenancy/perf/deploy) | agents/technical-auditor.md        |
+| Platform-wide systemic hunt (D24/D25/D29/D30 etc.) | agents/technical-auditor.md (Mode D) |
 | Check module completion %           | agents/status-analyzer.md + 7-CLAUDE_Prompts/Dev_Completness_Status_Prompt/Dev_Completness_Calculation_Process.md |
 | Pre-deployment checklist            | agents/technical-auditor.md + memory/deployment-config.md |
 | Check what's done / in progress     | state/progress.md                  |

@@ -21,9 +21,26 @@
 | Tests | **1 file** actual (`tests/Feature/CafeteriaReportControllerTest.php` — **22 proposed, only 1 exists**) |
 | Jobs | **0** actual — no queued jobs created (NTF alerts, FSSAI expiry, menu archive all unqueued) |
 | Migrations | **0** — module uses DDL directly |
-| Business Rules | 19 (BR-CAF-001 to BR-CAF-019) |
+| Business Rules | 36 in FRD (BR-CAF-001..019 preserved from V2; BR-CAF-020..036 added) |
 | Permissions | 21 permission slugs |
-| FRD | Not yet generated |
+| FRD | Generated 2026-06-29 → `0-FRD_Documents/CAF_FRD_2026-06-29.md` (v1.0) |
+
+---
+
+## FRD Summary
+
+| Item | Value |
+|------|-------|
+| FRD file | `4-Requirement_Module_wise/0-FRD_Documents/CAF_FRD_2026-06-29.md` (flat location) |
+| Date / Version | 2026-06-29 / v1.0 (fresh — no prior FRD existed) |
+| Functional Requirements (REQ-) | 16 (REQ-CAF-001..016, mapping 1:1 to the 16 feature groups) |
+| Business Rules (BR-) | 36 (BR-CAF-001..019 preserved from V2/knowledge; 020..036 added for counter-session, immutability, price-snapshot, category-delete, profile-upsert, food-cost, staff/net-revenue rules) |
+| Workflows | 9 (Menu Publish, Pre-Order, Cancel/Refund, Wallet Top-Up, Counter Sale, QR Attendance, Stock Reorder, Hostel Mess Auto-Enrol, FSSAI Expiry) |
+| Reports (RPT-) | 9 (Revenue, Daily Sales, Order Summary, Wastage, Wallet Statement, FSSAI Audit, Subscription Enrolment, Attendance Summary, Kitchen Prep Sheet) |
+| Enhancements (ENH-) | 10 (ENH-CAF-001..010, from V2 SUG-CAF-01..10) |
+| Priority split | P0=6, P1=6, P2=4 |
+| Section 10.4 | Reconciled: 16 REQ / 36 BR / 9 WF / 9 RPT / 10 ENH |
+| Note | BR IDs in FRD are the new downstream contract; BR-CAF-014 in FRD merges school (60/30d) + supplier (30/7d) FSSAI reminders into one shared rule referenced by REQ-CAF-013 & 014. |
 
 **Model inventory (all 21):**
 `ConsumptionLog`, `DailyMenu`, `DailyMenuItemJnt`, `DietaryProfile`, `EventMeal`, `EventMealItemJnt`, `FssaiRecord`, `MealAttendance`, `MealCard`, `MealCardTransaction`, `MenuCategory`, `MenuItem`, `Order`, `OrderItem`, `PosSession`, `PosTransaction`, `StaffMealLog`, `StockItem`, `SubscriptionEnrollment`, `SubscriptionPlan`, `Supplier`
@@ -253,7 +270,33 @@ Store: MenuCategory, MenuItem, DailyMenu, EventMeal, DietaryProfile, FssaiRecord
 
 ---
 
+## Known Gaps & Open Issues (Technical Audit 2026-06-29)
+
+> Full report: `3-Audit_Reports/V1_Jun-2026/Cafeteria_Technical_Audit_2026-06-29.md`. Health 62/100, no P0 (not capped). Codes continue from prior max (only SEC-CAF-001 pre-existed → SEC starts 002).
+
+| Code | Severity | Title | Location |
+|------|----------|-------|----------|
+| SEC-CAF-002 | P1 | Write-side IDOR — arbitrary `student_id` on sanctum API (order/scan/dietary) — extends SEC-CAF-001 | `OrderController.php:83-93`, `StoreOrderRequest.php:20`, `MealAttendanceController.php:24`, `DietaryProfileController.php:112` |
+| SEC-CAF-003 | P1 | All 19 FormRequests `authorize(){ return true; }` (D30) | `app/Http/Requests/*` |
+| DAT-CAF-001 | P1 | Order-cancel double-refund race (no `lockForUpdate`/re-check on order) | `OrderService.php:116-139` |
+| JOB-CAF-001 | P1 | Scheduled commands run central — no `tenants:run` | `app/Providers/CafeteriaServiceProvider.php:111-117` |
+| BUG-CAF-001 | P2 | Dietary-conflict (BR-CAF-002) not enforced in order/POS write path (child-safety) | `OrderService.php:29`, `PosService.php:44` |
+| BUG-CAF-002 | P2 | NTF dispatch stubbed — BR-CAF-007/014/017 compute but never notify | `StockService.php:60,136`, `MealCardService.php:101-104` |
+| VAL-CAF-001 | P2 | BR-CAF-020 unenforced — multiple open POS sessions/day allowed | `PosService.php:23-29` |
+| SCH-CAF-001 | P2 | D29 — ~15 ENUM columns in CAF DDL instead of `sys_dropdown_table` FKs | `Cafeteria_DDL_v1.sql` (multiple) |
+| FE-CAF-001 | P2 | `json_encode()` chart payloads w/o `JSON_HEX_*` (staff-entered names) | `reports-page/index.blade.php:123-283`, `pages/dashboard.blade.php:276` |
+| DEAD-CAF-001 | P3 | Duplicate dead `CafeteriaServiceProvider` at module root `/Providers/` | `Modules/Cafeteria/Providers/CafeteriaServiceProvider.php` |
+| DAT-CAF-002 | P3 | Wallet balance columns in `$fillable` (latent ledger bypass; not currently reachable) | `MealCard.php:19-22` |
+| BUG-CAF-003 | P3 | Order cutoff silently skipped when category `meal_start_time` is NULL | `OrderService.php:212-216` |
+
+**Strengths confirmed (do not regress):** full tenancy stack on web+API RSP; `SELECT…FOR UPDATE` on wallet debit/credit/refund; order price snapshot (`unit_price`); idempotent QR attendance (`firstOrCreate`+`uq_caf_ma`); Razorpay idempotency (`exists()`+`uq_caf_mct_razorpay`); **zero `$request->all()` sites** (uses `validated()` everywhere); every controller method gated.
+
 ## Lessons Learned
+
+- [2026-06-29 | Technical Auditor] **"0 migrations" claim is STALE.** 22 `create_caf_*` migrations exist in `database/migrations/tenant/` (dated 2026-06-15). Tenant migrations are CENTRALIZED, not per-module — an empty `Modules/Cafeteria/database/migrations/` (only `.gitkeep`) is the expected architecture, NOT a gap. Always check `database/migrations/tenant/` before flagging missing migrations. Layer 2 is Green.
+- [2026-06-29 | Technical Auditor] **"0 jobs" is half-true.** No *queued* jobs, but 3 Artisan commands (`caf:archive-old-menus`, `caf:send-fssai-alerts`, `caf:check-stock-reorder`) + a scheduler block now exist. They are the JOB-CAF-001 defect (scheduled in **central** context without `tenants:run`), not absent. The NTF `dispatch(...)` calls inside the services are commented out — alerts compute counts but never send (BUG-CAF-002).
+- [2026-06-29 | Technical Auditor] Wallet concurrency is genuinely safe on the *debit* path (locked), but the *cancel/refund* path is not — guard reads order status without a row lock or conditional update, so concurrent cancels double-refund (DAT-CAF-001). Pattern reminder: locking the child (card) does not serialize the parent (order) state transition.
+- [2026-06-29 | Technical Auditor] CAF is a strong counter-example to D25 — it consistently uses `$request->validated()` and has **zero** `$request->all()` into models. The residual mass-assignment risk is narrow: balance columns in `MealCard::$fillable` (latent only — `UpdateMealCardRequest` doesn't expose them).
 
 - [2026-06-27 | Update] Seeding recorded models as "17" based on req doc assumption that jnt/log tables share parent models. Actual is 21 — every DDL table has its own dedicated model class (including `DailyMenuItemJnt`, `EventMealItemJnt`, `ConsumptionLog`, `OrderItem`, `StaffMealLog`). In this codebase, junction and log tables always get their own Model.
 - [2026-06-27 | Update] View count in seeding (50 proposed) was a large undercount — 95 blade files found. Seeded view estimates from req docs are typically 50–100% lower than actuals because req docs count screens, not individual blade partials.
@@ -262,7 +305,8 @@ Store: MenuCategory, MenuItem, DailyMenu, EventMeal, DietaryProfile, FssaiRecord
 
 ## Pending Next Steps
 
-- [ ] Generate FRD → `act as Business Analyst` → "create an FRD for Cafeteria"
+- [x] Generate FRD → done 2026-06-29 → `0-FRD_Documents/CAF_FRD_2026-06-29.md` (16 REQ / 36 BR / 9 WF / 9 RPT / 10 ENH)
+- [ ] DDL Schema Gap Analysis → `act as DB Architect / Technical Auditor` — for each REQ with "DDL Entity Needed = Yes" (15 of 16; only REQ-CAF-016 is aggregated reads), confirm tables/columns vs `Cafeteria_DDL_v1.sql`
 - [ ] Code Gap Analysis → `act as Technical Auditor` — verify controller logic completeness, job implementations (or lack thereof), NTF dispatch pattern, Razorpay webhook, HST/INV bridge services
 - [ ] Create queued jobs: MenuPublishNotificationJob, LowBalanceAlertJob, FssaiExpiryAlertJob, MenuArchiveJob
 - [ ] Expand test coverage: MealCardService (concurrency + double-spend), OrderService (cutoff enforcement), QR scan deduplication, Razorpay webhook idempotency
@@ -277,3 +321,5 @@ Store: MenuCategory, MenuItem, DailyMenu, EventMeal, DietaryProfile, FssaiRecord
 |------|-------|-----------|
 | 2026-06-27 | Business Analyst | Knowledge file seeded from V2 requirement doc (CAF_Cafeteria_Requirement.md v2) + DDL (Cafeteria_DDL_v1.sql). Status incorrectly recorded as 0% Greenfield — actual code not checked at seeding. Models recorded as 17 (undercount). |
 | 2026-06-27 | Business Analyst | Update pass: verified actual file counts against prime_ai/Modules/Cafeteria/. Status corrected to ~60–65%. Corrections: models 17→21 (all tables have dedicated models), FormRequests 16→19 (TopUp/Update/UpdateEnrollment added), views ~50→95, routes ~77→147 lines. Confirmed: 16 ctrl, 6 services, 14 policies all match proposed. Gaps: 1 test file only (22 proposed), 0 jobs, 0 migrations, Events/Listeners missing. |
+| 2026-06-29 | Technical Auditor | Mode A 12-layer deep audit (read-only) → `3-Audit_Reports/V1_Jun-2026/Cafeteria_Technical_Audit_2026-06-29.md`. Health 62/100, no P0. 4 P1 (SEC-CAF-002 write-IDOR, SEC-CAF-003 D30, DAT-CAF-001 cancel double-refund race, JOB-CAF-001 scheduler-central), 5 P2, 3 P3. Corrected stale knowledge: 22 caf_ migrations exist centrally (Layer 2 Green); 3 Artisan commands + scheduler exist (not "0 jobs"); NTF dispatch stubbed. Confirmed strengths: full tenancy stack web+API, locked wallet debit, price snapshot, idempotent attendance, no `$request->all()`. |
+| 2026-06-29 | Business Analyst | Generated FRD v1.0 (fresh; no prior FRD) → `CAF_FRD_2026-06-29.md`. 16 REQ (1:1 with feature groups), 36 BR (001-019 preserved, 020-036 added), 9 workflows, 9 reports, 10 ENH. P0=6/P1=6/P2=4. Sources: V2 req + V1 Cafeteria_v2 (17 screen specs + data-flow) + DDL + Laravel module + this knowledge file. Section 10.4 reconciled. Daily Sales (RPT-CAF-002) and Kitchen Prep Sheet (RPT-CAF-009) surfaced from V1; one-open-session-per-day (BR-CAF-020) from V1 data-flow. |

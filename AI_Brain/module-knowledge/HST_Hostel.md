@@ -1,6 +1,24 @@
 # Module Knowledge: Hostel (HST)
-# Last Updated: 2026-06-27
-# Completion Status: 0% — Greenfield (RBS_ONLY, no implementation started)
+# Last Updated: 2026-06-29
+# Completion Status: ~70–75% — Substantially Implemented (corrected from 0% Greenfield)
+
+---
+
+## FRD Summary
+
+| Item | Value |
+|------|-------|
+| FRD file | `4-Requirement_Module_wise/0-FRD_Documents/HST_FRD_2026-06-29.md` (flat storage) |
+| Date / Version | 2026-06-29 / v1.0 (fresh — generated from 001) |
+| Functional Requirements (REQ-) | **29** (REQ-HST-001 … 029) |
+| Business Rules (BR-) | **54** (BR-HST-001 … 054) — original 001–022 preserved verbatim; 023–054 added for testability + post-V2 scope (reservations, mess opt-outs/bills, laundry, duty roster, masters, audit/notification logs) |
+| Workflows | **10** (allocation, room change, leave, roll-call/absence, movement/overdue, incident/escalation, complaint SLA, sick bay, mess opt-out/billing, reservation conversion) |
+| Reports (RPT-) | **14** (RPT-HST-001 … 014) |
+| Enhancements (ENH-) | **10** (ENH-HST-001 … 010) |
+| Priority split | **P0 = 13, P1 = 13, P2 = 3** |
+| Sources synthesised | V2 (HST_Hostel_Requirement.md, 21 FR/22 BR) + V1 screen-spec folder (Hostel_v2, 40 screens) + DDL (Hostel_DDL_v4.sql, 36–40 tables) + Laravel module (~70–75% built) + this knowledge file |
+| Section 10.4 reconciliation | Verified: 29 REQ / 54 BR / 10 WF / 14 RPT / 10 ENH; P0+P1+P2 = 29 |
+| Notes | REQ- re-numbered from 001 (NOT copied from V2 FR-). BR-HST-001…022 are the downstream gap-analysis contract and were carried over unchanged in meaning. No prior FRD existed — created fresh, not superseding. |
 
 ---
 
@@ -11,20 +29,154 @@
 | Table prefix | `hst_*` |
 | DDL (canonical) | `2-DDL_Tenant_Consolidated/Hostel_DDL_v4.sql` — **36 tables** (internally labelled v3.0, reviewed 2026-05-04) |
 | V2 Requirement | `4-Requirement_Module_wise/4-Initial_Requirements/V2/HST_Hostel_Requirement.md` |
-| Routes | `routes/tenant.php` under `hostel/` prefix (~65 routes) |
-| Controllers | 20 proposed |
-| Models | 20 proposed (req doc); DDL has 36 tables |
-| Services | 7 proposed |
-| FormRequests | 27 proposed |
-| Policies | 12 proposed |
-| Blade Views | ~65 proposed |
-| Seeders | 2 (RoomTypes, IncidentTypes) |
-| Events | 7 domain events |
-| Queued Jobs | 2 |
+| Routes | `Modules/Hostel/routes/web.php` (560 lines) + `api.php` (13 lines) = **573 total** |
+| Controllers | **53** (req doc proposed 20) |
+| Models | **41** (req doc proposed 20; modules-map 2026-06-21 shows 44 — discrepancy noted) |
+| Services | **22** (req doc proposed 7) |
+| FormRequests | **38** (req doc proposed 27) |
+| Policies | **20** (req doc proposed 12; in `Modules/Hostel/app/Policies/` — NOT in `app/Policies/`) |
+| Middleware | **1** — `WardenScopeMiddleware` ✓ |
+| Blade Views | **278** (req doc proposed ~65) |
+| Seeders | **9** (req doc proposed 2) |
+| Events | **7** domain events ✓ (matches req doc) |
+| Listeners | **0** — gap; events dispatch jobs directly |
+| Queued Jobs | **2** ✓ (matches req doc) |
+| Artisan Commands | **1** — `EscalateComplaintsCommand` (hst:escalate-complaints; scheduled hourly) |
+| Named Routes | **337** in web.php |
+| Migrations (tenant/) | **41** files in `database/migrations/tenant/` ✓ (36 CREATE + 5 ALTER/add) |
+| Module-level migrations | **0** — all in central `database/migrations/tenant/` |
 | Business Rules | 22 (BR-HST-001 to BR-HST-022) |
 | PDFs | 2 DomPDF documents (Leave Pass PDF, Warning Letter) |
-| Test Classes | 11 feature + 4 unit = 15 proposed |
-| FRD | Not yet generated |
+| Test Classes | **0 actual** (15 proposed — critical gap) |
+| FRD | **Generated 2026-06-29** → `HST_FRD_2026-06-29.md` (29 REQ / 54 BR / 14 RPT / 10 WF / 10 ENH) |
+
+---
+
+## Verified Filesystem Counts (2026-06-27)
+
+> All counts verified via `ls` against `Modules/Hostel/` in LARAVEL_REPO (`/Users/bkwork/Herd/prime_ai`).
+> Do NOT rely on req doc counts — every artifact category was systematically under-proposed.
+
+### Controllers (53 total)
+```
+AllotmentController, AuditLogController, BedController, BedMaintenanceController,
+BedTypeController, EmergencyContactController, FeeDemandController, FloorController,
+HostelAttendanceReportController, HostelController, HostelDisciplineReportController,
+HostelFeeReportController, HostelLaundryReportController, HostelLeaveReportController,
+HostelMaintenanceReportController, HostelMedicalReportController, HostelMessReportController,
+HostelOccupancyReportController, HostelReservationReportController, HostelSetupController,
+HostelWardenReportController, HousekeepingController, HstAttendanceController,
+HstAuditLogController, HstComplaintController, HstDashboardController,
+HstDynamicStatusMasterController, HstFeeController, HstNotificationLogController,
+HstReportController, IncidentController, IncidentTypeController, IncidentWarningController,
+LaundryController, LeavePassController, MessAttendanceController, MessBillController,
+MessMenuController, MessOptOutController, MovementLogController, NotificationLogController,
+RoomChangeRequestController, RoomController, RoomInventoryController, RoomReservationController,
+RoomTypeController, SickBayController, SickBayMedicationController, SickBayVitalController,
+SpecialDietController, VisitorLogController, WardenAssignmentController, WardenDutyRosterController
+```
+> Note: Both `AuditLogController` and `HstAuditLogController` exist; similarly `NotificationLogController` and `HstNotificationLogController`. Possible naming duplication — verify before FRD.
+
+### Models (41 total)
+```
+Allotment, Bed, BedMaintenanceLog, BedType, EmergencyContact, FeeDemand, Floor, Hostel,
+HousekeepingLog, HstAttendance, HstAttendanceEntry, HstAuditLog, HstBedType,
+HstComplaint, HstDynamicStatusMaster, HstFeeStructure, HstIncident, HstIncidentMedia,
+HstIncidentType, HstIncidentWarning, HstNotificationLog, HstSickBayLog, HstSickBayMedication,
+HstSickBayVital, HstVisitorLog, HstVisitorMedia, LaundryTicket, LeavePass, MessAttendance,
+MessBill, MessOptOut, MessWeeklyMenu, MovementLog, Room, RoomChangeRequest,
+RoomInventory, RoomReservation, RoomType, SpecialDiet, WardenAssignment, WardenDutyRoster
+```
+> **Naming inconsistency:** `BedType.php` AND `HstBedType.php` both exist — two models for one `hst_bed_types` table. Requires deduplication.
+> **modules-map discrepancy:** modules-map (2026-06-21) records 44 models; actual `ls` returns 41. Delta of 3 unresolved.
+
+### Services (22 total)
+```
+AllotmentService, HostelAttendanceReportService, HostelAuditService,
+HostelDisciplineReportService, HostelFeeReportService, HostelFeeService,
+HostelLaundryReportService, HostelLeaveReportService, HostelMaintenanceReportService,
+HostelMedicalReportService, HostelMessReportService, HostelMovementReportService,
+HostelOccupancyReportService, HostelReservationReportService, HostelVisitorFrequencyService,
+HostelVisitorReportService, HostelWardenReportService, HstAttendanceService,
+HstComplaintService, IncidentService, LeavePassService, SickBayService
+```
+> 7 core domain services from req doc all exist. Developer added 15 report-specific services.
+
+### FormRequests (38 total)
+```
+ApproveLeavePassRequest, BedMaintenanceRequest, BedRequest, BulkMarkAttendanceRequest,
+BulkMessAttendanceRequest, BulkVacateRequest, DischargeSickBayRequest,
+EmergencyContactRequest, FeeDemandRequest, FloorRequest, HostelRequest,
+HousekeepingRequest, IncidentTypeRequest, IncidentWarningRequest, LaundryTicketRequest,
+MarkReturnedRequest, MessBillRequest, MessOptOutRequest, ResolveComplaintRequest,
+RoomInventoryRequest, RoomRequest, RoomReservationRequest, StoreAllotmentRequest,
+StoreHstAttendanceRequest, StoreHstComplaintRequest, StoreHstFeeStructureRequest,
+StoreIncidentRequest, StoreLeavePassRequest, StoreMessAttendanceRequest,
+StoreMessMenuRequest, StoreMovementLogRequest, StoreRoomChangeRequestRequest,
+StoreSickBayRequest, StoreSpecialDietRequest, StoreVisitorLogRequest,
+TransferAllotmentRequest, WardenAssignmentRequest, WardenDutyRosterRequest
+```
+
+### Policies (20 total — in `Modules/Hostel/app/Policies/`)
+```
+AllotmentPolicy, BedPolicy, EmergencyContactPolicy, FloorPolicy, HstAttendancePolicy,
+HstComplaintPolicy, HstFeeStructurePolicy, HstIncidentPolicy, HostelPolicy, LeavePassPolicy,
+MessAttendancePolicy, MessWeeklyMenuPolicy, MovementLogPolicy, RoomChangeRequestPolicy,
+RoomInventoryPolicy, RoomPolicy, SickBayLogPolicy, SpecialDietPolicy,
+VisitorLogPolicy, WardenAssignmentPolicy
+```
+> All registered in `HostelServiceProvider::registerPolicies()`. **NOT in central `app/Policies/`.**
+
+### Seeders (9 total)
+```
+HostelComprehensiveSeeder, HostelDatabaseSeeder, HostelDemoDataSeeder,
+HostelHistorySeeder, HstBedTypeSeeder, HstDynamicStatusMasterSeeder,
+HstIncidentTypeSeeder, HstRoomTypeSeeder, HstSeederRunner
+```
+> modules-map records 8; actual ls returns 9. `HstSeederRunner` is an orchestrator seeder.
+
+### Events (7 total) ✓
+```
+HostelAbsenceDetected, HostelIncidentRecorded, LeavePassApproved, LeavePassRejected,
+SickBayAdmissionRecorded, SickBayDischarged, StudentReturned
+```
+
+### Jobs (2 total) ✓
+```
+SendHstComplaintEscalationJob, SendHstNotificationJob
+```
+
+### Artisan Commands (1 total)
+```
+EscalateComplaintsCommand  →  hst:escalate-complaints
+```
+Registered in `HostelServiceProvider::registerCommands()`.
+Scheduled hourly via `registerCommandSchedules()` — multi-tenant note: needs `tenants:run hst:escalate-complaints` wrapper for per-tenant execution.
+
+### Middleware (1 total) ✓
+```
+WardenScopeMiddleware  →  aliased as 'warden.scope' in HostelServiceProvider
+```
+Design Decision D10 (Block Warden scoped data access) is IMPLEMENTED.
+
+### Migrations (41 files in `database/migrations/tenant/`)
+All 36 DDL tables have migration files. Verified list (2026-06-27):
+```
+hst_audit_log, hst_bed_types, hst_dynamic_status_masters, hst_hostels, hst_incident_types,
+hst_notification_log, hst_room_types, hst_attendance, hst_emergency_contacts, hst_floors,
+hst_laundry_tickets, hst_mess_attendance, hst_mess_bills, hst_mess_opt_outs,
+hst_mess_weekly_menus, hst_movement_log, hst_sick_bay_log, hst_special_diets,
+hst_visitor_log, hst_incidents, hst_fee_structures, hst_attendance_entries, hst_rooms,
+hst_warden_assignments, hst_warden_duty_roster, hst_sick_bay_medications,
+hst_sick_bay_vitals, hst_visitor_media, hst_incident_media, hst_incident_warnings,
+hst_beds, hst_complaints, hst_housekeeping_log, hst_room_inventory, hst_allotments,
+hst_bed_maintenance_log, hst_fee_demands, hst_leave_passes, hst_room_change_requests,
+hst_room_reservations
+```
+Plus 1 ALTER: `add_bed_condition_status_to_hst_dynamic_status_masters` (2026-06-18)
+
+### Tests (0)
+> **Critical gap.** 15 tests proposed (11 feature + 4 unit); 0 exist.
 
 ---
 
@@ -104,6 +256,42 @@
 
 ## Known Gaps & Open Issues
 
+### Critical Gaps (must resolve before FRD/Code Gap Analysis)
+
+| # | Gap | Severity | Notes |
+|---|-----|----------|-------|
+| G1 | 0 tests (15 proposed) | P1 | 11 feature + 4 unit tests needed; none exist |
+| G2 | 0 Listeners | P2 | 7 events fire; jobs dispatch notifications directly — verify this is intentional or a Listener layer is missing |
+| G3 | `BedType.php` + `HstBedType.php` duplicate models | P1 | Two models for one `hst_bed_types` table. One must be removed or aliased. |
+| G4 | Controller naming duplication | P2 | `AuditLogController` vs `HstAuditLogController`; `NotificationLogController` vs `HstNotificationLogController` — likely dead code |
+| G5 | models-map count mismatch | P3 | modules-map records 44 models; actual ls returns 41. Delta of 3 unaccounted. |
+| G6 | Report service completeness unknown | P2 | 14 report controllers + 15 report services exist; FRD needed to verify screen/feature coverage |
+| G7 | FRD not generated | P2 | No FRD exists; gap analysis cannot proceed without it |
+
+### Technical Audit Findings — 2026-06-29 (Mode A, 12-layer, read-only)
+
+> Confirmed against live code at `/Users/bkwork/Herd/prime_ai/Modules/Hostel/`. Full report:
+> `3-Audit_Reports/V1_Jun-2026/Hostel_Technical_Audit_2026-06-29.md`. Health **39/100 (P0 cap ≤40)**.
+> New codes (orchestrator consolidates into known-issues.md): P0×1, P1×6, P2×5, P3×1.
+
+| Code | Sev | Issue | Location |
+|------|-----|-------|----------|
+| DAT-HST-001 | **P0** | `gen_active_bed_id`/`gen_active_student_id` written as plain nullable cols (NOT generated) → both UNIQUE indexes inert (all-NULL) → BR-HST-001/002 unenforced; no `lockForUpdate` anywhere → concurrent double-allotment of bed/student. AllotmentService's stated concurrency strategy is silently dead; `translateDuplicateError()` waits for a 1062 that can't fire. | `database/migrations/tenant/2026_06_15_153428_create_hst_allotments_table.php:23-24,44-45` + `AllotmentService.php` |
+| MIG-HST-001 | P1 | `hst_mess_bills.total_amount` is plain NOT-NULL `decimal(10,2)` no default, NOT `GENERATED` (D34 #3 requires it). Model has it in `$casts` but not `$fillable` → `MessBill::create()` w/o it fails (SQLSTATE 1364); BR-HST-025 unenforced. | `…create_hst_mess_bills_table.php:29` + `Models/MessBill.php:16-46` |
+| JOB-HST-001 | P1 | `hst:escalate-complaints` scheduled as a bare central command (`registerCommandSchedules`), no `tenants:run` wrapper; command runs `checkSlaBreaches()` inline on central DB → BR-HST-020 SLA escalation never runs per tenant. | `Providers/HostelServiceProvider.php:150-160`, `EscalateComplaintsCommand.php`, `SendHstComplaintEscalationJob.php` |
+| BUG-HST-006 | P1 | `SendHstNotificationJob::handle()` only `Log::info()` (stub). 0 Listeners, `EventServiceProvider::$listen=[]`. All 7 events dispatch this job → parent alerts (BR-HST-008/017/031/049) never delivered. | `Jobs/SendHstNotificationJob.php:40-46` |
+| PERF-HST-003 | P1 | `Schema::hasTable()` as runtime feature-flags (info_schema per request) — tables all exist. | `HostelFeeService.php:108,211,225`, `LeavePassService.php:209,260`, `HstAttendanceService.php:145`, `IncidentService.php:178` |
+| SEC-HST-004 | P1 | 35/38 FormRequests `authorize()` return bare `true` (D30). | `app/Http/Requests/` |
+| DAT-HST-002 | P1 | Room/hostel `current_occupancy` non-atomic read-modify-write, no lock → counter drift + missed `full` flip (BR-HST-010). (Hostel total uses atomic increment — room does not.) | `AllotmentService.php` create/transfer/vacate |
+| VAL-HST-002 | P2 | BR-HST-015 (fee structure must exist before allotment) is a soft `Log::info`, not a hard block — contradicts FRD REQ-HST-008 AC#3. | `HostelFeeService::validateFeeStructureExists()` |
+| ORM-HST-001 | P2 | Duplicate model→table: `BedType`+`HstBedType` both → `hst_bed_types`; both live (BedType: HostelSetup/BedTypeController; HstBedType: Bed rel + BedController). Resolves G3. | `Models/BedType.php:13`, `Models/HstBedType.php:14` |
+| MIG-HST-002 | P2 | D29: 29 hst migrations use `->enum()` (~35 calls: vacation_reason, meal_plan…) instead of dropdown FK. Top platform offender. | `…create_hst_allotments_table.php:21` et al. |
+| TEN-HST-001 | P2 | `RouteServiceProvider::mapApiRoutes()` = only `api` middleware (no tenancy/auth). api.php empty → latent; Phase-7 endpoints would be unprotected. | `Providers/RouteServiceProvider.php:46` |
+| BUG-HST-007 | P2 | `forwardToStudentFee()` hardcodes `return null` → fee demands stored locally but never pushed to StudentFee (REQ-HST-019 stub). | `HostelFeeService::forwardToStudentFee()` |
+| DEAD-HST-002 | P3 | Commented-out Gate in AuditLogController (compounds DEAD-HST-001/BUG-HST-005). | `AuditLogController.php:112` |
+
+**Verified CLEAN (not findings):** web `RouteServiceProvider` has full tenancy stack; no `$request->all()` into models; no `dd()`/debug; no backup files; no bare-string cache keys; events are dispatched (not orphaned); generated columns are never written directly by code (the bug is they're never written at all).
+
 ### Implementation Blockers (Prerequisites)
 
 | # | Prerequisite | Owner | Blocks |
@@ -126,6 +314,8 @@
 4. **Mess overlap with `mes_*`** — `hst_mess_*` tables are HST-internal for hostel boarders. If a separate `mes_*` Mess Management module is built for school canteen, review table ownership. Current recommendation: keep `hst_mess_*` in HST.
 
 5. **Repeated offender threshold** — BR-HST-022 hardcodes 3 incidents. Should be configurable via `sys_settings`. Define setting key before Phase 6.
+
+6. **Listeners layer** — Do 7 events need Listeners, or do controllers/services dispatch `SendHstNotificationJob` directly? Check `EventServiceProvider.php` before assuming gap.
 
 ### DDL Deferred Items (v4 scope)
 
@@ -161,7 +351,7 @@
 
 9. **`hst_housekeeping_log.cleaned_by` is VARCHAR** — cleaning staff may be third-party contractors not in `sys_users`. `cleaned_by_user_id` is a nullable FK for internal staff only.
 
-10. **Block Warden scoped data access** — `WardenScopeMiddleware` + `HostelScope` must be built in Phase 1/2. Block/floor wardens see only students and data for floors they are currently assigned to (active `hst_warden_assignments` record). Chief Warden has full hostel-wide access. This must be retrofitted nowhere — build early.
+10. **Block Warden scoped data access** — `WardenScopeMiddleware` + `HostelScope` — `WardenScopeMiddleware` is **IMPLEMENTED** (confirmed 2026-06-27). Block/floor wardens see only students and data for floors they are currently assigned to (active `hst_warden_assignments` record). Chief Warden has full hostel-wide access.
 
 11. **Attendance session is idempotent on create** — UNIQUE on `(hostel_id, attendance_date, shift)`. Service uses `firstOrCreate()`. Submitting same session twice must UPDATE, not throw duplicate error.
 
@@ -170,6 +360,8 @@
 13. **Leave approval auto-marks attendance AND mess**: `LeavePassService::approve()` must call both `markAttendanceForLeave()` (writes `hst_attendance_entries` status='leave') and `markMessAttendanceForLeave()` (writes `hst_mess_attendance` status='on_leave') for all sessions/meals in the leave date range.
 
 14. **Late return auto-creates incident**: `LeavePassService::markReturned()` checks if `actual_return_date > to_date`. If so, auto-creates `hst_incidents` record with `incident_type='late_arrival'` and `is_auto_generated=1`. `late_return_incident_id` FK on leave_pass links them.
+
+15. **`hst:escalate-complaints` command scheduled hourly** — implemented in `HostelServiceProvider::registerCommandSchedules()`. Multi-tenant deployment requires `tenants:run hst:escalate-complaints` wrapper; bare `schedule->command()` only runs on central domain context.
 
 ---
 
@@ -232,6 +424,8 @@
 - `SendHstNotificationJob` — generic dispatcher used by all 7 events above
 - `SendHstComplaintEscalationJob` — runs hourly via Laravel scheduler; checks SLA breach and auto-escalates
 
+**Listeners: 0** — verify whether events dispatch jobs directly in EventServiceProvider, or if Listeners layer is missing entirely.
+
 ---
 
 ## Cross-Module Dependencies
@@ -272,6 +466,8 @@
 | `HostelFeeService` | Fee structure lookup, monthly charge calculation, prorated amounts, push fee demand to StudentFee |
 | `HstComplaintService` | Create complaint, compute SLA due_at, assign, resolve, escalate overdue |
 | `SickBayService` | Admit student, auto-mark attendance, dispatch parent notification, discharge, flag hospital referral |
+| `HostelAuditService` | Internal audit trail writes to `hst_audit_log` |
+| 14 Report Services | One per report type: attendance, discipline, fee, laundry, leave, maintenance, medical, mess, movement, occupancy, reservation, visitor frequency, visitor, warden |
 
 ---
 
@@ -298,24 +494,41 @@
 | Phase 8 | hst_complaints + hst_visitor_log + hst_visitor_media + hst_sick_bay_log + hst_sick_bay_vitals + hst_sick_bay_medications + hst_room_inventory + hst_bed_maintenance_log + hst_housekeeping_log + hst_laundry_tickets | Support features; sick bay; maintenance |
 | Phase 9 | HstReportController (12 report types) + dashboard analytics + exports | Full reporting suite |
 
-**Build `WardenScopeMiddleware` + `HostelScope` in Phase 1/2.** Must not be retrofitted later across all controllers.
+**`WardenScopeMiddleware` is IMPLEMENTED as of 2026-06-27.** Phase 1/2 requirement is fulfilled.
 
 ---
 
 ## Lessons Learned
 
-(empty until session work populates this)
+- **Status "0% Greenfield" was wrong** — module was seeded from req doc only, never verified against filesystem. Hostel had 53 controllers, 278 views, 41 migrations, and 22 services already built. Always `ls` before trusting any seeded count.
+- **Policies are in the module, not `app/Policies/`** — HST has 20 policies in `Modules/Hostel/app/Policies/`. Post-migration architecture puts module policies in each module's own directory. Grep on `app/Policies/` returns 0 — not a gap.
+- **Report services inflate service count significantly** — 15 of 22 services are report-specific (`HostelAttendanceReportService`, etc.). Core domain services: 7. This pattern exists in other modules too — always distinguish domain services from report services when comparing.
+- **Model naming inconsistency is a real risk** — `BedType.php` and `HstBedType.php` both exist for the same `hst_bed_types` table. This must be caught in code gap analysis before FRD work proceeds.
+
+### [2026-06-29 | Technical Auditor]
+- **The Laravel migrations dropped the DDL's MySQL generated-column expressions — silently fatal.** `HST_DDL_v3` (D34) declares `hst_allotments.gen_active_bed_id`/`gen_active_student_id` as STORED `GENERATED ALWAYS AS (IF(is_alloted=1, bed_id, NULL))` and `hst_mess_bills.total_amount` as a GENERATED formula. The hand-written tenant migrations created all three as **plain columns** (`bigInteger()->nullable()`, `decimal()`), with no `storedAs`/`virtualAs` anywhere in any `hst_*` migration. Result: the allotment UNIQUE indexes enforce nothing (all-NULL columns), and the whole BR-HST-001/002 concurrency guarantee is a no-op (DAT-HST-001, P0). **Lesson: whenever a DDL master uses a generated column for a uniqueness/computed invariant, grep the migration for `storedAs|virtualAs|GENERATED` — a missing expression turns a DB-enforced rule into a silent lie. Don't trust a service docblock that says "relies on UNIQUE(...)"; verify the column is actually generated.**
+- **Generated-column "never written directly" can be a false comfort.** The audit guardrail is "confirm code never writes the generated column." Here code never writes it AND the DB never generates it → permanently NULL. The correct check is both directions.
+- **`Schema::hasTable()` Phase-gating leaves dead introspection cost.** Services were written to no-op until a table "ships," but the tables shipped — the guards now just hit `information_schema` every request (PERF-HST-003).
+- **Notification subsystem is a Log stub end-to-end.** Events dispatch correctly but the single sink job only logs; 0 Listeners. The module's headline safety value (parent alerts) is non-functional until Phase 5 (BUG-HST-006). Cross-module "Phase N will wire this" stubs (also BUG-HST-007 StudentFee, JOB-HST-001 scheduler) are the dominant gap class here, not security holes.
+- **Authorization is healthier than the platform norm for CRUD** — 20 policies registered, main controllers gated, no `$request->all()`. The authz weakness is concentrated in the 7 read-only report controllers (SEC-HST-001/002/003) and the universal D30 FormRequest `true` (SEC-HST-004).
 
 ---
 
 ## Pending Next Steps
 
-- [ ] Verify exact academic session table name in `0-DDL_Masters/tenant_db_v4.sql` — req doc says `sch_academic_sessions`; DDL uses `sch_academic_term` (singular)
-- [ ] Define StudentFee integration mechanism (direct Eloquent / event / service interface) before Phase 5
+- [ ] Verify `BedType.php` vs `HstBedType.php` — determine which is live, which is dead; remove duplicate
+- [ ] Verify duplicate controllers: `AuditLogController` vs `HstAuditLogController`; `NotificationLogController` vs `HstNotificationLogController`
+- [ ] Check `EventServiceProvider.php` — confirm whether 0 Listeners is intentional (jobs dispatched directly) or a gap
+- [ ] Verify modules-map model count discrepancy: 44 (map) vs 41 (actual ls)
+- [x] Generate FRD → done 2026-06-29 → `HST_FRD_2026-06-29.md` (29 REQ / 54 BR / 14 RPT / 10 WF / 10 ENH)
+- [ ] Run DDL Schema Gap Analysis → `act as DB Architect` — FRD Section 10.1 "DDL Entity Needed = Yes" rows vs Hostel_DDL_v4.sql
+- [ ] Run Code Gap Analysis → `act as Technical Auditor` — FRD-driven, against `Modules/Hostel/`
+- [ ] Run Completion Scoring (6-dim) → `act as Status_Analyzer` using HST_FRD_2026-06-29.md as denominator
+- [ ] Test Coverage Gap → `act as Testing Architect` — acceptance criteria vs the 0 existing tests
 - [ ] Define `sys_settings` key for repeated-offender threshold (BR-HST-022)
-- [ ] Generate FRD → `act as Business Analyst` → "create an FRD for Hostel"
-- [ ] DDL Gap Analysis → `act as DB Architect` — V2 req (20 tables) vs DDL v4 (36 tables); confirm all 15 new v3 tables are requirement-aligned
-- [ ] Code Gap Analysis → `act as Technical Auditor` — after FRD generated
+- [ ] Define StudentFee integration mechanism (direct Eloquent / event / service interface) before Phase 5
+- [ ] Write 15 test classes (11 feature + 4 unit) — 0 exist today
+- [ ] Multi-tenant scheduler wrapper: `hst:escalate-complaints` needs `tenants:run` for per-tenant execution
 
 ---
 
@@ -323,4 +536,7 @@
 
 | Date | Agent | Work Done |
 |------|-------|-----------|
-| 2026-06-27 | Business Analyst | Knowledge file seeded from V2 requirement doc (HST_Hostel_Requirement.md v2) + DDL (Hostel_DDL_v4.sql / internally v3.0). No session work yet. |
+| 2026-06-27 | Business Analyst | Knowledge file seeded from V2 requirement doc (HST_Hostel_Requirement.md v2) + DDL (Hostel_DDL_v4.sql / internally v3.0). No session work yet. Status recorded as 0% Greenfield. |
+| 2026-06-27 | Business Analyst | Full filesystem verification pass. Status corrected to ~70–75% complete. All artifact counts updated from filesystem. 13 known gaps/corrections documented. Lessons Learned populated. |
+| 2026-06-29 | Business Analyst | FRD generated fresh → `HST_FRD_2026-06-29.md` (flat FRD storage). 29 REQ / 54 BR / 14 RPT / 10 WF / 10 ENH; P0=13/P1=13/P2=3. Original BR-HST-001…022 preserved verbatim (downstream contract); BR-HST-023…054 added. REQ- re-numbered from 001. FRD Summary block added; Pending Next Steps updated to point at the four post-FRD gap analyses. Section 10.4 totals verified against actual document counts. |
+| 2026-06-29 | Technical Auditor | Mode A 12-layer deep audit (priority L6/8/2/5/10) against live module + tenant migrations, cross-referenced to HST_FRD_2026-06-29.md and D34/D29/D30/D17. Report → `3-Audit_Reports/V1_Jun-2026/Hostel_Technical_Audit_2026-06-29.md`. Health **39/100, P0 cap applied**. 13 new codes: **DAT-HST-001 (P0** — generated-UNIQUE allotment columns are inert plain columns → BR-HST-001/002 unenforced, concurrent double-allotment**)**, MIG-HST-001/JOB-HST-001/BUG-HST-006/PERF-HST-003/SEC-HST-004/DAT-HST-002 (P1), VAL-HST-002/ORM-HST-001/MIG-HST-002/TEN-HST-001/BUG-HST-007 (P2), DEAD-HST-002 (P3). Known Gaps + Lessons Learned appended. known-issues.md NOT edited (parallel-run protocol — orchestrator consolidates). |

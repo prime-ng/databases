@@ -7,7 +7,7 @@
 ```yaml
 CONTEXT_STORAGE_DIR : ""/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/.ai-contexts""    # Folder where context files are saved (relative to project root)
 PROJECT_NAME : "PrimeAI"                # Your project name (used in filenames)
-MAX_CONTEXT_FILES : 50                  # Optional: max files to keep (oldest auto-flagged)
+MAX_CONTEXT_FILES : 500                 # Optional: max files to keep (oldest auto-flagged)
 ```
 
 ---
@@ -26,7 +26,7 @@ You are resuming work from a previously saved context session. Follow this proce
 #### CONFIGURATION
 ```yaml
 CONTEXT_STORAGE_DIR: ".ai-contexts"
-CONTEXT_FILE_NAME: "2026-04-13_19-50_marksheet-generation-module-full-design.md"
+CONTEXT_FILE_NAME: ".ai-contexts/2026-06-27_14-00_module-knowledge-update-summary-8-modules-ba-agent.md"
 ```
 
 #### STEP 1 — Find and Load Context

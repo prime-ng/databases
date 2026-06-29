@@ -106,6 +106,12 @@ php artisan horizon:status 2>/dev/null || echo "Horizon not running"
 | SEC-NTF-006 | ALL Notification routes commented out in web.php | OPEN — module inaccessible |
 | DEPLOY-CMP-01 | Complaint module: no migration files for any tables | OPEN — module not deployable |
 | DEPLOY-CMP-02 | Complaint module: `RouteServiceProvider` imports cross-module models | OPEN — load error risk |
+| DEPLOY-HRZ-01 | **Queue driver mismatch:** `config/queue.php:17` hardcodes `default=database` but `config/horizon.php:201` supervises `connection=redis`. Jobs without explicit connection land on DB queue Horizon never reads → silently stuck. | OPEN — P0 (confirmed 2026-06-27) |
+| DEPLOY-HRZ-02 | Single supervisor / single `['default']` queue with `tries=1`, `timeout=60`. No isolated `generation`/`reports`/`emails` queues (contradicts the workload map above). Heavy PDF/timetable jobs >60s killed with no retry. | OPEN — P0/P1 |
+| DEPLOY-ENV-02 | **`.env-original` committed to git** with live `APP_KEY=base64:…` (forge signed URLs / decrypt cookies & encrypted columns). Defaults also ship `APP_ENV=local`. | OPEN — P0, rotate APP_KEY |
+| DEPLOY-MIG-01 | **Cross-DB / missing FK targets:** 17 tenant FKs → `sys_roles` (no create migration anywhere); 52 tenant FKs → `sys_dropdowns` (central-only table). `tenants:migrate` throws errno 150/1824 or silently drops constraints. | OPEN — P0 (confirmed 2026-06-27) |
+| DEPLOY-RTG-01 | **SEC-RTG-001 still live:** ~45 seeder routes at `routes/tenant.php:318+` are OUTSIDE the `auth` group (closes :296); `SeederController` has zero env/guard checks → anonymous destructive seeding on any tenant. | OPEN — P0 |
+| DEPLOY-CFG-01 | Route closures break `route:cache` (`routes/api.php:9`, `routes/tenant.php:306`, `routes/web.php:996`, `SmartTimetable/routes/web.php:52`). `env()` outside config (11 sites, incl. `QuestionBank/AIQuestionGeneratorController.php:531,578`) returns null after `config:cache`. | OPEN — P1 |
 
 ---
 

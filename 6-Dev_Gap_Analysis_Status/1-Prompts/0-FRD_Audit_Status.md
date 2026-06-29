@@ -6,24 +6,24 @@
 ┌─────────────────────────────┬─────────────┬───────────────┬──────────────────┬──────────────┬─────────────┬────────────┬────────────┬────────────┐
 │ MODULE_NAME                 │ MODULE_CODE │ MODULE_PREFIX │ Module Knowledge │ FRD Creation │ Tech. Audit │            │            │            │
 ├─────────────────────────────┼─────────────┼───────────────┼──────────────────┼──────────────┼─────────────┼────────────┼────────────┼────────────┤
-│ Accounting                  │ ACC         │ acc_          │  Done            │              │             │            │            │            │
-│ Admission                   │ ADM         │ adm_          │  Done            │              │             │            │            │            │
-│ BehaviouralAssessment       │ BHA         │ bha_          │  Done            │              │             │            │            │            │
-│ Billing                     │ BIL         │ bil_          │  Done            │              │             │            │            │            │
-│ Cafeteria                   │ CAF         │ caf_          │  Done            │              │             │            │            │            │
-│ Certificate                 │ CRT         │ crt_          │  Done            │              │             │            │            │            │
+│ Accounting                  │ ACC         │ acc_          │  Done / Enhanced │              │             │            │            │            │
+│ Admission                   │ ADM         │ adm_          │  Done / Enhanced │              │             │            │            │            │
+│ BehaviouralAssessment       │ BHA         │ bha_          │  Done / Enhanced │              │             │            │            │            │
+│ Billing                     │ BIL         │ bil_          │  Done / Enhanced │              │             │            │            │            │
+│ Cafeteria                   │ CAF         │ caf_          │  Done / Enhanced │              │             │            │            │            │
+│ Certificate                 │ CRT         │ crt_          │  Done / Enhanced │              │             │            │            │            │
 │ CommonChat                  │ COM         │ cht_          │  Done            │              │             │            │            │            │
 │ Complaint                   │ CMP         │ cmp_          │  Done            │              │             │            │            │            │
 │ Dashboard                   │ DSH         │ dsh_          │                  │              │             │            │            │            │
 │ Documentation               │ DOC         │ doc_          │                  │              │             │            │            │            │
 │ EventEngine                 │ EVT         │ sys_          │                  │              │             │            │            │            │
 │ Feedback                    │ FBK         │ fbk_          │                  │              │             │            │            │            │
-│ FrontOffice                 │ FOF         │ fof_          │  Done            │              │             │            │            │            │
+│ FrontOffice                 │ FOF         │ fof_          │  Done / Enhanced │              │             │            │            │            │
 │ GlobalMaster                │ GLB         │ glb_          │                  │              │             │            │            │            │
 │ Hostel                      │ HST         │ hst_          │  Done            │              │             │            │            │            │
 │ Hpc                         │ HPC         │ hpc_          │  Done            │              │             │            │            │            │
 │ HrStaff                     │ HRS         │ hrs_          │                  │              │             │            │            │            │
-│ Inventory                   │ INV         │ inv_          │  Done            │              │             │            │            │            │
+│ Inventory                   │ INV         │ inv_          │  Done / Enhanced │              │             │            │            │            │
 │ Library                     │ LIB         │ lib_          │  Done            │              │             │            │            │            │
 │ LmsExam                     │ EXM         │ lms_          │                  │              │             │            │            │            │
 │ LmsHomework                 │ HMW         │ lms_          │                  │              │             │            │            │            │
@@ -52,7 +52,7 @@
 │ SystemConfig                │ SYS         │ sys_          │                  │              │             │            │            │            │
 │ Template                    │ TMP         │ tmp_          │                  │              │             │            │            │            │
 │ TimetableFoundation         │ TTF         │ ttf_          │                  │              │             │            │            │            │
-│ Transport                   │ TPT         │ tpt_          │   Done /clear          │              │             │            │            │            │
+│ Transport                   │ TPT         │ tpt_          │   Done /clear    │              │             │            │            │            │
 │ Vendor                      │ VND         │ vnd_          │                  │              │             │            │            │            │
 └─────────────────────────────┴─────────────┴───────────────┴──────────────────┴──────────────┴─────────────┴────────────┴────────────┴────────────┘
 

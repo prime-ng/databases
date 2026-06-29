@@ -17,6 +17,40 @@
 
 ---
 
+## Platform-Wide Systemic Patterns (verified 2026-06-27 — read before any module audit)
+
+> These are NOT per-module bugs — they are platform-wide patterns confirmed by a full-codebase
+> survey. The Technical Auditor uses these as the baseline: a module exhibiting one of these is
+> *typical*, not exceptional. Do NOT re-discover these from scratch per module — reference this
+> section and quantify the specific module against the baseline. Full detectors live in
+> `AI_Brain/agents/technical-auditor.md` (Platform Baseline + Mode D). Linked decisions in
+> `AI_Brain/state/decisions.md`.
+
+| Pattern | Baseline count | Severity | Decision |
+|---------|----------------|----------|----------|
+| FormRequest `authorize(){ return true; }` | **437 / 485 (90%)** | P1 (P0 where controller also ungated) | D30 |
+| Live `create/update($request->all())` (mass-assign) | **24 sites** (GlobalMaster, Library, Syllabus heaviest) | P1 (P0 if model has privilege fields) | D25 |
+| Write controllers with zero authorization primitive | **64** (some are empty scaffolds — confirm body) | P0/P1 | — |
+| `->enum()` in tenant migrations (should be `sys_dropdown_table` FK) | **~476** (hst 28, sch 22, tt 20, tpt 19) | P2 | D29 |
+| `->increments('id')` INT(11) signed PK | **428 / 658 tables** | P1 (FK typing + 2.1B-row cap) | — |
+| Tenant FKs → `sys_dropdowns` (central-only table) | **52** | P0 (cross-DB FK, impossible in MySQL) | — |
+| Tenant FKs → `sys_roles` (NO create migration exists) | **17** | P0 (`tenants:migrate` fails errno 150/1824) | — |
+| `$fillable` lists a column the migration lacks (D17) | **66 models** | P1 (`SQLSTATE 42S22 Unknown column`) | D17 |
+| `is_super_admin`/`super_admin_flag`/`password` in `$fillable` | `SchoolSetup/app/Models/User.php` | P0 (priv-esc via `$request->all()`) | — |
+| Permission-prefix chaos + typos (`tennat.`, `schoolsetup` vs `school-setup`) | ~50 sites | P1 (silent auth deny/pass) | D24 |
+| `tenancy()->initialize()` without `->end()` (context leak) | `Prime/DropdownNeedController.php:479,641` (P0); SchoolSetup console cmds (P1) | P0/P1 | — |
+| Jobs touching tenant tables without tenancy re-init | Vendor, Inventory, FrontOffice, Hostel jobs | P0/P1 | — |
+| Queue driver (`database`) vs Horizon (`redis`) mismatch | platform-wide | P0 (jobs stuck) | DEPLOY-HRZ-01 |
+| Committed `.env-original` with live `APP_KEY` | repo root | P0 (rotate) | DEPLOY-ENV-02 |
+| Seeder routes outside auth (SEC-RTG-001) | `routes/tenant.php:318+` | P0 | SEC-RTG-001 |
+| Worst eager-load ratio (with:get) | **Hpc 0.04**, QuestionBank 0.43, LmsQuiz 0.48 | P1 (N+1) | — |
+| God objects | `StudentController.php` 4222, `LmsExamController.php` 3767, `PrimeSolver.php` 4447 | P1 | — |
+
+**Resolved since first survey:** D22 (module-owned routes/policies) RESOLVED; D23 (RSP tenancy) —
+Scheduler & EventEngine now FIXED (verify SystemConfig/GlobalMaster only).
+
+---
+
 ## Tenancy Issues
 
 ### Tenant DB Not Initialized on Queued Jobs
@@ -1271,3 +1305,134 @@
 | DEAD-CMP-001 (AiInsightController stub) | **STILL PRESENT** — all methods still empty |
 | BUG-CMP-016 (4 missing ComplaintController methods: trashed/restore/forceDelete/toggleStatus) | **UNVERIFIED** in this audit — routes were not re-checked |
 | ComplaintCategoryRequest / DepartmentSlaRequest `authorize() { return true; }` | **OPEN** — both requests bypass auth |
+
+### Complaint (CMP) — Mode A Deep Audit (2026-06-29)
+> Full report: `3-Audit_Reports/V1_Jun-2026/Complaint_Technical_Audit_2026-06-29.md`. Health 35/100 (P0 cap).
+
+| Code | Severity | Issue | File:Line |
+|------|----------|-------|-----------|
+| BUG-CMP-020 | **P0 (raised from P2)** | `cmp_complaint_actions` has `action_timestamp`, NO `created_at`. `logAction()` inserts `'created_at'=>now()` inside `store()`'s transaction → `Unknown column` → rollback → **no complaint can be created**. `buildComplaintActionsQuery()->latest()` orders by missing `created_at` → timeline list also errors. | `ComplaintController.php:1257,986` ; migration `...create_cmp_complaint_actions_table.php:18` |
+| ORM-CMP-001 | P0 | `ComplaintAction` model declares neither `public $timestamps=false` nor `const CREATED_AT` → Eloquent writes/reads absent created_at/updated_at. Root cause of BUG-CMP-020. | `Models/ComplaintAction.php` |
+| FE-CMP-001 | P1 | Stored XSS — `{!! $complaint->description !!}` renders user-supplied complaint text raw (reachable from portal submission). | `views/complaint/complaint/show.blade.php:160` ; `edit.blade.php:150` |
+| SEC-CMP-017 | P1 | `DocumentRequestController::update()` mutates ParentPortal document-request status/fee/file with NO Gate/policy. | `DocumentRequestController.php:69` |
+| PERF-CMP-009 | P1 | Unbounded `User::all()` / `Complaint::all()` loaded into dropdowns per form render. | `DepartmentSlaController.php:43,77` ; `MedicalCheckController.php:58,124` |
+| JOB-CMP-001 | P1 | No scheduled escalation job exists (REQ-CMP-013 inert); AI listener `ProcessComplaintAIInsights` is not `ShouldQueue` and fires inside store()'s transaction. | `app/Jobs/` (absent) ; `Listeners/ProcessComplaintAIInsights.php:8` |
+| DEAD-CMP-007 | P2 | D30 — `ComplaintCategoryRequest` + `DepartmentSlaRequest` `authorize(){return true;}`; core store/update have no FormRequest. | `Requests/ComplaintCategoryRequest.php`, `DepartmentSlaRequest.php` |
+
+**Re-confirmed OPEN (2026-06-29):** BUG-CMP-019 (resolution_due_at never persisted, `ComplaintController.php:339-379`), SEC-CMP-007 (store() no gate, `:211`), SEC-CMP-015 (private notes not query-filtered, `:969`), SEC-CMP-016 (now PARTIAL — masked in show blade but view-layer only / not role-aware), VAL-CMP-004 (resolve w/o note+timestamp, `:585-589`), VAL-CMP-005 (no status FSM, `:582`), BUG-CMP-024 (notif to `User::role('Super Admin')`, `:384`).
+
+**FIXED since 2026-06-27:** CT-03/CT-04 (`dd($e)` removed), CT-05/06/07 (hardcoded ids → real dropdown lookups; 124/3 remain only as `??` fallbacks), CT-12 (`destroy()` implemented), D23 tenancy stack present, D24 prefixes clean (`tenant.`).
+
+---
+
+## Mode A Deep-Audit Batch — INV · FOF · CAF · HST · LIB (2026-06-29)
+
+> 5 parallel `pa-technical-auditor` Mode A audits, consolidated by the orchestrator. Per-module full
+> reports in `3-Audit_Reports/V1_Jun-2026/{Module}_Technical_Audit_2026-06-29.md`; per-module gaps also
+> appended to each `AI_Brain/module-knowledge/{CODE}_*.md`. **62 new issue codes** (no collisions).
+
+### Roll-up
+
+| Module | Health | P0 | P1 | P2 | P3 | New codes |
+|--------|--------|----|----|----|----|-----------|
+| Inventory (INV) | 38/100 (P0 cap) | 1 | 5 | 3 | 1 | 10 |
+| Hostel (HST) | 39/100 (P0 cap) | 1 | 6 | 5 | 1 | 13 |
+| Library (LIB) | 40/100 (P0 cap) | 1 | 5 | 2 | 1 | 9 |
+| FrontOffice (FOF) | 41/100 | 0 | 9 | 6 | 3 | 18 |
+| Cafeteria (CAF) | 62/100 | 0 | 4 | 5 | 3 | 12 |
+| **Total** | — | **3** | **29** | **21** | **9** | **62** |
+
+### Cross-Module Systemic Patterns (the high-value synthesis)
+
+1. **Concurrency: read-modify-write on counters/balances with NO `lockForUpdate`/atomic op (Layer 8) — pervasive.**
+   LIB checkout-eligibility (DAT-LIB-001), CAF order-cancel double-refund (DAT-CAF-001), HST bed allotment + occupancy (DAT-HST-001/002), INV stock decrement + numbering (DAT-INV-003/004), FOF register numbering + key/gate-pass (DAT-FOF-002/004). Same defect class across all 5 modules → races (double-allot, oversell, double-refund, duplicate numbers).
+2. **D30 — every module's FormRequests `authorize(){return true;}`.** FOF 10/10, CAF 19/19, HST 35/38, INV 19, LIB present. Consistent with the 90% platform baseline; defense-in-depth absent module-wide (SEC-FOF-003, SEC-CAF-003, SEC-HST-004, SEC-INV-001*, …).
+3. **Scheduler/Job tenancy (Layer 10) — commands scheduled in CENTRAL context without `tenants:run`; jobs without tenancy re-init.** CAF `caf:*` (JOB-CAF-001), HST `hst:escalate-complaints` (JOB-HST-001), FOF `fof:flag-overstay` unscheduled (JOB-FOF-002) + ATT-sync job no context (JOB-FOF-001), INV ReorderAlertJob (JOB-INV-001). Per-tenant automation silently never runs.
+4. **★ CANDIDATE NEW D-PATTERN — MySQL `GENERATED ALWAYS` columns from the DDL were emitted as inert plain columns in the Laravel migrations.** HST `gen_active_bed_id`/`gen_active_student_id` (DAT-HST-001, the allotment-uniqueness P0) and `hst_mess_bills.total_amount` (MIG-HST-001); INV `variance_qty` (MIG-INV-001). The generated expression is dropped → UNIQUE-on-generated enforces nothing / NOT-NULL inserts fail / computed totals are wrong. **Recommend registering as a platform D-pattern and sweeping all modules (Mode D).**
+5. **Notification/NTF delivery stubbed — alerts computed but never sent.** HST parent alerts are a `Log::info` stub with 0 listeners (BUG-HST-006), CAF reorder/FSSAI/low-balance `dispatch()` commented out (BUG-CAF-002), FOF circular distribution is a status-flip with no NTF (BUG-FOF-002).
+6. **D29 ENUM in migrations persists.** HST ~35 (MIG-HST-002), CAF ~15 (SCH-CAF-001), INV entry_type (MIG-INV-001).
+7. **Process note:** dated module-knowledge snapshots were stale on "0 migrations" for INV (28 exist), CAF (22 exist), and on FOF facts (overstay command exists). Live-code verification corrected each — keep auditing against live code, not snapshots.
+
+### Inventory (INV)
+| Code | Severity | Issue | File:Line |
+|------|----------|-------|-----------|
+| DAT-INV-001 | P0 | Approved stock adjustments never post to ledger (posting loop commented out / FIXME) → balances silently corrupt | `StockAdjustmentService.php:138-163` |
+| DAT-INV-002 | P1 | `adjustment` entry-type sign contradiction (postEntry− vs recalculate+) + transfers leave no transfer_in row → recalculate corrupts balances | `StockLedgerService.php:59,92-102,154-161` |
+| DAT-INV-003 | P1 | Negative-stock guard reads balance unlocked outside the transaction → TOCTOU oversell; `max(0,…)` clamps the loss | `StockLedgerService.php:63-65,116-123` |
+| BUG-INV-001 | P1 | `Events/`+`Listeners/` at module root (outside PSR-4 `app/`) → not autoloaded; `assets.dispose` 500+rollback, nightly `inventory:maintenance-overdue` fatals | `Events/`,`Listeners/`; `app/Providers/EventServiceProvider.php:14-21` |
+| JOB-INV-001 | P1 | `ReorderAlertJob` reads/writes tenant tables with no tenancy re-init | `app/Jobs/ReorderAlertJob.php:25-67` |
+| DEPLOY-INV-01 | P1 | Closure route breaks `php artisan route:cache` app-wide | `routes/web.php:216` |
+| MIG-INV-001 | P2 | `entry_type` hard ENUM (D29) + `variance_qty` plain-writable though DDL intended GENERATED | `…create_inv_stock_entries_table.php:17` |
+| PERF-INV-003 | P2 | ~10 unbounded `->get()` over growing ledger tables in report builders | `InventoryReportService.php:36,60,82,…` |
+| DAT-INV-004 | P2 | GRN/ADJ/SI/IR numbers + asset tags via `COUNT(*)+1`, no lock/unique → duplicates | `GrnPostingService.php:26-32,223-233`; `StockAdjustmentService.php:232-238` |
+| DEAD-INV-003 | P3 | `prs.import` route → "coming soon" stub + orphan duplicate `Events/AssetDisposed.php` | `PurchaseRequisitionController.php:158`; `routes/web.php:113` |
+
+### Hostel (HST)
+| Code | Severity | Issue | File:Line |
+|------|----------|-------|-----------|
+| DAT-HST-001 | P0 | Allotment STORED-generated UNIQUE columns (`gen_active_bed_id`/`gen_active_student_id`) written as inert plain cols → UNIQUE all-NULL, BR-HST-001/002 unenforced; zero `lockForUpdate` → concurrent double-allotment | `…create_hst_allotments_table.php:23-24,44-45`; `AllotmentService.php` |
+| MIG-HST-001 | P1 | `hst_mess_bills.total_amount` plain NOT-NULL (not GENERATED per D34/BR-HST-025); omitted from `$fillable` → `MessBill::create()` fails (1364) | `…create_hst_mess_bills_table.php:29`; `MessBill.php:16-46` |
+| JOB-HST-001 | P1 | `hst:escalate-complaints` scheduled as bare central command (no `tenants:run`) → SLA escalation never runs per tenant | `HostelServiceProvider.php:150-160`; `EscalateComplaintsCommand.php` |
+| BUG-HST-006 | P1 | `SendHstNotificationJob::handle()` is a `Log::info` stub; 0 listeners → all parent alerts (BR-HST-008/017/031/049) undelivered | `Jobs/SendHstNotificationJob.php:40-46` |
+| PERF-HST-003 | P1 | `Schema::hasTable()` used as runtime feature-flags (per request/tenant) | `HostelFeeService.php:108,211,225`; `LeavePassService.php:209,260`; `HstAttendanceService.php:145` |
+| SEC-HST-004 | P1 | 35/38 FormRequests `authorize()` return bare `true` (D30) | `app/Http/Requests/` |
+| DAT-HST-002 | P1 | Non-atomic room/hostel occupancy counters, no lock → drift + missed `full` flip (BR-HST-010) | `AllotmentService.php` create/transfer/vacate |
+| VAL-HST-002 | P2 | BR-HST-015 fee-structure check is a soft log, not a hard block | `HostelFeeService::validateFeeStructureExists()` |
+| ORM-HST-001 | P2 | Duplicate model→table binding: `BedType`+`HstBedType` → `hst_bed_types`, both live | `BedType.php:13`; `HstBedType.php:14` |
+| MIG-HST-002 | P2 | D29 — 29 hst migrations use `->enum()` (~35 calls) | `…create_hst_allotments_table.php:21` et al. |
+| TEN-HST-001 | P2 | API route group has no tenancy/auth middleware (latent; api.php empty) | `RouteServiceProvider.php:46` |
+| BUG-HST-007 | P2 | `forwardToStudentFee()` hardcoded `return null` → fee demands never pushed (REQ-HST-019 stub) | `HostelFeeService::forwardToStudentFee()` |
+| DEAD-HST-002 | P3 | Commented-out Gate in `AuditLogController` | `AuditLogController.php:112` |
+
+### Library (LIB)
+| Code | Severity | Issue | File:Line |
+|------|----------|-------|-----------|
+| BUG-LIB-012 | P0 | `dd($e);` in the live `update()` catch block (fires above `DB::rollBack()`) | `LibBookMasterController.php:481` |
+| SEC-LIB-012 | P1 | Fine **waiver** gated by the generic `tenant.lib-fines.update` (same as pay) → any Librarian can waive (BR-LIB-048 Supervisor-only) | `LibFineController.php:339,321` |
+| SEC-LIB-013 | P1 | `$transaction->update($request->all())` mass-assignment into `lib_transactions` (D25; fillable exposes member_id/status/dates) | `LibTransactionController.php:314` |
+| BUG-LIB-013 | P1 | Fine payment decrements balance by `$payment->amount`, but column is `amount_paid` → NULL decrement, `outstanding_fines` never reduced (BR-LIB-047) | `LibFinePaymentController.php:46-47` |
+| DAT-LIB-001 | P1 | Checkout eligibility is unlocked read-modify-write, no transaction → double-issue/over-limit race (BR-LIB-019/021) | `LibTransactionController.php:94-224` |
+| VAL-LIB-003 | P1 | Payment not validated vs outstanding balance; no auto-settle (BR-LIB-044/046) | `LibFinePaymentRequest.php:14-23`; `LibFinePaymentController.php:36-58` |
+| DAT-LIB-002 | P2 | Unlocked fine settlement; two divergent payment paths | `LibFine.php:143,176`; `LibFineController.php:196-261` |
+| SEC-LIB-014 | P2 | Library routes lack module-subscription gate (`tenant.module:Library`) | `RouteServiceProvider.php:41-50` |
+| DEAD-LIB-014 | P3 | Unused Vendor import in 18 controllers | `app/Http/Controllers/` |
+
+### FrontOffice (FOF)
+| Code | Severity | Issue | File:Line |
+|------|----------|-------|-----------|
+| DAT-FOF-001 | P1 | Certificate `issue()` has no fee-clearance check for TC/Migration (BR-FOF-005); no `CertificateIssuanceService` | `CertificateRequestController.php:210-238` |
+| BUG-FOF-002 | P1 | Circular `distribute()` only flips status — no recipient resolution / per-recipient log / NTF (BR-FOF-018) | `Services/CircularService.php:93-110` |
+| SEC-FOF-001 | P1 | Govt-inspection retention guard bypassed: controller calls a permission-string gate so `VisitorPolicy::delete/forceDelete` never runs (BR-FOF-007) | `VisitorController.php:112,169` |
+| JOB-FOF-001 | P1 | `EarlyDepartureAttSyncJob` no tenant context + no `$timeout`; queries tenant model/ATT on worker → silent no-op (BR-FOF-013) | `Jobs/EarlyDepartureAttSyncJob.php:26-77` |
+| JOB-FOF-002 | P1 | `fof:flag-overstay` exists but is never scheduled and not `tenants:run`-wrapped (BR-FOF-002 never fires) | `FlagOverstayCommand.php`; `FrontOfficeServiceProvider.php:74` |
+| VAL-FOF-001 | P1 | Appointment double-booking unchecked (BR-FOF-017) | `AppointmentController.php:62-81`; `AppointmentRequest.php:18-36` |
+| SEC-FOF-002 | P1 | Anonymous feedback stores respondent id (BR-FOF-010) | `FeedbackController.php:260-267` |
+| BUG-FOF-001 | P1 | `toggleStatus(): JsonResponse` return type unimported → live 500 | `CertificateRequestController.php:151`; `ComplaintController.php:142` |
+| SEC-FOF-003 | P1 | All 10 FormRequests `authorize(){return true;}` (D30) | `app/Http/Requests/*.php` |
+| DAT-FOF-002 | P2 | Unlocked read-modify-write register numbering across 8 generators (BR-FOF-016) | services + controllers (8 sites) |
+| DAT-FOF-003 | P2 | Postal `update()` bypasses acknowledgement-lock (BR-FOF-009) | `PostalRegisterController.php:150-162` |
+| DAT-FOF-004 | P2 | Key/gate-pass issue lack row locks (BR-FOF-012/004) | `KeyRegisterController.php:106-130`; `Services/GatePassService.php:20-48` |
+| BUG-FOF-003 | P2 | Complaint `escalate` doesn't create a CMP record (BR-FOF-020) | `ComplaintController.php:180-199` |
+| SEC-FOF-004 | P2 | Aadhaar stored unencrypted / no masking (BR-FOF-015) | `Models/Visitor.php:20-50` |
+| PERF-FOF-001 | P2 | Unbounded `->get()` lists + full student preload | `CertificateRequestController.php:35,43,106`; `KeyRegisterController.php:38-45` |
+| DEAD-FOF-001 | P3 | Commented-out feedback expiry guards | `FeedbackController.php:178-180,250-254` |
+| BUG-FOF-004 | P3 | Register-number formats deviate from BR-FOF-016 | Complaint/Cert number generators |
+| ORM-FOF-001 | P3 | `updated_by => 0` (non-existent user) in background paths | `EarlyDepartureAttSyncJob`; `VisitorService::flagOverstay` |
+
+### Cafeteria (CAF)
+| Code | Severity | Issue | File:Line |
+|------|----------|-------|-----------|
+| SEC-CAF-002 | P1 | Write-side IDOR — sanctum API accepts arbitrary `student_id` (order/scan/dietary-profile) with no ownership check → debit another student's wallet / overwrite another child's medical profile (extends SEC-CAF-001) | `OrderController.php:83-93`; `MealAttendanceController.php:24`; `DietaryProfileController.php:112` |
+| SEC-CAF-003 | P1 | All 19 FormRequests `authorize(){return true;}` (D30) | `app/Http/Requests/*` |
+| DAT-CAF-001 | P1 | Order-cancel double-refund race — status guard has no `lockForUpdate`/conditional re-check → concurrent cancels credit wallet twice | `OrderService.php:116-139` |
+| JOB-CAF-001 | P1 | `caf:*` commands scheduled in central context without `tenants:run` → query `caf_*` against central DB → automation dead | `CafeteriaServiceProvider.php:111-117` |
+| BUG-CAF-001 | P2 | Dietary-conflict (BR-CAF-002) not enforced in order/POS | `OrderService.php:29`; `PosService.php:44` |
+| BUG-CAF-002 | P2 | NTF dispatch stubbed (commented) — reorder/FSSAI/low-balance alerts (BR-CAF-007/014/017) never fire | `StockService.php:60,136`; `MealCardService.php:101-104` |
+| VAL-CAF-001 | P2 | BR-CAF-020 unenforced — multiple open POS sessions/day | `PosService.php:23-29` |
+| SCH-CAF-001 | P2 | D29 — ~15 ENUM columns in CAF DDL | `Cafeteria_DDL_v1.sql` |
+| FE-CAF-001 | P2 | `json_encode()` chart payloads without `JSON_HEX_*` (embed staff names) | `reports-page/index.blade.php:123-283`; `pages/dashboard.blade.php:276` |
+| DEAD-CAF-001 | P3 | Duplicate dead `CafeteriaServiceProvider` at module root | `Modules/Cafeteria/Providers/CafeteriaServiceProvider.php` |
+| DAT-CAF-002 | P3 | Wallet balance columns in `$fillable` (latent ledger bypass; no current sink) | `MealCard.php:19-22` |
+| BUG-CAF-003 | P3 | Order cutoff silently skipped when `meal_start_time` NULL | `OrderService.php:212-216` |
+
+> `SEC-INV-001` (FormRequests authorize true; now 19) and `SEC-INV-002` (reject uses `grn.accept`) were re-confirmed by the INV audit, not re-registered.

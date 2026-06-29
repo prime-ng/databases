@@ -910,4 +910,5 @@ STEP 1 — Requirement file reads restructured:
 
 -----------------------------------------------
 
-
+Read all the Configuration file of "Technical Auditor" Agent in my AI_Brain and exnhance the Capability of it. I want it to provide maximum possible Auditing Detail
+for my prime_ai Application. You can read entire application to underatand and then update all the files of AI_Brain and then Enhance "Technical Auditor" Agent. You can get all the Folder Paths from thr paths.md file in "/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/AI_Brain/config/paths.md"

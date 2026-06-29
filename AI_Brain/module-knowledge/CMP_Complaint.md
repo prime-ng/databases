@@ -1,5 +1,5 @@
 # Module Knowledge: Complaint (CMP)
-# Last Updated: 2026-06-27
+# Last Updated: 2026-06-29
 # Completion Status: ~40% (sourced from V2 requirement doc)
 
 ---
@@ -12,7 +12,7 @@
 | Database | `tenant_db` |
 | DDL (canonical) | `2-DDL_Tenant_Consolidated/Complaint_DDL_v2.sql` — 6 tables |
 | V2 Requirement | `4-Requirement_Module_wise/4-Initial_Requirements/V2/CMP_Complaint_Requirement.md` |
-| FRD | `4-Requirement_Module_wise/0-FRD_Documents/Complaint/CMP_FRD_v1.md` — generated 2026-06-27 |
+| FRD | `4-Requirement_Module_wise/0-FRD_Documents/CMP_FRD_2026-06-29.md` (v2.0, current) — supersedes `CMP_FRD_Old_v1.md` (2026-06-27) |
 | Routes | `Modules/Complaint/routes/web.php` — ~220 lines, ~63 declared routes |
 | Controllers | 9 (ComplaintCategory ✅, ComplaintReport ✅, DepartmentSla 🟡, MedicalCheck ✅, Complaint 🟡, AiInsight ❌, ComplaintAction ❌, ComplaintDashboard ❌, DocumentRequest ?) |
 | Models | 6 (Complaint, ComplaintCategory, ComplaintAction, DepartmentSla, MedicalCheck, AiInsight) |
@@ -94,8 +94,8 @@
 
 | Item | Value |
 |------|-------|
-| FRD File | `CMP_FRD_v1.md` |
-| Generated | 2026-06-27 |
+| FRD File | `CMP_FRD_2026-06-29.md` (v2.0, current) — supersedes `CMP_FRD_Old_v1.md` |
+| Generated | 2026-06-29 (v2.0); original 2026-06-27 (v1.0) |
 | Total REQ- entries | 14 |
 | Total BR- entries | 24 |
 | Total Workflows | 3 |
@@ -104,6 +104,13 @@
 | P0 Requirements | 6 (REQ-CMP-001 to REQ-CMP-006) |
 | P1 Requirements | 7 (REQ-CMP-007 to REQ-CMP-013) |
 | P2 Requirements | 1 (REQ-CMP-014 — Feedback Collection) |
+
+> **v2.0 changes (IDs/counts unchanged):** Refined 7 BRs for testability, folding in Mode B+C audit findings —
+> BR-010 (resolution due date must be **persisted** at registration, not display-only — fixes BUG-CMP-019 at spec level);
+> BR-014 (status FSM **system-enforced**, invalid/backward transitions blocked — VAL-CMP-005);
+> BR-015 & BR-021 (private-note + anonymous masking enforced at **data retrieval**, not display — SEC-CMP-015/016);
+> BR-016 (timeline ordered by `action_timestamp`); BR-017 (medical-check flag verified before save — VAL-CMP-006);
+> BR-020 (SLA report explicitly excludes Resolved — BUG-CMP-021).
 
 ---
 
@@ -197,7 +204,38 @@
 - ✅ `destroy()` is no longer empty (fixed since prior audit) — soft-delete works
 - ✅ `ComplaintCategoryController` and `DepartmentSlaController` fully implemented
 
+## Mode A Deep Audit (2026-06-29)
+
+> Full report: `3-Audit_Reports/V1_Jun-2026/Complaint_Technical_Audit_2026-06-29.md` · Health **35/100** (P0 cap) · verified against LIVE code (module has grown: `ComplaintController` now 1368 lines; new `DocumentRequestController` + `Mobile/ComplaintMobileController`; `Events/ComplaintSaved` + `Listeners/ProcessComplaintAIInsights` exist; still NO `Jobs/` dir).
+
+### New / Raised P0
+- **BUG-CMP-020 raised P2→P0:** `cmp_complaint_actions` migration has `action_timestamp` (useCurrent) and **no `created_at`**, but `logAction()` (`ComplaintController.php:1257`) inserts `'created_at'=>now()` **inside store()'s transaction** → `Unknown column` → rollback → **every complaint registration fails**. `buildComplaintActionsQuery()->latest()` (`:986`) also orders by the missing column. Root cause **ORM-CMP-001**: `ComplaintAction` model lacks `public $timestamps=false` (design decision #8 was never implemented in code).
+
+### New P1
+- **FE-CMP-001** stored XSS: `{!! $complaint->description !!}` in `show.blade.php:160` + `edit.blade.php:150`.
+- **SEC-CMP-017** `DocumentRequestController::update():69` mutates ParentPortal doc-requests with no gate.
+- **PERF-CMP-009** `User::all()`/`Complaint::all()` dropdowns (`DepartmentSlaController:43,77`; `MedicalCheckController:58,124`).
+- **JOB-CMP-001** no escalation job (REQ-CMP-013 inert); AI listener not `ShouldQueue`, fires in-transaction.
+
+### Re-confirmed OPEN vs FRD v2.0 BRs
+- BUG-CMP-019 (BR-CMP-010): `resolution_due_at` still absent from the `Complaint::create()` array (`:339-379`).
+- SEC-CMP-007: `store():211` still has no `Gate::authorize`.
+- VAL-CMP-005 (BR-CMP-014): `status_id` validated `nullable|integer`, any→any (`:582`).
+- VAL-CMP-004 (BR-CMP-012): Resolved allowed with null summary + null `actual_resolved_at` (`:585-589`).
+- SEC-CMP-015 (BR-CMP-015): `buildComplaintActionsQuery():969` no `is_private_note` role filter.
+- SEC-CMP-016 (BR-CMP-021): now PARTIAL — show blade masks `is_anonymous` but view-layer only, not role-aware.
+- BUG-CMP-024: creation notif still to `User::role('Super Admin')` via `App\Notifications\…` (`:384`).
+
+### FIXED since 2026-06-27
+CT-03/04 (`dd($e)` gone) · CT-05/06/07 (hardcoded ids → real lookups; 124/3 now only `??` fallbacks → P2) · CT-12 (`destroy()` implemented) · D23 tenancy stack present on RSP · D24 prefixes uniform (`tenant.`) · ticket-number `lockForUpdate()`+collision loop correct.
+
+### Clean layers
+Tenancy (L6) 🟢 — no `initialize()` leaks, no hardcoded tenant ids. Deployment (L12) 🟢 at module scope — no route closures / `env()` / secrets. No live `$request->all()` mass-assignment sink (the one hit is a safe `paginate()->appends()`).
+
 ## Pending Next Steps
+
+- [ ] **P0 fix batch** → `act as Developer` — BUG-CMP-020 + ORM-CMP-001 (`logAction` writes `action_timestamp`; `ComplaintAction` `$timestamps=false`; timeline `orderByDesc('action_timestamp')`), then BUG-CMP-019 (persist `resolution_due_at` in store)
+- [ ] **P1 security batch** → `act as Developer` — FE-CMP-001 (escape description), SEC-CMP-007 + SEC-CMP-017 (add gates), SEC-CMP-015 (private-note query filter), VAL-CMP-004/005 (resolution gate + status FSM)
 
 - [ ] **Sprint 1 (P0)** → `act as Developer` — Fix BUG-CMP-019 (`resolution_due_at` in store), VAL-CMP-004 (resolution gate), VAL-CMP-005 (status FSM), SEC-CMP-015 (private note query filter), BUG-CMP-022 (reopen method), BUG-CMP-023 (escalation job)
 - [ ] **Sprint 2 (P1)** → `act as Developer` — Fix VAL-CMP-001, VAL-CMP-003, VAL-CMP-006, BUG-CMP-021, BUG-CMP-024/025, SEC-CMP-016; implement `ComplaintActionController.store()`
@@ -215,3 +253,5 @@
 | 2026-06-27 | Business Analyst | FRD generated (`CMP_FRD_v1.md`) — 14 REQ, 24 BR, 5 reports, 13 enhancements |
 | 2026-06-27 | Business Analyst | Module knowledge seeded from `CMP_Complaint_Requirement.md` (V2) + `Complaint_DDL_v2.sql` + live code inspection |
 | 2026-06-27 | Technical Auditor | Mode B (FRD gap) + Mode C (BR enforcement) against `CMP_FRD_v1.md`. 15 new issue codes registered (VAL-CMP-001–006, BUG-CMP-019–025, SEC-CMP-015–016). Report: `Deep_Analysis/2026-06-27/Complaint_Technical_Audit_2026-06-27.md` |
+| 2026-06-29 | Business Analyst | FRD v2.0 generated (`CMP_FRD_2026-06-29.md`), superseding v1 (renamed `CMP_FRD_Old_v1.md`). All 14 REQ / 24 BR / 5 RPT / 13 ENH IDs and counts preserved. Refined 7 BRs (010/014/015/016/017/020/021) for testability per Mode B+C audit findings. |
+| 2026-06-29 | Technical Auditor | Mode A 12-layer deep audit vs LIVE code. Health 35/100 (P0 cap). Raised BUG-CMP-020 P2→P0 (created_at vs action_timestamp breaks store + timeline); registered ORM-CMP-001, FE-CMP-001, SEC-CMP-017, PERF-CMP-009, JOB-CMP-001, DEAD-CMP-007. Re-confirmed BUG-CMP-019, SEC-CMP-007/015, VAL-CMP-004/005, BUG-CMP-024 open; SEC-CMP-016 now partial. Confirmed CT-03..07/CT-12 fixed, tenancy+deploy clean. Report: `3-Audit_Reports/V1_Jun-2026/Complaint_Technical_Audit_2026-06-29.md`. |

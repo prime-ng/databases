@@ -25,7 +25,23 @@
 | Artisan Commands | **1** actual: `MaintenanceOverdueCommand` (3 of 4 proposed commands missing) |
 | Seeders | **35** actual (3 proposed) — includes **5 cross-module placeholder seeders** for ACC + VND prerequisite bypass |
 | Migrations | **0** — module uses DDL directly |
-| FRD | Not yet generated |
+| FRD | **Generated 2026-06-29** → `4-Requirement_Module_wise/0-FRD_Documents/INV_FRD_2026-06-29.md` |
+
+---
+
+## FRD Summary
+
+| Item | Value |
+|------|-------|
+| FRD File | `4-Requirement_Module_wise/0-FRD_Documents/INV_FRD_2026-06-29.md` |
+| Date | 2026-06-29 |
+| Functional Requirements (REQ-INV) | **22** (re-derived from V2's 15 `FR-INV`; separated masters, valuation, transfer, asset register vs maintenance, reporting into distinct testable units) |
+| Business Rules (BR-INV) | **58** (re-numbered + expanded from V2's 18; added delete/archive, opening-balance lock, concurrency, data-isolation, audit, negative-stock and partial-flow coverage) |
+| Workflows | **6** (Procure-to-Stock, Stock Issue, Physical Count & Adjustment, Asset Lifecycle, Reorder Automation, Rate Contract Lifecycle) |
+| Reports (RPT-INV) | **12** (balance, valuation, ledger, consumption, purchase register, pending PO, GRN register, reorder, fast/slow movers, expiry, storeroom-wise, asset register) |
+| Enhancements (ENH-INV) | **7** (mobile count app, multi-level approval, predictive reorder, supplier scorecard, GeM integration, regional language, asset self-service QR) |
+| Priority split | P0 = 11 · P1 = 8 · P2 = 3 |
+| Status | Draft (superseded none — first FRD for this module) |
 
 ---
 
@@ -203,8 +219,34 @@ Both point to the same controller method. This is a DRY violation and wastes rou
 
 ---
 
+## Known Gaps & Open Issues (Technical Audit 2026-06-29 — Mode A, verified against LIVE code)
+
+> Full report: `3-Audit_Reports/V1_Jun-2026/Inventory_Technical_Audit_2026-06-29.md`. Health **38/100 (P0 cap ≤40 applies)**. New codes: P0=1, P1=5, P2=3, P3=1.
+
+| Code | Sev | Issue | File:Line |
+|------|-----|-------|-----------|
+| DAT-INV-001 | P0 | `StockAdjustmentService::approve()` posting loop commented out (FIXME) — approved physical-count variances flip status to `approved` + fire `StockAdjusted` but NEVER post to ledger/balances → balances silently corrupt. | `app/Services/StockAdjustmentService.php:138-163` |
+| DAT-INV-002 | P1 | `entry_type='adjustment'` sign contradiction: `postEntry()` treats it OUTWARD(−) but `recalculateBalances()` treats it INWARD(+); transfers create only a `transfer_out` row (destination credited via direct write) so `inventory:recalculate-balances` cannot rebuild destination stock → rebuild corrupts balances. | `app/Services/StockLedgerService.php:59 vs 92-102,154-161` |
+| DAT-INV-003 | P1 | Negative-stock guard runs OUTSIDE the lock/transaction → TOCTOU oversell race; `max(0,…)` then silently clamps the loss. BR-INV-003 defeated under concurrency. | `app/Services/StockLedgerService.php:63-65 vs 116-123` |
+| BUG-INV-001 | P1 | `Events/MaintenanceOverdue.php`, `Events/AssetDisposed.php`(dup), `Listeners/*` live at module ROOT (PSR-4 root is `app/` only) → NOT autoloadable. Firing `AssetDisposed` (live `assets.dispose`) 500s + rolls back; scheduled `inventory:maintenance-overdue` fatals nightly. | root `Events/`,`Listeners/`; `app/Providers/EventServiceProvider.php:14-21` |
+| JOB-INV-001 | P1 | `ReorderAlertJob` queries/writes tenant tables with no tenancy re-init (constructor carries no tenant id, `handle()` no `initialize()`/`$tenant->run()`). | `app/Jobs/ReorderAlertJob.php:25-67` |
+| DEPLOY-INV-01 | P1 | Closure route `Route::get('/', fn () => view(...))` breaks `php artisan route:cache` for the whole app. | `routes/web.php:216` |
+| MIG-INV-001 | P2 | `entry_type` hard ENUM (D29; root cause of DAT-INV-001) + `variance_qty` is a plain writable column though DDL intended GENERATED ALWAYS and its own comment says "DO NOT INSERT/UPDATE". | `database/migrations/tenant/...create_inv_stock_entries_table.php:17`; `...stock_adjustment_items...` |
+| PERF-INV-003 | P2 | ~10 unbounded `->get()` over growing ledger tables in report builders (stock-ledger/consumption/valuation). | `app/Services/InventoryReportService.php` (36,60,82,…) |
+| DAT-INV-004 | P2 | GRN/ADJ/SI/IR numbers + asset tags minted via `COUNT(*)+1` with no lock/unique → duplicates under concurrency. | `GrnPostingService.php:26-32,223-233`; `StockAdjustmentService.php:232-238`; `StockIssueService.php:25-42` |
+| DEAD-INV-003 | P3 | `prs.import` route wired to a "coming soon" stub; orphan duplicate `Events/AssetDisposed.php`. | `routes/web.php:113`; `PurchaseRequisitionController.php:158` |
+
+**Snapshot corrections (do not trust the 2026-06-27 facts block blindly):**
+- ❌ "0 migrations" is FALSE — all **28 `inv_*` tenant migrations exist** at `database/migrations/tenant/2026_06_15_*`. The module's own `database/migrations/` is empty (expected — migrations are centralized).
+- ❌ "`MaintenanceOverdue` missing / 0 Listeners" — they EXIST but are mis-located outside `app/` (BUG-INV-001): present-but-unwired, not missing.
+- FormRequests are **19** (not 18) — `BulkTransferRequest` included; all 19 still `authorize(){return true}` (SEC-INV-001 / D30).
+
 ## Lessons Learned
 
+- [2026-06-29 | Technical Auditor] **The core stock-integrity engine is broken at the worst layer.** `StockAdjustmentService::approve()` ships with its ledger-posting loop commented out (FIXME blaming the `entry_type` ENUM) → approved adjustments never reconcile balances. Always read the *body* of an approve/post method, not just its existence — the method exists, is routed, fires its event, and looks complete, but does nothing to the ledger. The cited ENUM excuse is half-false: a generic `'adjustment'` value already exists in the enum.
+- [2026-06-29 | Technical Auditor] **PSR-4 trap:** nwidart modules map `Modules\Inventory\` → `app/` ONLY. Files at the module root (`Events/`, `Listeners/`) carrying an `app`-namespace are NOT autoloadable — they silently break event wiring and any code that references them. Grep the autoload map in `composer.json` before trusting a class's location.
+- [2026-06-29 | Technical Auditor] **"0 migrations" snapshot error:** migrations are centralized under `database/migrations/tenant/`, never inside `Modules/<X>/database/migrations/`. A per-module-dir check will always report 0 — verify against the tenant migration set.
+- [2026-06-29 | Technical Auditor] **Locking is half-done:** the balance WRITE uses `lockForUpdate()` (good) but the negative-stock CHECK and all `COUNT(*)+1` document-number generators are unlocked → oversell + duplicate numbers. A locked write does not make a read-modify-write safe.
 - [2026-06-27 | Update] Module was seeded as "0% Greenfield" without filesystem check. Actual state: 20 controllers, 28 models, 14 services, 16 policies, 18 FormRequests, 77 views, 221 route lines — ~55–65% complete. Standard update pass pattern applied.
 - [2026-06-27 | Update] Services count UNDER-counted in req doc (7 proposed vs 14 actual) — reverse of ACC/BHA pattern. The extra 7 services (`StockLedgerService`, `StockValuationService`, `ReorderAlertService`, etc.) implement architectural decisions beyond what the req doc proposed. Verify actual `app/Services/` always.
 - [2026-06-27 | Update] **5 cross-module placeholder seeders** enable standalone INV testing despite ACC/VND blockers. When ACC/VND modules are production-ready, placeholder seeders must be removed. Document this as a tech debt item.
@@ -214,7 +256,7 @@ Both point to the same controller method. This is a DRY violation and wastes rou
 
 ## Pending Next Steps
 
-- [ ] Generate FRD → `act as Business Analyst` → "create an FRD for Inventory"
+- [x] Generate FRD → DONE 2026-06-29 → `INV_FRD_2026-06-29.md` (22 REQ / 58 BR / 6 workflows / 12 reports / 7 ENH)
 - [ ] Create 4 missing domain events: `StockTransferred`, `ReorderThresholdReached`, `RateContractExpiringSoon`, `MaintenanceOverdue`
 - [ ] Create 3 missing Artisan commands: `inventory:recalculate-balances`, `inventory:check-reorder-levels`, `inventory:expire-rate-contracts`
 - [ ] Verify ACC module has Listeners for INV events (`GrnAccepted`, `StockIssued`, etc.) as per Decision D21
@@ -231,5 +273,7 @@ Both point to the same controller method. This is a DRY violation and wastes rou
 
 | Date | Agent | Work Done |
 |------|-------|-----------|
+| 2026-06-29 | Technical Auditor | Mode A 12-layer deep audit (live-verified). Health 38/100 (P0 cap). 10 new issues: DAT-INV-001 (P0 posting disabled), DAT-INV-002/003 (P1 sign/transfer + oversell race), BUG-INV-001 (P1 mis-located Events/Listeners), JOB-INV-001 (P1 job tenancy), DEPLOY-INV-01 (P1 closure route), MIG-INV-001 + PERF-INV-003 + DAT-INV-004 (P2), DEAD-INV-003 (P3). Corrected snapshot: 28 migrations DO exist, MaintenanceOverdue/Listeners present-but-unwired, 19 FormRequests. Report → `3-Audit_Reports/V1_Jun-2026/Inventory_Technical_Audit_2026-06-29.md`. |
 | 2026-06-27 | Business Analyst | Knowledge file seeded from V2 requirement doc (INV_Inventory_Requirement.md v2) + DDL (Inventory_DDL_v1.sql). Status incorrectly recorded as 0% Greenfield — actual code not checked at seeding. |
+| 2026-06-29 | Business Analyst | FRD generated fresh (no prior FRD) → `INV_FRD_2026-06-29.md`. Synthesized from V2 requirement (15 FR/18 BR), V1 19 screen-specs, DDL (28 tables) and the 20-controller Laravel module. Produced 22 REQ-INV, 58 BR-INV, 6 workflows, 12 RPT-INV reports, 7 ENH-INV. Section 10.4 totals reconciled (P0=11/P1=8/P2=3). FRD Summary block added to knowledge file. |
 | 2026-06-27 | Business Analyst | Update pass: verified all file counts against prime_ai/Modules/Inventory/. Status corrected to ~55–65%. Controllers 18→20, models 28→28 (confirmed), services 7→14 (2× proposed), FormRequests 13→18, policies 13→16, views 65→77, routes 221 lines. Discovered: 5 cross-module placeholder seeders (ACC+VND bypass), 35 total seeders, 4 of 8 domain events implemented, 1 Artisan command, 1 queued Job, 0 Listeners, 0 tests, 0 migrations. Route duplication noted. StockLedgerService + StockValuationService found (not in V2 req). |

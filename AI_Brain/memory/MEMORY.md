@@ -47,14 +47,14 @@
 
 ## Deployment & Operations
 
-- [deployment-config.md](deployment-config.md) — **Deployment configuration reference** (2026-06-25): queue names and workload map, environment variable checklist, Horizon configuration, known deployment risks, storage setup, pre-flight checklist. Used by Technical Auditor (Layer 5) and DevOps agent.
+- [deployment-config.md](deployment-config.md) — **Deployment configuration reference** (2026-06-25): queue names and workload map, environment variable checklist, Horizon configuration, known deployment risks (incl. confirmed P0s: queue=database vs Horizon=redis mismatch, committed APP_KEY in .env-original, cross-DB FK to sys_roles/sys_dropdowns), storage setup, pre-flight checklist. Used by Technical Auditor (Layer 12) and DevOps agent.
 
 ---
 
 ## Module Knowledge Files (`AI_Brain/module-knowledge/`)
 
 > Per-module accumulated knowledge — read before any FRD, audit, or code session on that module.
-> Seeded by Business Analyst; updated after every significant session (FRD, audit, code review).
+> Seeded by Business Analyst (enhanced: 22-artifact Analysis Mode Catalog — FRD/BRD/SRS/RBS/user-stories/RTM/FSM/data-dictionary/NFR/risk/estimation/reporting/rollout/conditions-catalog); updated after every significant session (FRD, audit, code review). Always verify counts via `ls` — seeded "0% Greenfield" is routinely 50–75% actual.
 
 - [../module-knowledge/BIL_Billing.md](../module-knowledge/BIL_Billing.md) — Billing (BIL): **PRIME module** (prime_db, not tenant). 5 bil_* tables in prime_db_v2.sql (no standalone DDL). 7 controllers, 6 models, 8 policies (**ALL BROKEN** — duplicate registrations), 43 views, ~55% complete. 7 P0 critical issues: silent auth bypass, audit log FK mismatch, open DB transactions, sensitive data in audit JSON, 9 unauth'd controller methods. 0 services (GOD controller). `Tenancy::initialize()/end()` pattern for cross-DB student count. P0 resolution status unverified as of 2026-06-27. FRD not yet generated.
 - [../module-knowledge/CMP_Complaint.md](../module-knowledge/CMP_Complaint.md) — Complaint (CMP): ~40% complete, 6 tables, 8 P0 blockers (dd() calls, empty destroy, wrong policy gate, hardcoded IDs), 3 stub controllers, 15 schema mismatches. FRD generated 2026-06-27.
@@ -65,6 +65,7 @@
 - [../module-knowledge/BHA_BehaviouralAssessment.md](../module-knowledge/BHA_BehaviouralAssessment.md) — BehaviouralAssessment (BHA): 16 tables (DDL v2, 6 dep layers), 12 controllers, **1 service** (BehaviouralScoreService only — corrected from 4), 5 FormRequests, 17 policies, 65 views, ~**50–55%** complete. 0 tests (critical — CBSE/ICSE CCE compliance). ComputeSchoolScoresJob missing. 3 FormRequests missing (Assessment, Incident, ClassCategory). No consolidated V2 req — 24 screen files are primary source. FRD not yet generated.
 - [../module-knowledge/INV_Inventory.md](../module-knowledge/INV_Inventory.md) — Inventory (INV): 28 tables (DDL v1, tenant_db), 20 ctrl, 28 models, **14 services** (corrected from 7; StockLedgerService + StockValuationService undocumented), 16 policies, 77 views, ~**55–65%** (corrected from 0% Greenfield). 5 cross-module placeholder seeders bypass ACC/VND prereqs. 4 of 8 domain events missing (StockTransferred etc.). 0 Listeners. 0 tests (critical — SELECT...FOR UPDATE on stock_balances). FK constraints for ACC/VND/SCH commented out in DDL. FRD not yet generated.
 - [../module-knowledge/FOF_FrontOffice.md](../module-knowledge/FOF_FrontOffice.md) — FrontOffice (FOF): 22 tables (DDL v1, 4 layers), 21 ctrl, 22 models, **4 services** (corrected from 6; FeedbackService + CertificateIssuanceService missing), **13 policies** (corrected from 4 proposed — 3× undercount), 118 views, ~**55–65%** (corrected from 0% Greenfield). `fof:flag-overstay` Artisan command not found. 1 queued Job (EarlyDepartureAttSyncJob). 0 Events, 1 test file. 0 migrations. FRD not yet generated.
+- [../module-knowledge/HST_Hostel.md](../module-knowledge/HST_Hostel.md) — Hostel (HST): 36-table DDL (v4/v3.0 internal), 41 migrations deployed. **53 ctrl** (proposed 20), **41 models** (proposed 20; modules-map says 44 — discrepancy of 3 unresolved), **22 services** (proposed 7; 15 are report-specific), **38 FormRequests** (proposed 27), **20 policies** (proposed 12; in module's own Policies/ not app/Policies/), **278 views** (proposed 65), **573 route lines / 337 named routes**, 9 seeders, 7 events, 2 jobs, 1 Artisan command (hst:escalate-complaints — hourly scheduler), 1 middleware (WardenScopeMiddleware ✓ implemented), **0 tests** (15 proposed — critical gap), ~**70–75%** (corrected from 0% Greenfield). Key gaps: 0 Listeners (events dispatch jobs directly), BedType.php+HstBedType.php duplicate models (P1), duplicate controller naming (AuditLogController vs HstAuditLogController). FRD not yet generated. Knowledge: `AI_Brain/module-knowledge/HST_Hostel.md`
 
 ---
 

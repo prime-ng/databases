@@ -94,4 +94,16 @@ It Will Ask :
 
   (5) Specific layer only         — specify: DDL / Code / Security / Performance / Deployment
 
-  
+  ----------------------------------------------------------------------------------------------------------
+
+`/agent business-analyst` → "FRD for the Complaint module."
+
+
+Next? (post-FRD handoffs)
+
+1. DDL Schema Gap Analysis → /agent db-architect — compare Section 10.1 vs Complaint_DDL_v2.sql
+2. Application Code Gap → /agent technical-auditor (Mode B, FRD-driven)
+3. Business-Rule Enforcement → /agent technical-auditor (Mode C) — re-run against the refined BRs
+4. Completion Scoring (6-dim) → /agent status-analyzer
+5. Test Coverage Gap → /agent testing-architect
+
