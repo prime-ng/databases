@@ -293,3 +293,20 @@ Weighted index would be ~52 (Amber-heavy), but **a P0 caps module health at 40**
 
 ---
 *Read-only audit. No application code was modified. Handoffs: P0/P1 fixes → Developer; schema/DDL reconciliation (SCH-CMP-*) → DB Architect; completeness re-score → Status_Analyzer; test coverage → Testing Architect.*
+
+---
+
+## STEP 1 Reading-Discipline Output (D-pattern) — added 2026-06-29
+
+### Three-Way Schema Reconciliation (DDL ↔ migration ↔ model)
+| Subject | DDL spec | Live migration | Eloquent model | Code | Verdict |
+|---------|----------|----------------|----------------|------|---------|
+| `cmp_complaint_actions` time column | `action_timestamp` only | `timestamp('action_timestamp')->useCurrent()`, **no `created_at`** | `ComplaintAction` has **no** `$timestamps=false` / `CREATED_AT` override | `logAction()` inserts `'created_at'`; `buildComplaintActionsQuery()->latest()` orders by `created_at` | **All three disagree → BUG-CMP-020 (P0) + ORM-CMP-001 (P0).** Reading any one alone would have mis-rated this as P2 "ordering"; only the 3-way read showed it hard-fails `store()`. |
+| `cmp_complaints.resolution_due_at` | present | present (nullable) | fillable | `store()` never writes it | Column exists, **code gap not schema gap** → BUG-CMP-019 (correctly a logic defect, not a migration defect). |
+
+### Module-Knowledge Snapshot Corrections (hints vs live code)
+Knowledge file dated 2026-06-27; live tree on 2026-06-29 differs:
+- "destroy() is empty" → **now implemented** (gated soft-delete).
+- "CT-03/CT-04 `dd($e)` blockers" → **removed**; only commented `// dd()` remains.
+- "CT-05/06/07 hardcoded `124/197/202`" → **replaced by dropdown lookups**; `124/3` survive only as `??` fallbacks (downgraded P2).
+- Module has grown since the snapshot: `ComplaintController` now 1368 lines; new `DocumentRequestController`, `Mobile/ComplaintMobileController`, and `Events/ComplaintSaved` + `Listeners/ProcessComplaintAIInsights`.

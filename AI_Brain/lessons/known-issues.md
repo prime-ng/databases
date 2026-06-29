@@ -1436,3 +1436,23 @@ Scheduler & EventEngine now FIXED (verify SystemConfig/GlobalMaster only).
 | BUG-CAF-003 | P3 | Order cutoff silently skipped when `meal_start_time` NULL | `OrderService.php:212-216` |
 
 > `SEC-INV-001` (FormRequests authorize true; now 19) and `SEC-INV-002` (reject uses `grn.accept`) were re-confirmed by the INV audit, not re-registered.
+
+---
+
+## Mode D Sweep — D36 GENERATED-Column Degradation (2026-06-29)
+
+> Full report: `3-Audit_Reports/V1_Jun-2026/ModeD_Sweep_GeneratedColumns_2026-06-29.md` · Pattern: `state/decisions.md` D36.
+> **Platform fact:** of ~19 DDL `GENERATED ALWAYS` columns, only **`sys_users.super_admin_flag`** is correctly generated in the live migrations; only 2 of ~700 tenant migrations use `storedAs/virtualAs`. Already-registered instances: DAT-HST-001, MIG-HST-001, MIG-INV-001. New instances below.
+
+| Code | Severity | Issue | File:Line |
+|------|----------|-------|-----------|
+| MIG-PTM-001 | P1 | `ptm_slot_bookings.active_booking_key` (DDL `GENERATED…CASE WHEN status='CONFIRMED' THEN student_id`) shipped as plain column → UNIQUE all-NULL, double-confirmed-booking not blocked | `migrations/tenant/...create_ptm_slot_bookings_table.php` ; `Sch_PTM_DDL_v3.sql:353` |
+| MIG-FIN-001 | P1 | `fee_invoices.balance_amount` (DDL `GENERATED…total_amount-paid_amount`) shipped plain → invoice balance wrong/driftable (financial) | `migrations/tenant/...create_fee_invoices_table.php` ; `StudentFee_DDL_v4.sql:321` |
+| MIG-VND-001 | P1 | `vnd_invoices.balance_due` (DDL `GENERATED…net_payable-amount_paid`) shipped plain → AP balance wrong (financial) | `migrations/tenant/...create_vnd_invoices_table.php` ; `Vendor_DDL_v2.1.sql:193` |
+| MIG-SCC-001 | P1 | `sch_academic_term.current_flag` + `sch_org_academic_sessions_jnt.current_flag` (DDL GENERATED) shipped plain → ">1 current term/session" possible (unique-active broken) | `migrations/tenant/...create_sch_academic_term_table.php`, `...create_sch_org_academic_sessions_jnt_table.php` |
+| MIG-STD-001 | P1 | `std_student_academic_sessions.current_flag` (DDL `GENERATED…IF(is_current=1,student_id,NULL)`) shipped plain → >1 current session per student | `migrations/tenant/...create_std_student_academic_sessions_table.php` ; `StudentProfile_DDL_v1.6.sql:222` |
+| MIG-TT-001 | P2 | Timetable derived columns shipped plain: `tt_period_set.total_periods`, `tt_room_availability.available_for_full_timetable_duration`, TIMESTAMPDIFF `duration_minutes` | `migrations/tenant/...create_tt_period_set_table.php`, `...create_tt_room_availability_table.php` ; `Timetable_DDL_v7.8.sql:420,1096` |
+
+**Tracked under D36, module code to confirm before coding:** EmployeeSetup `sch_employees_profile.active_flag`, `sch_employee_shift_assignments.active_flag`, `sch_teacher_capabilities.active_flag` (unique-active, P1) and `sch_employee_leave_balance.available_balance` (DDL `GENERATED…opening+carry-used`, leave-balance integrity / D26, P1).
+**Absent entirely (flag when module ships):** CommonChat `cht_*.dm_pair_hash`; Timetable `tt_*.no_of_days_not_available`.
+**Excluded (name-collision false positives, verified plain in own DDL):** 10× `total_amount` (acc_/caf_/inv_/tpt_/fee_), 4× `duration_minutes` (lms_/slb_ user-input).

@@ -242,3 +242,19 @@ public function toggleStatus(CertificateRequest $cert): JsonResponse   // resolv
 
 ---
 *Read-only audit. No application code modified. Issue codes start at 001 per prefix (no prior FOF codes in `lessons/known-issues.md`). Consolidation of known-issues / progress / decisions is left to the orchestrator.*
+
+---
+
+## STEP 1 Reading-Discipline Output (D-pattern) — added 2026-06-29
+
+### Three-Way Schema Reconciliation (DDL ↔ migration ↔ model)
+| Subject | DDL spec | Live migration | Eloquent model / code | Verdict |
+|---------|----------|----------------|-----------------------|---------|
+| `fof_visitors.id_proof_number` (Aadhaar) | identity field; BR-FOF-015 = mask/encrypt | column present | model stores raw, no cast/mask | model vs BR intent → SEC-FOF-004 (P2). |
+| Register-number columns | format per BR-FOF-016 | columns present | code generators deviate from the format | code vs spec → BUG-FOF-004 (P3). |
+| 22 models ↔ 22 tables | 22 tables | tenant migrations present | 22 models | binding reconciled **clean**; defects are logic/concurrency, not orphan tables. |
+
+### Module-Knowledge Snapshot Corrections (hints vs live code)
+- "`fof:flag-overstay` command not found" → **stale**: `FlagOverstayCommand` **does exist** — but is never scheduled / not `tenants:run`-wrapped (JOB-FOF-002). The real defect differs from what the snapshot implied.
+- `EarlyDepartureAttSyncJob` confirmed real and queued — but ships with no tenant context (JOB-FOF-001).
+- RSP confirmed to carry the full tenancy stack (not a D23 offender).

@@ -896,6 +896,7 @@ Use these to judge whether a module is typical or an outlier. (Re-measure period
 | Queue driver vs Horizon | **database vs redis** mismatch | P0 — jobs stuck |
 | Committed env with APP_KEY | `.env-original` | P0 — rotate |
 | SEC-RTG-001 seeder routes unauth | `routes/tenant.php:318+` | P0 — still live |
+| DDL GENERATED columns correct in migrations (D36) | **1 of ~19** (`sys_users.super_admin_flag`) | Rest plain/absent — P0/P1/P2 |
 
 ---
 
@@ -910,6 +911,7 @@ Use these to judge whether a module is typical or an outlier. (Re-measure period
 | D25 | `$request->all()` mass-assignment | Open (24 sites) |
 | D29 | ENUM instead of `sys_dropdown_table` FK | Open (~476 migration enums) |
 | D30 | FormRequest `authorize(){return true;}` | Open (437/485) |
+| D36 | DDL `GENERATED ALWAYS` columns shipped as plain/absent in migrations | Open — platform-wide (only `sys_users.super_admin_flag` correct; ~18 degraded incl. P0 hst_allotments) |
 
 ---
 

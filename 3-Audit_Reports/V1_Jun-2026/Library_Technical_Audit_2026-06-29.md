@@ -263,3 +263,18 @@ found -> P3/clear. Re-verify status_badge accessors never interpolate unescaped 
 ### False Positives Cleared (guardrails applied)
 - **Layer 5.2 "commented gates in LibInventoryAuditController (5 sites)"** (350,458,511,545,729) — these `// Gate::authorize` lines sit inside **fully commented-out alternate method bodies**; the live methods immediately below (create() :367, edit() :560, etc.) all carry active `Gate::authorize`. NOT an authorization hole — it is dead code already captured by DEAD-LIB-002. No SEC code assigned.
 - **Module-knowledge claim "LibFineController has zero Gate::authorize"** — STALE. Every LibFineController action (incl. waive :339, markPaid :293) now has a `Gate::authorize`. The residual issue is permission *granularity* (SEC-LIB-012), not absence.
+
+---
+
+## STEP 1 Reading-Discipline Output (D-pattern) — added 2026-06-29
+
+### Three-Way Schema Reconciliation (DDL ↔ migration ↔ model)
+| Subject | DDL spec | Live migration | Eloquent model / code | Verdict |
+|---------|----------|----------------|-----------------------|---------|
+| Fine payment amount | `amount_paid` column | migration confirms `amount_paid` (no `amount`) | code decrements by `$payment->amount` | **code↔migration column-name mismatch** → NULL decrement, `outstanding_fines` never reduced → BUG-LIB-013 (P1). Caught only by reading the migration, not the model. |
+| `lib_transactions` | — | columns present | `$fillable` exposes `member_id/status/dates` | model + `update($request->all())` → mass-assignment → SEC-LIB-013 (D25). |
+
+### Module-Knowledge Snapshot Corrections (hints vs live code)
+- "Tenancy not fully wired / D23 gap" → **stale**: the full stancl stack is present on all Library routes — **not** a D23 offender.
+- "LibFineController zero-auth" → **corrected**: it **is** gated; the real issue is permission **granularity** (waiver shares the pay permission → SEC-LIB-012), not absence of auth.
+- The 5 "commented gates" in `LibInventoryAuditController` are **dead alternate method bodies** (the live methods below are gated) → false positive cleared (tracked as DEAD-LIB-002).

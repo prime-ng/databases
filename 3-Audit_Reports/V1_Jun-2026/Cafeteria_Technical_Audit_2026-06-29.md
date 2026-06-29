@@ -210,3 +210,18 @@ Layer scores (G/A/R): L1 Amber, L2 Green, L3 Amber, L4 Amber, L5 Amber, L6 Green
 ## Notes & Corrections for the Knowledge Base
 - Knowledge file states **"0 migrations — module uses DDL directly"**; this is **stale** — 22 `create_caf_*` migrations exist in `database/migrations/tenant/` (dated 2026-06-15). Layer 2 is healthy.
 - Knowledge file states **"0 jobs"**; still true for *queued* jobs, but **3 Artisan commands + a scheduler block now exist** (archive/FSSAI/reorder) — they are the JOB-CAF-001 finding, not absent.
+
+---
+
+## STEP 1 Reading-Discipline Output (D-pattern) — added 2026-06-29
+
+### Three-Way Schema Reconciliation (DDL ↔ migration ↔ model)
+| Subject | DDL spec | Live migration | Eloquent model | Verdict |
+|---------|----------|----------------|----------------|---------|
+| ~15 pick-list columns | declared `ENUM` | migration mirrors `ENUM` | n/a | DDL and migration **agree but both violate D29** → SCH-CAF-001 (P2). |
+| `MealCard` wallet balance | ledger-derived (must not be mass-assigned) | columns present | balance columns in `$fillable` (DAT-CAF-002) | **Latent**, not active: `UpdateMealCardRequest` does **not** expose them → P3, not P1. The 3-way read prevented a false P1. |
+| Wallet debit / order price | — | columns present | locked debit + price snapshot | Reconciled **clean** — no gap. |
+
+### Module-Knowledge Snapshot Corrections (hints vs live code)
+- "0 migrations / module uses DDL directly" → **stale**: 22 `create_caf_*` tenant migrations exist in `database/migrations/tenant/` → Layer 2 verified Green.
+- Balance-in-`$fillable` re-checked against the consuming FormRequest → downgraded from a presumed active exploit to **latent (P3)**.

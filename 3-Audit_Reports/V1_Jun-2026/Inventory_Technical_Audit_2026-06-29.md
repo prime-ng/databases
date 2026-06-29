@@ -265,3 +265,19 @@ Mode A — Full 12-Layer Deep Audit (read-only). FRD (`INV_FRD_2026-06-29.md`) u
 
 ---
 *Read-only audit. No application code modified. Issue codes assigned continue from the current per-prefix maxima in `lessons/known-issues.md` (SEC-INV→002, VAL-INV→001, PERF-INV→002, DEAD-INV→002; DAT/BUG/JOB/MIG/DEPLOY-INV had none).*
+
+---
+
+## STEP 1 Reading-Discipline Output (D-pattern) — added 2026-06-29
+
+### Three-Way Schema Reconciliation (DDL ↔ migration ↔ model)
+| Subject | DDL spec | Live migration | Eloquent model / code | Verdict |
+|---------|----------|----------------|-----------------------|---------|
+| `inv_stock_adjustment_items.variance_qty` | `GENERATED ALWAYS AS (physical-system) STORED` ("DO NOT INSERT/UPDATE") | shipped **plain, writable** | service can write it | DDL↔migration gap → MIG-INV-001 (D36); compounds the DAT-INV-001 posting P0. |
+| `entry_type` | semi-open set | `ENUM` | — | D29 violation in migration (MIG-INV-001). |
+| Stock ledger sign | inward+/outward− | columns present | `postEntry()` vs `recalculateBalances()` contradict | code-vs-code, verified against real columns → DAT-INV-002. |
+
+### Module-Knowledge Snapshot Corrections (hints vs live code)
+- "0 migrations" → **stale**: 28 `inv_*` tenant migrations exist in `database/migrations/tenant/`.
+- "MaintenanceOverdue event + listeners missing" → they **exist but are mis-located** (module root, outside PSR-4 `app/`) → present-but-unwired (BUG-INV-001), a different defect than "missing".
+- FormRequest count corrected to **19** (snapshot said 18).

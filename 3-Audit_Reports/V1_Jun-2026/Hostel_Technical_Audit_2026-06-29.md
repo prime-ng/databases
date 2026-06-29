@@ -282,3 +282,19 @@ Counts (new this audit): **P0 = 1, P1 = 6, P2 = 5, P3 = 1.** Carried-open (alrea
 
 ---
 *Read-only audit. No application code modified. Findings registered for orchestrator consolidation into `known-issues.md` (not written here per parallel-run protocol).*
+
+---
+
+## STEP 1 Reading-Discipline Output (D-pattern) — added 2026-06-29
+
+### Three-Way Schema Reconciliation (DDL ↔ migration ↔ model)
+| Subject | DDL spec | Live migration | Eloquent model / code | Verdict |
+|---------|----------|----------------|-----------------------|---------|
+| `hst_allotments.gen_active_bed_id` / `gen_active_student_id` | `GENERATED ALWAYS … STORED` + UNIQUE | shipped **plain `nullable bigInteger`** (no `storedAs`) | code never writes them | **DDL↔migration gap = the whole P0** (DAT-HST-001): UNIQUE on all-NULL enforces nothing → concurrent double-allotment. Pattern = **D36**. |
+| `hst_mess_bills.total_amount` | `GENERATED ALWAYS … STORED` | shipped **plain NOT NULL** (no default) | model **omits** it from `$fillable` | All three disagree → `MessBill::create()` fails (1364) → MIG-HST-001 (D36). |
+| `hst_bed_types` | one table | one table | **two** models (`BedType` + `HstBedType`) | model layer disagrees with itself → ORM-HST-001. |
+
+### Module-Knowledge Snapshot Corrections (hints vs live code)
+- Duplicate `BedType`/`HstBedType` → `hst_bed_types` binding **re-confirmed live** (carried from baseline, still present).
+- `Schema::hasTable()` runtime feature-flags **re-confirmed live** in HostelFeeService/LeavePassService/HstAttendanceService (PERF-HST-003).
+- The generated-column degradation here seeded the **D36 platform sweep** (Hostel + Inventory shared root cause).
