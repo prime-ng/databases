@@ -121,3 +121,20 @@ Per-school isolated data organized by prefix (see consolidated DDL for full list
 - **Central roles:** Super Admin, Manager, Accounting, Invoicing, Student, Parent
 - **Tenant roles:** Super Admin, Principal, Vice Principal, Teacher, Staff, Accountant, Librarian, Parent, Student
 - **RBAC tables:** sys_users ↔ sys_model_has_roles_jnt ↔ sys_roles ↔ sys_role_has_permissions_jnt ↔ sys_permissions
+
+## Platform-Wide Security Posture (audited 2026-06-30)
+
+> Confirmed by Complete Analysis Pack sessions run across 13 modules (SCH, STT, TTS, TTF, STP, FIN, STD, SLK, SLB, QNS, TMP, SYS, VND) on 2026-06-30.
+> Full pattern baseline lives in `AI_Brain/lessons/known-issues.md` — Platform-Wide Systemic Patterns section.
+> Do NOT re-discover these per module — reference the baseline and quantify against it.
+
+| # | Pattern | Scope | Severity |
+|---|---------|-------|----------|
+| P1 | `EnsureTenantHasModule` middleware absent from route groups | 13/13 modules confirmed (2026-06-30) | P0 — schools without the module in their plan can access all features |
+| P2 | `Gate::authorize()` absent or dead — policies exist but are never called | All modules audited | P0 — authorization is a no-op even where policy classes exist |
+| P3 | `FormRequest::authorize(){ return true; }` hardcoded — FormRequests do not enforce permission | Platform-wide (D30): 437/485 (90%); SLB alone has 15 FormRequests with this pattern | P1/P0 where controller is also ungated |
+| P4 | Zero test coverage | Most modules have 0 tests; only a handful have partial coverage | P1 — no regression safety net |
+| P5 | PII stored in plaintext | Confirmed VND: PAN card numbers + bank account numbers unencrypted in tenant_db | P0 — regulatory / DPDPA exposure |
+| P6 | Cross-layer `AcademicSession` import | Confirmed SLK: 3 controllers import `Modules\Prime\Models\AcademicSession` (prime_db) instead of tenant `OrganizationAcademicSession` (tenant_db) — returns wrong school's data | P0 — data isolation breach |
+| P7 | `is_super_admin` in User model `$fillable` | Confirmed SCH and STD User models | P0 — privilege escalation via `$request->all()` mass-assignment |
+| P8 | Duplicate `Gate::policy()` registration overwriting valid policies | Confirmed QNS (QuestionBankPolicy dead — overwritten by duplicate), TTF (19 of 23 policies unregistered) | P0 — auth silently passes for affected resources |

@@ -1,0 +1,143 @@
+/* ============================================================================
+   Prime Design System — dropdowns.css
+   Styles Bootstrap: .dropdown-menu, .dropdown-item, .dropdown-divider,
+   .dropdown-header, .dropdown-item-text. Adds Prime helpers: .p-menu-filter,
+   .p-menu-profile, .p-menu-notify.
+
+   Principles: soft md shadow floating panel, consistent radius, tinted hover
+   (not filled), danger items get danger accent, visible focus, 44px items.
+   ========================================================================== */
+
+.dropdown-menu {
+  min-width: 200px;
+  padding: var(--p-space-2);
+  margin-top: var(--p-space-1);
+  background-color: var(--p-surface-bg);
+  border: 1px solid var(--p-surface-border);
+  border-radius: var(--p-radius-lg);
+  box-shadow: var(--p-shadow-md);
+  color: var(--p-text-primary);
+  font-size: var(--p-fs-sm);
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: var(--p-space-3);
+  min-height: 40px;
+  padding: var(--p-space-2) var(--p-space-3);
+  border-radius: var(--p-radius-md);
+  color: var(--p-text-secondary);
+  font-weight: var(--p-fw-medium);
+  transition: background-color var(--p-dur-fast) var(--p-ease),
+              color var(--p-dur-fast) var(--p-ease);
+}
+.dropdown-item .p-menu-icon {
+  flex: 0 0 auto;
+  width: 18px;
+  color: var(--p-text-muted);
+  transition: color var(--p-dur-fast) var(--p-ease);
+}
+.dropdown-item:hover,
+.dropdown-item:focus {
+  background-color: var(--p-surface-hover);
+  color: var(--p-text-primary);
+}
+.dropdown-item:hover .p-menu-icon { color: var(--p-text-secondary); }
+.dropdown-item.active,
+.dropdown-item:active {
+  background-color: rgba(var(--p-primary-rgb), 0.12);
+  color: var(--p-primary);
+}
+.dropdown-item.active .p-menu-icon { color: var(--p-primary); }
+.dropdown-item:focus-visible { outline: none; box-shadow: var(--p-focus-ring); }
+.dropdown-item:disabled,
+.dropdown-item.disabled { color: var(--p-text-muted); opacity: 0.6; pointer-events: none; }
+
+/* Danger action (delete etc.) */
+.dropdown-item.p-menu-danger { color: var(--p-danger); }
+.dropdown-item.p-menu-danger .p-menu-icon { color: var(--p-danger); }
+.dropdown-item.p-menu-danger:hover { background-color: rgba(var(--p-danger-rgb), 0.10); color: var(--p-danger); }
+
+/* Trailing meta (shortcut, count) */
+.dropdown-item .p-menu-end { margin-left: auto; color: var(--p-text-muted); font-size: var(--p-fs-cap); }
+
+.dropdown-divider {
+  height: 1px;
+  margin: var(--p-space-2) 0;
+  background-color: var(--p-surface-border-light);
+  border: 0;
+}
+.dropdown-header {
+  padding: var(--p-space-2) var(--p-space-3);
+  font-size: var(--p-fs-cap);
+  font-weight: var(--p-fw-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--p-text-muted);
+}
+
+/* ── Filter menu — checkable items ──────────────────────────────────────── */
+.p-menu-filter .dropdown-item { justify-content: flex-start; }
+.p-menu-filter .dropdown-item .form-check-input { margin: 0; }
+
+/* ── Profile menu — avatar header ───────────────────────────────────────── */
+.p-menu-profile { min-width: 240px; }
+.p-menu-profile .p-menu-profile__head {
+  display: flex;
+  align-items: center;
+  gap: var(--p-space-3);
+  padding: var(--p-space-3);
+  margin-bottom: var(--p-space-1);
+  border-radius: var(--p-radius-md);
+  background: var(--p-surface-secondary);
+}
+.p-menu-profile__head img,
+.p-menu-profile__head .p-avatar {
+  width: 40px; height: 40px;
+  border-radius: var(--p-radius-full);
+  object-fit: cover;
+}
+.p-menu-profile__name { font-weight: var(--p-fw-semibold); color: var(--p-text-primary); }
+.p-menu-profile__mail { font-size: var(--p-fs-cap); color: var(--p-text-muted); }
+
+/* ── Notification menu ──────────────────────────────────────────────────── */
+.p-menu-notify { min-width: 320px; max-width: 360px; padding: 0; }
+.p-menu-notify .p-menu-notify__head {
+  display: flex; align-items: center;
+  padding: var(--p-space-3) var(--p-space-4);
+  border-bottom: 1px solid var(--p-surface-border-light);
+  font-weight: var(--p-fw-semibold);
+}
+.p-menu-notify .p-menu-notify__head .p-menu-end { margin-left: auto; }
+.p-menu-notify__list { max-height: 360px; overflow-y: auto; padding: var(--p-space-1); }
+.p-menu-notify__item {
+  display: flex;
+  gap: var(--p-space-3);
+  padding: var(--p-space-3);
+  border-radius: var(--p-radius-md);
+  transition: background-color var(--p-dur-fast) var(--p-ease);
+}
+.p-menu-notify__item:hover { background: var(--p-surface-hover); }
+.p-menu-notify__item.is-unread { background: rgba(var(--p-primary-rgb), 0.05); }
+.p-menu-notify__item .p-menu-notify__dot {
+  flex: 0 0 auto; margin-top: 6px;
+  width: 8px; height: 8px; border-radius: var(--p-radius-full);
+  background: var(--p-primary);
+}
+.p-menu-notify__title { font-weight: var(--p-fw-medium); color: var(--p-text-primary); font-size: var(--p-fs-sm); }
+.p-menu-notify__time { font-size: var(--p-fs-cap); color: var(--p-text-muted); }
+.p-menu-notify__foot {
+  padding: var(--p-space-2);
+  border-top: 1px solid var(--p-surface-border-light);
+  text-align: center;
+}
+
+/* Entrance (Bootstrap toggles .show) */
+.dropdown-menu.show { animation: p-menu-in var(--p-dur-fast) var(--p-ease); }
+@keyframes p-menu-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .dropdown-item, .p-menu-notify__item, .dropdown-item .p-menu-icon { transition: none; }
+  .dropdown-menu.show { animation: none; }
+}

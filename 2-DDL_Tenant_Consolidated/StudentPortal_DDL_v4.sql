@@ -1,42 +1,42 @@
 -- =========================================================================
 -- STUDENT ATTEMPTS & RESULTS — COMPLETE DDL
 -- =========================================================================
--- File    : StudentAttempt_ddl_v4.sql
--- Database: tenant_db
--- Prefix  : lms_
--- Module  : StudentPortal — StudentAttempt Functionality
--- Scope   : Quiz Attempts · Quest Attempts · Exam Attempts (Online/Offline)
---           Results · Grievances · Activity Logs · Session Checkpoints
--- Version : v3 — Updated from v2
---           v2 Fixes: deduplicated tables, missing standard columns, FK refs,
---                     added quiz/quest result table, checkpoint/resume support,
---                     extended proctoring events, consistent index strategy
---           v3 Changes: replaced polymorphic assessment_id/allocation_id on
---                     lms_quiz_quest_attempts with explicit quiz_id, quest_id,
---                     quiz_allocation_id, quest_allocation_id + CHECK constraints;
---                     fixed G-06: replaced broken UNIQUE(assessment_id) with two
---                     separate UNIQUEs uq_qqat_student_quiz_attempt /
---                     uq_qqat_student_quest_attempt; fixed idx_qqat_assessment /
---                     idx_qqat_allocation index refs; fixed ConSTRAINT typo
+  -- File    : StudentAttempt_ddl_v4.sql
+  -- Database: tenant_db
+  -- Prefix  : lms_
+  -- Module  : StudentPortal — StudentAttempt Functionality
+  -- Scope   : Quiz Attempts · Quest Attempts · Exam Attempts (Online/Offline)
+  --           Results · Grievances · Activity Logs · Session Checkpoints
+  -- Version : v3 — Updated from v2
+  --           v2 Fixes: deduplicated tables, missing standard columns, FK refs,
+  --                     added quiz/quest result table, checkpoint/resume support,
+  --                     extended proctoring events, consistent index strategy
+  --           v3 Changes: replaced polymorphic assessment_id/allocation_id on
+  --                     lms_quiz_quest_attempts with explicit quiz_id, quest_id,
+  --                     quiz_allocation_id, quest_allocation_id + CHECK constraints;
+  --                     fixed G-06: replaced broken UNIQUE(assessment_id) with two
+  --                     separate UNIQUEs uq_qqat_student_quiz_attempt /
+  --                     uq_qqat_student_quest_attempt; fixed idx_qqat_assessment /
+  --                     idx_qqat_allocation index refs; fixed ConSTRAINT typo
 -- Date    : 2026-04-02
 -- =========================================================================
 
 -- =========================================================================
 -- DEPENDENCIES (Tables in other modules referenced by FK)
 -- =========================================================================
--- std_students          → Modules/StudentProfile   (lms_ tables → student_id)
--- sys_users             → SystemConfig             (evaluated_by, entered_by, created_by)
--- sys_media             → SystemConfig             (attachment_id, offline_paper_uploaded_id)
--- qns_questions_bank    → Modules/QuestionBank     (question_id)
--- qns_question_options  → Modules/QuestionBank     (selected_option_id)
--- lms_quizzes           → Modules/LmsQuiz          (quiz_id)
--- lms_quests            → Modules/LmsQuests        (quest_id)
--- lms_quiz_allocations  → Modules/LmsQuiz          (quiz_allocation_id)
--- lms_quest_allocations → Modules/LmsQuests        (quest_allocation_id)
--- lms_exams             → Modules/LmsExam          (exam_id)
--- lms_exam_papers       → Modules/LmsExam          (exam_paper_id)
--- lms_exam_paper_sets   → Modules/LmsExam          (paper_set_id)
--- lms_exam_allocations  → Modules/LmsExam          (allocation_id)
+  -- std_students          → Modules/StudentProfile   (lms_ tables → student_id)
+  -- sys_users             → SystemConfig             (evaluated_by, entered_by, created_by)
+  -- sys_media             → SystemConfig             (attachment_id, offline_paper_uploaded_id)
+  -- qns_questions_bank    → Modules/QuestionBank     (question_id)
+  -- qns_question_options  → Modules/QuestionBank     (selected_option_id)
+  -- lms_quizzes           → Modules/LmsQuiz          (quiz_id)
+  -- lms_quests            → Modules/LmsQuests        (quest_id)
+  -- lms_quiz_allocations  → Modules/LmsQuiz          (quiz_allocation_id)
+  -- lms_quest_allocations → Modules/LmsQuests        (quest_allocation_id)
+  -- lms_exams             → Modules/LmsExam          (exam_id)
+  -- lms_exam_papers       → Modules/LmsExam          (exam_paper_id)
+  -- lms_exam_paper_sets   → Modules/LmsExam          (paper_set_id)
+  -- lms_exam_allocations  → Modules/LmsExam          (allocation_id)
 -- =========================================================================
 
 
@@ -202,14 +202,12 @@ CREATE TABLE IF NOT EXISTS `lms_quiz_quest_results` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Final computed/published result for a quiz or quest attempt. Created after all answers are evaluated.';
 
-
 -- =========================================================================
 -- SECTION 2: EXAM ATTEMPTS (Online & Offline)
 -- =========================================================================
 -- Covers LmsExam: lms_exams → lms_exam_papers → lms_exam_paper_sets
 -- Supports both ONLINE (auto-graded) and OFFLINE (bulk entry / question-wise)
 -- =========================================================================
-
 
 -- -------------------------------------------------------------------------
 -- Table: lms_exam_attempts

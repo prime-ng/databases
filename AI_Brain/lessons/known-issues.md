@@ -28,15 +28,20 @@
 
 | Pattern | Baseline count | Severity | Decision |
 |---------|----------------|----------|----------|
-| FormRequest `authorize(){ return true; }` | **437 / 485 (90%)** | P1 (P0 where controller also ungated) | D30 |
+| `EnsureTenantHasModule` middleware absent from route groups | **13/13 modules confirmed** (2026-06-30 BA audit); only 1 usage in entire tenant.php | P0 (any school can access modules not in their plan) | SEC-PLATFORM-001 |
+| `Gate::authorize()` absent or dead — policies exist but are never called | **13/13 modules** (2026-06-30); 64 controllers with zero auth primitive in earlier survey | P0 — authorization is a no-op even where policy classes exist | — |
+| FormRequest `authorize(){ return true; }` | **437 / 485 (90%)**; SLB alone: 15/15 FormRequests (2026-06-30) | P1 (P0 where controller also ungated) | D30 |
+| Zero test coverage | Most modules (BHA, VND, TTS, TTP, SLB, SLK, TMP and others have 0 tests) | P1 — no regression safety net | — |
+| PII stored in plaintext | VND confirmed: PAN card + bank account numbers unencrypted in tenant_db (2026-06-30) | P0 — DPDPA / regulatory violation | — |
+| Cross-layer `AcademicSession` import | SLK confirmed: 3 controllers import `Modules\Prime\Models\AcademicSession` (prime_db) instead of tenant `OrganizationAcademicSession` (tenant_db) — returns wrong school's data (2026-06-30) | P0 — cross-tenant data isolation breach | — |
+| `is_super_admin`/`super_admin_flag`/`password` in `$fillable` | `SchoolSetup/User.php` + `StudentProfile/User.php` (SCH + STD confirmed 2026-06-30) | P0 (priv-esc via `$request->all()`) | — |
+| Duplicate `Gate::policy()` registration silently kills valid policies | QNS: `QuestionBankPolicy` dead — overwritten by duplicate. TTF: 19 of 23 policies unregistered (2026-06-30) | P0 — auth silently passes for affected resources | — |
 | Live `create/update($request->all())` (mass-assign) | **24 sites** (GlobalMaster, Library, Syllabus heaviest) | P1 (P0 if model has privilege fields) | D25 |
-| Write controllers with zero authorization primitive | **64** (some are empty scaffolds — confirm body) | P0/P1 | — |
 | `->enum()` in tenant migrations (should be `sys_dropdown_table` FK) | **~476** (hst 28, sch 22, tt 20, tpt 19) | P2 | D29 |
 | `->increments('id')` INT(11) signed PK | **428 / 658 tables** | P1 (FK typing + 2.1B-row cap) | — |
 | Tenant FKs → `sys_dropdowns` (central-only table) | **52** | P0 (cross-DB FK, impossible in MySQL) | — |
 | Tenant FKs → `sys_roles` (NO create migration exists) | **17** | P0 (`tenants:migrate` fails errno 150/1824) | — |
 | `$fillable` lists a column the migration lacks (D17) | **66 models** | P1 (`SQLSTATE 42S22 Unknown column`) | D17 |
-| `is_super_admin`/`super_admin_flag`/`password` in `$fillable` | `SchoolSetup/app/Models/User.php` | P0 (priv-esc via `$request->all()`) | — |
 | Permission-prefix chaos + typos (`tennat.`, `schoolsetup` vs `school-setup`) | ~50 sites | P1 (silent auth deny/pass) | D24 |
 | `tenancy()->initialize()` without `->end()` (context leak) | `Prime/DropdownNeedController.php:479,641` (P0); SchoolSetup console cmds (P1) | P0/P1 | — |
 | Jobs touching tenant tables without tenancy re-init | Vendor, Inventory, FrontOffice, Hostel jobs | P0/P1 | — |
@@ -48,6 +53,36 @@
 
 **Resolved since first survey:** D22 (module-owned routes/policies) RESOLVED; D23 (RSP tenancy) —
 Scheduler & EventEngine now FIXED (verify SystemConfig/GlobalMaster only).
+
+### SEC-PLATFORM-003: `EnsureTenantHasModule` Missing from All Route Groups (13/13 confirmed 2026-06-30)
+- **Module/Area:** All tenant-scoped modules — confirmed across SCH, STT, TTS, TTF, STP, FIN, STD, SLK, SLB, QNS, TMP, SYS, VND on 2026-06-30
+- **Symptom:** A school on a Basic plan (e.g., without LMS) can navigate directly to `/question-bank/`, `/syllabus/`, etc. and access features their subscription does not include
+- **Root Cause:** Only 1 usage of `EnsureTenantHasModule` exists across the entire `routes/tenant.php` (8,315 route lines across all modules). Module `RouteServiceProvider`s load `Modules/{Module}/routes/web.php` with `auth` + tenant middleware but do NOT add `EnsureTenantHasModule`.
+- **Fix:** Add `EnsureTenantHasModule:'{module_slug}'` to each module's route group middleware in `Modules/{Module}/routes/web.php`. Module slug must match the `glb_modules.slug` value for that module.
+- **Prevention:** The `10-new-feature-checklist.md` must be updated to require `EnsureTenantHasModule` in the middleware stack for every new tenant route group. Add to the Technical Auditor's Layer 4 (Auth Middleware) checklist.
+
+### SEC-PLATFORM-007: Cross-Layer `AcademicSession` Import — Wrong DB Layer (confirmed SLK 2026-06-30)
+- **Module/Area:** SyllabusBooks (3 controllers confirmed); may affect other modules — audit all tenant controllers
+- **Symptom:** Academic session data is pulled from `prime_db` instead of the current school's `tenant_db` — could return another school's session, return empty for new tenants, or throw a "table not found" error when the prime context is not initialized
+- **Root Cause:** Controllers import `Modules\Prime\Models\AcademicSession` (resolves to prime_db's `prm_academic_sessions`) instead of `Modules\SchoolSetup\Models\OrganizationAcademicSession` (resolves to tenant_db's `sch_organization_academic_sessions`). Because the tenant DB has no `prm_academic_sessions` table, the query either crosses to prime context (context leak) or fails silently.
+- **Fix:** Replace all `use Modules\Prime\Models\AcademicSession;` imports in tenant-scoped controllers with `use Modules\SchoolSetup\Models\OrganizationAcademicSession;` (or the appropriate tenant model). Run `grep -r "Modules\\\\Prime\\\\Models\\\\AcademicSession" Modules/` to find all occurrences.
+- **Prevention:** Never import Prime-layer models in tenant-scoped controllers or services. The cross-module dependency map for any tenant module must list only tenant-db models from `SchoolSetup`, `StudentProfile`, etc. — never from `Prime`, `Billing`, or `GlobalMaster`.
+
+### SEC-PLATFORM-008: Duplicate `Gate::policy()` Registration Silently Kills Valid Policies (confirmed QNS + TTF 2026-06-30)
+- **Module/Area:** QuestionBank (QuestionBankPolicy dead), TimetableFoundation (19 of 23 policies unregistered); may affect other modules
+- **Symptom:** `Gate::authorize('tenant.question-bank.create')` passes unconditionally (or uses wrong policy) even though `QuestionBankPolicy` is correctly written. No error thrown — silent security bypass.
+- **Root Cause:** When two `Gate::policy(Model::class, PolicyClass::class)` calls register the same Model, the second overwrites the first. If a module's `ServiceProvider::registerPolicies()` registers `Question::class → QuestionBankPolicy` and another place (AppServiceProvider, a duplicate in the same boot()) registers `Question::class → SomeOtherPolicy` (or re-registers with a typo), the last registration wins silently. In TTF's case, 19 policies were registered in AppServiceProvider (which was later cleaned to comments) and the module ServiceProvider was never updated to re-register them, leaving 19 of 23 dead.
+- **Fix (QNS):** Audit `Modules/QuestionBank/app/Providers/QuestionBankServiceProvider.php::registerPolicies()` and `app/Providers/AppServiceProvider.php` for any duplicate `Gate::policy(Question::class, ...)` call. Remove the duplicate; keep only the module-level registration.
+- **Fix (TTF):** Add all 23 `Gate::policy(...)` calls back into `Modules/TimetableFoundation/app/Providers/TimetableFoundationServiceProvider.php::registerPolicies()` — the AppServiceProvider migration (D22) removed them but the module provider was not populated.
+- **Detection:** For any module: `grep -r "Gate::policy" Modules/{Module}/ app/Providers/` — if the same Model appears more than once, the last one wins. If a policy exists in `app/Policies/` or `Modules/{Module}/app/Policies/` but is NOT in any `Gate::policy()` call, it is dead.
+- **Prevention:** After every D22-style routes/policies migration, verify that every Policy class in `Modules/{Module}/app/Policies/` has exactly one corresponding `Gate::policy()` call in that module's `ServiceProvider::registerPolicies()`. Add this as a Technical Auditor Layer 6 (Policy Registration) check.
+
+### SEC-VND-010: PII (PAN + Bank Account Numbers) Stored in Plaintext (confirmed VND 2026-06-30)
+- **Module/Area:** `Modules/Vendor/` — vendor financial details (PAN card numbers, bank account numbers, IFSC codes stored in plain `VARCHAR` columns in tenant_db)
+- **Symptom:** A database dump, SQL injection, or insider threat exposes vendor PAN and bank account data in cleartext
+- **Root Cause:** Financial PII fields were designed as plain `VARCHAR` without encryption at rest. No `$casts` or `Encrypted::` cast applied. No field-level encryption service wired.
+- **Fix:** Apply Laravel's `Illuminate\Database\Eloquent\Casts\Encrypted` cast to PAN, bank account, and IFSC fields in the Vendor model. Add a migration to encrypt existing plaintext values (one-time data migration job). Store ONLY the last 4 digits of the bank account for display.
+- **Prevention:** Any field classified as "Confidential" or "Sensitive (PII)" in the Data Dictionary must use `Encrypted` cast in the model. Add a PII field audit step to the Technical Auditor's Layer 8 (Data Security) checklist. Reference the Data Dictionary privacy classification: Public / Internal / Confidential / Sensitive (PII).
 
 ---
 
@@ -476,7 +511,45 @@ Scheduler & EventEngine now FIXED (verify SystemConfig/GlobalMaster only).
 ### BUG-REC-002: Table Name Mismatch in complexity_level Validation
 - **Module/Area:** `RecommendationMaterialController` store vs update
 - **Symptom:** One of `slb_complexity_levels` (store) vs `slb_complexity_level` (update) will throw
-- **Fix:** Verify actual table name in DDL, standardize both
+- **Fix:** Verify actual table name in DDL, standardize both — confirmed singular `slb_complexity_level` is correct (migration verified 2026-06-30)
+
+### BUG-REC-003: StudentRecommendation::create() fails at runtime — missing `created_at` column
+- **Module/Area:** `Modules/Recommendation/database/migrations/tenant/2026_06_16_130101_create_rec_student_recommendations_table.php` + `StudentRecommendation.php`
+- **Severity:** P0
+- **Symptom:** Migration uses custom `assigned_at` timestamp and does NOT call `$table->timestamps()`. Model leaves default `$timestamps = true`. Eloquent writes `created_at` to a non-existent column on every `create()` call → `SQLSTATE[42S22]: Column not found: rec_student_recommendations.created_at`. The entire recommendation engine is non-functional: every quiz result publish that triggers a matching rule results in a rolled-back transaction.
+- **Fix (migration):** Add `$table->timestamp('created_at')->useCurrent()->after('assigned_at')` via new migration.
+- **Alternative fix (model):** Set `const CREATED_AT = 'assigned_at';` in `StudentRecommendation` model.
+
+### BUG-REC-004: media_id INT FK column used as JSON array — type collision
+- **Module/Area:** `Modules/Recommendation/database/migrations/tenant/2026_06_16_130058_create_rec_recommendation_materials_table.php` + `RecommendationMaterial.php` + `RecommendationMaterialController.php`
+- **Severity:** P1
+- **Symptom:** Migration declares `media_id` as `unsignedInteger` with FK to `qns_media_store`. Model casts `'media_id' => 'array'`. Controller stores `['media_id' => $attachments]` where `$attachments` is an array of file-metadata objects. Eloquent JSON-encodes the array; MySQL receives a string for an INT FK column. Strict mode: error 1366. Without strict mode: coerced to 0, FK integrity violation. All file attachment saves fail.
+- **Fix:** Change migration column to `$table->json('media_id')->nullable()`, remove FK constraint to `qns_media_store`. Update DDL.
+
+### MIG-REC-001: `difficulty_band` absent from rec_recommendation_rules migration — engine filtering disabled
+- **Module/Area:** `Modules/Recommendation/database/migrations/tenant/2026_06_16_130100_create_rec_recommendation_rules_table.php` + `RecommendationEngineService.php:117` + `RecommendationRule.php` + `StoreRecommendationRuleRequest.php`
+- **Severity:** P1
+- **Symptom:** `difficulty_band` is in `$fillable`, validated in FormRequest, and read by the engine (`$rule->difficulty_band`). Column does not exist in migration → always null → `if ($rule->difficulty_band && ...)` never fires → difficulty-band filter is permanently disabled. Rules configured for EASY/MODERATE/HARD students fire for all students regardless.
+- **Fix:** Add migration: `$table->string('difficulty_band', 10)->nullable()->after('max_score_pct')` (or sys_dropdown FK per D29).
+
+### D39-REC-001: No REC permissions seeded in any seeder
+- **Module/Area:** `Modules/Recommendation/database/seeders/`
+- **Severity:** P1 (D39 pattern)
+- **Symptom:** No `Permission::create()` calls in any REC seeder. No central seeder references `tenant.recommendation.*` permissions. All 18 FormRequest `authorize()` calls return false for non-super-admin users in fresh tenants. All CRUD screens return 403.
+- **Fix:** Create `Modules/Recommendation/database/seeders/RolePermissionSeeder.php` seeding all 33 REC permission strings (see audit report for full list). Call from `RecommendationDatabaseSeeder::run()`.
+
+### ORM-REC-001: TriggerEventPolicy not registered; RecAssessmentTypePolicy missing
+- **Module/Area:** `Modules/Recommendation/app/Providers/RecommendationServiceProvider.php`
+- **Severity:** P1
+- **Symptom:** `TriggerEventPolicy.php` exists but is not imported or registered in `registerPolicies()`. `RecAssessmentTypePolicy.php` does not exist. Trigger-event management and assessment-type management are super-admin-only by default.
+- **Fix:** Add `RecTriggerEvent::class => TriggerEventPolicy::class` to `registerPolicies()`. Create `RecAssessmentTypePolicy` and register it.
+
+### XSS-REC-001: Seven unescaped {!! !!} outputs on user-controlled description/content fields
+- **Module/Area:** `Modules/Recommendation/resources/views/` — 5 show.blade.php files
+- **Severity:** P2
+- **Symptom:** `description` and `content_text` fields output via `{!! $model->description !!}`. Admin users can inject HTML/JS that executes when other admin users view the show page. Stored XSS.
+- **Files:** `dynamic-purposes/show.blade.php:40`, `recommendation-modes/show.blade.php:40`, `material-bundles/show.blade.php:42`, `assessment-types/show.blade.php:40`, `dynamic-material-type/show.blade.php:40`, `recommendation-materials/show.blade.php:132,137`
+- **Fix:** Sanitize on save (HTMLPurifier) or replace `{!! !!}` with `{{ }}` if HTML formatting not needed.
 
 ---
 
@@ -1194,6 +1267,22 @@ Scheduler & EventEngine now FIXED (verify SystemConfig/GlobalMaster only).
 | DEAD-PTM-001 | Ptm | **`PtmCombinedViewController::scheduling()` is an orphaned method with no route** — `web.php` routes `combined.scheduling` to `PtmManagementController::index`, not to `CombinedViewController`; the method at line 109 is unreachable dead code. | `Modules/Ptm/app/Http/Controllers/PtmCombinedViewController.php:109` |
 | DEAD-MSG-001 | MarksheetGeneration | **`StudentResultController::printStudentMarksheet()` is an empty unreachable method** — empty body, no route points to it (route uses `print` → real `print()` at line 177); dead code that will silently return null if ever reached. | `Modules/MarksheetGeneration/app/Http/Controllers/StudentResultController.php:162-165` |
 | DEAD-FBK-001 | Feedback | **`FbkEligibilityService` injected but never called** — declared in constructor (line 23), never referenced elsewhere in the file; instantiated on every request for no effect while the eligibility gate it provides is completely bypassed. | `Modules/Feedback/app/Http/Controllers/FbkResponseController.php:23` |
+
+#### PPT Phase 3 Mode X Audit — New Findings (2026-06-29)
+| Code | Module | Issue | File:Line |
+|------|--------|-------|-----------|
+| SEC-PPT-007 | ParentPortal | **`ConsentFormPolicy` is dead code: never registered and wrong type** — `ParentPortalServiceProvider` has no `registerPolicies()`; `ConsentFormPolicy` checks admin Spatie permissions (`tenant.consent-forms.viewAny` etc.) rather than parent-context IDOR prevention; `ParentConsentFormController` never calls `$this->authorize()`. Admin consent form operations have no policy enforcement. | `Modules/ParentPortal/app/Policies/ConsentFormPolicy.php`, `Providers/ParentPortalServiceProvider.php` |
+| SEC-PPT-008 | ParentPortal | **`session('tenant_id') ?? 1` hardcoded fallback in PTM notification creation** — `ParentPtmController::book()` uses `session('tenant_id') ?? 1` when creating the booking notification, falling back silently to tenant_id=1 for any school that is not the first tenant; silently assigns cross-tenant notification ownership. | `Modules/ParentPortal/app/Http/Controllers/ParentPtmController.php:~185` |
+| VAL-PPT-003 | ParentPortal | **`StoreParentLeaveRequest` uses `after_or_equal:today` for `from_date`** — BR-PPT-004 requires `from_date >= tomorrow` to prevent retroactive leave applications; the rule `after_or_equal:today` allows same-day applications, violating the business rule. Fix: change to `'after:today'`. | `Modules/ParentPortal/app/Http/Requests/StoreParentLeaveRequest.php:17` |
+| MIG-PPT-001 | ParentPortal | **D29: 7 ENUM columns across 4 ppt_* migrations** — `ppt_parent_sessions.device_type`, `ppt_consent_forms.status`, `ppt_consent_form_responses.response`, `ppt_document_requests.document_type`, `ppt_document_requests.urgency`, `ppt_document_requests.status`, `ppt_event_rsvps.rsvp_status` all use `->enum()` instead of FK to `sys_dropdown_options`. Adding new values requires a new migration. | `database/migrations/tenant/2026_06_16_105224-105228` |
+
+#### PPT Phase 3 Mode X Audit — Resolved/Stale Prior Findings (2026-06-29)
+The following entries from the Phase 2 audit (2026-06-21) are confirmed resolved or stale as of Mode X audit:
+- **SEC-PPT-001 (FIXED)**: `Gate::define()` overwrite in `reportCardPdf()` no longer present; delegation pattern with bypass flag used instead.
+- **SEC-PPT-002 (STALE)**: "Zero FormRequests" was incorrect — 22 FormRequests confirmed present in the module.
+- **SEC-PPT-004 (FIXED)**: Complaint target-field injection remediated; fields explicitly set to null with code comment.
+- **VAL-PPT-001 (STALE)**: Same as SEC-PPT-002 — 22 FormRequests confirmed.
+- **VAL-PPT-002 (FIXED)**: Same fix as SEC-PPT-004.
 
 ---
 
@@ -1928,3 +2017,1099 @@ Health **60/100 (Amber)**, **no P0**, **DEPLOY: GO** (no cross-tenant write hole
 **Lesson (reusable):** a console command with a `tenant:` signature is NOT automatically per-tenant — if `handle()` lacks `Tenant::all()->each(... tenancy()->initialize/run ...)` it runs once in CENTRAL context against tenant tables (finds nothing / errors). Within one module, `ReleaseScheduledHomework` does this correctly while `UpdateHomeworkStatus` does not (BUG-HMW-005). Always read `handle()` before treating a scheduled `tenant:*` command as working.
 
 Report: `3-Audit_Reports/V1_Jun-2026/LmsHomework_Complete_Audit_2026-06-29.md`.
+
+---
+
+## MarksheetGeneration (MSH) — Mode X Complete Audit (2026-06-29, Technical Auditor)
+
+Health **6/100 (P0-capped; raw 6 already below cap)**. Deploy: **NO-GO**. 1×P0, 7×P1, 5×P2, 3×P3.
+
+**P0**
+- **BUG-MSH-001** — `routes/api.php` registers `apiResource('marksheetgenerations', MarksheetGenerationController::class)` (5 routes). `MarksheetGenerationController` has ZERO apiResource methods (`index/store/show/update/destroy`). All 5 routes return 404 or runtime error. API layer entirely dead.
+
+**P1**
+- **SEC-MSH-001** — `StudentResultController::create()` gates with `tenant.msh-student-result.view` (should be `.create`). Users without create permission can reach the create form.
+- **SEC-MSH-002** — `StudentResultController::store()` gates with `tenant.msh-student-result.update` (should be `.create`). Users with update-only can create new records; users with create-only get 403 on submit.
+- **SEC-MSH-003** — All **19/19** FormRequests in `app/Http/Requests/` return `authorize() = true` with no Gate check (D30 platform-wide pattern). Authorization fully bypassed at the FormRequest layer for every mutation.
+- **PERF-MSH-001** — `MarksheetScheduleController::precheck()` fires **6 DB queries per class-section** in a foreach (StudentAcademicSession count, ClassRequirementGroup count, ExamResult join count, HomeworkSubmission join count, QuizQuestResult join count, StudentIaMark count). For 20 class-sections: 120+ queries. No batching. (**Confirmed re-discovery of BUG-MSG-001 from 2026-06-21 deep audit.**)
+- **BR-MSH-026** — `compute()` (line 318) checks `is_locked === 1` only. BR-MSH-026 requires status to be DRAFT or COMPUTED before compute. A REVIEWED or PUBLISHED (unlocked) schedule can be recomputed, destroying reviewed data.
+- **BR-MSH-027** — `compute()` dispatches `ComputeMarksheetJob::dispatch()` with no check for an existing RUNNING computation log. Concurrent double-submission triggers race condition on `wipePreviousResults()` and result inserts.
+- **D39-MSH** — Zero MSH permissions (`msh-*`) found in `TenantRolePermissionSeeder`. All 18 policy-protected MSH resources are inaccessible to non-super-admin users.
+
+**P2**
+- **BUG-MSH-003** — `ExamGroupController::edit()` has no model binding parameter (signature `public function edit()`) and returns a redirect to the combined config page. The edit URL resolves but delivers no edit form. (**Confirmed re-discovery of BUG-MSG-003 from 2026-06-21 deep audit.**)
+- **PERF-MSH-002** — `MarksheetComputationService` lines 209, 294, 338 call `Schema::hasTable()` inside `computeForClassSection()`. Each issues a `SHOW TABLES LIKE '...'` query. For 20 class-sections: 60 schema queries per computation run.
+- **PERF-MSH-003** — `MarksheetGenerationController::results()` fetches `Student::where('is_active',1)->get()` and `Subject::orderBy('name')->get()` without pagination.
+- **BR-MSH-050** — Weightage sum (must = 100) not validated at compute time. `precheck()` shows COUNT of weightage rows, not their sum. `compute()` dispatches without sum validation. `WeightageApplier` is null-safe but does not enforce 100% constraint.
+- **DEP-MSH-001** — `MarksheetScheduleController::precheck()` imports `Modules\StudentPortal\Models\ExamResult` and `Modules\StudentPortal\Models\QuizQuestResult`. StudentPortal is a Pending module — tight coupling to an incomplete module.
+
+**Strengths (above baseline):** Tenancy middleware stack correct (InitializeTenancyByDomain + PreventAccessFromCentralDomains + EnsureTenantIsActive). LifecycleService enforces all FSM transitions (COMPUTED→REVIEWED→PUBLISHED→LOCKED) with DomainException, DB transactions, and audit logs. BR-MSH-037 (publish locks template) and BR-MSH-039 (unlock requires reason) correctly enforced. D24 clean permission prefix. D29 clean (0 ENUMs). D38 clean (SoftDeletes consistent). D17 clean (fillable correct). 18/18 policies registered. sys_dropdowns FK is tenant-table (not cross-DB).
+
+Report: `3-Audit_Reports/V1_Jun-2026/MarksheetGeneration_Complete_Audit_2026-06-29.md`
+
+---
+
+## Phase 3 — LmsQuiz Module Complete Audit (Mode X, 2026-06-29)
+
+> Full Mode X audit (A+B+C+G+scoped D). 23 findings across 6 layers. Report: `3-Audit_Reports/V1_Jun-2026/LmsQuiz_Complete_Audit_2026-06-29.md`
+
+**P0**
+- **SEC-QUZ-003** — `RouteServiceProvider::mapApiRoutes()` applies only `['api']` middleware. No `InitializeTenancyByDomain`, `PreventAccessFromCentralDomains`, or `EnsureTenantIsActive`. API routes (`GET /api/v1/lmsquizzes` etc.) run without tenant context — queries hit default (central) DB. Tenancy isolation broken on all API endpoints. `routes/api.php` + `RouteServiceProvider.php mapApiRoutes()`.
+
+**P1**
+- **SEC-QUZ-002** — `LmsQuizServiceProvider::registerPolicies()` calls `Gate::policy(Quiz::class, QuizPolicy::class)` at line 65 then overwrites it with `Gate::policy(Quiz::class, LmsQuizReportPolicy::class)` at line 68. `QuizPolicy` is dead. Policy-based auth for Quiz model routes to the report policy. Current controllers use string gates (unaffected), but policy-instance auth (`authorize('update', $quiz)`) silently uses wrong policy.
+- **SEC-QUZ-004** — `LmsQuizReportController::getDependencies()` has NO Gate::authorize call. Returns subjects, sections, students, lessons, and topics to any authenticated user. Single gate at `index()` does not cover this AJAX endpoint.
+- **BUG-QUZ-001** — `QuizAllocationController::publishHiddenRecommendations()` queries `->where('a.allocation_id', $allocationId)`. Column `allocation_id` does not exist on `lms_quiz_quest_attempts`. Real column is `quiz_allocation_id`. Recommendation publish always returns empty student list — nothing is ever published. Fix: `'a.quiz_allocation_id'`.
+- **BUG-QUZ-002** — `RemedialQuizGenerationService::createAllocation()` stores `$student->user_id` as `target_id` for STUDENT type. `QuizAllocation::getTargetNameAttribute()` for STUDENT does `Student::find($this->target_id)` (std_students.id). `user_id` is sys_users.id — identity mismatch. Fix: `$student->id`.
+- **BUG-QUZ-003** — `RemedialQuizGenerationService::fetchQuestionsByConfig()` when `only_unused_questions=true` calls `$query->select('question_bank_id')->from('qns_question_usage_log')`. Overwrites the QuestionBank query's SELECT and FROM — returns usage-log rows, not filtered questions. Fix: `$query->whereNotIn('id', $usedIds)`.
+- **BUG-QUZ-005** — `RouteServiceProvider::mapWebRoutes()` middleware omits `EnsureTenantHasModule`. Schools without LmsQuiz licence can access all quiz screens.
+- **BUG-QUZ-006** — `LmsQuizController::store()` and `update()` not wrapped in `DB::transaction()`. Quiz creation + activityLog calls are non-atomic. `forceDelete()` IS transactional — inconsistency.
+- **BUG-QUZ-007** — `QuizAllocationController::index()` has `abort(404)` as first statement (line 31). Gate check at line 32 is dead code. Quiz allocation list route permanently 404.
+
+**P2**
+- **SEC-QUZ-001** — All 5 FormRequests return `authorize():true` (D30 platform pattern). Compensating control: controllers use string Gate::authorize.
+- **SEC-QUZ-005** — `summary/student_result.blade.php` lines 143, 168, 170, 181 use `{!! !!}` on question text, option text, and explanation from DB. Teacher-entered `<script>` executes in student browsers. Stored XSS.
+- **BUG-QUZ-004** — Route prefix typo `lms-quize` (extra 'e') throughout `RouteServiceProvider.php` (lines 49-50) and all 87 route lines in `routes/web.php`. Self-consistent within module but all named routes are misspelled.
+- **BUG-QUZ-008** — `AssessmentTypeController::index()` `abort(404)` before gate (lines 25-26). Standalone assessment-type list always 404.
+- **BUG-QUZ-009** — `DifficultyDistributionConfigController::index()` `abort(404)` before gate (lines 33-34). Standalone difficulty config list always 404.
+- **BUG-QUZ-010** — `QuizQuestionController::index()` `abort(404)` before gate (lines 42-43). Standalone quiz-question list always 404. (4 of 6 controllers have abort(404) pattern in index().)
+- **DAT-QUZ-001** — 4 ENUM columns across 3 tables (D29): `lms_quiz_allocations.allocation_type`, `lms_quiz_quest_attempts.assessment_type`, `lms_quiz_quest_attempts.status`, `lms_quiz_quest_results.assessment_type`.
+
+**P3**
+- **DAT-QUZ-002** — `Quiz::$fillable` contains `is_system_generated` twice (lines 33 and 62). No runtime impact.
+- **DAT-QUZ-003** — `lesson_id` in `lms_quizzes` has no FK constraint in DDL spec or migration. Both consistently omit it (possible cross-schema reason). Deleted lessons leave orphan quiz records.
+- **DAT-QUZ-004** — No permission seeder for LmsQuiz. `LmsQuizDatabaseSeeder` runs only demo data seeders. All `tenant.quiz.*` and sibling permissions unregistered in Spatie (D39). Non-super-admin users locked out.
+- **ARCH-QUZ-001** — `Quiz.php` imports `Modules\StudentPortal\Models\QuizQuestAttempt` and `Modules\StudentPortal\Models\QuizQuestResult`. Hard dependency on StudentPortal module.
+- **ARCH-QUZ-002** — Route duplication on difficulty-distribution-config show (resource + explicit both register same path).
+- **ARCH-QUZ-003** — `LmsQuizController::index()` fires 8+ separate COUNT queries per page load with no cache.
+- **PERF-QUZ-001** — `LmsQuizReportController::index()` loads all active students unbounded (`Student::where('is_active',1)->get()`).
+
+**Strengths:** Gate coverage on all 6 LmsQuizController CRUD methods (BUG-LMS-005 FIXED confirmed). `QuizAllocationController::store()` and `RemedialQuizGenerationService::generate()` are transactional. D25 clean (all controllers use `$request->validated()`). Soft-delete consistent across all 9 tables. UUID BINARY(16) correctly generated in model boot(). QuizQuestion unique constraint enforces BR-QUZ-011 at DB level.
+
+**Health Score: 40/100 (P0 cap) — NO-GO**
+
+---
+
+## LmsQuests (QST) — Mode X Complete Audit (Technical Auditor, 2026-06-29)
+
+Health **38/100 (P0-capped; uncapped ≈51)**. Deploy **NO-GO**. 4×P0, 15×P1, 8×P2. 0 tests.
+
+### P0
+
+| Code | Issue | File:Line |
+|------|-------|-----------|
+| SEC-QST-001 | **Hub viewAny Gate commented out** — `// Gate::authorize('tenant.quest.viewAny');` in `LmsQuestController::index()` — any authenticated user reaches the full Quest hub, analytics dashboard, and all tabs with no authorization check. | `LmsQuestController.php:71` |
+| BUG-QST-001 | **Missing `use Illuminate\Support\Facades\DB` in LmsQuestController** — `forceDelete()` calls `DB::beginTransaction()/commit()/rollBack()` but the facade is not imported in the 42-line import block; every permanent quest deletion throws `Class "DB" not found`; cascade deletes of child records left in inconsistent state. | `LmsQuestController.php:786` |
+| BUG-QST-002 | **Undefined `$quest` in QuestQuestionController::store()** — `$quest->id` referenced at line 985 before `$quest` is assigned anywhere in the method; `POST quest-question` route throws `Undefined variable $quest` fatal error on every call. | `QuestQuestionController.php:985` |
+| MIG-QST-001 | **`lms_quest_scopes.topic_id` NOT NULL in migration** — `$table->unsignedInteger('topic_id')` (no `->nullable()`); alter migration `2026_06_18_100000` does not add nullable; `QuestScopeRequest` validates `topic_id` as optional; any scope inserted without topic_id throws `SQLSTATE[23000]: 1048 Column 'topic_id' cannot be null`. | `2026_06_16_115421_create_lms_quest_scopes_table.php:25` |
+
+### P1
+
+| Code | Issue | File:Line |
+|------|-------|-----------|
+| BUG-QST-ROUTE | Trash GET routes for `quest-scope`, `quest-question`, `quest-allocation` registered AFTER their `Route::resource()` — resource `show` `GET {model}` captures literal string "trash" → trash views permanently unreachable via named route. Quest itself is correctly ordered (trash before resource). | `routes/web.php:36-37,48-49,56-57` |
+| SEC-QST-002 | No `EnsureTenantHasModule` on any LmsQuests route — module not plan-gated; any active tenant accesses quest features regardless of subscription. Systemic pattern (SEC-LMS-001). | `RouteServiceProvider.php` |
+| SEC-QST-003 | `saveAnswerGrade()` — no `Gate::authorize()`; any authenticated user can POST arbitrary marks for any student's quest answer (grading data-integrity bypass). | `LmsQuestController.php:1114` |
+| SEC-QST-004 | `getSubjectsByClass()` — no `Gate::authorize()`; AJAX endpoint exposes class/subject associations to any authenticated user. | `LmsQuestController.php:506` |
+| SEC-QST-005 | Four QuestQuestionController AJAX endpoints have no `Gate::authorize()`: `getSections()`, `getSubjectGroups()`, `getLessons()`, `getTopics()` — exposes school structural data. | `QuestQuestionController.php:130,154,165,194` |
+| SEC-QST-007 | Two QuestAllocationController AJAX endpoints have no `Gate::authorize()`: `getTargetOptions()`, `getQuests()`. | `QuestAllocationController.php:652,720` |
+| TEN-QST-001 | `Modules\Prime\Models\AcademicSession` imported and used in both `LmsQuestController` and `Quest` model (tenant context). Migration FK references `global_db.glb_academic_sessions`; `Prime::AcademicSession` resolves to `prime_db` — cross-layer DB mismatch in quest code generation and academic hierarchy. | `LmsQuestController.php:29`, `Quest.php:15`, `2026_06_15_150344_create_lms_quests_table.php:46` |
+| BUG-QST-003 | Undefined `$usageTypeId` captured in `search()` closure when `$onlyUnused=true` — assignment commented out; original intent (filter by usage type ID) dead code; PHP 8.2 emits undefined-variable warning on closure capture. | `QuestQuestionController.php:311-323` |
+| BUG-QST-004 | `bulkStore()` double-parses `questions_data`: first parse (lines 543-555) and `$ordinalMap` discarded after pre-auth checks; second parse (lines 599-614) restarts from scratch with different structure. Pre-auth business rules at lines 556-584 use different data than insertion uses. | `QuestQuestionController.php:539-754` |
+| BUG-QST-005 | `addQuestions()` legacy endpoint: no `Gate::authorize()`, no DB transaction, no duplicate `QuestionUsageLog` prevention. | `QuestQuestionController.php:1454` |
+| BUG-QST-006 | Duplicate quest code generation: `Quest::boot()` `creating` hook generates code model-side AND `LmsQuestController::store()/update()` generate and assign `quest_code` before create/update — controller path overwrites model-generated code; both paths use cross-layer `AcademicSession::find()` (TEN-QST-001). | `LmsQuestController.php:574-586,664-675`, `Quest.php:104` |
+| BUG-QST-POL | `QuestPolicy` defines `view()` four times (lines 22, 29, 37, 45) and `update()` twice (lines 53, 69) — PHP fatal `Cannot redeclare QuestPolicy::view()` when the class is first instantiated. Currently latent (controllers use string Gate), becomes P0 on any model-based auth call. `LmsQuestsServiceProvider` imports and registers the class. | `QuestPolicy.php:22,29,37,45,53,69` |
+| MIG-QST-002 | Alter migration `down()` references non-existent FK `fk_quest_lesson` and column `lesson_id` on `lms_quests` (never created); `migrate:rollback` on this migration fails. | `2026_06_18_100000_update_lms_quests_and_scopes.php:31-38` |
+| PERF-QST-001 | Dashboard `score_distribution` calls `->get(['percentage'])` on `QuizQuestResult` — fetches ALL result rows to PHP then bins in foreach; should use MySQL `SUM(CASE WHEN percentage BETWEEN x AND y THEN 1 ELSE 0 END)`. | `LmsQuestController.php:425-446` |
+| D30-QST | All 4 FormRequests return `authorize(){return true;}` (platform baseline 90%; not independently blocking). | `app/Http/Requests/Quest*.php` |
+
+### P2
+
+| Code | Issue | File:Line |
+|------|-------|-----------|
+| SCH-QST-001 | `allocation_type` stored as ENUM (D29): `['CLASS','GROUP','SECTION','STUDENT']`; should be `sys_dropdowns` FK. | `2026_06_15_150346_create_lms_quest_allocations_table.php:16` |
+| PHANTOM-QST-001 | `show_result_immediately` in `Quest::$fillable` and `$casts` but no migration column; silently ignored on write, null on read. | `Quest.php:49,70` |
+| PHANTOM-QST-002 | `pending` in `QuestRequest` rules and `prepareForValidation` (annotated "ONLY NEW COLUMN") but no backing DB column and not in `$fillable`. | `QuestRequest.php:57,78` |
+| PERF-QST-002 | `ClassSection::find($request->class_section_id)` called ~8 times per dashboard load (once per metric) with no memoization. | `LmsQuestController.php:dashboardStats` |
+| BUG-QST-010 | `QuestAllocation::target()` morphTo uses `target_table_name` as morph type column; morphMap registered in ServiceProvider covers CLASS/GROUP/STUDENT but NOT `sch_class_section_jnt` (stored for SECTION) — `$allocation->target` returns null for SECTION allocations. | `QuestAllocation.php:94`, `LmsQuestsServiceProvider.php:46-51` |
+| BUG-QST-011 | `QuestAllocationRequest::getTargetTable()` returns `'sch_sections'` for SECTION; `Rule::exists` validates raw section_id; controller overwrites `target_id` with junction ID — validation and stored value are inconsistent. | `QuestAllocationRequest.php:300-303` |
+| BUG-QST-012 | FK naming inconsistency: `QuestAllocation::attempts()` uses `quest_allocation_id`; `publishHiddenRecommendations()` queries `lms_quiz_quest_attempts.allocation_id` — one is wrong; `attempts()` relation may always return empty. | `QuestAllocation.php:64`, `QuestAllocationController.php:575` |
+| N+1-QST-001 | `Quest::getStatisticsAttribute()` and `Quest::getSummaryAttribute()` fire 3-5 queries each per call; dangerous if iterated over a quest list. | `Quest.php:465,624` |
+
+### Strengths
+
+- Usage-guard pattern (5 `*UsageCheckService`) applied consistently to all 4 CRUD controllers.
+- `QuestAllocationController` is the best-structured controller: full DB transactions, Gate checks, usage-guard, and error logging throughout.
+- Recommendation hook correctly fires: `QuizQuestResultPublished::dispatch()` at `LmsQuestController:1097`.
+- D25 clean (0 `$request->all()` into models; all creation paths use `$request->validated()`).
+- D24 clean (`tenant.*` prefix only; no prefix variants).
+- D17 clean (`activityLog()` in all mutating paths).
+- D38 clean (SoftDeletes on all 4 models and migrations).
+- MorphMap registration in ServiceProvider correctly resolves CLASS/GROUP/STUDENT polymorphic targets.
+
+### Lessons
+
+- [2026-06-29 | QST] `Gate::policy(Model::class, PolicyClass::class)` does NOT autoload the policy class — PHP defers until instantiation. Duplicate method definitions in a policy are invisible until model-based auth is triggered. Audit `*Policy.php` for duplicate method names as a standard three-way check step.
+- [2026-06-29 | QST] When auditing a morphMap (`Relation::morphMap([...])`), verify ALL possible values of the polymorphic type column (including those written by helper `getTargetTable()` methods) are registered. A missing entry silently returns null from `$model->target`.
+- [2026-06-29 | QST] Three-way reconcile (DDL ↔ migration ↔ model) is the most reliable method for catching NOT NULL column mismatches treated as optional by the application. MIG-QST-001 (`topic_id`) is a concrete example.
+
+Report: `3-Audit_Reports/V1_Jun-2026/LmsQuests_Complete_Audit_2026-06-29.md`.
+
+---
+
+### Payment (PAY) — Mode X Complete Audit (2026-06-29, Technical Auditor)
+
+Health **40/100 (P0-capped; uncapped ≈19)**. Deploy: **NO-GO**. Pre-existing issues SEC-PAY-001/004/008, BUG-PAY-001 are **RESOLVED** in the refactored codebase. The architecture is sound (ULID IDs, encrypted credentials, HMAC webhook middleware, polymorphic Payable interface, append-only audit log, 6 gateway drivers) but implementation gaps in routing, authorization, tenancy, and transactional integrity block every core flow.
+
+#### P0
+| Code | Issue | File:Line |
+|------|-------|-----------|
+| BUG-PAY-002 | **Dead PaymentHistory model** — `ptm_payment_histories` dropped by migration 100102; `PaymentHistory.php` still references it → `SQLSTATE[42S02]` on any touch | `Modules/Payment/app/Models/PaymentHistory.php:12` |
+| BUG-PAY-003 | **RefundController has zero routes** — `store()` and `index()` built but unreachable from any HTTP client | `routes/web.php`, `routes/api.php` |
+| BUG-PAY-004 | **apiResource mismatch** — `Route::apiResource('payments', PaymentController::class)` generates `index/store/update/destroy` (500 each — methods absent); controller methods `initiate/callback/cancel` never routed | `routes/api.php:7` |
+| SEC-PAY-009 | **No PaymentPolicy class** — `$this->authorize('initiate', $payable)` in `PaymentController::initiate()` throws `PolicyNotRegisteredException` on every payment attempt; no Policies/ dir exists | `PaymentController.php` (initiate) |
+| TEN-PAY-001 | **API routes missing tenancy middleware** — `mapApiRoutes()` applies only `middleware('api')`; no `InitializeTenancyByDomain`, no `EnsureTenantIsActive`; all `/api/v1/payments/*` requests hit central DB | `Providers/RouteServiceProvider.php` (mapApiRoutes) |
+| DAT-PAY-001 | **No DB::transaction in `PaymentService::initiate()`** — Payment record created before gateway API call; orphan 'initiated' record persists on gateway failure; directly violates REQ-PAY-002 AC2 | `Services/PaymentService.php` (initiate) |
+
+#### P1
+| Code | Issue | File:Line |
+|------|-------|-----------|
+| SEC-PAY-010 | **`cancel()` zero authorization** — no Gate/policy check; any authenticated user can cancel any payment by ULID when routes are wired (IDOR) | `PaymentController.php` (cancel) |
+| SEC-PAY-011 | **D39: `payment.gateway.*` permissions never seeded** — `PaymentDatabaseSeeder` is a stub; no seeder defines `payment.gateway.{viewAny,create,update,delete,...}`; Finance Admin / Bursar effectively locked out; also D24 (prefix not `tenant.*`) | `PaymentGatewayController.php`, `database/seeders/` |
+| SEC-PAY-012 | **Razorpay handler never posts callback for verification** — `handler()` in checkout blade redirects to fee-summary without posting `razorpay_payment_id/order_id/signature` to server; server-side success confirmation depends entirely on webhook delivery (REQ-PAY-002 AC3 partial) | `resources/views/razorpay/process-payment.blade.php:21–24` |
+| TEN-PAY-002 | **No `EnsureTenantHasModule` on any route group** — any tenant accesses payment features regardless of plan | `Providers/RouteServiceProvider.php` |
+| DAT-PAY-002 | **Over-refund possible** — `RefundService::initiate()` checks `amount > payment->amount` only; sum of prior successful refunds not subtracted → total refunds can exceed original amount; also missing `lockForUpdate`; BR-PAY-009 violated | `Services/RefundService.php` (initiate) |
+| MIG-PAY-001 | **D17: `OfflinePaymentRecord.$fillable` has `'method'`; migration column is `'mode'`** — any create call throws `SQLSTATE[42S22]: Unknown column 'method'`; also missing `bank_name`, `cheque_date`, `clearance_status`, `receipt_number` from fillable | `Models/OfflinePaymentRecord.php` vs migration 100106 |
+| BUG-PAY-005 | **`priority` not in `PaymentGateway.$fillable`** — `PaymentGatewayController::store/update` set `priority` explicitly but Eloquent silently drops it; gateway ordering permanently lost | `Models/PaymentGateway.php`, `Controllers/PaymentGatewayController.php` |
+| BUG-PAY-006 | **`callback()` passes `$request->all()` to `$driver->verify()`** — unvalidated raw input used for payment confirmation path | `Controllers/PaymentController.php` (callback) |
+| BUG-PAY-007 | **`getAvailableDrivers()` hardcoded to Razorpay** — BillDesk, CCAvenue, Paytm, PhonePe, Offline fully implemented but not selectable in admin UI; violates REQ-PAY-013 | `Controllers/PaymentGatewayController.php` (getAvailableDrivers) |
+| BUG-PAY-008 | **ReconciliationController and routes absent** — `PaymentReconciliation` model + `ptm_payment_reconciliations` table exist; no controller, no routes; REQ-PAY-009 not met | `Modules/Payment/` (no ReconciliationController.php) |
+| JOB-PAY-001 | **`ProcessWebhookJob` queries tenant tables without explicit tenancy re-init** — `handle()` queries `PaymentGateway` + `Payment` (both tenant tables); relies on `QueueTenancyBootstrapper` being registered; P0 if bootstrapper absent | `Jobs/ProcessWebhookJob.php` (handle) |
+
+#### P2
+| Code | Issue | File:Line |
+|------|-------|-----------|
+| DAT-PAY-003 | **D29: 6 ENUM columns across 5 migrations** — `ptm_payment_gateways.type`, `ptm_payments.status`, `ptm_payment_refunds.status`, `ptm_offline_payment_records.mode`, `ptm_offline_payment_records.clearance_status`, `ptm_payment_reconciliations.status` | Migrations 100101, 100102, 100103, 100106, 100107 |
+| BUG-PAY-009 | **D17: `PaymentWebhook.$fillable` has `payment_id`; migration has no such column** — relationship `payment()` always null; explicit set throws 42S22 | `Models/PaymentWebhook.php` vs migration 100105 |
+| BUG-PAY-010 | **`failure_reason` column exists but not in `Payment.$fillable`; `markFailed()` never writes it** — all payment failure reasons are permanently lost | `Models/Payment.php`, `Services/PaymentService.php` (markFailed) |
+| BUG-PAY-011 | **Missing views: refund management, webhook log admin, payment detail, receipt download** — 4 functional areas have backend logic but no UI; REQ-PAY-007/008/011/012 UI gaps | `resources/views/` |
+| PERF-PAY-001 | **`GatewayManager::resolve()` queries DB on every call** — no `Cache::remember()`; also `InitiatePaymentRequest::rules()` queries active gateways on every request | `Services/GatewayManager.php` (resolve) |
+| DEAD-PAY-001 | **`EventServiceProvider.$listen=[]` + `$shouldDiscoverEvents=true` but no `app/Listeners/` dir** — 8 events (PaymentSucceeded, PaymentFailed, RefundSucceeded, etc.) fire into void; fee invoice never marked paid, no receipt, no accounting voucher, no notification | `Providers/EventServiceProvider.php` |
+
+#### P3
+| Code | Issue | File:Line |
+|------|-------|-----------|
+| BUG-PAY-012 | **`OfflineGateway::initiate()` never writes to `ptm_offline_payment_records`** — returns synthetic reference but write path missing | `app/Gateways/OfflineGateway.php` (initiate) |
+| DEAD-PAY-002 | **`PaymentHistoryModelTest.php` tests dead model** — will throw `Table not found` on any DB touch | `tests/Unit/PaymentHistoryModelTest.php` |
+
+#### Verified Good
+- Webhook HMAC-SHA256: `VerifyWebhookSignature` middleware reads raw body before JSON decode; `hash_equals()` timing-safe ✓
+- Credential encryption: `PaymentGateway.credentials` cast `encrypted:array`; column is TEXT (not JSON) since encrypted blob is not valid JSON ✓
+- ULID public identifiers: `ptm_payments.ulid` + `ptm_payment_refunds.ulid` prevent ID enumeration ✓
+- Audit log immutability: `PaymentAuditLog` has `$timestamps=false`, no SoftDeletes, append-only via AuditService ✓
+- Webhook route correctly outside `auth` middleware (SEC-PAY-008 resolved) ✓
+- Store-then-queue webhook pattern: HTTP 200 returned immediately, processing async ✓
+
+Report: `3-Audit_Reports/V1_Jun-2026/Payment_Complete_Audit_2026-06-29.md`.
+
+---
+
+## Notification Module (NTF) — Mode X Audit 2026-06-29
+
+> Full report: `3-Audit_Reports/V1_Jun-2026/Notification_Complete_Audit_2026-06-29.md`
+> Health: **34/100 | NO-GO | 8 P0 findings**
+
+### P0
+
+| Code | Issue | File:Line |
+|------|-------|-----------|
+| BUG-NTF-003 | **ALL 12 controllers use `prime.*` Gate prefix instead of `tenant.*`** — every NTF action is unauthorized for tenant users; includes `NotificationManageController`, `ProviderMasterController`, `ChannelMasterController`, all others | All controllers in `Modules/Notification/app/Http/Controllers/` |
+| BUG-NTF-005 | **`ProcessNotificationJob::dispatch($notification)` commented out** — notifications can never be triggered from the UI | `NotificationManageController.php:579` |
+| BUG-NTF-011 | **`canBeProcessed()` method absent from Notification model** — called at controller:556 → PHP Fatal on any `process()` request | `Notification.php` model + `NotificationManageController.php:556` |
+| ARCH-NTF-001 | **`ProcessNotificationJob` class does not exist** — entire delivery pipeline has no execution vehicle; no `app/Jobs/` directory in Notification module | `Modules/Notification/` (missing) |
+| TEN-NTF-001 | **`Tenant::all()` / `Tenant::get()` in 5 controllers (7 call sites)** — uses `Modules\Prime\Models\Tenant` from tenant DB context; queries `prime_db.tenants`; exposes full tenant list to school users | `NotificationManageController:243`, `TemplateController:288/382/445`, `ResolvedRecipientController:285`, `NotificationThreadController:283`, `UserPreferenceController:218` |
+| SEC-NTF-001 | **Provider API credentials stored as plaintext** — `api_key_encrypted` and `api_secret_encrypted` in `$fillable` but no `encrypted` cast in `$casts`; BR-NTF-011 violated | `ProviderMaster.php` ($casts) |
+| MIG-NTF-001 | **`ntf_delivery_logs.provider_id` NOT NULL but `logDelivery()` passes nullable `$providerId`** — every delivery log INSERT fails with errno 1048 when no provider (e.g., in-app delivery) | `NotificationService.php:logDelivery()` + migration `2026_06_16_111148` |
+| MIG-NTF-002 | **`ntf_delivery_logs.resolved_user_id` NOT NULL but service passes `$payload['user_id'] ?? null`** — INSERT fails when user_id absent in payload | `NotificationService.php:logDelivery()` + migration `2026_06_16_111148` |
+
+### P1
+
+| Code | Issue | File:Line |
+|------|-------|-----------|
+| BUG-NTF-004 | **store()/update() use `$request->field` not `$request->validated()`** — FormRequest validation result bypassed | `NotificationManageController.php:274,371` |
+| BUG-NTF-007 | **`create()` and `edit()` have no Gate::authorize()** — any authenticated user can access | `NotificationManageController.php:228,337` |
+| BUG-NTF-009 | **`getRouteKeyName()` returns `'notification_uuid'` but controllers use `findOrFail($id)` with integer** — route model binding conflict | `Notification.php:92` |
+| BUG-NTF-010 | **`resolvedRecipients()` and `logs()` relationships commented out** | `Notification.php:154,178` |
+| TEN-NTF-002 | **`Modules\GlobalMaster\Models\Dropdown` imported in Notification and NotificationDeliveryLog models** — status/priority relationships query `global_db` from tenant context | `Notification.php`, `NotificationDeliveryLog.php` |
+| TEN-NTF-003 | **`Dropdown::query()` (GlobalMaster) in `NotificationService::logDelivery()`** — cross-DB lookup from tenant service layer | `NotificationService.php:204` |
+| VAL-NTF-001 | **6 of 11 FormRequests return bare `true` in `authorize()`** (D30 pattern) — NotificationTargetRequest, NotificationThreadMemberRequest, NotificationThreadRequest, ProviderMasterRequest, ScheduleAuditRequest, UserPreferenceRequest | `Modules/Notification/app/Http/Requests/` |
+| VAL-NTF-002 | **4 FormRequests use `prime.*` prefix in `authorize()`** — same wrong-prefix bug as controllers | NotificationRequest, DeliveryQueueRequest, TemplateRequest, ResolvedRecipientRequest |
+| JOB-NTF-001 | **`ProcessSystemNotification` listener (ShouldQueue) has no tenancy re-initialization** — queued execution calls `NotificationService::trigger()` without tenant DB context | `Listeners/ProcessSystemNotification.php:handle()` |
+| ARCH-NTF-002 | **`RecipientResolutionService` does not exist** — CLASS/SECTION/GROUP targets cannot be expanded; opt-out enforcement (BR-NTF-002) impossible | `Modules/Notification/app/Services/` (missing) |
+| ARCH-NTF-003 | **Notification inbox absent** — no inbox views or API endpoints; REQ-NTF-030/031/032 not started | `resources/views/` |
+| ARCH-NTF-004 | **`notifications:process-due` artisan command does not exist** — scheduled/recurring notifications cannot fire | `Modules/Notification/app/Console/` (missing) |
+
+### P2
+
+| Code | Issue | File:Line |
+|------|-------|-----------|
+| ORM-NTF-001 | **`scopeReadyToDispatch()` incorrectly includes `DRAFT` in whereIn** — DRAFT must never be queued (BR-NTF-001) | `Notification.php` |
+| VAL-NTF-003 | **`exists:tenants,id` validation rule in NotificationRequest** — `tenants` is in `prime_db`; cross-DB `exists:` rule fails in tenant context | `NotificationRequest.php` |
+| PERF-NTF-001 | **`NotificationManageController::index()` god-method 8+ queries** — no pagination, no tabbed AJAX | `NotificationManageController.php:index()` |
+| PERF-NTF-002 | **`Schema::hasColumn()` in `destroy()` hot path** — expensive schema introspection on every delete | `NotificationManageController.php:428` |
+| PERF-NTF-003 | **`NotificationTemplate::all()` unbounded query in `create()`/`edit()`** | `NotificationManageController.php:230` |
+| DDL-NTF-001 | **`dlt_template_id VARCHAR(50)` missing from `ntf_templates`** — DLT compliance (BR-NTF-010, REQ-NTF-011) blocked | Migration `2026_06_16_111140` |
+| DDL-NTF-002 | **`deleted_at` missing from `ntf_user_devices`** — cannot soft-delete stale device tokens | Migration `2026_06_16_111138` |
+| DDL-NTF-003 | **FK references `sys_user` (singular); should be `sys_users` (plural)** | `ntf_user_devices`, `ntf_resolved_recipients` migrations |
+| DAT-NTF-001 | **15 ENUM columns across 10 of 15 NTF migrations** (D29 pattern) | 10 migrations |
+| IMPL-NTF-001 | **SMS delivery is stub only** — `switch/default` branch; no MSG91/Twilio adapter | `NotificationService.php:dispatchToChannel()` |
+| IMPL-NTF-002 | **Push (FCM) delivery not implemented** — device token model exists; dispatch not wired | `NotificationService.php` |
+| IMPL-NTF-003 | **WhatsApp delivery not implemented** | `NotificationService.php` |
+| IMPL-NTF-004 | **`logDelivery()` early-returns on null $resolvedRecipientId** — delivery not logged for most trigger paths | `NotificationService.php:200` |
+
+### P3
+
+| Code | Issue | File:Line |
+|------|-------|-----------|
+| BUG-NTF-012 | **Circular fallback check validates only self-reference (depth 1); BR-NTF-013 requires depth-5 traversal** | `ChannelMasterController.php:411` |
+| DEAD-NTF-001 | **`use Modules\Notification\Models\Template;` stale import in Notification model** — unused; template() uses NotificationTemplate::class | `Notification.php` |
+| CODE-NTF-001 | **0 tests for any NTF functionality** | `tests/Feature/`, `tests/Unit/` |
+
+### Verified Good
+
+- Web RSP tenancy middleware stack: InitializeTenancyByDomain + PreventAccessFromCentralDomains + EnsureTenantIsActive + auth + verified ✓
+- `InAppSystemNotification` delivery: fully functional end-to-end ✓
+- `sendEmail()` call: active (previously commented out; now fixed) ✓
+- `ScheduleAuditController` and routes: both present and active ✓
+- `SystemNotificationTriggered` event + `ProcessSystemNotification` listener wiring: correct ✓
+- `ntf_channel_master` unique constraint: added 2026-06-24 ✓
+- `sys_dropdowns` FK in tenant tables: confirmed tenant table (D-MSH-009) — no cross-DB FK ✓
+- Template render `{{key}}` / `{{ key }}` both supported ✓
+- Worker locking schema in `ntf_delivery_queue`: supports horizontal scaling ✓
+
+Report: `3-Audit_Reports/V1_Jun-2026/Notification_Complete_Audit_2026-06-29.md`.
+
+---
+
+### Prime (PRM) — Mode X Complete Audit (2026-06-29)
+
+**Central module on prime_db (prm_* + sys_* + bil_*). Health: 40/100 (P0-capped; uncapped ≈ 87). Deploy: NO-GO.**
+
+#### P0
+| Code | Issue | File:Line |
+|------|-------|-----------|
+| BUG-PRM-001 | **`prm_tenant_domains.db_password` stored in plaintext** — Domain model has no `encrypted` cast; TenantDomainController::store() passes raw password via `Domain::create($validated)` | `app/Models/Domain.php`, `TenantDomainController.php:73` |
+| SEC-PRM-001 | **`RolePermissionController::getPermissions()` has zero Gate authorization** — any authenticated user enumerates all role permissions as JSON; violates BR-PRM-020 | `Http/Controllers/RolePermissionController.php:311-315` |
+| SEC-PRM-003 | **`UserController::update()` explicitly passes `is_super_admin` via `$request->only()`** — any admin can elevate any account to Super Admin via PUT request; violates BR-PRM-007 | `Http/Controllers/UserController.php:144` |
+| GAP-PRM-003 | **`SetupTenantDatabase` creates root tenant user with `Hash::make('password')`** — every provisioned school has the same predictable root password; no email sent; violates BR-PRM-009 | `app/Jobs/SetupTenantDatabase.php:82` |
+
+#### P1
+| Code | Issue | File:Line |
+|------|-------|-----------|
+| TEN-PRM-001 | **`tenancy()->initialize($tenant)` without `->end()` at two sites** — DropdownNeedController::getMigrationTables() (line 479) and ::getTableColumns() (line 641) leak tenant DB context | `Http/Controllers/DropdownNeedController.php:479, 641` |
+| BUG-PRM-006 | **Wrong gate on three TenantController methods** — `completeTenantSetup()`, `toggleStatus()`, `tenantPlanToggleStatus()` all use `prime.tenant-group.update` instead of `prime.tenant.update`; violates BR-PRM-013 | `Http/Controllers/TenantController.php:211, 634, 661` |
+| SEC-PRM-002 | **Three debug/test routes accessible in production** — `testEmail()`, `sendTestEmail()` (hardcoded to yopmail), `testNotification()` registered without `App::isLocal()` guard; violates BR-PRM-018 | `EmailController.php`, `NotificationController.php:86` |
+| GAP-PRM-001 | **`GenerateInvoicesCommand` does not exist** — `registerCommands()` empty; billing schedule → invoice pipeline non-functional; BR-PRM-016/017 cannot be met | `Providers/PrimeServiceProvider.php` |
+| BUG-PRM-010 | **`UserController::usersByRole()` ignores `$role` parameter** — returns `User::paginate(10)` (all users); violates AC-007-04 | `Http/Controllers/UserController.php:50` |
+| SEC-PRM-004 | **`DropdownNeedController::filterOptions()` AJAX endpoint has no Gate** | `Http/Controllers/DropdownNeedController.php` |
+| BUG-PRM-011 | **PrimeServiceProvider double-registers AcademicSession** — `SessionBoardSetupPolicy` overwrites `AcademicSessionPolicy` (last `Gate::policy()` wins); AcademicSessionPolicy dead | `Providers/PrimeServiceProvider.php` |
+| GAP-PRM-004 | **New platform user does not receive login credentials by email** — `UserCreatedNotification` goes to super admins; `LoginMail` unused in store(); violates BR-PRM-019 | `Http/Controllers/UserController.php:98` |
+| MIG-PRM-001 | **`create_tenants_table.php` down() calls `dropIfExists('tenants')`** — table is `prm_tenant`; rollback is a no-op or destroys wrong table | `database/migrations/2025_10_10_000010_create_tenants_table.php:61` |
+
+#### P2
+| Code | Issue | File:Line |
+|------|-------|-----------|
+| D30-PRM | **All 7 FormRequests return bare `true` in `authorize()`** — 100% rate (platform baseline 90%) | `Http/Requests/` (all 7 files) |
+| D25-PRM | **3 D25 sites** — AcademicSessionController::store/update() and TenantGroupController::update() use `$request->all()` with FormRequest injected | `AcademicSessionController.php:42,80`, `TenantGroupController.php:99` |
+| BUG-PRM-009 | **UserController::index() stub data** — `$totalRoles=100`, `rand()` for student/class counts | `Http/Controllers/UserController.php:30-36` |
+| BUG-PRM-STUB | **TenantController::destroy() is empty stub wired to live route** — DELETE silently does nothing | `Http/Controllers/TenantController.php:620` |
+| FILL-PRM-001 | **`super_admin_flag` (STORED generated column) in User `$fillable`** — writing it via Eloquent triggers MySQL 3105 error | `app/Models/User.php` |
+| BUG-PRM-007 | **Stale duplicate model** — `Modules/Prime/Models/DropdownNeed.php` outside `app/Models/`; not autoloaded | `Modules/Prime/Models/DropdownNeed.php` |
+| PERF-PRM | **Raw `SHOW TABLES`/`SHOW COLUMNS FROM` in AJAX hot path** (DropdownNeedController); **`Menu::find()` in while-loop in Navbar** — N+1 and no caching | `DropdownNeedController.php:479,641`, `Navbar.php` |
+
+#### Verified Good (PRM)
+- `DB::transaction()` wraps 5-step plan assignment in TenantPlanAssigner — atomic ✓
+- `TenantController::store/update/updateTenantPlan()` use `$request->validated()` ✓
+- `TenantController::resetSetup()` exists and re-dispatches SetupTenantDatabase — GAP-PRM-002 RESOLVED ✓
+- RolePermissionController::destroy() calls `$role->delete()` — BUG-PRM-008 RESOLVED ✓
+- All `$tenant->run()` and `tenancy()->central()` usages auto-revert — SAFE ✓
+- Tenant model implements TenantWithDatabase + HasDatabase + HasDomains — BR-PRM-010 PASS ✓
+- SetupTenantDatabase `$tries=1` — BR-PRM-008 PASS ✓
+- MySQL triggers prevent super-admin deletion/demotion at DB level ✓
+- D24 CLEAN (all permissions use `prime.*` prefix) ✓
+- D36 CORRECT (super_admin_flag UNIQUE constraint active) ✓
+- D38 CLEAN (sys_roles + prm_billing_cycles both have deleted_at in migrations) ✓
+
+Report: `3-Audit_Reports/V1_Jun-2026/Prime_Complete_Audit_2026-06-29.md`.
+
+---
+
+## PTM — Parent-Teacher Meeting (Mode X Audit 2026-06-29)
+
+**Health: 38/100 — NO-GO | 5 P0, 19 P1, 5 P2, 3 P3**
+**Report:** `3-Audit_Reports/V1_Jun-2026/PTM_Complete_Audit_2026-06-29.md`
+
+### P0 — Critical Blockers
+
+| ID | Finding | Location |
+|----|---------|----------|
+| SEC-PTM-001 | **6 AJAX endpoints in PtmManagementController have ZERO Gate::authorize.** Any authenticated tenant user can query all teacher lists, student lists, teacher slot schedules, and event scheduling data. Routes: `ptm/ajax/class-teachers`, `ptm/ajax/assignment-teachers`, `ptm/ajax/eligible-additional-teachers`, `ptm/ajax/event-teachers`, `ptm/ajax/teacher-slots`, `ptm/ajax/event-students`. | `PtmManagementController.php` lines 227, 277, 312, 338, 376, 398 |
+| DAT-PTM-001 | **D36: `ptm_slot_bookings.active_booking_key` is a plain `unsignedInteger` column** (not VIRTUAL GENERATED as D35 mandates). Column is absent from `$fillable` and never assigned in service — all rows permanently have `NULL`. MySQL UNIQUE treats two NULLs as distinct, so `uq_ptmBooking_event_teacher_studentActive` and `uq_ptmBooking_slot_studentActive` enforce **nothing**. BR-PTM-005 (1 confirmed booking per student/teacher/event) has zero DB-level enforcement. | Migration `2026_06_16_094315` line 23; `PtmSlotBooking.php`; `PtmSlotBookingService.php` |
+| DAT-PTM-002 | **No lockForUpdate() in `PtmSlotBookingService::create()`.** Read-check-write pattern with no pessimistic lock: two concurrent booking requests both pass capacity and uniqueness checks, both insert, overbooking the slot and creating duplicate CONFIRMED bookings for the same student+teacher+event. | `PtmSlotBookingService.php` lines 70–115 |
+| DAT-PTM-003 | **`PtmSlotService::generateFromAssignment()` calls `PtmSlot::where()->forceDelete()` at entry.** `ptm_slot_bookings.slot_id` FK has `onDelete('cascade')`. Republishing an assignment permanently hard-deletes all booking records for that assignment with no warning, soft-delete, or audit trail. | `PtmSlotService.php` line 43; migration FK line 30 |
+| DAT-PTM-004 | **`PtmAssignmentService::delete()` calls `slots()->forceDelete()`.** FK cascade then hard-deletes all `ptm_slot_bookings` records. BR-PTM-013 (protect assignment with active bookings) not implemented: no confirmed-booking guard before `forceDelete()`. Admin soft-delete of an assignment silently annihilates all booking history. | `PtmAssignmentService.php` lines 191–204 |
+
+### P1 — High
+
+| ID | Finding | Location |
+|----|---------|----------|
+| BUG-PTM-001 | All 9 entity trash routes shadowed by resource `show` route (BUG-HPC-009 pattern). All trash/restore/forceDelete routes permanently unreachable for all 9 entities. | `routes/web.php` — all 9 resource groups |
+| SEC-PTM-002 | All 18 FormRequests return `authorize()=true` (D30). | All 18 Request files |
+| SEC-PTM-003 | `PtmCombinedViewController::setup()` and `bookings()` have no Gate::authorize. Any authenticated tenant user sees all PTM setup data and all bookings. | `PtmCombinedViewController.php` lines 53, 170 |
+| TEN-PTM-001 | `session('tenant_id') ?? 1` in `Notification::create()` — 4 occurrences across `PtmSlotBookingService` (create, cancel) and `PtmAssignmentService` (create, update). Session is unreliable; fallback `?? 1` creates notifications on tenant 1. | `PtmSlotBookingService.php` lines 120, 176; `PtmAssignmentService.php` lines 71, 171 |
+| TEN-PTM-002 | API routes registered with only `'api'` middleware — no tenancy stack (no InitializeTenancyByDomain, no EnsureTenantIsActive). | `RouteServiceProvider.php` lines 45–53 |
+| VAL-PTM-001 | `cancel()` reads `$request->input()` without FormRequest; `reschedule()` uses inline `$request->validate()`. | `PtmSlotBookingController.php` lines 178, 205 |
+| D17-PTM-001 | `PtmSlotBooking.$fillable` includes `'updated_by'` but `ptm_slot_bookings` migration has no `updated_by` column. Any update with `updated_by` throws QueryException. | `PtmSlotBooking.php` line 33; migration `2026_06_16_094315` |
+| D39-PTM-001 | All PTM permissions absent from `TenantRolePermissionSeeder`. Regular staff roles cannot access any PTM feature on fresh tenants. | `database/seeders/TenantRolePermissionSeeder.php` |
+| BR-PTM-013 | Assignment delete does not check for confirmed bookings (see also DAT-PTM-004). | `PtmAssignmentService.php` line 191 |
+| BR-PTM-015 | Unpublish soft-deletes slots without checking or cancelling confirmed bookings; parents not notified. | `PtmAssignmentService.php` lines 235–246 |
+| PERF-PTM-001 | Management dashboard: 14+ queries per load including 8 separate `onlyTrashed()->count()` calls + unbounded `AcademicTerm::all()`, `Section::all()`. | `PtmManagementController.php` |
+| PERF-PTM-002 | `PtmBlockoutService::notifyAffectedBookings()`: re-queries guardians per booking (N+1). | `PtmBlockoutService.php` |
+| PERF-PTM-003 | `PtmSlotService::syncSlotStatusForBlockout()`: one `isSlotBlockedByBlockout()` EXISTS query per slot (N+1). | `PtmSlotService.php` lines 353–380 |
+| PAY-PTM-001 | 7 payment tables created in migrations (2026-06-18 batch), zero models/controllers/services. Payment workflow entirely unimplemented. | `database/migrations/tenant/` 8 payment files |
+| PARENT-PTM-001 | REQ-PTM-010 (parent self-booking) not implemented. No parent-portal routes or views. | FRD Section 3.2 REQ-PTM-010 |
+| TEST-PTM-001 | 0 test files. | `Modules/Ptm/` |
+| JOB-PTM-001 | `Notification::create()` runs synchronously inside `DB::transaction()` in 4 service methods. | `PtmSlotBookingService.php`, `PtmAssignmentService.php` |
+| DEAD-PTM-001 | `PtmCombinedViewController::scheduling()` has no route. Route `combined.scheduling` → `PtmManagementController::index()`. 55-line method is dead code. | `PtmCombinedViewController.php` lines 109–163 |
+
+### P2 — Medium
+
+| ID | Finding |
+|----|---------|
+| D29-PTM-001 | `ptm_events.default_meeting_mode` ENUM (D29 violation) |
+| D29-PTM-002 | `ptm_slots.status` ENUM (D29 violation) |
+| D29-PTM-003 | `ptm_slot_bookings.status` ENUM (D29 violation) |
+| PERF-PTM-006 | `PtmAssignmentController::create/edit()`: `PtmEventClassSection::with()->get()` unbounded |
+| ARCH-PTM-001 | `PtmServiceProvider::loadMigrationsFrom()` points to empty module migrations dir |
+
+### Verified Good (PTM)
+- Full tenancy middleware stack on web routes (InitializeTenancyByDomain + PreventAccessFromCentralDomains + EnsureTenantIsActive + auth + verified) ✓
+- 9 policies registered via Gate::policy() in PtmServiceProvider ✓
+- Three-level parameter fallback (Assignment → BatchTemplate → Event) correctly implemented in PtmSlotService ✓
+- Both static (buffer=0) and dynamic (buffer>0) slot generation modes correct ✓
+- Blockout overlap detection: `start_time < slotEnd AND end_time > slotStart` correct ✓
+- Reschedule = atomic cancel + rebook in single transaction ✓
+- All CRUD controllers use `$request->validated()` — D25 clean ✓
+- Activity logging consistent across all mutation operations ✓
+- `{!! !!}` in Blade views exclusively for pagination `->links()` — XSS clean ✓
+- SoftDeletes on all 9 models; DDL has `softDeletes()` — D38 clean ✓
+- `PtmBatchTemplate.$table = 'ptm_batches_template'` matches migration ✓
+- No `$request->all()` usage — D25 clean ✓
+- Permission prefix consistent `tenant.ptm_*` — D24 clean ✓
+
+---
+
+## QuestionBank (QNS) — Mode X Audit 2026-06-29
+
+### P0 — Critical Blockers
+
+| ID | Severity | Finding | Evidence |
+|----|----------|---------|---------|
+| SEC-QNS-003 | P0 | Duplicate `Gate::policy(QuestionBank::class, ...)` in QuestionBankServiceProvider lines 69 + 75 — `QuestionBankPolicy` is dead; all `tenant.question-bank.*` Gate checks dispatch to `AiQuestionGeneratorPolicy` (PRM-D-001 pattern) | `QuestionBankServiceProvider.php:69,75` |
+| BUG-QNS-002 | P0 | Routes `GET /get-ai-providers` and `GET /ai-provider-status/{id}` map to `getAIProviders()` and `checkProviderStatus()` — neither method exists in AIQuestionGeneratorController → HTTP 500 | `routes/web.php:108-109` |
+| BUG-QNS-003 | P0 | `reviewApprove()` writes `status='PUBLISHED'` directly, bypassing the mandated `APPROVED` intermediate state — FSM violation; BR-QNS-008 violated; APPROVED state unreachable via UI | `QuestionBankController.php:2690` |
+| SEC-QNS-004 | P0 | API routes in `RouteServiceProvider::mapApiRoutes()` apply only `'api'` middleware — no tenancy stack (no InitializeTenancyByDomain, no PreventAccessFromCentralDomains, no EnsureTenantIsActive) | `RouteServiceProvider.php:60-62` |
+
+Note: BUG-QNS-001 (demo data early return) and SEC-QNS-002 (API keys — now partially fixed, keys moved from hardcoded to env()) are pre-existing entries.
+
+### P1 — High Priority
+
+| ID | Finding | Evidence |
+|----|---------|---------|
+| MIG-QNS-001 | `qns_question_statistics.discrimination_index`, `.guessing_factor`, `.avg_time_taken_seconds` are NOT NULL in migration but `QuestionStatisticsService` correctly writes null per D31 spec → MySQL SQLSTATE 1048 runtime error on statistics write for new/non-MCQ/no-telemetry questions | `2026_06_16_114247_create_qns_question_statistics_table.php:17-21` |
+| ORM-QNS-001 | `QuestionBank::scopeApproved()` references column `ques_reviewed_status` which does not exist (column is `status`) — scope silently returns 0 rows; assessment builders receive empty question pools | `QuestionBank.php:210` |
+| BUG-QNS-004 | 6 AJAX cascade endpoints in AIQuestionGeneratorController (`getSections`, `getSubjectGroups`, `getSubjects`, `getLessons`, `getTopics`, `downloadCSV`) have no `Gate::authorize()` — correction: SEC-QNS-001 claim of "ZERO auth on ALL methods" is inaccurate; `index()`, `generateQuestions()`, `saveQuestions()` are correctly gated | `AIQuestionGeneratorController.php:84,105,126,149,175,960` |
+| D39-QNS-001 | No permission seeder for any `tenant.question-bank.*` ability — module is super-admin-only; no non-SA user can access any feature | No seeder found in `database/seeders/` or `Modules/QuestionBank/database/seeders/` |
+| SEC-QNS-006 | `env('CHATGPT_API_KEY')` and `env('GEMINI_API_KEY')` direct in controller — returns null after `config:cache`; AI silently fails in cached-config production | `AIQuestionGeneratorController.php:531,578` |
+
+### P2 — Medium Priority
+
+| ID | Finding |
+|----|---------|
+| D29-QNS-001 | 6 ENUM columns in `qns_questions_bank`: `content_format`, `media_location_for_question`, `media_location_for_teacher_explanation`, `ques_owner`, `availability`, `status` |
+| D29-QNS-002 | 1 ENUM column in `qns_question_media_jnt`: `media_purpose` |
+| ORM-QNS-002 | `QuestionBank::questionMediaStores()` uses `hasMany(QuestionMediaStore::class, 'id')` with `'id'` as FK — wrong; relationship should use `belongsToMany` through `qns_question_media_jnt` |
+| D30-QNS-001 | All 6 FormRequests return `Auth::check()` — no resource-level authorization (D30 pattern) |
+
+### Verified Good (QNS)
+- Full tenancy middleware on web routes (InitializeTenancyByDomain + PreventAccessFromCentralDomains + EnsureTenantIsActive + auth + verified) ✓
+- D24 clean — all Gate calls use `tenant.` prefix (no `tennat.` or other typos) ✓
+- D25 clean — no `$request->all()` into models found ✓
+- D36 clean — no `storedAs`/`virtualAs` columns in any of 13 QNS migrations ✓
+- D37 clean — status stored as ENUM string; review_status_id uses FK correctly ✓
+- D38 clean — SoftDeletes/timestamps match DDL on all 13 tables ✓
+- D31 Formula Contract: QuestionStatisticsService fully implements all 9 spec sections including Kelley D-index (27% rule), MCQ guessing factor, outlier-guarded time metrics — code-verified ✓
+- UUID binary pattern: BINARY(16) with `Str::uuid()->getBytes()` in creating hook + multi-fallback hex accessor ✓
+- Version snapshot pattern: clean-slate update + JSON snapshot in DB::transaction in QuestionBankController::update() ✓
+- `reviewReject()` enforces `comment=required` validation ✓
+- `index()`, `generateQuestions()`, `saveQuestions()` in AIQuestionGeneratorController are correctly gated ✓
+
+---
+
+## Scheduler (SDL) — Mode X Complete Audit (2026-06-29)
+
+### P0 — Critical (Must fix before any use)
+
+| ID | Severity | Finding | Evidence |
+|----|----------|---------|---------|
+| SEC-SDL-001 | P0 | Zero `Gate::authorize()` across all 7 SchedulerController methods (index, create, store, show, edit, update, destroy) — any authenticated user including tenant school staff can attempt to access all schedule management pages; no SchedulePolicy exists anywhere | `SchedulerController.php:1-86` (entire file; no Gate import) |
+| BUG-SDL-001 | P0 | Execution engine entirely absent: `SchedulerService::runSchedule()` does not exist, no Artisan command (Console/ directory absent), `registerCommands()` and `registerCommandSchedules()` fully commented out in SchedulerServiceProvider — module stores schedule records but executes nothing | `SchedulerService.php:14-41` (only dueSchedules/isDue); `SchedulerServiceProvider.php:44-58` (all commented) |
+| BUG-SDL-002 | P0 | `update()` and `destroy()` methods have empty bodies — PUT /scheduler/schedule/{id} silently returns HTTP 200 with no update; DELETE silently returns HTTP 200 with no delete | `SchedulerController.php:76-78` (update), `SchedulerController.php:83-85` (destroy) |
+
+### P1 — High Priority
+
+| ID | Finding | Evidence |
+|----|---------|---------|
+| TEN-SDL-001 | Module RSP applies full tenant middleware stack (InitializeTenancyByDomain + PreventAccessFromCentralDomains + EnsureTenantIsActive) to a central-only (prime_db) module — PreventAccessFromCentralDomains blocks the central domain where Platform Admins operate, making /schedulers/* routes inaccessible from the correct domain; from tenant domains, controller queries crash (schedules table absent in tenant_db) | `RouteServiceProvider.php:41-48` |
+| BUG-SDL-003 | `trashedSchedule()` method does not exist in SchedulerController but is registered as a route in all 3 central web.php blocks — any access to GET /scheduler/schedule/trash throws BadMethodCallException → HTTP 500 | `routes/web.php:305,552,882`; `SchedulerController.php:1-86` (no method) |
+| RT-SDL-001 | Scheduler routes registered THREE TIMES in central web.php (lines 301, 548, 878) — identical resource + trash blocks; last registration wins, first two are shadowed | `routes/web.php:301-308`, `548-555`, `878-885` |
+| BUG-SDL-004 | Double validation in store(): ScheduleRequest FormRequest runs its rules first, then store() body calls `$request->validate()` again with DIFFERENT inline rules — any custom rules added to ScheduleRequest (cron validator, job-key whitelist) will be bypassed by the inline re-validation | `SchedulerController.php:34-42`; `ScheduleRequest.php:13-43` |
+| VAL-SDL-001 | `job_key` only validates as 'string' — not validated against `JobRegistry::all()` keys; arbitrary strings silently accepted and stored (BR-SDL-002 violated) | `ScheduleRequest.php:23-26`; `JobRegistry.php:17-23` |
+| VAL-SDL-002 | `cron_expression` only validates as 'string','max:255' — no cron syntax validation; invalid expressions stored and silently skipped at isDue() (dragonmantank/cron-expression is already a project dependency) | `ScheduleRequest.php:28-31` |
+| SEC-SDL-002 | `ScheduleRequest::authorize()` returns hardcoded `true` (D30) — both controller gate and FormRequest gate are absent simultaneously | `ScheduleRequest.php:49-51` |
+| ORM-SDL-001 | `Schedule` model has no `SoftDeletes` trait and `schedules` migration has no `deleted_at` — archive/restore feature (REQ-SDL-004, BR-SDL-010, BR-SDL-016) is architecturally impossible; forceDelete would conflict with RESTRICT FK from schedule_runs | `Schedule.php:1-44`; migration:1-30 (no softDeletes()) |
+| PERF-SDL-001 | `index()` uses unbounded `Schedule::orderBy()->get()` — no pagination; NFR-SDL-001 requires 15/page | `SchedulerController.php:18` |
+
+### P2 — Medium Priority
+
+| ID | Finding |
+|----|---------|
+| MIG-SDL-001 | `schedules.schedule_type` is `->enum('prime','tenant')` in migration (D29 violation) |
+| MIG-SDL-002 | `schedule_runs.status` is `->enum('running','success','failed')` in migration (D29 violation) |
+| DAT-SDL-001 | Missing columns in both tables — schedules: deleted_at, created_by, failure_count (failure_count referenced in index.blade.php:56 → always null/blank); schedule_runs: deleted_at, created_by, output, attempt |
+| ORM-SDL-002 | `Schedule.$fillable` missing last_run_at and next_run_at — both exist in migration and are needed by the execution engine; also missing datetime casts |
+| ORM-SDL-003 | `ScheduleRun` missing explicit `$table` (infers correctly by convention); both models missing ORM relationships (Schedule.runs() HasMany; ScheduleRun.schedule() BelongsTo) |
+| DEAD-SDL-001 | `SchedulerService.dueSchedules()` is never called anywhere — entire service layer orphaned until BUG-SDL-001 is fixed |
+| BUG-SDL-005 | `store()` hardcodes `schedule_type => 'prime'` — school-level (tenant-scoped) schedules cannot be created; create.blade.php has no scope selector |
+
+### P3
+
+| ID | Finding |
+|----|---------|
+| ARCH-SDL-001 | `SchedulerType` uses PHP class constants, not PHP 8.1+ backed enum (project runs PHP 8.2+) |
+| ARCH-SDL-002 | JobRegistry has 3 entries; FRD target is 10+ |
+| DEAD-SDL-002 | 16 tests in SchedulerModuleTest.php intentionally assert broken state (zero Gate, empty stubs) — will FAIL after security fix; must be inverted |
+
+### Verified Good (SDL)
+- Central web.php route names: `route('central.scheduler.schedule.index')` IS valid — outer `Route::domain()->name("central.")` group at web.php:67 prefixes all inner route names; views and store() redirect are correct ✓
+- D25 clean — no `$request->all()` into models; store() uses validated() result ✓
+- D36 N/A — no generated columns in SDL schema ✓
+- SchedulerService::isDue() correctly catches Throwable for malformed cron; well-implemented ✓
+- JobRegistry::get() validates SchedulableJob interface compliance before returning ✓
+- SchedulableJob contract (description(), allowedScheduleTypes()) well-designed ✓
+- Views use `{{ }}` only (XSS-safe); no unescaped output ✓
+
+---
+
+## SchoolSetup (SCH) — Mode X Complete Audit (2026-06-30)
+
+### P0 — Critical (Must fix before any use)
+
+| ID | Severity | Finding | Evidence |
+|----|----------|---------|---------|
+| SEC-SCH-001 | P0 | `is_super_admin`, `super_admin_flag`, `password`, `user_type` all in `User.$fillable` — any user with school-setup.user.update permission can self-promote to platform super-admin via crafted PUT (Gate::before() bypass at AppServiceProvider:65-67); `password` is also mass-assignable | `Modules/SchoolSetup/app/Models/User.php:59,67-70` |
+| SEC-SCH-002 | P0 | `EnsureTenantHasModule` absent from SchoolSetup RSP middleware stack — all 56+ controllers are accessible to tenants without a SchoolSetup license (subscription bypass) | `Modules/SchoolSetup/app/Providers/RouteServiceProvider.php:40-48` |
+| BUG-SCH-012 | P0 | `sch_entity_group_members` table migration missing — `EntityGroupMember` model exists (`$table='sch_entity_group_members'`) but no `create_entity_group_members_table` migration was ever written; any entity-group-member CRUD throws `SQLSTATE[42S02]` | `database/migrations/tenant/` (only `2026_06_15_145412_create_entity_groups_table.php` exists for entity groups); `Modules/SchoolSetup/app/Models/EntityGroupMember.php` |
+| FE-SCH-001 | P0 | XSS: `{!! old('name', $user->name) !!}` in user/edit.blade.php renders user-controlled name unescaped into an HTML attribute — a crafted name can inject arbitrary JavaScript into any admin session | `Modules/SchoolSetup/resources/views/user/edit.blade.php:38` |
+| DAT-SCH-001 | P0 | D36: `sch_org_academic_sessions_jnt.current_flag` is a plain `boolean()->default(false)` with NO unique constraint — multiple sessions can have `current_flag=true` simultaneously; BR-SCH-009 ("exactly one current session") is unenforced at the DB level | `database/migrations/tenant/2026_06_15_145404_create_sch_org_academic_sessions_jnt_table.php:31` |
+| BUG-SCH-017 | P0 | `EmployeeProfileController` has 5 live-routed methods that do not exist: `addProfile`, `addTeacherProfile`, `updateDocuments`, `generateQrCode`, `toggleProfileStatus` — every call throws `BadMethodCallException` → HTTP 500; employee onboarding steps 2+ are completely broken | `Modules/SchoolSetup/routes/web.php:117-121`; `Modules/SchoolSetup/app/Http/Controllers/EmployeeProfileController.php` (methods absent) |
+
+### P1 — High Priority
+
+| ID | Finding | Evidence |
+|----|---------|---------|
+| TEN-SCH-001 | D41: `session('tenant_id')` used in 6 locations across 3 controllers for notification/audit inserts — unreliable outside HTTP request lifecycle (queued jobs, artisan commands, concurrent requests); can write records to wrong tenant | `EmployeeSeparationController.php:54,210`; `EmployeeLeaveApplicationController.php:466,953,1028`; `EmployeeLeaveApprovalController.php:384` |
+| TEN-SCH-002 | `tenancy()->initialize($tenant)` called with no matching `tenancy()->end()` in two console commands — context leaks into subsequent Artisan calls in same process; dangling tenant DB connection | `Modules/SchoolSetup/app/Console/Commands/ProcessLeaveAccrual.php:40`; `ProcessDailyAttendance.php:46` |
+| SEC-SCH-020 | D30: All 26 FormRequests return bare `authorize(){ return true; }` — zero FormRequest-level ownership or permission checks across the entire module | All 26 files in `Modules/SchoolSetup/app/Http/Requests/` |
+| SEC-SCH-018 | `EmployeeReportController::index()` has no `Gate::authorize()` — HR analytics (attendance, leave balance, separation history) accessible to any authenticated user | `Modules/SchoolSetup/app/Http/Controllers/EmployeeReportController.php:28` |
+| BUG-SCH-011 | D38: `sch_designations` migration has no `softDeletes()` but `Designation` model uses the `SoftDeletes` trait — `$designation->delete()` throws `SQLSTATE[42S22] Unknown column 'deleted_at'` | `database/migrations/tenant/2026_06_15_145912_create_sch_designations_table.php`; `Modules/SchoolSetup/app/Models/Designation.php:7` |
+| BUG-SCH-013 | `UserController::index()` uses `rand(1000,2000)` and `rand(10,30)` for student/class counts in production; `Gate::authorize` block commented out on lines 30-32 | `Modules/SchoolSetup/app/Http/Controllers/UserController.php:30-35` |
+| BUG-SCH-023 | `ClassSubjectManagementController::store()`, `update()`, `destroy()` are completely empty — all state-changing operations silently do nothing; routes are live with no auth | `Modules/SchoolSetup/app/Http/Controllers/ClassSubjectManagementController.php:29,52,59` |
+| DAT-SCH-002 | D36: `sch_employee_leave_balance.available_balance` is a plain `decimal(5,2)` — DDL spec declares it as `GENERATED ALWAYS AS (opening_balance + carry_forward - total_used) STORED`; `ProcessLeaveAccrual` increments `opening_balance` without updating `available_balance`, causing balance drift | `database/migrations/tenant/2026_06_16_104157_create_sch_employee_leave_balance_table.php:21`; `ProcessLeaveAccrual.php` |
+| ORM-SCH-001 | `EmployeeBankDetail` stores `account_number`, `ifsc_code`, `iban` as plaintext VARCHAR — no `encrypted` cast in `$casts`; BR-SCH-039 requires encryption of employee bank details | `Modules/SchoolSetup/app/Models/EmployeeBankDetail.php:17-34` |
+| PERF-SCH-003 | `Role::all()` called in 15+ controller request paths without caching (UserController, EmployeeProfileController, LeaveApprovalPolicyController, etc.) and `Department::all()` / `Subject::all()` with no bounds | 15+ controllers; representative: `EmployeeProfileController.php:312,718`; `UserController.php:37,51` |
+| MIG-SCH-001 | D38 + D29 combined: `sch_designations` missing `softDeletes()` (see BUG-SCH-011); 11 ENUM columns across 4 migrations violate D29 (sch_employees: 5 ENUMs including 8-value `employment_status` FSM; sch_employee_leave_applications: 9-value `status` FSM; sch_holidays: 8-value `holiday_type`; sch_staff_leave_config: 2 ENUMs) | `2026_06_15_150600_create_sch_employees_table.php`; `2026_06_16_104201_create_sch_employee_leave_applications_table.php`; `2026_06_16_104147_create_sch_holidays_table.php`; `2026_06_16_104159_create_sch_staff_leave_config_table.php` |
+
+### Verified Good (SCH)
+- `sch_academic_term.current_flag`: nullable boolean + UNIQUE constraint on column — functional pattern (one non-NULL true per session) ✓
+- `sch_employees_profile.active_flag`: nullable boolean + UNIQUE on (employee_id, role_id, active_flag) — functional pattern ✓
+- `DB::transaction()` used consistently in EmployeeLeaveApplicationController (multi-table writes) ✓
+- `with()` eager loading used in EmployeeProfileController::show() — no N+1 on main profile load ✓
+- Cross-DB FKs correctly target correct global_db tables; index created on FK columns ✓ (constraint enforcement is the gap — DDL-SCH-01 P2)
+- Module uses module-owned migrations (loadMigrationsFrom) — correct for prime_db module ✓
+
+---
+
+## TimetableFoundation (TTF) — Mode X Complete Audit (2026-06-30)
+
+Full report: `3-Audit_Reports/TimetableFoundation_Complete_Audit_2026-06-30.md`
+Health score: **39 / 100 (P0-capped)**. Deploy gate: **NO-GO**.
+BA P0 refuted: `Config::scopeByStatus()` does NOT exist in current code — Config correctly uses `is_active`. FRD AC-002.6 "current bug: fails" annotation does not match live code.
+
+### P0 — Critical
+
+| ID | Finding | Evidence |
+|----|---------|---------|
+| SEC-PLATFORM-003 (TTF) | `EnsureTenantHasModule` absent from RSP web middleware — all 138+ routes accessible without subscription | `Modules/TimetableFoundation/app/Providers/RouteServiceProvider.php` |
+| SEC-TTF-004 | API routes have only `['auth:sanctum']` — no tenancy middleware; apiResource runs without tenant DB context | `Modules/TimetableFoundation/routes/api.php` |
+| SEC-PLATFORM-008 (TTF) | 19 of 23 policy classes completely unregistered in ServiceProvider; duplicate `Gate::policy(SchoolShift::class, ...)` call at line 66-67 silently kills `TimingProfilePolicy` | `Modules/TimetableFoundation/app/Providers/TimetableFoundationServiceProvider.php` |
+| TEN-TT-001 | `Modules\Prime\Models\AcademicSession` (prime_db) imported and queried in 6 controllers + 3 models in tenant context — returns wrong school's session data | `TimetableFoundationController.php:51,910`; `ActivityController.php:11,60`; `WorkingDayController.php:9,53+`; `ClassWorkingDayController.php:9,464,581`; `RequirementConsolidationController.php:10,41`; `TimetableController.php:9,34,156`; `Models/Timetable.php:13,88`; `Models/ClassWorkingDay.php:7,71`; `Models/ClassModeRule.php:8,110` |
+| ARCH-TT-001 | `TtGenerationStrategyController` (SmartTimetable) and `ClassSubjectGroupController` (SchoolSetup) wired into TTF route file — if either module is disabled, entire TTF route file fails to load (500 on all 138 routes) | `Modules/TimetableFoundation/routes/web.php:29-30,304,313` |
+
+### P1 — High Priority
+
+| ID | Finding | Evidence |
+|----|---------|---------|
+| ORM-TT-001 | `TeacherAvailablity` model class name typo (missing 'i') — any correctly-spelled import fails with class-not-found | `Modules/TimetableFoundation/app/Models/TeacherAvailablity.php` |
+| BUG-TT-013 | `TeacherAvailabilityController::store()` is a live stub — only runs Gate check, returns nothing; POST /teacher-availability silently discards submissions | `Modules/TimetableFoundation/app/Http/Controllers/TeacherAvailabilityController.php:39-41` |
+| PERF-TT-014 | `TimetableFoundationController` God controller: 2561 lines; mixed Pre-Req dashboard + Config + page routing + SmartTimetable model imports | `Modules/TimetableFoundation/app/Http/Controllers/TimetableFoundationController.php` |
+| PERF-TT-015 | `ActivityController` God controller: 1853 lines; imports 5 SmartTimetable models + cross-layer AcademicSession | `Modules/TimetableFoundation/app/Http/Controllers/ActivityController.php` |
+| PERF-TT-016 | `RequirementConsolidationController`: 1219 lines; inline 80-line DB::transaction bodies | `Modules/TimetableFoundation/app/Http/Controllers/RequirementConsolidationController.php` |
+| VAL-TT-001 | All 4 FormRequests return `authorize(){ return true; }` (D30) — zero FormRequest-level ownership checks | `app/Http/Requests/TimingProfileRequest.php:32`; `AcademicTermRequest.php:17`; `SchoolTimingProfileRequest.php:45`; `ConfigRequest.php:13` |
+| VAL-TT-002 | 22 of 27 controllers have no FormRequest at all — no centralized validation contract | All remaining controllers |
+| ARCH-TT-002 | SmartTimetable models bidirectionally imported in TTF (TTF is supposed to be foundation; STT is the consumer) — `GenerationRun`, `TtGenerationStrategy`, `ParallelGroup`, `ClassGroupJnt`, `ClassGroupRequirement`, `ClassSubgroup`, `Constraint` | `Models/Timetable.php:15-16`; `Models/Activity.php:27`; `Models/TimetableCell.php:15`; `ActivityController.php:20-24`; `ClassSubjectSubgroupController.php:14-15`; `TimetableFoundationController.php:20,46-47` |
+
+### P2
+
+| ID | Finding | Evidence |
+|----|---------|---------|
+| MIG-TT-001 (UPDATED) | D36: `tt_room_availability.available_for_full_timetable_duration` is a plain `boolean()->default(true)` in migration but specified as STORED generated column in DDL v7.8; writes to this column succeed silently, value does not auto-update on date change. NOTE: `tt_period_set.total_periods` is plain in both migration AND DDL — consistent, not a defect (remove from prior MIG-TT-001 scope). `duration_minutes` in `tt_period_config` IS correctly GENERATED. | `database/migrations/tenant/2026_06_16_152638_create_tt_room_availability_table.php:19` |
+| BUG-TT-015 | Column name typo `competancy_level` (missing 'e') entrenched in migration + model + DDL; should be `competency_level` | `database/migrations/tenant/2026_06_16_152641_create_tt_teacher_availability_table.php:31`; `app/Models/TeacherAvailablity.php` fillable |
+| D29-TTF-001 | 28 `->enum()` declarations across 20 tt_ migration files (D29 ban) — highest risk: `tt_timetable.status` (5-value FSM), `tt_timetable.generation_method` (3-value), `tt_teacher_availability.competancy_level` | All 20 files; see audit report for full list |
+| TEST-TT-001 | Test suite (6 files) strips all tenancy middleware in `beforeEach`; only tests unauthenticated redirects — cannot detect any tenancy, authorization, or business-rule defect | `Modules/TimetableFoundation/tests/Feature/RouteAuthenticationTest.php:17-21` |
+
+### P3
+
+| ID | Finding | Evidence |
+|----|---------|---------|
+| BUG-TT-016 | `TeacherAvailabilityController::edit()` calls `view('timetablefoundation::edit')` — wrong view name (should be `timetablefoundation::teacher-availability.edit`) | `Modules/TimetableFoundation/app/Http/Controllers/TeacherAvailabilityController.php` |
+| DEAD-TT-003 | `BackfillSubActivityDetails` console command exists but is not scheduled | `Modules/TimetableFoundation/` Console/Commands |
+
+### Verified Good (TTF)
+- `Config` model has NO `scopeByStatus()` — BA-documented P0 refuted; `ConfigController` correctly uses `is_active` inline filter; `ConfigRequest` uses `$request->validated()` ✓
+- `DB::transaction()` used consistently across multi-write operations (WorkingDayController, ClassWorkingDayController, PeriodConfigController, RequirementConsolidationController, TimetableTypeController) ✓
+- `tt_teacher_availabilities.available_for_full_timetable_duration` and `no_of_days_not_available` correctly implemented as STORED generated columns via `DB::statement()` in migration ✓
+- `tt_period_config.duration_minutes` correctly GENERATED (TIMESTAMPDIFF) ✓
+- `tt_activities.total_periods` correctly GENERATED (duration_periods * weekly_periods) ✓
+- ConfigController uses `Gate::authorize()` on all state-changing methods ✓
+- No `env()` calls in TTF controllers ✓
+
+---
+
+## StandardTimetable (TTS) Specific
+
+> Audit date: 2026-06-30 | Mode X Complete Technical Audit | Health Score: 30/100 (P0-capped)
+> Report: `3-Audit_Reports/StandardTimetable_Complete_Audit_2026-06-30.md`
+
+### SEC-TTS-001: Blanket viewAny Gate on All 6 Controller Methods Including Destructive Endpoints (P0)
+- **Module/Area:** `Modules/StandardTimetable/app/Http/Controllers/StandardTimetableController.php` — lines 33, 85, 175, 272, 322, 375
+- **Symptom:** `placeCell`, `removeCell`, `createTimetable`, `deleteTimetable` — all write/delete methods — use `Gate::authorize('standard-timetable.viewAny')`. A read-only user granted `viewAny` can delete timetables. No `StandardTimetablePolicy` class exists. The permission string `standard-timetable.viewAny` is never seeded. For non-super-admin roles the gate resolves to deny (undefined permission) — module entirely unusable.
+- **Root Cause:** D39 systemic pattern (permissions unreferenced → super-admin only). Copy of initial scaffold never replaced with granular per-ability gates.
+- **Fix:** (1) Create `Modules/StandardTimetable/app/Policies/StandardTimetablePolicy.php` with abilities `viewAny`, `viewClass`, `viewTeacher`, `viewRoom`, `manualPlace`, `publish`, `export`. (2) Register via `Gate::policy(Timetable::class, StandardTimetablePolicy::class)` in `StandardTimetableServiceProvider::registerPolicies()`. (3) Implement seeder to insert 7 permissions into `sys_permissions`. (4) Replace `Gate::authorize('standard-timetable.viewAny')` in destructive methods with correct ability name (`manualPlace` for place/remove/create/delete).
+- **Prevention:** Every new module must have policy + seeder implemented before any route is registered. The 10-new-feature-checklist must require these as non-optional. Technical Auditor Layer 4 and Layer 6 both check for this.
+
+### TEN-TTS-001: AcademicSession Cross-Layer FK Violation on createTimetable (P0)
+- **Module/Area:** `Modules/StandardTimetable/app/Http/Controllers/StandardTimetableController.php:13` (import) and `:346` (call)
+- **Symptom:** `createTimetable()` stores the return value of `AcademicSession::current()->first()->id` (from `global_master_mysql`, table `glb_academic_sessions`) into `tt_timetables.academic_session_id`. That column has a hard FK to `sch_org_academic_sessions_jnt(id)` in the tenant DB. IDs from the global DB almost never match tenant rows — every `createTimetable()` call throws `errno: 1452 Cannot add or update a child row: a foreign key constraint fails` for most tenants.
+- **Root Cause:** SEC-PLATFORM-007 pattern: developer imported `Modules\Prime\Models\AcademicSession` (global_master_mysql) instead of the tenant-scoped session model. The `Timetable` model's `academicSession()` relation also targets the wrong model, so any eager-load of `academicSession` in tenant context queries the wrong DB.
+- **Fix:** Replace `use Modules\Prime\Models\AcademicSession;` with `use Modules\SchoolSetup\Models\OrganizationAcademicSession;` in the controller. Fix the `Timetable` model relation (`Modules\TimetableFoundation\Models\Timetable`) to reference `OrganizationAcademicSession` instead of `AcademicSession`. Run: `grep -r "Modules\\\\Prime\\\\Models\\\\AcademicSession" Modules/StandardTimetable/ Modules/TimetableFoundation/` to find all occurrences.
+- **Prevention:** Never import Prime-layer models in tenant-scoped controllers. Cross-module dependency map for any tenant module must list only tenant-db models (SchoolSetup, StudentProfile, etc.) — never Prime, Billing, or GlobalMaster. Add this as a required import audit step in Technical Auditor Layer 1.
+
+### BUG-TTS-001: Wrong Column in Conflict Teacher Filter — Teacher Conflicts Silent (P1, pre-registered)
+- **Module/Area:** `Modules/StandardTimetable/app/Http/Controllers/StandardTimetableController.php:420` and `:442`
+- **Symptom:** `checkConflicts()` calls `$cell->teachers->whereIn('id', $teacherIds)`. The `teachers` relation returns `TimetableCellTeacher` pivot records; the FK holding the teacher reference is `teacher_id`, not `id`. `$conflictTeachers` is always empty when the pivot record's `id != teacher_id`. The `whereHas()` query (which correctly uses `teacher_id`) identifies the conflicting cell; the post-load filter (which uses `id`) fails to extract the teacher name. Result: TEACHER_CONFLICT and TEACHER_CROSS_TT messages are built with empty teacher name arrays.
+- **Root Cause:** Subtle Eloquent collection filtering error: `whereIn('id', ...)` on a pivot model filters by the pivot's own PK, not by the FK column pointing to the teacher.
+- **Fix:** Change both occurrences to `->whereIn('teacher_id', $teacherIds)`.
+- **Prevention:** When filtering Eloquent collections built from pivot models, always confirm the column name on the pivot model, not the related model. Write a regression unit test `ConflictDetectionTest` that asserts the teacher name is correctly returned in the conflict details JSON.
+
+### BUG-TTS-002: removeCell() Deletes Wrong Cell in Multi-Class Timetables (P1)
+- **Module/Area:** `Modules/StandardTimetable/app/Http/Controllers/StandardTimetableController.php:280-283`
+- **Symptom:** `removeCell()` builds a lookup without `class_group_id`. In a timetable with multiple class groups, multiple cells can share the same `(timetable_id, day_of_week, period_ord)` — one per class group. `.first()` returns an arbitrary cell, potentially from a different class group than the caller intended. The wrong cell is silently deleted.
+- **Root Cause:** Incomplete lookup key: the unique constraint on `tt_timetable_cells` is `(timetable_id, day_of_week, period_ord, class_group_id, class_subgroup_id)`. The query omits `class_group_id`.
+- **Fix:** Add `->where('class_group_id', $validated['class_group_id'])` to the chain at line 283. Also add `class_group_id` to the `removeCell` validation rules (currently absent from `$request->validate([...])`).
+- **Prevention:** Any query that is expected to retrieve a unique row must include ALL columns that form the table's unique constraint. When adding new unique indexes, audit all controller lookups for completeness.
+
+### MIG-TTS-003: Table Name Drift Between Migration and DDL (P2)
+- **Module/Area:** `database/migrations/tenant/2026_06_16_152633_create_tt_conflict_detection_table.php`
+- **Symptom:** Migration creates table `tt_conflict_detections` (plural). Canonical DDL (`Timetable_DDL_v7.8.sql`) defines `tt_conflict_detection` (singular). Any TTF model referencing `tt_conflict_detection` throws "Table not found" on a migrated database because the actual table has a different name.
+- **Root Cause:** Naming inconsistency between the developer who wrote the migration and the DDL author.
+- **Fix:** Create a corrective migration: `Schema::rename('tt_conflict_detections', 'tt_conflict_detection')`. Update the TTF model `protected $table = 'tt_conflict_detection'`.
+- **Prevention:** All new migration names must be verified against the canonical DDL document before merging. The DDL document is the source of truth.
+
+### TTS Systemic Pattern Summary (confirmed 2026-06-30)
+| Pattern | TTS State |
+|---------|-----------|
+| SEC-PLATFORM-003 (EnsureTenantHasModule absent) | Confirmed — all 6 routes |
+| SEC-PLATFORM-007 (cross-layer AcademicSession) | Confirmed — new FK violation variant |
+| D39 (permissions unreferenced) | Confirmed — 6/6 methods |
+| D29 (ENUM columns) | Confirmed — 3 migrations, 6 ENUMs |
+| Zero test coverage | Confirmed — 0 tests |
+| activityLog() absent from mutations | Confirmed — 4 mutating methods |
+| Zero service layer | Confirmed — all logic in 513-line controller |
+- No live `$request->all()` mass-assignment found in reviewed controllers (D25 clean) ✓
+
+---
+
+## SmartTimetable — Mode X Complete Audit (2026-06-30)
+
+> Audit: Mode X (A+B+C+G+scoped D) | Health: 40/100 (P0-capped) | DEPLOY: NO-GO
+> Full report: `3-Audit_Reports/SmartTimetable_Complete_Audit_2026-06-30.md`
+
+### SEC-TT-004: API Routes Missing All Tenancy Middleware (P0)
+- **Module/Area:** `Modules/SmartTimetable/app/Providers/RouteServiceProvider.php:57`
+- **Symptom:** All 7 API endpoints (generate, status, show, byClass, byTeacher, byRoom + apiResource) execute in the central prime_db context — no tenant isolation. Any API call returns empty data or corrupts the central DB.
+- **Root Cause:** `mapApiRoutes()` only applies `Route::middleware('api')` — no `InitializeTenancyByDomain`, `PreventAccessFromCentralDomains`, or `EnsureTenantIsActive`. This mirrors the TTF pattern (SEC-TTF-004).
+- **Fix:** Add the full tenancy stack to `mapApiRoutes()`: `Route::middleware(['api', InitializeTenancyByDomain::class, PreventAccessFromCentralDomains::class, EnsureTenantIsActive::class])`.
+- **Prevention:** Every module RSP must include the tenancy stack in `mapApiRoutes()` — add this as an auditor Layer 6 checklist item for all new modules.
+
+### DAT-TT-001: tt_parallel_groups + tt_parallel_group_activity Have NO Migration (P0)
+- **Module/Area:** `Modules/SmartTimetable/app/Models/ParallelGroup.php`, `ParallelGroupActivity.php`; `Modules/SmartTimetable/routes/web.php` (live parallel-group CRUD routes)
+- **Symptom:** Confirmed search: zero tenant migration files mention "parallel_group" or "tt_parallel" anywhere. On fresh tenant provision, `tenants:migrate` skips these tables. Any request to `/smart-timetable/parallel-group/*` throws `SQLSTATE[42S02]: Table 'tenant_db.tt_parallel_groups' doesn't exist`.
+- **Root Cause:** Module-knowledge v1.0 incorrectly classified `tt_parallel_groups` as "DDL-backed" and `tt_parallel_group_activity` as "migration-only (GAP-DB-001)". In reality BOTH have no migration. Code was implemented but the migration was never committed.
+- **Fix:** Create two tenant migrations: (1) `create_tt_parallel_groups_table.php` — id, name, anchor_activity_id FK, is_active, created_by, deleted_at, timestamps. (2) `create_tt_parallel_group_activity_table.php` — id, parallel_group_id FK, activity_id FK, is_anchor TINYINT(1) DEFAULT 0. Compound PK.
+- **Prevention:** Every new model must have its migration committed before the corresponding controller routes are registered. Add a "migration exists" gate to the Technical Auditor Layer 2 checklist.
+
+### JOB-TT-001: GenerateTimetableJob Runs Without Tenancy Context (P0)
+- **Module/Area:** `Modules/SmartTimetable/app/Jobs/GenerateTimetableJob.php` (entire handle() method); `app/Providers/TenancyServiceProvider.php` (no QueueTenancyBootstrapper)
+- **Symptom:** `handle()` immediately calls `GenerationRun::findOrFail($this->runId)`, `Activity::where(...)`, `SchoolDay::schoolDays()->get()`, `Room::where(...)` with no tenancy init. `QueueTenancyBootstrapper` is absent from TenancyServiceProvider. Queue workers process the job in the wrong DB context — queries either throw "table not found" or write results to prime_db.
+- **Root Cause:** No explicit `tenancy()->initialize()` and no automatic bootstrapper registered. Identical pattern to Vendor/Inventory/FrontOffice/Hostel jobs (platform baseline).
+- **Fix:** (1) Register `QueueTenancyBootstrapper` in `TenancyServiceProvider::bootstrappers()`. (2) Add `protected int $tenantId;` to job constructor accepting the current tenant ID. (3) At start of `handle()`: `tenancy()->initialize(Tenant::find($this->tenantId))`. (4) Wrap in `finally { tenancy()->end(); }`. OR use `$tenant->run(fn() => ...job body...)`. (5) Update all dispatch() call sites to pass `tenant()->id`.
+- **Prevention:** Any job referencing a tenant-prefixed model must implement the `TenantAware` interface or perform explicit tenancy init. QueueTenancyBootstrapper should be platform-standard.
+
+### SEC-TT-005: Permission Prefix Split — tenant.* vs smart-timetable.* (P1)
+- **Module/Area:** `Modules/SmartTimetable/app/Http/Controllers/TtGenerationStrategyController.php` — lines 28, 41, 93, 109, 125, 196, 231, 265, 285, 320 (tenant.*); line 245 (smart-timetable.*)
+- **Symptom:** 16 gate calls use `tenant.timetable-generation-strategy.*`; 1 call at line 245 uses `smart-timetable.generation-strategy.restore`. The Policy checks `tenant.*` for restore, so the controller call at :245 maps to a non-existent permission — silently allows or denies depending on Gate fallback.
+- **Root Cause:** Copy-paste error during refactor. Two prefixes in use for one module's resource.
+- **Fix:** Standardize all TtGenerationStrategyController calls to use `tenant.timetable-generation-strategy.*` (matching the Policy), OR migrate entire module to `smart-timetable.*` and update the Policy. Remove the mismatched call at :245.
+- **Prevention:** D24 fix — permission seeder should declare a single prefix per module. Technical Auditor Layer 5.4 detects this pattern.
+
+### DEAD-TT-004: Route Closure in routes/web.php Breaks route:cache (P1)
+- **Module/Area:** `Modules/SmartTimetable/routes/web.php:52-57`
+- **Symptom:** `php artisan route:cache` fails — closures are not serializable. Blocks route caching for the entire application.
+- **Root Cause:** A redirect fallback for GET /generate/generate-prime was implemented as an inline closure instead of a named controller method.
+- **Fix:** Extract to `TimetableGenerationController::redirectGeneratePrime()` and wire: `Route::get('generate/generate-prime', [TimetableGenerationController::class, 'redirectGeneratePrime'])`.
+- **Prevention:** Never use closure routes in production modules. Technical Auditor Layer 12.4 detects this pattern.
+
+### PERF-TT-017: Schema::getColumnListing() Called Per Dashboard Request (P1)
+- **Module/Area:** `Modules/SmartTimetable/app/Http/Controllers/TimetableMenuController.php:53`
+- **Symptom:** `safeCount()` helper calls `Schema::getColumnListing($table)` on every dashboard page load for ≥4 tables — ≥4 information_schema hits per request per tenant.
+- **Root Cause:** Column listing used as runtime softdelete detection instead of hardcoded.
+- **Fix:** Replace with a constant: `const SOFT_DELETE_TABLES = ['tt_timetables', 'tt_timetable_cells', ...]`.
+- **Prevention:** Never call Schema:: introspection in request hot paths. Cache or constant-fold at deploy time.
+
+### PERF-TT-018: AcademicTerm::all() Unbounded in ConstraintController (P1)
+- **Module/Area:** `Modules/SmartTimetable/app/Http/Controllers/ConstraintController.php:42, 59, 115, 245`
+- **Symptom:** Loads all academic terms (potentially decades of history) on every constraint form view.
+- **Fix:** Replace with `AcademicTerm::where('is_active', 1)->orderByDesc('start_date')->limit(10)->get()`.
+
+### FE-TT-001: json_encode of Teacher/Room Names Without JSON_HEX Flags (P2)
+- **Module/Area:** `Modules/SmartTimetable/resources/views/smart-timetable/reports.blade.php:214, :254`; `pages/partials/generation-history/_list.blade.php:378-416`
+- **Symptom:** `{!! json_encode($teacherLoads->pluck('name')->values()) !!}` embeds user-entered teacher names as raw JSON in chart labels. A teacher name containing `</script><script>alert(1)</script>` injects JavaScript.
+- **Fix:** Use `@json($variable)` (Blade helper applies all JSON_HEX flags) or add `JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP` flags to json_encode.
+
+### FE-TT-002: {!! $cti['detail_html'] !!} Unescaped in Conflict View (P2)
+- **Module/Area:** `Modules/SmartTimetable/resources/views/preview/partials/_class-conflicts.blade.php:220`
+- **Symptom:** Unescaped HTML in conflict detail rendering. Source of `$cti['detail_html']` not found in app code — origin unclear.
+- **Fix:** Trace origin; if user-derived, sanitize before assignment and switch to `{{ $cti['detail_html'] }}`.
+
+### ORM-TT-002: 12 Active Models Missing Boolean Casts for is_* Fields (P2)
+- **Module/Area:** `Modules/SmartTimetable/app/Models/` — Constraint.php, ConstraintCategoryScope.php, RoomUnavailable.php, TeacherUnavailable.php, TeacherAvailabilityDetail.php, PriorityConfig.php, ApprovalLevel.php, and 5 others
+- **Symptom:** `$constraint->is_hard` returns string "0" which is truthy in Blade — conditional display always shows "Hard". Logic on is_* fields is silently wrong.
+- **Fix:** Add `protected $casts = ['is_hard' => 'boolean', 'is_active' => 'boolean']` to each affected model.
+
+### MIG-TT-002: 21 Phantom Models With No Migration (P2)
+- **Module/Area:** `Modules/SmartTimetable/app/Models/` — ApprovalWorkflow, ApprovalRequest, ApprovalDecision, BatchOperation, EscalationLog, GenerationQueue, ImpactAnalysis*, MlModel, Optimization*, PatternResult, PredictionLog, RevalidationSchedule/Trigger, TrainingData, VersionComparison*, WhatIfScenario
+- **Symptom:** Accidental reference to any of these models throws SQLSTATE[42S02]. No migration exists for any of them.
+- **Fix:** Delete non-ML phantoms (ApprovalDecision/Level/Notification/Request/Workflow, BatchOperation/Item, EscalationLog/Rule, ConflictResolution*, Impact*, Revalidation*, WhatIfScenario, VersionComparison*); create migrations for GenerationQueue and ApprovalRequest if those features are planned.
+
+### PERF-TT-019: AnalyticsController index() Without Pagination (P2)
+- **Module/Area:** `Modules/SmartTimetable/app/Http/Controllers/AnalyticsController.php`
+- **Symptom:** Teacher workload and room utilization queries fetch all records with ->get(), no paginate(). Unbounded growth as school accumulates years.
+- **Fix:** Add `->paginate(25)` to workload/utilization queries; pass page from view.
+
+### STT Mode X Systemic Pattern Summary (confirmed 2026-06-30)
+| Pattern | STT State |
+|---------|-----------|
+| SEC-PLATFORM-003 (EnsureTenantHasModule absent) | Confirmed — both route groups |
+| API RSP missing tenancy middleware | Confirmed — NEW P0 (SEC-TT-004) |
+| No migration for core tables | Confirmed — tt_parallel_groups P0 (DAT-TT-001) |
+| Job tenancy missing | Confirmed — GenerateTimetableJob (JOB-TT-001) |
+| D30 (FormRequest authorize=true) | Confirmed — 13/13 (VAL-TT-003) |
+| D29 (ENUM in migrations) | CLEAN — 0 of 49 migrations |
+| D25 ($request->all() mass-assign) | CLEAN — 0 occurrences |
+| D24 (permission prefix split) | Confirmed — tenant.* vs smart-timetable.* (SEC-TT-005) |
+| Route closure breaking route:cache | Confirmed — web.php:52 (DEAD-TT-004) |
+| Schema:: introspection in hot path | Confirmed — dashboard (PERF-TT-017) |
+| json_encode without HEX flags (XSS P2) | Confirmed — reports.blade.php (FE-TT-001) |
+
+---
+
+## StudentFee (FIN) — Mode X Complete Audit (2026-06-30)
+
+### SEC-FIN-01: Seeder Route Exposed in Production (P0)
+- **Module/Area:** `Modules/StudentFee/routes/web.php:22`, `Modules/StudentFee/app/Http/Controllers/StudentFeeController.php:91`
+- **Symptom:** `GET /student-fee/seeder` registered under `auth`+`verified` middleware with no role check. Any authenticated tenant user can trigger it. `seederFunction()` body has all calls commented out now (returns "SEEDING DONE"), but 14 seeder methods remain in the controller — uncommenting one line writes test data to production.
+- **Root Cause:** Seeder route was never removed after local development.
+- **Fix:** Remove `Route::get('/seeder', ...)` from `web.php:22`. Remove `seederFunction()` and all `seeder*()` methods from `StudentFeeController`. Remove dev-only imports.
+- **Prevention:** No seeder controller method should ever exist in a production module. Seeders belong in `Database/Seeders/`, not controllers.
+
+### SEC-FIN-02: `Faker\Factory` Imported in Production Controller (P0)
+- **Module/Area:** `Modules/StudentFee/app/Http/Controllers/StudentFeeController.php:7`
+- **Symptom:** `use Faker\Factory as Faker;` in production class. `faker/faker` is a `require-dev` dependency — `composer install --no-dev` causes `Class "Faker\Factory" not found` on class load, crashing any route resolved by this controller.
+- **Fix:** Remove `use Faker\Factory as Faker;` and the 12 other dev-only imports from the controller.
+- **Prevention:** Never import `faker/*`, `phpunit/*`, or other dev-only packages in production controllers.
+
+### SEC-FIN-03: `EnsureTenantHasModule` Missing from Web Route Group (P0)
+- **Module/Area:** `Modules/StudentFee/app/Providers/RouteServiceProvider.php:41–51`
+- **Symptom:** Any authenticated tenant user can access all fee routes regardless of whether the tenant has the StudentFee module licensed.
+- **Fix:** Add `\App\Http\Middleware\EnsureTenantHasModule::class.':StudentFee'` to `mapWebRoutes()` middleware array.
+- **Prevention:** Every module RSP `mapWebRoutes()` must include `EnsureTenantHasModule::class.':ModuleName'`. This is SEC-PLATFORM-003.
+
+### SEC-FIN-34: API Routes Missing All Tenancy Middleware (P0)
+- **Module/Area:** `Modules/StudentFee/app/Providers/RouteServiceProvider.php:61`, `Modules/StudentFee/routes/api.php`
+- **Symptom:** `mapApiRoutes()` applies only `'api'` middleware. Inner `api.php` adds `auth:sanctum`. NO tenancy middleware in chain. API requests get no tenant DB connection — Eloquent runs against central DB or throws.
+- **Root Cause:** Same systemic pattern as SEC-TT-004, SEC-TTF-004. Module RSP API methods universally miss tenancy stack.
+- **Fix:** Add tenancy middleware to `mapApiRoutes()`: `InitializeTenancyByDomain::class, PreventAccessFromCentralDomains::class, EnsureTenantIsActive::class`.
+- **Prevention:** Any module with `routes/api.php` must verify `mapApiRoutes()` includes full tenancy stack. Platform-wide audit needed.
+
+### BUG-FIN-05: `balance_amount` Stale in DB from Creation (P1)
+- **Module/Area:** `database/migrations/tenant/2026_06_16_092641_create_fee_invoices_table.php:25`, `Modules/StudentFee/app/Models/FeeInvoice.php:144–158`, `Modules/StudentFee/app/Http/Controllers/FeeInvoiceController.php:59–73`
+- **Symptom:** `fee_invoices.balance_amount` is `DECIMAL(12,2)` with no default. Store() never sets it → defaults to `0` (MySQL permissive) not `total_amount`. `updatePayment()` updates `paid_amount` and `status` but not `balance_amount` → stays at `0` forever. Dashboard `->orderByDesc('balance_amount')` returns wrong sort. All BI/raw SQL queries on `balance_amount` are wrong.
+- **Root Cause:** V2 documented `balance_amount` as a GENERATED STORED column. Migration creates it as plain DECIMAL. PHP helper `getBalanceAmount()` computes correctly at runtime but DB column is orphaned.
+- **Fix (Option A):** Add to `updatePayment()`: `'balance_amount' => $this->total_amount - $newPaid`. Set correct initial value in all create paths.
+- **Fix (Option B — preferred):** Migrate to `GENERATED ALWAYS AS (total_amount - paid_amount) STORED` column (D36 pattern).
+- **Prevention:** When V2 says GENERATED, verify with `grep -n "storedAs\|virtualAs\|->storedAs\|GENERATED ALWAYS"` in the migration before trusting.
+
+### BUG-FIN-06: `ApplyFines` Scheduler Commented Out (P1)
+- **Module/Area:** `Modules/StudentFee/app/Providers/StudentFeeServiceProvider.php:105–111`
+- **Symptom:** Fine calculation never runs automatically. `action_on_expiry` rules never trigger. Schools lose fine revenue silently.
+- **Fix:** Uncomment and configure: `$schedule->command('fee:apply-fines')->dailyAt('00:30')->withoutOverlapping()`.
+- **Prevention:** Any `registerCommandSchedules()` with only commented code is a production gap. Technical Auditor L10 must verify schedule body is non-empty.
+
+### BUG-FIN-07: `FeeHeadMasterPolicy` Dead — Overridden by `StudentFeeManagementPolicy` (P1)
+- **Module/Area:** `Modules/StudentFee/app/Providers/StudentFeeServiceProvider.php:75, 89`
+- **Symptom:** `Gate::policy(FeeHeadMaster::class, FeeHeadMasterPolicy::class)` at line 75 then immediately overridden by `Gate::policy(FeeHeadMaster::class, StudentFeeManagementPolicy::class)` at line 89. Laravel last-wins: `FeeHeadMasterPolicy` is unreachable.
+- **Root Cause:** `StudentFeeManagementPolicy` uses `FeeHeadMaster::class` as a virtual model key for hub dashboard authorization — reuses the same model class, creating a collision.
+- **Fix:** Use `Gate::define('tenant.student-fee-management.viewAny', [StudentFeeManagementPolicy::class, 'viewAny'])` instead of a duplicate policy binding. Keep `FeeHeadMasterPolicy` as the sole `FeeHeadMaster::class` policy.
+- **Prevention:** Never register the same model class twice in `Gate::policy()`. Grep for duplicate model registrations in all ServiceProvider::registerPolicies() methods.
+
+### BUG-FIN-08: `fee-transaction.store` Routes to Wrong Controller (P1)
+- **Module/Area:** `Modules/StudentFee/routes/web.php:141`
+- **Symptom:** Named route `fee-transaction.store` calls `FeeInvoiceController::store()` (creates invoice) instead of a payment-recording action. Any form POSTing to `fee-transaction.store` creates a duplicate invoice.
+- **Fix:** Remove line 141. Payment recording is `fee-invoice.recordPayment` (line 142). If a dedicated `fee-transaction.store` is needed, implement `FeeTransactionController::store()`.
+
+### BUG-FIN-35: `invoice_no` Has No UNIQUE Constraint + Race in `generateInvoiceNumber()` (P1)
+- **Module/Area:** `database/migrations/tenant/2026_06_16_092641_create_fee_invoices_table.php`, `Modules/StudentFee/app/Http/Controllers/FeeInvoiceController.php:477–480`
+- **Symptom:** `generateInvoiceNumber()` uses `max('id')` which is a TOCTOU race — two concurrent invoice creations get identical `max` values → same `invoice_no`. No UNIQUE constraint on `fee_invoices.invoice_no` to catch the collision → two rows with identical invoice numbers. Financial audit risk.
+- **Fix:** (1) Add migration: `$table->unique('invoice_no', 'uq_fee_invoices_invoice_no')`. (2) Wrap `generateInvoiceNumber()` in `DB::transaction()` with `lockForUpdate()`.
+- **Prevention:** All financial reference number generators must use DB-level uniqueness. invoice_no, transaction_no, receipt_no all need UNIQUE indexes.
+
+### PERF-FIN-001: Bulk Invoice Generation Synchronous + N+1 in Loop (P1)
+- **Module/Area:** `Modules/StudentFee/app/Http/Controllers/FeeInvoiceController.php:391–474`
+- **Symptom:** `generateFeeInvoice()` loads all assignments into memory with `.get()`, then fires N+1 EXISTS queries + N INSERTs + N max('id') queries + N notification dispatches inside a foreach. 30s timeout at ~200 students.
+- **Fix:** Queue a `GenerateFeeInvoicesJob`. Pre-load existing invoice assignment IDs with a single `->whereIn('student_assignment_id', ...)->pluck()` before the loop.
+- **Prevention:** Any bulk financial operation over >50 records must use a queued job. GAP-FIN-15 was already identified by BA; this audit adds N+1 evidence.
+
+### DEAD-FIN-36: Route Closures at web.php:94,107 Break `route:cache` (P2)
+- **Module/Area:** `Modules/StudentFee/routes/web.php:94, 107`
+- **Symptom:** `fn() => redirect()->route(...)` closures in route file prevent `php artisan route:cache`. The named routes `fee-student-concession.trashed` and `fee-fine-transaction.trashed` may resolve as null or cause cache error.
+- **Fix:** Convert to controller methods: `[FeeStudentConcessionController::class, 'trashed']`.
+- **Prevention:** Never use closure routes in production modules. Same as DEAD-TT-004. Platform-wide grep: `grep -rn "fn() =>" Modules/*/routes/web.php`.
+
+### VAL-FIN-001: All 36 FormRequests Return `true` from `authorize()` (D30, P2)
+- **Module/Area:** All files in `Modules/StudentFee/app/Http/Requests/`
+- **Symptom:** D30 platform-wide pattern. FormRequest-level ownership checks are absent. Controllers compensate with `Gate::authorize()` (all present), so runtime security is maintained, but FormRequest auth layer is dead.
+- **Fix:** For payment-critical requests (RecordFeeInvoicePaymentRequest, CancelFeeInvoiceRequest), implement meaningful `authorize()` with auth check. For others, at minimum `return auth()->check()`.
+
+### DAT-FIN-001: 16 ENUM Columns in fee_ Migrations (D29, P2)
+- **Module/Area:** Multiple `fee_*` migrations created 2026-06-16
+- **Symptom:** 16 ENUM columns across: `fee_head_master.frequency`, `fee_fine_rules` (4 ENUMs), `fee_invoices.status`, `fee_transactions.payment_mode`, `.status`, `fee_concession_types.discount_type`, `.applicable_on`, `fee_scholarship_applications.status`, etc.
+- **Fix:** Convert to `VARCHAR(50)` with `CHECK` constraints or app-level constants. Priority: `fee_invoices.status` (most queried).
+- **Prevention:** D29 pattern — no new ENUMs in any migration.
+
+### FIN Mode X Systemic Pattern Summary (confirmed 2026-06-30)
+| Pattern | FIN State |
+|---------|-----------|
+| SEC-PLATFORM-003 (EnsureTenantHasModule absent) | Confirmed — SEC-FIN-03 |
+| API RSP missing tenancy middleware | Confirmed — NEW P0 (SEC-FIN-34) |
+| D30 (FormRequest authorize=true) | Confirmed — 36/36 (VAL-FIN-001) |
+| D29 (ENUM in migrations) | Confirmed — 16 ENUMs (DAT-FIN-001) |
+| D25 ($request->all() mass-assign) | CLEAN — all controllers use FormRequests |
+| D24 (permission prefix split) | CLEAN — consistent `tenant.fee-*.*` across all 15 controllers |
+| Seeder route in production | Confirmed — ONLY module with this (SEC-FIN-01) |
+| Faker import in production | Confirmed — dev dependency risk (SEC-FIN-02) |
+| Route closure breaking route:cache | Confirmed — web.php:94, :107 (DEAD-FIN-36) |
+| Policy override (duplicate Gate::policy) | Confirmed — FeeHeadMasterPolicy dead (BUG-FIN-07) |
+| balance_amount stale (DB integrity) | Confirmed — 0 from creation (BUG-FIN-05) |
+| invoice_no UNIQUE constraint absent | Confirmed — race + no constraint (BUG-FIN-35) |
+| Gate::authorize coverage | EXCELLENT — 100% of methods in all 15 controllers |
+| AcademicSession cross-layer import | Confirmed — 5 models (ARCH-FIN-001) |
+
+---
+
+## StudentPortal (STP) — Mode X Complete Audit (2026-06-30)
+
+> Report: `3-Audit_Reports/StudentPortal_Complete_Audit_2026-06-30.md`
+> Health: **40/100 (P0-capped)** | Deploy: **NO-GO**
+> Key: Multiple BA Phase 2 P0s CLEARED by live code evidence (SEC-STP-01, SEC-STP-008, SEC-STP-04, SEC-STP-09, BUG-STP-08).
+
+### SEC-STP-03: EnsureTenantHasModule Missing from mapWebRoutes() (P0)
+- **Module/Area:** `Modules/StudentPortal/app/Providers/RouteServiceProvider.php:44–55`
+- **Symptom:** A student can access the StudentPortal on a tenant that does not have a StudentPortal subscription. Module-level access control bypassed.
+- **Root Cause:** Platform-wide gap SEC-PLATFORM-003 — not added to RSP middleware chain.
+- **Fix:** Add `\App\Http\Middleware\EnsureTenantHasModule::class` after `EnsureTenantIsActive::class` in mapWebRoutes().
+- **Prevention:** All module RSPs must include EnsureTenantHasModule in mapWebRoutes(). Audit all 24 tenant module RSPs.
+
+### SEC-STP-014: Mobile API Routes Lack role:Student|Parent Check (P1)
+- **Module/Area:** `routes/api.php:26–30` (central)
+- **Symptom:** Mobile routes loaded in `Route::middleware(['mobile.key', 'tenant.mobile', 'auth:sanctum'])` group — no `role:Student|Parent`. Any Sanctum-authenticated user (teacher, admin, staff) can call all 45+ student portal mobile endpoints.
+- **Root Cause:** Web routes apply `role:Student|Parent` in the module RSP. Mobile routes are loaded centrally with no role constraint.
+- **Fix:** Wrap STP mobile routes require with `Route::middleware(['role:Student|Parent'])->group(fn() => require ...)` in central `routes/api.php`.
+- **Prevention:** All portal mobile routes (StudentPortal, ParentPortal) must have role-scoped middleware. Audit other `mobile_api.php` files for the same gap.
+
+### SEC-STP-02: Zero Gate::authorize / Zero Policies (P1)
+- **Module/Area:** All 37 STP controllers (`Modules/StudentPortal/app/Http/Controllers/`)
+- **Symptom:** grep returns 0 results for Gate::authorize across all STP controllers. ServiceProvider has zero Gate::policy() registrations. Authorization is entirely: (1) `role:Student|Parent` middleware at web route group level, (2) auth-scoped DB queries (`where('student_id', auth()->user()->student->id)`).
+- **Root Cause:** Design choice: portal is student-scoped, data is filtered at query time.
+- **Impact:** No per-object authorization audit trail. Cannot unit-test authorization at policy layer.
+- **Fix:** Register policies for ExamAttempt + AttemptCheckpoint; add Gate::authorize in exam/quiz/quest attempt entry points (instructions, start).
+- **Prevention:** At minimum, every module with user-owned resources should have at least one registered policy with a viewAny ability.
+
+### FE-STP-001: Stored XSS in Exam/Quiz/Homework Views (P2)
+- **Module/Area:** `online-exam/attempt.blade.php:153`, `online-exam/result.blade.php:209`, `quiz/result.blade.php:210`, `homework/show.blade.php:69`, `my-recommendations/show.blade.php:284,339`
+- **Symptom:** `{!! $q['text'] !!}`, `{!! $q['explanation'] !!}`, `{!! $hw->description !!}`, `{!! $rec->material->content_text !!}` — all rendered without any sanitization.
+- **Root Cause:** Rich content from admin-created question bank / homework / recommendations is rendered raw for HTML formatting (bold, formulas, etc.).
+- **Impact:** Malicious teacher account can inject JavaScript that executes on student browsers during exam attempts.
+- **Safe pattern (already used):** `{!! nl2br(e($notification->data['body'])) !!}` — correct: e() escapes, then nl2br adds safe <br>, then output raw.
+- **Fix:** Use HTMLPurifier or `strip_tags($content, '<strong><em><sub><sup><code><b><i><br><span><u>')` on rich content before rendering.
+- **Prevention:** Any `{!! ... !!}` on DB content must pass through a sanitizer. Never raw-render teacher/admin text content directly.
+
+### GAP-STP-012: Notification Mark-Read via HTTP GET (P2)
+- **Module/Area:** `Modules/StudentPortal/routes/web.php:39`
+- **Symptom:** `Route::get('/notifications/{id}/mark-read', ...)` — state mutation via GET. No CSRF protection on GET routes. Can be triggered by `<img src=...>` injection.
+- **Fix:** Change to `Route::patch(...)` and update view to POST/PATCH.
+
+### BUG-STP-001: Complaint Index Unpaginated (P2)
+- **Module/Area:** `Modules/StudentPortal/app/Http/Controllers/StudentPortalComplaintController.php:52`
+- **Symptom:** `$complaints = $query->orderBy('created_at', 'desc')->get()` — loads all complaints without pagination. Memory risk for high-complaint users.
+- **Fix:** Replace with `->paginate(15)`.
+
+### DAT-STP-001: 5 ENUM Columns in lms_* Tables (P2 — D29)
+- **Module/Area:** migrations for lms_exam_attempts, lms_attempt_activity_logs, lms_attempt_checkpoints, lms_quiz_quest_results, lms_quest_allocations
+- **Symptom:** `attempt_mode`, `status`, `attempt_type` (×2), `assessment_type`, `allocation_type` — 5 ENUM columns across 5 tables owned by STP.
+- **Fix:** Migrate to VARCHAR(30) NOT NULL + CHECK constraints (MySQL 8.0.16+).
+
+### STP Mode X Stale BA Knowledge Summary (CLEARED findings)
+| BA Code | Claimed | Live Code Reality | Verdict |
+|---------|---------|-------------------|---------|
+| SEC-STP-01 | IDOR in proceedPayment() | Method just redirects to fee-summary; actual payment in FeePaymentController with abort_if ownership check | ✅ CLEARED |
+| SEC-STP-008 | IDOR in attempt() — no allocation check | assertAllocation() called at top of ALL 6+ exam action methods (instructions, start, attempt, submit, saveAnswer, checkpoint) | ✅ CLEARED |
+| SEC-STP-04 | Hardcoded dropdown ID 104 in complaint create | ComplaintCategory::parents()->get() used; no hardcoded IDs anywhere | ✅ CLEARED |
+| SEC-STP-09 | User::all() in complaint controller | Not present; complaint form uses category-only data | ✅ CLEARED |
+| BUG-STP-08 | PaymentGateway::all() exposes all gateways | Not found; FeePaymentController uses GatewayManager::resolve('razorpay') | ✅ CLEARED |
+
+### STP Mode X Systemic Pattern Summary
+| Pattern | Verdict |
+|---------|---------|
+| SEC-PLATFORM-003 (EnsureTenantHasModule) | ✅ Confirmed |
+| API RSP no tenancy | PARTIAL — mapApiRoutes() maps dead scaffold; mobile tenancy via custom InitializeTenancyByMobileHeader |
+| D29 ENUM columns | ✅ Confirmed (5 columns, 5 tables) |
+| D30 authorize()=true | ❌ Not present (STP uses auth()->check()) |
+| D25 $request->all() | ❌ Not present |
+| Zero policies (SEC-STP-02) | ✅ Confirmed |
+| Mobile role gap (SEC-STP-014) | 🆕 New finding |
+
+## StudentProfile (STD) — Mode X Complete Audit (2026-06-30, Technical Auditor)
+Health **40/100 (P0-capped; uncapped ≈62)**. Deploy: **NO-GO**. Report: `3-Audit_Reports/StudentProfile_Complete_Audit_2026-06-30.md`.
+- **Completion revised:** ~20% (2026-04-09 Phase 2) → **~75%** (2026-06-30 Mode X). Major additions since April: StdLeaveController now exists with full leave workflow routes; Guardian, Medical, Leave Type, Attendance all functional.
+- **EnsureTenantHasModule CONFIRMED PRESENT** — `module:STUDENT` alias applied at `Modules/StudentProfile/routes/web.php:12` wrapping ALL routes. STD is the ONLY tenant module using route-file-level coverage instead of RSP-level. SEC-PLATFORM-003 does NOT apply to STD. This is correct architecture.
+- **P0×1:** SEC-STD-01 — `is_super_admin` accepted in createStudentLogin() validation (`'is_super_admin'=>'nullable'` at line 610) and in User::create() (line 631) — toggle rendered as UI switch in `_student-login.blade.php:124`. Any school admin can escalate any user to platform super-admin. **Fix:** Remove from validation + User::create + view.
+- **P1×6:** SEC-STD-02 — 4 Gate checks use wrong prefix `school-setup.student.*` (lines 1090, 1212, 1316, 1892) — permission does not exist → 403 for everyone; SEC-STD-03 — Aadhar ID plaintext, no `encrypted` cast (DPDPA 2023 violation); GAP-STD-06 — StdLeaveController Gate::authorize commented on index() (line 25) and review() (line 250) — any module:STUDENT user can view/approve ALL leave requests; AUD-STD-04 — activityLog commented on delete/restore/forceDelete (lines 3852, 3916, 3979); GAP-STD-08 — only 2 policies registered (StudentPolicy, AttendancePolicy) — 5 missing (Guardian, MedicalIncident, StudentDocument, LeaveApplication, LeaveType); GAP-STD-05 — zero FormRequests for student create/update routes.
+- **P2×4:** BUG-STD-11 current_flag plain INT not GENERATED STORED (UNIQUE enforcement broken); DDL-STD-12 SoftDeletes missing from 4 tables (std_student_attendance, std_student_documents, std_health_profiles, std_vaccination_records); ARCH-STD-13 Student model imports 3 downstream module models (FeeStudentAssignment, StudentPayLog, ExamAttempt) — reversed coupling; PERF-STD-10 synchronous Excel export.
+- **STALE CORRECTIONS from 2026-04-09 Phase 2:** "Gate facade not imported in AttendanceController — all Gate calls fatal" — CLEARED (Gate::authorize present on all 6 methods). "Leave subsystem DEAD CODE" — CLEARED (StdLeaveController exists). "module web.php registers only stub controller" — CLEARED.
+- **ABOVE BASELINE:** Only module with confirmed EnsureTenantHasModule; AttendanceController and StudentLeaveTypeController fully authorized; MedicalIncidentController activityLog correct; Spatie MediaLibrary with image conversions.
+
+### STD Systemic Pattern Summary
+| Pattern | Verdict |
+|---------|---------|
+| SEC-PLATFORM-003 (EnsureTenantHasModule) | ✅ PRESENT (route-level via module:STUDENT — unique pattern) |
+| API RSP no tenancy | ✅ Confirmed (dead scaffold) |
+| D30 authorize()=true | ⚠️ PARTIAL (1 FormRequest returns true; most use inline validate) |
+| D25 $request->all() | ✅ Confirmed (multiple student create/update methods) |
+| is_super_admin privilege escalation | ✅ Confirmed (SEC-STD-01 P0) |
+
+## Syllabus (SLB) — Mode X Complete Audit (2026-06-30, Technical Auditor)
+Health **40/100 (P0-capped)**. Deploy: **NO-GO**. Report: `3-Audit_Reports/Syllabus_Complete_Audit_2026-06-30.md`.
+- **Completion revised:** ~55% → **~78%** (2026-06-30 Mode X). June 27, 2026 commit (`adca1dfbb`) added full SyllabusController (~1776 lines) covering master/bloom/planning/report/saveSequencing/saveScheduling/autoSchedule/toggleLock/saveSetting. LMS resource release cron implemented.
+- **P0×4:** SEC-SLB-01 — EnsureTenantHasModule absent from mapWebRoutes() AND from routes/web.php; GAP-SLB-001 — CompetencieController has ZERO Gate::authorize on ALL 9 methods — NEP competency framework completely ungated; GAP-SLB-003 — TopicController::destroy() calls `forceDelete()` not `delete()` — permanent data loss on every UI-triggered topic delete; GAP-SLB-004 — Competencie model lacks SoftDeletes + slb_competencies has no deleted_at column.
+- **P1×4:** BUG-SLB-DUPOLICIES — Duplicate Gate::policy kills LessonPolicy (line 78 overwritten at line 93) AND CompetencyPolicy (line 81 overwritten at line 92) — both are unreachable dead policies. GAP-SLB-002 — CompetencieController uses `$request->all()` directly. GAP-SLB-008 — ReleaseLmsResources cron no date filter — re-processes all entries every run. API RSP missing tenancy stack.
+- **P2×4:** VAL-SLB-001 — all 15 FormRequests return `true` in authorize() (D30); GAP-SLB-009/010 — no range overlap detection for performance categories / grade divisions; GAP-SLB-019 — slb_books vs bok_books FK ambiguity; DAT-SLB-001 — 2 ENUM columns (D29).
+- **ABOVE BASELINE:** 156 Gate::authorize calls across 14 of 15 controllers; SyllabusController gate-guarded at all write paths; toggleLock() implemented; only 2 ENUMs (below platform average).
+
+### SLB Systemic Pattern Summary
+| Pattern | Verdict |
+|---------|---------|
+| SEC-PLATFORM-003 (EnsureTenantHasModule) | ✅ Confirmed |
+| Duplicate Gate::policy() kill | ✅ Confirmed (LessonPolicy + CompetencyPolicy both dead) |
+| D30 authorize()=true | ✅ Confirmed (all 15 FormRequests) |
+| D29 ENUM columns | ✅ Confirmed (2 columns) |
+| D25 $request->all() | ✅ Confirmed (CompetencieController) |
+| API RSP no tenancy | ✅ Confirmed (dead scaffold) |
+
+## SyllabusBooks (SLK) — Mode X Complete Audit (2026-06-30, Technical Auditor)
+Health **40/100 (P0-capped)**. Deploy: **NO-GO**. Report: `3-Audit_Reports/SyllabusBooks_Complete_Audit_2026-06-30.md`.
+- **Completion revised:** ~55% → **~72%** (2026-06-30 Mode X). 11 controllers, 13 models, 8 FormRequests with real validation rules, 10 policies (NO duplicates). June 2026 additions: NoteController, NoteFileController, BookChapterController, BookFileController, BookChapterService, BookFileService, download tracking models and policies.
+- **P0×2:** SEC-SLK-01 — EnsureTenantHasModule absent from mapWebRoutes() AND routes/web.php; ARCH-SLK-01 — BookController.php line 18 imports `Modules\Prime\Models\AcademicSession` which uses `$connection = 'global_master_mysql'` and `$table = 'glb_academic_sessions'`. Tenant module querying global DB: returns sessions from global pool not school's own `sch_organization_academic_sessions`. 8 call sites (lines 51, 54, 97, 186, 369, 372, 397, 474). Correct model was commented out at line 74. **Fix:** `use Modules\SchoolSetup\Models\OrganizationAcademicSession;` — replace all 8 call sites.
+- **P1×1:** API RSP missing tenancy stack (dead scaffold).
+- **P2×3:** VAL-SLK-001 — all 8 FormRequests return `true` in authorize() (D30 — note: validation rules ARE present, only authorize() is bare-true); DAT-SLK-001 — 2 ENUM columns shared with SLB (coordinate migration); GAP-SLK-001 — slb_books vs bok_books canonical table ambiguity.
+- **ABOVE BASELINE:** 63 Gate::authorize calls; 10 policies registered with NO duplicates (unlike QNS/TTF/SLB); 8 FormRequests have real validation rules (only authorize() has D30 gap); BookChapterService + BookFileService proper abstractions.
+
+### SLK Systemic Pattern Summary
+| Pattern | Verdict |
+|---------|---------|
+| SEC-PLATFORM-003 (EnsureTenantHasModule) | ✅ Confirmed |
+| Cross-layer AcademicSession import | ✅ Confirmed (ARCH-SLK-01 — BookController, 8 call sites) |
+| D30 authorize()=true | ✅ Confirmed (all 8 FormRequests — rules present, only authorize() bare-true) |
+| D29 ENUM columns | ✅ Confirmed (2 columns, shared with SLB) |
+| Duplicate Gate::policy() kill | ❌ NOT present (10 policies, no duplicates) |
+| D25 $request->all() | ❌ NOT present (FormRequests used consistently) |
+| API RSP no tenancy | ✅ Confirmed (dead scaffold) |
+
+## SystemConfig (SYS) — Mode X Complete Audit (2026-06-30, Technical Auditor)
+Health **40/100 (P0-capped)**. Deploy: **NO-GO**. Report: `3-Audit_Reports/SYS_SystemConfig_Complete_Audit_2026-06-30.md`.
+- **Module type:** Central-only (prime domain / Super Admin only). EnsureTenantHasModule: N/A. No tenant scoping needed.
+- **Completion revised:** ~40% (V2 estimate) → **~65-70%** (2026-06-30 Mode X). 11 controllers, 8 models, 4 FormRequests, 2 policies, 2 services, 1 job, 2 notifications.
+- **P0×5:**
+  - **SEC-SYS-02 [CONFIRMED]** — MenuSyncController::sync() auth check is COMMENTED OUT (lines 74-79). Any auth+verified user can truncate `glb_menu_module_jnt`, forceDelete ALL tenant menus, and rebuild — platform-wide menu wipe.
+  - **SEC-SYS-28 [NEW]** — BackupController has ZERO Gate::authorize on all 6 methods incl. `download()`. Any auth+verified user can download complete DB backup ZIP files from local storage. Active data breach vector.
+  - **SEC-SYS-29 [NEW]** — BackupScheduleController has ZERO Gate::authorize on all 6 methods. Any auth+verified user can create/modify/delete backup schedules (resource abuse + backup sabotage).
+  - **SEC-SYS-30 [NEW]** — TenantDropdownController::getColumns() has NO Gate::authorize AND SQL injection: `DB::connection('tenant')->select("SHOW COLUMNS FROM {$request->table_name}")` — user-controlled table name in raw SQL string.
+  - **ARCH-SYS-05 [CONFIRMED]** — Duplicate `Setting` model: `Modules\Prime\Models\Setting` + `Modules\SystemConfig\Models\Setting` both map to `sys_settings`.
+- **SEC-SYS-01 DOWNGRADED to P2:** SystemConfigController 7 stubs, zero Gate — but ONLY `dashboard` (index) is routed; returns stub view. Other 6 CRUD methods are unrouted dead scaffold. Low exploitability.
+- **P1×8:**
+  - SEC-SYS-03: MenuController::create() and destroy() empty stubs, no Gate
+  - BUG-SYS-04: MenuController::update() line 127 uses `$request->all()` — immutable `code` field can be overwritten
+  - BUG-SYS-08: MenuPolicy all 7 methods use `prime.menu.*`; controller uses `system-config.menu.*` — policy is dead code
+  - BUG-SYS-16: MenuController::forceDelete() no Gate::authorize — any auth+verified user can permanently delete menu items
+  - SEC-SYS-22: SettingController uses `tenant.setting.*` prefix (wrong for central module)
+  - PERM-SYS-01: 5 controllers use `tenant.*` prefix — correct prefix is `system-config.*`
+  - ARCH-SYS-06: TenantDropdownController::create() calls `DB::connection('tenant')` in central context (no tenant initialized) → SHOW TABLES throws, caught silently, form shows empty table list
+  - AUD-SYS-01: SettingController line 67 `activityLog('updated', $setting, ...)` — wrong arg order; should be `activityLog($setting, 'updated', ...)`
+- **STALE CLEARED (BA P1s):**
+  - BUG-SYS-06 (SettingController wrong table in validation): CLEARED — update() correctly validates only `value` field
+  - BUG-SYS-07 (store() returns raw $request): CLEARED — no store() method exists; only index/edit/update implemented
+- **ABOVE BASELINE:** RunBackupJob correctly implements ShouldQueue, active-backup guard, 500MB disk check, failed() handler. MenuController CRUD (index/store/edit/update/updateMenu) all have correct `system-config.menu.*` Gate calls. TenantLocationController fully gated (20+ CRUD methods). TenantDropdownController CRUD methods (except getColumns) have Gate.
+
+### SYS Systemic Pattern Summary
+| Pattern | Verdict |
+|---------|---------|
+| SEC-PLATFORM-003 (EnsureTenantHasModule) | N/A — central module |
+| D30 authorize()=true | ✅ Confirmed (3/4 FormRequests) |
+| D29 ENUM columns | ❌ Not present (sys_settings uses key-value, 0 ENUMs) |
+| PERM-SYS-01 Permission prefix chaos | ✅ Confirmed (5 controllers using `tenant.*` instead of `system-config.*`) |
+| ARCH-SLK-01 Cross-layer model import | N/A |
+| Duplicate Gate::policy() kill | ❌ Not applicable (MenuPolicy dead for different reason — prefix mismatch, not duplicate registration) |
+| activityLog wrong arg order | ✅ Confirmed (SettingController line 67) |
+
+## Template (TMP) — Mode X Complete Audit (2026-06-30, Technical Auditor)
+Health **40/100 (P0-capped)**. Deploy: **NO-GO**. Report: `3-Audit_Reports/TMP_Template_Complete_Audit_2026-06-30.md`.
+
+Cross-cutting platform rendering engine: consumed by MarksheetGeneration (MSH), StudentProfile (STD), StudentFee (FIN), LmsExam (EXM), Certificate (CRT). Stateless singleton via `TemplateEngine::render()`. Renders HTML using `@{{varName}}` placeholders, loop blocks, and legacy marker translation.
+
+### P0 Findings
+- **SEC-PLATFORM-003 [CONFIRMED]** — EnsureTenantHasModule absent from mapWebRoutes() middleware stack. Any active tenant can access Template routes regardless of module subscription.
+- **GAP-TMP-02 [CONFIRMED P0]** — `TemplateEngine::resolveTemplate()` 6-step fallback queries `ta.class_id` and `ta.academic_session_id` only. **No `ta.class_group_id` at any of the 6 fallback steps.** Assignments scoped to class groups are silently skipped → `TemplateNotFoundException` for all group-level assignments. Schools using group-level template assignments get silent failures.
+- **BUG-TMP-03 [CONFIRMED P0]** — `tmp_template_variables` migration (2026_06_16_082736) has **NO `value_type` column**. Engine `resolveVariables()` line 237 casts `$var->value_type ?? 'text'` — always 'text'. `formatVariableValue()` branch for `image` (→ `<img>` tag) and `html` (→ trusted pass-through) are **unreachable**. All variables silently render as text. Confirmed by exhaustive grep across all tenant migrations — no subsequent migration adds this column.
+
+### P1 Findings (7)
+- **SEC-TMP-01** — `getTables()` line 227 and `getColumns()` line 247: raw user input in backtick-quoted SQL (`"SHOW TABLES FROM \`{$dbName}\`"`, `"SHOW COLUMNS FROM \`{$dbName}\`.\`{$tableName}\`"`). SQL injection via backtick escape.
+- **SEC-TMP-02** — `getDatabases()` line 209: `DB::select('SHOW DATABASES')` returns ALL databases visible to the MySQL user (prime_db, global_db, all tenant_* DBs). Cross-tenant schema enumeration for any School Admin. Also called unconditionally on every `create()` / `edit()` load.
+- **SEC-TMP-03 [NEW]** — `TemplateController::uploadImage()` (line 408): validates file type/size but has **no Gate::authorize** call. Any authenticated user can upload image files.
+- **BUG-TMP-04 [NEW]** — `UpdateTemplateRequest` includes `code` field with `unique:tmp_templates,code,{id}` — update() passes `$validated['code']` to the update array. Template code is documented as immutable after creation (BR-TMP-003) but is updatable via API.
+- **GAP-TMP-05 [CONFIRMED]** — `TemplatePurposeController::update()` (lines 91–99): no `is_system` guard. A system purpose can have its name/description/is_active overwritten. `destroy()` and `forceDelete()` do check `is_system` correctly.
+- **BUG-TMP-05 [CONFIRMED]** — `TemplateController::forceDelete()` (line 463): calls `$template->forceDelete()` with no check for active `TemplateAssignment` records. BR-017 (cannot delete assigned template) not enforced.
+- **API-TMP-01** — API RSP `mapApiRoutes()`: `Route::middleware(['auth:sanctum'])->prefix('v1')` only — no tenancy middleware (InitializeTenancyByDomain, PreventAccessFromCentralDomains, EnsureTenantIsActive). Cross-tenant API access possible.
+
+### Cleared (BA Findings)
+- **GAP-TMP-07 CLEARED** — `config/template.php` EXISTS in `config/` with 3 DataProvider registrations: `MARKSHEET_PRINT`, `STUDENT_ID_CARD`, `TRANSPORT_STAFF_ID_CARD`. Facade + provider system is fully wired.
+- **GAP-TMP-10 CLEARED** — `StoreTemplateVariableRequest` uses `Rule::unique('tmp_template_variables')->where('template_type_id', $this->input('template_type_id'))` — compound unique constraint correctly enforced in validation.
+
+### Above Baseline
+- 5 policies registered in TemplateServiceProvider — **NO duplicate Gate::policy() kills** (unlike EXM, TTF, SLB, QUZ)
+- All 5 controllers use **consistent `tenant.template.*` prefix** (no split like SYS, STT, TTF)
+- `TemplateAssignmentController::store()/update()` uses `DB::beginTransaction` with try/catch/rollback and user-friendly duplicate detection
+- `TemplateTypeController::destroy()` checks `$templateType->templates()->exists()` and `forceDelete()` checks `->withTrashed()->exists()` before proceeding
+- TemplateEngine correctly uses `e()` (HTML escape) for text variables and trusted pass-through only for 'html' type
+
+### Systemic Pattern Scorecard
+| Pattern | TMP Verdict |
+|---------|------------|
+| SEC-PLATFORM-003 (EnsureTenantHasModule) | ✅ CONFIRMED — absent from mapWebRoutes() |
+| D30 (authorize()=true FormRequests) | ✅ CONFIRMED — 10/10 (100%) |
+| D29 (ENUM columns) | ❌ NOT PRESENT — 0 ENUM columns |
+| API RSP no tenancy | ✅ CONFIRMED — api.php routes no tenancy stack |
+| Cross-layer model import | ❌ NOT PRESENT — TemplateAssignmentController imports MarksheetGeneration\Models\ClassGroup but this is a same-DB tenant-layer import, not cross-layer |
+| Duplicate Gate::policy() kill | ❌ NOT PRESENT — 5 policies, no duplicates |
+| activityLog wrong arg order | Not checked (no activityLog calls found) |
+
+---
+
+## VND (Vendor) — Mode X Complete Audit 2026-06-30
+**Health: 35/100 (P0-capped) — NO-GO**
+**Report:** `3-Audit_Reports/Vendor_Complete_Audit_2026-06-30.md`
+
+### P0 Findings (4)
+- **SEC-PLATFORM-003** — EnsureTenantHasModule absent from RSP mapWebRoutes(). Module accessible regardless of tenant subscription. (Platform-wide P0)
+- **SEC-VND-010 [CONFIRMED]** — `pan_number`, `bank_account_no`, `gst_number`, `upi_id` in plain VARCHAR columns in `vnd_vendors` migration; no `encrypted` cast on Vendor model. DPDPA 2023 regulatory violation.
+- **MIG-VND-002 [NEW]** — `vnd_invoices.balance_due` is `$table->decimal('balance_due', 12, 2)` (plain) in `2026_06_15_151252_create_vnd_invoices_table.php:36`. DDL spec (Vendor_DDL_v2.1.sql:193) says `GENERATED ALWAYS AS (net_payable - amount_paid) STORED`. Not in `$fillable` → controller writes silently dropped. DB column always stale/0. Same D36 pattern as BUG-FIN-05.
+- **DAT-VND-001 [NEW]** — Concurrent payment race condition: `VendorInvoiceController::store()`, `VendorPaymentController::update()`, and `destroy()` all read `invoice->amount_paid`, compute new total, write back — with NO `lockForUpdate()`. Concurrent writes overwrite each other; payment silently lost from ledger.
+
+### P1 Findings (8)
+- **JOB-VND-001 [NEW]** — `SendVendorInvoiceEmailJob`: (a) no `$tries`/`$timeout`/`$backoff`; (b) no `tenancy()->initialize()` → queries return null in central context; (c) sends to `Auth::user()->email` (admin), not vendor email; (d) temp PDFs leak on `Mail::send()` exception.
+- **BUG-VND-003 [NEW]** — `generateMultiple()` failure masking: `generateInvoice()` catches ALL exceptions internally (never rethrows). Outer try/catch in `generateMultiple()` never fires → all failed invoices appear in `$success` array.
+- **BUG-VND-004 [NEW]** — `VendorPaymentController::destroy()` calls `DB::beginTransaction()` with NO try/catch. Exception leaves transaction open.
+- **BUG-VND-005 [NEW]** — `routes/web.php:36` registers `vendor-usage-log.toggleStatus` → `VndUsageLogController::toggleStatus()` — method does not exist → 500.
+- **SEC-VND-011 [NEW]** — `VndUsageLogController::store()/update()` no FormRequest; `qty_used` accepts negative values (corrupts invoice billing sum); no existence check on `vendor_id`/`agreement_item_id` → IDOR.
+- **ORM-VND-001 [NEW]** — `VndAgreement` model lines 11–12 directly imports `Modules\Transport\Models\Vehicle` and `Modules\Transport\Models\DriverHelper`. Vendor crashes class-not-found if Transport module is disabled.
+- **BUG-VND-008 [CONFIRMED]** — `generateInvoice()` line 381: `'INV-' . now()->format('YmdHis') . rand(100,999)` — 1-in-900 collision in batch loop (same vendor, same second).
+- **PERF-VND-001 [NEW]** — `VendorDashboardController` lines 166–189: N+1 — one `VndPayment::whereHas()` per vendor in `$vendors->map(...)` loop.
+
+### P2 Findings (key)
+- **BUG-VND-016 [CONFIRMED]** — `pdfMultiple()` temp PDFs at `storage/app/{random}.pdf` never unlinked after ZIP close.
+- **D29 [CONFIRMED]** — 4 ENUM columns: `vnd_agreements.status`, `vnd_agreements.billing_cycle`, `vnd_agreement_items_jnt.billing_model`, `vnd_payments.status`.
+- **D30 [CONFIRMED]** — 3/3 FormRequests return `authorize(){return true;}`.
+- **Layer 2.5 [CONFIRMED]** — 4 cross-DB FKs → `sys_dropdowns`: `vnd_vendors.vendor_type_id`, `vnd_invoices.status`, `vnd_payments.payment_mode`, `vnd_agreement_items_jnt.related_entity_type`.
+
+### Stale BA Findings — CLEARED
+- SEC-VND-001/005 — Gate commented — **CLEARED**: `Gate::any([7 permissions]) || abort(403)` in VendorController::index()
+- SEC-VND-002 — zero auth on VendorInvoiceController — **CLEARED**: all 14+ methods gated
+- SEC-VND-006 — prefix mismatch — **CLEARED**: consistent `tenant.vendor-payment.*`
+- GAP-VND-05 — VendorDashboardController unregistered — **CLEARED**: `web.php:66`
+- GAP-VND-24 — VendorReportController dead — **CLEARED**: `web.php:73`
+
+### Above Baseline
+- 7 policies registered, **zero duplicate Gate::policy() kills** (unlike EXM 13×, TTF 19×)
+- All 8 controllers have Gate coverage (100%) — best authorization posture of any audited module
+
+### Systemic Pattern Scorecard
+| Pattern | VND Verdict |
+|---------|------------|
+| SEC-PLATFORM-003 (EnsureTenantHasModule) | ✅ CONFIRMED — absent |
+| D30 (authorize()=true FormRequests) | ✅ CONFIRMED — 3/3 |
+| D29 (ENUM columns) | ✅ CONFIRMED — 4 columns |
+| D25 ($request->all() into models) | ❌ NOT PRESENT |
+| D36 (GENERATED columns as plain in migration) | ✅ CONFIRMED — balance_due |
+| Layer 2.5 (cross-DB FKs → sys_dropdowns) | ✅ CONFIRMED — 4 FKs |
+| Layer 10.1 (Job missing tenancy/retry) | ✅ CONFIRMED — SendVendorInvoiceEmailJob |
+| PII plaintext | ✅ CONFIRMED — 4 fields (pan_number, bank_account_no, gst_number, upi_id) |
+| Duplicate Gate::policy() kill | ❌ NOT PRESENT — 7 policies, all unique |

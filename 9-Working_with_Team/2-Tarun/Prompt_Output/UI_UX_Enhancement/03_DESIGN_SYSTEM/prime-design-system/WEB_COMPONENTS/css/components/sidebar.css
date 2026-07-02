@@ -1,0 +1,145 @@
+/* ============================================================================
+   Prime Design System — sidebar.css
+   Styles AdminLTE: .app-sidebar, .sidebar-brand, .sidebar-menu, .nav-item,
+   .nav-link, .nav-treeview, .menu-open, .nav-icon, .right (caret).
+   Adds Prime helpers: .p-sidebar-heading.
+
+   Principles: accent active item (left bar + tint, not saturated fill),
+   smooth treeview collapse, comfortable 44px rows, visible focus.
+   ========================================================================== */
+
+.app-sidebar,
+.sidebar {
+  background-color: var(--p-surface-bg);
+  border-right: 1px solid var(--p-surface-border);
+  color: var(--p-text-secondary);
+}
+
+.sidebar-brand,
+.app-sidebar .brand-link {
+  display: flex;
+  align-items: center;
+  gap: var(--p-space-3);
+  min-height: 56px;
+  padding: 0 var(--p-space-4);
+  border-bottom: 1px solid var(--p-surface-border-light);
+  font-weight: var(--p-fw-bold);
+  color: var(--p-text-primary);
+}
+
+/* Section heading between menu groups */
+.p-sidebar-heading,
+.sidebar-menu .nav-header {
+  padding: var(--p-space-4) var(--p-space-4) var(--p-space-1);
+  font-size: var(--p-fs-cap);
+  font-weight: var(--p-fw-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--p-text-muted);
+}
+
+/* ── Menu items ─────────────────────────────────────────────────────────── */
+.sidebar-menu .nav-item { margin: 2px var(--p-space-2); }
+
+.sidebar-menu .nav-link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--p-space-3);
+  min-height: 44px;
+  padding: var(--p-space-2) var(--p-space-3);
+  border-radius: var(--p-radius-md);
+  color: var(--p-text-secondary);
+  font-size: var(--p-fs-sm);
+  font-weight: var(--p-fw-medium);
+  transition: background-color var(--p-dur-fast) var(--p-ease),
+              color var(--p-dur-fast) var(--p-ease);
+}
+.sidebar-menu .nav-link:hover {
+  background-color: var(--p-surface-hover);
+  color: var(--p-text-primary);
+}
+.sidebar-menu .nav-link:focus-visible { outline: none; box-shadow: var(--p-focus-ring); }
+
+.sidebar-menu .nav-icon {
+  flex: 0 0 auto;
+  width: 20px;
+  text-align: center;
+  color: var(--p-text-muted);
+  transition: color var(--p-dur-fast) var(--p-ease);
+}
+.sidebar-menu .nav-link:hover .nav-icon { color: var(--p-text-secondary); }
+
+/* Active item — accent, don't fill */
+.sidebar-menu .nav-link.active {
+  color: var(--p-primary);
+  background-color: rgba(var(--p-primary-rgb), 0.10);
+  font-weight: var(--p-fw-semibold);
+}
+.sidebar-menu .nav-link.active .nav-icon { color: var(--p-primary); }
+.sidebar-menu .nav-link.active::before {
+  content: "";
+  position: absolute;
+  left: -6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px; height: 22px;
+  border-radius: var(--p-radius-full);
+  background: var(--p-primary);
+}
+
+/* Caret for parents */
+.sidebar-menu .nav-link > .right,
+.sidebar-menu .nav-link > .nav-arrow {
+  margin-left: auto;
+  transition: transform var(--p-dur-base) var(--p-ease);
+  color: var(--p-text-muted);
+}
+.sidebar-menu .menu-open > .nav-link > .right,
+.sidebar-menu .menu-open > .nav-link > .nav-arrow { transform: rotate(90deg); }
+
+/* ── Treeview (submenu) ─────────────────────────────────────────────────── */
+.sidebar-menu .nav-treeview {
+  padding-left: var(--p-space-4);
+  margin: 2px 0;
+}
+.sidebar-menu .nav-treeview .nav-link {
+  min-height: 38px;
+  padding-left: var(--p-space-4);
+  font-size: var(--p-fs-sm);
+  font-weight: var(--p-fw-regular);
+  color: var(--p-text-muted);
+}
+.sidebar-menu .nav-treeview .nav-link::after {
+  content: "";
+  position: absolute;
+  left: var(--p-space-2);
+  top: 50%;
+  transform: translateY(-50%);
+  width: 5px; height: 5px;
+  border-radius: var(--p-radius-full);
+  background: var(--p-surface-active);
+}
+.sidebar-menu .nav-treeview .nav-link:hover { color: var(--p-text-primary); }
+.sidebar-menu .nav-treeview .nav-link.active {
+  color: var(--p-primary);
+  background-color: rgba(var(--p-primary-rgb), 0.08);
+}
+.sidebar-menu .nav-treeview .nav-link.active::after { background: var(--p-primary); }
+
+/* Collapsible animation for AdminLTE treeview (JS toggles display; we soften
+   the open state where the framework animates height). Guarded for reduced-motion. */
+.sidebar-menu .nav-treeview {
+  transition: none;
+}
+
+/* ── Collapsed / mini sidebar ───────────────────────────────────────────── */
+.sidebar-collapse .app-sidebar .sidebar-menu .nav-link > p,
+.sidebar-collapse .app-sidebar .p-sidebar-heading { display: none; }
+.sidebar-collapse .app-sidebar .sidebar-menu .nav-link { justify-content: center; }
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-menu .nav-link,
+  .sidebar-menu .nav-link > .right,
+  .sidebar-menu .nav-icon { transition: none; }
+}

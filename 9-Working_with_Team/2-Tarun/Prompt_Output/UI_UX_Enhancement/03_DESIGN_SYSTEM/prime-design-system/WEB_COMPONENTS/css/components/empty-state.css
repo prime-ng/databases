@@ -1,0 +1,74 @@
+/* ============================================================================
+   Prime Design System — empty-state.css
+   Adds the Prime helper block .p-empty (empty / zero-data / error / no-access
+   states). There is no direct Bootstrap/AdminLTE equivalent — this layers a
+   token-driven, centered "blank slate" pattern on top of the framework so
+   empty screens still feel designed and always offer a next action (CTA).
+
+   Principles encoded:
+   - "accent, don't fill": the icon sits in a LARGE tinted circle (.p-tint-*),
+     never a saturated block; only the single primary CTA uses a solid fill.
+   - Color is never the only signal — every state pairs a bi icon + heading +
+     message so the meaning survives greyscale / colour-blindness.
+   - Decorative icon is aria-hidden; the block is a labelled region for AT.
+   - All colours via --p-* tokens, so dark mode flips automatically.
+   ========================================================================== */
+
+.p-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--p-space-3);
+  max-width: 420px;
+  margin: 0 auto;
+  padding: var(--p-space-12) var(--p-space-6);
+}
+
+/* Large tinted circular icon — accent, not fill.
+   Pair with a .p-tint-* helper for colour (e.g. .p-tint-primary). */
+.p-empty__icon {
+  display: grid;
+  place-items: center;
+  width: 88px;
+  height: 88px;
+  border-radius: var(--p-radius-full);
+  font-size: 40px;
+  line-height: 1;
+  margin-bottom: var(--p-space-2);
+}
+
+.p-empty__title {
+  margin: 0;
+  font-size: var(--p-fs-h3);
+  line-height: var(--p-lh-h3);
+  font-weight: var(--p-fw-semibold);
+  color: var(--p-text-primary);
+}
+
+.p-empty__message {
+  margin: 0;
+  max-width: 36ch;
+  font-size: var(--p-fs-sm);
+  line-height: var(--p-lh-sm);
+  color: var(--p-text-secondary);
+}
+
+/* Actions row — primary CTA plus optional secondary/ghost action */
+.p-empty__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--p-space-2);
+  margin-top: var(--p-space-3);
+}
+
+/* Compact variant — for empty table bodies, small panels, dropdown results */
+.p-empty.p-empty--sm {
+  padding: var(--p-space-8) var(--p-space-4);
+  gap: var(--p-space-2);
+}
+.p-empty.p-empty--sm .p-empty__icon {
+  width: 60px; height: 60px; font-size: 28px;
+}
+.p-empty.p-empty--sm .p-empty__title { font-size: var(--p-fs-h4); }

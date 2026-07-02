@@ -1,0 +1,126 @@
+/* ============================================================================
+   Prime Design System — modals.css
+   Styles Bootstrap: .modal, .modal-dialog, .modal-content, .modal-header,
+   .modal-title, .modal-body, .modal-footer, .modal-backdrop, size classes
+   (.modal-sm/.modal-lg/.modal-xl). Adds Prime helpers: .p-modal-confirm and
+   tone modifiers --danger/--warning/--success.
+
+   Principles: soft lg shadow, consistent radius, accent header for
+   confirmation/delete (icon + tint, not a saturated fill), sticky footer,
+   visible focus, reduced-motion friendly.
+   ========================================================================== */
+
+.modal-backdrop {
+  background-color: rgba(15, 23, 42, 0.55);
+}
+.modal-backdrop.show { opacity: 1; }
+
+.modal-content {
+  background-color: var(--p-surface-bg);
+  border: 1px solid var(--p-surface-border);
+  border-radius: var(--p-radius-xl);
+  box-shadow: var(--p-shadow-lg);
+  overflow: hidden;
+  color: var(--p-text-primary);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  gap: var(--p-space-3);
+  padding: var(--p-space-4) var(--p-space-6);
+  border-bottom: 1px solid var(--p-surface-border-light);
+}
+.modal-title {
+  margin: 0;
+  font-size: var(--p-fs-h4);
+  font-weight: var(--p-fw-semibold);
+  color: var(--p-text-primary);
+}
+.modal-header .btn-close {
+  margin-left: auto;
+  padding: var(--p-space-2);
+  border-radius: var(--p-radius-md);
+  opacity: 0.6;
+  transition: opacity var(--p-dur-fast) var(--p-ease),
+              background-color var(--p-dur-fast) var(--p-ease);
+}
+.modal-header .btn-close:hover { opacity: 1; background-color: var(--p-surface-hover); }
+.modal-header .btn-close:focus-visible { outline: none; box-shadow: var(--p-focus-ring); }
+
+.modal-body {
+  padding: var(--p-space-6);
+  font-size: var(--p-fs-body);
+  color: var(--p-text-secondary);
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--p-space-2);
+  padding: var(--p-space-4) var(--p-space-6);
+  border-top: 1px solid var(--p-surface-border-light);
+  background-color: var(--p-surface-bg);
+}
+/* Sticky footer for long, scrollable modal bodies */
+.modal-content.p-modal-sticky-footer { display: flex; flex-direction: column; max-height: 90vh; }
+.modal-content.p-modal-sticky-footer .modal-body { flex: 1 1 auto; max-height: none; }
+.modal-content.p-modal-sticky-footer .modal-footer {
+  position: sticky;
+  bottom: 0;
+  box-shadow: 0 -1px 0 var(--p-surface-border-light);
+}
+
+/* ── Sizes (round out Bootstrap widths with tokens) ─────────────────────── */
+.modal-dialog { margin: var(--p-space-6) auto; }
+@media (min-width: 576px) {
+  .modal-sm .modal-dialog { max-width: 380px; }
+  .modal-dialog { max-width: 520px; }
+  .modal-lg .modal-dialog { max-width: 760px; }
+  .modal-xl .modal-dialog { max-width: 1080px; }
+}
+
+/* ── Confirmation / delete modal — accent header ────────────────────────────
+   Markup:
+   <div class="modal-content p-modal-confirm p-modal-confirm--danger">
+     <div class="modal-header">
+       <span class="p-modal-confirm__icon">…</span>
+       <h5 class="modal-title">Delete student?</h5> …
+   ────────────────────────────────────────────────────────────────────────── */
+.p-modal-confirm { --p-accent: var(--p-primary); --p-accent-rgb: var(--p-primary-rgb); }
+.p-modal-confirm .modal-header {
+  background-color: rgba(var(--p-accent-rgb), 0.08);
+  border-bottom-color: rgba(var(--p-accent-rgb), 0.20);
+}
+.p-modal-confirm .modal-title { color: var(--p-text-primary); }
+.p-modal-confirm__icon {
+  display: grid;
+  place-items: center;
+  width: 40px; height: 40px;
+  border-radius: var(--p-radius-full);
+  background: rgba(var(--p-accent-rgb), 0.15);
+  color: var(--p-accent);
+  font-size: 20px;
+  flex: 0 0 auto;
+}
+.p-modal-confirm--danger  { --p-accent: var(--p-danger);  --p-accent-rgb: var(--p-danger-rgb); }
+.p-modal-confirm--warning { --p-accent: var(--p-warning); --p-accent-rgb: var(--p-warning-rgb); }
+.p-modal-confirm--success { --p-accent: var(--p-success); --p-accent-rgb: var(--p-success-rgb); }
+.p-modal-confirm--info    { --p-accent: var(--p-info);    --p-accent-rgb: var(--p-info-rgb); }
+
+/* Entrance transition (Bootstrap toggles .fade/.show) */
+.modal.fade .modal-dialog {
+  transition: transform var(--p-dur-base) var(--p-ease),
+              opacity var(--p-dur-base) var(--p-ease);
+  transform: translateY(-12px) scale(0.98);
+  opacity: 0;
+}
+.modal.show .modal-dialog { transform: none; opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .modal.fade .modal-dialog { transition: none; transform: none; opacity: 1; }
+  .modal-header .btn-close { transition: none; }
+}

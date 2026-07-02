@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en" data-bs-theme="light" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prime DS — Modals</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@4.0.0-beta3/dist/css/adminlte.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<link rel="stylesheet" href="../css/tokens.css">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/components/modals.css">
+<link rel="stylesheet" href="../css/components/buttons.css">
+<link rel="stylesheet" href="../css/components/forms.css">
+<link rel="stylesheet" href="../css/dark-mode.css">
+</head>
+<body>
+<header class="ds-toolbar">
+  <a href="../../index.html" class="ds-brand" style="text-decoration:none;color:inherit"><span class="ds-logo">P</span> Prime DS</a>
+  <span class="ds-spacer"></span>
+  <button class="ds-toggle" data-ds-width-toggle><i class="bi bi-phone"></i> <span class="ds-width-label">Desktop</span></button>
+  <button class="ds-toggle" data-ds-theme-toggle><i class="bi bi-sun"></i> <span class="ds-theme-label">Light</span></button>
+</header>
+<main class="ds-content">
+  <div class="ds-section"><h1>Modals</h1><p class="ds-desc">Bootstrap 5.3 dialogs restyled with Prime tokens — soft <code>radius-lg</code> corners, an <code>lg</code> shadow, and a subtle <em>tinted accent header</em> per intent. We accent, we don't fill: reserve solid colour for the accent bar + icon, keep the body neutral.</p></div>
+
+  <!-- ── Confirmation modal ─────────────────────────────────────────────── -->
+  <section class="ds-section">
+    <h2>Confirmation modal</h2>
+    <p class="ds-desc">Neutral / primary intent. A short title, one-line message, and a two-button footer — <strong>Cancel</strong> (ghost) beside the single solid <strong>Confirm</strong> (primary).</p>
+    <div class="ds-demo">
+      <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#mConfirm">
+        <i class="bi bi-check2-circle"></i> Open confirmation
+      </button>
+
+      <div class="modal fade" id="mConfirm" tabindex="-1" aria-labelledby="mConfirmTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+          <div class="modal-content p-modal-confirm">
+            <div class="modal-header">
+              <span class="p-modal-confirm__icon"><i class="bi bi-question-circle"></i></span>
+              <h5 class="modal-title" id="mConfirmTitle">Publish results?</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">Marks for <strong>Class 8 · Mathematics</strong> will become visible to 42 students and their parents. You can unpublish later.</div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-ghost" data-bs-dismiss="modal">Cancel</button>
+              <button type="button" class="btn btn-primary" data-bs-dismiss="modal"><i class="bi bi-send"></i> Confirm &amp; publish</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;button class=&quot;btn btn-primary&quot; data-bs-toggle=&quot;modal&quot; data-bs-target=&quot;#mConfirm&quot;&gt;
+  &lt;i class=&quot;bi bi-check2-circle&quot;&gt;&lt;/i&gt; Open confirmation
+&lt;/button&gt;
+
+&lt;div class=&quot;modal fade&quot; id=&quot;mConfirm&quot; tabindex=&quot;-1&quot; aria-labelledby=&quot;mConfirmTitle&quot; aria-hidden=&quot;true&quot;&gt;
+  &lt;div class=&quot;modal-dialog modal-dialog-centered modal-sm&quot;&gt;
+    &lt;div class=&quot;modal-content p-modal-confirm&quot;&gt;
+      &lt;div class=&quot;modal-header&quot;&gt;
+        &lt;span class=&quot;p-modal-confirm__icon&quot;&gt;&lt;i class=&quot;bi bi-question-circle&quot;&gt;&lt;/i&gt;&lt;/span&gt;
+        &lt;h5 class=&quot;modal-title&quot; id=&quot;mConfirmTitle&quot;&gt;Publish results?&lt;/h5&gt;
+        &lt;button type=&quot;button&quot; class=&quot;btn-close&quot; data-bs-dismiss=&quot;modal&quot; aria-label=&quot;Close&quot;&gt;&lt;/button&gt;
+      &lt;/div&gt;
+      &lt;div class=&quot;modal-body&quot;&gt;Marks for Class 8 · Mathematics will become visible…&lt;/div&gt;
+      &lt;div class=&quot;modal-footer&quot;&gt;
+        &lt;button type=&quot;button&quot; class=&quot;btn btn-ghost&quot; data-bs-dismiss=&quot;modal&quot;&gt;Cancel&lt;/button&gt;
+        &lt;button type=&quot;button&quot; class=&quot;btn btn-primary&quot; data-bs-dismiss=&quot;modal&quot;&gt;Confirm &amp;amp; publish&lt;/button&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> the everyday "are you sure?" for reversible primary actions. Styles Bootstrap <code>.modal</code>/<code>.modal-content</code>/<code>.modal-header/-body/-footer</code>; Prime adds <code>.p-modal-confirm</code> (primary accent header) + <code>.p-modal-confirm__icon</code>. <code>modal-dialog-centered</code> vertically centres it; <code>modal-sm</code> keeps a confirm compact. Footer order is Cancel-then-Confirm with the solid button last (primary on the right).</div>
+  </section>
+
+  <!-- ── Form modal ─────────────────────────────────────────────────────── -->
+  <section class="ds-section">
+    <h2>Form modal</h2>
+    <p class="ds-desc">A neutral header with a couple of fields in the body. Use for quick create / edit flows without leaving the current page.</p>
+    <div class="ds-demo">
+      <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#mForm">
+        <i class="bi bi-pencil-square"></i> Add class section
+      </button>
+
+      <div class="modal fade" id="mForm" tabindex="-1" aria-labelledby="mFormTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="mFormTitle">Add class section</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form>
+              <div class="modal-body">
+                <div class="mb-3">
+                  <label for="fSecName" class="form-label">Section name</label>
+                  <input type="text" class="form-control" id="fSecName" placeholder="e.g. 6-A" required>
+                </div>
+                <div class="mb-3">
+                  <label for="fTeacher" class="form-label">Class teacher</label>
+                  <select class="form-select" id="fTeacher">
+                    <option selected>R. Iyer</option>
+                    <option>Meera Kapoor</option>
+                    <option>S. Bhaduri</option>
+                  </select>
+                </div>
+                <div class="mb-0">
+                  <label for="fCap" class="form-label">Capacity</label>
+                  <input type="number" class="form-control" id="fCap" value="40" min="1">
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-ghost" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Save section</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;div class=&quot;modal fade&quot; id=&quot;mForm&quot; tabindex=&quot;-1&quot; aria-labelledby=&quot;mFormTitle&quot; aria-hidden=&quot;true&quot;&gt;
+  &lt;div class=&quot;modal-dialog modal-dialog-centered&quot;&gt;
+    &lt;div class=&quot;modal-content&quot;&gt;
+      &lt;div class=&quot;modal-header&quot;&gt;
+        &lt;h5 class=&quot;modal-title&quot; id=&quot;mFormTitle&quot;&gt;Add class section&lt;/h5&gt;
+        &lt;button type=&quot;button&quot; class=&quot;btn-close&quot; data-bs-dismiss=&quot;modal&quot; aria-label=&quot;Close&quot;&gt;&lt;/button&gt;
+      &lt;/div&gt;
+      &lt;form&gt;
+        &lt;div class=&quot;modal-body&quot;&gt;
+          &lt;div class=&quot;mb-3&quot;&gt;
+            &lt;label for=&quot;fSecName&quot; class=&quot;form-label&quot;&gt;Section name&lt;/label&gt;
+            &lt;input type=&quot;text&quot; class=&quot;form-control&quot; id=&quot;fSecName&quot; placeholder=&quot;e.g. 6-A&quot; required&gt;
+          &lt;/div&gt;
+          &lt;div class=&quot;mb-3&quot;&gt;
+            &lt;label for=&quot;fTeacher&quot; class=&quot;form-label&quot;&gt;Class teacher&lt;/label&gt;
+            &lt;select class=&quot;form-select&quot; id=&quot;fTeacher&quot;&gt;…&lt;/select&gt;
+          &lt;/div&gt;
+        &lt;/div&gt;
+        &lt;div class=&quot;modal-footer&quot;&gt;
+          &lt;button type=&quot;button&quot; class=&quot;btn btn-ghost&quot; data-bs-dismiss=&quot;modal&quot;&gt;Cancel&lt;/button&gt;
+          &lt;button type=&quot;submit&quot; class=&quot;btn btn-primary&quot;&gt;Save section&lt;/button&gt;
+        &lt;/div&gt;
+      &lt;/form&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> wrap <code>.modal-body</code> + <code>.modal-footer</code> in a <code>&lt;form&gt;</code> so <kbd>Enter</kbd> submits and the Save button is <code>type="submit"</code>. Uses the neutral header (no accent) — reserve accent headers for destructive/informational dialogs. Long forms scroll inside <code>.modal-body</code> (max-height 70vh); add <code>.p-modal-sticky-footer</code> on <code>.modal-content</code> to pin the footer.</div>
+  </section>
+
+  <!-- ── Info modal ─────────────────────────────────────────────────────── -->
+  <section class="ds-section">
+    <h2>Info modal</h2>
+    <p class="ds-desc">Informational content with an <em>info-tinted</em> header icon and a single <strong>Close</strong> action — nothing to decide, just to read.</p>
+    <div class="ds-demo">
+      <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#mInfo">
+        <i class="bi bi-info-circle"></i> What's new
+      </button>
+
+      <div class="modal fade" id="mInfo" tabindex="-1" aria-labelledby="mInfoTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content p-modal-confirm p-modal-confirm--info">
+            <div class="modal-header">
+              <span class="p-modal-confirm__icon"><i class="bi bi-info-circle"></i></span>
+              <h5 class="modal-title" id="mInfoTitle">Term 1 gradebook is now live</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <p>You can now enter assessment marks directly against each student. A few things to know:</p>
+              <ul class="mb-0">
+                <li>Draft marks are auto-saved every 30 seconds.</li>
+                <li>Publishing notifies parents via the mobile app.</li>
+                <li>Weightages are locked once the term is closed.</li>
+              </ul>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Got it</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;div class=&quot;modal-content p-modal-confirm p-modal-confirm--info&quot;&gt;
+  &lt;div class=&quot;modal-header&quot;&gt;
+    &lt;span class=&quot;p-modal-confirm__icon&quot;&gt;&lt;i class=&quot;bi bi-info-circle&quot;&gt;&lt;/i&gt;&lt;/span&gt;
+    &lt;h5 class=&quot;modal-title&quot; id=&quot;mInfoTitle&quot;&gt;Term 1 gradebook is now live&lt;/h5&gt;
+    &lt;button type=&quot;button&quot; class=&quot;btn-close&quot; data-bs-dismiss=&quot;modal&quot; aria-label=&quot;Close&quot;&gt;&lt;/button&gt;
+  &lt;/div&gt;
+  &lt;div class=&quot;modal-body&quot;&gt;&lt;!-- informational copy --&gt;&lt;/div&gt;
+  &lt;div class=&quot;modal-footer&quot;&gt;
+    &lt;button type=&quot;button&quot; class=&quot;btn btn-primary&quot; data-bs-dismiss=&quot;modal&quot;&gt;Got it&lt;/button&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> announcements, help, "what changed" dialogs. The <code>.p-modal-confirm--info</code> modifier swaps the accent to <code>--p-info</code> (tinted bar + icon chip). A single acknowledging button is enough — no Cancel, because there is nothing to cancel.</div>
+  </section>
+
+  <!-- ── Delete confirmation ────────────────────────────────────────────── -->
+  <section class="ds-section">
+    <h2>Delete confirmation (danger)</h2>
+    <p class="ds-desc">A <strong>danger-accent</strong> header (tinted bar + <code>bi-exclamation-triangle</code>), warning copy that <em>names the exact item</em>, and a <strong>Delete</strong> button that is the only solid fill — deliberately red so the destructive action is unmistakable.</p>
+    <div class="ds-demo">
+      <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#mDelete">
+        <i class="bi bi-trash3"></i> Delete student
+      </button>
+
+      <div class="modal fade" id="mDelete" tabindex="-1" aria-labelledby="mDeleteTitle" aria-describedby="mDeleteDesc" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+          <div class="modal-content p-modal-confirm p-modal-confirm--danger">
+            <div class="modal-header">
+              <span class="p-modal-confirm__icon"><i class="bi bi-exclamation-triangle"></i></span>
+              <h5 class="modal-title" id="mDeleteTitle">Delete student record?</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="mDeleteDesc">
+              You are about to permanently delete <strong>Aarav Sharma (Class 9-B, Adm #GIS-20481)</strong>. This removes attendance, marks and fee history and <strong>cannot be undone</strong>.
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-ghost" data-bs-dismiss="modal">Cancel</button>
+              <button type="button" class="btn btn-danger" data-bs-dismiss="modal"><i class="bi bi-trash3"></i> Delete permanently</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;div class=&quot;modal-content p-modal-confirm p-modal-confirm--danger&quot;&gt;
+  &lt;div class=&quot;modal-header&quot;&gt;
+    &lt;span class=&quot;p-modal-confirm__icon&quot;&gt;&lt;i class=&quot;bi bi-exclamation-triangle&quot;&gt;&lt;/i&gt;&lt;/span&gt;
+    &lt;h5 class=&quot;modal-title&quot; id=&quot;mDeleteTitle&quot;&gt;Delete student record?&lt;/h5&gt;
+    &lt;button type=&quot;button&quot; class=&quot;btn-close&quot; data-bs-dismiss=&quot;modal&quot; aria-label=&quot;Close&quot;&gt;&lt;/button&gt;
+  &lt;/div&gt;
+  &lt;div class=&quot;modal-body&quot; id=&quot;mDeleteDesc&quot;&gt;
+    You are about to permanently delete &lt;strong&gt;Aarav Sharma (Class 9-B)&lt;/strong&gt;.
+    This cannot be undone.
+  &lt;/div&gt;
+  &lt;div class=&quot;modal-footer&quot;&gt;
+    &lt;button type=&quot;button&quot; class=&quot;btn btn-ghost&quot; data-bs-dismiss=&quot;modal&quot;&gt;Cancel&lt;/button&gt;
+    &lt;button type=&quot;button&quot; class=&quot;btn btn-danger&quot; data-bs-dismiss=&quot;modal&quot;&gt;Delete permanently&lt;/button&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> irreversible deletes. <code>.p-modal-confirm--danger</code> tints the header bar + icon red (accent, <em>not</em> a fully red modal). Always name the item and spell out what is lost; wire <code>aria-describedby</code> to the body. The danger fill is reserved for the confirm button so red = "the point of no return", never mere decoration.</div>
+  </section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+/* ============================================================================
+   Prime Design System — dark-mode.css
+   Dark-mode refinements that sit ON TOP of the [data-bs-theme="dark"] token
+   block in tokens.css. Most theming happens automatically because components
+   reference --p-* tokens (which flip in tokens.css). This file only handles
+   the few cases that need an explicit dark tweak.
+
+   Load order: tokens.css → base.css → components/*.css → dark-mode.css
+   ========================================================================== */
+
+[data-bs-theme="dark"] body { background: var(--p-surface-bg); }
+
+/* Preview chrome */
+[data-bs-theme="dark"] .ds-toolbar { background: var(--p-surface-secondary); }
+[data-bs-theme="dark"] .ds-demo    { background: var(--p-surface-secondary); border-color: var(--p-surface-border); }
+[data-bs-theme="dark"] .ds-code    { background: #0b1020; }
+
+/* Tints need slightly higher opacity + lighter text to stay legible on dark */
+[data-bs-theme="dark"] .p-tint-primary { background: rgba(var(--p-primary-rgb), .22); color: #aab2ff; }
+[data-bs-theme="dark"] .p-tint-success { background: rgba(var(--p-success-rgb), .22); color: #7ee3ab; }
+[data-bs-theme="dark"] .p-tint-warning { background: rgba(var(--p-warning-rgb), .22); color: #f4d55a; }
+[data-bs-theme="dark"] .p-tint-danger  { background: rgba(var(--p-danger-rgb), .24);  color: #f2949a; }
+[data-bs-theme="dark"] .p-tint-info    { background: rgba(var(--p-info-rgb), .22);    color: #82d2e2; }
+
+/* AdminLTE/Bootstrap surfaces that don't auto-flip via tokens */
+[data-bs-theme="dark"] .card,
+[data-bs-theme="dark"] .app-sidebar,
+[data-bs-theme="dark"] .app-header { background-color: var(--p-surface-bg); color: var(--p-text-primary); }
+[data-bs-theme="dark"] .table { --bs-table-bg: transparent; color: var(--p-text-primary); }
+[data-bs-theme="dark"] .border,
+[data-bs-theme="dark"] .p-border { border-color: var(--p-surface-border) !important; }
+
+/* Guardrail note: in the REAL app, the audit found module views hardcoding
+   bg-white / text-dark / inline #fff which defeat this. Those must be replaced
+   with token-driven classes — see 01_AUDIT/ACCESSIBILITY_AUDIT.md + ENH-021. */

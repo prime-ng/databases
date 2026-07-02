@@ -94,7 +94,7 @@ Modules/ModuleName/
 |--------|-------------|--------|----------|----------|-------|---------|-------------|-------|-------------|
 | **Prime** | 22 | 27 | 1 | 7 | 97 | 2 | 244 | 9 | Tenant CRUD, plans, billing, users, roles, modules, menus, geography |
 | **GlobalMaster** | 15 | 12 | 0 | 10 | 55 | 3 | 52 | 4 | Countries, states, cities, boards, languages, plans, dropdowns |
-| **SystemConfig** | 13 | 8 | 2 | 4 | 36 | 2 | 50 | 1 | Settings, menus, translations |
+| **SystemConfig** | 13 | 8 | 2 | 4 | 36 | 2 | 50 | 1 | Settings, menus, translations. **~65-70% complete** (BA 2026-06-30). 5 P0 gaps. ~46 hrs. FRD: `SYS_FRD_2026-06-30.md`. |
 | **Billing** | 7 | 6 | 0 | 3 | 43 | 1 | 18 | 1 | Invoice generation, payment tracking, billing cycles |
 | **Documentation** | 3 | 2 | 0 | 2 | 15 | 3 | 16 | 1 | Knowledge base, help docs |
 
@@ -103,29 +103,29 @@ Modules/ModuleName/
 
 | Module | Controllers | Models | Services | Requests | Views | Jobs | Seeders | Route Lines | Tests | Description |
 |--------|-------------|--------|----------|----------|-------|------|---------|-------------|-------|-------------|
-| **SchoolSetup** | 70 | 69 | 3 | 31 | 357 | 0 | 8 | 823 | 0 | School structure, classes, sections, subjects, teachers, rooms, buildings. Employee leave management DDL (25 tables). PTM DDL v2 (10 tables). |
-| **SmartTimetable** | 18 | 63 | 111 | 13 | 178 | 1 | 14 | 188 | 0 | AI timetable: FET solver, 24 Hard + 60+ Soft constraint classes, analytics, refinement, substitution |
-| **TimetableFoundation** | 27 | 34 | 5 | 4 | 172 | 0 | 1 | 333 | 7 | Shared timetable config: period sets, day types, configurations, academic terms |
+| **SchoolSetup** | 70 | 69 | 3 | 31 | 357 | 0 | 8 | 823 | 0 | School structure, classes, sections, subjects, teachers, rooms, buildings. Employee leave management DDL (25 tables). PTM DDL v2 (10 tables). **~62% complete** (BA 2026-06-30). 4 P0 gaps. ~49 dev-days to close. `is_super_admin` in User model `$fillable` — P0 priv-esc. FRD: `SCH_FRD_2026-06-30.md`. |
+| **SmartTimetable** | 18 | 63 | 111 | 13 | 178 | 1 | 14 | 188 | 0 | AI timetable: FET solver, 24 Hard + 60+ Soft constraint classes, analytics, refinement, substitution. **~68% complete** (BA 2026-06-30). 5 P0 gaps. 192 hrs to close. FRD: `STT_FRD_2026-06-30.md`. |
+| **TimetableFoundation** | 27 | 34 | 5 | 4 | 172 | 0 | 1 | 333 | 7 | Shared timetable config: period sets, day types, configurations, academic terms. **~68% complete** (BA 2026-06-30). 4 P0 gaps, ~70 hrs. Mandatory infrastructure for STT and TTS. 19 of 23 policies unregistered (P0 — Gate::policy() duplicate overwrites). Prefix: `tt_*`. FRD: `TTF_FRD_2026-06-30.md`. |
 | **Transport** | 32 | 36 | 0 | 20 | 151 | 0 | 2 | 364 | 0 | Vehicles, routes, trips, drivers, pickup points, student allocation, inspections |
 | **Hpc** | 23 | 32 | 10 | 14 | 242 | 1 | 0 | 270 | 0 | Holistic Progress Card: 4 PDF templates, approval workflow, student/parent/peer portals |
 | **Library** | 39 | 51 | 12 | 27 | 210 | 0 | 3 | 401 | 0 | Book catalog, members, transactions, fines, reservations, digital resources, reports |
-| **StudentProfile** | 9 | 19 | 1 | 1 | 70 | 0 | 1 | 215 | 0 | Student CRUD, guardians, attendance, medical incidents; Leave subsystem (models only, no routes) |
-| **StudentFee** | 15 | 24 | 3 | 0 | 89 | 0 | 1 | 151 | 24 | Fee heads, invoices, receipts, concessions, scholarships, fines, assignments |
-| **Syllabus** | 15 | 22 | 1 | 15 | 90 | 0 | 1 | 183 | 0 | Lessons, topics, competencies, bloom taxonomy, cognitive skills, schedules |
-| **QuestionBank** | 7 | 16 | 2 | 6 | 45 | 0 | 1 | 116 | 0 | Questions with bloom/cognitive/complexity tagging, AI generation, search. Stats spec: `51-QuestionBank/DDL/statistics_help.md`. |
+| **StudentProfile** | 9 | 19 | 1 | 1 | 70 | 0 | 1 | 215 | 0 | Student CRUD, guardians, attendance, medical incidents; Leave subsystem (models only, no routes). **Completion TBD** (BA 2026-06-30). 3 P0 gaps. ~59 dev-days. `is_super_admin` in User model `$fillable` — P0 priv-esc. FRD: `STD_FRD_2026-06-30.md`. |
+| **StudentFee** | 15 | 24 | 3 | 0 | 89 | 0 | 1 | 151 | 24 | Fee heads, invoices, receipts, concessions, scholarships, fines, assignments. **~78% complete** (BA 2026-06-30). 9 P0 gaps (highest count across all 13 modules). ~32 dev-days. FRD: `FIN_FRD_2026-06-30.md`. |
+| **Syllabus** | 15 | 22 | 1 | 15 | 90 | 0 | 1 | 183 | 0 | Lessons, topics, competencies, bloom taxonomy, cognitive skills, schedules. **~78% complete** (BA 2026-06-30). 6 P0 gaps. 15 FormRequests with `authorize(){return true;}` (D30 pattern). FRD: `SLB_FRD_2026-06-30.md`. |
+| **QuestionBank** | 7 | 16 | 2 | 6 | 45 | 0 | 1 | 116 | 0 | Questions with bloom/cognitive/complexity tagging, AI generation, search. Stats spec: `51-QuestionBank/DDL/statistics_help.md`. **~50% complete** (BA 2026-06-30). 6 P0 gaps. ~112 hrs. QuestionBankPolicy dead — overwritten by duplicate Gate::policy() registration. FRD: `QNS_FRD_2026-06-30.md`. |
 | **LmsExam** | 13 | 13 | 11 | 12 | 91 | 0 | 3 | 214 | 0 | Exam blueprints, paper sets, allocations, scopes, student groups; GrievanceReviewController; PaperSetQuestionController; ExamQueryService |
 | **LmsQuiz** | 6 | 6 | 7 | 5 | 42 | 0 | 1 | 94 | 0 | Quizzes, questions, allocations, assessment types, difficulty distribution |
 | **LmsHomework** | 2 | 3 | 2 | 3 | 20 | 0 | 1 | 67 | 1 | Homework, submissions, action types, trigger events, rule engine |
 | **LmsQuests** | 4 | 4 | 5 | 4 | 30 | 0 | 1 | 85 | 0 | Quests, questions, scopes, allocations |
 | **Notification** | 12 | 14 | 2 | 10 | 64 | 0 | 1 | 119 | 0 | Channels, templates, targets, delivery; routes currently COMMENTED OUT |
 | **Complaint** | 10 | 6 | 2 | 2 | 36 | 0 | 1 | 220 | 0 | Complaints, categories, actions, SLA, AI insights, dashboard |
-| **Vendor** | 8 | 8 | 0 | 3 | 42 | 1 | 2 | 84 | 0 | Vendors, agreements, invoices, payments, inspections |
+| **Vendor** | 8 | 8 | 0 | 3 | 42 | 1 | 2 | 84 | 0 | Vendors, agreements, invoices, payments, inspections. **~50% complete**. Mode X Audit 2026-06-30: **Health 35/100 — NO-GO**. 4×P0: EnsureTenantHasModule absent; `pan_number`/`bank_account_no` plaintext (DPDPA); `balance_due` plain DECIMAL (DDL says GENERATED STORED — stale DB column); payment race condition (no lockForUpdate). 8×P1 incl. SendVendorInvoiceEmailJob (no tenancy, no retry, sends to admin), generateMultiple() failure masking, missing toggleStatus method, Transport hard-import in VndAgreement. CLEARED: all 14+ VendorInvoiceController Gate calls now active; GAP-VND-05/24 cleared. ABOVE BASELINE: 7 policies, zero duplicate kills. No FRD exists. Report: `Vendor_Complete_Audit_2026-06-30.md`. |
 | **Payment** | 4 | 8 | 4 | 3 | 9 | 1 | 1 | 52 | 8 | Payment gateway (Razorpay), processing, callbacks |
 | **Recommendation** | 10 | 10 | 1 | 18 | 49 | 0 | 1 | 111 | 0 | Rules, materials, student recommendations |
-| **SyllabusBooks** | 11 | 13 | 3 | 8 | 30 | 0 | 1 | 112 | 0 | Books, book-topic mapping, authors |
+| **SyllabusBooks** | 11 | 13 | 3 | 8 | 30 | 0 | 1 | 112 | 0 | Books, book-topic mapping, authors. **~70-75% complete** (BA 2026-06-30). 5 P0 gaps. 3 controllers import `Modules\Prime\Models\AcademicSession` (prime_db) instead of tenant `OrganizationAcademicSession` — P0 cross-layer data isolation breach. FRD: `SLK_FRD_2026-06-30.md`. |
 | **Accounting** | 21 | 25 | 7 | 17 | 141 | 0 | 2 | 228 | 14 | Tally-inspired voucher engine, chart of accounts, ledgers, journal entries |
-| **StandardTimetable** | 1 | 0 | 0 | 0 | 3 | 0 | 1 | 38 | 0 | Standard timetable views (skeleton) |
-| **StudentPortal** | 37 | 11 | 1 | 5 | 98 | 0 | 1 | 304 | 9 | Student-facing portal. 37 controllers (major growth). Includes Api/ and Mobile/ sub-dirs. |
+| **StandardTimetable** | 1 | 0 | 0 | 0 | 3 | 0 | 1 | 38 | 0 | Standard timetable views (skeleton). **~15% complete** (BA 2026-06-30). 5 P0 gaps. ~150 hrs. Near-greenfield — requires TimetableFoundation (TTF) as mandatory infrastructure. FRD: `TTS_FRD_2026-06-30.md`. |
+| **StudentPortal** | 37 | 11 | 1 | 5 | 98 | 0 | 1 | 304 | 9 | Student-facing portal. 37 controllers (major growth). Includes Api/ and Mobile/ sub-dirs. **~75-80% complete** (BA 2026-06-30). 4 P0 gaps. ~77.5 hrs. Confirmed ACTIVE — was incorrectly labelled "Pending" in CLAUDE.md. FRD: `STP_FRD_2026-06-30.md`. |
 | **Dashboard** | 26 | 0 | 0 | 0 | 85 | 0 | 1 | 142 | 0 | Admin dashboards — major growth (was 1 ctrl, now 26) |
 | **Scheduler** | 1 | 2 | 2 | 1 | 6 | 0 | 1 | 14 | 1 | Job scheduling |
 | **EventEngine** | 4 | 3 | 0 | 3 | 17 | 0 | 1 | 39 | 0 | Cross-module event system (~20% done) |
@@ -135,7 +135,7 @@ Modules/ModuleName/
 | **FrontOffice** | 21 | 22 | 4 | 10 | 118 | 1 | 3 | 310 | 0 | Reception, postal register, circulars, gate pass, early departure. **Prompt:** `5-Work-In-Progress/FrontOffice/1-Claude_Prompt/FOF_2step_Prompt1.md` |
 | **HrStaff** | 22 | 33 | 15 | 23 | 93 | 0 | 9 | 242 | 0 | HR + Payroll. PF/ESI/TDS, leave FSM, payroll integration. **Prompt:** `5-Work-In-Progress/HrStaff/1-Claude_Prompt/HRS_2step_Prompt1.md` |
 | **Inventory** | 20 | 28 | 14 | 18 | 77 | 1 | 5 | 229 | 0 | GRN, stock issue, reorder, vendor integration. **Prompt:** `5-Work-In-Progress/22-Inventory/1-Claude_Prompt/INV_2step_Prompt1.md` |
-| **Template** | 5 | 6 | 3 | 10 | 31 | 0 | 4 | 63 | 0 | Visual template builder (canvas/HTML). `tmp_templates` migration MISSING. |
+| **Template** | 5 | 6 | 3 | 10 | 31 | 0 | 4 | 63 | 0 | Visual template builder (canvas/HTML). Platform rendering engine: consumed by MSH, STD, FIN, EXM, CRT. Stateless singleton via `TemplateEngine::render()`. **~68% complete**. Mode X Audit 2026-06-30: **Health 40/100 — NO-GO**. 3×P0: EnsureTenantHasModule absent; `class_group_id` fallback missing from `resolveTemplate()` (group-scoped assignments silently fail); `value_type` column missing from `tmp_template_variables` migration (image/html rendering permanently broken). 7×P1 incl. SQL injection in DB introspection endpoints (SEC-TMP-01), cross-tenant schema leak via getDatabases() (SEC-TMP-02), missing uploadImage Gate (SEC-TMP-03). CLEARED: GAP-TMP-07 (config/template.php exists), GAP-TMP-10 (compound unique in StoreTemplateVariableRequest confirmed). Prefix: `tmp_*`. FRD: `TMP_FRD_2026-06-30.md`. Report: `TMP_Template_Complete_Audit_2026-06-30.md`. |
 | **MarksheetGeneration** | 21 | 24 | 33 | 19 | 98 | 1 | 4 | 180 | 0 | **Graduated from DDL-only (2026-06-21).** Marksheet computation & result storage (`msh_*`, 23 tables). Full code scaffold now present. DDL: `1-DDL_Tenant_Modules/55h-MarksheetGeneration/`. |
 | **Feedback** | 10 | 11 | 6 | 1 | 51 | 0 | 4 | 171 | 0 | **Graduated from DDL-only (2026-06-21).** Generic cross-entity feedback (`fbk_*`, 11 tables). Code scaffold now present. DDL: `1-DDL_Tenant_Modules/39-Feedback/StudentFeedback_ddl_v2.sql`. |
 | **Hostel** | 53 | 44 | 22 | 38 | 278 | 2 | 8 | 573 | 0 | **NEW (2026-06-21).** Hostel Management — buildings, floors, rooms, beds, allotments, attendance, mess, fee, complaints, sick bay. 36-table DDL (HST_DDL_v3.sql). Prefix: `hst_`. **Prompt:** `5-Work-In-Progress/Hostel/1-Claude_Prompt/HST_2step_Prompt1.md` |
@@ -233,3 +233,38 @@ Modules/ModuleName/
 ### API Endpoints
 All module APIs follow: `auth:sanctum` + `/v1/{module_plural}` + standard apiResource CRUD (index, store, show, update, destroy)
 Modules WITHOUT active API routes: Billing, Notification, Vendor, LmsExam, LmsHomework, LmsQuests, Recommendation, SyllabusBooks, Documentation, Scheduler, SystemConfig
+
+---
+
+## Module Completion Status Index (2026-06-30 BA Complete Analysis Packs)
+
+> Source: `pa-business-analyst` Complete Analysis Pack Mode runs on 2026-06-30.
+> FRDs saved to `0-FRD_Documents/{CODE}_FRD_2026-06-30.md`.
+> Complete Analysis Packs saved to `0-FRD_Documents/{CODE}_FRD_Complete_2026-06-30.md`.
+> "P0 gaps" = critical blockers (security, data integrity, compliance). "Effort" = remaining dev work.
+
+| Code | Module | Completion | P0 Gaps | Effort Remaining | Notable Finding |
+|------|--------|-----------|---------|------------------|-----------------|
+| SCH | SchoolSetup | 62% | 4 | ~49 dev-days | `is_super_admin` in `$fillable` — P0 priv-esc |
+| STT | SmartTimetable | 68% | 5 | 192 hrs | FET solver untested, gate calls absent |
+| TTS | StandardTimetable | 15% | 5 | ~150 hrs | Near-greenfield; depends on TTF |
+| TTF | TimetableFoundation | 68% | 4 | ~70 hrs | 19 of 23 policies dead (duplicate Gate registration) |
+| STP | StudentPortal | 75-80% | 4 | ~77.5 hrs | Confirmed ACTIVE — was wrongly "Pending" in CLAUDE.md |
+| FIN | StudentFee | 78% | 9 | ~32 dev-days | Highest P0 count in batch; zero-auth on financial routes |
+| STD | StudentProfile | TBD | 3 | ~59 dev-days | `is_super_admin` in `$fillable`; attendance controller zero-auth |
+| SLK | SyllabusBooks | 70-75% | 5 | — | 3 controllers import Prime `AcademicSession` (wrong DB layer) |
+| SLB | Syllabus | 78% | 6 | — | 15 FormRequests with `authorize(){return true;}` |
+| QNS | QuestionBank | 50% | 6 | ~112 hrs | `QuestionBankPolicy` dead due to duplicate Gate::policy() call |
+| TMP | Template | ~68% (**NO-GO** 40/100) | 3 | — | Mode X 2026-06-30: `value_type` missing → image/html rendering broken; `class_group_id` fallback absent; SQL injection in DB introspection |
+| SYS | SystemConfig | 65-70% | 5 | ~46 hrs | Central module; menus/settings/translations |
+| VND | Vendor | ~50% (**NO-GO** 35/100) | 4 | — | Mode X 2026-06-30: `balance_due` plain vs GENERATED STORED; PAN/bank plaintext; payment race condition; Transport hard-import in VndAgreement |
+
+### Cross-Cutting Systemic Gaps (confirmed 13/13 modules, 2026-06-30)
+1. `EnsureTenantHasModule` middleware absent from all route groups
+2. `Gate::authorize()` absent or commented out — policies exist but are never called
+3. `FormRequest::authorize(){ return true; }` hardcoded (D30 pattern)
+4. Zero test coverage across most modules
+5. PII plaintext storage (VND confirmed; audit others)
+6. Cross-layer `AcademicSession` import (SLK confirmed; check all modules)
+7. `is_super_admin` in User model `$fillable` (SCH + STD confirmed)
+8. Duplicate `Gate::policy()` registration silently kills valid policies (QNS + TTF confirmed)

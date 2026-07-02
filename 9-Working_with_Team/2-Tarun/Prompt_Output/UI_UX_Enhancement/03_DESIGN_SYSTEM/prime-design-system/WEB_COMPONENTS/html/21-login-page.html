@@ -1,0 +1,120 @@
+<!doctype html><html lang="en" data-bs-theme="light" dir="ltr"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prime DS — Login</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@4.0.0-beta3/dist/css/adminlte.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<link rel="stylesheet" href="../css/tokens.css"><link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/components/forms.css"><link rel="stylesheet" href="../css/components/buttons.css">
+<link rel="stylesheet" href="../css/dark-mode.css">
+<style>
+  /* full-bleed override of the preview content wrapper for this screen */
+  .ds-content.login-content{max-width:none;margin:0;padding:0}
+  .split{display:grid;grid-template-columns:1.05fr 1fr;min-height:calc(100vh - 57px)}
+  /* branded panel */
+  .brand-side{position:relative;overflow:hidden;color:#fff;padding:56px 56px;display:flex;flex-direction:column;justify-content:space-between;
+    background:linear-gradient(135deg,#545ed6 0%,#6673fc 45%,#8a94ff 100%)}
+  .brand-side::before,.brand-side::after{content:"";position:absolute;border-radius:50%;background:rgba(255,255,255,.10)}
+  .brand-side::before{width:420px;height:420px;right:-120px;top:-140px}
+  .brand-side::after{width:280px;height:280px;left:-90px;bottom:-110px;background:rgba(255,255,255,.07)}
+  .brand-side > *{position:relative;z-index:1}
+  .brand-logo{display:flex;align-items:center;gap:12px;font-weight:700;font-size:1.15rem}
+  .brand-logo .mark{width:42px;height:42px;border-radius:12px;background:#fff;color:var(--p-primary);display:grid;place-items:center;font-weight:800;font-size:1.35rem;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+  .brand-copy h2{font-size:2rem;line-height:2.4rem;font-weight:700;margin:0 0 14px}
+  .brand-copy p{font-size:1.02rem;opacity:.9;max-width:420px;margin:0}
+  .brand-points{list-style:none;margin:26px 0 0;padding:0;display:grid;gap:12px}
+  .brand-points li{display:flex;align-items:center;gap:10px;font-size:.95rem;opacity:.95}
+  .brand-points i{opacity:.9}
+  .brand-foot{font-size:.8rem;opacity:.8}
+  /* form panel */
+  .form-side{display:flex;align-items:center;justify-content:center;padding:40px 24px;background:var(--p-surface-secondary)}
+  .login-card{width:100%;max-width:400px;background:var(--p-surface-bg);border:1px solid var(--p-surface-border);border-radius:20px;box-shadow:var(--p-shadow-md);padding:36px 32px}
+  .login-card .top{text-align:center;margin-bottom:26px}
+  .login-card .mark-sm{width:48px;height:48px;border-radius:14px;background:var(--p-primary);color:#fff;display:grid;place-items:center;font-weight:800;font-size:1.5rem;margin:0 auto 14px;box-shadow:var(--p-shadow-sm)}
+  .login-card h1{font-size:1.35rem;margin:0 0 4px}
+  .login-card .sub{color:var(--p-text-secondary);font-size:.9rem;margin:0}
+  .pw-wrap{position:relative}
+  .pw-toggle{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:34px;height:34px;border:0;background:transparent;color:var(--p-text-muted);border-radius:8px;cursor:pointer;display:grid;place-items:center}
+  .pw-toggle:hover{background:var(--p-surface-hover);color:var(--p-text-primary)}
+  .row-between{display:flex;align-items:center;justify-content:space-between;margin:14px 0 20px}
+  .row-between a{font-size:.85rem;font-weight:600;text-decoration:none;color:var(--p-primary)}
+  .divider{display:flex;align-items:center;gap:12px;color:var(--p-text-muted);font-size:.78rem;margin:22px 0}
+  .divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--p-surface-border)}
+  .foot-note{text-align:center;font-size:.82rem;color:var(--p-text-secondary);margin:20px 0 0}
+  @media(max-width:860px){.split{grid-template-columns:1fr}.brand-side{display:none}}
+</style></head>
+<body>
+<header class="ds-toolbar"><a href="../../index.html" class="ds-brand" style="text-decoration:none;color:inherit"><span class="ds-logo">P</span> Prime DS</a><span class="ds-spacer"></span>
+<button class="ds-toggle" data-ds-width-toggle><i class="bi bi-phone"></i> <span class="ds-width-label">Desktop</span></button>
+<button class="ds-toggle" data-ds-theme-toggle><i class="bi bi-sun"></i> <span class="ds-theme-label">Light</span></button></header>
+<main class="ds-content login-content">
+  <div class="ds-notes" style="margin:16px 24px 0"><strong>Template:</strong> Authentication screen — a centered card over a branded split/gradient panel, "P" logo mark, email + password with show/hide toggle, remember-me + forgot-password, primary sign-in and an inline validation example. No demo credentials are shown. Maps to <code>resources/views/auth/login.blade.php</code> (tenant-scoped login resolved by school code / sub-domain).</div>
+
+  <div class="split">
+    <!-- Branded side -->
+    <aside class="brand-side">
+      <div class="brand-logo"><span class="mark">P</span> Prime AI</div>
+      <div class="brand-copy">
+        <h2>The intelligent operating system for your school.</h2>
+        <p>ERP, learning and analytics in one place — attendance, fees, exams and communication, unified for every classroom.</p>
+        <ul class="brand-points">
+          <li><i class="bi bi-check-circle-fill"></i> Real-time attendance &amp; fee insights</li>
+          <li><i class="bi bi-check-circle-fill"></i> Parent, teacher &amp; student portals</li>
+          <li><i class="bi bi-check-circle-fill"></i> Secure, multi-tenant &amp; privacy-first</li>
+        </ul>
+      </div>
+      <div class="brand-foot">© 2026 Prime AI · Greenwood International School, Bengaluru</div>
+    </aside>
+
+    <!-- Form side -->
+    <section class="form-side">
+      <form class="login-card" novalidate>
+        <div class="top">
+          <div class="mark-sm">P</div>
+          <h1>Welcome back</h1>
+          <p class="sub">Sign in to your school workspace</p>
+        </div>
+
+        <div class="p-field">
+          <label class="form-label" for="email">Email address</label>
+          <input class="form-control" id="email" type="email" autocomplete="username" placeholder="you@school.edu" value="admin@greenwood.edu">
+        </div>
+
+        <div class="p-field">
+          <label class="form-label" for="pw">Password</label>
+          <div class="pw-wrap">
+            <input class="form-control is-invalid" id="pw" type="password" autocomplete="current-password" value="secret" aria-describedby="pwErr">
+            <button class="pw-toggle" type="button" data-pw-toggle aria-label="Show password" aria-pressed="false"><i class="bi bi-eye"></i></button>
+          </div>
+          <span class="invalid-feedback" id="pwErr">Incorrect password. Please try again or reset it below.</span>
+        </div>
+
+        <div class="row-between">
+          <label class="form-check" style="display:flex;gap:8px;align-items:center;margin:0">
+            <input class="form-check-input" type="checkbox">
+            <span class="form-check-label" style="font-size:.88rem">Remember me</span>
+          </label>
+          <a href="#">Forgot password?</a>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-lg btn-block"><i class="bi bi-box-arrow-in-right"></i> Sign in</button>
+
+        <div class="divider">Need help?</div>
+        <p class="foot-note">Contact your school administrator to request access.<br>Protected by role-based access control.</p>
+      </form>
+    </section>
+  </div>
+</main>
+<script src="../js/main.js"></script>
+<script>
+  // password show/hide toggle
+  var t = document.querySelector('[data-pw-toggle]');
+  if (t) t.addEventListener('click', function(){
+    var f = document.getElementById('pw');
+    var show = f.type === 'password';
+    f.type = show ? 'text' : 'password';
+    t.setAttribute('aria-pressed', show ? 'true' : 'false');
+    t.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+    t.querySelector('i').className = show ? 'bi bi-eye-slash' : 'bi bi-eye';
+  });
+</script>
+</body></html>

@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en" data-bs-theme="light" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prime DS — Sidebar</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@4.0.0-beta3/dist/css/adminlte.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<link rel="stylesheet" href="../css/tokens.css">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/components/sidebar.css">
+<link rel="stylesheet" href="../css/dark-mode.css">
+<style>
+  /* Page-local presentation only: give the demo sidebars a fixed frame and
+     drive treeview open/close + the static mobile-drawer visual. The Prime
+     styling of .app-sidebar / .sidebar-menu / .nav-treeview lives in sidebar.css. */
+  .p-sidebar{width:264px;flex:0 0 264px;align-self:stretch;overflow:hidden;
+    border-radius:var(--p-radius-lg)}
+  .p-sidebar .sidebar-menu{list-style:none;margin:0;padding:var(--p-space-2) 0}
+  .p-sidebar .nav-treeview{list-style:none}
+  .p-sidebar .nav-link{cursor:pointer}
+  .p-sidebar .nav-link>p{margin:0}
+  /* Treeview open/close driven by .menu-open (script toggles it). */
+  .p-sidebar .nav-treeview{display:none}
+  .p-sidebar .menu-open>.nav-treeview{display:block}
+
+  /* Mini / collapsed rail preview */
+  .p-sidebar.is-mini{width:64px;flex-basis:64px}
+  .p-sidebar.is-mini .sidebar-brand span,
+  .p-sidebar.is-mini .nav-link>p,
+  .p-sidebar.is-mini .nav-link>.nav-arrow{display:none}
+  .p-sidebar.is-mini .sidebar-brand{justify-content:center;padding:0}
+  .p-sidebar.is-mini .nav-link{justify-content:center}
+
+  /* Static mobile drawer + scrim visual */
+  .p-drawer-stage{position:relative;height:380px;overflow:hidden;border-radius:var(--p-radius-lg);
+    background:var(--p-surface-secondary);border:1px solid var(--p-surface-border)}
+  .p-drawer-stage .p-stage-content{padding:var(--p-space-6);color:var(--p-text-muted)}
+  .p-scrim{position:absolute;inset:0;background:rgba(15,23,42,.5);z-index:1}
+  .p-drawer{position:absolute;inset:0 auto 0 0;width:248px;z-index:2;
+    box-shadow:var(--p-shadow-lg);border-right:1px solid var(--p-surface-border);
+    display:flex;flex-direction:column}
+  .p-drawer .sidebar-menu{list-style:none;margin:0;padding:var(--p-space-2) 0}
+</style>
+</head>
+<body>
+<header class="ds-toolbar">
+  <a href="../../index.html" class="ds-brand" style="text-decoration:none;color:inherit"><span class="ds-logo">P</span> Prime DS</a>
+  <span class="ds-spacer"></span>
+  <button class="ds-toggle" data-ds-width-toggle><i class="bi bi-phone"></i> <span class="ds-width-label">Desktop</span></button>
+  <button class="ds-toggle" data-ds-theme-toggle><i class="bi bi-sun"></i> <span class="ds-theme-label">Light</span></button>
+</header>
+<main class="ds-content">
+  <div class="ds-section"><h1>Sidebar</h1><p class="ds-desc">The primary app navigation rail — AdminLTE <code>.app-sidebar</code> / <code>.sidebar-menu</code> restyled to Prime: accent-not-fill active items, expandable treeview submenus, a mini rail and a mobile drawer.</p></div>
+
+  <!-- ===================== APP SIDEBAR + TREEVIEW ===================== -->
+  <section class="ds-section">
+    <h2>App sidebar with treeview</h2>
+    <p class="ds-desc">Brand header, icon-led items, one active item (left accent bar + tint), and an expandable <em>Students</em> treeview. The active trail is open by default; the current child is highlighted.</p>
+    <div class="ds-demo ds-block">
+      <aside class="app-sidebar p-sidebar p-shadow-sm">
+        <div class="sidebar-brand"><span class="p-navbar-logo" style="width:28px;height:28px;border-radius:8px;background:var(--p-primary);color:#fff;display:inline-grid;place-items:center;font-weight:700">P</span> <span>Greenwood&nbsp;ISB</span></div>
+        <nav aria-label="Main">
+          <ul class="sidebar-menu">
+            <li class="nav-item">
+              <a href="#" class="nav-link"><i class="nav-icon bi bi-grid-1x2-fill" aria-hidden="true"></i><p>Dashboard</p></a>
+            </li>
+            <li class="nav-item menu-open">
+              <button type="button" class="nav-link" aria-expanded="true" aria-controls="tv-students">
+                <i class="nav-icon bi bi-mortarboard-fill" aria-hidden="true"></i>
+                <p>Students</p>
+                <i class="nav-arrow bi bi-chevron-right right" aria-hidden="true"></i>
+              </button>
+              <ul class="nav-treeview" id="tv-students">
+                <li class="nav-item"><a href="#" class="nav-link"><p>All Students</p></a></li>
+                <li class="nav-item"><a href="#" class="nav-link"><p>Admissions</p></a></li>
+                <li class="nav-item"><a href="#" class="nav-link active" aria-current="page"><p>Attendance</p></a></li>
+              </ul>
+            </li>
+            <li class="nav-item">
+              <a href="#" class="nav-link"><i class="nav-icon bi bi-cash-coin" aria-hidden="true"></i><p>Fees</p></a>
+            </li>
+            <li class="nav-item">
+              <a href="#" class="nav-link"><i class="nav-icon bi bi-bar-chart-line-fill" aria-hidden="true"></i><p>Reports</p></a>
+            </li>
+          </ul>
+        </nav>
+      </aside>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;aside class="app-sidebar p-sidebar"&gt;
+  &lt;div class="sidebar-brand"&gt;&lt;span&gt;Greenwood ISB&lt;/span&gt;&lt;/div&gt;
+  &lt;nav aria-label="Main"&gt;
+    &lt;ul class="sidebar-menu"&gt;
+      &lt;li class="nav-item"&gt;
+        &lt;a href="#" class="nav-link"&gt;&lt;i class="nav-icon bi bi-grid-1x2-fill"&gt;&lt;/i&gt;&lt;p&gt;Dashboard&lt;/p&gt;&lt;/a&gt;
+      &lt;/li&gt;
+
+      &lt;!-- Treeview parent: button toggles .menu-open on the &lt;li&gt; --&gt;
+      &lt;li class="nav-item menu-open"&gt;
+        &lt;button type="button" class="nav-link" aria-expanded="true" aria-controls="tv-students"&gt;
+          &lt;i class="nav-icon bi bi-mortarboard-fill"&gt;&lt;/i&gt;
+          &lt;p&gt;Students&lt;/p&gt;
+          &lt;i class="nav-arrow bi bi-chevron-right right"&gt;&lt;/i&gt;
+        &lt;/button&gt;
+        &lt;ul class="nav-treeview" id="tv-students"&gt;
+          &lt;li class="nav-item"&gt;&lt;a href="#" class="nav-link"&gt;&lt;p&gt;All Students&lt;/p&gt;&lt;/a&gt;&lt;/li&gt;
+          &lt;li class="nav-item"&gt;&lt;a href="#" class="nav-link"&gt;&lt;p&gt;Admissions&lt;/p&gt;&lt;/a&gt;&lt;/li&gt;
+          &lt;li class="nav-item"&gt;&lt;a href="#" class="nav-link active" aria-current="page"&gt;&lt;p&gt;Attendance&lt;/p&gt;&lt;/a&gt;&lt;/li&gt;
+        &lt;/ul&gt;
+      &lt;/li&gt;
+
+      &lt;li class="nav-item"&gt;&lt;a href="#" class="nav-link"&gt;&lt;i class="nav-icon bi bi-cash-coin"&gt;&lt;/i&gt;&lt;p&gt;Fees&lt;/p&gt;&lt;/a&gt;&lt;/li&gt;
+      &lt;li class="nav-item"&gt;&lt;a href="#" class="nav-link"&gt;&lt;i class="nav-icon bi bi-bar-chart-line-fill"&gt;&lt;/i&gt;&lt;p&gt;Reports&lt;/p&gt;&lt;/a&gt;&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/nav&gt;
+&lt;/aside&gt;
+
+&lt;script&gt;
+  // Toggle treeview parents; keep aria-expanded in sync.
+  document.querySelectorAll('.sidebar-menu .nav-link[aria-controls]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var li = btn.closest('.nav-item');
+      var open = li.classList.toggle('menu-open');
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+  });
+&lt;/script&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> The main app rail. <code>sidebar.css</code> styles AdminLTE <code>.sidebar-menu .nav-link</code> (44px rows, icon + label), the <code>.active</code> item as a <em>3px left primary bar + primary tint + primary text</em> (accent, don't fill), and rotates the <code>.right</code> caret when the parent <code>&lt;li&gt;</code> gains <code>.menu-open</code>. The treeview toggle is a real <code>&lt;button&gt;</code> with <code>aria-expanded</code> + <code>aria-controls</code>. Wrapping labels in <code>&lt;p&gt;</code> lets the mini rail hide them cleanly.</div>
+  </section>
+
+  <!-- ===================== MINI / COLLAPSED RAIL ===================== -->
+  <section class="ds-section">
+    <h2>Mini / collapsed rail</h2>
+    <p class="ds-desc">On narrow desktops the rail collapses to an icons-only 64px strip; labels reappear as tooltips on hover. In the app, AdminLTE toggles <code>.sidebar-collapse</code> on the wrapper — here we show the end state statically.</p>
+    <div class="ds-demo ds-block">
+      <aside class="app-sidebar p-sidebar is-mini p-shadow-sm">
+        <div class="sidebar-brand"><span class="p-navbar-logo" style="width:28px;height:28px;border-radius:8px;background:var(--p-primary);color:#fff;display:inline-grid;place-items:center;font-weight:700">P</span></div>
+        <ul class="sidebar-menu">
+          <li class="nav-item"><a href="#" class="nav-link" aria-label="Dashboard" title="Dashboard"><i class="nav-icon bi bi-grid-1x2-fill" aria-hidden="true"></i><p>Dashboard</p></a></li>
+          <li class="nav-item"><a href="#" class="nav-link active" aria-current="page" aria-label="Students" title="Students"><i class="nav-icon bi bi-mortarboard-fill" aria-hidden="true"></i><p>Students</p></a></li>
+          <li class="nav-item"><a href="#" class="nav-link" aria-label="Fees" title="Fees"><i class="nav-icon bi bi-cash-coin" aria-hidden="true"></i><p>Fees</p></a></li>
+          <li class="nav-item"><a href="#" class="nav-link" aria-label="Reports" title="Reports"><i class="nav-icon bi bi-bar-chart-line-fill" aria-hidden="true"></i><p>Reports</p></a></li>
+        </ul>
+      </aside>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;!-- App shell collapses the rail by toggling .sidebar-collapse on the wrapper --&gt;
+&lt;body class="sidebar-collapse"&gt;
+  &lt;aside class="app-sidebar p-sidebar"&gt;
+    &lt;ul class="sidebar-menu"&gt;
+      &lt;!-- give each item aria-label + title so the icon-only state stays labelled --&gt;
+      &lt;li class="nav-item"&gt;
+        &lt;a href="#" class="nav-link" aria-label="Students" title="Students"&gt;
+          &lt;i class="nav-icon bi bi-mortarboard-fill"&gt;&lt;/i&gt;&lt;p&gt;Students&lt;/p&gt;
+        &lt;/a&gt;
+      &lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/aside&gt;
+&lt;/body&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> Space-saving desktop mode. <code>sidebar.css</code> <code>.sidebar-collapse</code> rules hide <code>.nav-link &gt; p</code> and centre the icons. Always keep <code>aria-label</code> + <code>title</code> on each item so the collapsed rail is still labelled for screen readers and hover tooltips.</div>
+  </section>
+
+  <!-- ===================== MOBILE DRAWER NOTE ===================== -->
+  <section class="ds-section">
+    <h2>Mobile drawer (off-canvas)</h2>
+    <p class="ds-desc">On phones the sidebar becomes an off-canvas drawer that slides in over a dimming scrim. Below is a static visual of the open state.</p>
+    <div class="ds-demo ds-block">
+      <div class="p-drawer-stage">
+        <div class="p-stage-content">Page content behind the drawer…</div>
+        <div class="p-scrim" aria-hidden="true"></div>
+        <aside class="app-sidebar p-drawer" role="dialog" aria-modal="true" aria-label="Navigation drawer">
+          <div class="sidebar-brand"><span class="p-navbar-logo" style="width:28px;height:28px;border-radius:8px;background:var(--p-primary);color:#fff;display:inline-grid;place-items:center;font-weight:700">P</span> <span>Greenwood&nbsp;ISB</span></div>
+          <ul class="sidebar-menu">
+            <li class="nav-item"><a href="#" class="nav-link"><i class="nav-icon bi bi-grid-1x2-fill" aria-hidden="true"></i><p>Dashboard</p></a></li>
+            <li class="nav-item"><a href="#" class="nav-link active" aria-current="page"><i class="nav-icon bi bi-mortarboard-fill" aria-hidden="true"></i><p>Students</p></a></li>
+            <li class="nav-item"><a href="#" class="nav-link"><i class="nav-icon bi bi-cash-coin" aria-hidden="true"></i><p>Fees</p></a></li>
+            <li class="nav-item"><a href="#" class="nav-link"><i class="nav-icon bi bi-bar-chart-line-fill" aria-hidden="true"></i><p>Reports</p></a></li>
+          </ul>
+        </aside>
+      </div>
+    </div>
+    <div class="ds-notes"><strong>Note — drawer pattern:</strong> The navbar hamburger (<code>&lt;button class="navbar-toggler"&gt;</code>, see <a href="05-navigation.html">05-navigation.html</a>) toggles the drawer. When open: give the panel <code>role="dialog" aria-modal="true"</code>, render a full-bleed <code>.p-scrim</code> beneath it, <strong>trap focus</strong> inside the drawer, move initial focus to the first item, close on <kbd>Esc</kbd> or a scrim tap, and restore focus to the hamburger on close. Respect <code>prefers-reduced-motion</code> by skipping the slide animation.</div>
+  </section>
+</main>
+<script>
+  // Treeview toggle for the demo sidebars (keeps aria-expanded in sync).
+  document.querySelectorAll('.p-sidebar .sidebar-menu .nav-link[aria-controls]').forEach(function (btn) {
+    btn.addEventListener('click', function (e) {
+      e.preventDefault();
+      var li = btn.closest('.nav-item');
+      var open = li.classList.toggle('menu-open');
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+  });
+</script>
+<script src="../js/main.js"></script>
+</body>
+</html>

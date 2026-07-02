@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en" data-bs-theme="light" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prime DS — Tabs</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@4.0.0-beta3/dist/css/adminlte.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<link rel="stylesheet" href="../css/tokens.css">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/components/tabs.css">
+<link rel="stylesheet" href="../css/dark-mode.css">
+</head>
+<body>
+<header class="ds-toolbar">
+  <a href="../../index.html" class="ds-brand" style="text-decoration:none;color:inherit"><span class="ds-logo">P</span> Prime DS</a>
+  <span class="ds-spacer"></span>
+  <button class="ds-toggle" data-ds-width-toggle><i class="bi bi-phone"></i> <span class="ds-width-label">Desktop</span></button>
+  <button class="ds-toggle" data-ds-theme-toggle><i class="bi bi-sun"></i> <span class="ds-theme-label">Light</span></button>
+</header>
+<main class="ds-content">
+  <div class="ds-section"><h1>Tabs</h1><p class="ds-desc">Bootstrap <code>.nav-tabs</code> restyled to Prime: the active tab is a primary <em>underline accent</em>, not a filled pill. Horizontal, vertical, and toolbar layouts — all keyboard-accessible.</p></div>
+
+  <!-- ===================== HORIZONTAL TABS ===================== -->
+  <section class="ds-section">
+    <h2>Horizontal tabs</h2>
+    <p class="ds-desc">The default: a row of tabs with a 2px primary underline on the active tab. Panels switch via the Bootstrap tab plugin.</p>
+    <div class="ds-demo ds-block">
+      <ul class="nav nav-tabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active" id="h-overview-tab" data-bs-toggle="tab" data-bs-target="#h-overview" type="button" role="tab" aria-controls="h-overview" aria-selected="true">Overview</button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="h-fees-tab" data-bs-toggle="tab" data-bs-target="#h-fees" type="button" role="tab" aria-controls="h-fees" aria-selected="false">Fees <span class="p-tab-count">3</span></button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="h-attend-tab" data-bs-toggle="tab" data-bs-target="#h-attend" type="button" role="tab" aria-controls="h-attend" aria-selected="false">Attendance</button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="h-docs-tab" data-bs-toggle="tab" data-bs-target="#h-docs" type="button" role="tab" aria-controls="h-docs" aria-selected="false">Documents</button>
+        </li>
+      </ul>
+      <div class="tab-content">
+        <div class="tab-pane fade show active" id="h-overview" role="tabpanel" aria-labelledby="h-overview-tab" tabindex="0">
+          <p class="p-h4" style="margin:0 0 4px">Aarav Sharma · Class 9-B</p>
+          <p class="p-text-secondary" style="margin:0">Roll 24 · Admission 2019 · House Emerald · Guardian: Rajesh Sharma.</p>
+        </div>
+        <div class="tab-pane fade" id="h-fees" role="tabpanel" aria-labelledby="h-fees-tab" tabindex="0">
+          <p style="margin:0">3 open invoices · <strong>₹42,000</strong> due this term. Last payment 12 Jun 2026.</p>
+        </div>
+        <div class="tab-pane fade" id="h-attend" role="tabpanel" aria-labelledby="h-attend-tab" tabindex="0">
+          <p style="margin:0">Present 96.2% this term · 4 late marks · 0 unexplained absences.</p>
+        </div>
+        <div class="tab-pane fade" id="h-docs" role="tabpanel" aria-labelledby="h-docs-tab" tabindex="0">
+          <p style="margin:0">Birth certificate, Aadhaar, and transfer certificate on file. 1 pending upload.</p>
+        </div>
+      </div>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;ul class="nav nav-tabs" role="tablist"&gt;
+  &lt;li class="nav-item" role="presentation"&gt;
+    &lt;button class="nav-link active" id="h-overview-tab" data-bs-toggle="tab"
+            data-bs-target="#h-overview" type="button" role="tab"
+            aria-controls="h-overview" aria-selected="true"&gt;Overview&lt;/button&gt;
+  &lt;/li&gt;
+  &lt;li class="nav-item" role="presentation"&gt;
+    &lt;button class="nav-link" id="h-fees-tab" data-bs-toggle="tab"
+            data-bs-target="#h-fees" type="button" role="tab"
+            aria-controls="h-fees" aria-selected="false"&gt;Fees &lt;span class="p-tab-count"&gt;3&lt;/span&gt;&lt;/button&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class="tab-content"&gt;
+  &lt;div class="tab-pane fade show active" id="h-overview" role="tabpanel"
+       aria-labelledby="h-overview-tab" tabindex="0"&gt;…&lt;/div&gt;
+  &lt;div class="tab-pane fade" id="h-fees" role="tabpanel"
+       aria-labelledby="h-fees-tab" tabindex="0"&gt;…&lt;/div&gt;
+&lt;/div&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> Section switching inside a page or card. <code>tabs.css</code> strips the boxed Bootstrap look, colours inactive tabs muted, hover as a subtle underline tint, and the <code>.active</code> tab as <em>primary text + 2px primary bottom-border</em>. Count chips use <code>.p-tab-count</code>. Needs the Bootstrap bundle JS (loaded below); arrow-key roving focus and <code>aria-selected</code> come from the plugin.</div>
+  </section>
+
+  <!-- ===================== VERTICAL TABS ===================== -->
+  <section class="ds-section">
+    <h2>Vertical tabs</h2>
+    <p class="ds-desc">Tabs stacked in a left column with content on the right — good for settings and long tab sets. The active accent moves to a left border.</p>
+    <div class="ds-demo ds-block">
+      <div class="p-tabs-vertical">
+        <div class="nav flex-column nav-tabs" role="tablist" aria-orientation="vertical">
+          <button class="nav-link active" id="v-profile-tab" data-bs-toggle="tab" data-bs-target="#v-profile" type="button" role="tab" aria-controls="v-profile" aria-selected="true"><i class="bi bi-person" aria-hidden="true"></i> Profile</button>
+          <button class="nav-link" id="v-academic-tab" data-bs-toggle="tab" data-bs-target="#v-academic" type="button" role="tab" aria-controls="v-academic" aria-selected="false"><i class="bi bi-journal-text" aria-hidden="true"></i> Academic</button>
+          <button class="nav-link" id="v-billing-tab" data-bs-toggle="tab" data-bs-target="#v-billing" type="button" role="tab" aria-controls="v-billing" aria-selected="false"><i class="bi bi-cash-coin" aria-hidden="true"></i> Billing</button>
+          <button class="nav-link" id="v-notify-tab" data-bs-toggle="tab" data-bs-target="#v-notify" type="button" role="tab" aria-controls="v-notify" aria-selected="false"><i class="bi bi-bell" aria-hidden="true"></i> Notifications</button>
+        </div>
+        <div class="tab-content">
+          <div class="tab-pane fade show active" id="v-profile" role="tabpanel" aria-labelledby="v-profile-tab" tabindex="0"><p style="margin:0">Name, guardians, contact details and emergency information.</p></div>
+          <div class="tab-pane fade" id="v-academic" role="tabpanel" aria-labelledby="v-academic-tab" tabindex="0"><p style="margin:0">Class, section, stream, elective subjects and report cards.</p></div>
+          <div class="tab-pane fade" id="v-billing" role="tabpanel" aria-labelledby="v-billing-tab" tabindex="0"><p style="margin:0">Fee plan, invoices, concessions and payment history.</p></div>
+          <div class="tab-pane fade" id="v-notify" role="tabpanel" aria-labelledby="v-notify-tab" tabindex="0"><p style="margin:0">SMS, email and push-notification preferences per guardian.</p></div>
+        </div>
+      </div>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;div class="p-tabs-vertical"&gt;
+  &lt;div class="nav flex-column nav-tabs" role="tablist" aria-orientation="vertical"&gt;
+    &lt;button class="nav-link active" id="v-profile-tab" data-bs-toggle="tab"
+            data-bs-target="#v-profile" type="button" role="tab"
+            aria-controls="v-profile" aria-selected="true"&gt;&lt;i class="bi bi-person"&gt;&lt;/i&gt; Profile&lt;/button&gt;
+    &lt;button class="nav-link" id="v-academic-tab" data-bs-toggle="tab"
+            data-bs-target="#v-academic" type="button" role="tab"
+            aria-controls="v-academic" aria-selected="false"&gt;&lt;i class="bi bi-journal-text"&gt;&lt;/i&gt; Academic&lt;/button&gt;
+  &lt;/div&gt;
+  &lt;div class="tab-content"&gt;
+    &lt;div class="tab-pane fade show active" id="v-profile" role="tabpanel"
+         aria-labelledby="v-profile-tab" tabindex="0"&gt;…&lt;/div&gt;
+    &lt;div class="tab-pane fade" id="v-academic" role="tabpanel"
+         aria-labelledby="v-academic-tab" tabindex="0"&gt;…&lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> Settings and detail screens with many sections. The <code>.p-tabs-vertical</code> wrapper (from <code>tabs.css</code>) lays the <code>.nav.flex-column</code> tab column beside the panel and moves the active accent to a <em>left</em> border. Set <code>aria-orientation="vertical"</code> so arrow keys navigate up/down.</div>
+  </section>
+
+  <!-- ===================== TABS WITH SEARCH / FILTER TOOLBAR ===================== -->
+  <section class="ds-section">
+    <h2>Tabs with search &amp; filter</h2>
+    <p class="ds-desc">A toolbar row: tabs on the left, a search field and filter dropdown aligned right on the same line, content below.</p>
+    <div class="ds-demo ds-block">
+      <div class="p-tabs-toolbar">
+        <ul class="nav nav-tabs" role="tablist">
+          <li class="nav-item" role="presentation"><button class="nav-link active" id="s-all-tab" data-bs-toggle="tab" data-bs-target="#s-all" type="button" role="tab" aria-controls="s-all" aria-selected="true">All <span class="p-tab-count">2418</span></button></li>
+          <li class="nav-item" role="presentation"><button class="nav-link" id="s-active-tab" data-bs-toggle="tab" data-bs-target="#s-active" type="button" role="tab" aria-controls="s-active" aria-selected="false">Active</button></li>
+          <li class="nav-item" role="presentation"><button class="nav-link" id="s-alumni-tab" data-bs-toggle="tab" data-bs-target="#s-alumni" type="button" role="tab" aria-controls="s-alumni" aria-selected="false">Alumni</button></li>
+        </ul>
+        <div class="p-tabs-toolbar__actions">
+          <div class="position-relative" style="display:flex;align-items:center">
+            <i class="bi bi-search" aria-hidden="true" style="position:absolute;left:10px;color:var(--p-text-muted)"></i>
+            <input class="form-control form-control-sm" type="search" placeholder="Search students…" aria-label="Search students" style="padding-left:30px;width:200px">
+          </div>
+          <select class="form-select form-select-sm" aria-label="Filter by class" style="width:auto"><option>All classes</option><option>Class 9</option><option>Class 10</option></select>
+        </div>
+      </div>
+      <div class="tab-content">
+        <div class="tab-pane fade show active" id="s-all" role="tabpanel" aria-labelledby="s-all-tab" tabindex="0"><p style="margin:0">2,418 students across all classes and statuses.</p></div>
+        <div class="tab-pane fade" id="s-active" role="tabpanel" aria-labelledby="s-active-tab" tabindex="0"><p style="margin:0">2,301 currently enrolled and active.</p></div>
+        <div class="tab-pane fade" id="s-alumni" role="tabpanel" aria-labelledby="s-alumni-tab" tabindex="0"><p style="margin:0">117 graduated / transferred out.</p></div>
+      </div>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;div class="p-tabs-toolbar"&gt;
+  &lt;ul class="nav nav-tabs" role="tablist"&gt;
+    &lt;li class="nav-item" role="presentation"&gt;
+      &lt;button class="nav-link active" data-bs-toggle="tab" data-bs-target="#s-all"
+              type="button" role="tab" aria-controls="s-all" aria-selected="true"&gt;All&lt;/button&gt;
+    &lt;/li&gt;
+  &lt;/ul&gt;
+  &lt;div class="p-tabs-toolbar__actions"&gt;
+    &lt;input class="form-control form-control-sm" type="search"
+           placeholder="Search students…" aria-label="Search students"&gt;
+    &lt;select class="form-select form-select-sm" aria-label="Filter by class"&gt;…&lt;/select&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="tab-content"&gt;…&lt;/div&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> List views where tabs filter the collection and a search/filter refines it further. The <code>.p-tabs-toolbar</code> flex row (from <code>tabs.css</code>) keeps the tab strip and the right-aligned <code>.p-tabs-toolbar__actions</code> on one baseline and owns the shared bottom border. Every control keeps an <code>aria-label</code>.</div>
+  </section>
+
+  <!-- ===================== TABS WITH CREATE BUTTON ===================== -->
+  <section class="ds-section">
+    <h2>Tabs with a Create action</h2>
+    <p class="ds-desc">Tabs on the left, a single primary “＋ Create” button on the right of the strip — the one solid fill on the row, reserved for the primary action.</p>
+    <div class="ds-demo ds-block">
+      <div class="p-tabs-toolbar">
+        <ul class="nav nav-tabs" role="tablist">
+          <li class="nav-item" role="presentation"><button class="nav-link active" id="c-draft-tab" data-bs-toggle="tab" data-bs-target="#c-draft" type="button" role="tab" aria-controls="c-draft" aria-selected="true">Drafts</button></li>
+          <li class="nav-item" role="presentation"><button class="nav-link" id="c-sched-tab" data-bs-toggle="tab" data-bs-target="#c-sched" type="button" role="tab" aria-controls="c-sched" aria-selected="false">Scheduled</button></li>
+          <li class="nav-item" role="presentation"><button class="nav-link" id="c-sent-tab" data-bs-toggle="tab" data-bs-target="#c-sent" type="button" role="tab" aria-controls="c-sent" aria-selected="false">Sent</button></li>
+        </ul>
+        <div class="p-tabs-toolbar__actions">
+          <button type="button" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg" aria-hidden="true"></i> Create</button>
+        </div>
+      </div>
+      <div class="tab-content">
+        <div class="tab-pane fade show active" id="c-draft" role="tabpanel" aria-labelledby="c-draft-tab" tabindex="0"><p style="margin:0">4 announcement drafts awaiting review.</p></div>
+        <div class="tab-pane fade" id="c-sched" role="tabpanel" aria-labelledby="c-sched-tab" tabindex="0"><p style="margin:0">2 scheduled to publish next week.</p></div>
+        <div class="tab-pane fade" id="c-sent" role="tabpanel" aria-labelledby="c-sent-tab" tabindex="0"><p style="margin:0">128 announcements sent this academic year.</p></div>
+      </div>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;div class="p-tabs-toolbar"&gt;
+  &lt;ul class="nav nav-tabs" role="tablist"&gt;
+    &lt;li class="nav-item" role="presentation"&gt;
+      &lt;button class="nav-link active" data-bs-toggle="tab" data-bs-target="#c-draft"
+              type="button" role="tab" aria-controls="c-draft" aria-selected="true"&gt;Drafts&lt;/button&gt;
+    &lt;/li&gt;
+  &lt;/ul&gt;
+  &lt;div class="p-tabs-toolbar__actions"&gt;
+    &lt;button type="button" class="btn btn-primary btn-sm"&gt;&lt;i class="bi bi-plus-lg"&gt;&lt;/i&gt; Create&lt;/button&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> Management screens where a primary create/add action belongs beside the tab set. The <code>.p-tabs-toolbar__actions</code> slot holds the single <code>.btn-primary</code> — the only solid fill on the row (accent, don't fill). Keep the button label as text + icon, never icon-only here.</div>
+  </section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../js/main.js"></script>
+</body>
+</html>

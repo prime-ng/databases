@@ -1,0 +1,222 @@
+/* ============================================================================
+   Prime Design System — buttons.css
+   Styles Bootstrap/AdminLTE: .btn, .btn-primary/.btn-secondary/.btn-success/
+   .btn-danger/.btn-warning/.btn-info, .btn-outline-*, .btn-sm/.btn-lg.
+   Adds Prime helpers: .btn-ghost, .btn.is-loading.
+
+   Principles encoded:
+   - "accent, don't fill": solid fills reserved for primary actions; ghost /
+     outline / subtle used for secondary actions.
+   - Visible focus via --p-focus-ring, 44px min touch target on default+lg.
+   - White text only on primary/danger/secondary; dark text (#222c3c) on the
+     lighter warning/success fills for AA contrast.
+   - Respects prefers-reduced-motion (handled globally + guarded here).
+   ========================================================================== */
+
+.btn {
+  --p-btn-fg: var(--p-text-primary);
+  --p-btn-bg: transparent;
+  --p-btn-border: transparent;
+  --p-btn-hover-bg: var(--p-surface-hover);
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--p-space-2);
+  min-height: 40px;               /* comfortable default */
+  padding: 0 var(--p-space-4);
+  border-radius: var(--p-radius-md);
+  border: 1px solid var(--p-btn-border);
+  background-color: var(--p-btn-bg);
+  color: var(--p-btn-fg);
+  font-size: var(--p-fs-sm);
+  font-weight: var(--p-fw-semibold);
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color var(--p-dur-fast) var(--p-ease),
+              border-color var(--p-dur-fast) var(--p-ease),
+              color var(--p-dur-fast) var(--p-ease),
+              box-shadow var(--p-dur-fast) var(--p-ease),
+              transform var(--p-dur-fast) var(--p-ease);
+}
+
+.btn:hover {
+  background-color: var(--p-btn-hover-bg);
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+/* Visible, consistent focus ring for every variant */
+.btn:focus-visible {
+  outline: none;
+  box-shadow: var(--p-focus-ring);
+}
+
+/* Icon sizing / spacing inside buttons (gap handles the rest) */
+.btn > .p-icon,
+.btn > svg,
+.btn > i {
+  flex: 0 0 auto;
+  font-size: 1.05em;
+  line-height: 1;
+}
+
+/* Icon-only button — keep it square and tappable */
+.btn.btn-icon {
+  padding: 0;
+  width: 40px;
+  aspect-ratio: 1;
+}
+
+/* ── Solid fills — reserved for primary intent ───────────────────────────── */
+.btn.btn-primary {
+  --p-btn-bg: var(--p-primary);
+  --p-btn-hover-bg: var(--p-primary-hover);
+  --p-btn-border: var(--p-primary);
+  --p-btn-fg: #ffffff;                 /* white on primary */
+  box-shadow: var(--p-shadow-sm);
+}
+.btn.btn-primary:hover { border-color: var(--p-primary-hover); color: #fff; }
+
+.btn.btn-secondary {
+  --p-btn-bg: var(--p-secondary);
+  --p-btn-hover-bg: #55647a;
+  --p-btn-border: var(--p-secondary);
+  --p-btn-fg: #ffffff;                 /* white on secondary */
+}
+.btn.btn-secondary:hover { color: #fff; }
+
+.btn.btn-danger {
+  --p-btn-bg: var(--p-danger);
+  --p-btn-hover-bg: #cf424a;
+  --p-btn-border: var(--p-danger);
+  --p-btn-fg: #ffffff;                 /* white on danger */
+}
+.btn.btn-danger:hover { color: #fff; }
+
+/* Lighter fills need DARK text for contrast (per spec: #222c3c) */
+.btn.btn-warning {
+  --p-btn-bg: var(--p-warning);
+  --p-btn-hover-bg: #e6ba13;
+  --p-btn-border: var(--p-warning);
+  --p-btn-fg: #222c3c;
+}
+.btn.btn-warning:hover { color: #222c3c; }
+
+.btn.btn-success {
+  --p-btn-bg: var(--p-success);
+  --p-btn-hover-bg: #34b56e;
+  --p-btn-border: var(--p-success);
+  --p-btn-fg: #222c3c;
+}
+.btn.btn-success:hover { color: #222c3c; }
+
+.btn.btn-info {
+  --p-btn-bg: var(--p-info);
+  --p-btn-hover-bg: #3ba6bd;
+  --p-btn-border: var(--p-info);
+  --p-btn-fg: #222c3c;
+}
+.btn.btn-info:hover { color: #222c3c; }
+
+/* ── Outline variants — accent, don't fill ──────────────────────────────── */
+.btn.btn-outline-primary   { --p-btn-fg: var(--p-primary);   --p-btn-border: var(--p-primary);   --p-btn-hover-bg: rgba(var(--p-primary-rgb), 0.10); }
+.btn.btn-outline-secondary { --p-btn-fg: var(--p-secondary); --p-btn-border: var(--p-secondary); --p-btn-hover-bg: rgba(var(--p-secondary-rgb), 0.10); }
+.btn.btn-outline-success   { --p-btn-fg: #1f9b57;            --p-btn-border: var(--p-success);   --p-btn-hover-bg: rgba(var(--p-success-rgb), 0.12); }
+.btn.btn-outline-danger    { --p-btn-fg: var(--p-danger);    --p-btn-border: var(--p-danger);    --p-btn-hover-bg: rgba(var(--p-danger-rgb), 0.10); }
+.btn.btn-outline-warning   { --p-btn-fg: #a67f04;            --p-btn-border: var(--p-warning);   --p-btn-hover-bg: rgba(var(--p-warning-rgb), 0.15); }
+.btn.btn-outline-info      { --p-btn-fg: #2f8497;            --p-btn-border: var(--p-info);      --p-btn-hover-bg: rgba(var(--p-info-rgb), 0.12); }
+
+.btn[class*="btn-outline-"] { background-color: transparent; }
+.btn[class*="btn-outline-"]:hover { background-color: var(--p-btn-hover-bg); }
+
+/* ── Ghost — text-only accent button (Prime helper) ─────────────────────── */
+.btn-ghost {
+  --p-btn-fg: var(--p-text-secondary);
+  --p-btn-bg: transparent;
+  --p-btn-border: transparent;
+  --p-btn-hover-bg: var(--p-surface-hover);
+}
+.btn-ghost.btn-ghost-primary { --p-btn-fg: var(--p-primary); --p-btn-hover-bg: rgba(var(--p-primary-rgb), 0.10); }
+.btn-ghost.btn-ghost-danger  { --p-btn-fg: var(--p-danger);  --p-btn-hover-bg: rgba(var(--p-danger-rgb), 0.10); }
+
+/* Bootstrap's flat helpers mapped to ghost look */
+.btn.btn-link {
+  --p-btn-fg: var(--p-text-link);
+  --p-btn-border: transparent;
+  text-decoration: none;
+}
+.btn.btn-link:hover { text-decoration: underline; background: transparent; }
+
+/* ── Sizes ──────────────────────────────────────────────────────────────── */
+.btn.btn-sm {
+  min-height: 32px;
+  padding: 0 var(--p-space-3);
+  font-size: var(--p-fs-cap);
+  border-radius: var(--p-radius-sm);
+}
+.btn.btn-lg {
+  min-height: 48px;               /* exceeds 44px touch target */
+  padding: 0 var(--p-space-6);
+  font-size: var(--p-fs-body);
+  border-radius: var(--p-radius-lg);
+}
+
+/* ── Disabled ───────────────────────────────────────────────────────────── */
+.btn:disabled,
+.btn.disabled,
+.btn[aria-disabled="true"] {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: none;
+  pointer-events: none;
+}
+
+/* ── Loading state — spinner + hidden label ─────────────────────────────── */
+.btn.is-loading {
+  position: relative;
+  color: transparent !important;
+  pointer-events: none;
+}
+.btn.is-loading > * { visibility: hidden; }
+.btn.is-loading::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 1.05em;
+  height: 1.05em;
+  margin: -0.525em 0 0 -0.525em;
+  border-radius: var(--p-radius-full);
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  /* currentColor is transparent above, so paint the spinner explicitly */
+  border-color: rgba(255, 255, 255, 0.55);
+  border-top-color: #ffffff;
+  animation: p-btn-spin 0.6s linear infinite;
+  visibility: visible;
+}
+/* On light-text fills (warning/success/info) + outlines, use dark spinner */
+.btn.is-loading.btn-warning::after,
+.btn.is-loading.btn-success::after,
+.btn.is-loading.btn-info::after,
+.btn.is-loading[class*="btn-outline-"]::after,
+.btn.is-loading.btn-ghost::after {
+  border-color: rgba(var(--p-primary-rgb), 0.35);
+  border-top-color: var(--p-primary);
+}
+
+@keyframes p-btn-spin { to { transform: rotate(360deg); } }
+
+/* Block / full-width helper */
+.btn.btn-block { display: flex; width: 100%; }
+
+@media (prefers-reduced-motion: reduce) {
+  .btn { transition: none; }
+  .btn:active { transform: none; }
+  .btn.is-loading::after { animation-duration: 1.2s; }
+}

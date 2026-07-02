@@ -1,0 +1,122 @@
+/* ============================================================================
+   Prime Design System — badges.css
+   Styles Bootstrap: .badge, .bg-primary/.bg-success/etc used on badges.
+   Adds Prime helpers: .p-badge (tinted pill) + tone modifiers --primary/
+   --success/--warning/--danger/--info/--secondary, .p-badge--dot (status dot).
+
+   Principle "accent, don't fill": badges are a TINTED background + colored
+   text (+ optional leading icon slot), NOT a saturated solid fill.
+   Status is communicated by color + icon/dot + label together.
+   ========================================================================== */
+
+.badge,
+.p-badge {
+  --p-badge-color: var(--p-secondary);
+  --p-badge-rgb: var(--p-secondary-rgb);
+
+  display: inline-flex;
+  align-items: center;
+  gap: var(--p-space-1);
+  padding: 3px var(--p-space-2);
+  border-radius: var(--p-radius-full);
+  background-color: rgba(var(--p-badge-rgb), 0.12);   /* tint */
+  color: var(--p-badge-color);                        /* colored text */
+  font-size: var(--p-fs-cap);
+  font-weight: var(--p-fw-semibold);
+  line-height: 1.4;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+/* Optional leading icon slot */
+.p-badge > .p-badge__icon,
+.badge > .p-badge__icon {
+  flex: 0 0 auto;
+  display: inline-flex;
+  font-size: 0.9em;
+  line-height: 1;
+}
+
+/* ── Tone modifiers (Prime helpers) ─────────────────────────────────────── */
+.p-badge--primary   { --p-badge-color: var(--p-primary);   --p-badge-rgb: var(--p-primary-rgb); }
+.p-badge--secondary { --p-badge-color: var(--p-secondary); --p-badge-rgb: var(--p-secondary-rgb); }
+.p-badge--success   { --p-badge-color: #1f9b57;            --p-badge-rgb: var(--p-success-rgb); }
+.p-badge--warning   { --p-badge-color: #a67f04;            --p-badge-rgb: var(--p-warning-rgb); }
+.p-badge--danger    { --p-badge-color: var(--p-danger);    --p-badge-rgb: var(--p-danger-rgb); }
+.p-badge--info      { --p-badge-color: #2f8497;            --p-badge-rgb: var(--p-info-rgb); }
+
+/* ── Bridge Bootstrap contextual bg-* classes onto the tinted look ──────────
+   So legacy markup like <span class="badge bg-success"> also renders as a
+   tinted pill instead of a saturated fill. Uses !important to beat BS utility. */
+.badge.bg-primary   { background-color: rgba(var(--p-primary-rgb),   0.12) !important; color: var(--p-primary); }
+.badge.bg-secondary { background-color: rgba(var(--p-secondary-rgb), 0.12) !important; color: var(--p-secondary); }
+.badge.bg-success   { background-color: rgba(var(--p-success-rgb),   0.14) !important; color: #1f9b57; }
+.badge.bg-warning   { background-color: rgba(var(--p-warning-rgb),   0.18) !important; color: #a67f04; }
+.badge.bg-danger    { background-color: rgba(var(--p-danger-rgb),    0.12) !important; color: var(--p-danger); }
+.badge.bg-info      { background-color: rgba(var(--p-info-rgb),      0.14) !important; color: #2f8497; }
+.badge.bg-light     { background-color: var(--p-surface-secondary) !important; color: var(--p-text-secondary); }
+.badge.bg-dark      { background-color: rgba(34,44,60,0.10) !important; color: var(--p-dark); }
+
+/* ── Solid variant (opt-in, e.g. counters on icons) ─────────────────────── */
+.p-badge.p-badge--solid {
+  background-color: var(--p-badge-color);
+  color: #ffffff;
+}
+.p-badge--solid.p-badge--warning,
+.p-badge--solid.p-badge--success,
+.p-badge--solid.p-badge--info { color: #222c3c; }   /* dark text on light fills */
+
+/* ── Status dot variant ─────────────────────────────────────────────────────
+   Markup: <span class="p-badge p-badge--success"><span class="p-badge--dot"></span> Active</span>
+   The dot reinforces status beyond color for the pill, or can stand alone. */
+.p-badge--dot,
+.p-status-dot {
+  flex: 0 0 auto;
+  display: inline-block;
+  width: 7px; height: 7px;
+  border-radius: var(--p-radius-full);
+  background-color: var(--p-badge-color, currentColor);
+}
+/* Standalone status dots (outside a pill) with their own tone classes */
+.p-status-dot.is-success { background: var(--p-success); }
+.p-status-dot.is-warning { background: var(--p-warning); }
+.p-status-dot.is-danger  { background: var(--p-danger); }
+.p-status-dot.is-info    { background: var(--p-info); }
+.p-status-dot.is-muted   { background: var(--p-text-muted); }
+/* Optional pulsing dot for "live"/attention */
+.p-status-dot.is-pulse { position: relative; }
+.p-status-dot.is-pulse::after {
+  content: "";
+  position: absolute; inset: -3px;
+  border-radius: var(--p-radius-full);
+  background: inherit;
+  opacity: 0.4;
+  animation: p-dot-pulse 1.6s var(--p-ease) infinite;
+}
+@keyframes p-dot-pulse { 0% { transform: scale(1); opacity: 0.4; } 70%,100% { transform: scale(2.2); opacity: 0; } }
+
+/* Pill-with-count (e.g. tab or nav counters) */
+.p-badge.p-badge--count { min-width: 20px; justify-content: center; padding: 2px 6px; }
+
+/* ── Semantic STATUS modifiers ──────────────────────────────────────────────
+   Named by domain status (not just tone) so markup reads like the data model.
+   Each MUST still carry a leading bi icon + a text label — colour alone is
+   never the signal. They alias the tone tint/colour pairs above.            */
+.p-badge--active   { --p-badge-color: #1f9b57;            --p-badge-rgb: var(--p-success-rgb); }
+.p-badge--inactive { --p-badge-color: var(--p-secondary); --p-badge-rgb: var(--p-secondary-rgb); }
+.p-badge--pending  { --p-badge-color: #a67f04;            --p-badge-rgb: var(--p-warning-rgb); }
+.p-badge--approved { --p-badge-color: #1f9b57;            --p-badge-rgb: var(--p-success-rgb); }
+.p-badge--rejected { --p-badge-color: var(--p-danger);    --p-badge-rgb: var(--p-danger-rgb); }
+.p-badge--paid     { --p-badge-color: #1f9b57;            --p-badge-rgb: var(--p-success-rgb); }
+.p-badge--unpaid   { --p-badge-color: var(--p-danger);    --p-badge-rgb: var(--p-danger-rgb); }
+
+/* Keep tinted status text legible in dark mode */
+[data-bs-theme="dark"] .p-badge--active,
+[data-bs-theme="dark"] .p-badge--approved,
+[data-bs-theme="dark"] .p-badge--paid    { --p-badge-color: #4ade80; }
+[data-bs-theme="dark"] .p-badge--pending { --p-badge-color: #fde047; }
+
+@media (prefers-reduced-motion: reduce) {
+  .p-status-dot.is-pulse::after { animation: none; display: none; }
+}

@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en" data-bs-theme="light" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prime DS — Navigation</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@4.0.0-beta3/dist/css/adminlte.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<link rel="stylesheet" href="../css/tokens.css">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/components/navigation.css">
+<link rel="stylesheet" href="../css/dark-mode.css">
+<style>
+  /* Page-local navbar decoration (kept out of the shared component CSS).
+     Restyles Bootstrap .navbar chrome to Prime: logo chip, search pill,
+     notification count badge, avatar dropdown trigger. Token-driven. */
+  .p-navbar-logo{width:28px;height:28px;flex:0 0 auto;border-radius:var(--p-radius-md);
+    background:var(--p-primary);color:#fff;display:inline-grid;place-items:center;font-weight:700;margin-right:var(--p-space-2)}
+  .navbar-brand{display:inline-flex;align-items:center}
+  .p-navbar-search{position:relative;display:flex;align-items:center;flex:1 1 320px;max-width:420px;margin:0 var(--p-space-4)}
+  .p-navbar-search i{position:absolute;left:12px;color:var(--p-text-muted);pointer-events:none}
+  .p-navbar-search .form-control{padding-left:34px;border-radius:var(--p-radius-full);
+    background:var(--p-surface-secondary);border-color:var(--p-surface-border);min-height:40px}
+  .p-navbar-badge{position:absolute;top:4px;right:2px;min-width:17px;height:17px;padding:0 4px;
+    border-radius:var(--p-radius-full);background:var(--p-danger);color:#fff;
+    font-size:11px;font-weight:700;line-height:17px;text-align:center;border:2px solid var(--p-surface-bg)}
+  .p-avatar{width:30px;height:30px;border-radius:var(--p-radius-full);flex:0 0 auto;
+    background:rgba(var(--p-primary-rgb),.15);color:var(--p-primary);display:inline-grid;place-items:center;
+    font-size:.75rem;font-weight:700}
+  .p-navbar-user{gap:var(--p-space-2)!important}
+  .p-navbar-user__name{font-size:var(--p-fs-sm);font-weight:var(--p-fw-medium)}
+  .dropdown-item{display:flex;align-items:center;gap:var(--p-space-2)}
+  @media(max-width:991.98px){.p-navbar-search{margin:var(--p-space-3) 0;max-width:none}}
+</style>
+</head>
+<body>
+<header class="ds-toolbar">
+  <a href="../../index.html" class="ds-brand" style="text-decoration:none;color:inherit"><span class="ds-logo">P</span> Prime DS</a>
+  <span class="ds-spacer"></span>
+  <button class="ds-toggle" data-ds-width-toggle><i class="bi bi-phone"></i> <span class="ds-width-label">Desktop</span></button>
+  <button class="ds-toggle" data-ds-theme-toggle><i class="bi bi-sun"></i> <span class="ds-theme-label">Light</span></button>
+</header>
+<main class="ds-content">
+  <div class="ds-section"><h1>Navigation</h1><p class="ds-desc">Top navbar and breadcrumb chrome, restyled from AdminLTE&nbsp;v4 / Bootstrap&nbsp;5.3 to the Prime palette — accents on active/hover, never heavy fills.</p></div>
+
+  <!-- ===================== TOP NAVBAR ===================== -->
+  <section class="ds-section">
+    <h2>Top navbar</h2>
+    <p class="ds-desc">The application header: Prime brand, a global search, and right-aligned actions — a notification icon-button with a live unread count and an avatar dropdown. Collapses behind a toggler on mobile.</p>
+    <div class="ds-demo ds-block">
+      <nav class="navbar navbar-expand-lg" aria-label="Primary">
+        <div class="container-fluid">
+          <a class="navbar-brand" href="#"><span class="p-navbar-logo" aria-hidden="true">P</span> Prime&nbsp;AI</a>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#primeNav"
+                  aria-controls="primeNav" aria-expanded="false" aria-label="Toggle navigation">
+            <i class="bi bi-list" aria-hidden="true"></i>
+          </button>
+          <div class="collapse navbar-collapse" id="primeNav">
+            <form class="p-navbar-search" role="search">
+              <i class="bi bi-search" aria-hidden="true"></i>
+              <input class="form-control" type="search" placeholder="Search students, staff, fees…" aria-label="Search">
+            </form>
+            <ul class="navbar-nav ms-auto align-items-lg-center">
+              <li class="nav-item"><a class="nav-link active" aria-current="page" href="#">Dashboard</a></li>
+              <li class="nav-item"><a class="nav-link" href="#">Students</a></li>
+              <li class="nav-item">
+                <button type="button" class="nav-link p-header-icon position-relative" aria-label="Notifications, 5 unread">
+                  <i class="bi bi-bell" aria-hidden="true"></i>
+                  <span class="p-navbar-badge" aria-hidden="true">5</span>
+                </button>
+              </li>
+              <li class="nav-item dropdown">
+                <button type="button" class="nav-link p-navbar-user dropdown-toggle" data-bs-toggle="dropdown"
+                        aria-expanded="false" aria-label="Account menu for Meera Pillai">
+                  <span class="p-avatar" aria-hidden="true">MP</span>
+                  <span class="p-navbar-user__name">Meera&nbsp;P.</span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                  <li><a class="dropdown-item" href="#"><i class="bi bi-person" aria-hidden="true"></i> Profile</a></li>
+                  <li><a class="dropdown-item" href="#"><i class="bi bi-gear" aria-hidden="true"></i> Settings</a></li>
+                  <li><hr class="dropdown-divider"></li>
+                  <li><a class="dropdown-item" href="#"><i class="bi bi-box-arrow-right" aria-hidden="true"></i> Sign out</a></li>
+                </ul>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </nav>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;nav class="navbar navbar-expand-lg" aria-label="Primary"&gt;
+  &lt;div class="container-fluid"&gt;
+    &lt;a class="navbar-brand" href="#"&gt;&lt;span class="p-navbar-logo" aria-hidden="true"&gt;P&lt;/span&gt; Prime AI&lt;/a&gt;
+    &lt;button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#primeNav"
+            aria-controls="primeNav" aria-expanded="false" aria-label="Toggle navigation"&gt;
+      &lt;i class="bi bi-list" aria-hidden="true"&gt;&lt;/i&gt;
+    &lt;/button&gt;
+    &lt;div class="collapse navbar-collapse" id="primeNav"&gt;
+      &lt;form class="p-navbar-search" role="search"&gt;
+        &lt;i class="bi bi-search" aria-hidden="true"&gt;&lt;/i&gt;
+        &lt;input class="form-control" type="search" placeholder="Search…" aria-label="Search"&gt;
+      &lt;/form&gt;
+      &lt;ul class="navbar-nav ms-auto align-items-lg-center"&gt;
+        &lt;li class="nav-item"&gt;&lt;a class="nav-link active" aria-current="page" href="#"&gt;Dashboard&lt;/a&gt;&lt;/li&gt;
+        &lt;li class="nav-item"&gt;
+          &lt;button type="button" class="nav-link p-header-icon position-relative" aria-label="Notifications, 5 unread"&gt;
+            &lt;i class="bi bi-bell" aria-hidden="true"&gt;&lt;/i&gt;
+            &lt;span class="p-navbar-badge" aria-hidden="true"&gt;5&lt;/span&gt;
+          &lt;/button&gt;
+        &lt;/li&gt;
+        &lt;li class="nav-item dropdown"&gt;
+          &lt;button type="button" class="nav-link p-navbar-user dropdown-toggle" data-bs-toggle="dropdown"
+                  aria-expanded="false" aria-label="Account menu for Meera Pillai"&gt;
+            &lt;span class="p-avatar" aria-hidden="true"&gt;MP&lt;/span&gt; &lt;span class="p-navbar-user__name"&gt;Meera P.&lt;/span&gt;
+          &lt;/button&gt;
+          &lt;ul class="dropdown-menu dropdown-menu-end"&gt;
+            &lt;li&gt;&lt;a class="dropdown-item" href="#"&gt;&lt;i class="bi bi-person"&gt;&lt;/i&gt; Profile&lt;/a&gt;&lt;/li&gt;
+            &lt;li&gt;&lt;hr class="dropdown-divider"&gt;&lt;/li&gt;
+            &lt;li&gt;&lt;a class="dropdown-item" href="#"&gt;&lt;i class="bi bi-box-arrow-right"&gt;&lt;/i&gt; Sign out&lt;/a&gt;&lt;/li&gt;
+          &lt;/ul&gt;
+        &lt;/li&gt;
+      &lt;/ul&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/nav&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> The app header. <code>navigation.css</code> restyles Bootstrap <code>.navbar</code> (surface background, subtle bottom border, <code>--p-shadow-sm</code>) and <code>.navbar-nav .nav-link</code> so hover/<code>.active</code> read as a <em>primary tint</em>, not a solid fill. The icon-only bell uses <code>.p-header-icon</code> (44px square touch target) and carries an <code>aria-label</code> that includes the count — colour is never the only signal. The <code>.navbar-toggler</code> exposes <code>aria-controls</code>/<code>aria-expanded</code>. Dropdown and mobile collapse need the Bootstrap bundle JS (loaded below).</div>
+  </section>
+
+  <!-- ===================== BREADCRUMB ===================== -->
+  <section class="ds-section">
+    <h2>Breadcrumb</h2>
+    <p class="ds-desc">A shallow trail (2–3 levels plus Home) showing where the current page sits. Chevron separators, muted ancestors, a primary-weighted current page.</p>
+    <div class="ds-demo ds-block">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="#"><i class="bi bi-house-door" aria-hidden="true"></i> Home</a></li>
+          <li class="breadcrumb-item"><a href="#">Students</a></li>
+          <li class="breadcrumb-item"><a href="#">Class&nbsp;9-B</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Aarav&nbsp;Sharma</li>
+        </ol>
+      </nav>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;nav aria-label="breadcrumb"&gt;
+  &lt;ol class="breadcrumb"&gt;
+    &lt;li class="breadcrumb-item"&gt;&lt;a href="#"&gt;&lt;i class="bi bi-house-door" aria-hidden="true"&gt;&lt;/i&gt; Home&lt;/a&gt;&lt;/li&gt;
+    &lt;li class="breadcrumb-item"&gt;&lt;a href="#"&gt;Students&lt;/a&gt;&lt;/li&gt;
+    &lt;li class="breadcrumb-item"&gt;&lt;a href="#"&gt;Class 9-B&lt;/a&gt;&lt;/li&gt;
+    &lt;li class="breadcrumb-item active" aria-current="page"&gt;Aarav Sharma&lt;/li&gt;
+  &lt;/ol&gt;
+&lt;/nav&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> Place directly under the page title. <code>navigation.css</code> styles Bootstrap <code>.breadcrumb</code> flat (transparent background), replaces the default separator with a token-tinted chevron (<code>&rsaquo;</code>) via <code>.breadcrumb-item + .breadcrumb-item::before</code>, and gives the current <code>.active</code> item primary text weight. Always wrap in <code>&lt;nav aria-label="breadcrumb"&gt;</code> and mark the last crumb <code>aria-current="page"</code>.</div>
+  </section>
+
+  <!-- ===================== NOTE: SIDEBAR ===================== -->
+  <section class="ds-section">
+    <h2>Sidebar navigation</h2>
+    <div class="ds-notes"><strong>Note:</strong> Sidebar navigation — the collapsible app menu, treeview submenus, the mini/collapsed rail and the mobile drawer — is documented on its own page: <a href="06-sidebar.html">06-sidebar.html</a>.</div>
+  </section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../js/main.js"></script>
+</body>
+</html>

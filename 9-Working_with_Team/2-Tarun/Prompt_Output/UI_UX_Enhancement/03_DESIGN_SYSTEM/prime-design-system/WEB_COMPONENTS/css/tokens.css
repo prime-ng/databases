@@ -1,0 +1,135 @@
+/* ============================================================================
+   Prime Design System — tokens.css
+   Canonical design tokens for the Prime School Management ecosystem.
+
+   These CSS custom properties mirror the verified values from:
+     prime_ai/public/backend/css/adminlte-custom.css  (:root + [data-bs-theme=dark])
+     mobile_school/constants/theme.ts  &  mobile_student/constants/theme.ts
+
+   They are ALSO mapped onto Bootstrap 5.3 / AdminLTE v4 variables so that
+   restyling happens by overriding tokens, not by fighting the framework.
+
+   NOTE: This file is a design-system REFERENCE. It is NOT applied to the live
+   app as part of the audit. To adopt in prime_ai, copy the relevant blocks
+   into public/backend/css/prime-modern-ui.css (a new override file).
+   ========================================================================== */
+
+:root {
+  /* ── Brand palette (identical across web + both mobile apps) ────────────── */
+  --p-primary:        #6673fc;
+  --p-primary-hover:  #545ed6;   /* = mobile primaryDark; codifies web hover   */
+  --p-secondary:      #64748b;
+  --p-success:        #3fcc7e;
+  --p-info:           #4abad2;
+  --p-warning:        #facc15;
+  --p-danger:         #e44f56;
+  --p-light:          #f4f6f9;    /* muted chip / tag background                */
+  --p-dark:           #222c3c;
+
+  /* ── Brand as rgb (for rgba() accents, tints, focus rings) ──────────────── */
+  --p-primary-rgb:    102, 115, 252;
+  --p-secondary-rgb:  100, 116, 139;
+  --p-success-rgb:    63, 204, 126;
+  --p-info-rgb:       74, 186, 210;
+  --p-warning-rgb:    250, 204, 21;
+  --p-danger-rgb:     228, 79, 86;
+
+  /* ── Surfaces (light) ───────────────────────────────────────────────────── */
+  --p-surface-bg:            #ffffff;   /* cards, panels                        */
+  --p-surface-secondary:     #f8fafc;   /* page bg, alternating rows            */
+  --p-surface-hover:         #f1f5f9;   /* hover states                         */
+  --p-surface-active:        #e2e8f0;   /* active/pressed, borders              */
+  --p-surface-border:        #e2e8f0;
+  --p-surface-border-light:  #f1f5f9;   /* softer dividers                      */
+
+  /* ── Text (light) ───────────────────────────────────────────────────────── */
+  --p-text-primary:   #1e293b;
+  --p-text-secondary: #475569;
+  --p-text-muted:     #94a3b8;
+  --p-text-link:      #3b82f6;
+
+  /* ── Elevation ──────────────────────────────────────────────────────────── */
+  --p-shadow-sm: 0 1px 3px rgba(0,0,0,0.04);
+  --p-shadow-md: 0 10px 25px -5px rgba(0,0,0,0.10);
+  --p-shadow-lg: 0 25px 50px -12px rgba(0,0,0,0.15);
+
+  /* ── Spacing scale — canonical 4/8 grid (8 = default step) ──────────────── */
+  --p-space-1: 4px;   --p-space-2: 8px;   --p-space-3: 12px;  --p-space-4: 16px;
+  --p-space-6: 24px;  --p-space-8: 32px;  --p-space-12: 48px;
+
+  /* ── Border radius ──────────────────────────────────────────────────────── */
+  --p-radius-sm: 4px;  --p-radius-md: 8px;  --p-radius-lg: 12px;
+  --p-radius-xl: 16px; --p-radius-2xl: 24px; --p-radius-full: 999px;
+
+  /* ── Typography scale (from mobile theme.ts — canonical) ────────────────── */
+  --p-font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+                 Roboto, Helvetica, Arial, sans-serif;
+  --p-fs-h1: 2rem;    --p-lh-h1: 2.5rem;    /* 32/40 */
+  --p-fs-h2: 1.5rem;  --p-lh-h2: 2rem;      /* 24/32 */
+  --p-fs-h3: 1.25rem; --p-lh-h3: 1.75rem;   /* 20/28 */
+  --p-fs-h4: 1.125rem;--p-lh-h4: 1.5rem;    /* 18/24 */
+  --p-fs-body: 1rem;  --p-lh-body: 1.5rem;  /* 16/24 */
+  --p-fs-sm: 0.875rem;--p-lh-sm: 1.25rem;   /* 14/20 */
+  --p-fs-cap: 0.75rem;--p-lh-cap: 1rem;     /* 12/16 */
+  --p-fw-regular: 400; --p-fw-medium: 500; --p-fw-semibold: 600; --p-fw-bold: 700;
+
+  /* ── Motion ─────────────────────────────────────────────────────────────── */
+  --p-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --p-dur-fast: 120ms; --p-dur-base: 200ms; --p-dur-slow: 320ms;
+
+  /* ── Z-index scale ──────────────────────────────────────────────────────── */
+  --p-z-dropdown: 1000; --p-z-sticky: 1020; --p-z-fixed: 1030;
+  --p-z-modal-backdrop: 1040; --p-z-modal: 1050; --p-z-toast: 1080;
+
+  /* ── Focus ring (accessibility) ─────────────────────────────────────────── */
+  --p-focus-ring: 0 0 0 3px rgba(var(--p-primary-rgb), 0.35);
+
+  /* ────────────────────────────────────────────────────────────────────────
+     Bootstrap 5.3 / AdminLTE v4 bridge — override framework vars with tokens
+     so BS/AdminLTE components pick up the Prime palette automatically.
+     ──────────────────────────────────────────────────────────────────────── */
+  --bs-primary:        var(--p-primary);
+  --bs-secondary:      var(--p-secondary);
+  --bs-success:        var(--p-success);
+  --bs-info:           var(--p-info);
+  --bs-warning:        var(--p-warning);
+  --bs-danger:         var(--p-danger);
+  --bs-light:          var(--p-light);
+  --bs-dark:           var(--p-dark);
+  --bs-primary-rgb:    var(--p-primary-rgb);
+  --bs-body-color:     var(--p-text-primary);
+  --bs-body-bg:        var(--p-surface-secondary);
+  --bs-border-color:   var(--p-surface-border);
+  --bs-border-radius:  var(--p-radius-md);
+  --bs-link-color:     var(--p-text-link);
+}
+
+/* ── Dark mode ─────────────────────────────────────────────────────────────
+   AdminLTE v4 / BS 5.3 use [data-bs-theme="dark"]. Values mirror the web CSS
+   dark block and the mobile theme.ts dark object.                             */
+[data-bs-theme="dark"] {
+  --p-surface-bg:            #1e1e2d;
+  --p-surface-secondary:     #252536;
+  --p-surface-hover:         #2a2a3d;
+  --p-surface-active:        #323248;
+  --p-surface-border:        #323248;
+  --p-surface-border-light:  #2a2a3d;
+
+  --p-text-primary:   #e2e8f0;
+  --p-text-secondary: #94a3b8;
+  --p-text-muted:     #64748b;
+  --p-text-link:      #60a5fa;
+
+  --p-shadow-sm: 0 1px 3px rgba(0,0,0,0.2);
+  --p-shadow-md: 0 10px 25px -5px rgba(0,0,0,0.4);
+  --p-shadow-lg: 0 25px 50px -12px rgba(0,0,0,0.5);
+
+  --bs-body-color: var(--p-text-primary);
+  --bs-body-bg:    var(--p-surface-bg);
+  --bs-border-color: var(--p-surface-border);
+}
+
+/* Respect reduced-motion globally */
+@media (prefers-reduced-motion: reduce) {
+  :root { --p-dur-fast: 0ms; --p-dur-base: 0ms; --p-dur-slow: 0ms; }
+}

@@ -1,0 +1,157 @@
+/* ============================================================================
+   Prime Design System — cards.css
+   Styles Bootstrap/AdminLTE: .card, .card-header, .card-body, .card-footer,
+   .card-title. Adds Prime helpers: .p-stat-card (accent stat card) with
+   modifiers --primary/--success/--warning/--danger/--info, .p-list-card,
+   .p-info-card.
+
+   Principle "accent, don't fill": stat cards are WHITE surfaces with a colored
+   LEFT-BORDER + tinted icon circle — never a saturated fill.
+   ========================================================================== */
+
+.card {
+  background-color: var(--p-surface-bg);
+  border: 1px solid var(--p-surface-border);
+  border-radius: var(--p-radius-lg);
+  box-shadow: var(--p-shadow-sm);
+  color: var(--p-text-primary);
+  overflow: hidden;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: var(--p-space-3);
+  padding: var(--p-space-4) var(--p-space-6);
+  background-color: transparent;
+  border-bottom: 1px solid var(--p-surface-border-light);
+  font-weight: var(--p-fw-semibold);
+}
+.card-header .card-title {
+  margin: 0;
+  font-size: var(--p-fs-h4);
+  font-weight: var(--p-fw-semibold);
+  color: var(--p-text-primary);
+}
+.card-header .card-tools,
+.card-header .p-card-tools { margin-left: auto; display: flex; gap: var(--p-space-2); }
+
+.card-body { padding: var(--p-space-6); }
+.card-footer {
+  padding: var(--p-space-4) var(--p-space-6);
+  background-color: var(--p-surface-secondary);
+  border-top: 1px solid var(--p-surface-border-light);
+}
+
+/* Hover-elevate helper for clickable cards */
+.card.p-card-hover {
+  transition: box-shadow var(--p-dur-base) var(--p-ease),
+              transform var(--p-dur-base) var(--p-ease);
+  cursor: pointer;
+}
+.card.p-card-hover:hover { box-shadow: var(--p-shadow-md); transform: translateY(-2px); }
+
+/* ── Stat card (accent) ─────────────────────────────────────────────────────
+   Markup:
+   <div class="p-stat-card p-stat-card--primary">
+     <span class="p-stat-card__icon">…</span>
+     <div class="p-stat-card__body">
+       <span class="p-stat-card__value">1,284</span>
+       <span class="p-stat-card__label">Active Students</span>
+       <span class="p-stat-card__trend p-stat-card__trend--up">▲ 4.2%</span>
+     </div>
+   </div>
+   ────────────────────────────────────────────────────────────────────────── */
+.p-stat-card {
+  --p-accent: var(--p-primary);
+  --p-accent-rgb: var(--p-primary-rgb);
+
+  display: flex;
+  align-items: center;
+  gap: var(--p-space-4);
+  padding: var(--p-space-4) var(--p-space-6);
+  background-color: var(--p-surface-bg);
+  border: 1px solid var(--p-surface-border);
+  border-left: 4px solid var(--p-accent);        /* the accent */
+  border-radius: var(--p-radius-lg);
+  box-shadow: var(--p-shadow-sm);
+}
+
+.p-stat-card__icon {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 48px; height: 48px;
+  border-radius: var(--p-radius-full);
+  background-color: rgba(var(--p-accent-rgb), 0.12);   /* tint, not fill */
+  color: var(--p-accent);
+  font-size: 20px;
+}
+.p-stat-card__icon svg,
+.p-stat-card__icon i { width: 1em; height: 1em; }
+
+.p-stat-card__body { display: flex; flex-direction: column; min-width: 0; }
+.p-stat-card__value {
+  font-size: var(--p-fs-h2);
+  line-height: var(--p-lh-h2);
+  font-weight: var(--p-fw-bold);
+  color: var(--p-text-primary);
+}
+.p-stat-card__label {
+  font-size: var(--p-fs-sm);
+  color: var(--p-text-secondary);
+}
+.p-stat-card__trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-top: var(--p-space-1);
+  font-size: var(--p-fs-cap);
+  font-weight: var(--p-fw-semibold);
+}
+.p-stat-card__trend--up   { color: #1f9b57; }
+.p-stat-card__trend--down { color: var(--p-danger); }
+.p-stat-card__trend--flat { color: var(--p-text-muted); }
+
+/* Accent modifiers just swap the accent color/rgb pair */
+.p-stat-card--primary { --p-accent: var(--p-primary); --p-accent-rgb: var(--p-primary-rgb); }
+.p-stat-card--success { --p-accent: var(--p-success); --p-accent-rgb: var(--p-success-rgb); }
+.p-stat-card--warning { --p-accent: var(--p-warning); --p-accent-rgb: var(--p-warning-rgb); }
+.p-stat-card--danger  { --p-accent: var(--p-danger);  --p-accent-rgb: var(--p-danger-rgb); }
+.p-stat-card--info    { --p-accent: var(--p-info);    --p-accent-rgb: var(--p-info-rgb); }
+
+/* ── List card — rows of items inside a card ────────────────────────────── */
+.p-list-card { padding: var(--p-space-2) 0; }
+.p-list-card .p-list-item {
+  display: flex;
+  align-items: center;
+  gap: var(--p-space-3);
+  padding: var(--p-space-3) var(--p-space-6);
+  border-bottom: 1px solid var(--p-surface-border-light);
+  transition: background-color var(--p-dur-fast) var(--p-ease);
+}
+.p-list-card .p-list-item:last-child { border-bottom: 0; }
+.p-list-card .p-list-item:hover { background-color: var(--p-surface-hover); }
+.p-list-card .p-list-item__title { font-weight: var(--p-fw-medium); color: var(--p-text-primary); }
+.p-list-card .p-list-item__meta  { font-size: var(--p-fs-sm); color: var(--p-text-muted); }
+.p-list-card .p-list-item__end   { margin-left: auto; }
+
+/* ── Info card — left-accent notice block inside content ────────────────── */
+.p-info-card {
+  --p-accent: var(--p-info);
+  --p-accent-rgb: var(--p-info-rgb);
+  display: flex;
+  gap: var(--p-space-3);
+  padding: var(--p-space-4);
+  background-color: rgba(var(--p-accent-rgb), 0.06);
+  border: 1px solid rgba(var(--p-accent-rgb), 0.25);
+  border-left: 4px solid var(--p-accent);
+  border-radius: var(--p-radius-md);
+  color: var(--p-text-secondary);
+  font-size: var(--p-fs-sm);
+}
+.p-info-card__icon { color: var(--p-accent); flex: 0 0 auto; }
+.p-info-card--primary { --p-accent: var(--p-primary); --p-accent-rgb: var(--p-primary-rgb); }
+.p-info-card--success { --p-accent: var(--p-success); --p-accent-rgb: var(--p-success-rgb); }
+.p-info-card--warning { --p-accent: var(--p-warning); --p-accent-rgb: var(--p-warning-rgb); }
+.p-info-card--danger  { --p-accent: var(--p-danger);  --p-accent-rgb: var(--p-danger-rgb); }

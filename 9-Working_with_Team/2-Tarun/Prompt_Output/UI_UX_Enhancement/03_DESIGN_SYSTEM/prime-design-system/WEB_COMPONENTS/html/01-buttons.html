@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en" data-bs-theme="light" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prime DS — Buttons</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@4.0.0-beta3/dist/css/adminlte.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<link rel="stylesheet" href="../css/tokens.css">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/components/buttons.css">
+<link rel="stylesheet" href="../css/dark-mode.css">
+</head>
+<body>
+<header class="ds-toolbar">
+  <a href="../../index.html" class="ds-brand" style="text-decoration:none;color:inherit"><span class="ds-logo">P</span> Prime DS</a>
+  <span class="ds-spacer"></span>
+  <button class="ds-toggle" data-ds-width-toggle><i class="bi bi-phone"></i> <span class="ds-width-label">Desktop</span></button>
+  <button class="ds-toggle" data-ds-theme-toggle><i class="bi bi-sun"></i> <span class="ds-theme-label">Light</span></button>
+</header>
+<main class="ds-content">
+  <div class="ds-section"><h1>Buttons</h1><p class="ds-desc">Token-driven Bootstrap/AdminLTE <code>.btn</code>s. Solid fills are reserved for the one primary action on a screen; everything else uses outline or ghost so the accent guides the eye instead of shouting.</p></div>
+
+  <!-- Solid intents -->
+  <section class="ds-section">
+    <h2>Solid intent fills</h2>
+    <p class="ds-desc">Semantic fills for <em>primary</em> actions. Use at most one solid button per view; reach for outline/ghost for the rest. Lighter fills (warning / success / info) carry dark text for AA contrast.</p>
+    <div class="ds-demo">
+      <button type="button" class="btn btn-primary">Primary</button>
+      <button type="button" class="btn btn-secondary">Secondary</button>
+      <button type="button" class="btn btn-success">Success</button>
+      <button type="button" class="btn btn-danger">Danger</button>
+      <button type="button" class="btn btn-warning">Warning</button>
+      <button type="button" class="btn btn-info">Info</button>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;button type=&quot;button&quot; class=&quot;btn btn-primary&quot;&gt;Primary&lt;/button&gt;
+&lt;button type=&quot;button&quot; class=&quot;btn btn-secondary&quot;&gt;Secondary&lt;/button&gt;
+&lt;button type=&quot;button&quot; class=&quot;btn btn-success&quot;&gt;Success&lt;/button&gt;
+&lt;button type=&quot;button&quot; class=&quot;btn btn-danger&quot;&gt;Danger&lt;/button&gt;
+&lt;button type=&quot;button&quot; class=&quot;btn btn-warning&quot;&gt;Warning&lt;/button&gt;
+&lt;button type=&quot;button&quot; class=&quot;btn btn-info&quot;&gt;Info&lt;/button&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> Styles Bootstrap <code>.btn</code> + <code>.btn-primary/.btn-secondary/.btn-success/.btn-danger/.btn-warning/.btn-info</code>. Pair color with a text label (and an icon where the action is not obvious) — color is never the only signal.</div>
+  </section>
+
+  <!-- Ghost -->
+  <section class="ds-section">
+    <h2>Ghost buttons</h2>
+    <p class="ds-desc">Text-only accent buttons for low-emphasis / inline actions (toolbars, table rows, cards). The <code>.btn-ghost</code> base is neutral; add an intent modifier to accent it.</p>
+    <div class="ds-demo">
+      <button type="button" class="btn btn-ghost">Ghost</button>
+      <button type="button" class="btn btn-ghost btn-ghost-primary">Ghost Primary</button>
+      <button type="button" class="btn btn-ghost btn-ghost-danger">Ghost Danger</button>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;button type=&quot;button&quot; class=&quot;btn btn-ghost&quot;&gt;Ghost&lt;/button&gt;
+&lt;button type=&quot;button&quot; class=&quot;btn btn-ghost btn-ghost-primary&quot;&gt;Ghost Primary&lt;/button&gt;
+&lt;button type=&quot;button&quot; class=&quot;btn btn-ghost btn-ghost-danger&quot;&gt;Ghost Danger&lt;/button&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> Prime helper <code>.btn-ghost</code> (+ <code>.btn-ghost-primary</code> / <code>.btn-ghost-danger</code>). Best for destructive or secondary actions you want present but quiet — e.g. a "Delete" that only fills its background on hover.</div>
+  </section>
+
+  <!-- Outline -->
+  <section class="ds-section">
+    <h2>Outline buttons</h2>
+    <p class="ds-desc">Bordered accents — the default choice for secondary actions sitting beside a solid primary.</p>
+    <div class="ds-demo">
+      <button type="button" class="btn btn-outline-primary">Primary</button>
+      <button type="button" class="btn btn-outline-secondary">Secondary</button>
+      <button type="button" class="btn btn-outline-success">Success</button>
+      <button type="button" class="btn btn-outline-danger">Danger</button>
+      <button type="button" class="btn btn-outline-warning">Warning</button>
+      <button type="button" class="btn btn-outline-info">Info</button>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;button type=&quot;button&quot; class=&quot;btn btn-outline-primary&quot;&gt;Primary&lt;/button&gt;
+&lt;button type=&quot;button&quot; class=&quot;btn btn-outline-secondary&quot;&gt;Secondary&lt;/button&gt;
+&lt;button type=&quot;button&quot; class=&quot;btn btn-outline-success&quot;&gt;Success&lt;/button&gt;
+&lt;button type=&quot;button&quot; class=&quot;btn btn-outline-danger&quot;&gt;Danger&lt;/button&gt;
+&lt;button type=&quot;button&quot; class=&quot;btn btn-outline-warning&quot;&gt;Warning&lt;/button&gt;
+&lt;button type=&quot;button&quot; class=&quot;btn btn-outline-info&quot;&gt;Info&lt;/button&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> Styles Bootstrap <code>.btn-outline-*</code>. Transparent until hover, when they take a subtle tint of their own color — never a full fill.</div>
+  </section>
+
+  <!-- Accent don't fill -->
+  <section class="ds-section">
+    <h2>Accent, don't fill</h2>
+    <p class="ds-desc">The core principle in one row: a single solid primary carries the main action; the supporting actions stay outline / ghost so the hierarchy is obvious at a glance.</p>
+    <div class="ds-demo">
+      <button type="button" class="btn btn-primary"><i class="bi bi-check2"></i> Save changes</button>
+      <button type="button" class="btn btn-outline-secondary">Save &amp; add another</button>
+      <button type="button" class="btn btn-ghost">Cancel</button>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;!-- one solid = the primary action; the rest recede --&gt;
+&lt;button type=&quot;button&quot; class=&quot;btn btn-primary&quot;&gt;&lt;i class=&quot;bi bi-check2&quot;&gt;&lt;/i&gt; Save changes&lt;/button&gt;
+&lt;button type=&quot;button&quot; class=&quot;btn btn-outline-secondary&quot;&gt;Save &amp;amp; add another&lt;/button&gt;
+&lt;button type=&quot;button&quot; class=&quot;btn btn-ghost&quot;&gt;Cancel&lt;/button&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> Never place two solid intent fills side by side — it flattens the hierarchy. One fill + outline + ghost keeps a clear "do this first" read.</div>
+  </section>
+
+  <!-- Sizes -->
+  <section class="ds-section">
+    <h2>Sizes</h2>
+    <p class="ds-desc"><code>.btn-sm</code> (32px), default (40px), <code>.btn-lg</code> (48px). Default and large both clear the 44px comfortable-touch guideline; reserve <code>.btn-sm</code> for dense desktop tables.</p>
+    <div class="ds-demo">
+      <button type="button" class="btn btn-primary btn-sm">Small</button>
+      <button type="button" class="btn btn-primary">Default</button>
+      <button type="button" class="btn btn-primary btn-lg">Large</button>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;button type=&quot;button&quot; class=&quot;btn btn-primary btn-sm&quot;&gt;Small&lt;/button&gt;
+&lt;button type=&quot;button&quot; class=&quot;btn btn-primary&quot;&gt;Default&lt;/button&gt;
+&lt;button type=&quot;button&quot; class=&quot;btn btn-primary btn-lg&quot;&gt;Large&lt;/button&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> Styles Bootstrap <code>.btn-sm</code> / <code>.btn-lg</code>. Keep one size per action group; don't mix sizes within a single toolbar.</div>
+  </section>
+
+  <!-- Icons -->
+  <section class="ds-section">
+    <h2>Icon + label</h2>
+    <p class="ds-desc">Icon-left (leading, for create/confirm) or icon-right (trailing, for "continue / next" flows). The <code>gap</code> spacing is built into <code>.btn</code>, so just place the <code>&lt;i&gt;</code> before or after the text.</p>
+    <div class="ds-demo">
+      <button type="button" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Add student</button>
+      <button type="button" class="btn btn-outline-primary">Continue <i class="bi bi-arrow-right"></i></button>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;!-- icon left: icon then label --&gt;
+&lt;button type=&quot;button&quot; class=&quot;btn btn-primary&quot;&gt;&lt;i class=&quot;bi bi-plus-lg&quot;&gt;&lt;/i&gt; Add student&lt;/button&gt;
+
+&lt;!-- icon right: label then icon --&gt;
+&lt;button type=&quot;button&quot; class=&quot;btn btn-outline-primary&quot;&gt;Continue &lt;i class=&quot;bi bi-arrow-right&quot;&gt;&lt;/i&gt;&lt;/button&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> Icons are decorative here — the text label carries meaning, so no extra ARIA is needed. Use <code>bi bi-*</code> Bootstrap Icons.</div>
+  </section>
+
+  <!-- Icon-only -->
+  <section class="ds-section">
+    <h2>Icon-only</h2>
+    <p class="ds-desc">Square, tappable icon buttons for toolbars &amp; table rows. Because there's no visible text, an <code>aria-label</code> (and usually a <code>title</code> tooltip) is <strong>required</strong>.</p>
+    <div class="ds-demo">
+      <button type="button" class="btn btn-icon btn-outline-secondary" aria-label="Edit" title="Edit"><i class="bi bi-pencil"></i></button>
+      <button type="button" class="btn btn-icon btn-ghost btn-ghost-danger" aria-label="Delete" title="Delete"><i class="bi bi-trash"></i></button>
+      <button type="button" class="btn btn-icon btn-primary" aria-label="Add" title="Add"><i class="bi bi-plus-lg"></i></button>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;button type=&quot;button&quot; class=&quot;btn btn-icon btn-outline-secondary&quot;
+        aria-label=&quot;Edit&quot; title=&quot;Edit&quot;&gt;&lt;i class=&quot;bi bi-pencil&quot;&gt;&lt;/i&gt;&lt;/button&gt;
+&lt;button type=&quot;button&quot; class=&quot;btn btn-icon btn-ghost btn-ghost-danger&quot;
+        aria-label=&quot;Delete&quot; title=&quot;Delete&quot;&gt;&lt;i class=&quot;bi bi-trash&quot;&gt;&lt;/i&gt;&lt;/button&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> Prime helper <code>.btn-icon</code> keeps the button square (40px). The <code>aria-label</code> is not optional — a screen reader has nothing else to announce.</div>
+  </section>
+
+  <!-- Loading -->
+  <section class="ds-section">
+    <h2>Loading</h2>
+    <p class="ds-desc">Add <code>.is-loading</code> to swap the label for a spinner while an async action runs. Text is visually hidden but the button keeps its width (no layout jump); pair with <code>aria-busy="true"</code> so assistive tech announces the wait.</p>
+    <div class="ds-demo">
+      <button type="button" class="btn btn-primary is-loading" aria-busy="true">Saving…</button>
+      <button type="button" class="btn btn-outline-primary is-loading" aria-busy="true">Loading</button>
+      <button type="button" class="btn btn-success is-loading" aria-busy="true">Submitting</button>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;button type=&quot;button&quot; class=&quot;btn btn-primary is-loading&quot; aria-busy=&quot;true&quot;&gt;Saving…&lt;/button&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> Prime helper <code>.btn.is-loading</code>. Spinner color adapts: white on solid fills, primary accent on outline/ghost/light fills. Toggle the class in JS on submit, and remove it on response.</div>
+  </section>
+
+  <!-- Disabled -->
+  <section class="ds-section">
+    <h2>Disabled</h2>
+    <p class="ds-desc">Use the native <code>disabled</code> attribute (best) — add <code>aria-disabled="true"</code> only on non-<code>&lt;button&gt;</code> elements (e.g. links styled as buttons) that can't take the real attribute.</p>
+    <div class="ds-demo">
+      <button type="button" class="btn btn-primary" disabled>Disabled</button>
+      <button type="button" class="btn btn-outline-secondary" disabled>Disabled</button>
+      <a href="#" class="btn btn-ghost" role="button" aria-disabled="true" tabindex="-1">Disabled link</a>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;button type=&quot;button&quot; class=&quot;btn btn-primary&quot; disabled&gt;Disabled&lt;/button&gt;
+
+&lt;!-- link-as-button can't use the disabled attribute --&gt;
+&lt;a href=&quot;#&quot; class=&quot;btn btn-ghost&quot; role=&quot;button&quot;
+   aria-disabled=&quot;true&quot; tabindex=&quot;-1&quot;&gt;Disabled link&lt;/a&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> Styled via <code>:disabled</code>, <code>.disabled</code> and <code>[aria-disabled="true"]</code>. Prefer disabling only when the action is truly unavailable; otherwise leave it enabled and show an inline validation message.</div>
+  </section>
+
+  <!-- Block -->
+  <section class="ds-section">
+    <h2>Block (full width)</h2>
+    <p class="ds-desc">Full-width buttons for mobile flows, modals, and narrow cards. Toggle the "Mobile" width in the toolbar to see it in context.</p>
+    <div class="ds-demo ds-block" style="max-width:360px">
+      <button type="button" class="btn btn-primary btn-block">Continue</button>
+      <div style="height:12px"></div>
+      <button type="button" class="btn btn-outline-secondary btn-block">Back</button>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;button type=&quot;button&quot; class=&quot;btn btn-primary btn-block&quot;&gt;Continue&lt;/button&gt;
+&lt;button type=&quot;button&quot; class=&quot;btn btn-outline-secondary btn-block&quot;&gt;Back&lt;/button&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> Prime helper <code>.btn-block</code> sets <code>display:flex; width:100%</code>. Stack a solid primary above an outline secondary in mobile action sheets.</div>
+  </section>
+
+</main>
+<script src="../js/main.js"></script>
+</body>
+</html>

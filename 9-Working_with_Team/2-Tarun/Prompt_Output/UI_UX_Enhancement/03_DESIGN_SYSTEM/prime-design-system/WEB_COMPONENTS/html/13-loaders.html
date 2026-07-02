@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en" data-bs-theme="light" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prime DS — Loaders &amp; Skeletons</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@4.0.0-beta3/dist/css/adminlte.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<link rel="stylesheet" href="../css/tokens.css">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/components/loaders.css">
+<link rel="stylesheet" href="../css/components/buttons.css">
+<link rel="stylesheet" href="../css/dark-mode.css">
+</head>
+<body>
+<header class="ds-toolbar">
+  <a href="../../index.html" class="ds-brand" style="text-decoration:none;color:inherit"><span class="ds-logo">P</span> Prime DS</a>
+  <span class="ds-spacer"></span>
+  <button class="ds-toggle" data-ds-width-toggle><i class="bi bi-phone"></i> <span class="ds-width-label">Desktop</span></button>
+  <button class="ds-toggle" data-ds-theme-toggle><i class="bi bi-sun"></i> <span class="ds-theme-label">Light</span></button>
+</header>
+<main class="ds-content">
+  <div class="ds-section"><h1>Loaders &amp; Skeletons</h1><p class="ds-desc">Busy-state building blocks: an accessible border spinner for indeterminate waits, and shimmer skeletons that reserve the final layout so content doesn't jump when it arrives. All motion freezes to a calm pulse under <code>prefers-reduced-motion</code>.</p></div>
+
+  <!-- Spinner -->
+  <section class="ds-section">
+    <h2>Spinner</h2>
+    <p class="ds-desc">The <code>.p-spinner</code> uses the border technique — a quiet primary-tint track with a solid accent arc. Wrap it in <code>role="status"</code> and include a <code>.visually-hidden</code> "Loading" so screen readers announce the wait; the motion alone is never the only signal.</p>
+    <div class="ds-demo">
+      <span class="p-spinner p-spinner-sm" role="status" aria-label="Loading"><span class="visually-hidden">Loading…</span></span>
+      <span class="p-spinner" role="status" aria-label="Loading"><span class="visually-hidden">Loading…</span></span>
+      <span class="p-spinner p-spinner-lg" role="status" aria-label="Loading"><span class="visually-hidden">Loading…</span></span>
+      <span class="p-spinner p-spinner-muted" role="status" aria-label="Loading"><span class="visually-hidden">Loading…</span></span>
+      <span class="p-text-secondary" style="display:inline-flex;align-items:center;gap:8px">
+        <span class="p-spinner p-spinner-sm" role="status" aria-label="Loading results"><span class="visually-hidden">Loading…</span></span>
+        Loading results…
+      </span>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;!-- sizes: .p-spinner-sm (16) / default (24) / .p-spinner-lg (40) --&gt;
+&lt;span class=&quot;p-spinner&quot; role=&quot;status&quot; aria-label=&quot;Loading&quot;&gt;
+  &lt;span class=&quot;visually-hidden&quot;&gt;Loading…&lt;/span&gt;
+&lt;/span&gt;
+
+&lt;!-- with a visible label, the aria-label is optional --&gt;
+&lt;span class=&quot;p-text-secondary&quot; style=&quot;display:inline-flex;align-items:center;gap:8px&quot;&gt;
+  &lt;span class=&quot;p-spinner p-spinner-sm&quot; role=&quot;status&quot;&gt;&lt;span class=&quot;visually-hidden&quot;&gt;Loading…&lt;/span&gt;&lt;/span&gt;
+  Loading results…
+&lt;/span&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> Prime helper <code>.p-spinner</code> (+ <code>.p-spinner-sm</code> / <code>.p-spinner-lg</code> / <code>.p-spinner-muted</code>). For indeterminate waits only — if you know progress %, use a progress bar instead.</div>
+  </section>
+
+  <!-- Card skeleton -->
+  <section class="ds-section">
+    <h2>Skeleton — card</h2>
+    <p class="ds-desc">Mirror the real card's shape so the layout is stable when data lands. The container is <code>aria-busy="true"</code>; the shimmer blocks are <code>aria-hidden</code> so they're not read out one by one.</p>
+    <div class="ds-demo ds-block">
+      <div class="p-skeleton-card" aria-busy="true" aria-live="polite" style="max-width:340px">
+        <span class="visually-hidden">Loading card…</span>
+        <div class="p-skeleton p-skeleton-thumb" aria-hidden="true"></div>
+        <div class="p-skeleton p-skeleton-title" aria-hidden="true"></div>
+        <div class="p-skeleton p-skeleton-text" aria-hidden="true"></div>
+        <div class="p-skeleton p-skeleton-text p-skeleton-w-90" aria-hidden="true"></div>
+        <div class="p-skeleton p-skeleton-text p-skeleton-w-60" aria-hidden="true"></div>
+        <div style="margin-top:16px"><div class="p-skeleton p-skeleton-btn" aria-hidden="true"></div></div>
+      </div>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;div class=&quot;p-skeleton-card&quot; aria-busy=&quot;true&quot; aria-live=&quot;polite&quot;&gt;
+  &lt;span class=&quot;visually-hidden&quot;&gt;Loading card…&lt;/span&gt;
+  &lt;div class=&quot;p-skeleton p-skeleton-thumb&quot; aria-hidden=&quot;true&quot;&gt;&lt;/div&gt;
+  &lt;div class=&quot;p-skeleton p-skeleton-title&quot; aria-hidden=&quot;true&quot;&gt;&lt;/div&gt;
+  &lt;div class=&quot;p-skeleton p-skeleton-text&quot; aria-hidden=&quot;true&quot;&gt;&lt;/div&gt;
+  &lt;div class=&quot;p-skeleton p-skeleton-text p-skeleton-w-90&quot; aria-hidden=&quot;true&quot;&gt;&lt;/div&gt;
+  &lt;div class=&quot;p-skeleton p-skeleton-text p-skeleton-w-60&quot; aria-hidden=&quot;true&quot;&gt;&lt;/div&gt;
+  &lt;div class=&quot;p-skeleton p-skeleton-btn&quot; aria-hidden=&quot;true&quot;&gt;&lt;/div&gt;
+&lt;/div&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> Prime helpers <code>.p-skeleton-card</code> + <code>.p-skeleton</code> shape modifiers (<code>-thumb / -title / -text / -btn</code>) and width helpers (<code>.p-skeleton-w-90/75/60/40</code>). Match the block count to the real content so nothing shifts on load.</div>
+  </section>
+
+  <!-- Table skeleton -->
+  <section class="ds-section">
+    <h2>Skeleton — table rows</h2>
+    <p class="ds-desc">Placeholder rows for a data table while the first page loads. Keep the real <code>&lt;thead&gt;</code> visible so column context is immediate.</p>
+    <div class="ds-demo ds-block">
+      <table class="table" aria-busy="true" style="background:var(--p-surface-bg)">
+        <thead>
+          <tr><th style="width:44px"></th><th>Student</th><th>Class</th><th>Roll no.</th><th class="text-end">Status</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><div class="p-skeleton p-skeleton-circle" style="width:28px;height:28px" aria-hidden="true"></div></td>
+            <td><div class="p-skeleton p-skeleton-text p-skeleton-w-75" aria-hidden="true"></div></td>
+            <td><div class="p-skeleton p-skeleton-text p-skeleton-w-40" aria-hidden="true"></div></td>
+            <td><div class="p-skeleton p-skeleton-text p-skeleton-w-40" aria-hidden="true"></div></td>
+            <td><div class="p-skeleton p-skeleton-text p-skeleton-w-60" style="margin-left:auto" aria-hidden="true"></div></td>
+          </tr>
+          <tr>
+            <td><div class="p-skeleton p-skeleton-circle" style="width:28px;height:28px" aria-hidden="true"></div></td>
+            <td><div class="p-skeleton p-skeleton-text p-skeleton-w-90" aria-hidden="true"></div></td>
+            <td><div class="p-skeleton p-skeleton-text p-skeleton-w-40" aria-hidden="true"></div></td>
+            <td><div class="p-skeleton p-skeleton-text p-skeleton-w-40" aria-hidden="true"></div></td>
+            <td><div class="p-skeleton p-skeleton-text p-skeleton-w-60" style="margin-left:auto" aria-hidden="true"></div></td>
+          </tr>
+          <tr>
+            <td><div class="p-skeleton p-skeleton-circle" style="width:28px;height:28px" aria-hidden="true"></div></td>
+            <td><div class="p-skeleton p-skeleton-text p-skeleton-w-60" aria-hidden="true"></div></td>
+            <td><div class="p-skeleton p-skeleton-text p-skeleton-w-40" aria-hidden="true"></div></td>
+            <td><div class="p-skeleton p-skeleton-text p-skeleton-w-40" aria-hidden="true"></div></td>
+            <td><div class="p-skeleton p-skeleton-text p-skeleton-w-60" style="margin-left:auto" aria-hidden="true"></div></td>
+          </tr>
+        </tbody>
+      </table>
+      <span class="visually-hidden" role="status">Loading table rows…</span>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;table class=&quot;table&quot; aria-busy=&quot;true&quot;&gt;
+  &lt;thead&gt;&lt;tr&gt;&lt;th&gt;Student&lt;/th&gt;&lt;th&gt;Class&lt;/th&gt;&lt;th&gt;Roll no.&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;
+      &lt;td&gt;&lt;div class=&quot;p-skeleton p-skeleton-text p-skeleton-w-75&quot; aria-hidden=&quot;true&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+      &lt;td&gt;&lt;div class=&quot;p-skeleton p-skeleton-text p-skeleton-w-40&quot; aria-hidden=&quot;true&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+      &lt;td&gt;&lt;div class=&quot;p-skeleton p-skeleton-text p-skeleton-w-40&quot; aria-hidden=&quot;true&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;!-- repeat rows for the page size --&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+&lt;span class=&quot;visually-hidden&quot; role=&quot;status&quot;&gt;Loading table rows…&lt;/span&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> Reuses <code>.p-skeleton</code> inside a real Bootstrap <code>.table</code>. Render as many skeleton rows as your page size (10, 20…) so the table height matches the loaded state.</div>
+  </section>
+
+  <!-- List skeleton -->
+  <section class="ds-section">
+    <h2>Skeleton — list items</h2>
+    <p class="ds-desc">Avatar + two lines per row — for notification feeds, student lists, chat, etc. The whole list is one <code>aria-busy</code> region.</p>
+    <div class="ds-demo ds-block">
+      <div class="p-surface p-border p-rounded" style="padding:8px 16px;max-width:420px" aria-busy="true" aria-live="polite">
+        <span class="visually-hidden" role="status">Loading list…</span>
+        <div class="p-skeleton-row">
+          <div class="p-skeleton p-skeleton-circle" aria-hidden="true"></div>
+          <div class="p-skeleton-lines">
+            <div class="p-skeleton p-skeleton-text p-skeleton-w-60" aria-hidden="true"></div>
+            <div class="p-skeleton p-skeleton-text p-skeleton-w-90" aria-hidden="true"></div>
+          </div>
+        </div>
+        <div class="p-skeleton-row">
+          <div class="p-skeleton p-skeleton-circle" aria-hidden="true"></div>
+          <div class="p-skeleton-lines">
+            <div class="p-skeleton p-skeleton-text p-skeleton-w-40" aria-hidden="true"></div>
+            <div class="p-skeleton p-skeleton-text p-skeleton-w-75" aria-hidden="true"></div>
+          </div>
+        </div>
+        <div class="p-skeleton-row">
+          <div class="p-skeleton p-skeleton-circle" aria-hidden="true"></div>
+          <div class="p-skeleton-lines">
+            <div class="p-skeleton p-skeleton-text p-skeleton-w-75" aria-hidden="true"></div>
+            <div class="p-skeleton p-skeleton-text p-skeleton-w-60" aria-hidden="true"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;div class=&quot;p-surface p-border p-rounded&quot; aria-busy=&quot;true&quot; aria-live=&quot;polite&quot;&gt;
+  &lt;span class=&quot;visually-hidden&quot; role=&quot;status&quot;&gt;Loading list…&lt;/span&gt;
+  &lt;div class=&quot;p-skeleton-row&quot;&gt;
+    &lt;div class=&quot;p-skeleton p-skeleton-circle&quot; aria-hidden=&quot;true&quot;&gt;&lt;/div&gt;
+    &lt;div class=&quot;p-skeleton-lines&quot;&gt;
+      &lt;div class=&quot;p-skeleton p-skeleton-text p-skeleton-w-60&quot; aria-hidden=&quot;true&quot;&gt;&lt;/div&gt;
+      &lt;div class=&quot;p-skeleton p-skeleton-text p-skeleton-w-90&quot; aria-hidden=&quot;true&quot;&gt;&lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+  &lt;!-- repeat rows --&gt;
+&lt;/div&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> Prime helper <code>.p-skeleton-row</code> (flex avatar + <code>.p-skeleton-lines</code>). Vary the width helpers between rows so the placeholder reads as natural, ragged text rather than a solid block.</div>
+  </section>
+
+  <!-- Button loading -->
+  <section class="ds-section">
+    <h2>Button loading</h2>
+    <p class="ds-desc">For a button-triggered action, don't add a separate spinner — put the button itself into its loading state. This reuses <code>.btn.is-loading</code> from <code>buttons.css</code>.</p>
+    <div class="ds-demo">
+      <button type="button" class="btn btn-primary is-loading" aria-busy="true">Saving…</button>
+      <button type="button" class="btn btn-outline-primary is-loading" aria-busy="true">Loading</button>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;!-- link buttons.css too, then reuse the button loading state --&gt;
+&lt;button type=&quot;button&quot; class=&quot;btn btn-primary is-loading&quot; aria-busy=&quot;true&quot;&gt;Saving…&lt;/button&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> This page links a second stylesheet (<code>../css/components/buttons.css</code>) to pull in <code>.btn.is-loading</code>. Keep the action's context — a loading button — instead of covering the region with a standalone spinner.</div>
+  </section>
+
+  <!-- Reduced motion -->
+  <section class="ds-section">
+    <h2>Reduced motion</h2>
+    <p class="ds-desc">Everything above respects <code>@media (prefers-reduced-motion: reduce)</code>: the spinner and skeleton shimmer stop and cross-fade to a slow opacity pulse instead, so the busy state is still conveyed without sliding/spinning motion.</p>
+    <div class="ds-notes"><strong>Usage:</strong> Enable "Reduce motion" in your OS accessibility settings and reload — the spinner arc and skeleton sheen switch to a gentle <code>p-pulse</code>. No JS needed; it's pure CSS in <code>loaders.css</code>.</div>
+  </section>
+
+</main>
+<script src="../js/main.js"></script>
+</body>
+</html>

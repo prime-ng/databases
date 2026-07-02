@@ -1,6 +1,6 @@
 -- =====================================================================
--- CLASS SUB-MODULE - VERSION 2.0 (PRODUCTION-GRADE)
--- Enhanced from Class_Setup_ddl_v1.0.sql
+-- CLASS SUB-MODULE - VERSION 3.0 (PRODUCTION-GRADE)
+-- Enhanced from Class_Setup_ddl_v2.0.sql
 -- =====================================================================
 -- Target: MySQL 8.x | Stack: PHP + Laravel
 -- Architecture: Multi-tenant, Constraint-based Auto-Scheduling

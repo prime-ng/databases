@@ -2,7 +2,7 @@
 
 > This file is the index of all memory files in `AI_Brain/memory/`.
 > **Start every session by reading `AI_Brain/README.md` first.**
-> Last Updated: 2026-06-27
+> Last Updated: 2026-06-30
 
 ---
 
@@ -66,6 +66,39 @@
 - [../module-knowledge/INV_Inventory.md](../module-knowledge/INV_Inventory.md) — Inventory (INV): 28 tables (DDL v1, tenant_db), 20 ctrl, 28 models, **14 services** (corrected from 7; StockLedgerService + StockValuationService undocumented), 16 policies, 77 views, ~**55–65%** (corrected from 0% Greenfield). 5 cross-module placeholder seeders bypass ACC/VND prereqs. 4 of 8 domain events missing (StockTransferred etc.). 0 Listeners. 0 tests (critical — SELECT...FOR UPDATE on stock_balances). FK constraints for ACC/VND/SCH commented out in DDL. FRD not yet generated.
 - [../module-knowledge/FOF_FrontOffice.md](../module-knowledge/FOF_FrontOffice.md) — FrontOffice (FOF): 22 tables (DDL v1, 4 layers), 21 ctrl, 22 models, **4 services** (corrected from 6; FeedbackService + CertificateIssuanceService missing), **13 policies** (corrected from 4 proposed — 3× undercount), 118 views, ~**55–65%** (corrected from 0% Greenfield). `fof:flag-overstay` Artisan command not found. 1 queued Job (EarlyDepartureAttSyncJob). 0 Events, 1 test file. 0 migrations. FRD not yet generated.
 - [../module-knowledge/HST_Hostel.md](../module-knowledge/HST_Hostel.md) — Hostel (HST): 36-table DDL (v4/v3.0 internal), 41 migrations deployed. **53 ctrl** (proposed 20), **41 models** (proposed 20; modules-map says 44 — discrepancy of 3 unresolved), **22 services** (proposed 7; 15 are report-specific), **38 FormRequests** (proposed 27), **20 policies** (proposed 12; in module's own Policies/ not app/Policies/), **278 views** (proposed 65), **573 route lines / 337 named routes**, 9 seeders, 7 events, 2 jobs, 1 Artisan command (hst:escalate-complaints — hourly scheduler), 1 middleware (WardenScopeMiddleware ✓ implemented), **0 tests** (15 proposed — critical gap), ~**70–75%** (corrected from 0% Greenfield). Key gaps: 0 Listeners (events dispatch jobs directly), BedType.php+HstBedType.php duplicate models (P1), duplicate controller naming (AuditLogController vs HstAuditLogController). FRD not yet generated. Knowledge: `AI_Brain/module-knowledge/HST_Hostel.md`
+
+---
+
+## Session Summary: 2026-06-30 Complete Analysis Packs (13 modules)
+
+> `pa-business-analyst` workers ran Complete Analysis Pack Mode for 13 modules on 2026-06-30.
+> FRDs and Complete Analysis Packs saved flat to `0-FRD_Documents/` as `{CODE}_FRD_2026-06-30.md` and `{CODE}_FRD_Complete_2026-06-30.md`.
+
+### Modules Analysed
+
+| Code | Module | Completion | P0 Gaps | Effort Estimate |
+|------|--------|-----------|---------|-----------------|
+| SCH | SchoolSetup | 62% | 4 | ~49 dev-days |
+| STT | SmartTimetable | 68% | 5 | 192 hrs |
+| TTS | StandardTimetable | 15% | 5 | ~150 hrs |
+| TTF | TimetableFoundation | 68% | 4 | ~70 hrs |
+| STP | StudentPortal | 75-80% | 4 | ~77.5 hrs |
+| FIN | StudentFee | 78% | 9 | ~32 dev-days |
+| STD | StudentProfile | TBD | 3 | ~59 dev-days |
+| SLK | SyllabusBooks | 70-75% | 5 | — |
+| SLB | Syllabus | 78% | 6 | — |
+| QNS | QuestionBank | 50% | 6 | ~112 hrs |
+| TMP | Template | ~68% (**NO-GO** 40/100) | 3 | — |
+| SYS | SystemConfig | 65-70% | 5 | ~46 hrs |
+| VND | Vendor | ~50% (**NO-GO** 35/100) | 4 | — |
+
+### Key Discoveries
+- **STP (StudentPortal)** is ~75-80% complete — was incorrectly listed as "Pending" in CLAUDE.md. Already in modules-map.md main table.
+- **TTF (TimetableFoundation)** and **TMP (Template)** confirmed as active modules (already in modules-map.md since 2026-06-21).
+- 8 platform-wide systemic patterns confirmed across all 13 modules — see `project-context.md` § "Platform-Wide Security Posture" and `lessons/known-issues.md` for full details.
+- **New critical pattern:** Cross-layer `AcademicSession` import — SLK controllers import Prime's `AcademicSession` (prime_db) instead of tenant `OrganizationAcademicSession` (tenant_db). Check all modules.
+- **New critical pattern:** Duplicate `Gate::policy()` registration silently kills valid policy — confirmed QNS and TTF.
+- **VND:** PAN card numbers and bank account numbers stored in plaintext — P0 PII risk.
 
 ---
 

@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="en" data-bs-theme="light" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prime DS — Forms &amp; Inputs</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@4.0.0-beta3/dist/css/adminlte.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<link rel="stylesheet" href="../css/tokens.css">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/components/forms.css">
+<link rel="stylesheet" href="../css/dark-mode.css">
+</head>
+<body>
+<header class="ds-toolbar">
+  <a href="../../index.html" class="ds-brand" style="text-decoration:none;color:inherit"><span class="ds-logo">P</span> Prime DS</a>
+  <span class="ds-spacer"></span>
+  <button class="ds-toggle" data-ds-width-toggle><i class="bi bi-phone"></i> <span class="ds-width-label">Desktop</span></button>
+  <button class="ds-toggle" data-ds-theme-toggle><i class="bi bi-sun"></i> <span class="ds-theme-label">Light</span></button>
+</header>
+<main class="ds-content">
+  <div class="ds-section"><h1>Forms &amp; Inputs</h1><p class="ds-desc">Token-driven Bootstrap/AdminLTE form controls: 44px+ targets, primary focus ring, and validation shown by colour + icon + text. Every input is paired with a <code>&lt;label for&gt;</code>; validity uses a left-accent border, never a full colour fill.</p></div>
+
+  <!-- ============================================================ TEXT INPUT -->
+  <section class="ds-section">
+    <h2>Text input</h2>
+    <p class="ds-desc">The default single-line control. Always pair it with a top <code>&lt;label for&gt;</code> tied by matching <code>id</code>.</p>
+    <div class="ds-demo ds-block">
+      <div class="p-field" style="max-width:420px">
+        <label for="f-name" class="form-label">Student full name <span class="p-req" aria-hidden="true">*</span></label>
+        <input type="text" class="form-control" id="f-name" name="student_name" placeholder="e.g. Aarav Sharma" autocomplete="name">
+      </div>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;div class="p-field"&gt;
+  &lt;label for="f-name" class="form-label"&gt;Student full name &lt;span class="p-req" aria-hidden="true"&gt;*&lt;/span&gt;&lt;/label&gt;
+  &lt;input type="text" class="form-control" id="f-name" name="student_name"
+         placeholder="e.g. Aarav Sharma" autocomplete="name"&gt;
+&lt;/div&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> Base of most forms. Styles Bootstrap <code>.form-control</code> + <code>.form-label</code>. Prime <code>.p-field</code> supplies vertical rhythm; <code>.p-req</code> flags required fields. Focus shows the primary ring; hover softens the border.</div>
+  </section>
+
+  <!-- ======================================================= PASSWORD TOGGLE -->
+  <section class="ds-section">
+    <h2>Password — show / hide toggle</h2>
+    <p class="ds-desc">An <code>.input-group</code> with a trailing icon-button that flips the field between <code>password</code> and <code>text</code>. The button carries an <code>aria-label</code> and swaps <code>bi-eye</code> / <code>bi-eye-slash</code>.</p>
+    <div class="ds-demo ds-block">
+      <div class="p-field" style="max-width:420px">
+        <label for="f-pass" class="form-label">Password</label>
+        <div class="input-group">
+          <input type="password" class="form-control" id="f-pass" name="password" placeholder="Enter password" autocomplete="current-password">
+          <button class="btn btn-outline-secondary btn-icon" type="button" data-pw-toggle="f-pass" aria-label="Show password" title="Show password">
+            <i class="bi bi-eye" aria-hidden="true"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;div class="input-group"&gt;
+  &lt;input type="password" class="form-control" id="f-pass" name="password"
+         placeholder="Enter password" autocomplete="current-password"&gt;
+  &lt;button class="btn btn-outline-secondary btn-icon" type="button"
+          data-pw-toggle="f-pass" aria-label="Show password" title="Show password"&gt;
+    &lt;i class="bi bi-eye" aria-hidden="true"&gt;&lt;/i&gt;
+  &lt;/button&gt;
+&lt;/div&gt;
+
+&lt;script&gt;
+document.querySelectorAll('[data-pw-toggle]').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    var input = document.getElementById(btn.getAttribute('data-pw-toggle'));
+    var show = input.type === 'password';
+    input.type = show ? 'text' : 'password';
+    btn.querySelector('i').className = show ? 'bi bi-eye-slash' : 'bi bi-eye';
+    btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+    btn.setAttribute('title', show ? 'Hide password' : 'Show password');
+  });
+});
+&lt;/script&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> Login / set-password screens. The icon-only toggle keeps both <code>aria-label</code> and <code>title</code> in sync so screen readers and hover tooltips announce the current action.</div>
+  </section>
+
+  <!-- ============================================================== NUMBER -->
+  <section class="ds-section">
+    <h2>Number</h2>
+    <p class="ds-desc">Numeric entry with <code>min</code>/<code>max</code>/<code>step</code> and an <code>inputmode</code> hint for mobile keypads.</p>
+    <div class="ds-demo ds-block">
+      <div class="p-field" style="max-width:280px">
+        <label for="f-roll" class="form-label">Roll number</label>
+        <input type="number" class="form-control" id="f-roll" name="roll_no" min="1" max="60" step="1" inputmode="numeric" placeholder="1–60">
+      </div>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;label for="f-roll" class="form-label"&gt;Roll number&lt;/label&gt;
+&lt;input type="number" class="form-control" id="f-roll" name="roll_no"
+       min="1" max="60" step="1" inputmode="numeric" placeholder="1–60"&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> Counts, roll numbers, marks. Set <code>inputmode="numeric"</code> for the right mobile keypad and constrain with <code>min</code>/<code>max</code> so the browser validates on submit.</div>
+  </section>
+
+  <!-- =============================================================== EMAIL -->
+  <section class="ds-section">
+    <h2>Email</h2>
+    <p class="ds-desc"><code>type="email"</code> gives native format validation and the email keyboard on mobile.</p>
+    <div class="ds-demo ds-block">
+      <div class="p-field" style="max-width:420px">
+        <label for="f-email" class="form-label">Parent email</label>
+        <input type="email" class="form-control" id="f-email" name="email" placeholder="name@school.edu.in" autocomplete="email">
+      </div>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;label for="f-email" class="form-label"&gt;Parent email&lt;/label&gt;
+&lt;input type="email" class="form-control" id="f-email" name="email"
+       placeholder="name@school.edu.in" autocomplete="email"&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> Contact fields. Pair with server-side validation — client format checks are a convenience, not a guarantee.</div>
+  </section>
+
+  <!-- ============================================================= TEXTAREA -->
+  <section class="ds-section">
+    <h2>Textarea</h2>
+    <p class="ds-desc">Multi-line input; grows vertically only (<code>resize:vertical</code>) so layouts stay intact.</p>
+    <div class="ds-demo ds-block">
+      <div class="p-field" style="max-width:560px">
+        <label for="f-remarks" class="form-label">Remarks</label>
+        <textarea class="form-control" id="f-remarks" name="remarks" rows="3" placeholder="Add a note about the student…"></textarea>
+        <div class="form-text">Visible to class teachers and the parent portal.</div>
+      </div>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;label for="f-remarks" class="form-label"&gt;Remarks&lt;/label&gt;
+&lt;textarea class="form-control" id="f-remarks" name="remarks" rows="3"
+          placeholder="Add a note about the student…"&gt;&lt;/textarea&gt;
+&lt;div class="form-text"&gt;Visible to class teachers and the parent portal.&lt;/div&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> Comments, remarks, descriptions. Uses Bootstrap <code>.form-control</code> on a <code>&lt;textarea&gt;</code>; <code>.form-text</code> adds a neutral hint below.</div>
+  </section>
+
+  <!-- =============================================================== SELECT -->
+  <section class="ds-section">
+    <h2>Select — single &amp; multiple</h2>
+    <p class="ds-desc">Native <code>.form-select</code>. Single selects show a token-tinted caret; adding <code>multiple</code> switches to a list box.</p>
+    <div class="ds-demo ds-block">
+      <div class="p-field" style="max-width:420px">
+        <label for="f-class" class="form-label">Class</label>
+        <select class="form-select" id="f-class" name="class_id">
+          <option value="" selected disabled>Choose a class…</option>
+          <option>Grade 6 — A</option>
+          <option>Grade 6 — B</option>
+          <option>Grade 7 — A</option>
+        </select>
+      </div>
+      <div class="p-field" style="max-width:420px">
+        <label for="f-subjects" class="form-label">Subjects <span class="form-text" style="display:inline">(Ctrl / ⌘ to pick several)</span></label>
+        <select class="form-select" id="f-subjects" name="subjects[]" multiple size="4">
+          <option selected>Mathematics</option>
+          <option selected>Science</option>
+          <option>English</option>
+          <option>Social Studies</option>
+          <option>Hindi</option>
+        </select>
+      </div>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;label for="f-class" class="form-label"&gt;Class&lt;/label&gt;
+&lt;select class="form-select" id="f-class" name="class_id"&gt;
+  &lt;option value="" selected disabled&gt;Choose a class…&lt;/option&gt;
+  &lt;option&gt;Grade 6 — A&lt;/option&gt;
+&lt;/select&gt;
+
+&lt;label for="f-subjects" class="form-label"&gt;Subjects&lt;/label&gt;
+&lt;select class="form-select" id="f-subjects" name="subjects[]" multiple size="4"&gt;
+  &lt;option selected&gt;Mathematics&lt;/option&gt;
+  &lt;option&gt;English&lt;/option&gt;
+&lt;/select&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> Bounded choices. Use a disabled placeholder <code>&lt;option&gt;</code> as the prompt. For multi-select, name with <code>[]</code> and add a hint that Ctrl/⌘ selects several.</div>
+  </section>
+
+  <!-- ================================================= CHECK / RADIO / SWITCH -->
+  <section class="ds-section">
+    <h2>Checkbox, radio &amp; switch</h2>
+    <p class="ds-desc">All three share <code>.form-check</code> + <code>.form-check-input</code>. <code>type</code> and the <code>.form-switch</code> wrapper change the shape; checked state fills with the primary (switch = success).</p>
+    <div class="ds-demo ds-block">
+      <fieldset class="p-field" style="margin-right:48px">
+        <legend class="form-label">Checkboxes</legend>
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" value="bus" id="c-bus" checked>
+          <label class="form-check-label" for="c-bus">Uses school bus</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" value="hostel" id="c-hostel">
+          <label class="form-check-label" for="c-hostel">Hostel resident</label>
+        </div>
+      </fieldset>
+      <fieldset class="p-field" style="margin-right:48px">
+        <legend class="form-label">Radios — gender</legend>
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="gender" id="r-m" checked>
+          <label class="form-check-label" for="r-m">Male</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="gender" id="r-f">
+          <label class="form-check-label" for="r-f">Female</label>
+        </div>
+      </fieldset>
+      <fieldset class="p-field">
+        <legend class="form-label">Switch</legend>
+        <div class="form-check form-switch">
+          <input class="form-check-input" type="checkbox" role="switch" id="s-active" checked>
+          <label class="form-check-label" for="s-active">Admission active</label>
+        </div>
+      </fieldset>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;!-- Checkbox --&gt;
+&lt;div class="form-check"&gt;
+  &lt;input class="form-check-input" type="checkbox" value="bus" id="c-bus" checked&gt;
+  &lt;label class="form-check-label" for="c-bus"&gt;Uses school bus&lt;/label&gt;
+&lt;/div&gt;
+
+&lt;!-- Radio (share the same name) --&gt;
+&lt;div class="form-check"&gt;
+  &lt;input class="form-check-input" type="radio" name="gender" id="r-m" checked&gt;
+  &lt;label class="form-check-label" for="r-m"&gt;Male&lt;/label&gt;
+&lt;/div&gt;
+
+&lt;!-- Switch --&gt;
+&lt;div class="form-check form-switch"&gt;
+  &lt;input class="form-check-input" type="checkbox" role="switch" id="s-active" checked&gt;
+  &lt;label class="form-check-label" for="s-active"&gt;Admission active&lt;/label&gt;
+&lt;/div&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> Group related radios/checks in a <code>&lt;fieldset&gt;</code> with a <code>&lt;legend&gt;</code>. Add <code>role="switch"</code> on toggle inputs so assistive tech announces on/off. The label text always states meaning — colour is never the only signal.</div>
+  </section>
+
+  <!-- ============================================================ DATE RANGE -->
+  <section class="ds-section">
+    <h2>Date &amp; date range</h2>
+    <p class="ds-desc">Native <code>type="date"</code> pickers. A range is two labelled inputs (<em>From</em> / <em>To</em>) that constrain each other with <code>min</code>/<code>max</code>.</p>
+    <div class="ds-demo ds-block">
+      <div class="p-field" style="max-width:260px">
+        <label for="f-dob" class="form-label">Date of birth</label>
+        <input type="date" class="form-control" id="f-dob" name="dob">
+      </div>
+      <fieldset class="p-field">
+        <legend class="form-label">Attendance range</legend>
+        <div style="display:flex;gap:16px;flex-wrap:wrap">
+          <div>
+            <label for="f-from" class="form-label">From</label>
+            <input type="date" class="form-control" id="f-from" name="from" value="2026-07-01">
+          </div>
+          <div>
+            <label for="f-to" class="form-label">To</label>
+            <input type="date" class="form-control" id="f-to" name="to" value="2026-07-31">
+          </div>
+        </div>
+      </fieldset>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;label for="f-dob" class="form-label"&gt;Date of birth&lt;/label&gt;
+&lt;input type="date" class="form-control" id="f-dob" name="dob"&gt;
+
+&lt;!-- Range: two labelled inputs --&gt;
+&lt;fieldset&gt;
+  &lt;legend class="form-label"&gt;Attendance range&lt;/legend&gt;
+  &lt;label for="f-from" class="form-label"&gt;From&lt;/label&gt;
+  &lt;input type="date" class="form-control" id="f-from" name="from"&gt;
+  &lt;label for="f-to" class="form-label"&gt;To&lt;/label&gt;
+  &lt;input type="date" class="form-control" id="f-to" name="to"&gt;
+&lt;/fieldset&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> Report filters, DOB, session windows. For a true range, wire <code>from.max = to.value</code> and <code>to.min = from.value</code> on change so the pickers stay consistent.</div>
+  </section>
+
+  <!-- ============================================================ FILE UPLOAD -->
+  <section class="ds-section">
+    <h2>File upload</h2>
+    <p class="ds-desc">The styled native <code>.form-control[type=file]</code> for simple cases, plus a nicer drag-drop-look label (<code>.p-filedrop</code>) that hides the raw input.</p>
+    <div class="ds-demo ds-block">
+      <div class="p-field" style="max-width:480px">
+        <label for="f-doc" class="form-label">Upload document</label>
+        <input type="file" class="form-control" id="f-doc" name="document">
+      </div>
+      <div class="p-field" style="max-width:480px">
+        <label class="form-label" for="f-photo">Student photo</label>
+        <label class="p-filedrop" for="f-photo">
+          <i class="bi bi-cloud-arrow-up p-filedrop-icon" aria-hidden="true"></i>
+          <span><strong>Click to upload</strong> or drag &amp; drop</span>
+          <span class="p-filedrop-hint">PNG or JPG, up to 2&nbsp;MB</span>
+          <input type="file" id="f-photo" name="photo" accept="image/png,image/jpeg">
+        </label>
+      </div>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;!-- Simple styled file input --&gt;
+&lt;label for="f-doc" class="form-label"&gt;Upload document&lt;/label&gt;
+&lt;input type="file" class="form-control" id="f-doc" name="document"&gt;
+
+&lt;!-- Drag-drop-look label (input visually hidden but focusable) --&gt;
+&lt;label class="p-filedrop" for="f-photo"&gt;
+  &lt;i class="bi bi-cloud-arrow-up p-filedrop-icon" aria-hidden="true"&gt;&lt;/i&gt;
+  &lt;span&gt;&lt;strong&gt;Click to upload&lt;/strong&gt; or drag &amp; drop&lt;/span&gt;
+  &lt;span class="p-filedrop-hint"&gt;PNG or JPG, up to 2 MB&lt;/span&gt;
+  &lt;input type="file" id="f-photo" name="photo" accept="image/png,image/jpeg"&gt;
+&lt;/label&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> Documents and photos. The <code>.p-filedrop</code> label stays keyboard-accessible (the input is only visually hidden) and lights up on hover/focus. Set <code>accept</code> to steer the file dialog.</div>
+  </section>
+
+  <!-- ============================================================ SEARCH INPUT -->
+  <section class="ds-section">
+    <h2>Search with clear button</h2>
+    <p class="ds-desc"><code>.p-search</code> wraps a <code>bi-search</code> prefix and a <code>bi-x-circle</code> clear button that appears only when the field has a value.</p>
+    <div class="ds-demo ds-block">
+      <div class="p-field" style="max-width:420px">
+        <label for="f-search" class="form-label">Search students</label>
+        <div class="p-search">
+          <i class="bi bi-search p-search-icon" aria-hidden="true"></i>
+          <input type="search" class="form-control" id="f-search" name="q" placeholder="Name or admission no." value="Aarav">
+          <button type="button" class="p-search-clear" data-search-clear="f-search" aria-label="Clear search">
+            <i class="bi bi-x-circle" aria-hidden="true"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;div class="p-search has-value"&gt;
+  &lt;i class="bi bi-search p-search-icon" aria-hidden="true"&gt;&lt;/i&gt;
+  &lt;input type="search" class="form-control" id="f-search" name="q" placeholder="Name or admission no."&gt;
+  &lt;button type="button" class="p-search-clear" data-search-clear="f-search" aria-label="Clear search"&gt;
+    &lt;i class="bi bi-x-circle" aria-hidden="true"&gt;&lt;/i&gt;
+  &lt;/button&gt;
+&lt;/div&gt;
+
+&lt;script&gt;
+document.querySelectorAll('.p-search .form-control').forEach(function (input) {
+  var wrap = input.closest('.p-search');
+  var sync = function () { wrap.classList.toggle('has-value', input.value.length > 0); };
+  input.addEventListener('input', sync); sync();
+});
+document.querySelectorAll('[data-search-clear]').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    var input = document.getElementById(btn.getAttribute('data-search-clear'));
+    input.value = ''; input.dispatchEvent(new Event('input')); input.focus();
+  });
+});
+&lt;/script&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> List/table filters. The <code>.has-value</code> class (toggled by the script) reveals the clear button; the icon-only clear carries an <code>aria-label</code>. The prefix icon tints to primary on focus.</div>
+  </section>
+
+  <!-- =========================================================== VALIDATION -->
+  <section class="ds-section">
+    <h2>Validation states</h2>
+    <p class="ds-desc">Valid (<code>.is-valid</code>), invalid (<code>.is-invalid</code>) and a neutral hint (<code>.form-text</code>). Each state pairs a colour with an icon <em>and</em> text — never colour alone. Invalid inputs set <code>aria-invalid</code> and <code>aria-describedby</code>.</p>
+    <div class="ds-demo ds-block">
+      <div class="p-field" style="max-width:420px">
+        <label for="v-ok" class="form-label">Admission number</label>
+        <input type="text" class="form-control is-valid" id="v-ok" value="ADM-2026-0417" aria-describedby="v-ok-fb">
+        <div class="valid-feedback" id="v-ok-fb"><i class="bi bi-check-circle" aria-hidden="true"></i> Looks good — number is available.</div>
+      </div>
+      <div class="p-field" style="max-width:420px">
+        <label for="v-bad" class="form-label">Parent email</label>
+        <input type="email" class="form-control is-invalid" id="v-bad" value="parent@" aria-invalid="true" aria-describedby="v-bad-fb">
+        <div class="invalid-feedback" id="v-bad-fb"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i> Enter a valid email like name@school.edu.in.</div>
+      </div>
+      <div class="p-field" style="max-width:420px">
+        <label for="v-hint" class="form-label">Mobile number</label>
+        <input type="tel" class="form-control" id="v-hint" placeholder="10-digit number" aria-describedby="v-hint-help" inputmode="numeric">
+        <div class="form-text" id="v-hint-help">We only use this for attendance and fee alerts.</div>
+      </div>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;!-- Valid --&gt;
+&lt;input type="text" class="form-control is-valid" id="v-ok" aria-describedby="v-ok-fb"&gt;
+&lt;div class="valid-feedback" id="v-ok-fb"&gt;
+  &lt;i class="bi bi-check-circle" aria-hidden="true"&gt;&lt;/i&gt; Looks good — number is available.
+&lt;/div&gt;
+
+&lt;!-- Invalid --&gt;
+&lt;input type="email" class="form-control is-invalid" id="v-bad"
+       aria-invalid="true" aria-describedby="v-bad-fb"&gt;
+&lt;div class="invalid-feedback" id="v-bad-fb"&gt;
+  &lt;i class="bi bi-exclamation-triangle" aria-hidden="true"&gt;&lt;/i&gt; Enter a valid email…
+&lt;/div&gt;
+
+&lt;!-- Neutral hint --&gt;
+&lt;input type="tel" class="form-control" id="v-hint" aria-describedby="v-hint-help"&gt;
+&lt;div class="form-text" id="v-hint-help"&gt;We only use this for attendance and fee alerts.&lt;/div&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> Styles Bootstrap <code>.is-valid</code>/<code>.is-invalid</code> + <code>.valid-feedback</code>/<code>.invalid-feedback</code> and neutral <code>.form-text</code>. Prime renders validity as a left-accent border + soft ring + inline SVG glyph, and the feedback text starts with an icon so meaning survives without colour. Link the message with <code>aria-describedby</code> and set <code>aria-invalid</code> on failures.</div>
+  </section>
+</main>
+
+<script>
+// Password show/hide toggles
+document.querySelectorAll('[data-pw-toggle]').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    var input = document.getElementById(btn.getAttribute('data-pw-toggle'));
+    var show = input.type === 'password';
+    input.type = show ? 'text' : 'password';
+    btn.querySelector('i').className = show ? 'bi bi-eye-slash' : 'bi bi-eye';
+    btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+    btn.setAttribute('title', show ? 'Hide password' : 'Show password');
+  });
+});
+// Search: reveal/hide clear button + wire the clear action
+document.querySelectorAll('.p-search .form-control').forEach(function (input) {
+  var wrap = input.closest('.p-search');
+  var sync = function () { wrap.classList.toggle('has-value', input.value.length > 0); };
+  input.addEventListener('input', sync); sync();
+});
+document.querySelectorAll('[data-search-clear]').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    var input = document.getElementById(btn.getAttribute('data-search-clear'));
+    input.value = ''; input.dispatchEvent(new Event('input')); input.focus();
+  });
+});
+// Date range: keep from/to consistent
+(function () {
+  var from = document.getElementById('f-from'), to = document.getElementById('f-to');
+  if (!from || !to) return;
+  var sync = function () { if (from.value) to.min = from.value; if (to.value) from.max = to.value; };
+  from.addEventListener('change', sync); to.addEventListener('change', sync); sync();
+})();
+</script>
+<script src="../js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,121 @@
+/* ============================================================================
+   Prime Design System — pagination.css
+   Styles Bootstrap: .pagination, .page-item, .page-link (+ .active/.disabled).
+   Adds Prime helpers:
+     .p-pager-simple   — prev/next + "Showing X–Y of Z" summary row
+     .p-pager-summary  — the range/summary text
+     .p-load-more      — centered load-more wrapper
+
+   Principles encoded:
+   - "accent, don't fill": the ACTIVE page is a tinted + bordered accent chip,
+     not a heavy solid fill — the current page reads clearly without shouting.
+   - 40px min touch targets on every page-link; visible --p-focus-ring.
+   - State never relies on color alone: active carries aria-current="page",
+     disabled carries real disabled semantics + not-allowed cursor + dimming,
+     and prev/next pair a chevron icon with a text label.
+   - Token-driven colors => dark mode works automatically.
+   - Respects prefers-reduced-motion (transitions guarded).
+   ========================================================================== */
+
+/* ── Base list ────────────────────────────────────────────────────────────── */
+.pagination {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--p-space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* ── Page links / chips ───────────────────────────────────────────────────── */
+.page-item { display: inline-flex; }
+
+.page-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--p-space-2);
+  min-width: 40px;                 /* 40px tap target */
+  min-height: 40px;
+  padding: 0 var(--p-space-3);
+  border: 1px solid transparent;   /* quiet by default — accent, don't fill */
+  border-radius: var(--p-radius-md);
+  background: transparent;
+  color: var(--p-text-secondary);
+  font-size: var(--p-fs-sm);
+  font-weight: var(--p-fw-medium);
+  line-height: 1;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color var(--p-dur-fast) var(--p-ease),
+              border-color var(--p-dur-fast) var(--p-ease),
+              color var(--p-dur-fast) var(--p-ease);
+}
+
+.page-link:hover {
+  background: var(--p-surface-hover);
+  color: var(--p-text-primary);
+}
+
+.page-link:focus-visible {
+  outline: none;
+  box-shadow: var(--p-focus-ring);
+  z-index: 1;
+}
+
+/* ── Active — tinted, bordered accent (NOT a heavy fill) ──────────────────── */
+.page-item.active .page-link,
+.page-link.active {
+  background: rgba(var(--p-primary-rgb), 0.12);
+  border-color: rgba(var(--p-primary-rgb), 0.55);
+  color: var(--p-primary);
+  font-weight: var(--p-fw-semibold);
+}
+.page-item.active .page-link:hover,
+.page-link.active:hover {
+  background: rgba(var(--p-primary-rgb), 0.16);
+  color: var(--p-primary);
+}
+
+/* ── Disabled — real semantics + dimmed, non-interactive ──────────────────── */
+.page-item.disabled .page-link,
+.page-link.disabled,
+.page-link[aria-disabled="true"] {
+  color: var(--p-text-muted);
+  background: transparent;
+  cursor: not-allowed;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+/* Chevron icon sizing for prev/next controls */
+.page-link > i { font-size: 1em; line-height: 1; }
+
+/* ── Prime helper: simple prev/next pager with summary ────────────────────── */
+.p-pager-simple {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--p-space-4);
+}
+.p-pager-summary {
+  color: var(--p-text-secondary);
+  font-size: var(--p-fs-sm);
+}
+.p-pager-summary strong { color: var(--p-text-primary); font-weight: var(--p-fw-semibold); }
+
+/* ── Prime helper: load-more block ────────────────────────────────────────── */
+.p-load-more {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--p-space-2);
+  text-align: center;
+}
+.p-load-more .p-pager-summary { margin-top: var(--p-space-1); }
+
+@media (prefers-reduced-motion: reduce) {
+  .page-link { transition: none; }
+}

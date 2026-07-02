@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en" data-bs-theme="light" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prime DS — Cards</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@4.0.0-beta3/dist/css/adminlte.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<link rel="stylesheet" href="../css/tokens.css">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/components/cards.css">
+<link rel="stylesheet" href="../css/components/buttons.css">
+<link rel="stylesheet" href="../css/dark-mode.css">
+</head>
+<body>
+<header class="ds-toolbar">
+  <a href="../../index.html" class="ds-brand" style="text-decoration:none;color:inherit"><span class="ds-logo">P</span> Prime DS</a>
+  <span class="ds-spacer"></span>
+  <button class="ds-toggle" data-ds-width-toggle><i class="bi bi-phone"></i> <span class="ds-width-label">Desktop</span></button>
+  <button class="ds-toggle" data-ds-theme-toggle><i class="bi bi-sun"></i> <span class="ds-theme-label">Light</span></button>
+</header>
+<main class="ds-content">
+  <div class="ds-section">
+    <h1>Cards</h1>
+    <p class="ds-desc">Surfaces that group related content. Prime cards <strong>accent, don&rsquo;t fill</strong> — a white/surface panel with a colored <em>left-border</em> or a small tinted icon chip carries the meaning; the card body itself is never a saturated colour block.</p>
+  </div>
+
+  <!-- ══ Stat cards with trend ═════════════════════════════════════════════ -->
+  <section class="ds-section">
+    <h2>Accent stat cards (with trend)</h2>
+    <p class="ds-desc">KPI tiles for dashboards. Each is a white surface with a 4px colored left-border (<code>.p-stat-card--*</code>), a tinted icon chip, a big value, a label, and a trend delta. The trend pairs an arrow icon <em>and</em> text (&ldquo;+12% vs last term&rdquo;) so direction never relies on colour alone.</p>
+    <div class="ds-demo ds-block">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px">
+
+        <div class="p-stat-card p-stat-card--primary">
+          <span class="p-stat-card__icon"><i class="bi bi-mortarboard-fill"></i></span>
+          <div class="p-stat-card__body">
+            <span class="p-stat-card__value">2,418</span>
+            <span class="p-stat-card__label">Total students</span>
+            <span class="p-stat-card__trend p-stat-card__trend--up"><i class="bi bi-arrow-up-right"></i> +3.1% vs last term</span>
+          </div>
+        </div>
+
+        <div class="p-stat-card p-stat-card--success">
+          <span class="p-stat-card__icon"><i class="bi bi-cash-coin"></i></span>
+          <div class="p-stat-card__body">
+            <span class="p-stat-card__value">&#8377;1.94 Cr</span>
+            <span class="p-stat-card__label">Fees collected</span>
+            <span class="p-stat-card__trend p-stat-card__trend--up"><i class="bi bi-arrow-up-right"></i> +12% vs last term</span>
+          </div>
+        </div>
+
+        <div class="p-stat-card p-stat-card--warning">
+          <span class="p-stat-card__icon"><i class="bi bi-clipboard-check-fill"></i></span>
+          <div class="p-stat-card__body">
+            <span class="p-stat-card__value">94.6%</span>
+            <span class="p-stat-card__label">Attendance today</span>
+            <span class="p-stat-card__trend p-stat-card__trend--down"><i class="bi bi-arrow-down-right"></i> &minus;1.8% vs yesterday</span>
+          </div>
+        </div>
+
+        <div class="p-stat-card p-stat-card--danger">
+          <span class="p-stat-card__icon"><i class="bi bi-exclamation-triangle-fill"></i></span>
+          <div class="p-stat-card__body">
+            <span class="p-stat-card__value">17</span>
+            <span class="p-stat-card__label">Pending complaints</span>
+            <span class="p-stat-card__trend p-stat-card__trend--down"><i class="bi bi-arrow-down-right"></i> &minus;5 vs last week</span>
+          </div>
+        </div>
+
+        <div class="p-stat-card p-stat-card--info">
+          <span class="p-stat-card__icon"><i class="bi bi-people-fill"></i></span>
+          <div class="p-stat-card__body">
+            <span class="p-stat-card__value">186</span>
+            <span class="p-stat-card__label">Teaching &amp; staff</span>
+            <span class="p-stat-card__trend p-stat-card__trend--flat"><i class="bi bi-dash"></i> 4 on leave today</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;div class=&quot;p-stat-card p-stat-card--success&quot;&gt;
+  &lt;span class=&quot;p-stat-card__icon&quot;&gt;&lt;i class=&quot;bi bi-cash-coin&quot;&gt;&lt;/i&gt;&lt;/span&gt;
+  &lt;div class=&quot;p-stat-card__body&quot;&gt;
+    &lt;span class=&quot;p-stat-card__value&quot;&gt;&amp;#8377;1.94 Cr&lt;/span&gt;
+    &lt;span class=&quot;p-stat-card__label&quot;&gt;Fees collected&lt;/span&gt;
+    &lt;span class=&quot;p-stat-card__trend p-stat-card__trend--up&quot;&gt;
+      &lt;i class=&quot;bi bi-arrow-up-right&quot;&gt;&lt;/i&gt; +12% vs last term
+    &lt;/span&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+
+&lt;!-- down trend --&gt;
+&lt;span class=&quot;p-stat-card__trend p-stat-card__trend--down&quot;&gt;
+  &lt;i class=&quot;bi bi-arrow-down-right&quot;&gt;&lt;/i&gt; &amp;minus;5 vs last week
+&lt;/span&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> dashboard KPI rows. Wrap them in a responsive grid (<code>grid-template-columns:repeat(auto-fit,minmax(210px,1fr))</code>). Swap the accent with <code>--primary/--success/--warning/--danger/--info</code>; the left-border <em>and</em> the icon chip re-tint from one modifier. Trend direction is signalled by an arrow icon + words, not colour alone. <code>.p-stat-card</code> is a Prime helper (from cards.css); the icon chip auto-tints from the card&rsquo;s accent.</div>
+  </section>
+
+  <!-- ══ List card ═════════════════════════════════════════════════════════ -->
+  <section class="ds-section">
+    <h2>List card</h2>
+    <p class="ds-desc">A card wrapping a list of rows (<code>.p-list-card</code> + <code>.p-list-item</code>). Good for &ldquo;recent&rdquo; or &ldquo;top N&rdquo; panels: a title, a meta line, and a trailing value/action.</p>
+    <div class="ds-demo ds-block">
+      <div class="card" style="max-width:460px">
+        <div class="card-header"><span class="card-title">Recent fee payments</span>
+          <span class="p-card-tools"><a href="#" class="btn btn-ghost btn-ghost-primary btn-sm">View all</a></span>
+        </div>
+        <div class="p-list-card">
+          <div class="p-list-item">
+            <span class="p-tint-success p-rounded" style="width:34px;height:34px;display:grid;place-items:center"><i class="bi bi-cash"></i></span>
+            <div><div class="p-list-item__title">Aarav Sharma</div><div class="p-list-item__meta">Class 9-B &middot; Term 1 tuition</div></div>
+            <span class="p-list-item__end p-h4" style="margin:0">&#8377;42,000</span>
+          </div>
+          <div class="p-list-item">
+            <span class="p-tint-success p-rounded" style="width:34px;height:34px;display:grid;place-items:center"><i class="bi bi-cash"></i></span>
+            <div><div class="p-list-item__title">Diya Nair</div><div class="p-list-item__meta">Class 6-A &middot; Transport + tuition</div></div>
+            <span class="p-list-item__end p-h4" style="margin:0">&#8377;38,500</span>
+          </div>
+          <div class="p-list-item">
+            <span class="p-tint-warning p-rounded" style="width:34px;height:34px;display:grid;place-items:center"><i class="bi bi-hourglass-split"></i></span>
+            <div><div class="p-list-item__title">Kabir Menon</div><div class="p-list-item__meta">Class 11-C &middot; Partial &mdash; balance due</div></div>
+            <span class="p-list-item__end p-h4" style="margin:0">&#8377;15,000</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;div class=&quot;card&quot;&gt;
+  &lt;div class=&quot;card-header&quot;&gt;
+    &lt;span class=&quot;card-title&quot;&gt;Recent fee payments&lt;/span&gt;
+    &lt;span class=&quot;p-card-tools&quot;&gt;&lt;a href=&quot;#&quot; class=&quot;btn btn-ghost btn-ghost-primary btn-sm&quot;&gt;View all&lt;/a&gt;&lt;/span&gt;
+  &lt;/div&gt;
+  &lt;div class=&quot;p-list-card&quot;&gt;
+    &lt;div class=&quot;p-list-item&quot;&gt;
+      &lt;div&gt;
+        &lt;div class=&quot;p-list-item__title&quot;&gt;Aarav Sharma&lt;/div&gt;
+        &lt;div class=&quot;p-list-item__meta&quot;&gt;Class 9-B &amp;middot; Term 1 tuition&lt;/div&gt;
+      &lt;/div&gt;
+      &lt;span class=&quot;p-list-item__end&quot;&gt;&amp;#8377;42,000&lt;/span&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> compact record lists inside a card. Rows hover-highlight and divide with a hairline; the last row drops its divider automatically. Styled Prime helpers: <code>.p-list-card</code>, <code>.p-list-item</code> (<code>__title</code>/<code>__meta</code>/<code>__end</code>).</div>
+  </section>
+
+  <!-- ══ Info card ═════════════════════════════════════════════════════════ -->
+  <section class="ds-section">
+    <h2>Info card (title + body + footer meta)</h2>
+    <p class="ds-desc">The everyday Bootstrap <code>.card</code> with a header title, body copy, and a footer holding meta + an action. Prime restyles the framework classes — soft border, subtle shadow, token radius.</p>
+    <div class="ds-demo ds-block">
+      <div class="card" style="max-width:460px">
+        <div class="card-header"><span class="card-title">Parent-teacher meeting</span></div>
+        <div class="card-body">
+          <p style="margin:0 0 8px">The Term&nbsp;1 PTM for Classes 6&ndash;8 is scheduled for <strong>Saturday, 5&nbsp;July</strong> at 9:00&nbsp;AM in the main auditorium. Slot booking closes Thursday evening.</p>
+          <p class="p-text-secondary" style="margin:0">Homeroom teachers will share individual progress cards during the session.</p>
+        </div>
+        <div class="card-footer" style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <span class="p-text-muted p-caption"><i class="bi bi-clock"></i> Updated 2 hours ago</span>
+          <button class="btn btn-primary btn-sm"><i class="bi bi-calendar-check"></i> Book a slot</button>
+        </div>
+      </div>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;div class=&quot;card&quot;&gt;
+  &lt;div class=&quot;card-header&quot;&gt;&lt;span class=&quot;card-title&quot;&gt;Parent-teacher meeting&lt;/span&gt;&lt;/div&gt;
+  &lt;div class=&quot;card-body&quot;&gt;
+    &lt;p&gt;The Term 1 PTM for Classes 6&amp;ndash;8 is scheduled for &lt;strong&gt;Sat, 5 July&lt;/strong&gt;&hellip;&lt;/p&gt;
+  &lt;/div&gt;
+  &lt;div class=&quot;card-footer&quot;&gt;
+    &lt;span class=&quot;p-text-muted p-caption&quot;&gt;&lt;i class=&quot;bi bi-clock&quot;&gt;&lt;/i&gt; Updated 2 hours ago&lt;/span&gt;
+    &lt;button class=&quot;btn btn-primary btn-sm&quot;&gt;Book a slot&lt;/button&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> generic content panels. Styled Bootstrap/AdminLTE classes: <code>.card</code>, <code>.card-header</code>, <code>.card-title</code>, <code>.card-body</code>, <code>.card-footer</code>. Keep only the single primary action solid-filled in the footer.</div>
+  </section>
+
+  <!-- ══ Highlight / accent callout card ═══════════════════════════════════ -->
+  <section class="ds-section">
+    <h2>Highlight / accent callout card</h2>
+    <p class="ds-desc">A subtle tinted callout for inline notices inside content (<code>.p-info-card</code> + tone modifier). Left-accent bar + faint tint + icon &mdash; an accent, not a fill.</p>
+    <div class="ds-demo ds-block">
+      <div style="display:grid;gap:12px;max-width:560px">
+        <div class="p-info-card p-info-card--primary">
+          <span class="p-info-card__icon"><i class="bi bi-info-circle-fill"></i></span>
+          <div><strong>New academic year rollover</strong> &mdash; promote students to 2026&ndash;27 before enabling fresh fee heads. Run rollover from <em>School&nbsp;Setup &rsaquo; Academic&nbsp;Session</em>.</div>
+        </div>
+        <div class="p-info-card p-info-card--success">
+          <span class="p-info-card__icon"><i class="bi bi-check-circle-fill"></i></span>
+          <div><strong>Syllabus locked</strong> for Term&nbsp;1 &mdash; teachers can now map chapters to the timetable.</div>
+        </div>
+      </div>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;div class=&quot;p-info-card p-info-card--primary&quot;&gt;
+  &lt;span class=&quot;p-info-card__icon&quot;&gt;&lt;i class=&quot;bi bi-info-circle-fill&quot;&gt;&lt;/i&gt;&lt;/span&gt;
+  &lt;div&gt;&lt;strong&gt;New academic year rollover&lt;/strong&gt; &amp;mdash; promote students&hellip;&lt;/div&gt;
+&lt;/div&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> a lightweight callout <em>inside</em> a page (distinct from a full-width <code>.alert</code> banner). Tones: <code>--primary/--success/--warning/--danger</code>. Prime helper from cards.css.</div>
+  </section>
+
+  <!-- ══ Dashboard widget card ═════════════════════════════════════════════ -->
+  <section class="ds-section">
+    <h2>Dashboard widget card</h2>
+    <p class="ds-desc">The workhorse dashboard panel: a header with a title and an action control (dropdown / button), a chart-placeholder body, and a footer link. Header tools sit right-aligned via <code>.p-card-tools</code>.</p>
+    <div class="ds-demo ds-block">
+      <div class="card" style="max-width:600px">
+        <div class="card-header">
+          <span class="card-title">Fee collection &middot; last 8 weeks</span>
+          <span class="p-card-tools">
+            <select class="form-select form-select-sm" style="width:auto" aria-label="Chart range">
+              <option>This term</option><option>This year</option>
+            </select>
+            <button class="btn btn-icon btn-ghost" aria-label="Widget options"><i class="bi bi-three-dots-vertical"></i></button>
+          </span>
+        </div>
+        <div class="card-body">
+          <div role="img" aria-label="Bar chart of weekly fee collection trending upward"
+               style="height:200px;border-radius:12px;border:1px dashed var(--p-surface-border);display:flex;align-items:flex-end;gap:10px;padding:16px;background:linear-gradient(180deg,rgba(var(--p-primary-rgb),.07),rgba(var(--p-primary-rgb),.01))">
+            <div style="flex:1;height:42%;border-radius:8px 8px 0 0;background:linear-gradient(180deg,var(--p-primary),rgba(var(--p-primary-rgb),.55))"></div>
+            <div style="flex:1;height:58%;border-radius:8px 8px 0 0;background:linear-gradient(180deg,var(--p-primary),rgba(var(--p-primary-rgb),.55))"></div>
+            <div style="flex:1;height:49%;border-radius:8px 8px 0 0;background:linear-gradient(180deg,var(--p-primary),rgba(var(--p-primary-rgb),.55))"></div>
+            <div style="flex:1;height:70%;border-radius:8px 8px 0 0;background:linear-gradient(180deg,var(--p-primary),rgba(var(--p-primary-rgb),.55))"></div>
+            <div style="flex:1;height:62%;border-radius:8px 8px 0 0;background:linear-gradient(180deg,var(--p-primary),rgba(var(--p-primary-rgb),.55))"></div>
+            <div style="flex:1;height:84%;border-radius:8px 8px 0 0;background:linear-gradient(180deg,var(--p-primary),rgba(var(--p-primary-rgb),.55))"></div>
+            <div style="flex:1;height:95%;border-radius:8px 8px 0 0;background:linear-gradient(180deg,var(--p-primary),rgba(var(--p-primary-rgb),.55))"></div>
+          </div>
+        </div>
+        <div class="card-footer" style="text-align:right">
+          <a href="#" class="btn btn-ghost btn-ghost-primary btn-sm">Full report <i class="bi bi-arrow-right-short"></i></a>
+        </div>
+      </div>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;div class=&quot;card&quot;&gt;
+  &lt;div class=&quot;card-header&quot;&gt;
+    &lt;span class=&quot;card-title&quot;&gt;Fee collection &amp;middot; last 8 weeks&lt;/span&gt;
+    &lt;span class=&quot;p-card-tools&quot;&gt;
+      &lt;select class=&quot;form-select form-select-sm&quot; aria-label=&quot;Chart range&quot;&gt;&hellip;&lt;/select&gt;
+      &lt;button class=&quot;btn btn-icon btn-ghost&quot; aria-label=&quot;Widget options&quot;&gt;
+        &lt;i class=&quot;bi bi-three-dots-vertical&quot;&gt;&lt;/i&gt;
+      &lt;/button&gt;
+    &lt;/span&gt;
+  &lt;/div&gt;
+  &lt;div class=&quot;card-body&quot;&gt;&lt;!-- chart / chart placeholder --&gt;&lt;/div&gt;
+  &lt;div class=&quot;card-footer&quot;&gt;
+    &lt;a href=&quot;#&quot; class=&quot;btn btn-ghost btn-ghost-primary btn-sm&quot;&gt;Full report&lt;/a&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> chart / table widgets on dashboards. Right-align header controls with <code>.p-card-tools</code>. The chart region carries a <code>role="img"</code> + <code>aria-label</code> so the trend is announced to screen readers. Give the icon-only options button an <code>aria-label</code>.</div>
+  </section>
+
+</main>
+<script src="../js/main.js"></script>
+</body>
+</html>

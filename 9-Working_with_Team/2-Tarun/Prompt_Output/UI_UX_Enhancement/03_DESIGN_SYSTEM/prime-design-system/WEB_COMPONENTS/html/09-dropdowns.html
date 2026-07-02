@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en" data-bs-theme="light" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prime DS — Dropdowns</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@4.0.0-beta3/dist/css/adminlte.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<link rel="stylesheet" href="../css/tokens.css">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/components/dropdowns.css">
+<link rel="stylesheet" href="../css/components/buttons.css">
+<link rel="stylesheet" href="../css/dark-mode.css">
+<style>
+  /* Page-local demo helpers (bell badge + filter footer + notify empty state).
+     Kept inline so the shared dropdowns.css stays untouched. */
+  .p-bell { position: relative; }
+  .p-bell__badge {
+    position: absolute; top: 2px; right: 2px;
+    min-width: 18px; height: 18px; padding: 0 4px;
+    display: grid; place-items: center;
+    font-size: 11px; font-weight: 700; line-height: 1; color: #fff;
+    background: var(--p-danger); border: 2px solid var(--p-surface-bg);
+    border-radius: var(--p-radius-full);
+  }
+  .p-menu-filter__foot {
+    display: flex; gap: var(--p-space-2); justify-content: flex-end;
+    padding: var(--p-space-2) var(--p-space-3);
+    margin-top: var(--p-space-1);
+    border-top: 1px solid var(--p-surface-border-light);
+  }
+  .p-menu-notify__empty {
+    display: flex; flex-direction: column; align-items: center; gap: var(--p-space-2);
+    padding: var(--p-space-8) var(--p-space-4);
+    color: var(--p-text-muted); text-align: center;
+  }
+  .p-menu-notify__empty i { font-size: 32px; color: var(--p-text-muted); }
+</style>
+</head>
+<body>
+<header class="ds-toolbar">
+  <a href="../../index.html" class="ds-brand" style="text-decoration:none;color:inherit"><span class="ds-logo">P</span> Prime DS</a>
+  <span class="ds-spacer"></span>
+  <button class="ds-toggle" data-ds-width-toggle><i class="bi bi-phone"></i> <span class="ds-width-label">Desktop</span></button>
+  <button class="ds-toggle" data-ds-theme-toggle><i class="bi bi-sun"></i> <span class="ds-theme-label">Light</span></button>
+</header>
+<main class="ds-content">
+  <div class="ds-section"><h1>Dropdowns</h1><p class="ds-desc">Bootstrap 5.3 dropdowns restyled with Prime tokens — a floating surface panel (<code>shadow-md</code>, <code>radius-lg</code>), tinted hover (not filled), 40px rows and danger actions carrying colour <em>plus</em> icon <em>plus</em> label. Every toggle exposes <code>aria-haspopup</code>/<code>aria-expanded</code> and items are keyboard reachable.</p></div>
+
+  <!-- ── Action dropdown ────────────────────────────────────────────────── -->
+  <section class="ds-section">
+    <h2>Action (row) menu</h2>
+    <p class="ds-desc">The classic "kebab" (⋮) menu attached to a table row or card — View / Edit, a divider, then a danger Delete.</p>
+    <div class="ds-demo">
+      <div class="dropdown">
+        <button class="btn btn-outline-secondary" type="button" id="ddAction" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          Actions <i class="bi bi-chevron-down"></i>
+        </button>
+        <ul class="dropdown-menu" aria-labelledby="ddAction">
+          <li><a class="dropdown-item" href="#"><i class="bi bi-eye p-menu-icon"></i> View details</a></li>
+          <li><a class="dropdown-item" href="#"><i class="bi bi-pencil p-menu-icon"></i> Edit</a></li>
+          <li><a class="dropdown-item" href="#"><i class="bi bi-files p-menu-icon"></i> Duplicate</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item p-menu-danger" href="#"><i class="bi bi-trash3 p-menu-icon"></i> Delete</a></li>
+        </ul>
+      </div>
+
+      <div class="dropdown">
+        <button class="btn btn-icon btn-ghost" type="button" id="ddKebab" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" aria-label="Row actions">
+          <i class="bi bi-three-dots-vertical"></i>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="ddKebab">
+          <li><a class="dropdown-item" href="#"><i class="bi bi-eye p-menu-icon"></i> View</a></li>
+          <li><a class="dropdown-item" href="#"><i class="bi bi-pencil p-menu-icon"></i> Edit</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item p-menu-danger" href="#"><i class="bi bi-trash3 p-menu-icon"></i> Delete</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;div class=&quot;dropdown&quot;&gt;
+  &lt;button class=&quot;btn btn-icon btn-ghost&quot; type=&quot;button&quot; id=&quot;ddKebab&quot;
+          data-bs-toggle=&quot;dropdown&quot; aria-haspopup=&quot;true&quot;
+          aria-expanded=&quot;false&quot; aria-label=&quot;Row actions&quot;&gt;
+    &lt;i class=&quot;bi bi-three-dots-vertical&quot;&gt;&lt;/i&gt;
+  &lt;/button&gt;
+  &lt;ul class=&quot;dropdown-menu dropdown-menu-end&quot; aria-labelledby=&quot;ddKebab&quot;&gt;
+    &lt;li&gt;&lt;a class=&quot;dropdown-item&quot; href=&quot;#&quot;&gt;&lt;i class=&quot;bi bi-eye p-menu-icon&quot;&gt;&lt;/i&gt; View&lt;/a&gt;&lt;/li&gt;
+    &lt;li&gt;&lt;a class=&quot;dropdown-item&quot; href=&quot;#&quot;&gt;&lt;i class=&quot;bi bi-pencil p-menu-icon&quot;&gt;&lt;/i&gt; Edit&lt;/a&gt;&lt;/li&gt;
+    &lt;li&gt;&lt;hr class=&quot;dropdown-divider&quot;&gt;&lt;/li&gt;
+    &lt;li&gt;&lt;a class=&quot;dropdown-item p-menu-danger&quot; href=&quot;#&quot;&gt;&lt;i class=&quot;bi bi-trash3 p-menu-icon&quot;&gt;&lt;/i&gt; Delete&lt;/a&gt;&lt;/li&gt;
+  &lt;/ul&gt;
+&lt;/div&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> per-row / per-card actions in tables and lists. Styles Bootstrap <code>.dropdown-menu</code>/<code>.dropdown-item</code>/<code>.dropdown-divider</code>; Prime adds <code>.p-menu-icon</code> (muted leading glyph) and <code>.p-menu-danger</code> (red text + icon for destructive items). Use <code>.dropdown-menu-end</code> so a right-aligned kebab opens flush to the row edge. Icon-only toggles need an <code>aria-label</code>.</div>
+  </section>
+
+  <!-- ── Filter dropdown ────────────────────────────────────────────────── -->
+  <section class="ds-section">
+    <h2>Filter menu</h2>
+    <p class="ds-desc">A "Filter" button opening a menu of checkable options with an Apply / Clear footer. Stays open while you tick boxes (<code>data-bs-auto-close="outside"</code>).</p>
+    <div class="ds-demo">
+      <div class="dropdown">
+        <button class="btn btn-outline-primary" type="button" id="ddFilter" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-haspopup="true" aria-expanded="false">
+          <i class="bi bi-funnel"></i> Filter <span class="badge text-bg-primary rounded-pill">2</span>
+        </button>
+        <ul class="dropdown-menu p-menu-filter" aria-labelledby="ddFilter">
+          <li><h6 class="dropdown-header">Status</h6></li>
+          <li><label class="dropdown-item dropdown-item-text"><input class="form-check-input" type="checkbox" checked> Active</label></li>
+          <li><label class="dropdown-item dropdown-item-text"><input class="form-check-input" type="checkbox" checked> On leave</label></li>
+          <li><label class="dropdown-item dropdown-item-text"><input class="form-check-input" type="checkbox"> Alumni</label></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><h6 class="dropdown-header">Grade</h6></li>
+          <li><label class="dropdown-item dropdown-item-text"><input class="form-check-input" type="checkbox"> Primary (1–5)</label></li>
+          <li><label class="dropdown-item dropdown-item-text"><input class="form-check-input" type="checkbox"> Middle (6–8)</label></li>
+          <li>
+            <div class="p-menu-filter__foot">
+              <button type="button" class="btn btn-ghost btn-sm">Clear</button>
+              <button type="button" class="btn btn-primary btn-sm">Apply</button>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;div class=&quot;dropdown&quot;&gt;
+  &lt;button class=&quot;btn btn-outline-primary&quot; type=&quot;button&quot; id=&quot;ddFilter&quot;
+          data-bs-toggle=&quot;dropdown&quot; data-bs-auto-close=&quot;outside&quot;
+          aria-haspopup=&quot;true&quot; aria-expanded=&quot;false&quot;&gt;
+    &lt;i class=&quot;bi bi-funnel&quot;&gt;&lt;/i&gt; Filter &lt;span class=&quot;badge text-bg-primary rounded-pill&quot;&gt;2&lt;/span&gt;
+  &lt;/button&gt;
+  &lt;ul class=&quot;dropdown-menu p-menu-filter&quot; aria-labelledby=&quot;ddFilter&quot;&gt;
+    &lt;li&gt;&lt;h6 class=&quot;dropdown-header&quot;&gt;Status&lt;/h6&gt;&lt;/li&gt;
+    &lt;li&gt;&lt;label class=&quot;dropdown-item dropdown-item-text&quot;&gt;
+      &lt;input class=&quot;form-check-input&quot; type=&quot;checkbox&quot; checked&gt; Active
+    &lt;/label&gt;&lt;/li&gt;
+    &lt;!-- …more options… --&gt;
+    &lt;li&gt;
+      &lt;div class=&quot;p-menu-filter__foot&quot;&gt;
+        &lt;button type=&quot;button&quot; class=&quot;btn btn-ghost btn-sm&quot;&gt;Clear&lt;/button&gt;
+        &lt;button type=&quot;button&quot; class=&quot;btn btn-primary btn-sm&quot;&gt;Apply&lt;/button&gt;
+      &lt;/div&gt;
+    &lt;/li&gt;
+  &lt;/ul&gt;
+&lt;/div&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> multi-select filtering on a list/report toolbar. <code>data-bs-auto-close="outside"</code> keeps the panel open while ticking boxes and closes only on an outside click. Wrapping each option in a <code>&lt;label class="dropdown-item dropdown-item-text"&gt;</code> makes the whole 40px row a click target. The <code>.p-menu-filter</code> modifier left-aligns rows; the count badge on the toggle reflects active filters.</div>
+  </section>
+
+  <!-- ── User profile dropdown ──────────────────────────────────────────── -->
+  <section class="ds-section">
+    <h2>User profile menu</h2>
+    <p class="ds-desc">The top-bar account menu — an avatar + name toggle opening a header card, Profile / Settings links, a divider, and Sign out.</p>
+    <div class="ds-demo">
+      <div class="dropdown">
+        <button class="btn btn-ghost" type="button" id="ddUser" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="gap:10px">
+          <img class="p-avatar" src="https://i.pravatar.cc/80?img=47" alt="" style="width:28px;height:28px;border-radius:999px">
+          <span>Meera Kapoor</span>
+          <i class="bi bi-chevron-down"></i>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end p-menu-profile" aria-labelledby="ddUser">
+          <li>
+            <div class="p-menu-profile__head">
+              <img src="https://i.pravatar.cc/80?img=47" alt="">
+              <div>
+                <div class="p-menu-profile__name">Meera Kapoor</div>
+                <div class="p-menu-profile__mail">principal@greenwood.edu</div>
+              </div>
+            </div>
+          </li>
+          <li><a class="dropdown-item" href="#"><i class="bi bi-person p-menu-icon"></i> Profile</a></li>
+          <li><a class="dropdown-item" href="#"><i class="bi bi-gear p-menu-icon"></i> Settings <span class="p-menu-end">⌘,</span></a></li>
+          <li><a class="dropdown-item" href="#"><i class="bi bi-shield-lock p-menu-icon"></i> Privacy</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item p-menu-danger" href="#"><i class="bi bi-box-arrow-right p-menu-icon"></i> Sign out</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;ul class=&quot;dropdown-menu dropdown-menu-end p-menu-profile&quot; aria-labelledby=&quot;ddUser&quot;&gt;
+  &lt;li&gt;
+    &lt;div class=&quot;p-menu-profile__head&quot;&gt;
+      &lt;img src=&quot;/avatar.jpg&quot; alt=&quot;&quot;&gt;
+      &lt;div&gt;
+        &lt;div class=&quot;p-menu-profile__name&quot;&gt;Meera Kapoor&lt;/div&gt;
+        &lt;div class=&quot;p-menu-profile__mail&quot;&gt;principal@greenwood.edu&lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/li&gt;
+  &lt;li&gt;&lt;a class=&quot;dropdown-item&quot; href=&quot;#&quot;&gt;&lt;i class=&quot;bi bi-person p-menu-icon&quot;&gt;&lt;/i&gt; Profile&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a class=&quot;dropdown-item&quot; href=&quot;#&quot;&gt;&lt;i class=&quot;bi bi-gear p-menu-icon&quot;&gt;&lt;/i&gt; Settings&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;hr class=&quot;dropdown-divider&quot;&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a class=&quot;dropdown-item p-menu-danger&quot; href=&quot;#&quot;&gt;&lt;i class=&quot;bi bi-box-arrow-right p-menu-icon&quot;&gt;&lt;/i&gt; Sign out&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> the app-shell account menu. <code>.p-menu-profile</code> widens the panel and renders the <code>__head</code> identity card; keep the avatar image <code>alt=""</code> since the name is already text. <code>.p-menu-end</code> right-aligns a shortcut hint. Sign out uses <code>.p-menu-danger</code> so the exit action reads as consequential.</div>
+  </section>
+
+  <!-- ── Notification dropdown ──────────────────────────────────────────── -->
+  <section class="ds-section">
+    <h2>Notification panel</h2>
+    <p class="ds-desc">A bell button with an unread count badge opening a panel — header, a few rows (icon + title + time), and a "view all" footer. The second example shows the <strong>empty state</strong>.</p>
+    <div class="ds-demo">
+      <!-- With notifications -->
+      <div class="dropdown">
+        <button class="btn btn-icon btn-ghost p-bell" type="button" id="ddNotify" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" aria-label="Notifications, 3 unread">
+          <i class="bi bi-bell"></i>
+          <span class="p-bell__badge">3</span>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end p-menu-notify" aria-labelledby="ddNotify">
+          <li class="p-menu-notify__head">Notifications <span class="badge text-bg-primary rounded-pill p-menu-end">3 new</span></li>
+          <li>
+            <div class="p-menu-notify__list">
+              <div class="p-menu-notify__item is-unread">
+                <span class="p-menu-notify__dot"></span>
+                <div>
+                  <div class="p-menu-notify__title">Fee payment received — ₹42,000</div>
+                  <div class="p-menu-notify__time">Aarav Sharma · 6 min ago</div>
+                </div>
+              </div>
+              <div class="p-menu-notify__item is-unread">
+                <span class="p-menu-notify__dot"></span>
+                <div>
+                  <div class="p-menu-notify__title">Low attendance alert — Class 11-C</div>
+                  <div class="p-menu-notify__time">Dropped below 80% · 1 hr ago</div>
+                </div>
+              </div>
+              <div class="p-menu-notify__item">
+                <span class="p-menu-notify__dot" style="background:transparent"></span>
+                <div>
+                  <div class="p-menu-notify__title">Unit test marks published</div>
+                  <div class="p-menu-notify__time">Mathematics · Class 8 · Yesterday</div>
+                </div>
+              </div>
+            </div>
+          </li>
+          <li class="p-menu-notify__foot"><a href="#" class="btn btn-ghost btn-ghost-primary btn-sm">View all notifications</a></li>
+        </ul>
+      </div>
+
+      <!-- Empty state -->
+      <div class="dropdown">
+        <button class="btn btn-icon btn-ghost p-bell" type="button" id="ddNotifyEmpty" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" aria-label="Notifications, none new">
+          <i class="bi bi-bell"></i>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end p-menu-notify" aria-labelledby="ddNotifyEmpty">
+          <li class="p-menu-notify__head">Notifications</li>
+          <li>
+            <div class="p-menu-notify__empty">
+              <i class="bi bi-bell-slash"></i>
+              <div><strong>No new notifications</strong></div>
+              <div class="p-caption">You're all caught up.</div>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;button class=&quot;btn btn-icon btn-ghost p-bell&quot; type=&quot;button&quot; id=&quot;ddNotify&quot;
+        data-bs-toggle=&quot;dropdown&quot; aria-haspopup=&quot;true&quot;
+        aria-expanded=&quot;false&quot; aria-label=&quot;Notifications, 3 unread&quot;&gt;
+  &lt;i class=&quot;bi bi-bell&quot;&gt;&lt;/i&gt;
+  &lt;span class=&quot;p-bell__badge&quot;&gt;3&lt;/span&gt;
+&lt;/button&gt;
+&lt;ul class=&quot;dropdown-menu dropdown-menu-end p-menu-notify&quot;&gt;
+  &lt;li class=&quot;p-menu-notify__head&quot;&gt;Notifications
+      &lt;span class=&quot;badge text-bg-primary rounded-pill p-menu-end&quot;&gt;3 new&lt;/span&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;div class=&quot;p-menu-notify__list&quot;&gt;
+    &lt;div class=&quot;p-menu-notify__item is-unread&quot;&gt;
+      &lt;span class=&quot;p-menu-notify__dot&quot;&gt;&lt;/span&gt;
+      &lt;div&gt;
+        &lt;div class=&quot;p-menu-notify__title&quot;&gt;Fee payment received — ₹42,000&lt;/div&gt;
+        &lt;div class=&quot;p-menu-notify__time&quot;&gt;Aarav Sharma · 6 min ago&lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;&lt;/li&gt;
+  &lt;li class=&quot;p-menu-notify__foot&quot;&gt;&lt;a href=&quot;#&quot; class=&quot;btn btn-ghost btn-ghost-primary btn-sm&quot;&gt;View all&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;!-- Empty state --&gt;
+&lt;div class=&quot;p-menu-notify__empty&quot;&gt;
+  &lt;i class=&quot;bi bi-bell-slash&quot;&gt;&lt;/i&gt;
+  &lt;div&gt;&lt;strong&gt;No new notifications&lt;/strong&gt;&lt;/div&gt;
+  &lt;div class=&quot;p-caption&quot;&gt;You're all caught up.&lt;/div&gt;
+&lt;/div&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> the header bell. <code>.p-menu-notify</code> widens the panel (max 360px) and provides <code>__head</code>/<code>__list</code>/<code>__item</code>/<code>__title</code>/<code>__time</code>/<code>__foot</code>; <code>.is-unread</code> tints the row and shows the leading dot. Always ship an empty state (<code>bi-bell-slash</code> + "No new notifications") so the panel is never a blank box, and put the unread count in the toggle's <code>aria-label</code>.</div>
+  </section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../js/main.js"></script>
+</body>
+</html>

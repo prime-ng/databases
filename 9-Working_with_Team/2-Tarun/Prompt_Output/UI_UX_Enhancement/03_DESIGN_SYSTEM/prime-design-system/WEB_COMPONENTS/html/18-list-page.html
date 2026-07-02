@@ -1,0 +1,185 @@
+<!doctype html><html lang="en" data-bs-theme="light" dir="ltr"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prime DS — List Page (Students)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@4.0.0-beta3/dist/css/adminlte.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<link rel="stylesheet" href="../css/tokens.css"><link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/components/tables.css">
+<link rel="stylesheet" href="../css/components/forms.css"><link rel="stylesheet" href="../css/components/buttons.css">
+<link rel="stylesheet" href="../css/dark-mode.css">
+<style>
+  .crumbs{display:flex;align-items:center;gap:8px;font-size:.8rem;color:var(--p-text-muted);margin-bottom:8px}
+  .crumbs a{color:var(--p-text-secondary);text-decoration:none}.crumbs a:hover{color:var(--p-primary)}
+  .pg-head{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;margin-bottom:22px;flex-wrap:wrap}
+  .pg-head h1{font-size:1.6rem;margin:0}.pg-head .sub{color:var(--p-text-secondary);margin:4px 0 0;font-size:.9rem}
+  .toolbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+  .toolbar .p-search{flex:1;min-width:220px;max-width:360px}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+  .chip{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;border:1px solid var(--p-surface-border);background:var(--p-surface-bg);font-size:.8rem;font-weight:600;color:var(--p-text-secondary);cursor:pointer}
+  .chip.active{background:rgba(var(--p-primary-rgb),.10);border-color:transparent;color:var(--p-primary)}
+  .chip .x{opacity:.7}
+  .badge-status{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-size:.72rem;font-weight:700;white-space:nowrap}
+  .stu{display:flex;align-items:center;gap:10px}
+  .stu .av{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;color:#fff;font-weight:700;font-size:.78rem;flex:0 0 auto}
+  .stu .nm{font-weight:600}.stu .id{font-size:.74rem;color:var(--p-text-muted)}
+  .row-actions{display:flex;gap:4px;justify-content:flex-end}
+  .ia{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;border:1px solid transparent;background:transparent;color:var(--p-text-secondary);cursor:pointer;transition:.15s}
+  .ia:hover{background:var(--p-surface-hover);color:var(--p-text-primary)}
+  .ia.danger:hover{background:rgba(var(--p-danger-rgb),.1);color:var(--p-danger)}
+  .pager{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px;flex-wrap:wrap}
+  .pages{display:flex;gap:4px}
+  .pages button{min-width:38px;height:38px;border:1px solid var(--p-surface-border);background:var(--p-surface-bg);border-radius:9px;font-weight:600;font-size:.85rem;cursor:pointer;color:var(--p-text-secondary)}
+  .pages button:hover{background:var(--p-surface-hover)}
+  .pages button.active{background:var(--p-primary);border-color:var(--p-primary);color:#fff}
+  .pages button:disabled{opacity:.45;cursor:not-allowed}
+</style></head>
+<body>
+<header class="ds-toolbar"><a href="../../index.html" class="ds-brand" style="text-decoration:none;color:inherit"><span class="ds-logo">P</span> Prime DS</a><span class="ds-spacer"></span>
+<button class="ds-toggle" data-ds-width-toggle><i class="bi bi-phone"></i> <span class="ds-width-label">Desktop</span></button>
+<button class="ds-toggle" data-ds-theme-toggle><i class="bi bi-sun"></i> <span class="ds-theme-label">Light</span></button></header>
+<main class="ds-content" style="max-width:1180px">
+  <div class="ds-notes" style="margin-bottom:24px"><strong>Template:</strong> Standard index/list screen — breadcrumb, page header, search + filter chips, a contextual bulk-action toolbar, a sortable data table with sticky header, status badges (colour + icon + label) and per-row actions with <code>aria-label</code>s, then pagination. Includes the responsive <code>.p-table-card</code> stack. Maps to <code>Modules/StudentProfile/resources/views/students/index.blade.php</code> over <code>std_students</code>.</div>
+
+  <nav class="crumbs" aria-label="Breadcrumb">
+    <a href="#"><i class="bi bi-house-door"></i> Home</a><i class="bi bi-chevron-right" style="font-size:.7rem"></i>
+    <a href="#">Students</a><i class="bi bi-chevron-right" style="font-size:.7rem"></i>
+    <span style="color:var(--p-text-primary);font-weight:600">All students</span>
+  </nav>
+
+  <div class="pg-head">
+    <div><h1>Students</h1><p class="sub">2,418 enrolled · 1,204 boys · 1,214 girls · Academic Year 2026–27</p></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn btn-outline-secondary"><i class="bi bi-upload"></i> Import</button>
+      <button class="btn btn-primary"><i class="bi bi-person-plus-fill"></i> Admit student</button>
+    </div>
+  </div>
+
+  <!-- Search + filters -->
+  <div class="toolbar">
+    <label class="p-search has-value" style="margin:0">
+      <span class="visually-hidden">Search students</span>
+      <input class="form-control" type="search" placeholder="Search by name, admission no. or class…" value="class 9" aria-label="Search students">
+      <span class="p-search-icon"></span>
+      <button class="p-search-clear" type="button" aria-label="Clear search">&times;</button>
+    </label>
+    <select class="form-select" style="width:auto" aria-label="Filter by class"><option>All classes</option><option selected>Class 9</option><option>Class 10</option></select>
+    <select class="form-select" style="width:auto" aria-label="Filter by section"><option>All sections</option><option>Section A</option><option selected>Section B</option></select>
+    <button class="btn btn-outline-secondary"><i class="bi bi-funnel"></i> More filters</button>
+  </div>
+  <div class="chips" aria-label="Active filters">
+    <span class="chip active">Class 9 <i class="bi bi-x-lg x"></i></span>
+    <span class="chip active">Section B <i class="bi bi-x-lg x"></i></span>
+    <span class="chip">Status: Active</span>
+    <span class="chip">Fee: Overdue</span>
+    <a href="#" style="font-size:.8rem;align-self:center;color:var(--p-primary);text-decoration:none;font-weight:600">Clear all</a>
+  </div>
+
+  <!-- Bulk toolbar (shown active for demo) -->
+  <div class="p-bulk-toolbar is-active" role="region" aria-label="Bulk actions">
+    <span><span class="p-bulk-count">3</span> selected</span>
+    <div class="p-bulk-actions">
+      <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-envelope"></i> Message</button>
+      <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left-right"></i> Move section</button>
+      <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-file-earmark-arrow-down"></i> Export</button>
+      <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i> Deactivate</button>
+    </div>
+  </div>
+
+  <!-- Data table -->
+  <div class="p-table-wrap p-table-sticky">
+    <table class="table table-hover p-table-card">
+      <thead>
+        <tr>
+          <th style="width:44px"><input class="form-check-input" type="checkbox" aria-label="Select all rows"></th>
+          <th class="p-sortable" aria-sort="ascending"><span class="p-sort-label">Student <span class="p-sort-icon"></span></span></th>
+          <th class="p-sortable"><span class="p-sort-label">Class / Sec <span class="p-sort-icon"></span></span></th>
+          <th class="p-sortable"><span class="p-sort-label">Guardian <span class="p-sort-icon"></span></span></th>
+          <th class="p-sortable"><span class="p-sort-label">Fee status <span class="p-sort-icon"></span></span></th>
+          <th class="p-sortable"><span class="p-sort-label">Status <span class="p-sort-icon"></span></span></th>
+          <th style="text-align:right">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="is-selected">
+          <td data-label="Select"><input class="form-check-input" type="checkbox" checked aria-label="Select Aarav Sharma"></td>
+          <td data-label="Student"><span class="stu"><span class="av" style="background:var(--p-primary)">AS</span><span><span class="nm">Aarav Sharma</span><br><span class="id">ADM-2026-0148</span></span></span></td>
+          <td data-label="Class / Sec">9-B</td>
+          <td data-label="Guardian">Rakesh Sharma</td>
+          <td data-label="Fee status"><span class="badge-status p-tint-warning"><i class="bi bi-hourglass-split"></i> ₹9,500 due</span></td>
+          <td data-label="Status"><span class="badge-status p-tint-success"><i class="bi bi-check-circle-fill"></i> Active</span></td>
+          <td data-label=""><div class="row-actions">
+            <button class="ia" aria-label="View Aarav Sharma"><i class="bi bi-eye"></i></button>
+            <button class="ia" aria-label="Edit Aarav Sharma"><i class="bi bi-pencil"></i></button>
+            <button class="ia danger" aria-label="Delete Aarav Sharma"><i class="bi bi-trash"></i></button>
+          </div></td>
+        </tr>
+        <tr class="is-selected">
+          <td data-label="Select"><input class="form-check-input" type="checkbox" checked aria-label="Select Diya Nair"></td>
+          <td data-label="Student"><span class="stu"><span class="av" style="background:var(--p-info)">DN</span><span><span class="nm">Diya Nair</span><br><span class="id">ADM-2026-0151</span></span></span></td>
+          <td data-label="Class / Sec">9-B</td>
+          <td data-label="Guardian">Suresh Nair</td>
+          <td data-label="Fee status"><span class="badge-status p-tint-success"><i class="bi bi-check-circle-fill"></i> Paid</span></td>
+          <td data-label="Status"><span class="badge-status p-tint-success"><i class="bi bi-check-circle-fill"></i> Active</span></td>
+          <td data-label=""><div class="row-actions">
+            <button class="ia" aria-label="View Diya Nair"><i class="bi bi-eye"></i></button>
+            <button class="ia" aria-label="Edit Diya Nair"><i class="bi bi-pencil"></i></button>
+            <button class="ia danger" aria-label="Delete Diya Nair"><i class="bi bi-trash"></i></button>
+          </div></td>
+        </tr>
+        <tr class="is-selected">
+          <td data-label="Select"><input class="form-check-input" type="checkbox" checked aria-label="Select Kabir Menon"></td>
+          <td data-label="Student"><span class="stu"><span class="av" style="background:var(--p-success)">KM</span><span><span class="nm">Kabir Menon</span><br><span class="id">ADM-2026-0157</span></span></span></td>
+          <td data-label="Class / Sec">9-B</td>
+          <td data-label="Guardian">Anil Menon</td>
+          <td data-label="Fee status"><span class="badge-status p-tint-danger"><i class="bi bi-exclamation-triangle-fill"></i> Overdue</span></td>
+          <td data-label="Status"><span class="badge-status p-tint-success"><i class="bi bi-check-circle-fill"></i> Active</span></td>
+          <td data-label=""><div class="row-actions">
+            <button class="ia" aria-label="View Kabir Menon"><i class="bi bi-eye"></i></button>
+            <button class="ia" aria-label="Edit Kabir Menon"><i class="bi bi-pencil"></i></button>
+            <button class="ia danger" aria-label="Delete Kabir Menon"><i class="bi bi-trash"></i></button>
+          </div></td>
+        </tr>
+        <tr>
+          <td data-label="Select"><input class="form-check-input" type="checkbox" aria-label="Select Ananya Reddy"></td>
+          <td data-label="Student"><span class="stu"><span class="av" style="background:var(--p-warning);color:#222c3c">AR</span><span><span class="nm">Ananya Reddy</span><br><span class="id">ADM-2026-0163</span></span></span></td>
+          <td data-label="Class / Sec">9-B</td>
+          <td data-label="Guardian">Prakash Reddy</td>
+          <td data-label="Fee status"><span class="badge-status p-tint-success"><i class="bi bi-check-circle-fill"></i> Paid</span></td>
+          <td data-label="Status"><span class="badge-status p-tint-warning"><i class="bi bi-airplane-fill"></i> On leave</span></td>
+          <td data-label=""><div class="row-actions">
+            <button class="ia" aria-label="View Ananya Reddy"><i class="bi bi-eye"></i></button>
+            <button class="ia" aria-label="Edit Ananya Reddy"><i class="bi bi-pencil"></i></button>
+            <button class="ia danger" aria-label="Delete Ananya Reddy"><i class="bi bi-trash"></i></button>
+          </div></td>
+        </tr>
+        <tr>
+          <td data-label="Select"><input class="form-check-input" type="checkbox" aria-label="Select Vivaan Gupta"></td>
+          <td data-label="Student"><span class="stu"><span class="av" style="background:var(--p-secondary)">VG</span><span><span class="nm">Vivaan Gupta</span><br><span class="id">ADM-2025-0092</span></span></span></td>
+          <td data-label="Class / Sec">9-B</td>
+          <td data-label="Guardian">Manoj Gupta</td>
+          <td data-label="Fee status"><span class="badge-status p-tint-warning"><i class="bi bi-hourglass-split"></i> ₹4,200 due</span></td>
+          <td data-label="Status"><span class="badge-status p-tint-danger"><i class="bi bi-slash-circle-fill"></i> Inactive</span></td>
+          <td data-label=""><div class="row-actions">
+            <button class="ia" aria-label="View Vivaan Gupta"><i class="bi bi-eye"></i></button>
+            <button class="ia" aria-label="Edit Vivaan Gupta"><i class="bi bi-pencil"></i></button>
+            <button class="ia danger" aria-label="Delete Vivaan Gupta"><i class="bi bi-trash"></i></button>
+          </div></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <div class="pager">
+    <div style="color:var(--p-text-secondary);font-size:.85rem">Showing <strong>1–5</strong> of <strong>42</strong> students in Class 9-B</div>
+    <div class="pages">
+      <button disabled aria-label="Previous page"><i class="bi bi-chevron-left"></i></button>
+      <button class="active" aria-current="page">1</button>
+      <button>2</button><button>3</button>
+      <button disabled style="border:0;background:transparent;cursor:default">…</button>
+      <button>9</button>
+      <button aria-label="Next page"><i class="bi bi-chevron-right"></i></button>
+    </div>
+  </div>
+</main>
+<script src="../js/main.js"></script></body></html>

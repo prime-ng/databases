@@ -1,25 +1,26 @@
-Yes — absolutely. This is actually a better architecture because the core pattern (cycle → template → questions → responses → answers) is identical regardless of who is rating whom. Only the target and       
-  relationship context differ. Let me design v2 as a generic cross-cutting Feedback module.                                                                                                                     
-                                                                                                                                                                                                                  
+Yes — absolutely. This is actually a better architecture because the core pattern (cycle → template → questions → responses → answers) is identical 
+      regardless of who is rating whom. Only the target and relationship context differ. Let me design v2 as a generic cross-cutting Feedback module.
+ 
   What changes in v2:
-                                                                                                                                                                                                                  
-  ┌─────────────────────────────────────┬─────────────────────────────────────────────┬────────────────────────────────────────────────────────────────────────────────────────────────────┐                    
-  │               Aspect                │                     v1                      │                                                 v2                                                 │
-  ├─────────────────────────────────────┼─────────────────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────┤
-  │ Prefix                              │ std_teacher_feedback_*                      │ fbk_* (dedicated module)                                                                           │
-  ├─────────────────────────────────────┼─────────────────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────┤
-  │ Target                              │ Teachers only (hardcoded ENUM)              │ Any entity (Teacher, Student, Driver, Canteen, Library, Security, Department…) via reference table │                      
-  ├─────────────────────────────────────┼─────────────────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────┤
-  │ Respondent                          │ Student + Parent only                       │ Student, Parent, Teacher, Staff, Admin, Self                                                       │                      
-  ├─────────────────────────────────────┼─────────────────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────┤
-  │ Relationships                       │ Hardcoded (Class_Teacher / Subject_Teacher) │ Configurable via fbk_relationship_types master                                                     │
-  ├─────────────────────────────────────┼─────────────────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────┤
-  │ NEP 2020 Teacher→Student            │ ❌ Not supported                            │ ✅ Supported via TEACHER_TO_STUDENT relationship                                                   │
-  ├─────────────────────────────────────┼─────────────────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────┤
-  │ NEP 2020 Peer Feedback              │ ❌ Not supported                            │ ✅ Supported via STUDENT_TO_PEER_STUDENT with forced anonymity                                     │
-  ├─────────────────────────────────────┼─────────────────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────┤
-  │ One cycle = multiple feedback types │ ❌                                          │ ✅ fbk_cycle_feedback_types junction                                                               │
-  └─────────────────────────────────────┴─────────────────────────────────────────────┴────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+  ┌─────────────────────────────────────┬─────────────────────────────────────────────┬────────────────────────────────────────────────────────────────┐                    
+  │               Aspect                │                     v1                      │                           v2                                   │
+  ├─────────────────────────────────────┼─────────────────────────────────────────────┼────────────────────────────────────────────────────────────────┤
+  │ Prefix                              │ std_teacher_feedback_*                      │ fbk_* (dedicated module)                                       │
+  ├─────────────────────────────────────┼─────────────────────────────────────────────┼────────────────────────────────────────────────────────────────┤
+  │ Target                              │ Teachers only (hardcoded ENUM)              │ Any entity (Teacher, Student, Driver, Canteen, Library,        │
+  │                                     │                                             │  Security, Department…) via reference table                    │
+  ├─────────────────────────────────────┼─────────────────────────────────────────────┼────────────────────────────────────────────────────────────────┤
+  │ Respondent                          │ Student + Parent only                       │ Student, Parent, Teacher, Staff, Admin, Self                   │                      
+  ├─────────────────────────────────────┼─────────────────────────────────────────────┼────────────────────────────────────────────────────────────────┤
+  │ Relationships                       │ Hardcoded (Class_Teacher / Subject_Teacher) │ Configurable via fbk_relationship_types master                 │
+  ├─────────────────────────────────────┼─────────────────────────────────────────────┼────────────────────────────────────────────────────────────────┤
+  │ NEP 2020 Teacher→Student            │ ❌ Not supported                            │ ✅ Supported via TEACHER_TO_STUDENT relationship               │
+  ├─────────────────────────────────────┼─────────────────────────────────────────────┼────────────────────────────────────────────────────────────────┤
+  │ NEP 2020 Peer Feedback              │ ❌ Not supported                            │ ✅ Supported via STUDENT_TO_PEER_STUDENT with forced anonymity │
+  ├─────────────────────────────────────┼─────────────────────────────────────────────┼────────────────────────────────────────────────────────────────┤
+  │ One cycle = multiple feedback types │ ❌                                          │ ✅ fbk_cycle_feedback_types junction                           │
+  └─────────────────────────────────────┴─────────────────────────────────────────────┴────────────────────────────────────────────────────────────────┘
 
   Proposed 11 tables:
 
@@ -60,23 +61,24 @@ Yes — absolutely. This is actually a better architecture because the core patt
                                                                                                                                                                                                                   
   What changed from v1                                                                                                                                                                                            
    
-  ┌──────────────────────────┬────────────────────────────────────────┬─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐         
-  │          Aspect          │      v1 (std_teacher_feedback_*)       │                                                           v2 (fbk_*)                                                            │
-  ├──────────────────────────┼────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤         
-  │ Scope                    │ Student/Parent → Teacher only          │ Any actor → Any target                                                                                                          │
-  ├──────────────────────────┼────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-  │ Target                   │ Hardcoded ENUM (Class/Subject Teacher) │ Polymorphic: target_user_id / target_student_id / target_employee_id / target_department_id — driven by fbk_target_types master │         
-  ├──────────────────────────┼────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤         
-  │ Respondent               │ Student/Parent ENUM                    │ Student/Parent/Teacher/Staff/Admin/Self — driven by fbk_relationship_types master                                               │         
-  ├──────────────────────────┼────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤         
-  │ Relationships            │ 3 hardcoded (CT/Assist-CT/ST)          │ Unlimited, configurable via fbk_relationship_types                                                                              │
-  ├──────────────────────────┼────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤         
-  │ Cycles                   │ One feedback type per cycle            │ Multi-type per cycle via fbk_cycle_feedback_types junction                                                                      │
-  ├──────────────────────────┼────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤         
-  │ NEP 2020 Teacher→Student │ ❌ Not supported                       │ ✅ TEACHER_TO_STUDENT relationship                                                                                              │
-  ├──────────────────────────┼────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤         
-  │ NEP 2020 Peer feedback   │ ❌ Not supported                       │ ✅ STUDENT_TO_PEER_STUDENT with forced anonymity                                                                                │
-  └──────────────────────────┴────────────────────────────────────────┴─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘         
+  ┌──────────────────────────┬────────────────────────────────────────┬───────────────────────────────────────────────────────────────────────────────────┐         
+  │          Aspect          │      v1 (std_teacher_feedback_*)       │                       v2 (fbk_*)                                                  │
+  ├──────────────────────────┼────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────┤         
+  │ Scope                    │ Student/Parent → Teacher only          │ Any actor → Any target                                                            │
+  ├──────────────────────────┼────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────┤
+  │ Target                   │ Hardcoded ENUM (Class/Subject Teacher) │ Polymorphic: target_user_id / target_student_id / target_employee_id /            │
+  │                          │                                        │ target_department_id — driven by fbk_target_types master                          │
+  ├──────────────────────────┼────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────┤         
+  │ Respondent               │ Student/Parent ENUM                    │ Student/Parent/Teacher/Staff/Admin/Self — driven by fbk_relationship_types master │         
+  ├──────────────────────────┼────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────┤         
+  │ Relationships            │ 3 hardcoded (CT/Assist-CT/ST)          │ Unlimited, configurable via fbk_relationship_types                                │
+  ├──────────────────────────┼────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────┤         
+  │ Cycles                   │ One feedback type per cycle            │ Multi-type per cycle via fbk_cycle_feedback_types junction                        │
+  ├──────────────────────────┼────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────┤         
+  │ NEP 2020 Teacher→Student │ ❌ Not supported                       │ ✅ TEACHER_TO_STUDENT relationship                                                │
+  ├──────────────────────────┼────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────┤         
+  │ NEP 2020 Peer feedback   │ ❌ Not supported                       │ ✅ STUDENT_TO_PEER_STUDENT with forced anonymity                                  │
+  └──────────────────────────┴────────────────────────────────────────┴───────────────────────────────────────────────────────────────────────────────────┘         
                                                             
   11 Tables                                                                                                                                                                                                       
                                                             
@@ -135,10 +137,11 @@ Yes — absolutely. This is actually a better architecture because the core patt
   4. Snapshot strategy on fbk_answers — question_type_snapshot, category_id_snapshot, weight_snapshot ensure analytics survive template edits                                                                     
   5. Peer anonymity hardcoded as business rule (R7-R8) — admin cannot disable peer feedback anonymity even with full privileges (child safety)                                                                    
   6. min_responses_for_visibility — enforces k-anonymity (default 3) so single peer responses can't be deanonymized                                                                                               
-  7. Templates are reusable across relationships sharing the same target type — one "Teacher Evaluation Template" covers STUDENT_TO_CLASS_TEACHER, STUDENT_TO_SUBJECT_TEACHER, PARENT_TO_CLASS_TEACHER, etc.
+  7. Templates are reusable across relationships sharing the same target type — one "Teacher Evaluation Template" covers STUDENT_TO_CLASS_TEACHER, 
+  STUDENT_TO_SUBJECT_TEACHER, PARENT_TO_CLASS_TEACHER, etc.
 
   22 Business Rules (documented in file footer)
 
-  Covering: eligibility computation, anonymity enforcement, rating calculation, reverse scoring, cycle FSM, response FSM, template locking, incremental summary recomputation, and integrity checks across all    
-  polymorphic FKs.
+  Covering: eligibility computation, anonymity enforcement, rating calculation, reverse scoring, cycle FSM, response FSM, template locking, 
+  incremental summary recomputation, and integrity checks across all polymorphic FKs.
   

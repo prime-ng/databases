@@ -1,0 +1,130 @@
+/* ============================================================================
+   Prime Design System — loaders.css
+   Adds Prime helpers for loading / busy states (no direct Bootstrap component;
+   this layers on top of AdminLTE/BS surfaces):
+     .p-spinner (+ .p-spinner-sm/.p-spinner-lg)  — accessible border spinner
+     .p-skeleton (+ .p-skeleton-text/.p-skeleton-title/.p-skeleton-circle/
+                     .p-skeleton-btn)            — shimmer placeholder blocks
+     .p-skeleton-card / .p-skeleton-row          — composed layouts
+     .visually-hidden                            — SR-only label (BS-compatible)
+   Button loading (.btn.is-loading) lives in buttons.css and is reused here.
+
+   Principles encoded:
+   - "accent, don't fill": skeletons are quiet neutral surfaces, the spinner
+     borrows the primary accent only on its moving arc — never a solid block.
+   - Accessible: spinners ship a role="status" + visually-hidden "Loading" text;
+     skeleton blocks are aria-hidden inside an aria-busy container so status is
+     conveyed by MARKUP + TEXT, not motion alone.
+   - Token-driven colors => dark mode works automatically.
+   - Respects prefers-reduced-motion: shimmer/spin freeze to a gentle pulse.
+   ========================================================================== */
+
+/* ── SR-only helper (mirrors Bootstrap's .visually-hidden) ────────────────── */
+.visually-hidden {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0);
+  white-space: nowrap; border: 0;
+}
+
+/* ── Spinner — border technique, accent arc on a neutral track ────────────── */
+.p-spinner {
+  display: inline-block;
+  vertical-align: middle;
+  width: 24px;
+  height: 24px;
+  border: 3px solid rgba(var(--p-primary-rgb), 0.20);   /* quiet track */
+  border-top-color: var(--p-primary);                    /* accent arc  */
+  border-radius: var(--p-radius-full);
+  animation: p-spin 0.7s linear infinite;
+}
+.p-spinner-sm { width: 16px; height: 16px; border-width: 2px; }
+.p-spinner-lg { width: 40px; height: 40px; border-width: 4px; }
+
+/* Neutral / muted spinner for use on toolbars & secondary contexts */
+.p-spinner-muted {
+  border-color: var(--p-surface-active);
+  border-top-color: var(--p-text-secondary);
+}
+
+@keyframes p-spin { to { transform: rotate(360deg); } }
+
+/* ── Skeleton shimmer blocks ──────────────────────────────────────────────── */
+.p-skeleton {
+  --p-skel-base: var(--p-surface-hover);
+  --p-skel-sheen: rgba(var(--p-primary-rgb), 0.08);
+  display: block;
+  height: 1rem;
+  border-radius: var(--p-radius-sm);
+  background-color: var(--p-skel-base);
+  background-image: linear-gradient(
+    90deg,
+    transparent 0,
+    var(--p-skel-sheen) 40%,
+    var(--p-skel-sheen) 60%,
+    transparent 100%
+  );
+  background-size: 220% 100%;
+  background-repeat: no-repeat;
+  background-position: 180% 0;
+  animation: p-shimmer 1.4s ease-in-out infinite;
+}
+
+/* Shape modifiers */
+.p-skeleton-text   { height: 0.8rem; margin-bottom: var(--p-space-2); }
+.p-skeleton-text:last-child { margin-bottom: 0; }
+.p-skeleton-title  { height: 1.25rem; width: 55%; margin-bottom: var(--p-space-3); }
+.p-skeleton-btn    { height: 40px; width: 120px; border-radius: var(--p-radius-md); }
+.p-skeleton-circle { width: 48px; height: 48px; border-radius: var(--p-radius-full); flex: 0 0 auto; }
+.p-skeleton-thumb  { width: 100%; height: 140px; border-radius: var(--p-radius-md); margin-bottom: var(--p-space-4); }
+
+/* Width helpers for ragged, natural-looking text lines */
+.p-skeleton-w-90 { width: 90%; }
+.p-skeleton-w-75 { width: 75%; }
+.p-skeleton-w-60 { width: 60%; }
+.p-skeleton-w-40 { width: 40%; }
+
+/* ── Composed layouts ─────────────────────────────────────────────────────── */
+/* Card skeleton — sits on a real surface so it reserves the final layout */
+.p-skeleton-card {
+  background: var(--p-surface-bg);
+  border: 1px solid var(--p-surface-border);
+  border-radius: var(--p-radius-lg);
+  padding: var(--p-space-6);
+  box-shadow: var(--p-shadow-sm);
+}
+
+/* List/media row skeleton — avatar + two text lines */
+.p-skeleton-row {
+  display: flex;
+  align-items: center;
+  gap: var(--p-space-4);
+  padding: var(--p-space-3) 0;
+  border-bottom: 1px solid var(--p-surface-border-light);
+}
+.p-skeleton-row:last-child { border-bottom: 0; }
+.p-skeleton-row .p-skeleton-lines { flex: 1 1 auto; }
+
+@keyframes p-shimmer {
+  from { background-position: 180% 0; }
+  to   { background-position: -80% 0; }
+}
+
+/* ── Reduced motion — freeze shimmer/spin to a calm pulse ─────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .p-spinner,
+  .p-spinner-sm,
+  .p-spinner-lg,
+  .p-spinner-muted {
+    animation: p-pulse 1.6s ease-in-out infinite;
+  }
+  .p-skeleton {
+    background-image: none;
+    animation: p-pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes p-pulse {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.55; }
+  }
+}

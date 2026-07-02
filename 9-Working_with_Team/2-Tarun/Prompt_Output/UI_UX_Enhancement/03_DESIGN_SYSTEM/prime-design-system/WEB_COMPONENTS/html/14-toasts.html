@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en" data-bs-theme="light" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prime DS — Toasts</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@4.0.0-beta3/dist/css/adminlte.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<link rel="stylesheet" href="../css/tokens.css">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/components/toasts.css">
+<link rel="stylesheet" href="../css/components/buttons.css">
+<link rel="stylesheet" href="../css/dark-mode.css">
+<style>
+  /* Page-local: a fake "app screen" so the fixed toast-container has somewhere
+     to anchor inside the gallery instead of floating over the whole document. */
+  .p-screen {
+    position: relative; overflow: hidden;
+    width: 100%; min-height: 260px;
+    border: 1px dashed var(--p-surface-border);
+    border-radius: var(--p-radius-lg);
+    background:
+      repeating-linear-gradient(45deg, transparent 0 10px, rgba(var(--p-primary-rgb),.03) 10px 20px);
+  }
+  .p-screen__hint { position: absolute; inset: auto auto 12px 14px; color: var(--p-text-muted); font-size: var(--p-fs-cap); }
+  /* Contain the (normally fixed) container within the demo screen */
+  .p-screen .toast-container { position: absolute; }
+  .p-screen .toast-container.tc-tr { top: 12px; right: 12px; }
+</style>
+</head>
+<body>
+<header class="ds-toolbar">
+  <a href="../../index.html" class="ds-brand" style="text-decoration:none;color:inherit"><span class="ds-logo">P</span> Prime DS</a>
+  <span class="ds-spacer"></span>
+  <button class="ds-toggle" data-ds-width-toggle><i class="bi bi-phone"></i> <span class="ds-width-label">Desktop</span></button>
+  <button class="ds-toggle" data-ds-theme-toggle><i class="bi bi-sun"></i> <span class="ds-theme-label">Light</span></button>
+</header>
+<main class="ds-content">
+  <div class="ds-section"><h1>Toasts</h1><p class="ds-desc">Transient, non-blocking status messages. Each is a neutral surface card with a <em>left accent border</em> + tinted leading icon per intent — <strong>accent, don't fill</strong>. Status is conveyed by colour <em>and</em> icon <em>and</em> a text title, and every toast carries a live-region role for screen readers.</p></div>
+
+  <!-- ── Variants ───────────────────────────────────────────────────────── -->
+  <section class="ds-section">
+    <h2>Intent variants</h2>
+    <p class="ds-desc">Success, info, warning and error. Notice the shared card shell — only the left border, icon tint and icon glyph change. Errors use <code>role="alert"</code> (assertive); the rest use <code>role="status"</code> (polite).</p>
+    <div class="ds-demo ds-block">
+      <div class="toast show p-toast p-toast--success" role="status" aria-live="polite" aria-atomic="true">
+        <span class="p-toast__icon"><i class="bi bi-check-circle-fill"></i></span>
+        <div class="p-toast__content">
+          <div class="p-toast__title">Attendance saved</div>
+          <div class="p-toast__msg">Class 8-B marked for 1 July 2026.</div>
+        </div>
+        <button type="button" class="btn-close p-toast__close" aria-label="Dismiss notification"></button>
+      </div>
+
+      <div class="toast show p-toast p-toast--info" role="status" aria-live="polite" aria-atomic="true" style="margin-top:12px">
+        <span class="p-toast__icon"><i class="bi bi-info-circle-fill"></i></span>
+        <div class="p-toast__content">
+          <div class="p-toast__title">Sync in progress</div>
+          <div class="p-toast__msg">Timetable changes are being applied.</div>
+        </div>
+        <button type="button" class="btn-close p-toast__close" aria-label="Dismiss notification"></button>
+      </div>
+
+      <div class="toast show p-toast p-toast--warning" role="status" aria-live="polite" aria-atomic="true" style="margin-top:12px">
+        <span class="p-toast__icon"><i class="bi bi-exclamation-triangle-fill"></i></span>
+        <div class="p-toast__content">
+          <div class="p-toast__title">Fee due in 3 days</div>
+          <div class="p-toast__msg">Term 1 balance of ₹18,400 is pending.</div>
+        </div>
+        <button type="button" class="btn-close p-toast__close" aria-label="Dismiss notification"></button>
+      </div>
+
+      <div class="toast show p-toast p-toast--danger" role="alert" aria-live="assertive" aria-atomic="true" style="margin-top:12px">
+        <span class="p-toast__icon"><i class="bi bi-x-octagon-fill"></i></span>
+        <div class="p-toast__content">
+          <div class="p-toast__title">Couldn't publish marks</div>
+          <div class="p-toast__msg">Network error — changes were not saved. Retry?</div>
+        </div>
+        <button type="button" class="btn-close p-toast__close" aria-label="Dismiss notification"></button>
+      </div>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;!-- Success (polite) --&gt;
+&lt;div class=&quot;toast show p-toast p-toast--success&quot; role=&quot;status&quot; aria-live=&quot;polite&quot; aria-atomic=&quot;true&quot;&gt;
+  &lt;span class=&quot;p-toast__icon&quot;&gt;&lt;i class=&quot;bi bi-check-circle-fill&quot;&gt;&lt;/i&gt;&lt;/span&gt;
+  &lt;div class=&quot;p-toast__content&quot;&gt;
+    &lt;div class=&quot;p-toast__title&quot;&gt;Attendance saved&lt;/div&gt;
+    &lt;div class=&quot;p-toast__msg&quot;&gt;Class 8-B marked for 1 July 2026.&lt;/div&gt;
+  &lt;/div&gt;
+  &lt;button type=&quot;button&quot; class=&quot;btn-close p-toast__close&quot; aria-label=&quot;Dismiss notification&quot;&gt;&lt;/button&gt;
+&lt;/div&gt;
+
+&lt;!-- Error (assertive) --&gt;
+&lt;div class=&quot;toast show p-toast p-toast--danger&quot; role=&quot;alert&quot; aria-live=&quot;assertive&quot; aria-atomic=&quot;true&quot;&gt;
+  &lt;span class=&quot;p-toast__icon&quot;&gt;&lt;i class=&quot;bi bi-x-octagon-fill&quot;&gt;&lt;/i&gt;&lt;/span&gt;
+  &lt;div class=&quot;p-toast__content&quot;&gt;
+    &lt;div class=&quot;p-toast__title&quot;&gt;Couldn't publish marks&lt;/div&gt;
+    &lt;div class=&quot;p-toast__msg&quot;&gt;Network error — changes were not saved.&lt;/div&gt;
+  &lt;/div&gt;
+  &lt;button type=&quot;button&quot; class=&quot;btn-close p-toast__close&quot; aria-label=&quot;Dismiss notification&quot;&gt;&lt;/button&gt;
+&lt;/div&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> confirm an action succeeded or surface an async result. Styles Bootstrap <code>.toast</code>/<code>.btn-close</code>; Prime adds <code>.p-toast</code> + <code>.p-toast--success/-info/-warning/-danger</code> (left border + tinted <code>.p-toast__icon</code>). Keep titles ≤ 4 words and messages one line. Use <code>role="alert"</code> only for errors that interrupt; everything else is <code>role="status"</code> so it's announced without stealing focus.</div>
+  </section>
+
+  <!-- ── Auto-dismiss + progress ────────────────────────────────────────── -->
+  <section class="ds-section">
+    <h2>Auto-dismiss with progress bar</h2>
+    <p class="ds-desc">Auto-hiding toasts get a thin <code>.p-toast__progress</code> bar that shrinks over the dismiss duration, telling the user how long they have to act. The animation is disabled under <code>prefers-reduced-motion</code>.</p>
+    <div class="ds-demo ds-block">
+      <div class="toast show p-toast p-toast--success" role="status" aria-live="polite" aria-atomic="true" style="--p-toast-duration:6s">
+        <span class="p-toast__icon"><i class="bi bi-check-circle-fill"></i></span>
+        <div class="p-toast__content">
+          <div class="p-toast__title">Report exported</div>
+          <div class="p-toast__msg">student-list.xlsx is ready to download.</div>
+        </div>
+        <button type="button" class="btn-close p-toast__close" aria-label="Dismiss notification"></button>
+        <div class="p-toast__progress"></div>
+      </div>
+
+      <div style="margin-top:16px">
+        <button type="button" class="btn btn-primary" id="spawnBtn"><i class="bi bi-stars"></i> Spawn a demo toast</button>
+        <span class="p-caption p-text-muted" style="margin-left:8px">Optional — fires into the stack below.</span>
+      </div>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;div class=&quot;toast show p-toast p-toast--success&quot; role=&quot;status&quot; aria-live=&quot;polite&quot;
+     aria-atomic=&quot;true&quot; style=&quot;--p-toast-duration:6s&quot;&gt;
+  &lt;span class=&quot;p-toast__icon&quot;&gt;&lt;i class=&quot;bi bi-check-circle-fill&quot;&gt;&lt;/i&gt;&lt;/span&gt;
+  &lt;div class=&quot;p-toast__content&quot;&gt;
+    &lt;div class=&quot;p-toast__title&quot;&gt;Report exported&lt;/div&gt;
+    &lt;div class=&quot;p-toast__msg&quot;&gt;student-list.xlsx is ready to download.&lt;/div&gt;
+  &lt;/div&gt;
+  &lt;button type=&quot;button&quot; class=&quot;btn-close p-toast__close&quot; aria-label=&quot;Dismiss notification&quot;&gt;&lt;/button&gt;
+  &lt;div class=&quot;p-toast__progress&quot;&gt;&lt;/div&gt;   &lt;!-- shrinks over --p-toast-duration --&gt;
+&lt;/div&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> set the timer with the <code>--p-toast-duration</code> custom property (default 5s) and the bar animation matches it automatically. Pair with Bootstrap's <code>new bootstrap.Toast(el, {delay: 6000})</code> if you drive dismissal in JS. Never auto-dismiss error toasts the user must act on — drop the <code>__progress</code> bar and require a manual close for those.</div>
+  </section>
+
+  <!-- ── Stack positioning ──────────────────────────────────────────────── -->
+  <section class="ds-section">
+    <h2>Stack positioning</h2>
+    <p class="ds-desc">Multiple toasts collect in a <code>.toast-container</code> pinned to a screen corner (here <code>top-0 end-0</code> = top-right). Newest on top; the container gaps them evenly.</p>
+    <div class="ds-demo ds-block">
+      <div class="p-screen">
+        <div class="toast-container tc-tr" id="stackTop" aria-live="polite" aria-atomic="false">
+          <div class="toast show p-toast p-toast--success" role="status">
+            <span class="p-toast__icon"><i class="bi bi-check-circle-fill"></i></span>
+            <div class="p-toast__content"><div class="p-toast__title">Student admitted</div><div class="p-toast__msg">Diya Nair → Class 6-A.</div></div>
+            <button type="button" class="btn-close p-toast__close" aria-label="Dismiss notification"></button>
+          </div>
+          <div class="toast show p-toast p-toast--info" role="status">
+            <span class="p-toast__icon"><i class="bi bi-info-circle-fill"></i></span>
+            <div class="p-toast__content"><div class="p-toast__title">Timetable regenerated</div><div class="p-toast__msg">42 sections rebalanced.</div></div>
+            <button type="button" class="btn-close p-toast__close" aria-label="Dismiss notification"></button>
+          </div>
+          <div class="toast show p-toast p-toast--warning" role="status">
+            <span class="p-toast__icon"><i class="bi bi-exclamation-triangle-fill"></i></span>
+            <div class="p-toast__content"><div class="p-toast__title">2 fee reminders queued</div><div class="p-toast__msg">Sending at 5:00 PM.</div></div>
+            <button type="button" class="btn-close p-toast__close" aria-label="Dismiss notification"></button>
+          </div>
+        </div>
+        <span class="p-screen__hint"><i class="bi bi-window"></i> App viewport — container fixed top-right</span>
+      </div>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;!-- Real app: position-fixed to the viewport corner --&gt;
+&lt;div class=&quot;toast-container position-fixed top-0 end-0 p-3&quot; aria-live=&quot;polite&quot; aria-atomic=&quot;false&quot;&gt;
+  &lt;div class=&quot;toast show p-toast p-toast--success&quot; role=&quot;status&quot;&gt;…&lt;/div&gt;
+  &lt;div class=&quot;toast show p-toast p-toast--info&quot;    role=&quot;status&quot;&gt;…&lt;/div&gt;
+  &lt;div class=&quot;toast show p-toast p-toast--warning&quot; role=&quot;status&quot;&gt;…&lt;/div&gt;
+&lt;/div&gt;
+
+&lt;!-- Other corners (swap the Bootstrap position utilities): --&gt;
+&lt;!-- top-left     : top-0 start-0            --&gt;
+&lt;!-- top-center   : top-0 start-50 translate-middle-x --&gt;
+&lt;!-- bottom-right : bottom-0 end-0           --&gt;
+&lt;!-- bottom-center: bottom-0 start-50 translate-middle-x --&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> mount one <code>.toast-container</code> per corner in the app shell and append toasts into it. Real usage adds Bootstrap's <code>position-fixed</code> + <code>top-0 end-0</code> (with <code>p-3</code> inset); this demo anchors it inside a fake viewport so it doesn't float over the gallery. Top-right/top-center suit success + info; keep destructive/blocking errors closer to the action (or use a modal). The container stacks newest-first and gaps items via <code>--p-space-3</code>.</div>
+  </section>
+</main>
+<script>
+  /* Optional demo: dismiss on close-click + spawn a toast into the stack. */
+  (function () {
+    document.addEventListener('click', function (e) {
+      var close = e.target.closest('.p-toast__close');
+      if (close) { var t = close.closest('.toast'); if (t) t.remove(); }
+    });
+    var btn = document.getElementById('spawnBtn');
+    var stack = document.getElementById('stackTop');
+    if (btn && stack) {
+      btn.addEventListener('click', function () {
+        var t = document.createElement('div');
+        t.className = 'toast show p-toast p-toast--info';
+        t.setAttribute('role', 'status');
+        t.style.setProperty('--p-toast-duration', '4s');
+        t.innerHTML =
+          '<span class="p-toast__icon"><i class="bi bi-bell-fill"></i></span>' +
+          '<div class="p-toast__content"><div class="p-toast__title">New activity</div>' +
+          '<div class="p-toast__msg">A demo toast spawned at ' +
+          new Date().toLocaleTimeString() + '.</div></div>' +
+          '<button type="button" class="btn-close p-toast__close" aria-label="Dismiss notification"></button>' +
+          '<div class="p-toast__progress"></div>';
+        stack.prepend(t);
+        setTimeout(function () { t.remove(); }, 4000);
+      });
+    }
+  })();
+</script>
+<script src="../js/main.js"></script>
+</body>
+</html>

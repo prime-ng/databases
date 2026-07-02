@@ -1,0 +1,120 @@
+/* ============================================================================
+   Prime Design System — navigation.css
+   Styles AdminLTE/Bootstrap: .app-header, .navbar, .navbar-nav, .nav-link,
+   .breadcrumb, .breadcrumb-item. Adds Prime helpers: .p-page-title.
+
+   Principles: clean white header with soft bottom border + sm shadow, accent
+   active states (not filled), visible focus, 44px touch targets on nav items.
+   ========================================================================== */
+
+/* ── App header / navbar ────────────────────────────────────────────────── */
+.app-header,
+.navbar {
+  background-color: var(--p-surface-bg);
+  border-bottom: 1px solid var(--p-surface-border);
+  box-shadow: var(--p-shadow-sm);
+  min-height: 56px;
+}
+
+.navbar .navbar-nav .nav-link,
+.app-header .nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--p-space-2);
+  min-height: 44px;
+  padding: 0 var(--p-space-3);
+  color: var(--p-text-secondary);
+  font-size: var(--p-fs-sm);
+  font-weight: var(--p-fw-medium);
+  border-radius: var(--p-radius-md);
+  transition: background-color var(--p-dur-fast) var(--p-ease),
+              color var(--p-dur-fast) var(--p-ease);
+}
+.navbar .navbar-nav .nav-link:hover,
+.app-header .nav-link:hover {
+  color: var(--p-text-primary);
+  background-color: var(--p-surface-hover);
+}
+.navbar .navbar-nav .nav-link.active,
+.navbar .navbar-nav .nav-item.active > .nav-link {
+  color: var(--p-primary);
+  background-color: rgba(var(--p-primary-rgb), 0.10);
+}
+.navbar .navbar-nav .nav-link:focus-visible,
+.app-header .nav-link:focus-visible { outline: none; box-shadow: var(--p-focus-ring); }
+
+/* Header icon buttons (search, notifications, fullscreen) */
+.app-header .nav-link[data-lte-toggle],
+.app-header .nav-link.p-header-icon {
+  justify-content: center;
+  width: 44px;
+  padding: 0;
+  color: var(--p-text-secondary);
+}
+
+/* Brand / logo area */
+.navbar-brand,
+.app-header .brand-link {
+  font-weight: var(--p-fw-bold);
+  color: var(--p-text-primary);
+  letter-spacing: -0.01em;
+}
+
+/* Notification / avatar dropdown trigger badge dot */
+.app-header .p-has-dot { position: relative; }
+.app-header .p-has-dot::after {
+  content: "";
+  position: absolute;
+  top: 10px; right: 10px;
+  width: 8px; height: 8px;
+  border-radius: var(--p-radius-full);
+  background: var(--p-danger);
+  border: 2px solid var(--p-surface-bg);
+}
+
+/* ── Breadcrumb ─────────────────────────────────────────────────────────── */
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: var(--p-space-1);
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  font-size: var(--p-fs-sm);
+}
+.breadcrumb-item {
+  display: inline-flex;
+  align-items: center;
+  color: var(--p-text-muted);
+}
+.breadcrumb-item a {
+  color: var(--p-text-secondary);
+  text-decoration: none;
+  transition: color var(--p-dur-fast) var(--p-ease);
+}
+.breadcrumb-item a:hover { color: var(--p-primary); }
+.breadcrumb-item.active { color: var(--p-text-primary); font-weight: var(--p-fw-medium); }
+/* Custom chevron separator (token-tinted) */
+.breadcrumb-item + .breadcrumb-item { padding-left: var(--p-space-1); }
+.breadcrumb-item + .breadcrumb-item::before {
+  content: "\203A";                        /* › */
+  padding-right: var(--p-space-1);
+  color: var(--p-text-muted);
+}
+
+/* ── Page title block (Prime helper) ────────────────────────────────────── */
+.p-page-title {
+  display: flex;
+  align-items: center;
+  gap: var(--p-space-3);
+  margin-bottom: var(--p-space-4);
+}
+.p-page-title h1,
+.p-page-title .h1 {
+  margin: 0;
+  font-size: var(--p-fs-h2);
+  line-height: var(--p-lh-h2);
+  font-weight: var(--p-fw-bold);
+  color: var(--p-text-primary);
+}
+.p-page-title .p-page-title__actions { margin-left: auto; display: flex; gap: var(--p-space-2); }

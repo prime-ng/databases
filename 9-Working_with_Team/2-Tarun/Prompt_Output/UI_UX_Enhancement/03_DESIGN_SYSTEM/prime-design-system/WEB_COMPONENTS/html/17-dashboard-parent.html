@@ -1,0 +1,155 @@
+<!doctype html><html lang="en" data-bs-theme="light" dir="ltr"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prime DS — Parent Dashboard</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@4.0.0-beta3/dist/css/adminlte.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<link rel="stylesheet" href="../css/tokens.css"><link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/components/tables.css">
+<link rel="stylesheet" href="../css/components/forms.css"><link rel="stylesheet" href="../css/components/buttons.css">
+<link rel="stylesheet" href="../css/dark-mode.css">
+<style>
+  .pg-greet .kicker{font-size:.8125rem;font-weight:600;color:var(--p-primary);text-transform:uppercase;letter-spacing:.06em}
+  .pg-greet h1{font-size:1.6rem;line-height:2.1rem;margin:.25rem 0 .3rem}
+  .pg-greet .sub{color:var(--p-text-secondary);margin:0 0 22px}
+  /* child switcher */
+  .switch{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px}
+  .child{display:flex;align-items:center;gap:12px;padding:12px 16px;border:1px solid var(--p-surface-border);border-radius:14px;background:var(--p-surface-bg);cursor:pointer;transition:.18s;min-width:230px}
+  .child:hover{box-shadow:var(--p-shadow-sm)}
+  .child.active{border-color:var(--p-primary);box-shadow:0 0 0 3px rgba(var(--p-primary-rgb),.14)}
+  .child .av{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-weight:700;color:#fff;flex:0 0 auto}
+  .child .nm{font-weight:700;font-size:.95rem}
+  .child .cl{font-size:.78rem;color:var(--p-text-secondary)}
+  .child .chk{margin-left:auto;color:var(--p-primary);font-size:1.1rem;opacity:0}
+  .child.active .chk{opacity:1}
+  .grid{display:grid;gap:16px}
+  .cols-4{grid-template-columns:repeat(4,1fr)}.cols-2b{grid-template-columns:1fr 360px}
+  .card2{background:var(--p-surface-bg);border:1px solid var(--p-surface-border);border-radius:16px;box-shadow:var(--p-shadow-sm)}
+  .card2-h{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;border-bottom:1px solid var(--p-surface-border-light)}
+  .card2-h h3{margin:0;font-size:1rem;font-weight:600}
+  .card2-b{padding:20px}
+  .p-stat-card{position:relative;overflow:hidden;background:var(--p-surface-bg);border:1px solid var(--p-surface-border);border-radius:16px;padding:18px;box-shadow:var(--p-shadow-sm)}
+  .p-stat-card::before{content:"";position:absolute;inset:0 auto 0 0;width:4px;background:var(--accent,var(--p-primary))}
+  .p-stat-card .ic{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;font-size:1.2rem;margin-bottom:12px}
+  .p-stat-card .val{font-size:1.55rem;font-weight:700;line-height:1.1}
+  .p-stat-card .lbl{color:var(--p-text-secondary);font-size:.82rem;margin-top:2px}
+  .badge-status{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-size:.72rem;font-weight:700}
+  .bar-track{height:12px;border-radius:999px;background:var(--p-surface-active);overflow:hidden;margin:12px 0 8px}
+  .bar-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--p-warning),#e6ba13)}
+  .notices{list-style:none;margin:0;padding:0}
+  .notices li{display:flex;gap:12px;padding:12px 0;border-bottom:1px dashed var(--p-surface-border-light)}
+  .notices li:last-child{border-bottom:0}
+  .notices .nic{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;flex:0 0 auto}
+  .notices .t{font-weight:600;font-size:.9rem}.notices .m{font-size:.8rem;color:var(--p-text-secondary)}
+  /* calendar list */
+  .cal{list-style:none;margin:0;padding:0}
+  .cal li{display:flex;gap:14px;padding:12px 0;border-bottom:1px dashed var(--p-surface-border-light)}
+  .cal li:last-child{border-bottom:0}
+  .cal .date{flex:0 0 auto;width:52px;text-align:center;border-radius:10px;padding:6px 0;background:var(--p-surface-secondary)}
+  .cal .date .d{font-size:1.2rem;font-weight:700;line-height:1}.cal .date .mo{font-size:.68rem;text-transform:uppercase;color:var(--p-text-muted);font-weight:700}
+  .cal .t{font-weight:600;font-size:.9rem}.cal .m{font-size:.8rem;color:var(--p-text-secondary)}
+  @media(max-width:900px){.cols-4{grid-template-columns:repeat(2,1fr)}.cols-2b{grid-template-columns:1fr}}
+  @media(max-width:560px){.cols-4{grid-template-columns:1fr}}
+</style></head>
+<body>
+<header class="ds-toolbar"><a href="../../index.html" class="ds-brand" style="text-decoration:none;color:inherit"><span class="ds-logo">P</span> Prime DS</a><span class="ds-spacer"></span>
+<button class="ds-toggle" data-ds-width-toggle><i class="bi bi-phone"></i> <span class="ds-width-label">Desktop</span></button>
+<button class="ds-toggle" data-ds-theme-toggle><i class="bi bi-sun"></i> <span class="ds-theme-label">Light</span></button></header>
+<main class="ds-content" style="max-width:1180px">
+  <div class="ds-notes" style="margin-bottom:24px"><strong>Template:</strong> Parent dashboard with a multi-child switcher — selecting a child re-scopes the summary cards, fee status, notices and calendar below. Maps to <code>Modules/StudentPortal/resources/views/parent/dashboard.blade.php</code> (mirrors <code>mobile_school</code> guardian home), keyed on the ward linked to <code>std_guardian</code>.</div>
+
+  <div class="pg-greet">
+    <div class="kicker">Parent portal</div>
+    <h1>Welcome back, Mr. Sharma</h1>
+    <p class="sub">You are viewing details for the child selected below · Tuesday, 1 July 2026</p>
+  </div>
+
+  <!-- Child switcher -->
+  <div class="switch" role="tablist" aria-label="Select a child">
+    <button class="child active" role="tab" aria-selected="true">
+      <span class="av" style="background:var(--p-primary)">AS</span>
+      <span><span class="nm">Aarav Sharma</span><br><span class="cl">Class 9-B · Roll 14</span></span>
+      <i class="bi bi-check-circle-fill chk"></i>
+    </button>
+    <button class="child" role="tab" aria-selected="false">
+      <span class="av" style="background:var(--p-info)">IS</span>
+      <span><span class="nm">Ishita Sharma</span><br><span class="cl">Class 5-A · Roll 8</span></span>
+      <i class="bi bi-check-circle-fill chk"></i>
+    </button>
+  </div>
+
+  <!-- Summary cards for selected child -->
+  <div class="grid cols-4" style="margin-bottom:16px">
+    <div class="p-stat-card" style="--accent:var(--p-success)">
+      <div class="ic p-tint-success"><i class="bi bi-clipboard-check-fill"></i></div>
+      <div class="val">92%</div><div class="lbl">Attendance (Term 1)</div>
+    </div>
+    <div class="p-stat-card" style="--accent:var(--p-primary)">
+      <div class="ic p-tint-primary"><i class="bi bi-graph-up-arrow"></i></div>
+      <div class="val">A · 88%</div><div class="lbl">Last exam average</div>
+    </div>
+    <div class="p-stat-card" style="--accent:var(--p-warning)">
+      <div class="ic p-tint-warning"><i class="bi bi-journal-text"></i></div>
+      <div class="val">1</div><div class="lbl">Homework due today</div>
+    </div>
+    <div class="p-stat-card" style="--accent:var(--p-danger)">
+      <div class="ic p-tint-danger"><i class="bi bi-cash-stack"></i></div>
+      <div class="val">₹9,500</div><div class="lbl">Fee balance due</div>
+    </div>
+  </div>
+
+  <div class="grid cols-2b">
+    <!-- left -->
+    <div class="grid" style="gap:16px">
+      <div class="card2">
+        <div class="card2-h"><h3>Fee status — Aarav Sharma</h3><span class="badge-status p-tint-warning"><i class="bi bi-hourglass-split"></i> Partly paid</span></div>
+        <div class="card2-b">
+          <div style="display:flex;justify-content:space-between;align-items:baseline">
+            <div><div style="font-size:1.5rem;font-weight:700">₹28,500 <span style="font-size:.9rem;color:var(--p-text-secondary);font-weight:500">/ ₹38,000</span></div><div style="font-size:.8rem;color:var(--p-text-secondary)">Term 1 · 2026–27</div></div>
+            <div style="text-align:right"><div style="font-weight:700;color:var(--p-danger)">₹9,500 due</div><div style="font-size:.78rem;color:var(--p-text-muted)">by 10 Jul 2026</div></div>
+          </div>
+          <div class="bar-track" role="progressbar" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100"><div class="bar-fill" style="width:75%"></div></div>
+          <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
+            <button class="btn btn-primary"><i class="bi bi-credit-card"></i> Pay ₹9,500 now</button>
+            <button class="btn btn-outline-secondary"><i class="bi bi-file-earmark-text"></i> Download receipts</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card2">
+        <div class="card2-h"><h3>Notices &amp; announcements</h3><span class="badge-status p-tint-primary">3 new</span></div>
+        <div class="card2-b">
+          <ul class="notices">
+            <li><span class="nic p-tint-primary"><i class="bi bi-megaphone-fill"></i></span><div><div class="t">Parent–Teacher Meeting — 5 July</div><div class="m">Classes 6–9 · Please confirm your 30-min slot.</div></div></li>
+            <li><span class="nic p-tint-info"><i class="bi bi-bus-front-fill"></i></span><div><div class="t">Bus Route 7 timing revised</div><div class="m">Morning pickup now 07:05 AM from Indiranagar.</div></div></li>
+            <li><span class="nic p-tint-warning"><i class="bi bi-cloud-rain-fill"></i></span><div><div class="t">Half-day on 3 July</div><div class="m">School closes at 12:30 PM due to weather advisory.</div></div></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- right: upcoming calendar -->
+    <div class="card2" style="align-self:start">
+      <div class="card2-h"><h3>Upcoming</h3><a href="#" class="btn btn-ghost btn-ghost-primary btn-sm">Calendar</a></div>
+      <div class="card2-b">
+        <ul class="cal">
+          <li><span class="date"><span class="d">03</span><span class="mo">Jul</span></span><div><div class="t">Half-day · early closure</div><div class="m">School · 12:30 PM</div></div></li>
+          <li><span class="date"><span class="d">05</span><span class="mo">Jul</span></span><div><div class="t">Parent–Teacher Meeting</div><div class="m">Class 9-B · 9:00 AM</div></div></li>
+          <li><span class="date"><span class="d">10</span><span class="mo">Jul</span></span><div><div class="t">Term 1 fee due date</div><div class="m">₹9,500 balance</div></div></li>
+          <li><span class="date"><span class="d">18</span><span class="mo">Jul</span></span><div><div class="t">Science exhibition</div><div class="m">Auditorium · 10:00 AM</div></div></li>
+          <li><span class="date"><span class="d">28</span><span class="mo">Jul</span></span><div><div class="t">Unit Test 2 begins</div><div class="m">Datesheet published</div></div></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</main>
+<script src="../js/main.js"></script>
+<script>
+  // Local demo: child switcher tab behaviour (page is a static showcase)
+  document.querySelectorAll('.child').forEach(function(c){
+    c.addEventListener('click', function(){
+      document.querySelectorAll('.child').forEach(function(x){x.classList.remove('active');x.setAttribute('aria-selected','false');});
+      c.classList.add('active');c.setAttribute('aria-selected','true');
+    });
+  });
+</script>
+</body></html>

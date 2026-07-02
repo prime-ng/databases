@@ -1,0 +1,295 @@
+/* ============================================================================
+   Prime Design System — forms.css
+   Styles Bootstrap/AdminLTE: .form-control, .form-select, .form-label,
+   .form-check, .form-check-input, .form-check-label, .form-switch,
+   .form-floating, .input-group, .input-group-text,
+   .is-valid/.is-invalid, .valid-feedback/.invalid-feedback, .form-text.
+   Adds Prime helpers: .p-field, .p-search / .p-search-icon / .p-search-clear,
+   .p-filedrop (drag-drop-look upload label).
+
+   Principles encoded:
+   - "accent, don't fill": validity shown with a coloured LEFT-ACCENT border +
+     soft ring + icon + text, never a full colour flood.
+   - Accessible: 44px+ control height, visible --p-focus-ring, validity conveyed
+     by COLOUR + ICON + TEXT together (glyph in feedback), pair every input
+     with a <label for>.
+   - All colours via --p-* tokens so dark mode flips automatically.
+   - Respects prefers-reduced-motion.
+   ========================================================================== */
+
+/* ── Labels ─────────────────────────────────────────────────────────────── */
+.form-label,
+.p-field > label {
+  display: inline-block;
+  margin-bottom: var(--p-space-1);
+  font-size: var(--p-fs-sm);
+  font-weight: var(--p-fw-medium);
+  color: var(--p-text-secondary);
+}
+.form-label .p-req { color: var(--p-danger); margin-left: 2px; }   /* required * */
+
+/* ── Base controls ──────────────────────────────────────────────────────── */
+.form-control,
+.form-select {
+  min-height: 44px;                         /* comfortable touch target */
+  padding: var(--p-space-2) var(--p-space-3);
+  background-color: var(--p-surface-bg);
+  border: 1px solid var(--p-surface-border);
+  border-radius: var(--p-radius-md);
+  color: var(--p-text-primary);
+  font-size: var(--p-fs-body);
+  line-height: 1.4;
+  transition: border-color var(--p-dur-fast) var(--p-ease),
+              box-shadow var(--p-dur-fast) var(--p-ease),
+              background-color var(--p-dur-fast) var(--p-ease);
+}
+.form-control::placeholder { color: var(--p-text-muted); }
+
+.form-control:hover:not(:disabled):not(:focus),
+.form-select:hover:not(:disabled):not(:focus) {
+  border-color: var(--p-surface-active);
+}
+
+/* Focus — accent border + soft primary ring */
+.form-control:focus,
+.form-select:focus {
+  outline: none;
+  border-color: var(--p-primary);
+  box-shadow: var(--p-focus-ring);
+  background-color: var(--p-surface-bg);
+}
+
+.form-control:disabled,
+.form-select:disabled,
+.form-control[readonly] {
+  background-color: var(--p-surface-secondary);
+  color: var(--p-text-muted);
+  cursor: not-allowed;
+}
+
+textarea.form-control { min-height: 96px; resize: vertical; line-height: 1.5; }
+.form-control.form-control-sm { min-height: 34px; font-size: var(--p-fs-sm); padding: var(--p-space-1) var(--p-space-2); }
+.form-control.form-control-lg { min-height: 52px; font-size: var(--p-fs-h4); }
+
+/* Multiple-select drops the caret and grows with rows */
+.form-select[multiple],
+.form-select[size]:not([size="1"]) {
+  background-image: none;
+  padding-right: var(--p-space-3);
+  min-height: auto;
+}
+.form-select[multiple] option { padding: var(--p-space-1) var(--p-space-2); border-radius: var(--p-radius-sm); }
+
+/* Native single-select caret using an inline SVG (token-tinted) */
+.form-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%2394a3b8' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round' d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--p-space-3) center;
+  padding-right: var(--p-space-8);
+  appearance: none;
+}
+
+/* Native date input — keep the calendar picker visible + tappable */
+.form-control[type="date"] { padding-right: var(--p-space-3); }
+.form-control[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; opacity: .65; }
+.form-control[type="date"]:hover::-webkit-calendar-picker-indicator { opacity: 1; }
+
+/* ── File inputs ────────────────────────────────────────────────────────── */
+.form-control[type="file"] { padding: 0; overflow: hidden; }
+.form-control[type="file"]::file-selector-button {
+  margin-right: var(--p-space-3);
+  padding: 0 var(--p-space-4);
+  height: 42px;
+  border: 0;
+  border-right: 1px solid var(--p-surface-border);
+  background: var(--p-surface-secondary);
+  color: var(--p-text-secondary);
+  font-weight: var(--p-fw-semibold);
+  font-size: var(--p-fs-sm);
+  cursor: pointer;
+  transition: background-color var(--p-dur-fast) var(--p-ease);
+}
+.form-control[type="file"]::file-selector-button:hover { background: var(--p-surface-hover); color: var(--p-text-primary); }
+
+/* Nicer drag-drop-look upload zone (Prime helper) */
+.p-filedrop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--p-space-2);
+  width: 100%;
+  padding: var(--p-space-8) var(--p-space-6);
+  text-align: center;
+  border: 1.5px dashed var(--p-surface-active);
+  border-radius: var(--p-radius-lg);
+  background: var(--p-surface-secondary);
+  color: var(--p-text-secondary);
+  cursor: pointer;
+  transition: border-color var(--p-dur-fast) var(--p-ease),
+              background-color var(--p-dur-fast) var(--p-ease);
+}
+.p-filedrop:hover,
+.p-filedrop:focus-within {
+  border-color: var(--p-primary);
+  background: rgba(var(--p-primary-rgb), .06);
+}
+.p-filedrop .p-filedrop-icon { font-size: 1.75rem; color: var(--p-primary); }
+.p-filedrop .p-filedrop-hint { font-size: var(--p-fs-sm); color: var(--p-text-muted); }
+.p-filedrop strong { color: var(--p-primary); }
+.p-filedrop input[type="file"] { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); border: 0; }
+
+/* ── Floating labels (Bootstrap .form-floating) ─────────────────────────── */
+.form-floating > .form-control,
+.form-floating > .form-select { height: 56px; padding-top: 1.15rem; }
+.form-floating > label {
+  color: var(--p-text-muted);
+  padding: var(--p-space-2) var(--p-space-3);
+}
+.form-floating > .form-control:focus ~ label,
+.form-floating > .form-control:not(:placeholder-shown) ~ label,
+.form-floating > .form-select ~ label {
+  color: var(--p-primary);
+  opacity: 1;
+  transform: scale(0.82) translateY(-0.6rem) translateX(0.15rem);
+}
+
+/* ── Checkboxes & radios ────────────────────────────────────────────────── */
+.form-check { min-height: auto; margin-bottom: var(--p-space-1); }
+.form-check-input {
+  width: 1.15em;
+  height: 1.15em;
+  margin-top: 0.2em;
+  background-color: var(--p-surface-bg);
+  border: 1.5px solid var(--p-surface-active);
+  cursor: pointer;
+  transition: background-color var(--p-dur-fast) var(--p-ease),
+              border-color var(--p-dur-fast) var(--p-ease),
+              box-shadow var(--p-dur-fast) var(--p-ease);
+}
+.form-check-input:checked {
+  background-color: var(--p-primary);
+  border-color: var(--p-primary);
+}
+.form-check-input:focus-visible { outline: none; box-shadow: var(--p-focus-ring); }
+.form-check-label { color: var(--p-text-primary); font-size: var(--p-fs-body); cursor: pointer; }
+
+/* ── Switch / toggle ────────────────────────────────────────────────────── */
+.form-switch .form-check-input {
+  width: 2.4em;
+  height: 1.3em;
+  margin-top: 0.15em;
+  border-radius: var(--p-radius-full);
+  background-color: var(--p-surface-active);
+  border-color: transparent;
+}
+.form-switch .form-check-input:checked {
+  background-color: var(--p-success);       /* on = success, reinforced by label text */
+  border-color: var(--p-success);
+}
+
+/* ── Input groups (password toggle, search prefix, etc.) ────────────────── */
+.input-group { border-radius: var(--p-radius-md); }
+.input-group .form-control,
+.input-group .form-select { min-height: 44px; }
+.input-group-text {
+  background-color: var(--p-surface-secondary);
+  border: 1px solid var(--p-surface-border);
+  color: var(--p-text-secondary);
+  font-size: var(--p-fs-sm);
+  border-radius: var(--p-radius-md);
+}
+/* Keep the focus ring above sibling addons */
+.input-group .form-control:focus,
+.input-group .form-select:focus { z-index: 3; }
+/* Trailing icon-button addon (e.g. show/hide password) */
+.input-group .btn { z-index: 2; }
+
+/* ── Validation — accent border + soft ring + icon + text ───────────────── */
+.form-control.is-valid,
+.form-select.is-valid,
+.was-validated .form-control:valid {
+  border-color: var(--p-success);
+  border-left-width: 3px;                    /* left accent, not a full fill */
+  padding-right: var(--p-space-8);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%233fcc7e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M3 8.5l3 3 7-7'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--p-space-3) center;
+}
+.form-control.is-invalid,
+.form-select.is-invalid,
+.was-validated .form-control:invalid {
+  border-color: var(--p-danger);
+  border-left-width: 3px;
+  padding-right: var(--p-space-8);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='6.5' fill='none' stroke='%23e44f56' stroke-width='1.5'/%3E%3Cpath stroke='%23e44f56' stroke-width='1.8' stroke-linecap='round' d='M8 5v4M8 11h.01'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--p-space-3) center;
+}
+/* Textareas: icon in the top-right, not vertically centred */
+textarea.form-control.is-valid,
+textarea.form-control.is-invalid { background-position: right var(--p-space-3) top var(--p-space-3); }
+
+.form-control.is-valid:focus   { box-shadow: 0 0 0 3px rgba(var(--p-success-rgb), 0.30); }
+.form-control.is-invalid:focus { box-shadow: 0 0 0 3px rgba(var(--p-danger-rgb),  0.30); }
+
+.valid-feedback,
+.invalid-feedback {
+  display: none;
+  align-items: center;
+  gap: var(--p-space-1);
+  margin-top: var(--p-space-1);
+  font-size: var(--p-fs-sm);
+  font-weight: var(--p-fw-medium);
+}
+.valid-feedback   { color: #1f9b57; }
+.invalid-feedback { color: var(--p-danger); }
+.is-valid   ~ .valid-feedback,
+.is-invalid ~ .invalid-feedback { display: flex; }
+
+.form-text { color: var(--p-text-muted); font-size: var(--p-fs-sm); margin-top: var(--p-space-1); }
+
+/* ── Search input with leading icon + clear (x) button (Prime helper) ───── */
+.p-search { position: relative; display: block; }
+.p-search .form-control {
+  padding-left: 2.5rem;
+  padding-right: 2.5rem;
+}
+.p-search .p-search-icon {
+  position: absolute;
+  left: var(--p-space-3);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--p-text-muted);
+  pointer-events: none;
+  font-size: 1rem;
+  line-height: 1;
+}
+.p-search .form-control:focus ~ .p-search-icon { color: var(--p-primary); }
+.p-search .p-search-clear {
+  position: absolute;
+  right: var(--p-space-2);
+  top: 50%;
+  transform: translateY(-50%);
+  display: none;                            /* revealed when input has a value */
+  place-items: center;
+  width: 28px; height: 28px;
+  border: 0;
+  border-radius: var(--p-radius-full);
+  background: transparent;
+  color: var(--p-text-muted);
+  cursor: pointer;
+  font-size: 1.05rem; line-height: 1;
+}
+.p-search .p-search-clear:hover { background: var(--p-surface-hover); color: var(--p-text-primary); }
+.p-search .p-search-clear:focus-visible { outline: none; box-shadow: var(--p-focus-ring); }
+.p-search.has-value .p-search-clear { display: grid; }
+
+/* ── Field wrapper — vertical rhythm between labelled fields ─────────────── */
+.p-field { margin-bottom: var(--p-space-4); }
+.p-field:last-child { margin-bottom: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .form-control, .form-select, .form-check-input,
+  .p-filedrop, .form-floating > label { transition: none; }
+}

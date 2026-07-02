@@ -1,0 +1,123 @@
+/* ============================================================================
+   Prime Design System — alerts.css
+   Styles Bootstrap: .alert, .alert-success/.alert-info/.alert-warning/
+   .alert-danger, .alert-dismissible, .btn-close, .alert-link.
+   Adds Prime helpers: .p-alert (icon + text + optional actions layout).
+
+   Principle "accent, don't fill": alerts are a soft tinted surface with a
+   colored LEFT accent bar + status icon + label — not a saturated banner.
+   Status = color + icon + text together.
+   ========================================================================== */
+
+.alert,
+.p-alert {
+  --p-alert-color: var(--p-info);
+  --p-alert-rgb: var(--p-info-rgb);
+
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--p-space-3);
+  padding: var(--p-space-3) var(--p-space-4);
+  padding-left: var(--p-space-4);
+  background-color: rgba(var(--p-alert-rgb), 0.08);
+  border: 1px solid rgba(var(--p-alert-rgb), 0.22);
+  border-left: 4px solid var(--p-alert-color);      /* the accent */
+  border-radius: var(--p-radius-md);
+  color: var(--p-text-secondary);
+  font-size: var(--p-fs-sm);
+  line-height: var(--p-lh-sm);
+}
+
+/* Status icon slot — sits before the text; provide a glyph/SVG or a fallback */
+.alert > .p-alert__icon,
+.p-alert > .p-alert__icon {
+  flex: 0 0 auto;
+  display: inline-flex;
+  margin-top: 1px;
+  color: var(--p-alert-color);
+  font-size: 1.05em;
+}
+.alert__body,
+.p-alert__body { flex: 1 1 auto; min-width: 0; }
+.alert__title,
+.p-alert__title {
+  display: block;
+  margin-bottom: 2px;
+  font-weight: var(--p-fw-semibold);
+  color: var(--p-text-primary);
+}
+.alert .alert-link,
+.p-alert a { color: var(--p-alert-color); font-weight: var(--p-fw-semibold); text-decoration: underline; }
+
+/* Trailing actions (e.g. Undo / View) */
+.p-alert__actions { flex: 0 0 auto; display: flex; gap: var(--p-space-2); align-self: center; }
+
+/* ── Tone variants ──────────────────────────────────────────────────────── */
+.alert.alert-success, .p-alert--success { --p-alert-color: #1f9b57;         --p-alert-rgb: var(--p-success-rgb); }
+.alert.alert-info,    .p-alert--info    { --p-alert-color: #2f8497;         --p-alert-rgb: var(--p-info-rgb); }
+.alert.alert-warning, .p-alert--warning { --p-alert-color: #a67f04;         --p-alert-rgb: var(--p-warning-rgb); }
+.alert.alert-danger,  .p-alert--danger,
+.alert.alert-error,   .p-alert--error   { --p-alert-color: var(--p-danger); --p-alert-rgb: var(--p-danger-rgb); }
+.alert.alert-primary, .p-alert--primary { --p-alert-color: var(--p-primary);--p-alert-rgb: var(--p-primary-rgb); }
+
+/* Default icon glyphs when using .p-alert__icon with no content (::before) */
+.p-alert--success > .p-alert__icon:empty::before { content: "\2713"; }   /* ✓ */
+.p-alert--info    > .p-alert__icon:empty::before,
+.p-alert--primary > .p-alert__icon:empty::before { content: "\2139"; }   /* ℹ */
+.p-alert--warning > .p-alert__icon:empty::before { content: "\26A0"; }   /* ⚠ */
+.p-alert--danger  > .p-alert__icon:empty::before,
+.p-alert--error   > .p-alert__icon:empty::before { content: "\26D4"; }   /* ⛔ */
+.p-alert__icon:empty::before { font-weight: var(--p-fw-bold); }
+
+/* ── Dismissible ────────────────────────────────────────────────────────── */
+.alert-dismissible { padding-right: var(--p-space-8); }
+.alert-dismissible .btn-close {
+  position: absolute;
+  top: 50%;
+  right: var(--p-space-2);
+  transform: translateY(-50%);
+  padding: var(--p-space-2);
+  border-radius: var(--p-radius-md);
+  opacity: 0.55;
+  transition: opacity var(--p-dur-fast) var(--p-ease),
+              background-color var(--p-dur-fast) var(--p-ease);
+}
+.alert-dismissible .btn-close:hover { opacity: 1; background-color: rgba(var(--p-alert-rgb), 0.15); }
+.alert-dismissible .btn-close:focus-visible { outline: none; box-shadow: var(--p-focus-ring); }
+
+/* Bootstrap fade-out on dismiss */
+.alert.fade { transition: opacity var(--p-dur-base) var(--p-ease); }
+.alert.fade:not(.show) { opacity: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .alert.fade, .alert-dismissible .btn-close { transition: none; }
+}
+
+/* ── Inline field validation messages ───────────────────────────────────────
+   Small icon + text lines shown UNDER a form field. Not a banner — no border,
+   no fill; just a coloured glyph + short message. Status = colour + icon +
+   text together. Pair with aria-live="polite" on the container for AT.
+   Markup: <p class="p-inline-msg is-invalid"><i class="bi bi-x-circle"></i> …</p>
+   ────────────────────────────────────────────────────────────────────────── */
+.p-inline-msg {
+  --p-msg-color: var(--p-text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--p-space-1);
+  margin: var(--p-space-1) 0 0;
+  font-size: var(--p-fs-cap);
+  line-height: var(--p-lh-cap);
+  font-weight: var(--p-fw-medium);
+  color: var(--p-msg-color);
+}
+.p-inline-msg > i,
+.p-inline-msg > svg { flex: 0 0 auto; font-size: 1.05em; line-height: 1; }
+
+.p-inline-msg.is-valid   { --p-msg-color: #1f9b57; }
+.p-inline-msg.is-invalid { --p-msg-color: var(--p-danger); }
+.p-inline-msg.is-warning { --p-msg-color: #a67f04; }
+.p-inline-msg.is-hint    { --p-msg-color: var(--p-text-muted); font-weight: var(--p-fw-regular); }
+
+[data-bs-theme="dark"] .p-inline-msg.is-valid   { --p-msg-color: #4ade80; }
+[data-bs-theme="dark"] .p-inline-msg.is-warning { --p-msg-color: #fde047; }

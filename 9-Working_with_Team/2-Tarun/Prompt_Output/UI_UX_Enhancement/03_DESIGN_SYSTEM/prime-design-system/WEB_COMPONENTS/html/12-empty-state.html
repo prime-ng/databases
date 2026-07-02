@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en" data-bs-theme="light" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prime DS — Empty States</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@4.0.0-beta3/dist/css/adminlte.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<link rel="stylesheet" href="../css/tokens.css">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/components/empty-state.css">
+<link rel="stylesheet" href="../css/components/buttons.css">
+<link rel="stylesheet" href="../css/dark-mode.css">
+</head>
+<body>
+<header class="ds-toolbar">
+  <a href="../../index.html" class="ds-brand" style="text-decoration:none;color:inherit"><span class="ds-logo">P</span> Prime DS</a>
+  <span class="ds-spacer"></span>
+  <button class="ds-toggle" data-ds-width-toggle><i class="bi bi-phone"></i> <span class="ds-width-label">Desktop</span></button>
+  <button class="ds-toggle" data-ds-theme-toggle><i class="bi bi-sun"></i> <span class="ds-theme-label">Light</span></button>
+</header>
+<main class="ds-content">
+  <div class="ds-section">
+    <h1>Empty States</h1>
+    <p class="ds-desc">The &ldquo;blank slate&rdquo; shown when there is nothing to display. Every empty state is centered and always offers a next action &mdash; a large <em>tinted</em> icon (accent, not fill), a title, a muted one-line message, and a CTA.</p>
+  </div>
+
+  <!-- ══ No data ═══════════════════════════════════════════════════════════ -->
+  <section class="ds-section">
+    <h2>No data yet</h2>
+    <p class="ds-desc">First-run / zero-record screens. The single solid-filled primary CTA points at the obvious next step.</p>
+    <div class="ds-demo ds-block">
+      <div class="p-empty" role="region" aria-label="No students yet">
+        <span class="p-empty__icon p-tint-primary" aria-hidden="true"><i class="bi bi-inbox"></i></span>
+        <h3 class="p-empty__title">No students yet</h3>
+        <p class="p-empty__message">Once you admit students to this class they&rsquo;ll appear here with their roll number, section and fee status.</p>
+        <div class="p-empty__actions">
+          <button class="btn btn-primary"><i class="bi bi-person-plus"></i> Add student</button>
+          <button class="btn btn-ghost btn-ghost-primary"><i class="bi bi-upload"></i> Import CSV</button>
+        </div>
+      </div>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;div class=&quot;p-empty&quot; role=&quot;region&quot; aria-label=&quot;No students yet&quot;&gt;
+  &lt;span class=&quot;p-empty__icon p-tint-primary&quot; aria-hidden=&quot;true&quot;&gt;&lt;i class=&quot;bi bi-inbox&quot;&gt;&lt;/i&gt;&lt;/span&gt;
+  &lt;h3 class=&quot;p-empty__title&quot;&gt;No students yet&lt;/h3&gt;
+  &lt;p class=&quot;p-empty__message&quot;&gt;Once you admit students they&amp;rsquo;ll appear here&hellip;&lt;/p&gt;
+  &lt;div class=&quot;p-empty__actions&quot;&gt;
+    &lt;button class=&quot;btn btn-primary&quot;&gt;&lt;i class=&quot;bi bi-person-plus&quot;&gt;&lt;/i&gt; Add student&lt;/button&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> empty tables/lists, brand-new modules. The icon is decorative (<code>aria-hidden="true"</code>) and the block is a labelled <code>role="region"</code>. Keep exactly one solid primary CTA; make secondary actions ghost/outline. Prime helper: <code>.p-empty</code> with <code>.p-tint-*</code> on the icon chip.</div>
+  </section>
+
+  <!-- ══ No search results ═════════════════════════════════════════════════ -->
+  <section class="ds-section">
+    <h2>No search results</h2>
+    <p class="ds-desc">A filtered/searched view with zero matches. The message echoes the query; the CTA clears filters rather than dead-ending the user.</p>
+    <div class="ds-demo ds-block">
+      <div class="p-empty" role="region" aria-label="No search results">
+        <span class="p-empty__icon p-tint-info" aria-hidden="true"><i class="bi bi-search"></i></span>
+        <h3 class="p-empty__title">No results for &ldquo;Anjali 10-Z&rdquo;</h3>
+        <p class="p-empty__message">We couldn&rsquo;t find any student matching your search and filters. Check the spelling or widen the class/section filter.</p>
+        <div class="p-empty__actions">
+          <button class="btn btn-ghost btn-ghost-primary"><i class="bi bi-x-circle"></i> Clear filters</button>
+        </div>
+      </div>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;div class=&quot;p-empty&quot; role=&quot;region&quot; aria-label=&quot;No search results&quot;&gt;
+  &lt;span class=&quot;p-empty__icon p-tint-info&quot; aria-hidden=&quot;true&quot;&gt;&lt;i class=&quot;bi bi-search&quot;&gt;&lt;/i&gt;&lt;/span&gt;
+  &lt;h3 class=&quot;p-empty__title&quot;&gt;No results for &amp;ldquo;Anjali 10-Z&amp;rdquo;&lt;/h3&gt;
+  &lt;p class=&quot;p-empty__message&quot;&gt;Check the spelling or widen the filter.&lt;/p&gt;
+  &lt;div class=&quot;p-empty__actions&quot;&gt;
+    &lt;button class=&quot;btn btn-ghost btn-ghost-primary&quot;&gt;&lt;i class=&quot;bi bi-x-circle&quot;&gt;&lt;/i&gt; Clear filters&lt;/button&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> search / filter result panes. Echo the query text in the title so it&rsquo;s clear <em>what</em> returned nothing. The CTA is a low-emphasis ghost button because &ldquo;clear filters&rdquo; is a recovery, not a primary goal.</div>
+  </section>
+
+  <!-- ══ Error state ═══════════════════════════════════════════════════════ -->
+  <section class="ds-section">
+    <h2>Error state</h2>
+    <p class="ds-desc">Something failed to load. A danger-tinted icon signals trouble (paired with the word &ldquo;wrong&rdquo;), and the CTA lets the user retry.</p>
+    <div class="ds-demo ds-block">
+      <div class="p-empty" role="alert" aria-label="Something went wrong">
+        <span class="p-empty__icon p-tint-danger" aria-hidden="true"><i class="bi bi-exclamation-triangle"></i></span>
+        <h3 class="p-empty__title">Something went wrong</h3>
+        <p class="p-empty__message">We couldn&rsquo;t load the fee ledger for this class. This is usually temporary &mdash; please try again in a moment.</p>
+        <div class="p-empty__actions">
+          <button class="btn btn-outline-danger"><i class="bi bi-arrow-clockwise"></i> Retry</button>
+          <button class="btn btn-ghost"><i class="bi bi-life-preserver"></i> Contact support</button>
+        </div>
+      </div>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;div class=&quot;p-empty&quot; role=&quot;alert&quot; aria-label=&quot;Something went wrong&quot;&gt;
+  &lt;span class=&quot;p-empty__icon p-tint-danger&quot; aria-hidden=&quot;true&quot;&gt;&lt;i class=&quot;bi bi-exclamation-triangle&quot;&gt;&lt;/i&gt;&lt;/span&gt;
+  &lt;h3 class=&quot;p-empty__title&quot;&gt;Something went wrong&lt;/h3&gt;
+  &lt;p class=&quot;p-empty__message&quot;&gt;We couldn&amp;rsquo;t load the fee ledger&hellip;&lt;/p&gt;
+  &lt;div class=&quot;p-empty__actions&quot;&gt;
+    &lt;button class=&quot;btn btn-outline-danger&quot;&gt;&lt;i class=&quot;bi bi-arrow-clockwise&quot;&gt;&lt;/i&gt; Retry&lt;/button&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> failed fetch / server error panels. Use <code>role="alert"</code> so assistive tech announces it. The retry CTA is <code>.btn-outline-danger</code> (accent, not a solid danger fill) so it reads as recoverable rather than destructive.</div>
+  </section>
+
+  <!-- ══ Permission denied ═════════════════════════════════════════════════ -->
+  <section class="ds-section">
+    <h2>Permission denied</h2>
+    <p class="ds-desc">The user is authenticated but not authorised for this screen. Explain plainly and offer a path to request access rather than a hard dead-end.</p>
+    <div class="ds-demo ds-block">
+      <div class="p-empty" role="region" aria-label="Access denied">
+        <span class="p-empty__icon p-tint-warning" aria-hidden="true"><i class="bi bi-shield-lock"></i></span>
+        <h3 class="p-empty__title">You don&rsquo;t have access</h3>
+        <p class="p-empty__message">The <strong>Accounting</strong> module is restricted to Finance and Admin roles. Ask an administrator to grant you access if you need it.</p>
+        <div class="p-empty__actions">
+          <button class="btn btn-secondary"><i class="bi bi-send"></i> Request access</button>
+          <a href="#" class="btn btn-ghost btn-ghost-primary"><i class="bi bi-arrow-left"></i> Back to dashboard</a>
+        </div>
+      </div>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;div class=&quot;p-empty&quot; role=&quot;region&quot; aria-label=&quot;Access denied&quot;&gt;
+  &lt;span class=&quot;p-empty__icon p-tint-warning&quot; aria-hidden=&quot;true&quot;&gt;&lt;i class=&quot;bi bi-shield-lock&quot;&gt;&lt;/i&gt;&lt;/span&gt;
+  &lt;h3 class=&quot;p-empty__title&quot;&gt;You don&amp;rsquo;t have access&lt;/h3&gt;
+  &lt;p class=&quot;p-empty__message&quot;&gt;This module is restricted to Finance and Admin roles.&lt;/p&gt;
+  &lt;div class=&quot;p-empty__actions&quot;&gt;
+    &lt;button class=&quot;btn btn-secondary&quot;&gt;&lt;i class=&quot;bi bi-send&quot;&gt;&lt;/i&gt; Request access&lt;/button&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> 403 / policy-blocked screens (maps to Laravel authorization gates). State the required role and give a constructive CTA. The icon carries the meaning together with the &ldquo;don&rsquo;t have access&rdquo; text &mdash; never colour alone.</div>
+  </section>
+
+  <!-- ══ Compact variant ═══════════════════════════════════════════════════ -->
+  <section class="ds-section">
+    <h2>Compact variant (in-panel)</h2>
+    <p class="ds-desc">A tighter <code>.p-empty--sm</code> for empty table bodies, small cards, or dropdown result areas where the full-height blank slate would be too heavy.</p>
+    <div class="ds-demo ds-block">
+      <div class="p-surface p-border p-rounded" style="max-width:420px">
+        <div class="p-empty p-empty--sm" role="region" aria-label="No notifications">
+          <span class="p-empty__icon p-tint-info" aria-hidden="true"><i class="bi bi-bell-slash"></i></span>
+          <h3 class="p-empty__title">You&rsquo;re all caught up</h3>
+          <p class="p-empty__message">No new notifications right now.</p>
+        </div>
+      </div>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;div class=&quot;p-empty p-empty--sm&quot; role=&quot;region&quot; aria-label=&quot;No notifications&quot;&gt;
+  &lt;span class=&quot;p-empty__icon p-tint-info&quot; aria-hidden=&quot;true&quot;&gt;&lt;i class=&quot;bi bi-bell-slash&quot;&gt;&lt;/i&gt;&lt;/span&gt;
+  &lt;h3 class=&quot;p-empty__title&quot;&gt;You&amp;rsquo;re all caught up&lt;/h3&gt;
+  &lt;p class=&quot;p-empty__message&quot;&gt;No new notifications right now.&lt;/p&gt;
+&lt;/div&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> nest inside a card or table body. <code>.p-empty--sm</code> shrinks the icon and padding. A CTA is optional here &mdash; a purely informational &ldquo;caught up&rdquo; state can omit it.</div>
+  </section>
+
+</main>
+<script src="../js/main.js"></script>
+</body>
+</html>

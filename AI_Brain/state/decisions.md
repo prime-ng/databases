@@ -435,3 +435,93 @@ clearing Layer 5. If undefined → P1 (module non-functional for intended roles)
 
 ### D39 — Platform audit trail is hard-coupled to GlobalMaster's ActivityLog model (observation, 2026-06-29 | Technical Auditor)
 The global helper `app/Helpers/activityLog.php` does `use Modules\GlobalMaster\Models\ActivityLog;` and writes every module's audit entry through that concrete class. Consequence: **every module's auditing depends on GLB's `ActivityLog` staying present, named, and stable** — a module-boundary inversion (a cross-cutting concern owned by a feature module). The GLB Mode-X audit surfaced how brittle GLB's class-name resolution already is (the `AcademicSession` model is referenced by two controllers but does not exist → guaranteed 500s; the `activity_logs` migration vs `sys_activity_logs` model drift). Recommendation when remediating: bind the audit writer behind an interface (e.g. `App\Contracts\ActivityLogger`) resolved from the container, so the helper does not hard-depend on a feature module's concrete model. Tracked as ARCH-GLB-001 / RISK-GLB-008. No code change made (read-only audit).
+
+---
+
+### D-PPT-001: PPT Leave Feature Delegates to StudentProfile.LeaveService — Not a PPT-owned Table (2026-06-29, pa-technical-auditor, Mode X)
+**Context:** The BA phase module-knowledge flagged `ppt_leave_applications` as a P0 missing table. The DDL v2 does not include this table. `ParentLeaveController` imports `Modules\StudentProfile\Models\LeaveApplication` and `Modules\StudentProfile\Services\LeaveService`, operating on `std_leave_applications`.
+**Decision:** ppt_leave_applications is intentionally deferred. Parent leave applications are stored in the shared `std_leave_applications` table (StudentProfile module), making leave visible to both parent portal and admin views without data duplication. `ppt_leave_applications` was a planning artifact that was superseded by this cross-module delegation approach.
+**Impact:** ParentLeaveController will work correctly given a functioning StudentProfile module with `std_leave_applications`. GAP-PPT-P0-02 (missing table) is a false alarm. No migration needed.
+**Follow-up:** Document this in the cross-module dependency table. Ensure LeaveService and its tests cover parent-initiated submissions.
+
+### D-PPT-002: PPT FormRequest BaseClass Uses resolveChild() in authorize() — Positive Architecture Decision (2026-06-29, pa-technical-auditor, Mode X)
+**Context:** All 22 PPT FormRequests extend `ParentPortalBaseRequest` whose `authorize()` calls `ParentContextService::resolveChild()`. This was initially evaluated as D30 (bare-true authorize) pattern.
+**Decision:** This is NOT a D30 instance. `resolveChild()` validates that (a) the user is authenticated, (b) a guardian record exists for the user, (c) at least one active child is linked with `can_access_parent_portal=1`. If any check fails, a 403 redirect is thrown. This provides real per-request authorization at the FormRequest layer, which is better than the platform's typical bare-true D30.
+**Recommendation:** Keep this pattern. Consider extending it in specific FormRequests that also need resource-level IDOR checks (e.g., `BookParentPtmRequest` should also verify the slot's class-section scope).
+
+## D-MSH-008: wipePreviousResults uses hard-delete for soft-deletable tables (2026-06-29)
+**Context:** MarksheetComputationService::wipePreviousResults() hard-deletes rows from msh_student_results, msh_student_subject_results, msh_student_subject_exam_marks, msh_student_coscholastic_results — all of which have soft-delete columns.
+**Rationale in code:** "unique keys on these tables do not include deleted_at, so soft-deleting leaves rows that block re-insertion on recompute."
+**Decision:** Hard-delete is intentional. Recomputation permanently removes prior computed data. Computation logs retain audit trail.
+**Risk:** No rollback possible after recompute. If recompute fails mid-way, partial results are written with no recovery path to pre-recompute state.
+**Recommendation:** Consider adding unique constraints that include deleted_at, or taking a snapshot log before wiping.
+
+## D-MSH-009: sys_dropdowns IS a tenant table (2026-06-29, clarification)
+**Context:** known-issues.md platform baseline says "Tenant FKs → sys_dropdowns (central-only table) | 52 | P0". MSH has a FK from msh_marksheet_schedules.status_id → sys_dropdowns.id.
+**Verification:** Migration `2026_06_15_145407_rename_sys_dropdown_table_to_sys_dropdowns.php` confirms sys_dropdowns is in the tenant DB (renamed from sys_dropdown_table).
+**Decision:** The MSH FK to sys_dropdowns is NOT a cross-DB violation. The platform-wide P0 note in known-issues.md may refer to a different table or an older architecture state. MSH-specific FK is clean.
+**Note:** The "52 tenant FKs → sys_dropdowns (central-only)" claim in known-issues.md should be re-verified against the current tenant migration set — the table may now be tenant-side.
+
+## QST observation — Cross-Layer AcademicSession usage is a recurring multi-module pattern (2026-06-29)
+**Context:** LmsQuests (QST) `LmsQuestController` and `Quest` model import `Modules\Prime\Models\AcademicSession` for use in tenant context. The `lms_quests` migration creates a FK to `global_db.glb_academic_sessions`. `Prime\Models\AcademicSession` resolves through prime_db, not global_db — a cross-layer mismatch (TEN-QST-001). The same pattern was previously observed in SyllabusBooks (`BookController queries Prime\AcademicSession from tenant context` — V2 finding 2026-03-26). Two modules confirmed; others may be affected.
+**Implication:** Any module that needs to display or enforce academic session context in tenant scope should resolve through `GlobalMaster\Models\AcademicSession` (global_db) or a tenant-local denormalized copy — NOT through `Prime\Models\AcademicSession` (prime_db). The correct FK target (`glb_academic_sessions` in migrations) is already consistent; only the model resolution in PHP code is wrong.
+**Status:** No platform-wide D-number assigned (module-specific finding so far). If confirmed in 3+ additional modules, create D40.
+
+## PRM-D-001: Policy overwrite via duplicate Gate::policy() for aliased class (2026-06-29)
+**Context:** PrimeServiceProvider registers `Gate::policy(AcademicSession::class, AcademicSessionPolicy::class)` then later registers `Gate::policy(PrimeAcademicSession::class, SessionBoardSetupPolicy::class)` where `PrimeAcademicSession` is an alias of `AcademicSession`. Laravel's Gate uses the class name as key; the second call overwrites the first. `AcademicSessionPolicy` is dead.
+**Pattern:** Using a `use` alias for a model class does not create a new class — it is still the same FQCN. Two `Gate::policy()` calls for the same FQCN result in the last one winning silently with no error or warning.
+**Decision:** When a ServiceProvider must register two different policies for conceptually similar models, use distinct concrete classes rather than aliases. If the same model truly needs two different policies for different contexts, gate-define one and policy-register the other, or consolidate into a single policy with method-level branching.
+**Recommendation:** Audit all other module ServiceProviders for duplicate `Gate::policy()` registrations with aliased classes.
+
+## PRM-D-002: STORED generated column in $fillable causes MySQL 3105 error (2026-06-29)
+**Context:** `sys_users.super_admin_flag` is a STORED generated column (`storedAs` in migration). The User model includes `'super_admin_flag'` in `$fillable`. Eloquent will attempt to INSERT/UPDATE this column if it appears in the data array, triggering MySQL error 3105 ("The value specified for generated column is not allowed").
+**Decision:** Generated columns (both STORED and VIRTUAL) must NEVER appear in `$fillable`. They are computed by MySQL and cannot be written by PHP. Remove from fillable; they are readable via Eloquent but not writable.
+**Rule:** Audit all models with `storedAs`/`virtualAs` migration columns — ensure none of those column names appear in `$fillable`.
+
+## PRM-D-003: Migration down() naming inconsistency — table name must match up() (2026-06-29)
+**Context:** `create_tenants_table.php` creates `prm_tenant` in `up()` but calls `Schema::dropIfExists('tenants')` in `down()`. This is a copy-paste error from the stancl/tenancy default migration template where the table was originally named `tenants`.
+**Decision:** Always verify that `down()` references the exact same table name as `up()`. The stancl/tenancy package uses `tenants` as its default; this project renames to `prm_tenant`. The `down()` must be updated when the table name is changed.
+**Rule:** After renaming any table in `up()`, immediately update all references in `down()` to match.
+
+## NTF-D-001: ShouldQueue listeners in tenant context must explicitly re-initialize tenancy (2026-06-29)
+**Context:** `Modules/Notification/Listeners/ProcessSystemNotification.php` implements `ShouldQueue`. When the event is fired synchronously, tenancy context is active. When the listener is dequeued by a queue worker, tenancy context is lost. The listener calls `NotificationService::trigger()` which queries `ntf_notifications` (a tenant table) against the wrong DB.
+**Decision:** Any class implementing `ShouldQueue` that touches tenant tables must either: (1) use a TenancyAwareJob trait that re-initializes tenancy from a serialized `$tenantId` constructor argument, OR (2) explicitly call `tenancy()->initialize(Tenant::find($this->tenantId))` at the top of `handle()` and `tenancy()->end()` in a `finally` block.
+**Affected:** `ProcessSystemNotification` listener; grep for `implements ShouldQueue` across all modules to verify coverage.
+**Rule:** Every ShouldQueue class must serialize tenant ID and re-initialize tenancy in handle().
+
+## NTF-D-002: NOT NULL FK columns in append-only log tables must match nullable service call sites (2026-06-29)
+**Context:** `ntf_delivery_logs.provider_id` is NOT NULL with FK to `ntf_provider_master`. `NotificationService::logDelivery()` accepts `?int $providerId = null` because in-app delivery has no external provider. When `$providerId` is null, MySQL throws errno 1048 and the delivery log row is silently lost.
+**Decision:** For any append-only log table, FK columns that can be legitimately absent for some delivery paths must be NULLABLE in the migration. Apply to `ntf_delivery_logs.provider_id`, `ntf_delivery_logs.resolved_use_id`, and any similar columns in other modules' log tables.
+**Rule:** Before marking an FK NOT NULL in an append-only table, verify every code path that inserts into that table provides a non-null value. If any path can omit it, make the column nullable.
+
+## D40: forceDelete() on parent tables with onDelete('cascade') FKs permanently destroys child records (2026-06-29)
+**Context (PTM):** `PtmSlotService::generateFromAssignment()` calls `PtmSlot::where('assignment_id', $id)->forceDelete()` before regenerating slots. `ptm_slot_bookings.slot_id` FK has `onDelete('cascade')`. On every publish/republish, all booking records for that assignment are permanently destroyed with no warning. Same pattern: `PtmAssignmentService::delete()` calls `slots()->forceDelete()` which cascades to destroy booking history. Neither checks for confirmed bookings first.
+**Decision (DAT-PTM-003, DAT-PTM-004):**
+1. **Never call `forceDelete()` on a parent record when the FK has `onDelete('cascade')` and child records carry business value** (bookings, financial records, audit trails). Use `delete()` (soft-delete) instead.
+2. **Always guard before hard-delete of parent:** query for confirmed/active child records; throw if any exist (enforce BR-PTM-013 pattern).
+3. **For slot regeneration (republish):** first soft-delete existing slots, then generate new ones. If confirmed bookings exist, abort regeneration and require admin to cancel bookings first.
+**Rule:** Any service method that calls `forceDelete()` on a record with `onDelete('cascade')` child tables must (a) verify no business-critical children exist or (b) use `delete()` (soft-delete) and document why hard-delete is safe (e.g., no cascade children, or they are purely derived/re-creatable). Apply platform-wide grep: `forceDelete()` calls in service classes where child tables have booking/payment/financial data.
+**Affected modules confirmed:** PTM (slots, bookings). **Check:** Hostel (allotments → bed logs?), LmsExam (paper → student results?), StudentFee (fee demand → receipts?).
+
+## D41: session('tenant_id') is unreliable — use tenant()->id for cross-tenant notification inserts (2026-06-29)
+**Context (PTM, PPT):** Multiple PTM services use `session('tenant_id') ?? 1` when creating `Notification` records inside `DB::transaction()` blocks. The session is tied to the HTTP request lifecycle and is unreliable in: (a) queued jobs (session unavailable), (b) concurrent async requests (session may return null), (c) tests (no session). Fallback `?? 1` hardcodes tenant 1 and creates notifications on the wrong tenant.
+**Decision:** Replace all `session('tenant_id') ?? 1` usages with `tenant()->id` (stancl/tenancy current-tenant accessor, always correct within tenancy-initialized context) when writing to any tenant-scoped table that requires a `tenant_id` column. Move notification inserts outside `DB::transaction()` or dispatch as queued jobs with `->afterCommit()`.
+**Rule:** Never use `session('tenant_id')` as the source of tenant identity for DB inserts. Use `tenant()->id`. Grep platform-wide: `session('tenant_id')` — should return zero hits after remediation.
+**Affected modules confirmed:** PTM (`PtmSlotBookingService`, `PtmAssignmentService`); PPT (`ParentPortalNotificationService`). Platform-wide count: TBD.
+
+## NTF-D-002 Extension: QuestionBank Confirms Pattern on Computed Metrics Table (2026-06-29)
+**Context (QNS, MIG-QNS-001):** `qns_question_statistics.discrimination_index`, `.guessing_factor`, `.avg_time_taken_seconds` are NOT NULL in the migration, but `QuestionStatisticsService::computeAndPersist()` correctly sets them to `null` per D31 spec (fewer than 4 attempts per group → discrimination = null; non-MCQ → guessing = null; no valid telemetry → avg = null). The `updateOrCreate()` call with null values throws MySQL SQLSTATE 1048 at runtime, blocking statistics computation for newly-added questions and non-MCQ types.
+**Extension to NTF-D-002:** NTF-D-002 covered FK columns in append-only log tables. This confirms the same pattern applies to **non-FK DECIMAL/INT columns in computed-metrics tables**: if the service layer can legitimately produce null (per spec edge cases), the corresponding DDL column must be NULLABLE. Verify all computed-metrics columns in statistics/analytics tables across the platform for NOT NULL / nullable mismatch.
+**Rule extension:** Before declaring a non-FK column NOT NULL in any statistics/metrics table, verify that ALL code paths that insert or update that table can ALWAYS produce a non-null value. If any spec edge case produces null (e.g., insufficient data, wrong question type, empty feed), the column must be NULLABLE.
+**Affected modules confirmed:** QNS (discrimination_index, guessing_factor, avg_time_taken_seconds in qns_question_statistics). Check: LmsExam (exam statistics tables), LmsQuiz (quiz analytics tables), any other _statistics or _analytics tables.
+
+## TEN-D-002: Central modules must use only ['web', 'auth', 'verified'] in their RSP — no tenancy middleware (2026-06-29)
+**Context (SDL, TEN-SDL-001):** The Scheduler RSP was modified to include `InitializeTenancyByDomain`, `PreventAccessFromCentralDomains`, and `EnsureTenantIsActive` — the full tenancy stack used by tenant modules. Scheduler is a central-only (prime_db) module. Result: `PreventAccessFromCentralDomains` blocks the central domain (where Platform Admins operate), making all RSP-registered routes (/schedulers/*) inaccessible from the correct domain. From a tenant domain, the routes are reachable but crash with SQL errors (schedules table does not exist in tenant_db).
+**Contrast with D23:** D23 identified TENANT modules that were MISSING tenancy middleware. TEN-D-002 is the INVERSE: a CENTRAL module that INCORRECTLY HAS tenant middleware.
+**Decision:** Every central module (prime_db or global_db, not multi-tenant) must use ONLY `['web', 'auth', 'verified']` in its RSP middleware group. NEVER add InitializeTenancyByDomain, PreventAccessFromCentralDomains, or EnsureTenantIsActive to a central module's RSP. EnsureTenantHasModule is also not applicable.
+**Central modules affected (verify each RSP):** Prime (PRM), Billing (BIL), SystemConfig (SYS), Documentation (DOC), GlobalMaster (GLB), Scheduler (SDL), Dashboard (DSH).
+**Rule:** When scaffolding a new module, the RSP middleware list must reflect the module's DB layer:
+- Tenant module RSP: `['web', InitializeTenancyByDomain::class, PreventAccessFromCentralDomains::class, EnsureTenantIsActive::class, EnsureTenantHasModule::class, 'auth', 'verified']`
+- Central module RSP: `['web', 'auth', 'verified']`
+Never copy a tenant-module RSP to scaffold a central module (or vice versa) without adjusting the middleware list.
+**Stale note correction:** D23 note "Scheduler RSP fixed" was INCORRECT. The live RSP was CHANGED to add wrong middleware, not fixed. See TEN-SDL-001.

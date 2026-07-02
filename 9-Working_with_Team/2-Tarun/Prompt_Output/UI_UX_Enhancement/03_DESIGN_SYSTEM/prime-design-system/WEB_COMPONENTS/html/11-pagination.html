@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en" data-bs-theme="light" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prime DS — Pagination</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@4.0.0-beta3/dist/css/adminlte.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<link rel="stylesheet" href="../css/tokens.css">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/components/pagination.css">
+<link rel="stylesheet" href="../css/components/buttons.css">
+<link rel="stylesheet" href="../css/dark-mode.css">
+</head>
+<body>
+<header class="ds-toolbar">
+  <a href="../../index.html" class="ds-brand" style="text-decoration:none;color:inherit"><span class="ds-logo">P</span> Prime DS</a>
+  <span class="ds-spacer"></span>
+  <button class="ds-toggle" data-ds-width-toggle><i class="bi bi-phone"></i> <span class="ds-width-label">Desktop</span></button>
+  <button class="ds-toggle" data-ds-theme-toggle><i class="bi bi-sun"></i> <span class="ds-theme-label">Light</span></button>
+</header>
+<main class="ds-content">
+  <div class="ds-section"><h1>Pagination</h1><p class="ds-desc">Splitting long result sets across pages. Styles Bootstrap's <code>.pagination</code> so the current page reads as a tinted, bordered accent chip — not a heavy solid fill — with 40px targets and visible focus rings.</p></div>
+
+  <!-- Numbered -->
+  <section class="ds-section">
+    <h2>Numbered pagination</h2>
+    <p class="ds-desc">The default for tables and grids. The active page is marked with both a tinted accent style <em>and</em> <code>aria-current="page"</code>; prev/next use chevron icons and carry an <code>aria-label</code>. The whole control lives in a labelled <code>&lt;nav&gt;</code>.</p>
+    <div class="ds-demo ds-block">
+      <nav aria-label="Student list pagination">
+        <ul class="pagination">
+          <li class="page-item disabled">
+            <a class="page-link" href="#" aria-label="Previous" aria-disabled="true" tabindex="-1"><i class="bi bi-chevron-left"></i> <span>Prev</span></a>
+          </li>
+          <li class="page-item active"><a class="page-link" href="#" aria-current="page">1</a></li>
+          <li class="page-item"><a class="page-link" href="#">2</a></li>
+          <li class="page-item"><a class="page-link" href="#">3</a></li>
+          <li class="page-item disabled"><span class="page-link" aria-hidden="true">…</span></li>
+          <li class="page-item"><a class="page-link" href="#">12</a></li>
+          <li class="page-item">
+            <a class="page-link" href="#" aria-label="Next"><span>Next</span> <i class="bi bi-chevron-right"></i></a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;nav aria-label=&quot;Student list pagination&quot;&gt;
+  &lt;ul class=&quot;pagination&quot;&gt;
+    &lt;li class=&quot;page-item disabled&quot;&gt;
+      &lt;a class=&quot;page-link&quot; href=&quot;#&quot; aria-label=&quot;Previous&quot; aria-disabled=&quot;true&quot; tabindex=&quot;-1&quot;&gt;
+        &lt;i class=&quot;bi bi-chevron-left&quot;&gt;&lt;/i&gt; &lt;span&gt;Prev&lt;/span&gt;&lt;/a&gt;
+    &lt;/li&gt;
+    &lt;li class=&quot;page-item active&quot;&gt;&lt;a class=&quot;page-link&quot; href=&quot;#&quot; aria-current=&quot;page&quot;&gt;1&lt;/a&gt;&lt;/li&gt;
+    &lt;li class=&quot;page-item&quot;&gt;&lt;a class=&quot;page-link&quot; href=&quot;#&quot;&gt;2&lt;/a&gt;&lt;/li&gt;
+    &lt;li class=&quot;page-item&quot;&gt;&lt;a class=&quot;page-link&quot; href=&quot;#&quot;&gt;3&lt;/a&gt;&lt;/li&gt;
+    &lt;li class=&quot;page-item disabled&quot;&gt;&lt;span class=&quot;page-link&quot; aria-hidden=&quot;true&quot;&gt;…&lt;/span&gt;&lt;/li&gt;
+    &lt;li class=&quot;page-item&quot;&gt;&lt;a class=&quot;page-link&quot; href=&quot;#&quot;&gt;12&lt;/a&gt;&lt;/li&gt;
+    &lt;li class=&quot;page-item&quot;&gt;
+      &lt;a class=&quot;page-link&quot; href=&quot;#&quot; aria-label=&quot;Next&quot;&gt;&lt;span&gt;Next&lt;/span&gt; &lt;i class=&quot;bi bi-chevron-right&quot;&gt;&lt;/i&gt;&lt;/a&gt;
+    &lt;/li&gt;
+  &lt;/ul&gt;
+&lt;/nav&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> Styles Bootstrap <code>.pagination/.page-item/.page-link</code> with <code>.active</code> + <code>.disabled</code>. Always set <code>aria-current="page"</code> on the active link and label the <code>&lt;nav&gt;</code>. Matches Laravel's default paginator markup.</div>
+  </section>
+
+  <!-- Simple -->
+  <section class="ds-section">
+    <h2>Simple prev / next</h2>
+    <p class="ds-desc">When exact page numbers don't matter — infinite-ish lists, wizards, detail record navigation. Pair the buttons with a plain-language range summary so users know where they are.</p>
+    <div class="ds-demo ds-block">
+      <nav class="p-pager-simple" aria-label="Results navigation">
+        <span class="p-pager-summary">Showing <strong>1–20</strong> of <strong>240</strong></span>
+        <ul class="pagination">
+          <li class="page-item disabled">
+            <a class="page-link" href="#" aria-label="Previous page" aria-disabled="true" tabindex="-1"><i class="bi bi-chevron-left"></i> Prev</a>
+          </li>
+          <li class="page-item">
+            <a class="page-link" href="#" aria-label="Next page">Next <i class="bi bi-chevron-right"></i></a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;nav class=&quot;p-pager-simple&quot; aria-label=&quot;Results navigation&quot;&gt;
+  &lt;span class=&quot;p-pager-summary&quot;&gt;Showing &lt;strong&gt;1–20&lt;/strong&gt; of &lt;strong&gt;240&lt;/strong&gt;&lt;/span&gt;
+  &lt;ul class=&quot;pagination&quot;&gt;
+    &lt;li class=&quot;page-item disabled&quot;&gt;
+      &lt;a class=&quot;page-link&quot; href=&quot;#&quot; aria-label=&quot;Previous page&quot; aria-disabled=&quot;true&quot; tabindex=&quot;-1&quot;&gt;
+        &lt;i class=&quot;bi bi-chevron-left&quot;&gt;&lt;/i&gt; Prev&lt;/a&gt;
+    &lt;/li&gt;
+    &lt;li class=&quot;page-item&quot;&gt;
+      &lt;a class=&quot;page-link&quot; href=&quot;#&quot; aria-label=&quot;Next page&quot;&gt;Next &lt;i class=&quot;bi bi-chevron-right&quot;&gt;&lt;/i&gt;&lt;/a&gt;
+    &lt;/li&gt;
+  &lt;/ul&gt;
+&lt;/nav&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> Prime helpers <code>.p-pager-simple</code> (space-between layout) + <code>.p-pager-summary</code>. The "Showing X–Y of Z" text is the accessible anchor when there are no numbered pages to convey position.</div>
+  </section>
+
+  <!-- Load more -->
+  <section class="ds-section">
+    <h2>Load more</h2>
+    <p class="ds-desc">For feeds and cards where users append rather than jump — one centered outline button (accent, not fill) plus a remaining-count. On click, swap it into its loading state while the next batch fetches.</p>
+    <div class="ds-demo ds-block">
+      <div class="p-load-more">
+        <button type="button" class="btn btn-outline-primary" id="loadMoreBtn" aria-live="polite">
+          <i class="bi bi-arrow-clockwise"></i> Load more
+        </button>
+        <span class="p-pager-summary">Showing <strong>20</strong> of <strong>240</strong></span>
+      </div>
+    </div>
+    <div class="ds-code"><button class="ds-copy">Copy</button><pre><code>&lt;div class=&quot;p-load-more&quot;&gt;
+  &lt;button type=&quot;button&quot; class=&quot;btn btn-outline-primary&quot; aria-live=&quot;polite&quot;&gt;
+    &lt;i class=&quot;bi bi-arrow-clockwise&quot;&gt;&lt;/i&gt; Load more
+  &lt;/button&gt;
+  &lt;span class=&quot;p-pager-summary&quot;&gt;Showing &lt;strong&gt;20&lt;/strong&gt; of &lt;strong&gt;240&lt;/strong&gt;&lt;/span&gt;
+&lt;/div&gt;
+
+&lt;!-- on click, show progress by reusing the button loading state --&gt;
+&lt;script&gt;
+  btn.classList.add('is-loading');   // spinner from buttons.css
+  btn.setAttribute('aria-busy', 'true');
+  // …fetch next batch, then remove is-loading + update the count
+&lt;/script&gt;</code></pre></div>
+    <div class="ds-notes"><strong>Usage:</strong> Prime helper <code>.p-load-more</code>. The button uses the outline variant so it accents without competing with page actions; toggling <code>.is-loading</code> (from <code>buttons.css</code>, linked on this page) gives the spinner-on-click state.</div>
+  </section>
+
+</main>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  // Demo-only: show the button loading state on click for a moment.
+  document.addEventListener('DOMContentLoaded', function () {
+    var b = document.getElementById('loadMoreBtn');
+    if (!b) return;
+    b.addEventListener('click', function () {
+      b.classList.add('is-loading');
+      b.setAttribute('aria-busy', 'true');
+      setTimeout(function () {
+        b.classList.remove('is-loading');
+        b.removeAttribute('aria-busy');
+      }, 1400);
+    });
+  });
+</script>
+<script src="../js/main.js"></script>
+</body>
+</html>
