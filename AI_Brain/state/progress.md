@@ -1,5 +1,6 @@
 # Development Progress Tracker
 
+> **Status_Analyzer enhanced + all-module Standard run — 2026-07-02:** Scoring moved to the **10-Dimension v2 formula** (see `config/completion-formula-v2.md` + STATUS-D-001 in `state/decisions.md`). First all-module **Standard (structural)** report: `6-Dev_Gap_Analysis_Status/Progress_Status/2026-07-02_Progress_Status_All-Module.md` (structural avg 82%). ⚠️ These are STRUCTURAL upper-bound scores (D3=non-stub proxy, D5 counts possibly-dead Gates) — **the documented deep-audit %s below are NOT replaced by them**; Full-depth per-module runs are needed for audit-grade numbers. Files now resolve via `0-Prime_Ai_Detail/module_list.md`; tests read from `prime_testing/tests/Browser/Modules`.
 > **Last Phase-2 deep audit (new modules):** 2026-06-21 — 10-module deep audit of newly added/graduated modules (ParentPortal, Dashboard, SchoolSetup, Library, Hostel, CommonChat, BehaviouralAssessment, Ptm, MarksheetGeneration, Feedback). Findings in `lessons/known-issues.md` section "Phase 2 — New Module Audit (2026-06-21)". Completion % updated for all 10 modules.
 > **Last Phase-1 count-only re-audit:** 2026-06-21 — Full structure scan across all 45 modules. +8 modules vs 2026-04-09 (BehaviouralAssessment, CommonChat, Hostel, ParentPortal, Ptm added as new standalone modules; MarksheetGeneration and Feedback graduated from DDL-only to code). No deep code audit performed — completion % not updated for existing modules.
 > **Last Phase-2 deep audit (prior):** 2026-04-09 — 6-agent parallel re-audit of modules that changed since 2026-04-02 (StudentPortal, Inventory, LmsExam/Quiz/Homework/Quests, StudentProfile Leave, Admission+Vendor, Hpc). Findings in `lessons/known-issues.md` section "Deep Audit — 2026-04-09 (Phase 2)".
@@ -271,3 +272,9 @@ Health **32/100 (no P0 cap reduction; weighted raw = 32)**. Deploy: **NO-GO**. C
 - ABOVE baseline: D25 clean, D36 N/A, isDue() well-implemented, JobRegistry contract enforcement correct.
 - FRD: 0/9 REQs fully met; 2 partial; 7 not started or non-functional. BR: 1 partial (BR-SDL-021) / 23 not met.
 - Report: `3-Audit_Reports/V1_Jun-2026/Scheduler_Complete_Audit_2026-06-29.md`
+
+---
+
+## 2026-07-02 — Production Readiness Audit (all 12 domains)
+**Verdict: 🔴 NOT PRODUCTION READY (NO-GO)** — 0/12 domains ready; ~20 distinct P0 blockers, ~68 P1s. App does not build/deploy/provision-a-tenant/back-up/pass-its-own-tests. Top blockers: fresh-tenant migrate+seed fatal chain (missing sys_roles migration, no tenants:seed), 50 unauthenticated seeder routes, forgeable+double-creditable payments, plaintext Aadhaar/PAN/health PII, secrets in git, 2 parse errors blocking optimize, 189 cross-layer tenancy imports, no all-tenant backup, non-functional test suite. Baseline corrections: authZ now 98% guarded (not dead), 0 SQL-injection, no cross-tenant IDOR, jobs tenancy-safe. Est. ~5–7 months / 20–30 focused eng-weeks for P0+P1.
+Reports: `6-Dev_Gap_Analysis_Status/Production_Readyness_Prompt/Reports/2026-07-02/` — `00_Production_Readiness_Report.md` (gap register), `01_Production_Readiness_Plan.md` (phased remediation + go-live checklist), `A_Baseline.md`, `D1..D12_*.md`.

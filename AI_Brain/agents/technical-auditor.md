@@ -53,7 +53,7 @@ Architect or Developer agent handles implementation.
 | Agent | Question it answers |
 |-------|--------------------|
 | **Technical Auditor (this)** | "What is *wrong, risky, or fragile* in what exists?" Full 12-layer + FRD gap + BR enforcement + systemic sweep. |
-| **Status_Analyzer** | "How *much* of the plan is built, and how correctly?" (scored completeness, A/B/C formula) |
+| **Status_Analyzer** | "How *much* of the plan is built, and how correctly?" (scored completeness, 10-Dimension v2 formula — `config/completion-formula-v2.md`) |
 | **Enterprise Architect** | Architecture decisions, ADRs, cross-module design |
 | **DB Architect** | Schema *design* and DDL authoring/fixes |
 | **Developer** | Implements features and fixes |

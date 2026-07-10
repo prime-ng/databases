@@ -31,3 +31,15 @@ Show comprehensive status for a module.
 3. Check `AI_Brain/lessons/known-issues.md` and `AI_Brain/memory/known-bugs-and-roadmap.md`
 
 4. Report: file counts, routes, known issues, completion %, missing components
+
+## Scored 10-Dimension Report (recommended)
+This skill gives a fast count-based snapshot. For the **reliable, evidence-anchored,
+stage-by-stage percentage report** (Requirement Doc, DDL, Dev Coverage, Security, Coding
+Standard, Bug-Fix, Tests, Deployment Readiness, Performance — each as its own module-wise %),
+invoke the **Status_Analyzer agent** which follows `AI_Brain/config/completion-formula-v2.md`:
+
+- Full analysis: "Act as Status_Analyzer. Full analysis of {Module}."
+- Scoped: name specific dimensions, e.g. "Status_Analyzer: Security + Deployment readiness only."
+
+The agent produces the Completeness Dashboard + Evidence Ledger + Deployment Verdict and can
+update `progress.md`.

@@ -328,3 +328,14 @@ Now updating the progress.md rows for STD, SLB, and SLK:
  Update(~/WorkFolder/1-Old_PrimeDB/old_db/AI_Brain/lessons/known-issues.md)
 
 Tip: You have 2 plugins you haven't used in a while. They still add startup and context cost — review them with /plugin
+
+-------------------------------------------------------------------------------------------------------------------------
+## PROMPT
+My Team member has shared a prompt with me to scan the UI/UX of our Application and Create a Review report and also Provide Suggestions for Enhancements. I wanted you to Review the Prompt File "/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/9-Working_with_Team/2-Tarun/Prompts/PRIME_UI_UX_CLAUDE_PROMPT.md". Convert it for my system paths and enhance it further by adding all possible UI/UX Auditing & for providing additional Enhancement Suggestion. Configur the Prompt to save every outcome into folder "old_db/9-Working_with_Team/2-Tarun/Prompt_Output". Generate a New EnhNCED PROMPT AS "old_db/9-Working_with_Team/2-Tarun/Prompts/PRIME_UI_UX_CLAUDE_PROMPT_V2.md"
+
+Similerly enhance Activity Log Audit prompt also from file "/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/9-Working_with_Team/2-Tarun/Prompts/activity-log-audit-prompt.md". Read & understand the Prompt, Enhance it further, update all the Paths for my system. Add output Reports Folder to "/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/9-Working_with_Team/2-Tarun/Prompt_Output". Add condition for strictly No change in Code or DDL or anywhere. Just generate Report. Save the prompt as "old_db/9-Working_with_Team/2-Tarun/Prompts/activity-log-audit-prompt_v2.md"
+
+-------------------------------------------------------------------------------------------------------------------------
+## Prompt:
+We are creating an Acedemic Intelligence Plateform for Indian Schools which is a combination of ERP, LMS, LXP & Analytical Insights. We have Developed 45 Module so far, and more then 90% Modules have cover all the fuxtionalities they should have. Now I want to use Claude to identify below Information:
+- 

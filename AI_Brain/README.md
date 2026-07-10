@@ -112,7 +112,7 @@ AI_Brain/
 │   ├── business-analyst.md  Max-detail analysis: 22-artifact catalog (FRD/BRD/SRS/RBS/user-stories/RTM/FSM/NFR/risk/estimation/etc.) + FRD pipeline + module-knowledge seed/update
 │   ├── technical-auditor.md 12-layer deep audit: DDL→migration↔model→ORM→code→authz→tenancy→validation→data-integrity→perf→jobs→frontend→deploy (+ FRD gap, BR enforcement, platform systemic sweep)
 │   ├── testing-architect.md Full test strategy: Pest 4.x, CI, coverage gap analysis
-│   └── status-analyzer.md  Requirements-driven completeness scoring (A/B/C formula)
+│   └── status-analyzer.md  10-Dimension evidence-anchored completeness scoring (v2 formula)
 │
 ├── lessons/               ← Hard-won knowledge, bugs, pitfalls
 │   └── known-issues.md      Known bugs, gotchas, and fixes
@@ -162,7 +162,7 @@ AI_Brain/
 | Full test strategy + CI setup       | agents/testing-architect.md        |
 | Audit a module (12-layer: bugs/security/tenancy/perf/deploy) | agents/technical-auditor.md        |
 | Platform-wide systemic hunt (D24/D25/D29/D30 etc.) | agents/technical-auditor.md (Mode D) |
-| Check module completion %           | agents/status-analyzer.md + 7-CLAUDE_Prompts/Dev_Completness_Status_Prompt/Dev_Completness_Calculation_Process.md |
+| Check module completion %           | agents/status-analyzer.md + config/completion-formula-v2.md (10-Dimension). Resolve files via 0-Prime_Ai_Detail/module_list.md |
 | Pre-deployment checklist            | agents/technical-auditor.md + memory/deployment-config.md |
 | Check what's done / in progress     | state/progress.md                  |
 | Understand an architectural choice  | state/decisions.md                 |
