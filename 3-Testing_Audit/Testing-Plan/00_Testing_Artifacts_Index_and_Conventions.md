@@ -24,7 +24,7 @@ This document is the **single source of truth for conventions** shared by humans
 | `TEST_OUTPUT_ROOT` | `{OLD_REPO}/3-Testing_Audit/TestCases/{Module}/` | **Every output lives under a per-module folder here, and nowhere else** — never write into `TEST_FILE_REPO`, `APP_REPO`, or elsewhere. See the mandatory folder structure below. |
 | `PLAN_ROOT` | `{OLD_REPO}/3-Testing_Audit/Testing-Plan` | This planning folder |
 
-> **Golden reference:** `Class&SubjectMgmt/Classes/` is the canonical example. Every new feature's artifacts must match its structure, depth, and idioms. The `HrStaff/*` folders are the most recent real-world application of the pattern (23 features) and add the `Validation_Report.md` + dual runner (`.ps1` + `.sh`) evolution.
+> **Golden reference:** `Class&SubjectMgmt/Classes/` is the canonical example — match its structure, depth, and idioms. The `HrStaff/*` folders are the most recent real-world application (23 features) and add the `Validation_Report.md`. **Note:** the current contract has evolved past those samples — the TcList and MANUALTESTING docs are now a single **combined** file, and the dual `.ps1`+`.sh` runners are now a single cross-platform `run-{Feature}-tests.php` (see §3). Mirror the reference for *idioms*, but follow §3 for the *artifact set*.
 
 ### 1.1 Mandatory Output Folder Structure (every output, every time)
 
@@ -52,18 +52,16 @@ Then everything for that run is written **inside `{ModuleFolder}`**:
     ├── {Module}_Coverage_Dashboard.md          ← (report mode)
     ├── {Module}_RTM.md                          ← (report mode)
     ├── {Feature}/                               ← one sub-folder per feature/screen
-    │   ├── {prefix}_{Feature}TcList_Require.md
-    │   ├── {prefix}_{Feature}MANUALTESTING_Require.md
+    │   ├── {prefix}_{Feature}TcList_Require.md   ← COMBINED: TC list + manual-testing spec (Feature Info + Manual Steps)
     │   ├── {prefix}_{Feature}GAPANALYSIS_Require.md
     │   ├── {prefix}_{Feature}_TestCas.php        ← ONE comprehensive test file per screen (no V1/V2 split)
     │   ├── {prefix}_{Feature}Validation_Report.md
-    │   ├── run-{Feature}-tests.ps1
-    │   └── run-{Feature}-tests.sh
+    │   └── run-{Feature}-tests.php               ← ONE cross-platform runner (replaces .ps1 + .sh)
     └── {Feature2}/ ...
 ```
 
 - **Module-level outputs** (Feature Inventory, module Coverage Dashboard, module RTM) → directly in `TestCases/{Module}/`.
-- **Per-feature outputs** (the 7 artifacts) → in `TestCases/{Module}/{Feature}/`.
+- **Per-feature outputs** (the 5 artifacts) → in `TestCases/{Module}/{Feature}/`.
 - **Program-level roll-ups** that genuinely span modules (Program Defect Register, Program Test Summary) → `TestCases/_Program/` (the one reserved non-module folder).
 - Create the module (and feature) folders if missing. Nothing is ever written to the bare `TestCases/` root.
 
@@ -75,7 +73,7 @@ The app has **45 modules**. Each module contains one or more **features**. Artif
 
 ### 2.0 Feature = Screen = one Requirement file (authoritative unit)
 
-**The unit of work is a *screen*, and each screen is defined by exactly one requirement file** in `REQUIRE_DETAIL_V1/{MODULE}_v1/`. One requirement file → one screen → one feature → one 7-artifact set (with a single test file).
+**The unit of work is a *screen*, and each screen is defined by exactly one requirement file** in `REQUIRE_DETAIL_V1/{MODULE}_v1/`. One requirement file → one screen → one feature → one 5-artifact set (with a single test file).
 
 - The requirement folder `{OLD_REPO}/4-Requirement_Module_wise/2-Module_Requirement_V1/{MODULE}_v1/` holds one kebab-case `.md` file **per screen** (e.g. `Accounting_v1/` has 12 files → 12 screens/features: `bank-reconciliation.md`, `chart-of-accounts.md`, `vouchers.md`, …).
 - **Feature discovery = list these files.** Each file is the *primary requirement source* for that screen's artifacts, and drives BC-BIZ (business rules, statuses, user stories) and the manual test cases.
@@ -137,23 +135,28 @@ The app has **45 modules**. Each module contains one or more **features**. Artif
 
 ---
 
-## 3. The 7-Artifact Contract (per feature)
+## 3. The 5-Artifact Contract (per feature)
 
 For every feature, the agent produces **exactly these files** in `TEST_OUTPUT_ROOT`. **There is exactly ONE PHP test file per screen** — the old V1/V2 pair is gone (the golden `Class` reference only had two because that feature was authored twice; that was never the standard).
 
 | # | Filename | Type | Purpose |
 |---|----------|------|---------|
-| 1 | `{prefix}_{Feature}TcList_Require.md` | Requirements | Business Conditions (BC-*) + Test Case List (TC-P/N/D) + Test Method Index |
-| 2 | `{prefix}_{Feature}MANUALTESTING_Require.md` | Manual test spec | Feature info + full BC + step-by-step manual test cases (Step/Action/Expected + DB + activity-log checks) |
-| 3 | `{prefix}_{Feature}GAPANALYSIS_Require.md` | Coverage | Manual TC ↔ Dusk method mapping + coverage % + partial/gap list |
-| 4 | `{prefix}_{Feature}_TestCas.php` | Dusk (single comprehensive suite) | Schema/model/request config truth (opening `test_01`) **plus** full coverage of every TC-P/N/D/SM/T/S + rich private helper library — one file, sized to the screen (commonly 40–80 methods) |
-| 5 | `{prefix}_{Feature}Validation_Report.md` | QA gate | File existence, naming, structure, coverage, known-defect, verdict |
-| 6 | `run-{Feature}-tests.ps1` | Runner (Windows) | Filtered Dusk run + result parsing + proof capture |
-| 7 | `run-{Feature}-tests.sh` | Runner (Linux/WSL) | Same, for bash environments |
+| 1 | `{prefix}_{Feature}TcList_Require.md` | **Combined** requirements + manual-testing | Feature Info + Business Conditions (BC-*) + Test Case List (TC-P/N/D) + Test Method Index + **Manual Test Steps** (Step/Action/Expected + DB + activity-log checks, for complex/money/workflow cases only) + Known Defects. **Replaces the former TcList AND MANUALTESTING.** |
+| 2 | `{prefix}_{Feature}GAPANALYSIS_Require.md` | Coverage | TC ↔ Dusk method mapping + coverage % + partial/gap list (kept separate — surfaces gaps) |
+| 3 | `{prefix}_{Feature}_TestCas.php` | Dusk (single comprehensive suite) | Schema/model/request config truth (opening `test_01`) **plus** full coverage of every TC-P/N/D/SM/T/S + rich private helper library — one file, sized to the screen (commonly 40–80 methods) |
+| 4 | `{prefix}_{Feature}Validation_Report.md` | QA gate | File existence, naming, structure, coverage, known-defect, verdict |
+| 5 | `run-{Feature}-tests.php` | Cross-platform runner | ONE portable PHP runner (Windows + Linux); replaces the old `.ps1` + `.sh` pair. Filtered Dusk run + result parsing + proof capture |
 
-**Generation order** (later artifacts depend on earlier): 1 → 2 → 3 (skeleton) → 4 (the test file) → 3 (finalize mapping) → 5 → 6/7.
+**Produced in a SINGLE pass by one agent on the strong model (token discipline — see `03_` §"Single-Pass Generation & Read-Budget Discipline").** The earlier two-phase/model-routing split was measured to make cost *worse* (it paid the context read twice) and is **retired**. Write **artifact 3 — the `_TestCas.php` — FIRST and flush it to disk** (crash-resilience: a killed run keeps the expensive artifact), then produce the companion docs in the same pass. The savings come from reading/writing **less** (compact `05_` Rule Card, module Fact Pack, targeted reads, doc consolidation — §3.1), not from switching models.
 
-See `03_Testcase_Creator_Agent_Prompt.md` §"Artifact Templates" for the required internal structure of each file.
+**Generation order:** analysis → **3 (the test file, flushed first)** → 1 (combined TcList) → 2 (gap analysis) → 4 (validation report) → 5 (runner). (A *docs-only* pass deriving the docs 1:1 from an existing `.php` is a crash-recovery path, not the normal flow.)
+
+See `03_Testcase_Creator_Agent_Prompt.md` §"Artifact Templates" for the required internal structure of each file, and §"Single-Pass Generation & Read-Budget Discipline" for the read-budget rules.
+
+### 3.1 Token discipline (prompt caching & doc de-duplication)
+**Prompt caching (keep prefixes cache-warm):** the large read-only prefixes — this conventions doc, `03_` (the agent prompt), `05_` (constraints), and the sibling reference `.php` — should stay **byte-stable during a generation batch** and features should run **back-to-back**, so those prefixes stay in the prompt cache (cached reads ≈ 0.1× input price vs full). **Do NOT edit `00_`/`03_`/`05_`/the reference `.php` mid-batch** — an edit invalidates the cache and forces every subsequent feature to re-read them at full price. Also reuse the module **Fact Pack** (Lever 2) so per-feature discovery isn't re-paid.
+
+**Doc consolidation (cut the most duplicative output):** the former separate MANUALTESTING doc mostly restated TcList, so it is **merged into the combined TcList** (artifact 1) — its Feature-Information becomes section 1 and its Manual-Test-Steps become section 5, and those step tables are written ONLY where a manual tester genuinely needs them (complex multi-step flows, money paths, workflow transitions); simple CRUD/validation cases are covered by the TC list's `Expected Result` column. GAPANALYSIS stays a separate file and maps to the combined TcList. **No coverage is dropped** — every TC appears once in TcList and is mapped in GAPANALYSIS. (The two runner scripts are likewise consolidated into ONE cross-platform `run-{Feature}-tests.php`.)
 
 ---
 
