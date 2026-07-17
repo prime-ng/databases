@@ -651,3 +651,64 @@ One honest caveat: the −23% always-read reduction is measured and guaranteed; 
 ※ recap: Goal: cut the TestCase Creator agent's token cost while keeping quality. I've executed refinement prompts v2 and v3, shrinking the always-read surface 23% and consolidating artifacts 7 to 5. Next: run a warm-cache multi-feature dry-run to measure the total cost drop.
 
 
+---------------------------------------------------------------------------------------------------------------------------------------
+## Prompt:
+My Tester has checked the testCases Created by the Enhanced "TestCase Creator" Agent. The comparision Report File is "/old_db/3-Testing_Audit/Testing_Prompt/TestCase_Agent_Refinement/fof_Circular_AGENTS_Review.md". In Process of Refining the "TestCase Creator" Agent I have executed multipal Prompt, detail as below:
+- 3-Testing_Audit/Testing_Prompt/TestCase_Agent_Refinement/Prompt_Refine_TestCaseCreatorAgent_v1.md
+- 3-Testing_Audit/Testing_Prompt/TestCase_Agent_Refinement/Prompt_Refine_TestCaseCreatorAgent_v2.md
+- 3-Testing_Audit/Testing_Prompt/TestCase_Agent_Refinement/Prompt_Refine_TestCaseCreatorAgent_v3.md
+- 3-Testing_Audit/Testing_Prompt/TestCase_Agent_Refinement/TokenReduction_Plan_TestcaseCreator.md
+
+My Tester has refined Test Cases for 1 Screen, which can be used as a Sample Required output, which located at "prime_testing/tests/Browser/Modules/Class&SubjectMgmt/ClassGroup". Read all the Files from this Folder when you need to understand what type of output I am looking for. But before that first I want to understand What all Rules "TestCase Creator" Agent are Following while creating TestCases. Provide me all detail including but not limited to below points:
+- Common Rules - what is being tested for every Screen For Example -
+    - Compare DDL with Migration to find gaps or discripencies
+    - Model - Call is for correct Model or not
+    - Conditions whether checked the View before Submit to Save for the Fields which are NOT NULL in DDL Schema
+    - etc.
+- Common Business Rule
+- What Process Agent is following to understand how to create TestCases before start writing output files
+
+My purpose is to read & verify the entire proces before execution, so add every detail to make it easy to understand the entire process. Ad only detail which exists in "TestCase Creator" Agent and being use by it. DO NOT ADD ANYTHING FROM PROMPTS, I PROVIDED FOR REFERENCE ONLY. Save the final Report as "old_db/3-Testing_Audit/Testing_Prompt/TestCase_Agent_Refinement/Enhancement_v2/TC_Creation_Process.md"
+
+## Responce:
+Done. Saved to .../Enhancement_v2/TC_Creation_Process.md.
+
+What it documents
+
+A faithful, source-cited description of what the current TestCase Creator agent actually does — drawn only from its five live files (loader, 03_, 00_, 05_ Rule Card, 05a_ appendix). Every rule carries a citation like [03_ HARD RULE 15], [Rule Card #46], [00_ §6] so you can verify each at source. I explicitly kept the refinement prompts (v1/v2/v3/TokenReduction) out — their effects are already baked into the five files, and the header states this.
+
+Structure
+
+1. What the agent is — role, 3 modes, unit-of-work
+2. The process BEFORE writing — the full ordered flow: bootstrap → Fact Pack (Step 0.5) → the fixed 9-item read order (screen file → DDL → FormRequest → Controller → Service → Model → Routes → Blade → FRD → Audit) → BC decomposition → TC enumeration
+3. Common Rules tested for every screen — the test_01 full DDL↔app alignment matrix, correct-model verification, DDL-derived UNIQUE/NOT-NULL/length coverage, permissions/403, activity-log, dependency A–G, hygiene rules
+4. Common Business Rules — BC-BIZ, BC-SM state machines, the 15-check Cross-Reference Defect Scan, defect discipline
+5. Taxonomies — BC (10 types), TC (P/N/D/T/S/A), traceability chain, semantic bands
+6. The 48 Rule-Card guardrails (A–G)
+7. The 5-artifact output contract
+8. Coverage gates + the ~30-item self-check
+9. Review notes (report screens lighter, single-pass, doesn't execute unless execute=true, etc.)
+
+Your three examples — where each lives in the report
+
+- "Compare DDL with Migration for gaps" → §3.1 (test_01 alignment matrix, asserted against the live schema where migration/DDL lag) + §4.3 Cross-Reference checks 11–15.
+- "Model — correct model or not" → §3.2 (constraint G47; verified in the read phase, enforced in generated CRUD).
+- "NOT-NULL fields checked in the View before Submit" → §3.3 + the callout: the agent derives "required" from the DDL, not the form, reads the Blade for real field names, generates a missing-value rejection test per NOT-NULL-no-default column, and cross-checks DDL NOT NULL vs FormRequest required (check 13).
+
+One honest caveat I built into the doc: I described the agent's intended behaviour as written in its files — it's the specification, and the FrontOffice run showed the agents follow it closely, but the ClassGroup sample you pointed me at is exactly the right way to check whether the specified process produces the output shape you want. I did not read ClassGroup for this doc (you said that's for the next step). When you're ready, I can diff the sample against this documented process and the fof_Circular_AGENTS_Review.md findings to pinpoint any gap between what the agent is specified to do and the output you actually want.
+
+
+---------------------------------------------------------------------------------------------------------------------------------------
+## Prompt:
+I want to create a Rule Book for "TestCase Creator" Agent, where every Rule for creating TestCases will be covered. It will be having below Categories:
+1. Category : DDL (first source of truth)
+    - Every table having "deleted_at" to implement Soft Delete. It should be implemented in Code as well.
+    - Transactions & Log Table may not have deleted_at, as they are not required soft delete implementation.
+    - Check - Every Foriegn Key Field should have similer Field Type (Bigint, Int, TinyInt etc) in Parent Table also.
+    - etc.
+2. 
+- Requirement File Screen wise : Separate Files for every Screen
+- FRD : 
+
+> 2. Model → Controller → FormRequests → Routes → Policy → Permission Seeder → Views → Services → Requirements → Conditions
+

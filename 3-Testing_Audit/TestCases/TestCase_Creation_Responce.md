@@ -1,6 +1,8 @@
-# Claude Summary of Testcase Creation
-=====================================
+# Testcase Creation - Responce
+==============================
 
+## Billing
+----------
 Agent "Generate Billing test artifacts" finished · 39m 45s
 
 The agent finished. Before I report success, let me sanity-check that the output actually landed on disk and the new constraints were appended.
@@ -233,6 +235,11 @@ I'd recommend option 2 — a placeholder template — so this exact bug (one mod
 
 ✻ Cogitated for 1m 15s
 
+----------------------------------------------------------------------------------------------------------------------
+
+## MarksheetGeneration
+----------------------
+
 ❯ MODULE_NAME  = MarksheetGeneration
   Use the testcase-creator agent — mode=module, module={MODULE_NAME}. Generate the complete artifact set for every feature, then run report 
   mode to produce the module roll-ups.
@@ -314,7 +321,10 @@ result: MarksheetGeneration test artifacts generated — 43 files (5 features ×
 php -l, 87 V1 / 254 V2 methods, MSH audit prefixes correctly applied, plus a P1 SoftDeletes bug (BUG-MSH-101) the prior audit missed.
 
 
-------------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------------
+
+## GlobalMaster
+---------------
 
  MODULE_NAME  = GlobalMaster
   Use the testcase-creator agent — mode=module, module={MODULE_NAME}. Generate the complete artifact set for every feature, then run 
@@ -396,7 +406,11 @@ result: GlobalMaster test artifacts generated — 43 files (5 features × 8 arti
 methods; agent correctly detected central/prime-side scope and caught 2 features as sys_ (not glb_), plus a route-ownership reconciliation 
 showing 3 audit defects don't reproduce on the live Prime-served route.
 
-------------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------------
+
+## Prime
+--------
+
 ## Prompt:
 MODULE_NAME  = Prime
 Use the testcase-creator agent — mode=module, module={MODULE_NAME}. Generate the complete artifact set for every feature, then run report 
@@ -569,7 +583,11 @@ Prime output and regenerating the 3 already-done modules.
 ※ recap: We enhanced the TestCase Creator agent to generate one comprehensive test file per screen instead of V1/V2 pairs, updating all seven 
 prompt files. Next, waiting on your call whether to delete the leftover partial Prime output and regenerate the three already-done modules.
 
-------------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------------
+
+## Prime (Re-Generate)
+----------------------
+
 # Prompt:
 Regenerate the 3 modules and delete the Prime partial
 
@@ -669,7 +687,10 @@ result: Prime complete — 20 features / 143 files / 797 methods, one .php per f
 interrupted session-limit run fully recovered (6 partials finished + report mode), 05_ clean at #28. Flagged GlobalMaster/Prime feature 
 overlap and stale _Program reports for your decision.
 
-------------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------------
+
+## StudentProfile
+-----------------
 
 Agent "Generate StudentProfile test artifacts" finished · 1h 3m 19s
 
@@ -717,7 +738,11 @@ Nothing written to prime_ai/prime_testing. Not executed (STUDENT disabled in mod
 result: StudentProfile complete — 8 features / 59 files / 354 methods, one .php per feature (zero V1/V2), all php -l clean, 3 roll-ups; 
 tenant-side scope correctly detected, std_ prefix verified over the sibling's legacy spr_, and 05_ self-reconciled to #29–#32.
 
-------------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------------
+
+## BehaviouralAssessment
+------------------------
+
 Creating 
 BehaviouralAssessment — complete
 
@@ -760,3 +785,93 @@ me to refresh those next, or is this good to leave here?
 
 ------------------------------------------------------------------------------------------------------------------
 
+## FrontOffice
+--------------
+All 16 features are done. Feedback (42 methods, php -l clean, P1 defect on the public-submit flow) completes the set. Let me verify the full FrontOffice output on disk before launching report mode.
+
+  Ran 1 shell command
+
+All 16 features complete and verified on disk — 16/16 with exactly 5 artifacts, 16/16 php -l clean, 701 total test methods, zero stray .ps1/.sh/MANUALTESTING, 16 single PHP runners, 16 combined TcLists. The v2/v3 config held perfectly across a real 16-feature module.
+
+Now Step 3: the report-mode roll-ups. Launching one agent to aggregate the 16 Validation Reports + Gap Analyses into the module dashboards.
+
+⏺ testcase-creator(FrontOffice report-mode roll-ups)
+Backgrounded agent (↓ to manage · ctrl+o to expand)
+
+All 16 feature sets are generated and verified — now the report-mode agent is aggregating them into the module roll-ups.
+
+Status: 16/16 features done ✅ · report mode running
+
+Interim scorecard while it finishes:
+
+┌──────────────────────────────┬─────────────────────────────────────────────────────────────────────────────┐
+│            Metric            │                                   Result                                    │
+├──────────────────────────────┼─────────────────────────────────────────────────────────────────────────────┤
+│ Features generated           │ 16 / 16                                                                     │
+├──────────────────────────────┼─────────────────────────────────────────────────────────────────────────────┤
+│ Artifacts each               │ 5 (combined TcList, GapAnalysis, .php, Validation Report, single run-*.php) │
+├──────────────────────────────┼─────────────────────────────────────────────────────────────────────────────┤
+│ php -l clean                 │ 16 / 16                                                                     │
+├──────────────────────────────┼─────────────────────────────────────────────────────────────────────────────┤
+│ Total test methods           │ 701                                                                         │
+├──────────────────────────────┼─────────────────────────────────────────────────────────────────────────────┤
+│ Stray .ps1/.sh/MANUALTESTING │ 0                                                                           │
+├──────────────────────────────┼─────────────────────────────────────────────────────────────────────────────┤
+│ Config validated             │ single-pass, 5-artifact, Rule Card, Fact Pack reuse — all held              │
+└──────────────────────────────┴─────────────────────────────────────────────────────────────────────────────┘
+
+The run also surfaced a substantial defect haul across the module (a recurring authorize(){return true;} pattern, several app-ENUM-vs-DDL-ENUM mismatches, partial activity-logging gaps, and a few broken create flows), while independently correcting the Fact Pack in two places (activity sink sys_activity_logs; several audit defects confirmed remediated rather than open). The report agent is consolidating all of that now.
+
+When it lands I'll give you the final wrap-up: the 4 roll-up paths, the consolidated defect count by severity, and the one thing you need to do to actually execute these (enable FrontOffice in modules_statuses.json + copy the .php files into prime_testing/tests/Browser/). Holding for the report agent.
+
+✻ Cogitated for 55s
+
+⏺ Agent "FrontOffice report-mode roll-ups" finished · 8m 36s
+
+Report mode is done. Let me confirm the 4 roll-ups landed on disk, then wrap up.
+
+  Ran 1 shell command
+
+Everything is on disk and verified. The full FrontOffice run is complete.
+
+✅ FrontOffice — complete (16 features, one go)
+
+What was produced — .../3-Testing_Audit/TestCases/FrontOffice/:
+- 16 feature folders × 5 artifacts = 80 files (combined TcList, GapAnalysis, .php suite, Validation Report, single run-*.php)
+- 2 module-discovery files (Fact Pack, Feature Inventory)
+- 4 roll-ups: _FrontOffice_Coverage_Dashboard.md, _FrontOffice_RTM.md, _FrontOffice_Defect_Register.md, _FrontOffice_Test_Summary.md
+- 86 files total
+
+Quality bar:
+
+┌─────────────────────┬────────────────────────────────────────────────────────────────────────────┐
+│       Metric        │                                   Result                                   │
+├─────────────────────┼────────────────────────────────────────────────────────────────────────────┤
+│ Features            │ 16 / 16                                                                    │
+├─────────────────────┼────────────────────────────────────────────────────────────────────────────┤
+│ Test methods        │ 701 (61 max / 21 min)                                                      │
+├─────────────────────┼────────────────────────────────────────────────────────────────────────────┤
+│ php -l clean        │ 16 / 16                                                                    │
+├─────────────────────┼────────────────────────────────────────────────────────────────────────────┤
+│ Verdicts            │ 16 × PASS WITH NOTES                                                       │
+├─────────────────────┼────────────────────────────────────────────────────────────────────────────┤
+│ Contract compliance │ 0 stray .ps1/.sh/MANUALTESTING; 16 combined TcLists; 16 single PHP runners │
+└─────────────────────┴────────────────────────────────────────────────────────────────────────────┘
+
+Defects surfaced: 86 distinct — 18 audit-carried (0 P0 · 9 P1 · 6 P2 · 3 P3) + 68 net-new live divergences. Notably the agents confirmed 6 audit bugs remediated and 1 partially — i.e. they verified against current source instead of trusting the stale audit. Top systemic patterns: blanket authorize(){return true;} in all 10 FormRequests, string-gate permissioning bypassing model policies, and app-ENUM-vs-DDL-ENUM drift.
+
+This also validated the v2/v3 refinements in production
+
+Single-pass (no two-phase), 5-artifact contract, combined TcList, single cross-platform runner, compact Rule Card, and Fact-Pack reuse all worked cleanly across 16 real features — and the agents correctly trusted source over the Fact Pack where it was wrong (activity sink sys_activity_logs, remediated audit bugs).
+
+Two things for you
+
+1. To actually execute these tests (they're generated + statically validated, not run): enable "FrontOffice": true in prime_testing/modules_statuses.json, then copy each fof_*_TestCas.php into prime_testing/tests/Browser/ and run its run-*.php. Every Validation Report spells out the per-feature prerequisites. Nothing was written to prime_ai/prime_testing — that's your step.
+2. One housekeeping item the report flagged: a DEV-FOF-PD-* defect-ID collision between PhoneDiary and PostalDispatch (both abbreviated PD). Cosmetic, but worth renaming one prefix if you track defects by ID. Want me to fix that across the two features' artifacts + the Defect Register?
+
+The Defect Register and Test Summary are the best starting points for review — the Defect Register groups the module-wide patterns with affected-feature counts, and 10 of the 18 audit items remain genuinely open with proving tests.
+
+------------------------------------------------------------------------------------------------------------------
+
+## 
+--------------
