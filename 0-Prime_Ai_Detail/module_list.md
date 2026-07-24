@@ -47,6 +47,7 @@
 │ SyllabusBooks            │ SLK  │ slb_   │ SyllabusBooks              │ SyllabusBooks_DDL_           │
 │ SystemConfig             │ SYS  │ sys_   │ SystemConfig               │ _tenant_db_                  │
 │ Template                 │ TMP  │ tmp_   │ Template                   │ Template_DDL_                │
+│ TenantCore               │ COR  │ cor_   │ TenantCore                 │ TenantCore_DDL_              │
 │ TimetableFoundation      │ TTF  │ ttf_   │ TimetableFoundation        │ Timetable_DDL_               │
 │ Transport                │ TPT  │ tpt_   │ Transport                  │ Transport_DDL_               │
 │ Vendor                   │ VND  │ vnd_   │ Vendor                     │ Vendor_DDL_                  │
