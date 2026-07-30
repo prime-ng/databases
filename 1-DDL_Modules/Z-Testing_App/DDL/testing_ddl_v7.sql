@@ -71,13 +71,41 @@
 -- This is a CATALOG table — same across all developer machines.
 -- ============================================================================
 
+  -- This table will store various system-wide settings and configurations
+  -- ----------------------------------------------------------------------------------------
+  CREATE TABLE IF NOT EXISTS `tst_settings` (
+    `id` INT unsigned NOT NULL AUTO_INCREMENT,
+    `ordinal` smallint unsigned NOT NULL,
+    `description` varchar(255) NULL,       -- Here we will describe the use of the variable
+    `key` varchar(100) NOT NULL,           -- This will be the Key to connect Value with it
+    `value` varchar(255) DEFAULT NULL,     -- Actual stored setting value. Could be string, JSON, or serialized data depending on type
+    `value_type` ENUM('STRING', 'NUMBER', 'BOOLEAN', 'DATE', 'TIME', 'DATETIME', 'JSON') NOT NULL,
+    `additional_info` JSON DEFAULT NULL,
+    `is_system` tinyint(1) NOT NULL DEFAULT 0,  -- 1 means this setting can not be odified, 0 means internal/backend-only (e.g. API keys).
+    `created_at` timestamp NULL DEFAULT NULL,
+    `updated_at` timestamp NULL DEFAULT NULL,
+    `deleted_at` timestamp NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_tst_settings_key` (`key`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+  -- Data Seed for sch_config
+    -- INSERT INTO `tst_settings` (`ordinal`,`description`,`key`,`value`,`value_type`,`additional_info`,`is_system`,`created_at`,`updated_at`,`deleted_at`) VALUES
+    -- (1,'performance_percentage_threshold_to_reassign_quiz', 'Performance Percentage Threshold to Reassign Quiz to a Student', '35', 'NUMBER', 'If Student Performance falls below this threshold, system will generate a new Quiz and will reassign it to the student', NULL, 1, 1, 1, 1, NULL, NULL, NULL),
+    -- (2,'performance_percentage_threshold_to_reassign_quiz', 'Performance Percentage Threshold to Reassign Quiz to a Student', '35', 'NUMBER', 'If Student Performance falls below this threshold, system will generate a new Quiz and will reassign it to the student', NULL, 1, 1, 1, 1, NULL, NULL, NULL),
+    -- (3,'syllabus_teaching_estimation_level_for_lesson_planning', 'At which level (Lesson/Topic/Sub-Topic/Mini-Topic) teacher will provide Syllabus Teaching Estimation', 'Topic', 'STRING', 'At which level (Lesson/Topic/Sub-Topic/Mini-Topic) teacher will provide Syllabus Teaching Estimation', NULL, 1, 1, 1, 1, NULL, NULL, NULL),
+    -- (4,'homework_released_on_syllabus_level', 'At which level (Lesson/Topic/Sub-Topic/Mini-Topic/Micro-Topic/Nano-Topic) homework will be released', 'Topic', 'STRING', 'At which level (Lesson/Topic/Sub-Topic/Mini-Topic/Micro-Topic/Nano-Topic) homework will be released', NULL, 1, 1, 1, 1, NULL, NULL, NULL),
+    -- (5,'quiz_released_on_syllabus_level', 'At which level (Lesson/Topic/Sub-Topic/Mini-Topic/Micro-Topic/Nano-Topic) Quiz will be released', 'Topic', 'STRING', 'At which level (Lesson/Topic/Sub-Topic/Mini-Topic/Micro-Topic/Nano-Topic) Quiz will be released', NULL, 1, 1, 1, 1, NULL, NULL, NULL),
+    -- (6,'quest_released_on_syllabus_level', 'At which level (Lesson/Topic/Sub-Topic/Mini-Topic/Micro-Topic/Nano-Topic) Quest will be released', 'Topic', 'STRING', 'At which level (Lesson/Topic/Sub-Topic/Mini-Topic/Micro-Topic/Nano-Topic) Quest will be released', NULL, 1, 1, 1, 1, NULL, NULL, NULL),
+  
+
+
 CREATE TABLE IF NOT EXISTS `tst_users` (
   `code`          VARCHAR(5)   NOT NULL,
   `name`          VARCHAR(50)  NOT NULL,
   `email`         VARCHAR(100) NOT NULL,
   `password`      VARCHAR(512) NOT NULL,                       -- Bcrypt hashed
-  `role`          ENUM('Admin','Architect','QA_Lead','Tester','Developer','Reviewer')
-                  NULL DEFAULT 'Tester',
+  `role`          ENUM('Admin','Architect','QA_Lead','Tester','Developer','Reviewer') NULL DEFAULT 'Tester',
   `is_superuser`  TINYINT(1)   NOT NULL DEFAULT 0,
   `is_system`     TINYINT(1)   NOT NULL DEFAULT 0,             -- system users cannot be deleted
   `is_active`     TINYINT(1)   NOT NULL DEFAULT 1,
@@ -85,20 +113,21 @@ CREATE TABLE IF NOT EXISTS `tst_users` (
   `updated_at`    TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `deleted_at`    TIMESTAMP    NULL,
   PRIMARY KEY (`code`),
-  UNIQUE KEY `uq_tst_users_email`  (`email`),
-  INDEX  `idx_tst_users_active`    (`is_active`),
-  INDEX  `idx_tst_users_role`      (`role`)
+  UNIQUE KEY `uq_tst_users_email` (`email`),
+  INDEX `idx_tst_users_active` (`is_active`),
+  INDEX `idx_tst_users_role` (`role`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Seed: system user for Auto_Retest and scheduled run attribution
 INSERT INTO `tst_users` (`code`, `name`, `email`, `password`, `role`, `is_superuser`, `is_system`, `is_active`)
 VALUES
+  ('super', 'Super_User',     'super@prime-testing.local',   '$2y$12$placeholder_super_hash', 'Admin',     1, 1, 1),
   ('sys',   'System',         'system@prime-testing.local',  '$2y$12$placeholder_sys_hash',   'Admin',     0, 1, 1),
-  ('brij',  'Brijesh',        'brij@prime-testing.local',    '$2y$12$placeholder_brij_hash',  'Admin',     1, 0, 1),
+  ('brij',  'Brijesh',        'brij@prime-testing.local',    '$2y$12$placeholder_brij_hash',  'Admin',     0, 0, 1),
   ('tarun', 'Tarun',          'tarun@prime-testing.local',   '$2y$12$placeholder_tarun_hash', 'Developer', 0, 0, 1),
   ('shail', 'Shailesh',       'shail@prime-testing.local',   '$2y$12$placeholder_shail_hash', 'Developer', 0, 0, 1),
   ('samer', 'Sameer',         'samer@prime-testing.local',   '$2y$12$placeholder_samer_hash', 'Tester',    0, 0, 1),
-  ('gaurv', 'Gaurav',         'gaurv@prime-testing.local',   '$2y$12$placeholder_gaurv_hash', 'Tester',    0, 0, 1)
+  ('gaurv', 'Gaurav',         'gaurv@prime-testing.local',   '$2y$12$placeholder_gaurv_hash', 'Developer', 0, 0, 1)
 ON DUPLICATE KEY UPDATE `name` = VALUES(`name`);
 
 
@@ -108,7 +137,7 @@ ON DUPLICATE KEY UPDATE `name` = VALUES(`name`);
 -- All CATALOG tables: simple INT PK, same data across all developer machines.
 -- ============================================================================
 
--- 1.1: Modules discovered from /Users/bkwork/Herd/prime_ai/Modules/*
+-- 1.1: Modules discovered from /prime_ai/Modules/*
 CREATE TABLE IF NOT EXISTS `tst_modules` (
   `id`            INT UNSIGNED  NOT NULL AUTO_INCREMENT,
   `code`          VARCHAR(3)    NOT NULL,              -- e.g. 'slb', 'lib', 'sch'
@@ -123,10 +152,9 @@ CREATE TABLE IF NOT EXISTS `tst_modules` (
   `updated_at`    TIMESTAMP     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `deleted_at`    TIMESTAMP     NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_tst_modules_code`   (`code`),
-  INDEX  `idx_tst_modules_active`    (`is_active`),
-  CONSTRAINT `fk_tst_modules_createdBy`
-    FOREIGN KEY (`created_by`) REFERENCES `tst_users`(`code`)
+  UNIQUE KEY `uq_tst_modules_code` (`code`),
+  INDEX `idx_tst_modules_active` (`is_active`),
+  CONSTRAINT `fk_tst_modules_createdBy` FOREIGN KEY (`created_by`) REFERENCES `tst_users`(`code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 1.2: Categories (top-level RBS grouping, e.g. 'School Setup', 'LMS')
@@ -143,8 +171,7 @@ CREATE TABLE IF NOT EXISTS `tst_categories` (
   UNIQUE KEY `uq_tst_categories_moduleName`  (`module_id`, `name`),
   INDEX  `idx_tst_categories_module`         (`module_id`),
   INDEX  `idx_tst_categories_active`         (`is_active`),
-  CONSTRAINT `fk_tst_categories_module`
-    FOREIGN KEY (`module_id`) REFERENCES `tst_modules`(`id`) ON DELETE CASCADE
+  CONSTRAINT `fk_tst_categories_module` FOREIGN KEY (`module_id`) REFERENCES `tst_modules`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 1.3: Main Menus (e.g. 'Syllabus Mgmt.')
@@ -163,10 +190,8 @@ CREATE TABLE IF NOT EXISTS `tst_main_menus` (
   UNIQUE KEY `uq_tst_mainMenus_categoryName`  (`category_id`, `name`),
   INDEX  `idx_tst_mainMenus_category`         (`category_id`),
   INDEX  `idx_tst_mainMenus_active`           (`is_active`),
-  CONSTRAINT `fk_tst_mainMenus_module`
-    FOREIGN KEY (`module_id`)   REFERENCES `tst_modules`(`id`)    ON DELETE CASCADE,
-  CONSTRAINT `fk_tst_mainMenus_category`
-    FOREIGN KEY (`category_id`) REFERENCES `tst_categories`(`id`) ON DELETE CASCADE
+  CONSTRAINT `fk_tst_mainMenus_module` FOREIGN KEY (`module_id`) REFERENCES `tst_modules`(`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_tst_mainMenus_category` FOREIGN KEY (`category_id`) REFERENCES `tst_categories`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 1.4: Sub Menus (one View/Screen, e.g. 'Syllabus Master')
@@ -185,10 +210,8 @@ CREATE TABLE IF NOT EXISTS `tst_sub_menus` (
   UNIQUE KEY `uq_tst_subMenus_mainMenuName`  (`main_menu_id`, `name`),
   INDEX  `idx_tst_subMenus_mainMenu`         (`main_menu_id`),
   INDEX  `idx_tst_subMenus_active`           (`is_active`),
-  CONSTRAINT `fk_tst_subMenus_module`
-    FOREIGN KEY (`module_id`)    REFERENCES `tst_modules`(`id`)    ON DELETE CASCADE,
-  CONSTRAINT `fk_tst_subMenus_mainMenu`
-    FOREIGN KEY (`main_menu_id`) REFERENCES `tst_main_menus`(`id`) ON DELETE CASCADE
+  CONSTRAINT `fk_tst_subMenus_module` FOREIGN KEY (`module_id`) REFERENCES `tst_modules`(`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_tst_subMenus_mainMenu` FOREIGN KEY (`main_menu_id`) REFERENCES `tst_main_menus`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 1.5: Tabs (one feature folder = one Tab)
@@ -209,16 +232,13 @@ CREATE TABLE IF NOT EXISTS `tst_tabs` (
   `updated_at`    TIMESTAMP     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `deleted_at`    TIMESTAMP     NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_tst_tabs_subMenuName`   (`sub_menu_id`, `name`),
-  INDEX  `idx_tst_tabs_mainMenu`         (`main_menu_id`),
-  INDEX  `idx_tst_tabs_subMenu`          (`sub_menu_id`),
-  INDEX  `idx_tst_tabs_active`           (`is_active`),
-  CONSTRAINT `fk_tst_tabs_module`
-    FOREIGN KEY (`module_id`)   REFERENCES `tst_modules`(`id`)    ON DELETE CASCADE,
-  CONSTRAINT `fk_tst_tabs_mainMenu`
-    FOREIGN KEY (`main_menu_id`) REFERENCES `tst_main_menus`(`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_tst_tabs_subMenu`
-    FOREIGN KEY (`sub_menu_id`)  REFERENCES `tst_sub_menus`(`id`)  ON DELETE CASCADE
+  UNIQUE KEY `uq_tst_tabs_subMenuName` (`sub_menu_id`, `name`),
+  INDEX  `idx_tst_tabs_mainMenu` (`main_menu_id`),
+  INDEX  `idx_tst_tabs_subMenu` (`sub_menu_id`),
+  INDEX  `idx_tst_tabs_active` (`is_active`),
+  CONSTRAINT `fk_tst_tabs_module` FOREIGN KEY (`module_id`) REFERENCES `tst_modules`(`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_tst_tabs_mainMenu` FOREIGN KEY (`main_menu_id`) REFERENCES `tst_main_menus`(`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_tst_tabs_subMenu` FOREIGN KEY (`sub_menu_id`)  REFERENCES `tst_sub_menus`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
@@ -227,29 +247,26 @@ CREATE TABLE IF NOT EXISTS `tst_tabs` (
 -- CATALOG table — simple INT PK. Same rows across all developer machines
 -- (synced from the shared prime_ai codebase).
 -- ============================================================================
-
 -- One row per discoverable test method (or 'Not_Automated' entry from requirements.md)
 CREATE TABLE IF NOT EXISTS `tst_test_cases` (
   `id`                    INT UNSIGNED  NOT NULL AUTO_INCREMENT,
-  `user_code`             VARCHAR(5)    NOT NULL,             -- v7 FIXED: FK constraint was missing in v6
-  `tab_id`                INT UNSIGNED  NOT NULL,
-  `module_id`             INT UNSIGNED  NOT NULL,             -- denormalized for fast module-level filtering
-  `file_path`             VARCHAR(500)  NOT NULL,             -- relative: tests/Browser/Modules/Syllabus/Lesson/LessonTest.php
-  `namespace`             VARCHAR(255)  NULL,
-  `class_name`            VARCHAR(150)  NOT NULL DEFAULT '',
-  `method_name`           VARCHAR(150)  NOT NULL DEFAULT '',  -- '' for Not_Automated entries
-  `display_name`          VARCHAR(255)  NOT NULL,
-  `description`           TEXT          NULL,
-  `test_type`             ENUM('Dusk','Feature','Unit','Validation','Business_Condition')
-                          NOT NULL DEFAULT 'Dusk',
-  `automation_status`     ENUM('Automated','Draft','Not_Automated')
-                          NOT NULL DEFAULT 'Automated',
-  `requirements_md_path`  VARCHAR(500)  NULL,
+  `user_code`             VARCHAR(5)   NOT NULL,             -- v7 FIXED: FK constraint was missing in v6
+  `tab_id`                INT UNSIGNED NOT NULL,
+  `module_id`             INT UNSIGNED NOT NULL,             -- denormalized for fast module-level filtering
+  `file_path`             VARCHAR(500) NOT NULL,             -- relative: tests/Browser/Modules/Syllabus/Lesson/LessonTest.php
+  `namespace`             VARCHAR(255) NULL,
+  `class_name`            VARCHAR(150) NOT NULL DEFAULT '',
+  `method_name`           VARCHAR(150) NOT NULL DEFAULT '',  -- '' for Not_Automated entries
+  `display_name`          VARCHAR(255) NOT NULL,
+  `description`           TEXT NULL,
+  `test_type`             ENUM('Dusk','Feature','Unit','Validation','Business_Condition') NOT NULL DEFAULT 'Dusk',
+  `automation_status`     ENUM('Automated','Draft','Not_Automated') NOT NULL DEFAULT 'Automated',
+  `requirements_md_path`  VARCHAR(500) NULL,
   `sort_order`            SMALLINT UNSIGNED NOT NULL DEFAULT 1,
-  `is_active`             TINYINT(1)    NOT NULL DEFAULT 1,
-  `created_at`            TIMESTAMP     DEFAULT CURRENT_TIMESTAMP,
-  `updated_at`            TIMESTAMP     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `deleted_at`            TIMESTAMP     NULL,
+  `is_active`             TINYINT(1)   NOT NULL DEFAULT 1,
+  `created_at`            TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`            TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at`            TIMESTAMP    NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_tst_testCases_identity`  (`file_path`(255), `class_name`, `method_name`),
   INDEX  `idx_tst_testCases_tab`          (`tab_id`),
@@ -257,12 +274,9 @@ CREATE TABLE IF NOT EXISTS `tst_test_cases` (
   INDEX  `idx_tst_testCases_active`       (`is_active`),
   INDEX  `idx_tst_testCases_status`       (`automation_status`),
   INDEX  `idx_tst_testCases_userCode`     (`user_code`),
-  CONSTRAINT `fk_tst_testCases_userCode`
-    FOREIGN KEY (`user_code`)  REFERENCES `tst_users`(`code`),
-  CONSTRAINT `fk_tst_testCases_tab`
-    FOREIGN KEY (`tab_id`)     REFERENCES `tst_tabs`(`id`)    ON DELETE CASCADE,
-  CONSTRAINT `fk_tst_testCases_module`
-    FOREIGN KEY (`module_id`)  REFERENCES `tst_modules`(`id`) ON DELETE CASCADE
+  CONSTRAINT `fk_tst_testCases_userCode` FOREIGN KEY (`user_code`) REFERENCES `tst_users`(`code`),
+  CONSTRAINT `fk_tst_testCases_tab` FOREIGN KEY (`tab_id`) REFERENCES `tst_tabs`(`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_tst_testCases_module` FOREIGN KEY (`module_id`) REFERENCES `tst_modules`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
@@ -279,12 +293,10 @@ CREATE TABLE IF NOT EXISTS `tst_test_runs` (
   `id`                INT UNSIGNED  NOT NULL AUTO_INCREMENT,
   `user_code`         VARCHAR(5)    NOT NULL,                  -- developer running tests
   `run_id`            VARCHAR(64)   NOT NULL,                  -- '20260612_143000_a1b2c3' — business key, globally unique
-  `trigger_type`      ENUM('Manual','Scheduled','Rerun','Auto_Retest')
-                      NOT NULL DEFAULT 'Manual',
+  `trigger_type`      ENUM('Manual','Scheduled','Rerun','Auto_Retest') NOT NULL DEFAULT 'Manual',
   `scope_json`        JSON          NULL,                      -- selected module/tab/test_case ids + resolved file list
   `command`           VARCHAR(1000) NULL,                      -- exact artisan dusk command executed
-  `status`            ENUM('Queued','Running','Completed','Failed','Cancelled')
-                      NOT NULL DEFAULT 'Queued',
+  `status`            ENUM('Queued','Running','Completed','Failed','Cancelled') NOT NULL DEFAULT 'Queued',
   `started_at`        DATETIME      NULL,
   `finished_at`       DATETIME      NULL,
   `duration_seconds`  DECIMAL(10,2) NULL,
@@ -304,8 +316,7 @@ CREATE TABLE IF NOT EXISTS `tst_test_runs` (
   INDEX  `idx_tst_testRuns_userCode`       (`user_code`),
   INDEX  `idx_tst_testRuns_status`         (`status`),
   INDEX  `idx_tst_testRuns_startedAt`      (`started_at`),
-  CONSTRAINT `fk_tst_testRuns_userCode`
-    FOREIGN KEY (`user_code`) REFERENCES `tst_users`(`code`)
+  CONSTRAINT `fk_tst_testRuns_userCode` FOREIGN KEY (`user_code`) REFERENCES `tst_users`(`code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 3.2: One row per test case within a run.
@@ -315,6 +326,8 @@ CREATE TABLE IF NOT EXISTS `tst_test_run_results` (
   `user_code`         VARCHAR(5)    NOT NULL,
   `run_id`            INT UNSIGNED  NOT NULL,                  -- FK → tst_test_runs(id, user_code) via composite
   `test_case_id`      INT UNSIGNED  NULL,                      -- nullable: keep history if test case is later removed
+  `bug_id`            INT UNSIGNED  NULL,                      -- nullable: keep history if bug is later removed
+  `bug_user_code`     VARCHAR(5)    NULL,                      -- nullable: keep history if bug is later removed
   `display_name`      VARCHAR(255)  NOT NULL,                  -- snapshot of name at run time
   `status`            ENUM('Passed','Failed','Skipped','Error') NOT NULL,
   `duration_seconds`  DECIMAL(10,2) NULL,
@@ -330,13 +343,18 @@ CREATE TABLE IF NOT EXISTS `tst_test_run_results` (
   INDEX  `idx_tst_testRunResults_testCase`  (`test_case_id`),
   INDEX  `idx_tst_testRunResults_status`    (`status`),
   INDEX  `idx_tst_testRunResults_userCode`  (`user_code`),
-  CONSTRAINT `fk_tst_testRunResults_userCode`
-    FOREIGN KEY (`user_code`) REFERENCES `tst_users`(`code`),
-  CONSTRAINT `fk_tst_testRunResults_run`
-    FOREIGN KEY (`run_id`, `user_code`) REFERENCES `tst_test_runs`(`id`, `user_code`) ON DELETE CASCADE,
-  CONSTRAINT `fk_tst_testRunResults_testCase`
-    FOREIGN KEY (`test_case_id`) REFERENCES `tst_test_cases`(`id`) ON DELETE SET NULL
+  INDEX  `idx_tst_testRunResults_bug`       (`bug_id`, `bug_user_code`),
+  CONSTRAINT `fk_tst_testRunResults_userCode` FOREIGN KEY (`user_code`) REFERENCES `tst_users`(`code`),
+  CONSTRAINT `fk_tst_testRunResults_run` FOREIGN KEY (`run_id`, `user_code`) REFERENCES `tst_test_runs`(`id`, `user_code`) ON DELETE CASCADE,
+  CONSTRAINT `fk_tst_testRunResults_testCase` FOREIGN KEY (`test_case_id`) REFERENCES `tst_test_cases`(`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_tst_testRunResults_bug` FOREIGN KEY (`bug_id`, `bug_user_code`) REFERENCES `tst_bugs`(`id`, `user_code`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Conditions:
+--   1. `bug_id` and `bug_user_code` are nullable: keep history if bug is later removed.
+--   2. `test_case_id` is nullable: keep history if test case is later removed.
+--   3. `run_id` is nullable: keep history if run is later removed.
+--   4. `user_code` is nullable: keep history if user is later removed.
+
 
 -- 3.3: Rolling per-test-case statistics for fast dashboard queries (FR-5).
 -- v7: PK is now (test_case_id, user_code) — one row per developer per test case.
@@ -359,13 +377,9 @@ CREATE TABLE IF NOT EXISTS `tst_test_case_runs_summary` (
   INDEX  `idx_tst_caseSummary_lastStatus`  (`last_status`),
   INDEX  `idx_tst_caseSummary_flaky`       (`is_flaky`),
   INDEX  `idx_tst_caseSummary_userCode`    (`user_code`),
-  CONSTRAINT `fk_tst_caseSummary_testCase`
-    FOREIGN KEY (`test_case_id`) REFERENCES `tst_test_cases`(`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_tst_caseSummary_userCode`
-    FOREIGN KEY (`user_code`) REFERENCES `tst_users`(`code`),
-  CONSTRAINT `fk_tst_caseSummary_lastRunResult`
-    FOREIGN KEY (`last_run_result_id`, `user_code`)
-    REFERENCES `tst_test_run_results`(`id`, `user_code`) ON DELETE SET NULL
+  CONSTRAINT `fk_tst_caseSummary_testCase` FOREIGN KEY (`test_case_id`) REFERENCES `tst_test_cases`(`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_tst_caseSummary_userCode` FOREIGN KEY (`user_code`) REFERENCES `tst_users`(`code`),
+  CONSTRAINT `fk_tst_caseSummary_lastRunResult` FOREIGN KEY (`last_run_result_id`, `user_code`) REFERENCES `tst_test_run_results`(`id`, `user_code`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
@@ -386,14 +400,11 @@ CREATE TABLE IF NOT EXISTS `tst_run_annotations` (
   `updated_at`     TIMESTAMP     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `deleted_at`     TIMESTAMP     NULL,
   PRIMARY KEY (`id`, `user_code`),
-  INDEX  `idx_tst_runAnnotations_run`        (`run_id`, `user_code`),
-  INDEX  `idx_tst_runAnnotations_runResult`  (`run_result_id`, `user_code`),
-  CONSTRAINT `fk_tst_runAnnotations_userCode`
-    FOREIGN KEY (`user_code`) REFERENCES `tst_users`(`code`),
-  CONSTRAINT `fk_tst_runAnnotations_run`
-    FOREIGN KEY (`run_id`, `user_code`) REFERENCES `tst_test_runs`(`id`, `user_code`) ON DELETE CASCADE,
-  CONSTRAINT `fk_tst_runAnnotations_runResult`
-    FOREIGN KEY (`run_result_id`, `user_code`) REFERENCES `tst_test_run_results`(`id`, `user_code`) ON DELETE CASCADE
+  INDEX  `idx_tst_runAnnotations_run` (`run_id`, `user_code`),
+  INDEX  `idx_tst_runAnnotations_runResult` (`run_result_id`, `user_code`),
+  CONSTRAINT `fk_tst_runAnnotations_userCode` FOREIGN KEY (`user_code`) REFERENCES `tst_users`(`code`),
+  CONSTRAINT `fk_tst_runAnnotations_run` FOREIGN KEY (`run_id`, `user_code`) REFERENCES `tst_test_runs`(`id`, `user_code`) ON DELETE CASCADE,
+  CONSTRAINT `fk_tst_runAnnotations_runResult` FOREIGN KEY (`run_result_id`, `user_code`) REFERENCES `tst_test_run_results`(`id`, `user_code`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 4.2: History of catalog discovery/sync runs.
@@ -416,28 +427,26 @@ CREATE TABLE IF NOT EXISTS `tst_sync_logs` (
   INDEX  `idx_tst_syncLogs_status`     (`status`),
   INDEX  `idx_tst_syncLogs_startedAt`  (`started_at`),
   INDEX  `idx_tst_syncLogs_userCode`   (`user_code`),
-  CONSTRAINT `fk_tst_syncLogs_userCode`
-    FOREIGN KEY (`user_code`) REFERENCES `tst_users`(`code`)
+  CONSTRAINT `fk_tst_syncLogs_userCode` FOREIGN KEY (`user_code`) REFERENCES `tst_users`(`code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 4.3: Scheduled run definitions — CATALOG table, simple PK.
 -- v7: last_run_id changed to VARCHAR(64) referencing tst_test_runs.run_id (UNIQUE KEY)
 -- instead of the INT PK, to avoid a composite FK from a catalog table.
 CREATE TABLE IF NOT EXISTS `tst_schedules` (
-  `id`               INT UNSIGNED  NOT NULL AUTO_INCREMENT,
-  `name`             VARCHAR(150)  NOT NULL,
-  `scope_json`       JSON          NOT NULL,
-  `cron_expression`  VARCHAR(100)  NOT NULL,
-  `is_active`        TINYINT(1)    NOT NULL DEFAULT 1,
-  `last_run_id`      VARCHAR(64)   NULL,                  -- v7: references tst_test_runs.run_id (unique business key)
-  `created_at`       TIMESTAMP     DEFAULT CURRENT_TIMESTAMP,
-  `updated_at`       TIMESTAMP     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `deleted_at`       TIMESTAMP     NULL,
+  `id`               INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `name`             VARCHAR(150) NOT NULL,
+  `scope_json`       JSON NOT NULL,
+  `cron_expression`  VARCHAR(100) NOT NULL,
+  `is_active`        TINYINT(1) NOT NULL DEFAULT 1,
+  `last_run_id`      VARCHAR(64) NULL,                  -- v7: references tst_test_runs.run_id (unique business key)
+  `created_at`       TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`       TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at`       TIMESTAMP    NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_tst_schedules_name`   (`name`),
-  INDEX  `idx_tst_schedules_active`    (`is_active`),
-  CONSTRAINT `fk_tst_schedules_lastRun`
-    FOREIGN KEY (`last_run_id`) REFERENCES `tst_test_runs`(`run_id`) ON DELETE SET NULL
+  UNIQUE KEY `uq_tst_schedules_name` (`name`),
+  INDEX  `idx_tst_schedules_active` (`is_active`),
+  CONSTRAINT `fk_tst_schedules_lastRun` FOREIGN KEY (`last_run_id`) REFERENCES `tst_test_runs`(`run_id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
@@ -462,8 +471,7 @@ CREATE TABLE IF NOT EXISTS `tst_test_case_requirements` (
   `target_release`        VARCHAR(60)   NULL,             -- e.g. '2026.07 Release'
   `requested_by`          VARCHAR(5)    NULL,             -- v7 FIXED: was INT UNSIGNED → tst_users(id)
   `assigned_to`           VARCHAR(5)    NULL,             -- v7 FIXED: was INT UNSIGNED → tst_users(id); role='Tester'
-  `status`                ENUM('Pending','In_Progress','Completed','Cancelled')
-                          NOT NULL DEFAULT 'Pending',
+  `status`                ENUM('Pending','In_Progress','Completed','Cancelled','Hold') NOT NULL DEFAULT 'Pending',
   `target_test_case_id`   INT UNSIGNED  NULL,             -- set once test case exists in catalog
   `completed_by`          VARCHAR(5)    NULL,             -- v7 FIXED: was INT UNSIGNED → tst_users(id)
   `completed_at`          DATETIME      NULL,
@@ -471,29 +479,20 @@ CREATE TABLE IF NOT EXISTS `tst_test_case_requirements` (
   `updated_at`            TIMESTAMP     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `deleted_at`            TIMESTAMP     NULL,
   PRIMARY KEY (`id`, `user_code`),
-  INDEX  `idx_tst_caseReq_module`      (`module_id`),
-  INDEX  `idx_tst_caseReq_status`      (`status`),
-  INDEX  `idx_tst_caseReq_priority`    (`priority`),
-  INDEX  `idx_tst_caseReq_assignedTo`  (`assigned_to`),
-  INDEX  `idx_tst_caseReq_userCode`    (`user_code`),
-  CONSTRAINT `fk_tst_caseReq_userCode`
-    FOREIGN KEY (`user_code`)     REFERENCES `tst_users`(`code`),
-  CONSTRAINT `fk_tst_caseReq_module`
-    FOREIGN KEY (`module_id`)     REFERENCES `tst_modules`(`id`)    ON DELETE CASCADE,
-  CONSTRAINT `fk_tst_caseReq_mainMenu`
-    FOREIGN KEY (`main_menu_id`)  REFERENCES `tst_main_menus`(`id`) ON DELETE SET NULL,
-  CONSTRAINT `fk_tst_caseReq_subMenu`
-    FOREIGN KEY (`sub_menu_id`)   REFERENCES `tst_sub_menus`(`id`)  ON DELETE SET NULL,
-  CONSTRAINT `fk_tst_caseReq_tab`
-    FOREIGN KEY (`tab_id`)        REFERENCES `tst_tabs`(`id`)       ON DELETE SET NULL,
-  CONSTRAINT `fk_tst_caseReq_requestedBy`
-    FOREIGN KEY (`requested_by`)  REFERENCES `tst_users`(`code`),
-  CONSTRAINT `fk_tst_caseReq_assignedTo`
-    FOREIGN KEY (`assigned_to`)   REFERENCES `tst_users`(`code`),
-  CONSTRAINT `fk_tst_caseReq_targetTestCase`
-    FOREIGN KEY (`target_test_case_id`) REFERENCES `tst_test_cases`(`id`) ON DELETE SET NULL,
-  CONSTRAINT `fk_tst_caseReq_completedBy`
-    FOREIGN KEY (`completed_by`)  REFERENCES `tst_users`(`code`)
+  INDEX `idx_tst_caseReq_module` (`module_id`),
+  INDEX `idx_tst_caseReq_status` (`status`),
+  INDEX `idx_tst_caseReq_priority` (`priority`),
+  INDEX `idx_tst_caseReq_assignedTo` (`assigned_to`),
+  INDEX `idx_tst_caseReq_userCode` (`user_code`),
+  CONSTRAINT `fk_tst_caseReq_userCode` FOREIGN KEY (`user_code`) REFERENCES `tst_users`(`code`),
+  CONSTRAINT `fk_tst_caseReq_module` FOREIGN KEY (`module_id`) REFERENCES `tst_modules`(`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_tst_caseReq_mainMenu` FOREIGN KEY (`main_menu_id`) REFERENCES `tst_main_menus`(`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_tst_caseReq_subMenu` FOREIGN KEY (`sub_menu_id`) REFERENCES `tst_sub_menus`(`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_tst_caseReq_tab` FOREIGN KEY (`tab_id`) REFERENCES `tst_tabs`(`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_tst_caseReq_requestedBy` FOREIGN KEY (`requested_by`) REFERENCES `tst_users`(`code`),
+  CONSTRAINT `fk_tst_caseReq_assignedTo` FOREIGN KEY (`assigned_to`) REFERENCES `tst_users`(`code`),
+  CONSTRAINT `fk_tst_caseReq_targetTestCase` FOREIGN KEY (`target_test_case_id`) REFERENCES `tst_test_cases`(`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_tst_caseReq_completedBy` FOREIGN KEY (`completed_by`) REFERENCES `tst_users`(`code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
@@ -517,9 +516,7 @@ CREATE TABLE IF NOT EXISTS `tst_bugs` (
   `title`                 VARCHAR(255)  NOT NULL,
   `description`           TEXT          NULL,             -- defaults to error_message/trace, editable by QA
   `severity`              ENUM('Low','Medium','High','Critical') NOT NULL DEFAULT 'Medium',
-  `status`                ENUM('Open','Assigned','In_Progress','Fixed','Retesting',
-                               'Reopened','Closed','Escalated','Wont_Fix')
-                          NOT NULL DEFAULT 'Open',
+  `status`                ENUM('Open','Assigned','In_Progress','Fixed','Retesting','Reopened','Closed','Escalated','Wont_Fix') NOT NULL DEFAULT 'Open',
   `assigned_to`           VARCHAR(5)    NULL,             -- v7 FIXED: was INT UNSIGNED; role='Developer'
   `assigned_by`           VARCHAR(5)    NULL,             -- v7 FIXED: was INT UNSIGNED; typically role='QA_Lead'
   `assigned_at`           DATETIME      NULL,
@@ -540,29 +537,17 @@ CREATE TABLE IF NOT EXISTS `tst_bugs` (
   INDEX  `idx_tst_bugs_subMenu`      (`sub_menu_id`),
   INDEX  `idx_tst_bugs_mainMenu`     (`main_menu_id`),
   INDEX  `idx_tst_bugs_userCode`     (`user_code`),
-  CONSTRAINT `fk_tst_bugs_userCode`
-    FOREIGN KEY (`user_code`)     REFERENCES `tst_users`(`code`),
-  CONSTRAINT `fk_tst_bugs_runResult`
-    FOREIGN KEY (`run_result_id`, `user_code`)
-    REFERENCES `tst_test_run_results`(`id`, `user_code`) ON DELETE SET NULL,
-  CONSTRAINT `fk_tst_bugs_testCase`
-    FOREIGN KEY (`test_case_id`)  REFERENCES `tst_test_cases`(`id`)   ON DELETE CASCADE,
-  CONSTRAINT `fk_tst_bugs_tab`
-    FOREIGN KEY (`tab_id`)        REFERENCES `tst_tabs`(`id`)         ON DELETE CASCADE,
-  CONSTRAINT `fk_tst_bugs_mainMenu`
-    FOREIGN KEY (`main_menu_id`)  REFERENCES `tst_main_menus`(`id`)   ON DELETE CASCADE,
-  CONSTRAINT `fk_tst_bugs_subMenu`
-    FOREIGN KEY (`sub_menu_id`)   REFERENCES `tst_sub_menus`(`id`)    ON DELETE CASCADE,
-  CONSTRAINT `fk_tst_bugs_requirementUserCode`
-    FOREIGN KEY (`requirement_user_code`) REFERENCES `tst_users`(`code`),
-  CONSTRAINT `fk_tst_bugs_assignedTo`
-    FOREIGN KEY (`assigned_to`)   REFERENCES `tst_users`(`code`),
-  CONSTRAINT `fk_tst_bugs_assignedBy`
-    FOREIGN KEY (`assigned_by`)   REFERENCES `tst_users`(`code`),
-  CONSTRAINT `fk_tst_bugs_fixedBy`
-    FOREIGN KEY (`fixed_by`)      REFERENCES `tst_users`(`code`),
-  CONSTRAINT `fk_tst_bugs_closedBy`
-    FOREIGN KEY (`closed_by`)     REFERENCES `tst_users`(`code`)
+  CONSTRAINT `fk_tst_bugs_userCode` FOREIGN KEY (`user_code`) REFERENCES `tst_users`(`code`),
+  CONSTRAINT `fk_tst_bugs_runResult` FOREIGN KEY (`run_result_id`, `user_code`) REFERENCES `tst_test_run_results`(`id`, `user_code`) ON DELETE SET NULL,
+  CONSTRAINT `fk_tst_bugs_testCase` FOREIGN KEY (`test_case_id`) REFERENCES `tst_test_cases`(`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_tst_bugs_tab` FOREIGN KEY (`tab_id`) REFERENCES `tst_tabs`(`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_tst_bugs_mainMenu` FOREIGN KEY (`main_menu_id`) REFERENCES `tst_main_menus`(`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_tst_bugs_subMenu` FOREIGN KEY (`sub_menu_id`) REFERENCES `tst_sub_menus`(`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_tst_bugs_requirementUserCode` FOREIGN KEY (`requirement_user_code`) REFERENCES `tst_users`(`code`),
+  CONSTRAINT `fk_tst_bugs_assignedTo` FOREIGN KEY (`assigned_to`) REFERENCES `tst_users`(`code`),
+  CONSTRAINT `fk_tst_bugs_assignedBy` FOREIGN KEY (`assigned_by`) REFERENCES `tst_users`(`code`),
+  CONSTRAINT `fk_tst_bugs_fixedBy` FOREIGN KEY (`fixed_by`) REFERENCES `tst_users`(`code`),
+  CONSTRAINT `fk_tst_bugs_closedBy` FOREIGN KEY (`closed_by`) REFERENCES `tst_users`(`code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 6.2: Audit trail of every bug status transition (FR-12).
@@ -576,14 +561,11 @@ CREATE TABLE IF NOT EXISTS `tst_bug_status_history` (
   `note`          TEXT          NULL,
   `created_at`    TIMESTAMP     DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`, `user_code`),
-  INDEX  `idx_tst_bugHistory_bug`       (`bug_id`, `user_code`),
-  INDEX  `idx_tst_bugHistory_userCode`  (`user_code`),
-  CONSTRAINT `fk_tst_bugHistory_userCode`
-    FOREIGN KEY (`user_code`)  REFERENCES `tst_users`(`code`),
-  CONSTRAINT `fk_tst_bugHistory_bug`
-    FOREIGN KEY (`bug_id`, `user_code`) REFERENCES `tst_bugs`(`id`, `user_code`) ON DELETE CASCADE,
-  CONSTRAINT `fk_tst_bugHistory_changedBy`
-    FOREIGN KEY (`changed_by`) REFERENCES `tst_users`(`code`)
+  INDEX `idx_tst_bugHistory_bug` (`bug_id`, `user_code`),
+  INDEX `idx_tst_bugHistory_userCode` (`user_code`),
+  CONSTRAINT `fk_tst_bugHistory_userCode` FOREIGN KEY (`user_code`) REFERENCES `tst_users`(`code`),
+  CONSTRAINT `fk_tst_bugHistory_bug` FOREIGN KEY (`bug_id`, `user_code`) REFERENCES `tst_bugs`(`id`, `user_code`) ON DELETE CASCADE,
+  CONSTRAINT `fk_tst_bugHistory_changedBy` FOREIGN KEY (`changed_by`) REFERENCES `tst_users`(`code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
@@ -594,33 +576,26 @@ CREATE TABLE IF NOT EXISTS `tst_bug_status_history` (
 
 -- 7.1: One row per auto-retest cycle triggered for a Screen after a bug is marked 'Fixed'.
 CREATE TABLE IF NOT EXISTS `tst_retest_cycles` (
-  `id`                    INT UNSIGNED  NOT NULL AUTO_INCREMENT,
-  `user_code`             VARCHAR(5)    NOT NULL,
-  `main_menu_id`          INT UNSIGNED  NOT NULL,        -- Screen scope when sub_menu_id IS NULL
-  `sub_menu_id`           INT UNSIGNED  NULL,            -- Screen scope when Tab has a Sub Menu
-  `triggered_by_bug_id`   INT UNSIGNED  NOT NULL,        -- the bug whose 'Fixed' status started this cycle
-  `cycle_number`          SMALLINT UNSIGNED NOT NULL DEFAULT 1, -- 1,2,3... per Screen+bug chain
-  `run_id`                INT UNSIGNED  NULL,            -- the scoped Auto_Retest run
-  `status`                ENUM('Pending','Passed','Failed') NOT NULL DEFAULT 'Pending',
-  `created_at`            TIMESTAMP     DEFAULT CURRENT_TIMESTAMP,
-  `updated_at`            TIMESTAMP     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `id`                  INT UNSIGNED  NOT NULL AUTO_INCREMENT,
+  `user_code`           VARCHAR(5)    NOT NULL,
+  `main_menu_id`        INT UNSIGNED  NOT NULL,        -- Screen scope when sub_menu_id IS NULL
+  `sub_menu_id`         INT UNSIGNED  NULL,            -- Screen scope when Tab has a Sub Menu
+  `triggered_by_bug_id` INT UNSIGNED  NOT NULL,        -- the bug whose 'Fixed' status started this cycle
+  `cycle_number`        SMALLINT UNSIGNED NOT NULL DEFAULT 1, -- 1,2,3... per Screen+bug chain
+  `run_id`              INT UNSIGNED  NULL,            -- the scoped Auto_Retest run
+  `status`              ENUM('Pending','Passed','Failed') NOT NULL DEFAULT 'Pending',
+  `created_at`          TIMESTAMP     DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`          TIMESTAMP     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`, `user_code`),
   INDEX  `idx_tst_retestCycles_subMenu`   (`sub_menu_id`),
   INDEX  `idx_tst_retestCycles_mainMenu`  (`main_menu_id`),
   INDEX  `idx_tst_retestCycles_status`    (`status`),
   INDEX  `idx_tst_retestCycles_userCode`  (`user_code`),
-  CONSTRAINT `fk_tst_retestCycles_userCode`
-    FOREIGN KEY (`user_code`) REFERENCES `tst_users`(`code`),
-  CONSTRAINT `fk_tst_retestCycles_mainMenu`
-    FOREIGN KEY (`main_menu_id`) REFERENCES `tst_main_menus`(`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_tst_retestCycles_subMenu`
-    FOREIGN KEY (`sub_menu_id`)  REFERENCES `tst_sub_menus`(`id`)  ON DELETE CASCADE,
-  CONSTRAINT `fk_tst_retestCycles_bug`
-    FOREIGN KEY (`triggered_by_bug_id`, `user_code`)
-    REFERENCES `tst_bugs`(`id`, `user_code`) ON DELETE CASCADE,
-  CONSTRAINT `fk_tst_retestCycles_run`
-    FOREIGN KEY (`run_id`, `user_code`)
-    REFERENCES `tst_test_runs`(`id`, `user_code`) ON DELETE SET NULL
+  CONSTRAINT `fk_tst_retestCycles_userCode` FOREIGN KEY (`user_code`) REFERENCES `tst_users`(`code`),
+  CONSTRAINT `fk_tst_retestCycles_mainMenu` FOREIGN KEY (`main_menu_id`) REFERENCES `tst_main_menus`(`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_tst_retestCycles_subMenu` FOREIGN KEY (`sub_menu_id`) REFERENCES `tst_sub_menus`(`id`)  ON DELETE CASCADE,
+  CONSTRAINT `fk_tst_retestCycles_bug` FOREIGN KEY (`triggered_by_bug_id`, `user_code`) REFERENCES `tst_bugs`(`id`, `user_code`) ON DELETE CASCADE,
+  CONSTRAINT `fk_tst_retestCycles_run` FOREIGN KEY (`run_id`, `user_code`) REFERENCES `tst_test_runs`(`id`, `user_code`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 7.2: Many-to-many — which open bugs were covered by a given retest cycle and per-bug outcome.
@@ -631,16 +606,11 @@ CREATE TABLE IF NOT EXISTS `tst_bug_retest_cycles_jnt` (
   `outcome`          ENUM('Pending','Passed','Failed') NOT NULL DEFAULT 'Pending',
   `created_at`       TIMESTAMP     DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`bug_id`, `user_code`, `retest_cycle_id`),
-  INDEX  `idx_tst_bugRetest_cycle`     (`retest_cycle_id`, `user_code`),
-  INDEX  `idx_tst_bugRetest_userCode`  (`user_code`),
-  CONSTRAINT `fk_tst_bugRetest_userCode`
-    FOREIGN KEY (`user_code`) REFERENCES `tst_users`(`code`),
-  CONSTRAINT `fk_tst_bugRetest_bug`
-    FOREIGN KEY (`bug_id`, `user_code`)
-    REFERENCES `tst_bugs`(`id`, `user_code`) ON DELETE CASCADE,
-  CONSTRAINT `fk_tst_bugRetest_cycle`
-    FOREIGN KEY (`retest_cycle_id`, `user_code`)
-    REFERENCES `tst_retest_cycles`(`id`, `user_code`) ON DELETE CASCADE
+  INDEX  `idx_tst_bugRetest_cycle` (`retest_cycle_id`, `user_code`),
+  INDEX  `idx_tst_bugRetest_userCode` (`user_code`),
+  CONSTRAINT `fk_tst_bugRetest_userCode` FOREIGN KEY (`user_code`) REFERENCES `tst_users`(`code`),
+  CONSTRAINT `fk_tst_bugRetest_bug` FOREIGN KEY (`bug_id`, `user_code`) REFERENCES `tst_bugs`(`id`, `user_code`) ON DELETE CASCADE,
+  CONSTRAINT `fk_tst_bugRetest_cycle` FOREIGN KEY (`retest_cycle_id`, `user_code`) REFERENCES `tst_retest_cycles`(`id`, `user_code`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
@@ -694,8 +664,7 @@ CREATE TABLE IF NOT EXISTS `tst_audit_logs` (
   INDEX  `idx_tst_auditLogs_userCode`   (`user_code`),
   INDEX  `idx_tst_auditLogs_operation`  (`operation`),
   INDEX  `idx_tst_auditLogs_createdAt`  (`created_at`),
-  CONSTRAINT `fk_tst_auditLogs_userCode`
-    FOREIGN KEY (`user_code`) REFERENCES `tst_users`(`code`)
+  CONSTRAINT `fk_tst_auditLogs_userCode` FOREIGN KEY (`user_code`) REFERENCES `tst_users`(`code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
@@ -714,42 +683,28 @@ CREATE TABLE IF NOT EXISTS `tst_data_exports` (
   `date_to`             DATETIME      NULL,               -- filter: export transactions up to this date
   `modules_json`        JSON          NULL,               -- array of module_ids; NULL = all modules
   `file_path`           VARCHAR(500)  NULL,               -- local path to the generated export file
-  `status`              ENUM('Pending','In_Progress','Completed','Failed')
-                        NOT NULL DEFAULT 'Pending',
+  `status`              ENUM('Pending','In_Progress','Completed','Failed') NOT NULL DEFAULT 'Pending',
   `record_counts_json`  JSON          NULL,               -- e.g. {"tst_test_runs": 42, "tst_bugs": 15}
   `error_message`       TEXT          NULL,
   `exported_at`         DATETIME      NULL,
   `created_at`          TIMESTAMP     DEFAULT CURRENT_TIMESTAMP,
   `updated_at`          TIMESTAMP     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`, `user_code`),
-  INDEX  `idx_tst_dataExports_status`      (`status`),
-  INDEX  `idx_tst_dataExports_userCode`    (`user_code`),
-  INDEX  `idx_tst_dataExports_exportedAt`  (`exported_at`),
-  CONSTRAINT `fk_tst_dataExports_userCode`
-    FOREIGN KEY (`user_code`) REFERENCES `tst_users`(`code`)
+  INDEX  `idx_tst_dataExports_status` (`status`),
+  INDEX  `idx_tst_dataExports_userCode` (`user_code`),
+  INDEX  `idx_tst_dataExports_exportedAt` (`exported_at`),
+  CONSTRAINT `fk_tst_dataExports_userCode` FOREIGN KEY (`user_code`) REFERENCES `tst_users`(`code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- ============================================================================
--- SECTION 11: FORWARD-REFERENCE — tst_test_run_results.(bug_id, bug_user_code)
--- Added via ALTER to avoid a circular forward reference:
---   tst_bugs references tst_test_run_results (Section 6)
---   tst_test_run_results references tst_bugs (this section)
--- v7: composite FK (bug_id, bug_user_code) → tst_bugs(id, user_code).
--- ============================================================================
 
-ALTER TABLE `tst_test_run_results`
-  ADD COLUMN `bug_id`        INT UNSIGNED NULL AFTER `test_case_id`,
-  ADD COLUMN `bug_user_code` VARCHAR(5)   NULL AFTER `bug_id`,
-  ADD INDEX  `idx_tst_testRunResults_bug` (`bug_id`, `bug_user_code`),
-  ADD CONSTRAINT `fk_tst_testRunResults_bug`
-    FOREIGN KEY (`bug_id`, `bug_user_code`)
-    REFERENCES `tst_bugs`(`id`, `user_code`)
-    ON DELETE SET NULL;
+
+
+
 
 
 -- ============================================================================
--- SECTION 12: CONVENIENCE VIEWS
+-- SECTION 11: CONVENIENCE VIEWS
 -- ============================================================================
 
 -- Full catalog view: flattens hierarchy + latest run status per developer (FR-1).
@@ -780,11 +735,11 @@ SELECT
   cs.is_flaky,
   tc.is_active
 FROM `tst_test_cases` tc
-JOIN  `tst_tabs`        t   ON t.id   = tc.tab_id
+JOIN `tst_tabs` t ON t.id = tc.tab_id
 LEFT JOIN `tst_sub_menus` sm ON sm.id = t.sub_menu_id
-JOIN  `tst_main_menus`  mm  ON mm.id  = COALESCE(sm.main_menu_id, t.main_menu_id)
-JOIN  `tst_categories`  c   ON c.id   = mm.category_id
-JOIN  `tst_modules`     m   ON m.id   = tc.module_id
+JOIN `tst_main_menus` mm ON mm.id = COALESCE(sm.main_menu_id, t.main_menu_id)
+JOIN `tst_categories` c ON c.id = mm.category_id
+JOIN `tst_modules` m ON m.id = tc.module_id
 LEFT JOIN `tst_test_case_runs_summary` cs ON cs.test_case_id = tc.id;
 
 -- Run history view: one row per run with executor name resolved.
@@ -930,21 +885,13 @@ SELECT
   COUNT(DISTINCT b_raised.id)                   AS total_bugs_raised,
   COUNT(DISTINCT b_assigned.id)                 AS total_bugs_assigned,
   COUNT(DISTINCT b_fixed.id)                    AS total_bugs_fixed,
-  GREATEST(
-    COALESCE(MAX(r.finished_at), '1970-01-01'),
-    COALESCE(MAX(b_raised.created_at), '1970-01-01')
-  )                                             AS last_activity_at
+  GREATEST(COALESCE(MAX(r.finished_at), '1970-01-01'), COALESCE(MAX(b_raised.created_at), '1970-01-01')) AS last_activity_at
 FROM `tst_users` u
-LEFT JOIN `tst_test_runs` r
-  ON r.user_code = u.code
-LEFT JOIN `tst_bugs` b_raised
-  ON b_raised.user_code = u.code
-LEFT JOIN `tst_bugs` b_assigned
-  ON b_assigned.assigned_to = u.code
-LEFT JOIN `tst_bugs` b_fixed
-  ON b_fixed.fixed_by = u.code
-WHERE u.is_active = 1
-  AND u.is_system = 0
+LEFT JOIN `tst_test_runs` r ON r.user_code = u.code
+LEFT JOIN `tst_bugs` b_raised ON b_raised.user_code = u.code
+LEFT JOIN `tst_bugs` b_assigned ON b_assigned.assigned_to = u.code
+LEFT JOIN `tst_bugs` b_fixed ON b_fixed.fixed_by = u.code
+WHERE u.is_active = 1 AND u.is_system = 0
 GROUP BY u.code, u.name, u.role;
 
 -- NEW v7: Reopen leaderboard — screens and tests with highest bug reopen counts.
@@ -967,8 +914,7 @@ JOIN `tst_main_menus` mm ON mm.id   = b.main_menu_id
 LEFT JOIN `tst_sub_menus` sm ON sm.id = b.sub_menu_id
 JOIN `tst_modules`    m  ON m.id    = tc.module_id
 WHERE b.deleted_at IS NULL
-GROUP BY
-  m.name, mm.name, sm.name, t.name, tc.display_name, b.user_code
+GROUP BY m.name, mm.name, sm.name, t.name, tc.display_name, b.user_code
 ORDER BY avg_reopen_count DESC, max_reopen_count DESC;
 
 -- ============================================================================

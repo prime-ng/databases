@@ -54,6 +54,41 @@
 **Resolved since first survey:** D22 (module-owned routes/policies) RESOLVED; D23 (RSP tenancy) —
 Scheduler & EventEngine now FIXED (verify SystemConfig/GlobalMaster only).
 
+---
+
+## Phase 2 — Full-Scan Deep Audit (2026-07-24, branch `main`, Tier-6)
+
+> Focus: the 2 net-new modules (Maintenance, TenantCore — never audited) + systemic-baseline refresh on `main`.
+> Existing Mode-X module audits (dated 2026-06-30) were NOT re-run; their findings still stand unless noted.
+
+### SEC-MNT-001 (P0) — RestoreController has ZERO authorization (DB overwrite by any auth user)
+- **Module/Area:** Maintenance — `RestoreController::create()` + `restore()`
+- **Symptom:** Any authenticated + verified user can reach `GET /maintenance/backup/{run}/restore` and `POST /maintenance/backup/{run}/restore` and execute a **full database restore** (the single most destructive operation — overwrites an entire DB from a backup archive).
+- **Root Cause:** `RestoreController` has **0** `Gate::authorize`/`->can()`/`role:` primitives (grep count 0). Only guard is `abort_unless($run->isCompleted(), 404)`. Contrast: `BackupController` and `BackupScheduleController` both have full `Gate::authorize('system-config.backup*.*')` coverage — restore was simply missed. `RestoreBackupRequest::authorize()` also `return true` (D30) → no defense-in-depth anywhere.
+- **Aggravator (cross-tenant destruction):** `restore()` reads `target_connection` + `target_db_name` straight from request; `RestoreBackupRequest` only constrains `target_db_name` to `regex:/^[a-zA-Z0-9_]+$/` (any valid DB name). A caller can restore a backup archive **into an arbitrary target database** (another tenant's `tenant_<uuid>` DB, or the central DB). `confirm.accepted` is a UI checkbox, not a security control.
+- **Fix:** Add `Gate::authorize('system-config.backup.restore')` (or a dedicated `maintenance.backup.restore`) to BOTH `create()` and `restore()`; restrict `target_db_name`/`target_connection` to a server-side allowlist; make `RestoreBackupRequest::authorize()` enforce the permission.
+- **Prevention:** Whenever a CRUD sibling set is gated, grep the whole controller group — a missed sibling on the most dangerous verb (restore/destroy/forceDelete) is the classic gap.
+
+### Maintenance module — other findings
+- **PERM-MNT-001 (P2):** Module carved out of SystemConfig but all permission strings remain `system-config.backup.*` / `system-config.backup-schedule.*` (not `maintenance.*`). Confirm the seeder registers these under the right namespace or Gates fail closed (D24 drift).
+- **DEAD-MNT-001 (P3):** `MaintenanceController` (apiResource target in `routes/api.php`) — `store()/update()/destroy()` are empty `{}` stubs; index/create/show/edit return bare views. Dead `module:make` scaffold. `mapApiRoutes()` also applies only `api` middleware (no tenancy) — but tables use the central `mysql` connection so this is low-risk.
+- **ARCH note (NOT a bug):** `BackupRun`/`BackupSchedule`/`RestoreLog` all set `protected $connection = 'mysql'` and live in **module-local** migrations (central DB, `sys_backup_*`/`sys_restore_*`). So the RSP `web`-only middleware (no `InitializeTenancyByDomain`) is acceptable — this is a **central/superadmin subsystem**, D23 tenancy-gap does NOT apply. The real exposure is the missing role/permission gate (SEC-MNT-001), not tenancy.
+- **Positive:** This module **resolves the old SystemConfig SEC-SYS-28/29/30** (BackupController/BackupScheduleController zero-Gate P0s) — those controllers now carry full Gate coverage. Only Restore slipped through.
+
+### TenantCore module — findings
+- **DEAD-TNC-001 (P3):** `TenantCoreController` (target of BOTH `resource('tenantcores')` web route and `apiResource`) has empty `store()/update()/destroy()` `{}` stubs and view-only index/create/show/edit. Entire routed surface is dead `module:make` boilerplate.
+- **GAP-TNC-001 (P2):** `ActivityLogController` — the only *functional* controller (real student/class-section filtering logic, `Gate::authorize('system-config.activity-log.viewAny')`) — is **NOT routed** by the module (`routes/web.php` registers only `tenantcores`). It is dead unless invoked via a shared/central route elsewhere. Wire it up or confirm its caller.
+- **TEN-TNC-001 (P2, needs-verify):** `ActivityLogController::index()` queries tenant data (`Student::whereHas('currentAcademicSession')`) but the RSP applies only `web` middleware (no `InitializeTenancyByDomain`). If ever routed as-is it runs in central context → wrong DB. Depends on how it's actually reached.
+
+### Systemic-baseline refresh on `main` (deltas vs 2026-06-30 baseline)
+- **DEAD debug code — IMPROVED:** **0** `dd()`/`var_dump()`/`print_r()` in ANY module controller on `main` (previously scattered). Debug-code pattern effectively cleared.
+- **D30 (FormRequest `authorize(){return true}`) — MIXED, several big improvements:** SchoolSetup **31/31 → 1/23**; ParentPortal 1/22; Notification 1/11; SystemConfig 1/2; StudentProfile 1/1. Still heavy: Cafeteria 19/19, Ptm 20/20, Hostel 35/38, Inventory 19/19, Syllabus 15/15, Template 10/10, FrontOffice 10/10, GlobalMaster 10/10.
+- **`EnsureTenantHasModule` — IMPROVED 1 → 4 modules:** Certificate (web+api), StudentProfile (`module:STUDENT` alias), SmartTimetable (web). Still absent from the other ~38 tenant modules (SEC-PLATFORM-003 stands for them).
+- **Zero-Gate-primitive controllers (whole module):** ParentPortal **0/29**, StudentPortal **0/39**, Scheduler 0/1. StudentPortal/ParentPortal are by-design (role + query-scope, per Mode-X SEC-STP-02) but carry no policy defense-in-depth.
+- **`is_super_admin`/`super_admin_flag` in User `$fillable`:** now `SchoolSetup/User.php` + **`Prime/User.php`** (central). StudentProfile no longer matches on `main` (was SCH+STD 2026-06-30 — appears fixed/moved). Prime is central but still a priv-esc vector via `$request->all()`.
+- **Cross-layer `Modules\Prime\Models\AcademicSession` import — broader than SLK:** now also Library (LibCurricularAlignment ctrl+2 models), LmsQuests (Quest + LmsQuestController), LmsQuiz (LmsQuizController), MarksheetGeneration (MarksheetSchedule). GlobalMaster references are central-owner (likely legit). Pattern #6 is platform-wide, not SLK-only.
+- **`$request->all()` mass-assign (D25):** 112 literal sites across module controllers (higher than the earlier 24-site with()-based sample — this is the raw literal count).
+
 ### SEC-PLATFORM-003: `EnsureTenantHasModule` Missing from All Route Groups (13/13 confirmed 2026-06-30)
 - **Module/Area:** All tenant-scoped modules — confirmed across SCH, STT, TTS, TTF, STP, FIN, STD, SLK, SLB, QNS, TMP, SYS, VND on 2026-06-30
 - **Symptom:** A school on a Basic plan (e.g., without LMS) can navigate directly to `/question-bank/`, `/syllabus/`, etc. and access features their subscription does not include

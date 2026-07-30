@@ -1,35 +1,14 @@
 -- ============================================================================
 -- Prime-AI Testing Automation App — Database Schema
 -- Project: prime_ai_testing (standalone Laravel app)
--- Version: v5
+-- Version: v6
 -- MySQL 8 Compatible | Single-tenant internal tool DB
--- Based on: testing_ddl_v4.sql + testing_requirement_v2.md
+-- Based on: testing_ddl_v5.sql + testing_requirement_v2.md
 -- Created: 2026-06-14
---
+-- ----------------------------------------------------------------------------
 -- Notes:
---  - This schema lives in its own database (e.g. `prime_ai_testing`), independent of global_db / prime_db / tenant_db.
---  - Table prefix: `tst_`.
---  - Conventions followed: InnoDB, utf8mb4, soft deletes (`deleted_at`), `is_active`,
---    `created_at`/`updated_at`, `created_by` FK to `tst_users`, `_json` suffix for JSON
---    columns, FK naming `{entity}_id`.
---
--- v5 CHANGES vs v4:
---  1. BUGFIX: `tst_modules` referenced a `created_by` column in
---     `fk_tst_modules_createdBy` that did not exist in v4 — column added.
---  2. BUGFIX: `tst_schedules.fk_tst_schedules_lastRun` had `ON DELETE SET NUL`
---     (typo) — corrected to `ON DELETE SET NULL`.
---  3. `tst_users` gains a `role` column (Admin/Tester/Developer/QA_Lead) to support
---     FR-8/FR-9 assignment pick-lists (testing_requirement_v2.md §16 Q3).
---  4. `tst_test_runs.trigger_type` ENUM gains `'Auto_Retest'` (FR-10).
---  5. `tst_test_run_results` gains nullable `bug_id` FK -> `tst_bugs` (added via
---     ALTER at the end of the file to avoid a forward reference).
---  6. NEW tables (FR-8 to FR-11):
---       tst_test_case_requirements, tst_bugs, tst_bug_status_history,
---       tst_retest_cycles, tst_bug_retest_cycles_jnt, tst_app_settings
---  7. `vw_test_case_catalog` rewritten with LEFT JOINs + COALESCE so Tabs that
---     attach directly to a Main Menu (no Sub Menu, `tst_tabs.sub_menu_id IS NULL`)
---     are no longer silently excluded from the catalog.
---  8. NEW views: vw_open_bugs, vw_test_case_requirements_backlog
+-- 
+
 -- ============================================================================
 
 
@@ -194,7 +173,7 @@ CREATE TABLE IF NOT EXISTS `tst_test_cases` (
   INDEX `idx_tst_testCases_module` (`module_id`),
   INDEX `idx_tst_testCases_active` (`is_active`),
   INDEX `idx_tst_testCases_status` (`automation_status`),
-  UNIQUE KEY `uq_tst_testCases_identity` (`file_path`(255), `class_name`, `method_name`),
+  UNIQUE KEY `uq_tst_testCases_identity` (`file_path`, `class_name`, `method_name`),
   CONSTRAINT `fk_tst_testCases_tab` FOREIGN KEY (`tab_id`) REFERENCES `tst_tabs`(`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_tst_testCases_module` FOREIGN KEY (`module_id`) REFERENCES `tst_modules`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

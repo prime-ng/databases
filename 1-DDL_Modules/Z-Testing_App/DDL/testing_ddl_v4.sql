@@ -1,7 +1,7 @@
 -- ============================================================================
 -- Prime-AI Testing Automation App — Database Schema
 -- Project: prime_ai_testing (standalone Laravel app)
--- Version: v1
+-- Version: v4
 -- MySQL 8 Compatible | Single-tenant internal tool DB
 -- Based on: testing_requirement.md + preliminary 2-New_Primedb/pgdatabase/1-Master_DDLs/test_runner_db.sql
 -- Created: 2026-06-12

@@ -34,7 +34,7 @@
   -- This table is a replica of 'prm_tenant' table in 'prmprime_db' database
   -- ----------------------------------------------------------------------------------------
   CREATE TABLE IF NOT EXISTS `sch_organizations` (
-    `id` SMALLINT unsigned NOT NULL,              -- it will have same id as it is in 'prm_tenant'
+    `id` SMALLINT unsigned NOT NULL,            -- it will have same id as it is in 'prm_tenant'
     `group_code` varchar(20) NOT NULL,          -- Code for Grouping of Organizations/Schools
     `group_short_name` varchar(50) NOT NULL,
     `group_name` varchar(150) NOT NULL,

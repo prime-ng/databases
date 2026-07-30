@@ -1,0 +1,113 @@
+- Routes
+    - Module routes in `Modules/{Module}/routes/web.php` and API routes in `Modules/{Module}/routes/api.php`.
+    - Routes registered through module `RouteServiceProvider`.
+    - Consistent URL prefix and route `name` prefix used.
+    - Resource routes cover: `index`, `create`, `store`, `show`, `edit`, `update`, `destroy`.
+    - Additional routes cover: `trash`, `restore`, `forceDelete`, `toggle` / `status`, `import`, `export`, `print`, `pdf`.
+    - No leftover dev-only or dead routes.
+    - Tenant middleware stack: `InitializeTenancyByDomain`, `PreventAccessFromCentralDomains`, `EnsureTenantIsActive`, `EnsureTenantHasModule:{Module}`.
+    - Authenticated routes behind `auth` / `verified`.
+    - API routes use `auth:sanctum`.
+    - Webhook routes outside `auth` with signature validation.
+    - No `env()` calls in route files — `config()` only.
+    - Route names follow `{module}.{feature}.{action}`.
+    - No duplicate route names.
+    - Route model binding correct; missing ID returns 404.
+    - `SoftDeletes` respected in route model binding.
+    - `php artisan route:cache` runs clean (no closures).
+    - Consistent URL parameter naming (`{id}` or `{model}`).
+
+- Policy
+    - Policy class exists for every model with controller actions.
+    - Policy registered in module `ServiceProvider` exactly once.
+    - No duplicate/conflicting policies across providers.
+    - Policy in correct namespace: `Modules\{Module}\app\Policies`.
+    - Standard methods implemented: `viewAny`, `view`, `create`, `update`, `delete`, `restore`, `forceDelete`.
+    - Extra methods for `status` / `toggle`, `import`, `export`, `print`, `pdf` where applicable.
+    - Every controller method maps to a policy method.
+    - Policy methods check spatie permission via `$user->can(...)` / `$user->hasPermissionTo(...)`.
+    - Super Admin bypass only via `Gate::before()` or policy `before()`.
+    - Policy methods return strict booleans with no side effects.
+    - Policies contain no business logic.
+    - Policies do not mix central/tenant model checks.
+    - Controller calls `$this->authorize(...)` or Form Request `authorize()` performs the check.
+    - Form Request `authorize()` does not return bare `true`.
+
+- Permission
+    - Permission names follow `{module}.{feature}.{action}`.
+    - Standard actions used: `create`, `view`, `viewAny`, `update`, `delete`, `restore`, `forceDelete`, `import`, `export`, `print`, `status`, `email-schedule`, `remark`, `pdf`.
+    - No orphan or phantom permissions.
+    - Permissions seeded via `Permission::firstOrCreate()` with `guard_name => 'web'`.
+    - Module permission source complete for every screen.
+    - Roles get permissions through standard seeder mechanism.
+    - Role permission subsets intentional.
+    - System roles protected from UI delete/modify.
+    - `is_super_admin`, `role_id`, permission IDs NOT in `$fillable`.
+    - Permission cache cleared on role/permission change.
+    - `@can` / `@canany` used on all action buttons.
+    - Menu/sidebar items filtered by `viewAny`.
+    - Breadcrumbs don't expose inaccessible links.
+    - Listing pages degrade gracefully with mixed permissions.
+    - No undefined-variable errors when `@can` skips a section.
+
+- Views
+    - Layout component, session alerts, CSRF meta present.
+    - Success messages after Create, Update, Delete, Restore, Force Delete.
+    - Validation errors in `alert-danger` block and below fields.
+    - Dropdowns populated with expected data.
+    - Edit form fields pre-filled correctly.
+    - `old()` input repopulation on validation failure.
+    - Method spoofing (`@method('PUT')`) on edit forms.
+    - Consistent create vs edit form patterns.
+    - Index views: table, actions, status switch, search, filter.
+    - Show views: detail table, null-safe display, status badges.
+    - Trash views: soft-deleted records, restore/force-delete actions.
+    - Pagination, sorting, search, filter, reset functionality works.
+    - Modals, confirmation dialogs, delete confirmations work.
+    - Form and action button routes correct.
+    - File/image preview on Edit page where applicable.
+    - No undefined variable/index/property errors.
+    - Dependent dropdowns and AJAX toggles work.
+
+- Dusk / Browser Tests
+    - Guest visits module route → redirect to login.
+    - User with permission → page loads (HTTP 200).
+    - User without permission → 403, never 500.
+    - Non-existent record ID → 404.
+    - Soft-deleted record ID → 404 or redirect to trash.
+    - `store`, `update`, `destroy` work end-to-end with success message and redirect.
+    - Breadcrumb links navigate correctly.
+    - Action buttons navigate correctly.
+    - Redirects after Create/Update/Delete follow convention.
+    - Trash → restore → forceDelete flow works.
+    - Toggle/status route updates UI immediately.
+    - Tenant A user works within Tenant A.
+    - Tenant A user accessing Tenant B record → 404.
+    - Tenant without module subscription → blocked by `EnsureTenantHasModule`.
+    - Central domain access → blocked by `PreventAccessFromCentralDomains`.
+    - Inactive tenant → blocked by `EnsureTenantIsActive`.
+    - Unauthenticated API → 401 JSON.
+    - Authenticated without ability → 403 JSON.
+    - Valid API → correct JSON and status code.
+    - API routes CSRF-exempt.
+    - `viewAny` only → listing loads, no action buttons, direct `/create` → 403.
+    - `viewAny` + `view` → detail read-only, no Edit button.
+    - `viewAny` + `create` → Create works.
+    - `viewAny` + `update` (no `create`) → Edit works, Create absent.
+    - `viewAny` + `delete` → Delete soft-deletes record.
+    - `delete` without `restore`/`forceDelete` → trash visible, restore/force-delete hidden.
+    - No `status` permission → toggle hidden/disabled, direct URL → 403.
+    - Super Admin → all actions allowed.
+    - Hidden button AND blocked direct URL match for same action.
+    - Revoked permission disappears on refresh.
+    - Granted permission appears on refresh.
+    - Role change reflected on next page load.
+
+- PR Sign-Off
+    - [ ] Routes: module files, prefix/name prefix, full CRUD + extras, tenancy middleware, no `env()` / dev routes / duplicates, `route:cache` clean.
+    - [ ] Routes Dusk: guest → login, no-permission → 403, bad ID → 404.
+    - [ ] Policy: exists per model, registered once, all methods, spatie checks, Super Admin bypass via `Gate::before`, controller authorizes, no bare `true` in Form Request.
+    - [ ] Policy Dusk: hidden button + blocked direct URL for each restricted action.
+    - [ ] Permission: naming convention, idempotent seeding, intentional roles, system roles protected, no privilege fields in `$fillable`, cache cleared.
+    - [ ] Permission UI: `@can` on buttons, menu filtered by `viewAny`.
+    - [ ] Permission Dusk: matrix per screen, cross-tenant → 404.

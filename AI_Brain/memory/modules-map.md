@@ -65,29 +65,35 @@ Modules/ModuleName/
 └── vite.config.js
 ```
 
-## All Modules (45)
-> **Audited:** 2026-06-21 against `prime_ai` / branch `Brijesh` (code-only re-count).
-> Previous audit: 2026-04-09 against `prime_ai` / branch `student-portal`. Prior: 2026-04-02 against `prime_ai`.
+## All Modules (47)
+> **Audited:** 2026-07-24 against `prime_ai` / branch `main` (Phase-1 code-only re-count, Tier-6 Full Scan).
+> Previous audit: 2026-06-21 against `prime_ai` / branch `Brijesh`. Prior: 2026-04-09 against `prime_ai` / branch `student-portal`; 2026-04-02 against `prime_ai`.
+> **+2 modules vs 2026-06-21:** `Maintenance` (backup/restore subsystem split out of SystemConfig — `sys_backup_*`/`sys_restore_*` tables) and `TenantCore` (centralized tenant `ActivityLog` — 2 ctrl, 1 mdl).
+> All 47 modules are enabled (`module.json` active — none disabled).
 > Controllers counted recursively under `app/Http/Controllers/`.
 > Services count = unique .php files under `app/Services/` (recursive).
 > Route lines = sum of line counts across all `*.php` in `Modules/{Name}/routes/` (web.php + api.php).
 > Tests = files inside each module's own `tests/` folder only (excludes central `tests/Unit|Feature|Browser/`).
 
-### Global Statistics (2026-06-21 re-count)
-| Metric | Count | Δ vs 2026-04-09 |
+### Global Statistics (2026-07-24 re-count — branch `main`)
+| Metric | Count | Δ vs 2026-06-21 (branch `Brijesh`) |
 |--------|-------|-----------------|
-| Total Modules | 45 (5 central + 40 tenant) | +8 (BehaviouralAssessment, CommonChat, Hostel, ParentPortal, Ptm added; MarksheetGeneration + Feedback graduated from DDL-only) |
-| Total Models | 806 | +190 |
-| Total Controllers | 747 | +280 |
-| Total Services | 318 | +124 |
-| Total Views | 3,764 blade files | +1,195 |
-| Total FormRequests | 451 | +163 |
-| Total Policies | ~230 (not re-counted) | — |
-| Tenant Migrations | 608 files in `database/migrations/tenant/` | +233 |
-| Module Route Lines | 8,315 across all `routes/*.php` in module dirs | +2,931 |
-| Module-level Test Files | 80 (not re-counted) | — |
-| Total Jobs | 13 (Billing, Certificate, FrontOffice, Hpc, Hostel×2, Inventory, MarksheetGeneration, Payment, Prime, SmartTimetable, SystemConfig, Vendor) | +5 |
-| EnsureTenantHasModule usage | 1 (across entire tenant.php) | — |
+| Total Modules | 47 (5 central + 42 tenant) | +2 (Maintenance, TenantCore) |
+| Total Models | 758 | −48 (branch delta: main vs Brijesh — Dashboard/others differ; no sub-dir models, maxdepth1==recursive) |
+| Total Controllers | 751 | +4 |
+| Total Services | 344 | +26 |
+| Total Views | 3,749 blade files | −15 |
+| Total FormRequests | 513 | +62 |
+| Total Policies | 496 (actual re-count under `app/Policies/`) | +266 vs prior ~230 estimate |
+| Tenant Migrations | 728 files in `database/migrations/tenant/` | +120 |
+| Module-local Migrations | 59 (Prime 29, GlobalMaster 17, Maintenance 5, Documentation 3, Scheduler 2, LmsHomework 2, HrStaff 1) | — |
+| Central Migrations (`database/migrations/*.php`) | 15 | — |
+| Module Route Lines | 7,905 across all `routes/*.php` in module dirs | −410 |
+| Total Seeders | 311 | — |
+| Total Jobs | 18 (Billing, Certificate, FrontOffice, Hostel×2, Hpc, Inventory, Maintenance, MarksheetGeneration, Notification×2, Payment, Prime, Ptm, QuestionBank, SmartTimetable, StudentFee, Vendor) | +5 (Maintenance, Ptm, QuestionBank, Notification 2nd, StudentFee added; SystemConfig job moved to Maintenance) |
+| EnsureTenantHasModule usage | 5 route files use `EnsureTenantHasModule`/`module:` alias | +4 (improvement — was 1) |
+
+> **Branch note:** This re-count is on `main`; the 2026-06-21 figures were on `Brijesh`. Model/view/route-line decreases are branch divergence, NOT regressions — treat `main` as the current source of truth. Deep-audit %s (Phase 2 / Mode X) are unaffected by these structural counts.
 
 ### Central-Scoped Modules (run on central domain, access prime_db/global_db)
 | Module | Controllers | Models | Services | Requests | Views | Seeders | Route Lines | Tests | Description |
@@ -142,7 +148,9 @@ Modules/ModuleName/
 | **ParentPortal** | 28 | 6 | 1 | 0 | 45 | 0 | 1 | 267 | 0 | **NEW (2026-06-21).** Parent Portal — attendance, results, homework, fees, timetable, leave, notifications for linked children. OTP login. Prefix: `ppt_`. **Prompt:** `5-Work-In-Progress/ParentPortal/1-Claude_Prompt/PPT_2step_Prompt1.md` |
 | **BehaviouralAssessment** | 12 | 16 | **1** | 5 | 65 | 0 | 4 | 119 | 0 | Student behavioral assessment (`bha_*`). 16 tables (DDL v2, 6 dep layers). 24 screen specs in `2-Module_Requirement_V1/BehaviouralAssessment_v2/` — no consolidated V2 req. 0 tests (critical gap). Only `BehaviouralScoreService` exists (corrected from 4). ComputeSchoolScoresJob missing. 3 FormRequests missing. ~50–55% complete. Knowledge: `AI_Brain/module-knowledge/BHA_BehaviouralAssessment.md`. FRD pending. |
 | **CommonChat** | 15 | 9 | 1 | 5 | 19 | 0 | 1 | 121 | 0 | **NEW (2026-06-21).** Standalone direct-messaging and group-chat for all registered users within a school tenant. |
-| **Ptm** | 11 | 9 | 6 | 18 | 58 | 0 | 1 | 103 | 0 | **NEW (2026-06-21).** Parent-Teacher Meeting scheduling. Previously a sub-module DDL of SchoolSetup (ptm_setup_ddl_v2.sql), now a standalone module. Prefix: `ptm_`. |
+| **Ptm** | 11 | 9 | 6 | 20 | 58 | 0 | 1 | 103 | 0 | **NEW (2026-06-21).** Parent-Teacher Meeting scheduling. Previously a sub-module DDL of SchoolSetup (ptm_setup_ddl_v2.sql), now a standalone module. Prefix: `ptm_`. |
+| **Maintenance** | 4 | 3 | 6 | 3 | 9 | 1 | — | 45 | 2 | **NEW (2026-07-24).** System Maintenance — Backup & Restore, scheduled backups, remote path/all-tenants support. Split out of SystemConfig's BackupController subsystem (addresses SEC-SYS-28/29/30). 5 module-local migrations: `sys_backup_runs`, `sys_backup_schedules`, `sys_restore_logs`. Prefix: `sys_backup_*`/`sys_restore_*`. Job: backup runner. **Deep audit pending.** |
+| **TenantCore** | 2 | 1 | 0 | 0 | 3 | 0 | — | 16 | 0 | **NEW (2026-07-24).** Centralized tenant `ActivityLog` (ActivityLogController + TenantCoreController). Infrastructure module — likely intended to consolidate the per-module activityLog pattern. `priority: 0`, empty description. **Deep audit pending.** |
 
 ### Route & Policy Registration Architecture (Post-Migration 2026-04-02)
 
