@@ -387,6 +387,8 @@
     KEY `idx_shift_active` (`is_active`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   COMMENT='Shift master — start/end times, grace, half-day thresholds.';
+  -- Conditions:
+  -- `half_day_threshold_minutes`- If present minutes < threshold → half-day (If `working_hours_present_min < half_day_threshold_minutes` → `Half Day`)
 
   -- ---------------------------------------------------------------------------
   -- sch_employee_shift_assignments   Employee × shift × effective range.

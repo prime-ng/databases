@@ -13,20 +13,30 @@ To start Terminal in VS Code on that Folder, Right Click on the folder and click
 Only after taking Pull from Git we have to Run below command :
 >> composer dump-autoload
 
-
 >> php artisan optimize
 
 >> php artisan serve
 
 
+### Open MySql (Local) using phpmyadmin
+---------------------------------------
+
+phpmyadmin.test/index.php?route=/
+root / root@123
+
+
+
+
+
+
+### Required Changes in App Config Files:
+------------------------------------------
 
 Open VS code on 'mobile_student' folder in "/Users/bkwork/Herd"
 then start terminal in vs code and execute below command -
 >>  npx expo start
 
 
-#### Required Changes in App Config Files:
-------------------------------------------
 make below changes in  (/.env) file On Application Root:
 
 Current value

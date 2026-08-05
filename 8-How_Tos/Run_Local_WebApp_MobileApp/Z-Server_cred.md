@@ -12,6 +12,14 @@ Open VS code on 'mobile_student' folder in "/Users/bkwork/Herd"
 then strt terminal in vs code and execute below command -
 >>  npx expo start
 
+
+### Open MySql (Local) using phpmyadmin
+---------------------------------------
+
+phpmyadmin.test/index.php?route=/
+root / root@123
+
+
 ### Tenant App
 --------------
 test.localhost:8000
@@ -23,12 +31,14 @@ localhost:8000
 superadmin@prime.com / password
 
 
+
+
 ### To Run Mobile Application
 -----------------------------
 Open Terminal on the Folder for the Mobile App (mobile_stundet / mobile_school) want to run on Mobile
 Execute below command in the Terminal
 ```
-npx expo start
+>>  npx expo start
 ```
 If you have made some chnages and want to clear memory before start npx expo then use below command:
 
