@@ -1,6 +1,6 @@
 -- ============================================================================
 -- ACCOUNTING MODULE DDL — acc_ prefix
--- Version: 1.0 — 2026-03-21
+-- Version: 3.0 — 2026-03-21
 -- Tally-Prime inspired voucher-based double-entry system
 -- Replaces old 31-table journal-based acc_* schema (unused draft)
 -- ============================================================================
@@ -8,6 +8,7 @@
 -- Section 0 : NEW TABLES
 -- ============================================================================
 
+	-- Generic master for dynamic status codes across modules
 	CREATE TABLE IF NOT EXISTS `acc_accounting_status_masters` (
 		`id`            TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
 		`status_type`   ENUM('Voucher Status', 'Bank Reconciliation Status', 'Expence Claim Status', 'Tally Export Status', 'Cross-Module Data Processing Status') NOT NULL,
@@ -19,7 +20,7 @@
 		`deleted_at`    TIMESTAMP       NULL,
 		PRIMARY KEY (`id`),
 		UNIQUE KEY `uq_accounting_status_code` (`status_type`, `code`)
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Generic master for dynamic status codes across modules; allows adding new statuses without code changes';
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 	-- Data seed :
 		-- Status Type                    Code

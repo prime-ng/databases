@@ -7,18 +7,18 @@
 ├──────────────────────────┼──────┼────────┼────────────────────────────┼──────────────────────┼──────────────────────────────┤
 │ Accounting               │ ACC  │ acc_   │ Accounting                 │ Accounting           │ Accounting_DDL_              │
 │ AdmissionManagement      │ ADM  │ adm_   │ Admission                  │ Admission            │ Admission_DDL_               │
-│ BehaviouralAssessment    │ BHA  │ bha_   │ BehaviouralAssessment      │                      │ BehaviouralAssess_DDL_       │ *
+│ BehaviouralAssessment    │ BHA  │ bha_   │ BehaviouralAssessment      │ BehaviouralAssessment │ BehaviouralAssess_DDL_      │ 
 │ Billing                  │ BIL  │ bil_   │ Billing                    │ Billing              │ Billing_DDL_                 │
 │ Cafeteria                │ CAF  │ caf_   │ Cafeteria                  │ Cafeteria            │ Cafeteria_DDL_               │
 │ Certificate              │ CRT  │ crt_   │ Certificate                │                      │ Certificates_DDL_            │ *
-│ CommonChat               │ COM  │ cht_   │ CommonChat                 │                      │ CommonChat_DDL_              │ *
+│ CommonChat               │ COM  │ cht_   │ CommonChat                 │                      │ CommonChat_DDL_              │ **
 │ Complaint                │ CMP  │ cmp_   │ Complaint                  │ Complaint            │ Complaint_DDL_               │
 │ Dashboard                │ DSH  │ dsh_   │ Dashboard                  │ N/A                  │ N/A                          │ *
 │ Documentation            │ DOC  │ doc_   │ Documentation              │ N/A                  │ N/A                          │ *
 │ EventEngine              │ EVT  │ sys_   │ EventEngine                │ N/A                  │ EventEngine_                 │ *
 │ Feedback                 │ FBK  │ fbk_   │ Feedback                   │ N/A                  │ Feedback_ddl_                │ *
 │ FrontOffice              │ FOF  │ fof_   │ FrontOffice                │ FrontOffice          │ FrontOffice_DDL_             │
-│ GlobalMaster             │ GLB  │ glb_   │ GlobalMaster               │                      │ _global_db_                  │ *
+│ GlobalMaster             │ GLB  │ glb_   │ GlobalMaster               │ GlobalMaster         │ _global_db_                  │
 │ Hostel                   │ HST  │ hst_   │ Hostel                     │ N/A                  │ Hostel_DDL_                  │
 │ Hpc                      │ HPC  │ hpc_   │ Hpc                        │ HPC                  │ HPC_DDL_                     │
 │ HrStaff                  │ HRS  │ hrs_   │ HrStaff                    │ HrStaff              │ HrStaff_Payroll_DDL_         │
@@ -36,9 +36,9 @@
 │ Prime                    │ PRM  │ prm_   │ Prime                      │ Prime                │ _prime_db_                   │
 │ PTM                      │ PTM  │ ptm_   │ PTM                        │ N/A                  │ PTM_DLL_                     │
 │ QuestionBank             │ QNS  │ qns_   │ QuestionBank               │ QuestionBank         │ LmsQuestionBank_DDL_         │
-│ Recommendation           │ REC  │ rec_   │ Recommendation             │                      │ Recommendation_DDL_          │ *
+│ Recommendation           │ REC  │ rec_   │ Recommendation             │ Recommendation.      │ Recommendation_DDL_          │
 │ Scheduler                │ SDL  │ sdl_   │ Scheduler                  │ N/A                  │ Scheduler_ddl_               │ *
-│ SchoolSetup              │ SCH  │ sch_   │ SchoolSetup                │                      │ SchoolSetup_DDL_             │ *
+│ SchoolSetup              │ SCH  │ sch_   │ SchoolSetup                │ SchoolSetup          │ SchoolSetup_DDL_             │
 │ SmartTimetable           │ STT  │ tt_    │ SmartTimetable             │ SmartTimetable       │ Timetable_DDL_               │
 │ StandardTimetable        │ TTS  │ tts_   │ StandardTimetable          │ StandardTimetable    │ Timetable_DDL_               │
 │ StudentFee               │ FIN  │ fee_   │ StudentFee                 │ StudentFee           │ StudentFee_DDL_              │

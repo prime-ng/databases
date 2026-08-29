@@ -1,6 +1,13 @@
 # How to Run Web Application & Mobile App on Localhost
 ======================================================
 
+>> composer dump-autoload 
+>> php artisan tenants:migrate
+>> php artisan optimize
+>> php artisan serve
+
+
+
 IP : http://192.168.29.100:8000
 
 
@@ -16,6 +23,10 @@ Only after taking Pull from Git we have to Run below command :
 >> php artisan optimize
 
 >> php artisan serve
+
+
+Whenevr there is any udate in DB Migration the to Refresh the Latest Migration below command needs to be executed.
+>> php artisan tenants:migrate 
 
 
 ### Open MySql (Local) using phpmyadmin

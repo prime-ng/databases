@@ -8,9 +8,10 @@
 -- Section 0 : NEW TABLES
 -- ============================================================================
 
+	-- 'This is a Generic Status master for dynamic status codes across modules
 	CREATE TABLE IF NOT EXISTS `acc_accounting_status_masters` (
 		`id`            TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
-		`status_type`   ENUM('Voucher Status', 'Bank Reconciliation Status', 'Expence Claim Status', 'Tally Export Status', 'Cross-Module Data Processing Status') NOT NULL,
+		`status_type`   ENUM(`Voucher Status`, `Bank Reconciliation Status`, `Expence Claim Status`, `Tally Export Status`, 'Cross-Module Data Processing Status' ) NOT NULL,
 		`code`          VARCHAR(20)     NOT NULL,  -- e.g. 'available', 'occupied', 'maintenance'
 		`name`          VARCHAR(100)    NOT NULL,  -- e.g. 'Available', 'Occupied', 'Under Maintenance'
 		`is_active`     TINYINT(1)      NOT NULL DEFAULT 1,
@@ -19,7 +20,7 @@
 		`deleted_at`    TIMESTAMP       NULL,
 		PRIMARY KEY (`id`),
 		UNIQUE KEY `uq_accounting_status_code` (`status_type`, `code`)
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Generic master for dynamic status codes across modules; allows adding new statuses without code changes';
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 	-- Data seed :
 		-- Status Type                    Code
@@ -27,7 +28,7 @@
 		-- `Voucher Status`                         - 'draft', 'posted', 'approved', 'cancelled'
 		-- `Bank Reconciliation Status`             - 'Pending', 'In Progress', 'Completed'
 		-- `Expence Claim Status`                   - 'Draft', 'Submitted', 'Approved', 'Rejected', 'Paid'
-        -- `Tally Export Status`                    - 'Success','Failed','Partial'
+		-- `Tally Export Status`                    - 'Success','Failed','Partial'
 		-- 'Cross-Module Data Processing Status'    - 'Pending','Processed','Failed','Skipped'
 
 
@@ -58,7 +59,7 @@ CREATE TABLE IF NOT EXISTS `acc_voucher_category` (
 	`is_active`         TINYINT(1) DEFAULT 1,
 	`created_at`        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 	UNIQUE KEY `uq_acc_vc_code` (`code`),
-	CONSTRAINT `fk_vc_module` FOREIGN KEY (`voucher_module_id`) REFERENCES `acc_voucher_modules`(`id`) ON DELETE RESTRICT,
+	CONSTRAINT `fk_vc_module` FOREIGN KEY (`module_id`) REFERENCES `acc_voucher_modules`(`id`) ON DELETE RESTRICT,
 	CONSTRAINT `fk_vc_ledger` FOREIGN KEY (`acc_ledger_id`) REFERENCES `acc_ledgers`(`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 -- Condition :
@@ -74,7 +75,7 @@ CREATE TABLE IF NOT EXISTS `acc_voucher_category` (
 CREATE TABLE IF NOT EXISTS `acc_financial_years` (
 	`id`            TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
 	`name`          VARCHAR(50) NOT NULL COMMENT 'e.g., 2025-26',
-	`start_date`    DATE NOT NULL COMMENT 'Financial year start (April 1)',
+	`start_date`    DATE NOT NULL 'Financial year start (April 1)',
 	`end_date`      DATE NOT NULL COMMENT 'Financial year end (March 31)',
 	`is_locked`     TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Prevents edits when locked',
 	`is_active`     TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Soft active flag',
@@ -89,11 +90,11 @@ CREATE TABLE IF NOT EXISTS `acc_financial_years` (
 
 -- 2. Account Groups (Tally's 28 predefined + custom)
 CREATE TABLE IF NOT EXISTS `acc_account_groups` (
-	`id`                    INT UNSIGNED NOT NULL AUTO_INCREMENT,
+	`id`                    MEDIUMINT UNSIGNED NOT NULL AUTO_INCREMENT,
 	`name`                  VARCHAR(100) NOT NULL COMMENT 'Group name',
 	`code`                  VARCHAR(30) NOT NULL COMMENT 'Unique group code e.g., A01, L02',
 	`alias`                 VARCHAR(100) NULL COMMENT 'Alternative display name',
-	`parent_id`             INT UNSIGNED NULL COMMENT 'Self-referencing for hierarchy',
+	`parent_id`             MEDIUMINT UNSIGNED NULL COMMENT 'Self-referencing for hierarchy',
 	`nature`                ENUM('Asset','Liability','Equity','Income','Expense') NOT NULL COMMENT 'Account nature',
 	`affects_gross_profit`  TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Direct vs Indirect classification',
 	`is_system`             TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'true = seeded, cannot delete',
@@ -134,7 +135,7 @@ CREATE TABLE IF NOT EXISTS `acc_ledgers` (
 	`name`                      VARCHAR(150) NOT NULL COMMENT 'Ledger name',
 	`code`                      VARCHAR(30) NULL COMMENT 'Unique ledger code',
 	`alias`                     VARCHAR(150) NULL COMMENT 'Alternative name',
-	`account_group_id`          INT UNSIGNED NOT NULL COMMENT 'FK → acc_account_groups',
+	`account_group_id`          MEDIUMINT UNSIGNED NOT NULL COMMENT 'FK → acc_account_groups',
 	`opening_balance`           DECIMAL(15,2) NOT NULL DEFAULT 0.00 COMMENT 'Opening balance amount',
 	`opening_balance_type`      ENUM('Dr','Cr') NULL COMMENT 'Debit or Credit opening',
 	`is_bank_account`           TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Bank account flag',
@@ -177,7 +178,7 @@ CREATE TABLE IF NOT EXISTS `acc_voucher_types` (
    -- `category`         ENUM('Accounting','Inventory','Payroll','Order') NOT NULL COMMENT 'Domain category',
 	`voucher_category_id` TINYINT UNSIGNED NOT NULL,  -- FK → acc_voucher_category
 	`prefix`              VARCHAR(5) NULL COMMENT 'Voucher number prefix e.g., PAY-, RCV-',
-	`auto_numbering`     TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Auto-increment enabled',
+	`auto_numbering`.     TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Auto-increment enabled',
 	`last_number`         INT NOT NULL DEFAULT 0 COMMENT 'Current voucher counter',
 	`is_system`           TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Cannot delete seeded types',
 	`is_active`           TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Soft active flag',
@@ -187,7 +188,7 @@ CREATE TABLE IF NOT EXISTS `acc_voucher_types` (
 	`deleted_at`          TIMESTAMP NULL DEFAULT NULL,
 	PRIMARY KEY (`id`),
 	UNIQUE KEY `uq_acc_vt_code` (`code`, `deleted_at`),
-	INDEX `idx_acc_vt_category` (`voucher_category_id`),
+	INDEX `idx_acc_vt_category` (`category`),
 	CONSTRAINT `fk_vt_category` FOREIGN KEY (`voucher_category_id`) REFERENCES `acc_voucher_category`(`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 -- Conditions:
@@ -201,7 +202,7 @@ CREATE TABLE IF NOT EXISTS `acc_cost_centers` (
 	`parent_id`     BIGINT UNSIGNED NULL COMMENT 'Self-referencing hierarchy',
 	`category`      VARCHAR(50) NULL COMMENT 'Department, Activity, Project',
 	`is_active`     TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Soft active flag',
-	`created_by`    INT UNSIGNED NULL COMMENT 'FK → sys_users',
+	`created_by`    BIGINT UNSIGNED NULL COMMENT 'FK → sys_users',
 	`created_at`    TIMESTAMP NULL DEFAULT NULL,
 	`updated_at`    TIMESTAMP NULL DEFAULT NULL,
 	`deleted_at`    TIMESTAMP NULL DEFAULT NULL,
@@ -215,8 +216,8 @@ CREATE TABLE IF NOT EXISTS `acc_vouchers` (
 	`id`                BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
 	`voucher_prefix`    VARCHAR(5) NULL COMMENT 'Snapshot of prefix from voucher type for historical reference',
 	`voucher_number`    INT UNSIGNED NOT NULL COMMENT 'Auto-generated sequential number per voucher type and FY',
-	`voucher_type_id`   TINYINT UNSIGNED NOT NULL COMMENT 'FK → acc_voucher_types',
-	`financial_year_id` TINYINT UNSIGNED NOT NULL COMMENT 'FK → acc_financial_years',
+	`voucher_type_id`   BIGINT UNSIGNED NOT NULL COMMENT 'FK → acc_voucher_types',
+	`financial_year_id` BIGINT UNSIGNED NOT NULL COMMENT 'FK → acc_financial_years',
 	`date`              DATE NOT NULL COMMENT 'Transaction date',
 	`reference_number`  VARCHAR(100) NULL COMMENT 'Cheque no, receipt no, etc.',
 	`reference_date`    DATE NULL COMMENT 'Cheque date, etc.',
@@ -228,13 +229,13 @@ CREATE TABLE IF NOT EXISTS `acc_vouchers` (
 	`cancelled_reason`  TEXT NULL COMMENT 'Cancellation reason',
 	`cost_center_id`    BIGINT UNSIGNED NULL COMMENT 'FK → acc_cost_centers (header-level)',
 	--`source_module`     ENUM('Fees','Library','Transport','HR','Vendor','Inventory','Payroll','Manual') NULL COMMENT 'Source module for integration',
-	`source_module`     TINYINT UNSIGNED NULL COMMENT 'Source module for integration', -- FK to `acc_voucher_modules`
+	`source_module`     BIGINT UNSIGNED NULL COMMENT 'Source module for integration', -- FK to `acc_voucher_modules`
 	`source_type`       VARCHAR(100) NULL COMMENT 'Polymorphic model: PayrollRun, FeeTransaction, GRN, etc.',
 	`source_id`         BIGINT UNSIGNED NULL COMMENT 'Polymorphic source ID',
-	`status`            TINYINT UNSIGNED NOT NULL COMMENT 'Voucher Status', -- FK to `acc_accounting_status_masters`
-	`approved_by`       INT UNSIGNED NULL COMMENT 'FK → sys_users (approver)',
+	`status`            INT UNSIGNED NOT NULL COMMENT 'Voucher Status', -- FK to `acc_accounting_status_masters`
+	`approved_by`       BIGINT UNSIGNED NULL COMMENT 'FK → sys_users (approver)',
 	`is_active`         TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Soft active flag',
-	`created_by`        INT UNSIGNED NULL COMMENT 'FK → sys_users',
+	`created_by`        BIGINT UNSIGNED NULL COMMENT 'FK → sys_users',
 	`created_at`        TIMESTAMP NULL DEFAULT NULL,
 	`updated_at`        TIMESTAMP NULL DEFAULT NULL,
 	`deleted_at`        TIMESTAMP NULL DEFAULT NULL,
@@ -259,14 +260,14 @@ CREATE TABLE IF NOT EXISTS `acc_vouchers` (
 CREATE TABLE IF NOT EXISTS `acc_voucher_items` (
 	`id`                BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
 	`voucher_id`        BIGINT UNSIGNED NOT NULL COMMENT 'FK → acc_vouchers',
-	`ledger_id`         INT UNSIGNED NOT NULL COMMENT 'FK → acc_ledgers',
+	`ledger_id`         BIGINT UNSIGNED NOT NULL COMMENT 'FK → acc_ledgers',
 	`type`              ENUM('debit','credit') NOT NULL COMMENT 'Dr or Cr entry',
 	`amount`            DECIMAL(15,2) NOT NULL COMMENT 'Line item amount',
 	`narration`         VARCHAR(500) NULL COMMENT 'Per-ledger narration',
 	`cost_center_id`    BIGINT UNSIGNED NULL COMMENT 'FK → acc_cost_centers (line-level override)',
 	`bill_reference`    VARCHAR(100) NULL COMMENT 'Against invoice/bill reference',
 	`is_active`         TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Soft active flag',
-	`created_by`        INT UNSIGNED NULL COMMENT 'FK → sys_users',
+	`created_by`        BIGINT UNSIGNED NULL COMMENT 'FK → sys_users',
 	`created_at`        TIMESTAMP NULL DEFAULT NULL,
 	`updated_at`        TIMESTAMP NULL DEFAULT NULL,
 	`deleted_at`        TIMESTAMP NULL DEFAULT NULL,
@@ -285,12 +286,12 @@ CREATE TABLE IF NOT EXISTS `acc_voucher_items` (
 -- 8. Budgets
 CREATE TABLE IF NOT EXISTS `acc_budgets` (
 	`id`                BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-	`financial_year_id` TINYINT UNSIGNED NOT NULL COMMENT 'FK → acc_financial_years',
+	`financial_year_id` BIGINT UNSIGNED NOT NULL COMMENT 'FK → acc_financial_years',
 	`cost_center_id`    BIGINT UNSIGNED NOT NULL COMMENT 'FK → acc_cost_centers',
-	`ledger_id`         INT UNSIGNED NOT NULL COMMENT 'FK → acc_ledgers',
+	`ledger_id`         BIGINT UNSIGNED NOT NULL COMMENT 'FK → acc_ledgers',
 	`budgeted_amount`   DECIMAL(15,2) NOT NULL DEFAULT 0.00 COMMENT 'Allocated budget amount',
 	`is_active`         TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Soft active flag',
-	`created_by`        INT UNSIGNED NULL COMMENT 'FK → sys_users',
+	`created_by`        BIGINT UNSIGNED NULL COMMENT 'FK → sys_users',
 	`created_at`        TIMESTAMP NULL DEFAULT NULL,
 	`updated_at`        TIMESTAMP NULL DEFAULT NULL,
 	`deleted_at`        TIMESTAMP NULL DEFAULT NULL,
@@ -312,7 +313,7 @@ CREATE TABLE IF NOT EXISTS `acc_tax_rates` (
 	`hsn_sac_code`  VARCHAR(20) NULL COMMENT 'HSN/SAC code',
 	`is_interstate` TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Interstate supply flag',
 	`is_active`     TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Soft active flag',
-	`created_by`    INT UNSIGNED NULL COMMENT 'FK → sys_users',
+	`created_by`    BIGINT UNSIGNED NULL COMMENT 'FK → sys_users',
 	`created_at`    TIMESTAMP NULL DEFAULT NULL,
 	`updated_at`    TIMESTAMP NULL DEFAULT NULL,
 	`deleted_at`    TIMESTAMP NULL DEFAULT NULL,
@@ -323,13 +324,13 @@ CREATE TABLE IF NOT EXISTS `acc_tax_rates` (
 -- 10. Ledger Mappings (Cross-module)
 CREATE TABLE IF NOT EXISTS `acc_ledger_mappings` (
 	`id`            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-	`ledger_id`     INT UNSIGNED NOT NULL COMMENT 'FK → acc_ledgers',
+	`ledger_id`     BIGINT UNSIGNED NOT NULL COMMENT 'FK → acc_ledgers',
 	`source_module` ENUM('Fees','Library','Transport','HR','Vendor','Inventory','Payroll') NOT NULL COMMENT 'Source module',
 	`source_type`   VARCHAR(100) NULL COMMENT 'e.g., FeeHead, PayHead, Route, Stoppage',
 	`source_id`     BIGINT UNSIGNED NOT NULL COMMENT 'Source entity ID',
 	`description`   VARCHAR(255) NULL COMMENT 'Human-readable mapping description',
 	`is_active`     TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Soft active flag',
-	`created_by`    INT UNSIGNED NULL COMMENT 'FK → sys_users',
+	`created_by`    BIGINT UNSIGNED NULL COMMENT 'FK → sys_users',
 	`created_at`    TIMESTAMP NULL DEFAULT NULL,
 	`updated_at`    TIMESTAMP NULL DEFAULT NULL,
 	`deleted_at`    TIMESTAMP NULL DEFAULT NULL,
@@ -343,7 +344,7 @@ CREATE TABLE IF NOT EXISTS `acc_ledger_mappings` (
 CREATE TABLE IF NOT EXISTS `acc_recurring_templates` (
 	`id`                BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
 	`name`              VARCHAR(150) NOT NULL COMMENT 'Template name',
-	`voucher_type_id`   TINYINT UNSIGNED NOT NULL COMMENT 'FK → acc_voucher_types',
+	`voucher_type_id`   BIGINT UNSIGNED NOT NULL COMMENT 'FK → acc_voucher_types',
 	`frequency`         ENUM('Daily','Weekly','Monthly','Quarterly','Yearly') NOT NULL COMMENT 'Recurrence frequency',
 	`start_date`        DATE NOT NULL COMMENT 'Start posting from',
 	`end_date`          DATE NULL COMMENT 'Stop posting after (NULL = indefinite)',
@@ -352,7 +353,7 @@ CREATE TABLE IF NOT EXISTS `acc_recurring_templates` (
 	`total_amount`      DECIMAL(15,2) NOT NULL COMMENT 'Template total (must balance Dr=Cr)',
 	`last_posted_date`  DATE NULL COMMENT 'Last auto-post date',
 	`is_active`         TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Soft active flag',
-	`created_by`        INT UNSIGNED NULL COMMENT 'FK → sys_users',
+	`created_by`        BIGINT UNSIGNED NULL COMMENT 'FK → sys_users',
 	`created_at`        TIMESTAMP NULL DEFAULT NULL,
 	`updated_at`        TIMESTAMP NULL DEFAULT NULL,
 	`deleted_at`        TIMESTAMP NULL DEFAULT NULL,
@@ -365,12 +366,12 @@ CREATE TABLE IF NOT EXISTS `acc_recurring_templates` (
 CREATE TABLE IF NOT EXISTS `acc_recurring_template_lines` (
 	`id`                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
 	`recurring_template_id` BIGINT UNSIGNED NOT NULL COMMENT 'FK → acc_recurring_templates',
-	`ledger_id`             INT UNSIGNED NOT NULL COMMENT 'FK → acc_ledgers',
+	`ledger_id`             BIGINT UNSIGNED NOT NULL COMMENT 'FK → acc_ledgers',
 	`type`                  ENUM('debit','credit') NOT NULL COMMENT 'Dr or Cr',
 	`amount`                DECIMAL(15,2) NOT NULL COMMENT 'Line amount',
 	`narration`             VARCHAR(500) NULL COMMENT 'Per-line narration',
 	`is_active`             TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Soft active flag',
-	`created_by`            INT UNSIGNED NULL COMMENT 'FK → sys_users',
+	`created_by`            BIGINT UNSIGNED NULL COMMENT 'FK → sys_users',
 	`created_at`            TIMESTAMP NULL DEFAULT NULL,
 	`updated_at`            TIMESTAMP NULL DEFAULT NULL,
 	`deleted_at`            TIMESTAMP NULL DEFAULT NULL,
@@ -388,13 +389,13 @@ CREATE TABLE IF NOT EXISTS `acc_recurring_template_lines` (
 -- 13. Bank Reconciliations
 CREATE TABLE IF NOT EXISTS `acc_bank_reconciliations` (
 	`id`                BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-	`ledger_id`         INT UNSIGNED NOT NULL COMMENT 'FK → acc_ledgers (bank account)',
+	`ledger_id`         BIGINT UNSIGNED NOT NULL COMMENT 'FK → acc_ledgers (bank account)',
 	`statement_date`    DATE NOT NULL COMMENT 'Bank statement date',
 	`closing_balance`   DECIMAL(15,2) NOT NULL COMMENT 'Closing balance per bank statement',
 	`statement_path`    VARCHAR(255) NULL COMMENT 'Uploaded statement file path',
-	`status`            TINYINT UNSIGNED NOT NULL COMMENT 'Reconciliation status', -- FK to `acc_accounting_status_masters`,
+	`status`            INT UNSIGNED NOT NULL COMMENT 'Reconciliation status', -- FK to `acc_accounting_status_masters`,
 	`is_active`         TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Soft active flag',
-	`created_by`        INT UNSIGNED NULL COMMENT 'FK → sys_users',
+	`created_by`        BIGINT UNSIGNED NULL COMMENT 'FK → sys_users',
 	`created_at`        TIMESTAMP NULL DEFAULT NULL,
 	`updated_at`        TIMESTAMP NULL DEFAULT NULL,
 	`deleted_at`        TIMESTAMP NULL DEFAULT NULL,
@@ -418,9 +419,9 @@ CREATE TABLE IF NOT EXISTS `acc_bank_statement_entries` (
     `is_matched`                TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Whether matched to a voucher item',
     `matched_voucher_item_id`   BIGINT UNSIGNED NULL COMMENT 'FK → acc_voucher_items (matched entry)',
     `matched_at`                TIMESTAMP NULL COMMENT 'When the match was made',
-    `matched_by`                INT UNSIGNED NULL COMMENT 'FK → sys_users (who matched)',
+    `matched_by`                BIGINT UNSIGNED NULL COMMENT 'FK → sys_users (who matched)',
     `is_active`                 TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Soft active flag',
-    `created_by`                INT UNSIGNED NULL COMMENT 'FK → sys_users',
+    `created_by`                BIGINT UNSIGNED NULL COMMENT 'FK → sys_users',
     `created_at`                TIMESTAMP NULL DEFAULT NULL,
     `updated_at`                TIMESTAMP NULL DEFAULT NULL,
     `deleted_at`                TIMESTAMP NULL DEFAULT NULL,
@@ -446,7 +447,7 @@ CREATE TABLE IF NOT EXISTS `acc_asset_categories` (
     `depreciation_rate`     DECIMAL(5,2) NOT NULL COMMENT 'Annual depreciation rate %',
     `useful_life_years`     INT NULL COMMENT 'Useful life in years',
     `is_active`             TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Soft active flag',
-    `created_by`            INT UNSIGNED NULL COMMENT 'FK → sys_users',
+    `created_by`            BIGINT UNSIGNED NULL COMMENT 'FK → sys_users',
     `created_at`            TIMESTAMP NULL DEFAULT NULL,
     `updated_at`            TIMESTAMP NULL DEFAULT NULL,
     `deleted_at`            TIMESTAMP NULL DEFAULT NULL,
@@ -466,10 +467,10 @@ CREATE TABLE IF NOT EXISTS `acc_fixed_assets` (
     `current_value`             DECIMAL(15,2) NOT NULL COMMENT 'Current book value',
     `accumulated_depreciation`  DECIMAL(15,2) NOT NULL DEFAULT 0.00 COMMENT 'Total depreciation to date',
     `location`                  VARCHAR(100) NULL COMMENT 'Physical location of asset',
-    `vendor_id`                 INT UNSIGNED NULL COMMENT 'FK → vnd_vendors (supplier)',
+    `vendor_id`                 BIGINT UNSIGNED NULL COMMENT 'FK → vnd_vendors (supplier)',
     `voucher_id`                BIGINT UNSIGNED NULL COMMENT 'FK → acc_vouchers (purchase voucher)',
     `is_active`                 TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Soft active flag',
-    `created_by`                INT UNSIGNED NULL COMMENT 'FK → sys_users',
+    `created_by`                BIGINT UNSIGNED NULL COMMENT 'FK → sys_users',
     `created_at`                TIMESTAMP NULL DEFAULT NULL,
     `updated_at`                TIMESTAMP NULL DEFAULT NULL,
     `deleted_at`                TIMESTAMP NULL DEFAULT NULL,
@@ -486,12 +487,12 @@ CREATE TABLE IF NOT EXISTS `acc_fixed_assets` (
 CREATE TABLE IF NOT EXISTS `acc_depreciation_entries` (
     `id`                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `fixed_asset_id`        BIGINT UNSIGNED NOT NULL COMMENT 'FK → acc_fixed_assets',
-    `financial_year_id`     TINYINT UNSIGNED NOT NULL COMMENT 'FK → acc_financial_years',
+    `financial_year_id`     BIGINT UNSIGNED NOT NULL COMMENT 'FK → acc_financial_years',
     `depreciation_date`     DATE NOT NULL COMMENT 'Date of depreciation entry',
     `depreciation_amount`   DECIMAL(15,2) NOT NULL COMMENT 'Depreciation amount for this period',
     `voucher_id`            BIGINT UNSIGNED NULL COMMENT 'FK → acc_vouchers (depreciation journal)',
     `is_active`             TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Soft active flag',
-    `created_by`            INT UNSIGNED NULL COMMENT 'FK → sys_users',
+    `created_by`            BIGINT UNSIGNED NULL COMMENT 'FK → sys_users',
     `created_at`            TIMESTAMP NULL DEFAULT NULL,
     `updated_at`            TIMESTAMP NULL DEFAULT NULL,
     `deleted_at`            TIMESTAMP NULL DEFAULT NULL,
@@ -512,16 +513,16 @@ CREATE TABLE IF NOT EXISTS `acc_depreciation_entries` (
 CREATE TABLE IF NOT EXISTS `acc_expense_claims` (
     `id`            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `claim_number`  VARCHAR(50) NOT NULL COMMENT 'Auto-generated claim number',
-    `employee_id`   INT UNSIGNED NOT NULL COMMENT 'FK → sch_employees (existing table)',
+    `employee_id`   BIGINT UNSIGNED NOT NULL COMMENT 'FK → sch_employees (existing table)',
     `claim_date`    DATE NOT NULL COMMENT 'Date of claim submission',
     `total_amount`  DECIMAL(15,2) NOT NULL COMMENT 'Total claim amount',
     -- `status`        ENUM('Draft','Submitted','Approved','Rejected','Paid') NOT NULL DEFAULT 'Draft' COMMENT 'Claim workflow status',
-	`status`         TINYINT UNSIGNED NOT NULL COMMENT 'Claim workflow status', -- FK to `acc_accounting_status_masters`
-    `approved_by`   INT UNSIGNED NULL COMMENT 'FK → sys_users',
+	`status`         INT UNSIGNED NOT NULL COMMENT 'Claim workflow status', -- FK to `acc_accounting_status_masters`
+    `approved_by`   BIGINT UNSIGNED NULL COMMENT 'FK → sys_users',
     `approved_at`   TIMESTAMP NULL COMMENT 'Approval timestamp',
     `voucher_id`    BIGINT UNSIGNED NULL COMMENT 'FK → acc_vouchers (payment voucher on approval)',
     `is_active`     TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Soft active flag',
-    `created_by`    INT UNSIGNED NULL COMMENT 'FK → sys_users',
+    `created_by`    BIGINT UNSIGNED NULL COMMENT 'FK → sys_users',
     `created_at`    TIMESTAMP NULL DEFAULT NULL,
     `updated_at`    TIMESTAMP NULL DEFAULT NULL,
     `deleted_at`    TIMESTAMP NULL DEFAULT NULL,
@@ -540,13 +541,13 @@ CREATE TABLE IF NOT EXISTS `acc_expense_claim_lines` (
     `id`                BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `expense_claim_id`  BIGINT UNSIGNED NOT NULL COMMENT 'FK → acc_expense_claims',
     `expense_date`      DATE NOT NULL COMMENT 'Date of expense',
-    `ledger_id`         INT UNSIGNED NOT NULL COMMENT 'FK → acc_ledgers (expense category)',
+    `ledger_id`         BIGINT UNSIGNED NOT NULL COMMENT 'FK → acc_ledgers (expense category)',
     `description`       VARCHAR(255) NOT NULL COMMENT 'Expense description',
     `amount`            DECIMAL(15,2) NOT NULL COMMENT 'Expense amount',
     `tax_amount`        DECIMAL(15,2) NOT NULL DEFAULT 0.00 COMMENT 'Tax on expense',
     `receipt_path`      VARCHAR(255) NULL COMMENT 'Uploaded receipt file path',
     `is_active`         TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Soft active flag',
-    `created_by`        INT UNSIGNED NULL COMMENT 'FK → sys_users',
+    `created_by`        BIGINT UNSIGNED NULL COMMENT 'FK → sys_users',
     `created_at`        TIMESTAMP NULL DEFAULT NULL,
     `updated_at`        TIMESTAMP NULL DEFAULT NULL,
     `deleted_at`        TIMESTAMP NULL DEFAULT NULL,
@@ -567,15 +568,15 @@ CREATE TABLE IF NOT EXISTS `acc_tally_export_logs` (
 	`export_type`   ENUM('Ledgers','Vouchers','Inventory') NOT NULL COMMENT 'What was exported',
 	`export_date`   DATETIME NOT NULL COMMENT 'When export was run',
 	`file_name`     VARCHAR(255) NOT NULL COMMENT 'Generated file name',
-	`exported_by`   INT UNSIGNED NOT NULL COMMENT 'FK → sys_users',
+	`exported_by`   BIGINT UNSIGNED NOT NULL COMMENT 'FK → sys_users',
 	`start_date`    DATE NULL COMMENT 'Export date range start',
 	`end_date`      DATE NULL COMMENT 'Export date range end',
 	`record_count`  INT NULL COMMENT 'Number of records exported',
    -- `status`        ENUM('Success','Failed','Partial') NOT NULL COMMENT 'Export result',
-	`status`         TINYINT UNSIGNED NOT NULL COMMENT 'Tally Export Status', -- FK to `acc_accounting_status_masters`
+	`status`         INT UNSIGNED NOT NULL COMMENT 'Tally Export Status', -- FK to `acc_accounting_status_masters`
 	`error_log`     TEXT NULL COMMENT 'Error details if failed',
 	`is_active`     TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Soft active flag',
-	`created_by`    INT UNSIGNED NULL COMMENT 'FK → sys_users',
+	`created_by`    BIGINT UNSIGNED NULL COMMENT 'FK → sys_users',
 	`created_at`    TIMESTAMP NULL DEFAULT NULL,
 	`updated_at`    TIMESTAMP NULL DEFAULT NULL,
 	`deleted_at`    TIMESTAMP NULL DEFAULT NULL,
@@ -589,7 +590,7 @@ CREATE TABLE IF NOT EXISTS `acc_tally_export_logs` (
 -- 21. Tally Ledger Mappings
 CREATE TABLE IF NOT EXISTS `acc_tally_ledger_mappings` (
     `id`                BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `ledger_id`         INT UNSIGNED NOT NULL COMMENT 'FK → acc_ledgers (our application ledger)',
+    `ledger_id`         BIGINT UNSIGNED NOT NULL COMMENT 'FK → acc_ledgers (our application ledger)',
     `tally_ledger_name` VARCHAR(200) NOT NULL COMMENT 'Exact Tally ledger name for export/import',
     `tally_group_name`  VARCHAR(200) NULL COMMENT 'Tally parent group name',
     `tally_alias`       VARCHAR(200) NULL COMMENT 'Tally alias if any',
@@ -597,7 +598,7 @@ CREATE TABLE IF NOT EXISTS `acc_tally_ledger_mappings` (
     `sync_direction`    ENUM('export_only','import_only','bidirectional') NOT NULL DEFAULT 'export_only' COMMENT 'Sync direction',
     `last_synced_at`    TIMESTAMP NULL COMMENT 'Last successful sync timestamp',
     `is_active`         TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Soft active flag',
-    `created_by`        INT UNSIGNED NULL COMMENT 'FK → sys_users',
+    `created_by`        BIGINT UNSIGNED NULL COMMENT 'FK → sys_users',
     `created_at`        TIMESTAMP NULL DEFAULT NULL,
     `updated_at`        TIMESTAMP NULL DEFAULT NULL,
     `deleted_at`        TIMESTAMP NULL DEFAULT NULL,
@@ -641,7 +642,7 @@ CREATE TABLE IF NOT EXISTS `acc_module_events` (
     `source_model`  VARCHAR(100) NOT NULL COMMENT 'Source DB table that owns the triggering record. e.g., lib_fines, tpt_student_route_allocation_jnt, lib_members',
     `is_system`     TINYINT(1) NOT NULL DEFAULT 1 COMMENT '1 = seeded by system (protected from deletion), 0 = custom event added by school',
     `is_active`     TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Soft active flag — inactive events are ignored by the processing engine',
-    `created_by`    INT UNSIGNED NULL  COMMENT 'FK → sys_users',
+    `created_by`    BIGINT UNSIGNED NULL  COMMENT 'FK → sys_users',
     `created_at`    TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`    TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`    TIMESTAMP NULL DEFAULT NULL,
@@ -672,13 +673,13 @@ COMMENT='Registry of all cross-module business events that can trigger accountin
 CREATE TABLE IF NOT EXISTS `acc_event_voucher_configs` (
     `id`                BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `module_event_id`   BIGINT UNSIGNED NOT NULL  COMMENT 'FK → acc_module_events',
-    `voucher_type_id`   TINYINT UNSIGNED NOT NULL COMMENT 'FK → acc_voucher_types. Typically RECEIPT for income, JOURNAL for internal transfers',
+    `voucher_type_id`   BIGINT UNSIGNED NOT NULL COMMENT 'FK → acc_voucher_types. Typically RECEIPT for income, JOURNAL for internal transfers',
     `cost_center_id`    BIGINT UNSIGNED NULL COMMENT 'FK → acc_cost_centers (optional default cost center for vouchers from this event)',
     `is_auto_post`      TINYINT(1) NOT NULL DEFAULT 0 COMMENT '1 = immediately post to ledgers; 0 = create as draft (status=draft in acc_vouchers)',
     `requires_approval` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '1 = set voucher status to draft and route to approver; overrides is_auto_post if both = 1',
     `narration_template` VARCHAR(500) NULL COMMENT 'Voucher narration with placeholders: {student_name}, {amount}, {date}, {event_name}, {reference_no}, {module_ref}',
     `is_active`         TINYINT(1) NOT NULL DEFAULT 1  COMMENT 'Soft active flag',
-    `created_by`        INT UNSIGNED NULL  COMMENT 'FK → sys_users',
+    `created_by`        BIGINT UNSIGNED NULL  COMMENT 'FK → sys_users',
     `created_at`        TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`        TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`        TIMESTAMP NULL DEFAULT NULL,
@@ -726,14 +727,14 @@ CREATE TABLE IF NOT EXISTS `acc_event_voucher_line_templates` (
     `entry_type`                ENUM('debit','credit') NOT NULL COMMENT 'Debit or Credit side of the double-entry line',
     -- ── Ledger Resolution ──────────────────────────────────────────────────
     `ledger_resolver`           ENUM('fixed','student_ledger','vendor_ledger','employee_ledger') NOT NULL DEFAULT 'fixed' COMMENT 'Strategy to resolve which ledger to post this line against at runtime',
-    `ledger_id`                 INT UNSIGNED NULL COMMENT 'FK → acc_ledgers. Required when ledger_resolver = fixed. NULL for dynamic resolvers.',
+    `ledger_id`                 BIGINT UNSIGNED NULL COMMENT 'FK → acc_ledgers. Required when ledger_resolver = fixed. NULL for dynamic resolvers.',
     -- ── Amount Resolution ──────────────────────────────────────────────────
     `amount_resolver`           ENUM('from_source','fixed_amount','from_payload') NOT NULL DEFAULT 'from_source' COMMENT 'Strategy to resolve the line amount at runtime',
     `source_amount_field`       VARCHAR(100) NULL COMMENT 'Column name in source model to read amount from. e.g., amount, fine_amount, fare, paid_amount. Used when amount_resolver = from_source.',
     `fixed_amount`              DECIMAL(15,2) NULL COMMENT 'Hard-coded amount used when amount_resolver = fixed_amount',
     `narration`                 VARCHAR(500) NULL COMMENT 'Per-line narration. Can use same placeholders as narration_template. Overrides header narration for this line.',
     `is_active`                 TINYINT(1) NOT NULL DEFAULT 1  COMMENT 'Soft active flag',
-    `created_by`                INT UNSIGNED NULL  COMMENT 'FK → sys_users',
+    `created_by`                BIGINT UNSIGNED NULL  COMMENT 'FK → sys_users',
     `created_at`                TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`                TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`                TIMESTAMP NULL DEFAULT NULL,
@@ -786,12 +787,12 @@ CREATE TABLE IF NOT EXISTS `acc_event_processing_log` (
 	`payload_json`      JSON NULL COMMENT 'Snapshot of critical fields from the source record at event time. Preserves audit integrity.',
 	`voucher_id`        BIGINT UNSIGNED NULL COMMENT 'FK → acc_vouchers. Set after successful processing. NULL if failed or skipped.',
 	-- `status`            ENUM('Pending','Processed','Failed','Skipped') NOT NULL DEFAULT 'Pending' COMMENT 'Pending=queued, Processed=voucher created, Failed=error, Skipped=no config or duplicate guard',
-	`status`            TINYINT UNSIGNED NOT NULL COMMENT 'Pending=queued, Processed=voucher created, Failed=error, Skipped=no config or duplicate guard', -- FK to `acc_accounting_status_masters`
+	`status`            INT UNSIGNED NOT NULL COMMENT 'Pending=queued, Processed=voucher created, Failed=error, Skipped=no config or duplicate guard', -- FK to `acc_accounting_status_masters`
 	`error_message`     TEXT NULL COMMENT 'Error detail when status = failed. Includes stack trace or validation message.',
 	`retry_count`       TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Number of automated retry attempts. Used by job scheduler to cap retries.',
 	`processed_at`      TIMESTAMP NULL COMMENT 'Timestamp when the event was successfully processed (voucher created)',
 	`is_active`         TINYINT(1) NOT NULL DEFAULT 1  COMMENT 'Soft active flag',
-	`created_by`        INT UNSIGNED NULL COMMENT 'FK → sys_users. The user whose action triggered the event, or system user if automated.',
+	`created_by`        BIGINT UNSIGNED NULL COMMENT 'FK → sys_users. The user whose action triggered the event, or system user if automated.',
 	`created_at`        TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
 	`updated_at`        TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 	`deleted_at`        TIMESTAMP NULL DEFAULT NULL,

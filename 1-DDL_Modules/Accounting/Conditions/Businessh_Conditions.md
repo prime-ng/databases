@@ -90,24 +90,30 @@ gst_registration_type captures how the party linked to this ledger is registered
 
 Why it lives on a Ledger
 In GST, how you calculate and claim Input Tax Credit (ITC) depends on the supplier's registration type. So when the school raises a purchase voucher against a vendor ledger, the system needs to know the vendor's GST type to:
+- Apply the correct tax rate
+- Decide if ITC can be claimed
+- Generate the correct GST return entries (GSTR-2B reconciliation)
 
-Apply the correct tax rate
-Decide if ITC can be claimed
-Generate the correct GST return entries (GSTR-2B reconciliation)
 The valid GST Registration Types in India
-Type	Who it applies to	ITC claimable by school?
-Regular	Vendors with turnover > ₹40L, fully GST registered	Yes — full ITC
-Composition	Small vendors (turnover < ₹1.5Cr) who pay flat tax	No — composition dealers can't pass ITC
-Unregistered	Vendor has no GST registration	No — school may need to pay GST under RCM
-Consumer	Individual, no GSTIN	No
-SEZ	Special Economic Zone supplier	Yes — zero-rated
+|---------------------------|-------------------------------------------------------|-------------------------------------------|
+| Type	                    | Who it applies to	                                    | ITC claimable by school?                  |
+|---------------------------|-------------------------------------------------------|-------------------------------------------|
+|Regular	                | Vendors with turnover > ₹40L, fully GST registered	| Yes — full ITC                            |
+|Composition	            | Small vendors (turnover < ₹1.5Cr) who pay flat tax	| No — composition dealers can't pass ITC   |
+|Unregistered	            | Vendor has no GST registration	                    | No — school may need to pay GST under RCM |
+|Consumer	                | Individual, no GSTIN	                                | No                                        |
+|SEZ	                    | Special Economic Zone supplier	                    | Yes — zero-rated                          |
+|---------------------------|-------------------------------------------------------|-------------------------------------------|
+
 RCM = Reverse Charge Mechanism — when a vendor is Unregistered, the school itself has to pay the GST to the government instead of the vendor.
 
-Practical example
-Vendor Ledger	gst_registration_type	gstin	Effect on voucher
-ABC Bus Suppliers	Regular	27AABCU9603R1ZX	ITC claimable, normal GST entry
-Local Carpenter	Unregistered	NULL	RCM applies, school pays GST
-XYZ Stationery (small)	Composition	27XXXXX1234R1ZX	No ITC, cost goes to expense directly
+### Practical example
+| Vendor Ledger	         | gst_registration_type | gstin	            | Effect on voucher                       |
+|------------------------|-----------------------|----------------------|-----------------------------------------|
+| ABC Bus Suppliers	     | Regular	             | 27AABCU9603R1ZX	    | ITC claimable, normal GST entry         |
+| Local Carpenter	     | Unregistered	         | NULL	                | RCM applies, school pays GST            |
+| XYZ Stationery (small) | Composition	         | 27XXXXX1234R1ZX	    | No ITC, cost goes to expense directly   |
+|------------------------|-----------------------|----------------------|-----------------------------------------|
 
 Since the valid types are a known closed set (defined by GST law), VARCHAR(30) is loose. It would be safer as an ENUM:
 
