@@ -6,10 +6,12 @@
 -- ============================================================================
 
 -- ----------------------------------------------------------------------------
--- Section 1 : ACCOUNTING MASTERS
+-- Reference Tables from Global Database
 -- ----------------------------------------------------------------------------
 
--- Need to create a Account_Config Table to capture Config value from User to use in App
+
+-- Table `acc_voucher_modules` moved to 'global_db' as `glb_app_modules`
+-- ---------------------------------------------------------------------
 
 -- This table belongs to global_db. Here it is placed only for reference purpose.
 -- This table will capture Modules detail of entire application, which will be used in application development.
@@ -29,12 +31,12 @@ CREATE TABLE IF NOT EXISTS `glb_app_modules` (
 	UNIQUE KEY `uq_sys_module_code` (`code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 -- Data Seeder:
--- Key | Ordinal | Code 				| Name											| Module_Prefix | Is_System | Is_Active
----------------------------------------------------------------------------------------------------------------------------
--- ACC | 1 		  | ACCOUNTING			| Accounting									| acc_ 			 | 1         | 1
--- ACC | 2 		  | TRANSPORT			| Transport										| tpt_ 			 | 0         | 1
--- ACC | 3 		  | HOSTEL				| Hostel & Boarding							| hst_ 			 | 0         | 1
--- 
+	-- Key | Ordinal | Code 				| Name											| Module_Prefix | Is_System | Is_Active
+	---------------------------------------------------------------------------------------------------------------------------
+	-- ACC | 1 		  | ACCOUNTING			| Accounting									| acc_ 			 | 1         | 1
+	-- ACC | 2 		  | TRANSPORT			| Transport										| tpt_ 			 | 0         | 1
+	-- ACC | 3 		  | HOSTEL				| Hostel & Boarding							| hst_ 			 | 0         | 1
+	-- 
 
 
 -- This table belongs to global_db. Here it is placed only for reference purpose.
@@ -62,35 +64,18 @@ CREATE TABLE IF NOT EXISTS `glb_app_modules` (
     UNIQUE KEY `uq_settings_key` (`key`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 -- Data Seeder:
--- Model | Key 								| Key	Name															| Type		| Value
+	-- Model | Key 								| Key	Name															| Type		| Value
+	-----------------------------------------------------------------------------------------------------------------------------------------------------
+	-- ACC   | COST_CENTRE_APPLICABLE		| Cost centres are applicable									| Boolean 	| True / False
+	--       | IS_INTEREST_ON					| Activate Interest Calculation								| Boolean 	| True / False
+	--       | CREDIT_DAYS_CHK_ON				| Check for credit days during voucher entry				| Boolean 	| True / False
+	-- 
+
 -----------------------------------------------------------------------------------------------------------------------------------------------------
--- ACC   | COST_CENTRE_APPLICABLE		| Cost centres are applicable									| Boolean 	| True / False
---       | IS_INTEREST_ON					| Activate Interest Calculation								| Boolean 	| True / False
---       | CREDIT_DAYS_CHK_ON				| Check for credit days during voucher entry				| Boolean 	| True / False
--- 
 
-
--- -------------------------------------------------------------------------
--- Table `acc_voucher_modules` moved to 'tenantcore' as `tco_app_modules`
--- -------------------------------------------------------------------------
-
--- Table
-CREATE TABLE IF NOT EXISTS `acc_account_config` (
-	`id`            MEDIUMINT UNSIGNED NOT NULL AUTO_INCREMENT,
-   `ordinal` int unsigned NOT NULL DEFAULT '1',
-	`key`          VARCHAR(20)     NOT NULL,  -- e.g. 'COST_CENTRE_ON', 'BANK_RECONCILIATION_ON'
-	`key_name`          VARCHAR(100)    NOT NULL,  -- e.g. 'Cost centres', 'Bank reconciliation' 
-	`value`         VARCHAR(100)    NOT NULL,  -- e.g. 'True', 'False', '100', 'Text'
-   `value_type` ENUM('STRING', 'NUMBER', 'BOOLEAN', 'DATE', 'TIME', 'DATETIME', 'JSON') NOT NULL,
-	`is_system`     TINYINT(1)      NOT NULL DEFAULT 0, -- 1 = For System use, can not be deleted.
-	`is_active`     TINYINT(1)      NOT NULL DEFAULT 1, -- Soft active flag.
-	`created_at`    TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-	`updated_at`    TIMESTAMP       DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-	`deleted_at`    TIMESTAMP       NULL,
-	PRIMARY KEY (`id`),
-	UNIQUE KEY `uq_acc_config_code` (`code`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
+-- ----------------------------------------------------------------------------
+-- Section 1 : ACCOUNTING MASTERS
+-- ----------------------------------------------------------------------------
 
 -- This is a Generic master to capture dynamic status codes across modules
 CREATE TABLE IF NOT EXISTS `acc_accounting_status_masters` (
@@ -114,18 +99,14 @@ CREATE TABLE IF NOT EXISTS `acc_accounting_status_masters` (
 	-- `Tally Export Status`                    - 'Success','Failed','Partial','Cancelled'
 	-- 'Cross-Module Data Processing Status'    - 'Pending','Processed','Failed','Skipped'
 
-
-
-
 -- This table will capture Category detail for all the Modules. Voucher entry in accounting Module from other Modules will use these Categories.
 CREATE TABLE IF NOT EXISTS `acc_voucher_category` (
 	`id`                        MEDIUMINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
 	`voucher_module_id`         MEDIUMINT UNSIGNED NOT NULL, -- FK → tco_app_modules
 	`code`                      VARCHAR(30) NOT NULL, -- 'TRANSPORT_FINE', 'TRANSPORT_DAMAGE_FINE', 'HOSTEL_FEE', 'HOSTEL_DAMAGE_FINE', 'LIBRARY_FINE'
 	`name`                      VARCHAR(100) NOT NULL, -- 'Transport Fine', 'Hostel Fee'
+	`event_detail`					 VARCHAR(100) NOT NULL, -- Event details for which voucher category will be used e.g. Library Late Fine Forfeiture, Hostel Fee Forfeiture
 	`module_table_name`         VARCHAR(60) NULL, -- Source Module Table name (`tpt_student_fine_detail`, `lib_fines`, etc.)
-	-- `debit_ledger_id`           INT UNSIGNED NULL, -- FK → acc_ledgers.id (What ledger account will be used to make entry in Accounting Module for this category)
-	-- `credit_ledger_id`          INT UNSIGNED NULL, -- FK → acc_ledgers.id (What ledger account will be used to make entry in Accounting Module for this category)
 	`is_system`                 TINYINT(1) DEFAULT 1, -- 1 = For System use, can not be deleted/edited.
 	`is_active`                 TINYINT(1) DEFAULT 1,
 	`created_at`                TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -158,11 +139,16 @@ CREATE TABLE IF NOT EXISTS `acc_voucher_types` (
 	PRIMARY KEY (`id`),
 	UNIQUE KEY `uq_acc_vt_code` (`code`),
 	UNIQUE KEY `uq_acc_vt_name` (`name`),
+	UNIQUE KEY `uq_acc_vt_prefix` (`prefix`),
 	INDEX `idx_acc_vt_category` (`voucher_category_id`),
 	CONSTRAINT `fk_vt_category` FOREIGN KEY (`voucher_category_id`) REFERENCES `acc_voucher_category`(`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 -- Conditions:
--- If `is_system` = 1, then that voucher type cannot be deleted.
+	-- If `is_system` = 1, then that voucher type cannot be deleted.
+	-- `is_system` = 1 will be only for voucher types - PAYMENT, RECEIPT, CONTRA, JOURNAL, MEMO, SALES, PURCHASE, CREDIT NOTE, DEBIT NOTE
+	-- `prefix` should be unique for each voucher type.
+	-- Admin can change `last_number`, if it has been set wrongly on a higher number and voucher are not there for the previous numbers i.e., 
+	--    set last_number = 100, whereas there is no voucher from 51 - 100.
 
 
 -- This is the table where the Master data of Tax Types will be created.
@@ -357,7 +343,6 @@ CREATE TABLE IF NOT EXISTS `acc_vouchers` (
 	`is_optional`        TINYINT(1) NOT NULL DEFAULT 0, -- Memorandum voucher',
 	`is_cancelled`       TINYINT(1) NOT NULL DEFAULT 0, -- Cancelled flag',
 	`cancelled_reason`   TEXT NULL, -- Cancellation reason',
-	`cost_center_id`     MEDIUMINT UNSIGNED NULL, -- FK → acc_cost_centers (header-level)', (COST CENTER CAN NOT BE CHANGED FOR ENTRIES WITHIN THE VOUCHER)
 	`source_module_id`   MEDIUMINT UNSIGNED NULL, -- FK to `tco_app_modules` e.g. 1 - Fees, 2 - Library, 3 - Transport
 	`source_category_id` MEDIUMINT UNSIGNED NULL, -- FK to `acc_voucher_category`
 	`source_type`        VARCHAR(100) NULL, -- Polymorphic model: PayrollRun, FeeTransaction, GRN, etc.', -- Check, whether required or Not
@@ -397,7 +382,8 @@ CREATE TABLE IF NOT EXISTS `acc_voucher_items` (
 	`type`              ENUM('Dr','Cr') NOT NULL, -- Dr-Debit or Cr-Credit entry',
 	`amount`            DECIMAL(15,2) NOT NULL, -- Line item amount',
 	`narration`         VARCHAR(500) NULL, -- Per-ledger narration',
-	`bill_reference`    VARCHAR(100) NULL, -- Against invoice/bill reference',
+	`reference_number`  VARCHAR(100) NULL, -- Against invoice/bill reference',
+	`reference_date`    DATE NULL, -- Against invoice/bill reference'
 	`created_at`        TIMESTAMP NULL DEFAULT NULL,
 	`updated_at`        TIMESTAMP NULL DEFAULT NULL,
 	`deleted_at`        TIMESTAMP NULL DEFAULT NULL,
@@ -410,6 +396,47 @@ CREATE TABLE IF NOT EXISTS `acc_voucher_items` (
 	CONSTRAINT `fk_acc_vi_ledger` FOREIGN KEY (`ledger_id`) REFERENCES `acc_ledgers` (`id`) ON DELETE RESTRICT,
 	CONSTRAINT `fk_acc_vi_cost` FOREIGN KEY (`cost_center_id`) REFERENCES `acc_cost_centers` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+CREATE TABLE IF NOT EXISTS `acc_voucher_item_cost_centers` (
+   `id`                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+   `voucher_item_id`       INT UNSIGNED NOT NULL,
+   `cost_center_id`        MEDIUMINT UNSIGNED NOT NULL,
+   `amount`                DECIMAL(15,2) NOT NULL,
+   `percentage`            DECIMAL(7,4) NULL,
+   `narration`             VARCHAR(500) NULL,
+   `created_at`            TIMESTAMP NULL DEFAULT NULL,
+   `updated_at`            TIMESTAMP NULL DEFAULT NULL,
+   `deleted_at`            TIMESTAMP NULL DEFAULT NULL,
+   PRIMARY KEY (`id`),
+   INDEX `idx_vic_voucher_item` (`voucher_item_id`),
+   INDEX `idx_vic_cost_center` (`cost_center_id`),
+   UNIQUE KEY `uq_vic_item_cost` (`voucher_item_id`, `cost_center_id`),
+   CONSTRAINT `fk_vic_voucher_item` FOREIGN KEY (`voucher_item_id`) REFERENCES `acc_voucher_items` (`id`) ON DELETE CASCADE,
+   CONSTRAINT `fk_vic_cost_center` FOREIGN KEY (`cost_center_id`) REFERENCES `acc_cost_centers` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Condition:
+-- If COST_CENTRE_REQUIRED in Table `glb_app_config` = 1 (True) Then only we will capturee Cost Center Detail else `acc_voucher_item_cost_centers` will be blank.
+-- I would use RESTRICT rather than SET NULL on cost_center_id. Once a Cost Centre has actually been used in an accounting transaction, I would generally not allow that Cost Centre to be deleted.
+-- Cascade is fine here, because we don’t allow the parent acc_voucher_items row to be deleted unless it has been “Cancelled” first.
+-- 
+-- Payment Voucher Example PAY-125
+-- Teaching Salary       Dr    ₹100,000
+-- HDFC Bank             Cr    ₹100,000
+
+-- Then acc_voucher_items would contain:
+-- |  id | voucher_id |       ledger_id | type |  amount |
+-- | --: | ---------- | --------------- | ---- | ------- |
+-- | 501 |        125 | Teaching Salary | Dr   | 100,000 |
+-- | 502 |        125 |       HDFC Bank | Cr   | 100,000 |
+
+-- Then acc_voucher_item_cost_centers:
+-- | id | voucher_item_id | cost_center_id | amount |
+-- | -: | --------------- | -------------- | ------ |
+-- |  1 |             501 |        Primary | 60,000 |
+-- |  2 |             501 |      Secondary | 40,000 |
+
+
 
 
 -- This is the table where the Master data of Budgets will be created.
@@ -445,6 +472,7 @@ CREATE TABLE IF NOT EXISTS `acc_bank_reconciliations` (
 	-- `statement_path`   VARCHAR(255) NULL,             -- Uploaded statement file path (Deleted to use Media Component)
    `statement_file_name` VARCHAR(100) DEFAULT NULL,     -- file name to show in UI
    `media_id`            INT UNSIGNED DEFAULT NULL,     -- FK to sys_media.id
+	`can_be_import`       TINYINT(1) NOT NULL DEFAULT 0, -- Whether data can be imported from bank statement file
 	`status`              MEDIUMINT UNSIGNED NOT NULL,   -- Reconciliation status -- FK to `acc_accounting_status_masters`
 	`created_at`          TIMESTAMP NULL DEFAULT NULL,
 	`updated_at`          TIMESTAMP NULL DEFAULT NULL,
@@ -455,6 +483,32 @@ CREATE TABLE IF NOT EXISTS `acc_bank_reconciliations` (
 	CONSTRAINT `fk_acc_br_ledger` FOREIGN KEY (`ledger_id`) REFERENCES `acc_ledgers` (`id`) ON DELETE RESTRICT,
 	CONSTRAINT `fk_acc_br_status` FOREIGN KEY (`status`) REFERENCES `acc_accounting_status_masters` (`id`) ON DELETE RESTRICT,
 	CONSTRAINT `fk_acc_br_media` FOREIGN KEY (`media_id`) REFERENCES `sys_media` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- This table will capture mapping of Bank Statement to get import into acc_bank_statement_entries
+CREATE TABLE IF NOT EXISTS `acc_bank_statement_mapping` (
+   `id`                        BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+   `reconciliation_id`         BIGINT UNSIGNED NOT NULL, -- FK → acc_bank_reconciliations`,
+	`has_column_header`         TINYINT(1) NOT NULL DEFAULT 0, -- Whether data can be imported from bank statement file`,
+	`row_no_for_header`         TINYINT UNSIGNED NULL, -- Row number for header`,
+	`import_data_from_row_no`   SMALLINT UNSIGNED NULL, -- Row number for importing data`,
+	`import_data_to_row_no`     SMALLINT UNSIGNED NULL, -- Row number for importing data`,
+	`tran_date_column_no`       TINYINT UNSIGNED NULL, -- Column number for date`,
+	`description_column_no`     TINYINT UNSIGNED NULL, -- Column number for description`,
+	`reference_column_no`       TINYINT UNSIGNED NULL, -- Column number for reference`,
+	`saperate_col_for_dr_cr`    TINYINT(1) NOT NULL DEFAULT 0, -- Whether data has saperate column for Dr/Cr`,
+	`debit_column_no`           TINYINT UNSIGNED NULL, -- Column number for debit`,
+	`credit_column_no`          TINYINT UNSIGNED NULL, -- Column number for credit`,
+	`amount_column_no`          TINYINT UNSIGNED NULL, -- Column number for amount`,	
+	`amount_type_dr_cr_col_no`  TINYINT UNSIGNED NULL, -- Column number for amount type Dr/Cr`,
+	`balance_column_no`         TINYINT UNSIGNED NULL, -- Column number for balance`,
+   `statement_date`            DATE NOT NULL, -- Bank statement date`,
+   `created_at`                TIMESTAMP NULL DEFAULT NULL,
+   `updated_at`                TIMESTAMP NULL DEFAULT NULL,
+   `deleted_at`                TIMESTAMP NULL DEFAULT NULL,
+   PRIMARY KEY (`id`),
+   INDEX `idx_acc_bsm_recon` (`reconciliation_id`),
+   CONSTRAINT `fk_acc_bsm_recon` FOREIGN KEY (`reconciliation_id`) REFERENCES `acc_bank_reconciliations` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
@@ -468,8 +522,10 @@ CREATE TABLE IF NOT EXISTS `acc_bank_statement_entries` (
    `debit`                     DECIMAL(15,2) NOT NULL DEFAULT 0.00, -- Debit amount (withdrawal)
    `credit`                    DECIMAL(15,2) NOT NULL DEFAULT 0.00, -- Credit amount (deposit)
    `balance`                   DECIMAL(15,2) NULL, -- Running balance per statement
+	`entry_type`                ENUM('Mannual','Imported') NOT NULL, -- Whether Data entered Mannually or Imported from Bank Statement File.
    `is_matched`                TINYINT(1) NOT NULL DEFAULT 0, -- Whether matched to a voucher item
    `matched_voucher_item_id`   INT UNSIGNED NULL, -- FK → acc_voucher_items (matched entry)
+   `reconciler_remarks`        VARCHAR(500) NULL, -- Remark from the person who reconciled (if any)
    `matched_at`                TIMESTAMP NULL, -- Reconciliation date, When the match was made
    `matched_by`                INT UNSIGNED NULL, -- FK → sys_users (who matched)
    `created_at`                TIMESTAMP NULL DEFAULT NULL,
@@ -559,7 +615,29 @@ CREATE TABLE IF NOT EXISTS `acc_recurring_template_lines` (
 	CONSTRAINT `fk_acc_rtl_cost` FOREIGN KEY (`cost_center_id`) REFERENCES `acc_cost_centers` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-
+-- This table will capture the log of recurring trasactions posted.
+CREATE TABLE IF NOT EXISTS `acc_recurring_transaction_log` (
+	`id`                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+	`recurring_template_id` BIGINT UNSIGNED NOT NULL, -- FK → acc_recurring_templates
+	`voucher_id`            INT UNSIGNED NOT NULL, -- FK → acc_vouchers
+	`voucher_date`          DATE NOT NULL, -- Voucher date
+	`voucher_type_id`       INT UNSIGNED NOT NULL, -- FK → acc_voucher_types
+	`narration`             VARCHAR(500) NULL, -- Voucher narration
+	`total_amount`          DECIMAL(15,2) NOT NULL, -- Voucher total (must balance Dr=Cr)
+	`is_posted`             TINYINT(1) NOT NULL DEFAULT 1, -- Whether posted to ledgers
+	`posted_at`             TIMESTAMP NULL DEFAULT NULL, -- When posted
+	`posted_by`             INT UNSIGNED NULL, -- FK → sys_users (who posted)
+	`created_at`            TIMESTAMP NULL DEFAULT NULL,
+	`updated_at`            TIMESTAMP NULL DEFAULT NULL,
+	`deleted_at`            TIMESTAMP NULL DEFAULT NULL,
+	PRIMARY KEY (`id`),
+	INDEX `idx_acc_rtl_template` (`recurring_template_id`),
+	INDEX `idx_acc_rtl_voucher` (`voucher_id`),
+	INDEX `idx_acc_rtl_voucher_type` (`voucher_type_id`),
+	CONSTRAINT `fk_acc_rtl_template` FOREIGN KEY (`recurring_template_id`) REFERENCES `acc_recurring_templates` (`id`) ON DELETE CASCADE,
+	CONSTRAINT `fk_acc_rtl_voucher` FOREIGN KEY (`voucher_id`) REFERENCES `acc_vouchers` (`id`) ON DELETE CASCADE,
+	CONSTRAINT `fk_acc_rtl_voucher_type` FOREIGN KEY (`voucher_type_id`) REFERENCES `acc_voucher_types` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----------------------------------------------------------------------------
 -- Section 4 : ASSETS & EXPENSES
@@ -647,26 +725,27 @@ CREATE TABLE IF NOT EXISTS `acc_depreciation_entries` (
 
 -- This is the table where the Master data of Expense Claims will be created.
 CREATE TABLE IF NOT EXISTS `acc_expense_claims` (
-   `id`            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-   `claim_number`  VARCHAR(50) NOT NULL,         -- Auto-generated claim number
-   `employee_id`   INT UNSIGNED NOT NULL,        -- FK → sch_employees (existing table)
-   `claim_date`    DATE NOT NULL,                -- Date of claim submission
-   `total_amount`  DECIMAL(15,2) NOT NULL,       -- Total claim amount
-	`status`         MEDIUMINT UNSIGNED NOT NULL, -- Claim workflow status (FK to `acc_accounting_status_masters`)
-   `approved_by`   INT UNSIGNED NULL,            -- FK → sys_users
-   `approved_at`   TIMESTAMP NULL,               -- Approval timestamp
-   `voucher_id`    BIGINT UNSIGNED NULL,         -- FK → acc_vouchers (payment voucher on approval)
-   `created_at`    TIMESTAMP NULL DEFAULT NULL,
-   `updated_at`    TIMESTAMP NULL DEFAULT NULL,
-   `deleted_at`    TIMESTAMP NULL DEFAULT NULL,
+   `id`             BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+   `claim_number`   VARCHAR(50) NOT NULL,         -- Auto-generated claim number
+   `employee_id`    INT UNSIGNED NOT NULL,        -- FK → sch_employees (existing table)
+   `claim_date`     DATE NOT NULL,                -- Date of claim submission
+   `narration`      VARCHAR(500) NULL,            -- Claim narration
+   `total_amount`   DECIMAL(15,2) NOT NULL,       -- Total claim amount
+   `status`         MEDIUMINT UNSIGNED NOT NULL,  -- Claim workflow status (FK to `acc_accounting_status_masters`)
+   `approved_by`    INT UNSIGNED NULL,            -- FK → sys_users
+   `approved_at`    TIMESTAMP NULL,               -- Approval timestamp
+   `voucher_id`     BIGINT UNSIGNED NULL,         -- FK → acc_vouchers (payment voucher on approval)
+   `created_at`     TIMESTAMP NULL DEFAULT NULL,
+   `updated_at`     TIMESTAMP NULL DEFAULT NULL,
+   `deleted_at`     TIMESTAMP NULL DEFAULT NULL,
    PRIMARY KEY (`id`),
    UNIQUE KEY `uq_acc_ec_number` (`claim_number`, `deleted_at`),
    INDEX `idx_acc_ec_employee` (`employee_id`),
    INDEX `idx_acc_ec_status` (`status`),
    INDEX `idx_acc_ec_voucher` (`voucher_id`),
    CONSTRAINT `fk_acc_ec_voucher` FOREIGN KEY (`voucher_id`) REFERENCES `acc_vouchers` (`id`) ON DELETE SET NULL,
-	CONSTRAINT `fk_acc_ec_employee` FOREIGN KEY (`employee_id`) REFERENCES `sch_employees` (`id`) ON DELETE RESTRICT,
-	CONSTRAINT `fk_acc_ec_status` FOREIGN KEY (`status`) REFERENCES `acc_accounting_status_masters` (`id`) ON DELETE RESTRICT
+   CONSTRAINT `fk_acc_ec_employee` FOREIGN KEY (`employee_id`) REFERENCES `sch_employees` (`id`) ON DELETE RESTRICT,
+   CONSTRAINT `fk_acc_ec_status` FOREIGN KEY (`status`) REFERENCES `acc_accounting_status_masters` (`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
@@ -675,7 +754,9 @@ CREATE TABLE IF NOT EXISTS `acc_expense_claim_lines` (
    `id`                BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
    `expense_claim_id`  BIGINT UNSIGNED NOT NULL,   -- FK → acc_expense_claims
    `expense_date`      DATE NOT NULL,              -- Date of expense
+   `reference_number`  VARCHAR(50) NULL,         	-- Reference number for the expense (e.g. bill number)
    `ledger_id`         INT UNSIGNED NOT NULL,      -- FK → acc_ledgers (expense category)
+   `cost_center_id`    MEDIUMINT UNSIGNED NULL,    -- FK → acc_cost_centers (header-level)
    `description`       VARCHAR(255) NOT NULL,      -- Expense description
    `amount`            DECIMAL(15,2) NOT NULL,     -- Expense amount
    `tax_amount`        DECIMAL(15,2) NOT NULL DEFAULT 0.00, -- Tax on expense
@@ -693,7 +774,50 @@ CREATE TABLE IF NOT EXISTS `acc_expense_claim_lines` (
    CONSTRAINT `fk_acc_ecl_ledger` FOREIGN KEY (`ledger_id`) REFERENCES `acc_ledgers` (`id`) ON DELETE RESTRICT,
 	CONSTRAINT `fk_acc_ecl_media` FOREIGN KEY (`media_id`) REFERENCES `sys_media` (`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Condition:
+-- When above Expence claim will make entry in Voucher table then acc_vouchers.source_type will be 'Expense Claim' and acc_vouchers.source_id will be acc_expense_claims.id
+-- Voucher lines will be created in `acc_voucher` & `acc_voucher_items` table as per below Instructions:
+-- 	1. acc_voucher_items.type will be 'Dr'
+-- 	2. acc_voucher_items.ledger_id will be acc_expense_claims_lines.ledger_id
+-- 	3. acc_voucher_items.amount will be acc_expense_claims_lines.total_amount
+-- 	4. acc_voucher_items.description will be acc_expense_claims_lines.description
 
+	`acc_voucher.voucher_prefix` = "PAY-"
+	`acc_voucher.voucher_number` = last_number+1 (This Number should be increased only when Voucher is in POSTED state)
+	`acc_voucher.voucher_type_id` = voucher type id for "PAY" in Table acc_voucher_types
+	`acc_voucher.financial_year_id` = Active Financial year id 
+	`acc_voucher.voucher_date` = `acc_expense_claims.claim_date`
+	`acc_voucher.reference_number` = NULL
+	`acc_voucher.reference_date` = `acc_expense_claim_lines.expense_date`
+	`acc_voucher.narration` = `acc_expense_claims.narration`
+	`acc_voucher.total_amount` = `acc_expense_claims.total_amount`
+	`acc_voucher.is_post_dated` = 0
+	`acc_voucher.is_optional` = 0        
+	`acc_voucher.is_cancelled` = 0       
+	`acc_voucher.cancelled_reason` = NULL   
+	`acc_voucher.cost_center_id` =  `acc_expense_claims.cost_center_id`
+	`acc_voucher.source_module_id` = `acc_expense_claims.source_module_id`
+	`acc_voucher.source_category_id` 
+	`acc_voucher.source_type`        
+	`acc_voucher.source_id`          
+	`acc_voucher.status`             
+
+
+	`acc_voucher_items.voucher_id` will be new voucher id
+	`acc_voucher_items.ledger_id` will be acc_expense_claims_lines.ledger_id
+	`acc_voucher_items.type` = 'Dr'
+	`acc_voucher_items.amount` = acc_expense_claims_lines.total_amount
+	`acc_voucher_items.narration` = acc_expense_claims_lines.description
+	`acc_voucher_items.bill_reference` = acc_expense_claims_lines.reference_number
+	`acc_voucher_items.reference_date` =    DATE NULL, -- Against invoice/bill reference'
+
+-- 5. acc_voucher_items.cost_center_id will be acc_expense_claims.cost_center_id
+-- 6. acc_voucher_items.employee_id will be acc_expense_claims.employee_id
+-- 7. acc_voucher_items.expense_date will be acc_expense_claims_lines.expense_date
+-- 8. acc_voucher_items.tax_amount will be acc_expense_claims_lines.tax_amount
+-- 9. acc_voucher_items.total_amount will be acc_expense_claims_lines.total_amount
+-- 10. acc_voucher_items.receipt_file_name will be acc_expense_claims_lines.receipt_file_name
+-- 11. acc_voucher_items.media_id will be acc_expense_claims_lines.media_id
 
 
 -- ============================================================================

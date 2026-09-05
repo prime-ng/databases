@@ -229,10 +229,10 @@
 -- This table will capture Modules detail of entire application, which will be used in application development.
 -- Screens of this table will not be available for Tenant to modify. This will be completely managed by Super Admin.
 CREATE TABLE IF NOT EXISTS `glb_app_modules` (
-  `key`           VARCHAR(10) NOT NULL,  -- Can not be changed by User (Tenant) e.g. 'ACC','TPT',...
+	`key`           VARCHAR(10) NOT NULL,  -- Can not be changed by User (Tenant) e.g. 'ACC','TPT',...
+	`ordinal`       SMALLINT UNSIGNED NOT NULL DEFAULT 0, -- display order in menu
 	`code`          VARCHAR(30) NOT NULL,  -- 'ACCOUNTING', 'TRANSPORT', 'HOSTEL', 'LIBRARY', 'STUDENT_FEE' etc.
 	`name`          VARCHAR(100) NOT NULL, -- 'Accounting', 'Transport', 'Hostel & Boarding', 'Library', 'Student Fee', etc.
-	`ordinal`       SMALLINT UNSIGNED NOT NULL DEFAULT 0, -- display order in menu
 	`module_prefix` VARCHAR(5) NULL, -- Source Module Tables Prefix (`tpt_`, `lib_`, etc.)
 	`is_system`     TINYINT(1) NOT NULL DEFAULT 0, -- 1 = For System use, can not be deleted/edited.
 	`is_active`     TINYINT(1) NOT NULL DEFAULT 1,
@@ -242,7 +242,13 @@ CREATE TABLE IF NOT EXISTS `glb_app_modules` (
 	PRIMARY KEY (`key`),
 	UNIQUE KEY `uq_sys_module_code` (`code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
--- Example : ('Fees','Library','Transport','HR','Vendor','Inventory','Payroll','Manual') 
+-- Data Seeder:
+-- Key | Ordinal | Code 				| Name											| Module_Prefix | Is_System | Is_Active
+---------------------------------------------------------------------------------------------------------------------------
+-- ACC | 1 		  | ACCOUNTING			| Accounting									| acc_ 			 | 1         | 1
+-- ACC | 2 		  | TRANSPORT			| Transport										| tpt_ 			 | 0         | 1
+-- ACC | 3 		  | HOSTEL				| Hostel & Boarding							| hst_ 			 | 0         | 1
+-- 
 
 
 -- This table is to store the global Settings detail for all the Modules. This will be used in application development.
@@ -252,7 +258,7 @@ CREATE TABLE IF NOT EXISTS `glb_app_modules` (
     `module_id`         VARCHAR(10) NOT NULL,         -- FK to glb_app_modules.key
     `key`               varchar(150) NOT NULL,        -- Can not changed by user (He can edit other fields only but not KEY)
     `key_name`          varchar(255) NOT NULL,        -- Can be Changed by user
-    `ordinal`           int unsigned NOT NULL DEFAULT '1',
+    `ordinal`           SMALLINT UNSIGNED NOT NULL DEFAULT '1',
     `value`             varchar(512) NOT NULL,        -- Can be Changed by user
     `value_type`        ENUM('STRING', 'NUMBER', 'BOOLEAN', 'DATE', 'TIME', 'DATETIME', 'JSON') NOT NULL,
     `description`       varchar(255) NOT NULL,
@@ -268,8 +274,14 @@ CREATE TABLE IF NOT EXISTS `glb_app_modules` (
     UNIQUE KEY `uq_settings_ordinal` (`ordinal`),
     UNIQUE KEY `uq_settings_key` (`key`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-
+-- Data Seeder:
+-- Model | Key 								| Key	Name															                        | Type		  | Value
+-----------------------------------------------------------------------------------------------------------------------------------------------------
+-- ACC   | COST_CENTRE_APPLICABLE		| Cost centres are applicable									            | Boolean 	| True / False
+-- ACC   | IS_INTEREST_ON						| Activate Interest Calculation								            | Boolean 	| True / False
+-- ACC   | CREDIT_DAYS_CHK_ON				| Check for credit days during voucher entry	            | Boolean 	| True / False
+-- ACC   | COST_CENTRE_REQUIRED			| Cost Centre Required												            | Boolean 	| True / False
+-- 
 
 -- ===============================================================================================================================================================
 -- CHANGE LOG:

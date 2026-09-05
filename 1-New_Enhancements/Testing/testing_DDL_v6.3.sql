@@ -322,12 +322,12 @@ CREATE TABLE IF NOT EXISTS `tst_test_runs` (
 -- 3.2: One row per test case within a run.
 -- bug_id + bug_user_code added via ALTER at end of file (forward reference to tst_bugs).
 CREATE TABLE IF NOT EXISTS `tst_test_run_results` (
-  `id`                INT UNSIGNED  NOT NULL AUTO_INCREMENT,
-  `user_code`         VARCHAR(5)    NOT NULL,
-  `run_id`            INT UNSIGNED  NOT NULL,                  -- FK → tst_test_runs(id, user_code) via composite
-  `test_case_id`      INT UNSIGNED  NULL,                      -- nullable: keep history if test case is later removed
-  `bug_id`            INT UNSIGNED  NULL,                      -- nullable: keep history if bug is later removed
-  `bug_user_code`     VARCHAR(5)    NULL,                      -- nullable: keep history if bug is later removed
+  `id`                    INT UNSIGNED  NOT NULL AUTO_INCREMENT,
+  `run_id`                INT UNSIGNED  NOT NULL,                  -- FK → tst_test_runs(id, user_code) via composite
+  `user_code`             VARCHAR(5)    NOT NULL,
+  `test_case_id`          INT UNSIGNED  NULL,                      -- nullable: keep history if test case is later removed
+  `bug_id`                INT UNSIGNED  NULL,                      -- nullable: keep history if bug is later removed
+  `bug_user_code`         VARCHAR(5)    NULL,                      -- nullable: keep history if bug is later removed
   `display_name`      VARCHAR(255)  NOT NULL,                  -- snapshot of name at run time
   `status`            ENUM('Passed','Failed','Skipped','Error') NOT NULL,
   `duration_seconds`  DECIMAL(10,2) NULL,

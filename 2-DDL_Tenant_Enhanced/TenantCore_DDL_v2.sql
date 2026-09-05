@@ -37,51 +37,6 @@ INSERT INTO `tco_central_activity_logs` (`id`, `subject_type`, `subject_id`, `us
 (3, 'Modules\\GlobalMaster\\Models\\Module', '1', 1, 'Updated', '{\"other\": \"some other information\", \"message\": \"A new module was updated.\"}', '127.0.0.1', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36 Edg/150.0.0.0', '2026-07-09 14:27:07', '2026-07-09 14:27:07');
 
 
--- --------------------------------------------------------------------------
--- NEW TABLES
--- --------------------------------------------------------------------------
-
--- This table will capture Modules detail which will make Voucher entry in accounting Module.
--- Screens of this table will not be available for Tenant to modify. This will be completely managed by Super Admin.
-CREATE TABLE IF NOT EXISTS `tco_app_modules` (
-  `key`           VARCHAR(10) NOT NULL,  -- Can not be changed by User (Tenant) e.g. 'ACC','TPT',...
-	`code`          VARCHAR(30) NOT NULL,  -- 'ACCOUNTING', 'TRANSPORT', 'HOSTEL', 'LIBRARY', 'STUDENT_FEE' etc.
-	`name`          VARCHAR(100) NOT NULL, -- 'Accounting', 'Transport', 'Hostel & Boarding', 'Library', 'Student Fee', etc.
-	`ordinal`       SMALLINT UNSIGNED NOT NULL DEFAULT 0, -- display order in menu
-	`module_prefix` VARCHAR(5) NULL, -- Source Module Tables Prefix (`tpt_`, `lib_`, etc.)
-	`is_system`     TINYINT(1) NOT NULL DEFAULT 0, -- 1 = For System use, can not be deleted/edited.
-	`is_active`     TINYINT(1) NOT NULL DEFAULT 1,
-	`created_at`    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	`updated_at`    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-	`deleted_at`    TIMESTAMP NULL,
-	PRIMARY KEY (`key`),
-	UNIQUE KEY `uq_sys_module_code` (`code`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
--- Example : ('Fees','Library','Transport','HR','Vendor','Inventory','Payroll','Manual') 
-
-
--- This table is to store the Settings detail for all the Modules. 
-  CREATE TABLE IF NOT EXISTS `tco_tenant_module_config` (
-    `id`                MEDIUMINT unsigned NOT NULL AUTO_INCREMENT,
-    `module_id`         SMALLINT unsigned NOT NULL,
-    `key`               varchar(150) NOT NULL,        -- Can not changed by user (He can edit other fields only but not KEY)
-    `key_name`          varchar(150) NOT NULL,        -- Can be Changed by user
-    `ordinal`           int unsigned NOT NULL DEFAULT '1',
-    `value`             varchar(512) NOT NULL,        -- Can be Changed by user
-    `value_type`        ENUM('STRING', 'NUMBER', 'BOOLEAN', 'DATE', 'TIME', 'DATETIME', 'JSON') NOT NULL,
-    `description`       varchar(255) NOT NULL,
-    `additional_info`   JSON DEFAULT NULL,
-    `tenant_can_modify` tinyint(1) NOT NULL DEFAULT '0',    -- Tenant can modify only if 1
-    `mandatory`         tinyint(1) NOT NULL DEFAULT '1',    -- Is it mandatory to set this value
-    `used_by_app`       tinyint(1) NOT NULL DEFAULT '1',    -- Is it used by app
-    `is_active`         tinyint(1) NOT NULL DEFAULT '1',
-    `deleted_at`        timestamp NULL DEFAULT NULL,
-    `created_at`        timestamp NULL DEFAULT NULL,
-    `updated_at`        timestamp NULL DEFAULT NULL,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_settings_ordinal` (`ordinal`),
-    UNIQUE KEY `uq_settings_key` (`key`)
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 -- ===========================================================================

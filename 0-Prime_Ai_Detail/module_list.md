@@ -41,7 +41,7 @@
 │ SchoolSetup              │ SCH  │ sch_   │ SchoolSetup                │ SchoolSetup          │ SchoolSetup_DDL_             │
 │ SmartTimetable           │ STT  │ tt_    │ SmartTimetable             │ SmartTimetable       │ Timetable_DDL_               │
 │ StandardTimetable        │ TTS  │ tts_   │ StandardTimetable          │ StandardTimetable    │ Timetable_DDL_               │
-│ StudentFee               │ FIN  │ fee_   │ StudentFee                 │ StudentFee           │ StudentFee_DDL_              │
+│ StudentFee               │ FEE  │ fee_   │ StudentFee                 │ StudentFee           │ StudentFee_DDL_              │
 │ StudentPortal            │ STP  │ stp_   │ StudentPortal              │ StudentPortal        │ StudentPortal_DDL_           │
 │ StudentProfile           │ STD  │ std_   │ StudentProfile             │ StudentProfile       │ StudentProfile_DDL_          │
 │ Syllabus                 │ SLB  │ slb_   │ Syllabus                   │ Syllabus             │ Syllabus_DDL_                │
@@ -54,3 +54,5 @@
 │ Vendor                   │ VND  │ vnd_   │ Vendor                     │ Vendor               │ Vendor_DDL_                  │
 └──────────────────────────┴──────┴────────┴────────────────────────────┴──────────────────────┴──────────────────────────────┘
 ```
+
+Prime
