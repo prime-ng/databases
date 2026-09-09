@@ -170,6 +170,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- A school may run several campuses under one legal entity. Multi-campus reporting is Phase 4, but the
 -- dimension is carried from Phase 1: adding a dimension to posted history later is far more expensive
 -- than carrying a mostly-constant column now (Solution_Design_v1 OD-02).
+-- New Table
 CREATE TABLE IF NOT EXISTS `acc_campuses` (
     `id`            SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `code`          VARCHAR(20) NOT NULL,
@@ -189,7 +190,7 @@ CREATE TABLE IF NOT EXISTS `acc_campuses` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Physical campuses of one legal entity. A reporting dimension, not a separate set of books.';
 
-
+-- New Table
 CREATE TABLE IF NOT EXISTS `acc_currencies` (
     `id`                SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `code`              CHAR(3) NOT NULL,               -- ISO 4217: INR, USD, GBP
@@ -3557,8 +3558,7 @@ COMMENT='Every assertion run, pass or fail. A failure names the record (Enhancem
 CREATE TABLE IF NOT EXISTS `acc_settings` (
     `id`                SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `setting_key`       VARCHAR(80) NOT NULL,
-    `setting_group`     ENUM('Posting','Numbering','Period','Bill_Wise','Bank','Tax','Fund','Budget',
-                             'Approval','Reporting','Integration','Security') NOT NULL,
+    `setting_group`     ENUM('Posting','Numbering','Period','Bill_Wise','Bank','Tax','Fund','Budget','Approval','Reporting','Integration','Security') NOT NULL,
     `value_type`        ENUM('String','Integer','Decimal','Boolean','Date','Json') NOT NULL,
     `value_string`      VARCHAR(500) NULL,
     `value_integer`     BIGINT NULL,
@@ -3611,774 +3611,774 @@ CREATE TABLE IF NOT EXISTS `acc_settings` (
 -- Ledger balance for a financial year: opening, movement, closing. The dimension-NULL rows only —
 -- summing the dimension slices as well would double count.
 CREATE OR REPLACE VIEW `vw_ledger_balances` AS
-SELECT
-    l.id                                            AS ledger_id,
-    l.code                                          AS ledger_code,
-    l.name                                          AS ledger_name,
-    l.ledger_type,
-    l.party_type,
-    l.is_bill_wise,
-    g.id                                            AS account_group_id,
-    g.name                                          AS group_name,
-    g.nature,
-    g.path                                          AS group_path,
-    b.financial_year_id,
-    MAX(CASE WHEN p.period_no = 1 THEN b.opening_debit  ELSE 0 END) AS opening_debit,
-    MAX(CASE WHEN p.period_no = 1 THEN b.opening_credit ELSE 0 END) AS opening_credit,
-    SUM(b.period_debit)                             AS total_debit,
-    SUM(b.period_credit)                            AS total_credit,
-    SUM(b.transaction_count)                        AS transaction_count,
-    -- Closing is the LAST period's closing, not a sum of closings.
-    SUM(b.period_debit)  - SUM(b.period_credit)
-      + MAX(CASE WHEN p.period_no = 1 THEN b.opening_debit - b.opening_credit ELSE 0 END) AS net_balance,
-    MAX(b.last_rebuilt_at)                          AS last_rebuilt_at,
-    MAX(b.is_stale)                                 AS is_stale
-FROM `acc_ledger_period_balances` b
-JOIN `acc_ledgers`          l ON l.id = b.ledger_id
-JOIN `acc_account_groups`   g ON g.id = l.account_group_id
-JOIN `acc_accounting_periods` p ON p.id = b.period_id
-WHERE b.cost_center_id IS NULL AND b.fund_id IS NULL AND b.campus_id IS NULL
-GROUP BY l.id, l.code, l.name, l.ledger_type, l.party_type, l.is_bill_wise,
-         g.id, g.name, g.nature, g.path, b.financial_year_id;
+    SELECT
+        l.id                                            AS ledger_id,
+        l.code                                          AS ledger_code,
+        l.name                                          AS ledger_name,
+        l.ledger_type,
+        l.party_type,
+        l.is_bill_wise,
+        g.id                                            AS account_group_id,
+        g.name                                          AS group_name,
+        g.nature,
+        g.path                                          AS group_path,
+        b.financial_year_id,
+        MAX(CASE WHEN p.period_no = 1 THEN b.opening_debit  ELSE 0 END) AS opening_debit,
+        MAX(CASE WHEN p.period_no = 1 THEN b.opening_credit ELSE 0 END) AS opening_credit,
+        SUM(b.period_debit)                             AS total_debit,
+        SUM(b.period_credit)                            AS total_credit,
+        SUM(b.transaction_count)                        AS transaction_count,
+        -- Closing is the LAST period's closing, not a sum of closings.
+        SUM(b.period_debit)  - SUM(b.period_credit)
+        + MAX(CASE WHEN p.period_no = 1 THEN b.opening_debit - b.opening_credit ELSE 0 END) AS net_balance,
+        MAX(b.last_rebuilt_at)                          AS last_rebuilt_at,
+        MAX(b.is_stale)                                 AS is_stale
+    FROM `acc_ledger_period_balances` b
+    JOIN `acc_ledgers`          l ON l.id = b.ledger_id
+    JOIN `acc_account_groups`   g ON g.id = l.account_group_id
+    JOIN `acc_accounting_periods` p ON p.id = b.period_id
+    WHERE b.cost_center_id IS NULL AND b.fund_id IS NULL AND b.campus_id IS NULL
+    GROUP BY l.id, l.code, l.name, l.ledger_type, l.party_type, l.is_bill_wise,
+            g.id, g.name, g.nature, g.path, b.financial_year_id;
 
 
 -- Trial Balance, one row per ledger per period. Σ debit_balance must equal Σ credit_balance — asserted
 -- hourly, not hoped for (Solution_Design_v1 §5.5).
 CREATE OR REPLACE VIEW `vw_trial_balance` AS
-SELECT
-    b.financial_year_id,
-    b.period_id,
-    p.period_no,
-    p.name                                          AS period_name,
-    p.start_date                                    AS period_start,
-    p.end_date                                      AS period_end,
-    p.status                                        AS period_status,
-    l.id                                            AS ledger_id,
-    l.code                                          AS ledger_code,
-    l.name                                          AS ledger_name,
-    g.id                                            AS account_group_id,
-    g.name                                          AS group_name,
-    g.nature,
-    g.path                                          AS group_path,
-    g.affects_gross_profit,
-    b.opening_debit,
-    b.opening_credit,
-    b.period_debit,
-    b.period_credit,
-    b.closing_debit,
-    b.closing_credit,
-    -- A ledger shows on one side only. Netting here is what makes Σ Dr = Σ Cr meaningful.
-    GREATEST(b.closing_debit  - b.closing_credit, 0) AS debit_balance,
-    GREATEST(b.closing_credit - b.closing_debit, 0) AS credit_balance,
-    b.transaction_count
-FROM `acc_ledger_period_balances` b
-JOIN `acc_ledgers`          l ON l.id = b.ledger_id
-JOIN `acc_account_groups`   g ON g.id = l.account_group_id
-JOIN `acc_accounting_periods` p ON p.id = b.period_id
-WHERE b.cost_center_id IS NULL AND b.fund_id IS NULL AND b.campus_id IS NULL
-  AND l.deleted_at IS NULL;
+    SELECT
+        b.financial_year_id,
+        b.period_id,
+        p.period_no,
+        p.name                                          AS period_name,
+        p.start_date                                    AS period_start,
+        p.end_date                                      AS period_end,
+        p.status                                        AS period_status,
+        l.id                                            AS ledger_id,
+        l.code                                          AS ledger_code,
+        l.name                                          AS ledger_name,
+        g.id                                            AS account_group_id,
+        g.name                                          AS group_name,
+        g.nature,
+        g.path                                          AS group_path,
+        g.affects_gross_profit,
+        b.opening_debit,
+        b.opening_credit,
+        b.period_debit,
+        b.period_credit,
+        b.closing_debit,
+        b.closing_credit,
+        -- A ledger shows on one side only. Netting here is what makes Σ Dr = Σ Cr meaningful.
+        GREATEST(b.closing_debit  - b.closing_credit, 0) AS debit_balance,
+        GREATEST(b.closing_credit - b.closing_debit, 0) AS credit_balance,
+        b.transaction_count
+    FROM `acc_ledger_period_balances` b
+    JOIN `acc_ledgers`          l ON l.id = b.ledger_id
+    JOIN `acc_account_groups`   g ON g.id = l.account_group_id
+    JOIN `acc_accounting_periods` p ON p.id = b.period_id
+    WHERE b.cost_center_id IS NULL AND b.fund_id IS NULL AND b.campus_id IS NULL
+    AND l.deleted_at IS NULL;
 
 
 -- Balance Sheet: the three permanent natures. Assets on one side, Liabilities and Equity on the other.
 CREATE OR REPLACE VIEW `vw_balance_sheet` AS
-SELECT
-    financial_year_id, period_id, period_no, period_name, period_end,
-    nature,
-    CASE nature WHEN 'Asset' THEN 'Assets' ELSE 'Liabilities and Funds' END AS bs_side,
-    account_group_id, group_name, group_path,
-    ledger_id, ledger_code, ledger_name,
-    debit_balance, credit_balance,
-    -- Assets are naturally debit, Liabilities and Equity naturally credit. Presented positive either way.
-    CASE WHEN nature = 'Asset' THEN debit_balance - credit_balance
-         ELSE credit_balance - debit_balance END    AS balance_amount
-FROM `vw_trial_balance`
-WHERE nature IN ('Asset','Liability','Equity');
+    SELECT
+        financial_year_id, period_id, period_no, period_name, period_end,
+        nature,
+        CASE nature WHEN 'Asset' THEN 'Assets' ELSE 'Liabilities and Funds' END AS bs_side,
+        account_group_id, group_name, group_path,
+        ledger_id, ledger_code, ledger_name,
+        debit_balance, credit_balance,
+        -- Assets are naturally debit, Liabilities and Equity naturally credit. Presented positive either way.
+        CASE WHEN nature = 'Asset' THEN debit_balance - credit_balance
+            ELSE credit_balance - debit_balance END    AS balance_amount
+    FROM `vw_trial_balance`
+    WHERE nature IN ('Asset','Liability','Equity');
 
 
 -- Income & Expenditure — the school's Profit & Loss. Surplus = Income − Expenditure.
 CREATE OR REPLACE VIEW `vw_income_expenditure` AS
-SELECT
-    financial_year_id, period_id, period_no, period_name, period_end,
-    nature,
-    affects_gross_profit,
-    CASE WHEN affects_gross_profit = 1 THEN 'Direct' ELSE 'Indirect' END AS ie_section,
-    account_group_id, group_name, group_path,
-    ledger_id, ledger_code, ledger_name,
-    period_debit, period_credit,
-    CASE WHEN nature = 'Income' THEN period_credit - period_debit
-         ELSE period_debit - period_credit END      AS amount
-FROM `vw_trial_balance`
-WHERE nature IN ('Income','Expense');
+    SELECT
+        financial_year_id, period_id, period_no, period_name, period_end,
+        nature,
+        affects_gross_profit,
+        CASE WHEN affects_gross_profit = 1 THEN 'Direct' ELSE 'Indirect' END AS ie_section,
+        account_group_id, group_name, group_path,
+        ledger_id, ledger_code, ledger_name,
+        period_debit, period_credit,
+        CASE WHEN nature = 'Income' THEN period_credit - period_debit
+            ELSE period_debit - period_credit END      AS amount
+    FROM `vw_trial_balance`
+    WHERE nature IN ('Income','Expense');
 
 
 -- The Day Book: every posted line, in date and voucher order. ALWAYS query this with a date range.
 CREATE OR REPLACE VIEW `vw_day_book` AS
-SELECT
-    vi.id                                           AS voucher_item_id,
-    v.id                                            AS voucher_id,
-    v.voucher_date,
-    v.voucher_display_no,
-    v.voucher_number,
-    vt.code                                         AS voucher_type_code,
-    vt.name                                         AS voucher_type_name,
-    vt.school_label,
-    v.financial_year_id,
-    v.period_id,
-    v.campus_id,
-    vi.sequence_no,
-    vi.ledger_id,
-    l.code                                          AS ledger_code,
-    l.name                                          AS ledger_name,
-    g.nature,
-    vi.entry_type,
-    CASE WHEN vi.entry_type = 'Dr' THEN vi.amount ELSE 0 END AS debit_amount,
-    CASE WHEN vi.entry_type = 'Cr' THEN vi.amount ELSE 0 END AS credit_amount,
-    vi.amount,
-    v.total_amount                                  AS voucher_total,
-    COALESCE(vi.narration, v.narration)             AS narration,
-    v.reference_number,
-    v.party_ledger_id,
-    pl.name                                         AS party_name,
-    v.source_module_key,
-    v.posted_at,
-    v.posted_by
-FROM `acc_voucher_items` vi
-JOIN `acc_vouchers`         v  ON v.id  = vi.voucher_id
-JOIN `acc_voucher_types`    vt ON vt.id = v.voucher_type_id
-JOIN `acc_ledgers`          l  ON l.id  = vi.ledger_id
-JOIN `acc_account_groups`   g  ON g.id  = l.account_group_id
-LEFT JOIN `acc_ledgers`     pl ON pl.id = v.party_ledger_id
-WHERE vi.voucher_status = 'Posted'
-  AND v.is_provisional = 0
-  AND vi.deleted_at IS NULL;
+    SELECT
+        vi.id                                           AS voucher_item_id,
+        v.id                                            AS voucher_id,
+        v.voucher_date,
+        v.voucher_display_no,
+        v.voucher_number,
+        vt.code                                         AS voucher_type_code,
+        vt.name                                         AS voucher_type_name,
+        vt.school_label,
+        v.financial_year_id,
+        v.period_id,
+        v.campus_id,
+        vi.sequence_no,
+        vi.ledger_id,
+        l.code                                          AS ledger_code,
+        l.name                                          AS ledger_name,
+        g.nature,
+        vi.entry_type,
+        CASE WHEN vi.entry_type = 'Dr' THEN vi.amount ELSE 0 END AS debit_amount,
+        CASE WHEN vi.entry_type = 'Cr' THEN vi.amount ELSE 0 END AS credit_amount,
+        vi.amount,
+        v.total_amount                                  AS voucher_total,
+        COALESCE(vi.narration, v.narration)             AS narration,
+        v.reference_number,
+        v.party_ledger_id,
+        pl.name                                         AS party_name,
+        v.source_module_key,
+        v.posted_at,
+        v.posted_by
+    FROM `acc_voucher_items` vi
+    JOIN `acc_vouchers`         v  ON v.id  = vi.voucher_id
+    JOIN `acc_voucher_types`    vt ON vt.id = v.voucher_type_id
+    JOIN `acc_ledgers`          l  ON l.id  = vi.ledger_id
+    JOIN `acc_account_groups`   g  ON g.id  = l.account_group_id
+    LEFT JOIN `acc_ledgers`     pl ON pl.id = v.party_ledger_id
+    WHERE vi.voucher_status = 'Posted'
+    AND v.is_provisional = 0
+    AND vi.deleted_at IS NULL;
 
 
 -- A ledger statement: the lines of one ledger, with the contra ledger named, so a row reads
 -- "To Fee Income" rather than merely showing an amount. Query with ledger_id and a date range.
 CREATE OR REPLACE VIEW `vw_ledger_statement` AS
-SELECT
-    vi.id                                           AS voucher_item_id,
-    vi.ledger_id,
-    l.name                                          AS ledger_name,
-    vi.voucher_date,
-    vi.financial_year_id,
-    vi.period_id,
-    v.id                                            AS voucher_id,
-    v.voucher_display_no,
-    vt.code                                         AS voucher_type_code,
-    vt.school_label,
-    vi.entry_type,
-    CASE WHEN vi.entry_type = 'Dr' THEN vi.amount ELSE 0 END AS debit_amount,
-    CASE WHEN vi.entry_type = 'Cr' THEN vi.amount ELSE 0 END AS credit_amount,
-    COALESCE(vi.narration, v.narration)             AS narration,
-    v.reference_number,
-    -- The other side of a simple two-line voucher. NULL where the voucher has more than two lines,
-    -- which the UI renders as 'As per details'.
-    (SELECT MIN(o.ledger_id) FROM `acc_voucher_items` o
-      WHERE o.voucher_id = vi.voucher_id AND o.id <> vi.id AND o.deleted_at IS NULL
-      HAVING COUNT(*) = 1)                          AS contra_ledger_id,
-    vi.is_reconciled,
-    vi.bank_value_date
-FROM `acc_voucher_items` vi
-JOIN `acc_vouchers`      v  ON v.id  = vi.voucher_id
-JOIN `acc_voucher_types` vt ON vt.id = v.voucher_type_id
-JOIN `acc_ledgers`       l  ON l.id  = vi.ledger_id
-WHERE vi.voucher_status = 'Posted'
-  AND v.is_provisional = 0
-  AND vi.deleted_at IS NULL;
+    SELECT
+        vi.id                                           AS voucher_item_id,
+        vi.ledger_id,
+        l.name                                          AS ledger_name,
+        vi.voucher_date,
+        vi.financial_year_id,
+        vi.period_id,
+        v.id                                            AS voucher_id,
+        v.voucher_display_no,
+        vt.code                                         AS voucher_type_code,
+        vt.school_label,
+        vi.entry_type,
+        CASE WHEN vi.entry_type = 'Dr' THEN vi.amount ELSE 0 END AS debit_amount,
+        CASE WHEN vi.entry_type = 'Cr' THEN vi.amount ELSE 0 END AS credit_amount,
+        COALESCE(vi.narration, v.narration)             AS narration,
+        v.reference_number,
+        -- The other side of a simple two-line voucher. NULL where the voucher has more than two lines,
+        -- which the UI renders as 'As per details'.
+        (SELECT MIN(o.ledger_id) FROM `acc_voucher_items` o
+        WHERE o.voucher_id = vi.voucher_id AND o.id <> vi.id AND o.deleted_at IS NULL
+        HAVING COUNT(*) = 1)                          AS contra_ledger_id,
+        vi.is_reconciled,
+        vi.bank_value_date
+    FROM `acc_voucher_items` vi
+    JOIN `acc_vouchers`      v  ON v.id  = vi.voucher_id
+    JOIN `acc_voucher_types` vt ON vt.id = v.voucher_type_id
+    JOIN `acc_ledgers`       l  ON l.id  = vi.ledger_id
+    WHERE vi.voucher_status = 'Posted'
+    AND v.is_provisional = 0
+    AND vi.deleted_at IS NULL;
 
 
 -- What each party owes or is owed, bill by bill. Reads the cache; the assertion keeps it honest.
 CREATE OR REPLACE VIEW `vw_party_outstanding` AS
-SELECT
-    br.id                                           AS bill_reference_id,
-    br.ledger_id,
-    l.code                                          AS ledger_code,
-    l.name                                          AS party_name,
-    l.party_type,
-    l.credit_limit,
-    l.credit_days,
-    br.reference_no,
-    br.reference_date,
-    br.due_date,
-    br.bill_type,
-    br.status                                       AS bill_status,
-    br.is_disputed,
-    br.financial_year_id,
-    br.campus_id,
-    br.fund_id,
-    COALESCE(bb.original_amount,    br.original_amount)    AS original_amount,
-    COALESCE(bb.allocated_amount,   0)                     AS allocated_amount,
-    COALESCE(bb.written_off_amount, br.written_off_amount) AS written_off_amount,
-    COALESCE(bb.outstanding_amount,
-             br.original_amount - br.written_off_amount)   AS outstanding_amount,
-    COALESCE(bb.days_overdue, DATEDIFF(CURDATE(), br.due_date)) AS days_overdue,
-    bb.age_bucket,
-    br.source_voucher_id
-FROM `acc_bill_references` br
-JOIN `acc_ledgers` l ON l.id = br.ledger_id
-LEFT JOIN `acc_bill_reference_balances` bb ON bb.bill_reference_id = br.id
-WHERE br.deleted_at IS NULL
-  AND br.status NOT IN ('Settled','Cancelled');
+    SELECT
+        br.id                                           AS bill_reference_id,
+        br.ledger_id,
+        l.code                                          AS ledger_code,
+        l.name                                          AS party_name,
+        l.party_type,
+        l.credit_limit,
+        l.credit_days,
+        br.reference_no,
+        br.reference_date,
+        br.due_date,
+        br.bill_type,
+        br.status                                       AS bill_status,
+        br.is_disputed,
+        br.financial_year_id,
+        br.campus_id,
+        br.fund_id,
+        COALESCE(bb.original_amount,    br.original_amount)    AS original_amount,
+        COALESCE(bb.allocated_amount,   0)                     AS allocated_amount,
+        COALESCE(bb.written_off_amount, br.written_off_amount) AS written_off_amount,
+        COALESCE(bb.outstanding_amount,
+                br.original_amount - br.written_off_amount)   AS outstanding_amount,
+        COALESCE(bb.days_overdue, DATEDIFF(CURDATE(), br.due_date)) AS days_overdue,
+        bb.age_bucket,
+        br.source_voucher_id
+    FROM `acc_bill_references` br
+    JOIN `acc_ledgers` l ON l.id = br.ledger_id
+    LEFT JOIN `acc_bill_reference_balances` bb ON bb.bill_reference_id = br.id
+    WHERE br.deleted_at IS NULL
+    AND br.status NOT IN ('Settled','Cancelled');
 
 
 -- Receivable ageing. Buckets are the default 30/60/90/180; BR-AR-02 makes them configurable, and the
 -- configured edges live in acc_settings, which is what the reporting service reads. AC-AR-01: the total
 -- here must equal the Sundry Debtors control balance — asserted.
 CREATE OR REPLACE VIEW `vw_receivable_ageing` AS
-SELECT
-    ledger_id, ledger_code, party_name, party_type,
-    bill_reference_id, reference_no, reference_date, due_date,
-    outstanding_amount, days_overdue, is_disputed, campus_id, financial_year_id,
-    CASE
-        WHEN days_overdue <= 0   THEN 'Not_Due'
-        WHEN days_overdue <= 30  THEN '01_30'
-        WHEN days_overdue <= 60  THEN '31_60'
-        WHEN days_overdue <= 90  THEN '61_90'
-        WHEN days_overdue <= 180 THEN '91_180'
-        ELSE                          'Over_180'
-    END                                             AS ageing_bucket
-FROM `vw_party_outstanding`
-WHERE bill_type IN ('Sales','Opening','Adjustment')
-  AND outstanding_amount > 0;
+    SELECT
+        ledger_id, ledger_code, party_name, party_type,
+        bill_reference_id, reference_no, reference_date, due_date,
+        outstanding_amount, days_overdue, is_disputed, campus_id, financial_year_id,
+        CASE
+            WHEN days_overdue <= 0   THEN 'Not_Due'
+            WHEN days_overdue <= 30  THEN '01_30'
+            WHEN days_overdue <= 60  THEN '31_60'
+            WHEN days_overdue <= 90  THEN '61_90'
+            WHEN days_overdue <= 180 THEN '91_180'
+            ELSE                          'Over_180'
+        END                                             AS ageing_bucket
+    FROM `vw_party_outstanding`
+    WHERE bill_type IN ('Sales','Opening','Adjustment')
+    AND outstanding_amount > 0;
 
 
 CREATE OR REPLACE VIEW `vw_payable_ageing` AS
-SELECT
-    ledger_id, ledger_code, party_name, party_type,
-    bill_reference_id, reference_no, reference_date, due_date,
-    outstanding_amount, days_overdue, is_disputed, campus_id, financial_year_id,
-    CASE
-        WHEN days_overdue <= 0   THEN 'Not_Due'
-        WHEN days_overdue <= 30  THEN '01_30'
-        WHEN days_overdue <= 60  THEN '31_60'
-        WHEN days_overdue <= 90  THEN '61_90'
-        WHEN days_overdue <= 180 THEN '91_180'
-        ELSE                          'Over_180'
-    END                                             AS ageing_bucket
-FROM `vw_party_outstanding`
-WHERE bill_type IN ('Purchase','Opening','Adjustment')
-  AND outstanding_amount > 0;
+    SELECT
+        ledger_id, ledger_code, party_name, party_type,
+        bill_reference_id, reference_no, reference_date, due_date,
+        outstanding_amount, days_overdue, is_disputed, campus_id, financial_year_id,
+        CASE
+            WHEN days_overdue <= 0   THEN 'Not_Due'
+            WHEN days_overdue <= 30  THEN '01_30'
+            WHEN days_overdue <= 60  THEN '31_60'
+            WHEN days_overdue <= 90  THEN '61_90'
+            WHEN days_overdue <= 180 THEN '91_180'
+            ELSE                          'Over_180'
+        END                                             AS ageing_bucket
+    FROM `vw_party_outstanding`
+    WHERE bill_type IN ('Purchase','Opening','Adjustment')
+    AND outstanding_amount > 0;
 
 
 -- Bill against its settlements. This is the drill-down behind "what has this student paid for?"
 -- (BRD BR-FEE-04, AC-AR-02) and the evidence behind the party-vs-bill assertion.
 CREATE OR REPLACE VIEW `vw_bill_reconciliation` AS
-SELECT
-    br.id                                           AS bill_reference_id,
-    br.ledger_id,
-    l.name                                          AS party_name,
-    br.reference_no,
-    br.reference_date,
-    br.due_date,
-    br.bill_type,
-    br.original_amount,
-    br.written_off_amount,
-    br.status                                       AS bill_status,
-    ba.id                                           AS allocation_id,
-    ba.allocation_type,
-    ba.amount                                       AS allocated_amount,
-    ba.allocation_date,
-    ba.voucher_id                                   AS settling_voucher_id,
-    sv.voucher_display_no                           AS settling_voucher_no,
-    svt.code                                        AS settling_voucher_type,
-    br.source_voucher_id,
-    ov.voucher_display_no                           AS originating_voucher_no
-FROM `acc_bill_references` br
-JOIN `acc_ledgers` l ON l.id = br.ledger_id
-LEFT JOIN `acc_bill_allocations` ba ON ba.bill_reference_id = br.id
-LEFT JOIN `acc_vouchers`      sv  ON sv.id  = ba.voucher_id
-LEFT JOIN `acc_voucher_types` svt ON svt.id = sv.voucher_type_id
-LEFT JOIN `acc_vouchers`      ov  ON ov.id  = br.source_voucher_id
-WHERE br.deleted_at IS NULL;
+    SELECT
+        br.id                                           AS bill_reference_id,
+        br.ledger_id,
+        l.name                                          AS party_name,
+        br.reference_no,
+        br.reference_date,
+        br.due_date,
+        br.bill_type,
+        br.original_amount,
+        br.written_off_amount,
+        br.status                                       AS bill_status,
+        ba.id                                           AS allocation_id,
+        ba.allocation_type,
+        ba.amount                                       AS allocated_amount,
+        ba.allocation_date,
+        ba.voucher_id                                   AS settling_voucher_id,
+        sv.voucher_display_no                           AS settling_voucher_no,
+        svt.code                                        AS settling_voucher_type,
+        br.source_voucher_id,
+        ov.voucher_display_no                           AS originating_voucher_no
+    FROM `acc_bill_references` br
+    JOIN `acc_ledgers` l ON l.id = br.ledger_id
+    LEFT JOIN `acc_bill_allocations` ba ON ba.bill_reference_id = br.id
+    LEFT JOIN `acc_vouchers`      sv  ON sv.id  = ba.voucher_id
+    LEFT JOIN `acc_voucher_types` svt ON svt.id = sv.voucher_type_id
+    LEFT JOIN `acc_vouchers`      ov  ON ov.id  = br.source_voucher_id
+    WHERE br.deleted_at IS NULL;
 
 
 -- Cost-centre analysis. Read from the allocation table, not from the balance buckets: Phase 1 maintains
 -- only the ledger-total buckets (Solution_Design_v1 OD-04), so the dimension detail lives here.
 CREATE OR REPLACE VIEW `vw_cost_center_summary` AS
-SELECT
-    cc.id                                           AS cost_center_id,
-    cc.code                                         AS cost_center_code,
-    cc.name                                         AS cost_center_name,
-    cc.path                                         AS cost_center_path,
-    ccat.id                                         AS cost_category_id,
-    ccat.name                                       AS cost_category_name,
-    vi.financial_year_id,
-    vi.period_id,
-    vi.campus_id,
-    l.id                                            AS ledger_id,
-    l.name                                          AS ledger_name,
-    g.nature,
-    SUM(CASE WHEN vi.entry_type = 'Dr' THEN vicc.amount ELSE 0 END) AS debit_amount,
-    SUM(CASE WHEN vi.entry_type = 'Cr' THEN vicc.amount ELSE 0 END) AS credit_amount,
-    SUM(CASE WHEN g.nature = 'Expense' THEN
-             CASE WHEN vi.entry_type = 'Dr' THEN vicc.amount ELSE -vicc.amount END
-         ELSE 0 END)                                AS expense_amount,
-    COUNT(DISTINCT vi.voucher_id)                   AS voucher_count
-FROM `acc_voucher_item_cost_centers` vicc
-JOIN `acc_voucher_items`    vi   ON vi.id   = vicc.voucher_item_id
-JOIN `acc_cost_centers`     cc   ON cc.id   = vicc.cost_center_id
-JOIN `acc_cost_categories`  ccat ON ccat.id = vicc.cost_category_id
-JOIN `acc_ledgers`          l    ON l.id    = vi.ledger_id
-JOIN `acc_account_groups`   g    ON g.id    = l.account_group_id
-WHERE vi.voucher_status = 'Posted' AND vi.deleted_at IS NULL
-GROUP BY cc.id, cc.code, cc.name, cc.path, ccat.id, ccat.name,
-         vi.financial_year_id, vi.period_id, vi.campus_id, l.id, l.name, g.nature;
+    SELECT
+        cc.id                                           AS cost_center_id,
+        cc.code                                         AS cost_center_code,
+        cc.name                                         AS cost_center_name,
+        cc.path                                         AS cost_center_path,
+        ccat.id                                         AS cost_category_id,
+        ccat.name                                       AS cost_category_name,
+        vi.financial_year_id,
+        vi.period_id,
+        vi.campus_id,
+        l.id                                            AS ledger_id,
+        l.name                                          AS ledger_name,
+        g.nature,
+        SUM(CASE WHEN vi.entry_type = 'Dr' THEN vicc.amount ELSE 0 END) AS debit_amount,
+        SUM(CASE WHEN vi.entry_type = 'Cr' THEN vicc.amount ELSE 0 END) AS credit_amount,
+        SUM(CASE WHEN g.nature = 'Expense' THEN
+                CASE WHEN vi.entry_type = 'Dr' THEN vicc.amount ELSE -vicc.amount END
+            ELSE 0 END)                                AS expense_amount,
+        COUNT(DISTINCT vi.voucher_id)                   AS voucher_count
+    FROM `acc_voucher_item_cost_centers` vicc
+    JOIN `acc_voucher_items`    vi   ON vi.id   = vicc.voucher_item_id
+    JOIN `acc_cost_centers`     cc   ON cc.id   = vicc.cost_center_id
+    JOIN `acc_cost_categories`  ccat ON ccat.id = vicc.cost_category_id
+    JOIN `acc_ledgers`          l    ON l.id    = vi.ledger_id
+    JOIN `acc_account_groups`   g    ON g.id    = l.account_group_id
+    WHERE vi.voucher_status = 'Posted' AND vi.deleted_at IS NULL
+    GROUP BY cc.id, cc.code, cc.name, cc.path, ccat.id, ccat.name,
+            vi.financial_year_id, vi.period_id, vi.campus_id, l.id, l.name, g.nature;
 
 
 -- Fund utilisation. AC-FUND-01: opening + additions − utilisation = closing, and that identity is
 -- asserted nightly rather than assumed by the reader.
 CREATE OR REPLACE VIEW `vw_fund_utilisation` AS
-SELECT
-    f.id                                            AS fund_id,
-    f.code                                          AS fund_code,
-    f.name                                          AS fund_name,
-    f.fund_type,
-    f.restriction_purpose,
-    f.sanctioned_amount,
-    f.utilisation_from,
-    f.utilisation_to,
-    f.overspend_action,
-    f.status                                        AS fund_status,
-    gl.name                                         AS grantor_name,
-    fb.financial_year_id,
-    fb.period_id,
-    p.name                                          AS period_name,
-    fb.campus_id,
-    fb.opening_balance,
-    fb.additions,
-    fb.utilisation,
-    fb.transfers_in,
-    fb.transfers_out,
-    fb.closing_balance,
-    fb.available_balance,
-    -- The identity BR-FUND-04 states. Nonzero here means the cache has drifted and the assertion failed.
-    (fb.opening_balance + fb.additions + fb.transfers_in
-       - fb.utilisation - fb.transfers_out - fb.closing_balance) AS identity_variance,
-    CASE WHEN f.sanctioned_amount IS NULL OR f.sanctioned_amount = 0 THEN NULL
-         ELSE ROUND(100 * fb.utilisation / f.sanctioned_amount, 2) END AS utilised_percent,
-    fb.is_stale
-FROM `acc_fund_balances` fb
-JOIN `acc_funds` f ON f.id = fb.fund_id
-LEFT JOIN `acc_ledgers` gl ON gl.id = f.grantor_ledger_id
-JOIN `acc_accounting_periods` p ON p.id = fb.period_id
-WHERE f.deleted_at IS NULL;
+    SELECT
+        f.id                                            AS fund_id,
+        f.code                                          AS fund_code,
+        f.name                                          AS fund_name,
+        f.fund_type,
+        f.restriction_purpose,
+        f.sanctioned_amount,
+        f.utilisation_from,
+        f.utilisation_to,
+        f.overspend_action,
+        f.status                                        AS fund_status,
+        gl.name                                         AS grantor_name,
+        fb.financial_year_id,
+        fb.period_id,
+        p.name                                          AS period_name,
+        fb.campus_id,
+        fb.opening_balance,
+        fb.additions,
+        fb.utilisation,
+        fb.transfers_in,
+        fb.transfers_out,
+        fb.closing_balance,
+        fb.available_balance,
+        -- The identity BR-FUND-04 states. Nonzero here means the cache has drifted and the assertion failed.
+        (fb.opening_balance + fb.additions + fb.transfers_in
+        - fb.utilisation - fb.transfers_out - fb.closing_balance) AS identity_variance,
+        CASE WHEN f.sanctioned_amount IS NULL OR f.sanctioned_amount = 0 THEN NULL
+            ELSE ROUND(100 * fb.utilisation / f.sanctioned_amount, 2) END AS utilised_percent,
+        fb.is_stale
+    FROM `acc_fund_balances` fb
+    JOIN `acc_funds` f ON f.id = fb.fund_id
+    LEFT JOIN `acc_ledgers` gl ON gl.id = f.grantor_ledger_id
+    JOIN `acc_accounting_periods` p ON p.id = fb.period_id
+    WHERE f.deleted_at IS NULL;
 
 
 -- Where every bank account stands: reconciled to when, with what left unexplained.
 -- This is the bank row of the Reconciliation Cockpit (BRD Enhancement E-02).
 CREATE OR REPLACE VIEW `vw_bank_reconciliation_status` AS
-SELECT
-    br.id                                           AS reconciliation_id,
-    br.bank_ledger_id,
-    l.name                                          AS bank_ledger_name,
-    l.bank_name,
-    l.bank_account_number,
-    br.financial_year_id,
-    br.period_id,
-    br.statement_from_date,
-    br.statement_date,
-    br.balance_as_per_books,
-    br.unpresented_amount,
-    br.uncredited_amount,
-    br.other_adjustments,
-    br.balance_as_per_bank,
-    br.statement_closing_balance,
-    br.difference,
-    br.status,
-    br.completed_at,
-    br.imported_row_count,
-    DATEDIFF(CURDATE(), br.statement_date)          AS days_since_statement,
-    COUNT(DISTINCT bse.id)                          AS statement_rows,
-    SUM(CASE WHEN bse.match_status = 'Unmatched' THEN 1 ELSE 0 END) AS unmatched_rows,
-    SUM(CASE WHEN bse.match_status = 'Proposed'  THEN 1 ELSE 0 END) AS proposed_rows,
-    SUM(CASE WHEN bse.match_status = 'Matched'   THEN 1 ELSE 0 END) AS matched_rows
-FROM `acc_bank_reconciliations` br
-JOIN `acc_ledgers` l ON l.id = br.bank_ledger_id
-LEFT JOIN `acc_bank_statement_entries` bse ON bse.reconciliation_id = br.id
-WHERE br.deleted_at IS NULL
-GROUP BY br.id, br.bank_ledger_id, l.name, l.bank_name, l.bank_account_number,
-         br.financial_year_id, br.period_id, br.statement_from_date, br.statement_date,
-         br.balance_as_per_books, br.unpresented_amount, br.uncredited_amount,
-         br.other_adjustments, br.balance_as_per_bank, br.statement_closing_balance,
-         br.difference, br.status, br.completed_at, br.imported_row_count;
+    SELECT
+        br.id                                           AS reconciliation_id,
+        br.bank_ledger_id,
+        l.name                                          AS bank_ledger_name,
+        l.bank_name,
+        l.bank_account_number,
+        br.financial_year_id,
+        br.period_id,
+        br.statement_from_date,
+        br.statement_date,
+        br.balance_as_per_books,
+        br.unpresented_amount,
+        br.uncredited_amount,
+        br.other_adjustments,
+        br.balance_as_per_bank,
+        br.statement_closing_balance,
+        br.difference,
+        br.status,
+        br.completed_at,
+        br.imported_row_count,
+        DATEDIFF(CURDATE(), br.statement_date)          AS days_since_statement,
+        COUNT(DISTINCT bse.id)                          AS statement_rows,
+        SUM(CASE WHEN bse.match_status = 'Unmatched' THEN 1 ELSE 0 END) AS unmatched_rows,
+        SUM(CASE WHEN bse.match_status = 'Proposed'  THEN 1 ELSE 0 END) AS proposed_rows,
+        SUM(CASE WHEN bse.match_status = 'Matched'   THEN 1 ELSE 0 END) AS matched_rows
+    FROM `acc_bank_reconciliations` br
+    JOIN `acc_ledgers` l ON l.id = br.bank_ledger_id
+    LEFT JOIN `acc_bank_statement_entries` bse ON bse.reconciliation_id = br.id
+    WHERE br.deleted_at IS NULL
+    GROUP BY br.id, br.bank_ledger_id, l.name, l.bank_name, l.bank_account_number,
+            br.financial_year_id, br.period_id, br.statement_from_date, br.statement_date,
+            br.balance_as_per_books, br.unpresented_amount, br.uncredited_amount,
+            br.other_adjustments, br.balance_as_per_bank, br.statement_closing_balance,
+            br.difference, br.status, br.completed_at, br.imported_row_count;
 
 
 -- The CURRENT state of every cheque. acc_cheque_transactions is append-only, so "current" is the newest
 -- row per cheque — which is what the ROW_NUMBER() filter selects. AC-CHEQUE-02 reads is_stale from here.
 CREATE OR REPLACE VIEW `vw_cheque_register` AS
-SELECT
-    ct.id                                           AS cheque_transaction_id,
-    ct.voucher_id,
-    v.voucher_display_no,
-    v.voucher_date,
-    ct.bank_ledger_id,
-    bl.name                                         AS bank_ledger_name,
-    ct.party_ledger_id,
-    pl.name                                         AS party_name,
-    ct.direction,
-    ct.instrument_no,
-    ct.instrument_date,
-    ct.amount,
-    ct.favouring_name,
-    ct.status                                       AS current_status,
-    ct.status_date,
-    ct.is_post_dated,
-    ct.stale_on,
-    ct.bounce_reason,
-    ct.bounce_charge_amount,
-    ct.reversal_voucher_id,
-    ct.charge_voucher_id,
-    ct.replacement_voucher_id,
-    cl.leaf_no,
-    -- BR-CHEQUE-01 'Stale': uncleared beyond the stale date. Three months by default.
-    CASE WHEN ct.status IN ('Issued','Presented')
-          AND ct.stale_on IS NOT NULL AND ct.stale_on < CURDATE()
-         THEN 1 ELSE 0 END                          AS is_stale,
-    DATEDIFF(CURDATE(), ct.instrument_date)         AS age_days
-FROM (
-    SELECT t.*, ROW_NUMBER() OVER (
-               PARTITION BY t.voucher_id, t.instrument_no
-               ORDER BY t.status_date DESC, t.id DESC) AS state_rank
-    FROM `acc_cheque_transactions` t
-) ct
-JOIN `acc_vouchers` v  ON v.id  = ct.voucher_id
-JOIN `acc_ledgers`  bl ON bl.id = ct.bank_ledger_id
-LEFT JOIN `acc_ledgers`       pl ON pl.id = ct.party_ledger_id
-LEFT JOIN `acc_cheque_leaves` cl ON cl.id = ct.cheque_leaf_id
-WHERE ct.state_rank = 1;
+    SELECT
+        ct.id                                           AS cheque_transaction_id,
+        ct.voucher_id,
+        v.voucher_display_no,
+        v.voucher_date,
+        ct.bank_ledger_id,
+        bl.name                                         AS bank_ledger_name,
+        ct.party_ledger_id,
+        pl.name                                         AS party_name,
+        ct.direction,
+        ct.instrument_no,
+        ct.instrument_date,
+        ct.amount,
+        ct.favouring_name,
+        ct.status                                       AS current_status,
+        ct.status_date,
+        ct.is_post_dated,
+        ct.stale_on,
+        ct.bounce_reason,
+        ct.bounce_charge_amount,
+        ct.reversal_voucher_id,
+        ct.charge_voucher_id,
+        ct.replacement_voucher_id,
+        cl.leaf_no,
+        -- BR-CHEQUE-01 'Stale': uncleared beyond the stale date. Three months by default.
+        CASE WHEN ct.status IN ('Issued','Presented')
+            AND ct.stale_on IS NOT NULL AND ct.stale_on < CURDATE()
+            THEN 1 ELSE 0 END                          AS is_stale,
+        DATEDIFF(CURDATE(), ct.instrument_date)         AS age_days
+    FROM (
+        SELECT t.*, ROW_NUMBER() OVER (
+                PARTITION BY t.voucher_id, t.instrument_no
+                ORDER BY t.status_date DESC, t.id DESC) AS state_rank
+        FROM `acc_cheque_transactions` t
+    ) ct
+    JOIN `acc_vouchers` v  ON v.id  = ct.voucher_id
+    JOIN `acc_ledgers`  bl ON bl.id = ct.bank_ledger_id
+    LEFT JOIN `acc_ledgers`       pl ON pl.id = ct.party_ledger_id
+    LEFT JOIN `acc_cheque_leaves` cl ON cl.id = ct.cheque_leaf_id
+    WHERE ct.state_rank = 1;
 
 
 -- Budget versus actual. BR-BUD-03: actuals are never affected by budgets — the actual side here comes
 -- from the same balance buckets every statement reads, with the budget joined alongside, never into it.
 CREATE OR REPLACE VIEW `vw_budget_variance` AS
-SELECT
-    bd.id                                           AS budget_id,
-    bd.code                                         AS budget_code,
-    bd.name                                         AS budget_name,
-    bd.budget_type,
-    bd.version,
-    bd.status                                       AS budget_status,
-    bd.breach_action,
-    bd.breach_tolerance_pct,
-    bl.id                                           AS budget_line_id,
-    bd.financial_year_id,
-    bl.period_id,
-    bl.ledger_id,
-    l.name                                          AS ledger_name,
-    bl.account_group_id,
-    bl.cost_center_id,
-    bl.fund_id,
-    bl.campus_id,
-    g.nature,
-    bl.budgeted_amount,
-    -- Expense is Dr-positive, Income is Cr-positive. Comparing an income budget to a debit total would
-    -- report every school as catastrophically under budget.
-    COALESCE(SUM(CASE WHEN g.nature = 'Income'
-                      THEN lpb.period_credit - lpb.period_debit
-                      ELSE lpb.period_debit  - lpb.period_credit END), 0) AS actual_amount,
-    bl.budgeted_amount
-      - COALESCE(SUM(CASE WHEN g.nature = 'Income'
-                          THEN lpb.period_credit - lpb.period_debit
-                          ELSE lpb.period_debit  - lpb.period_credit END), 0) AS variance_amount,
-    CASE WHEN bl.budgeted_amount = 0 THEN NULL
-         ELSE ROUND(100 *
-              COALESCE(SUM(CASE WHEN g.nature = 'Income'
-                                THEN lpb.period_credit - lpb.period_debit
-                                ELSE lpb.period_debit  - lpb.period_credit END), 0)
-              / bl.budgeted_amount, 2) END          AS utilised_percent
-FROM `acc_budget_lines` bl
-JOIN `acc_budgets` bd ON bd.id = bl.budget_id
-LEFT JOIN `acc_ledgers`        l ON l.id = bl.ledger_id
-LEFT JOIN `acc_account_groups` g ON g.id = COALESCE(bl.account_group_id, l.account_group_id)
-LEFT JOIN `acc_ledger_period_balances` lpb
-       ON lpb.ledger_id         = bl.ledger_id
-      AND lpb.financial_year_id = bd.financial_year_id
-      AND (bl.period_id IS NULL OR lpb.period_id = bl.period_id)
-      AND lpb.cost_center_id IS NULL AND lpb.fund_id IS NULL AND lpb.campus_id IS NULL
-WHERE bd.deleted_at IS NULL AND bd.status IN ('Approved','Active')
-GROUP BY bd.id, bd.code, bd.name, bd.budget_type, bd.version, bd.status,
-         bd.breach_action, bd.breach_tolerance_pct, bl.id, bd.financial_year_id, bl.period_id,
-         bl.ledger_id, l.name, bl.account_group_id, bl.cost_center_id, bl.fund_id, bl.campus_id,
-         g.nature, bl.budgeted_amount;
+    SELECT
+        bd.id                                           AS budget_id,
+        bd.code                                         AS budget_code,
+        bd.name                                         AS budget_name,
+        bd.budget_type,
+        bd.version,
+        bd.status                                       AS budget_status,
+        bd.breach_action,
+        bd.breach_tolerance_pct,
+        bl.id                                           AS budget_line_id,
+        bd.financial_year_id,
+        bl.period_id,
+        bl.ledger_id,
+        l.name                                          AS ledger_name,
+        bl.account_group_id,
+        bl.cost_center_id,
+        bl.fund_id,
+        bl.campus_id,
+        g.nature,
+        bl.budgeted_amount,
+        -- Expense is Dr-positive, Income is Cr-positive. Comparing an income budget to a debit total would
+        -- report every school as catastrophically under budget.
+        COALESCE(SUM(CASE WHEN g.nature = 'Income'
+                        THEN lpb.period_credit - lpb.period_debit
+                        ELSE lpb.period_debit  - lpb.period_credit END), 0) AS actual_amount,
+        bl.budgeted_amount
+        - COALESCE(SUM(CASE WHEN g.nature = 'Income'
+                            THEN lpb.period_credit - lpb.period_debit
+                            ELSE lpb.period_debit  - lpb.period_credit END), 0) AS variance_amount,
+        CASE WHEN bl.budgeted_amount = 0 THEN NULL
+            ELSE ROUND(100 *
+                COALESCE(SUM(CASE WHEN g.nature = 'Income'
+                                    THEN lpb.period_credit - lpb.period_debit
+                                    ELSE lpb.period_debit  - lpb.period_credit END), 0)
+                / bl.budgeted_amount, 2) END          AS utilised_percent
+    FROM `acc_budget_lines` bl
+    JOIN `acc_budgets` bd ON bd.id = bl.budget_id
+    LEFT JOIN `acc_ledgers`        l ON l.id = bl.ledger_id
+    LEFT JOIN `acc_account_groups` g ON g.id = COALESCE(bl.account_group_id, l.account_group_id)
+    LEFT JOIN `acc_ledger_period_balances` lpb
+        ON lpb.ledger_id         = bl.ledger_id
+        AND lpb.financial_year_id = bd.financial_year_id
+        AND (bl.period_id IS NULL OR lpb.period_id = bl.period_id)
+        AND lpb.cost_center_id IS NULL AND lpb.fund_id IS NULL AND lpb.campus_id IS NULL
+    WHERE bd.deleted_at IS NULL AND bd.status IN ('Approved','Active')
+    GROUP BY bd.id, bd.code, bd.name, bd.budget_type, bd.version, bd.status,
+            bd.breach_action, bd.breach_tolerance_pct, bl.id, bd.financial_year_id, bl.period_id,
+            bl.ledger_id, l.name, bl.account_group_id, bl.cost_center_id, bl.fund_id, bl.campus_id,
+            g.nature, bl.budgeted_amount;
 
 
 -- TDS: what was deducted, what was paid over, and what is still owed. BR-TDS-06 as one query.
 CREATE OR REPLACE VIEW `vw_tds_summary` AS
-SELECT
-    td.id                                           AS tds_deduction_id,
-    td.financial_year_id,
-    td.quarter,
-    td.period_id,
-    td.deduction_date,
-    td.section_code,
-    td.nature_of_payment,
-    td.party_ledger_id,
-    l.name                                          AS party_name,
-    l.pan                                           AS party_pan,
-    td.pan                                          AS deduction_pan,
-    td.is_higher_rate_no_pan,
-    td.tds_certificate_id,
-    td.gross_amount,
-    td.taxable_amount,
-    td.rate_applied,
-    td.tds_amount,
-    td.net_paid_amount,
-    td.paid_amount,
-    td.tds_amount - td.paid_amount                  AS unpaid_amount,
-    td.status,
-    td.certificate_issued_no,
-    td.voucher_id,
-    v.voucher_display_no,
-    -- The challans that paid it. GROUP_CONCAT because a deduction may be split across challans.
-    GROUP_CONCAT(DISTINCT tp.challan_no ORDER BY tp.challan_no SEPARATOR ', ') AS challan_numbers,
-    MAX(tp.deposit_date)                            AS last_deposit_date
-FROM `acc_tds_deductions` td
-JOIN `acc_ledgers`  l ON l.id = td.party_ledger_id
-JOIN `acc_vouchers` v ON v.id = td.voucher_id
-LEFT JOIN `acc_tds_payment_allocations` tpa ON tpa.tds_deduction_id = td.id
-LEFT JOIN `acc_tds_payments`            tp  ON tp.id = tpa.tds_payment_id
-GROUP BY td.id, td.financial_year_id, td.quarter, td.period_id, td.deduction_date,
-         td.section_code, td.nature_of_payment, td.party_ledger_id, l.name, l.pan,
-         td.pan, td.is_higher_rate_no_pan, td.tds_certificate_id, td.gross_amount,
-         td.taxable_amount, td.rate_applied, td.tds_amount, td.net_paid_amount,
-         td.paid_amount, td.status, td.certificate_issued_no, td.voucher_id, v.voucher_display_no;
+    SELECT
+        td.id                                           AS tds_deduction_id,
+        td.financial_year_id,
+        td.quarter,
+        td.period_id,
+        td.deduction_date,
+        td.section_code,
+        td.nature_of_payment,
+        td.party_ledger_id,
+        l.name                                          AS party_name,
+        l.pan                                           AS party_pan,
+        td.pan                                          AS deduction_pan,
+        td.is_higher_rate_no_pan,
+        td.tds_certificate_id,
+        td.gross_amount,
+        td.taxable_amount,
+        td.rate_applied,
+        td.tds_amount,
+        td.net_paid_amount,
+        td.paid_amount,
+        td.tds_amount - td.paid_amount                  AS unpaid_amount,
+        td.status,
+        td.certificate_issued_no,
+        td.voucher_id,
+        v.voucher_display_no,
+        -- The challans that paid it. GROUP_CONCAT because a deduction may be split across challans.
+        GROUP_CONCAT(DISTINCT tp.challan_no ORDER BY tp.challan_no SEPARATOR ', ') AS challan_numbers,
+        MAX(tp.deposit_date)                            AS last_deposit_date
+    FROM `acc_tds_deductions` td
+    JOIN `acc_ledgers`  l ON l.id = td.party_ledger_id
+    JOIN `acc_vouchers` v ON v.id = td.voucher_id
+    LEFT JOIN `acc_tds_payment_allocations` tpa ON tpa.tds_deduction_id = td.id
+    LEFT JOIN `acc_tds_payments`            tp  ON tp.id = tpa.tds_payment_id
+    GROUP BY td.id, td.financial_year_id, td.quarter, td.period_id, td.deduction_date,
+            td.section_code, td.nature_of_payment, td.party_ledger_id, l.name, l.pan,
+            td.pan, td.is_higher_rate_no_pan, td.tds_certificate_id, td.gross_amount,
+            td.taxable_amount, td.rate_applied, td.tds_amount, td.net_paid_amount,
+            td.paid_amount, td.status, td.certificate_issued_no, td.voucher_id, v.voucher_display_no;
 
 
 -- GST and other tax applied, at the rate frozen on the transaction (BR-TAX-01). Return data is composed
 -- from here and must reconcile to the tax ledger movement — asserted, not assumed.
 CREATE OR REPLACE VIEW `vw_tax_summary` AS
-SELECT
-    vit.id                                          AS voucher_item_tax_id,
-    v.id                                            AS voucher_id,
-    v.voucher_display_no,
-    v.voucher_date,
-    v.financial_year_id,
-    v.period_id,
-    vt.code                                         AS voucher_type_code,
-    v.party_ledger_id,
-    pl.name                                         AS party_name,
-    pl.gstin                                        AS party_gstin,
-    pl.state_code                                   AS party_state,
-    tt.code                                         AS tax_type_code,
-    tt.tax_family,
-    tt.is_input,
-    vit.tax_rate_id,
-    vit.tax_rule_id,
-    vit.taxable_amount,
-    vit.rate_applied,
-    vit.tax_amount,
-    vit.is_reverse_charge,
-    vit.is_input_credit,
-    vit.is_credit_eligible,
-    -- Ineligible input credit is expensed, not claimed (Solution_Design_v1 §9.4).
-    CASE WHEN vit.is_input_credit = 1 AND vit.is_credit_eligible = 1
-         THEN vit.tax_amount ELSE 0 END             AS claimable_credit,
-    vit.hsn_sac_code,
-    vit.place_of_supply,
-    vi.ledger_id                                    AS taxable_ledger_id,
-    l.name                                          AS taxable_ledger_name
-FROM `acc_voucher_item_taxes` vit
-JOIN `acc_voucher_items` vi ON vi.id = vit.voucher_item_id
-JOIN `acc_vouchers`      v  ON v.id  = vi.voucher_id
-JOIN `acc_voucher_types` vt ON vt.id = v.voucher_type_id
-JOIN `acc_tax_types`     tt ON tt.id = vit.tax_type_id
-JOIN `acc_ledgers`       l  ON l.id  = vi.ledger_id
-LEFT JOIN `acc_ledgers`  pl ON pl.id = v.party_ledger_id
-WHERE vi.voucher_status = 'Posted' AND v.is_provisional = 0;
+    SELECT
+        vit.id                                          AS voucher_item_tax_id,
+        v.id                                            AS voucher_id,
+        v.voucher_display_no,
+        v.voucher_date,
+        v.financial_year_id,
+        v.period_id,
+        vt.code                                         AS voucher_type_code,
+        v.party_ledger_id,
+        pl.name                                         AS party_name,
+        pl.gstin                                        AS party_gstin,
+        pl.state_code                                   AS party_state,
+        tt.code                                         AS tax_type_code,
+        tt.tax_family,
+        tt.is_input,
+        vit.tax_rate_id,
+        vit.tax_rule_id,
+        vit.taxable_amount,
+        vit.rate_applied,
+        vit.tax_amount,
+        vit.is_reverse_charge,
+        vit.is_input_credit,
+        vit.is_credit_eligible,
+        -- Ineligible input credit is expensed, not claimed (Solution_Design_v1 §9.4).
+        CASE WHEN vit.is_input_credit = 1 AND vit.is_credit_eligible = 1
+            THEN vit.tax_amount ELSE 0 END             AS claimable_credit,
+        vit.hsn_sac_code,
+        vit.place_of_supply,
+        vi.ledger_id                                    AS taxable_ledger_id,
+        l.name                                          AS taxable_ledger_name
+    FROM `acc_voucher_item_taxes` vit
+    JOIN `acc_voucher_items` vi ON vi.id = vit.voucher_item_id
+    JOIN `acc_vouchers`      v  ON v.id  = vi.voucher_id
+    JOIN `acc_voucher_types` vt ON vt.id = v.voucher_type_id
+    JOIN `acc_tax_types`     tt ON tt.id = vit.tax_type_id
+    JOIN `acc_ledgers`       l  ON l.id  = vi.ledger_id
+    LEFT JOIN `acc_ledgers`  pl ON pl.id = v.party_ledger_id
+    WHERE vi.voucher_status = 'Posted' AND v.is_provisional = 0;
 
 
 -- The asset register, with net block DERIVED. Σ net_block here must equal the asset ledger balances
 -- (BR-FA-07, AC-FA-01) — which is the assertion that would have caught v4.3's stored current_value
 -- drifting away from the books.
 CREATE OR REPLACE VIEW `vw_fixed_asset_register` AS
-SELECT
-    fa.id                                           AS fixed_asset_id,
-    fa.asset_code,
-    fa.name                                         AS asset_name,
-    fa.asset_category_id,
-    ac.name                                         AS category_name,
-    COALESCE(fa.depreciation_method, ac.depreciation_method) AS depreciation_method,
-    COALESCE(fa.depreciation_rate,   ac.depreciation_rate)   AS depreciation_rate,
-    COALESCE(fa.useful_life_years,   ac.useful_life_years)   AS useful_life_years,
-    fa.purchase_date,
-    fa.put_to_use_date,
-    fa.purchase_cost,
-    fa.salvage_value,
-    fa.location,
-    fa.custodian_user_id,
-    fa.campus_id,
-    fa.cost_center_id,
-    fa.fund_id,
-    f.name                                          AS fund_name,
-    fa.vendor_id,
-    fa.voucher_id                                   AS purchase_voucher_id,
-    pv.voucher_display_no                           AS purchase_voucher_no,
-    fa.status,
-    COALESCE(dep.accumulated_depreciation, 0)       AS accumulated_depreciation,
-    COALESCE(dep.depreciation_entry_count, 0)       AS depreciation_entry_count,
-    dep.last_depreciation_date,
-    ad.disposal_date,
-    ad.disposal_type,
-    ad.sale_proceeds,
-    ad.gain_loss_amount,
-    -- NET BLOCK. Derived, in exactly one place in the system.
-    CASE WHEN ad.id IS NOT NULL THEN 0
-         ELSE fa.purchase_cost - COALESCE(dep.accumulated_depreciation, 0) END AS net_block,
-    ac.asset_ledger_id,
-    ac.accum_dep_ledger_id,
-    ac.depreciation_expense_ledger_id
-FROM `acc_fixed_assets` fa
-JOIN `acc_asset_categories` ac ON ac.id = fa.asset_category_id
-LEFT JOIN `acc_funds`    f  ON f.id  = fa.fund_id
-LEFT JOIN `acc_vouchers` pv ON pv.id = fa.voucher_id
-LEFT JOIN `acc_asset_disposals` ad ON ad.fixed_asset_id = fa.id
-LEFT JOIN (
-    SELECT `fixed_asset_id`,
-           SUM(`depreciation_amount`) AS accumulated_depreciation,
-           COUNT(*)                   AS depreciation_entry_count,
-           MAX(`depreciation_date`)   AS last_depreciation_date
-    FROM `acc_depreciation_entries`
-    WHERE `is_posted` = 1
-    GROUP BY `fixed_asset_id`
-) dep ON dep.fixed_asset_id = fa.id
-WHERE fa.deleted_at IS NULL;
+    SELECT
+        fa.id                                           AS fixed_asset_id,
+        fa.asset_code,
+        fa.name                                         AS asset_name,
+        fa.asset_category_id,
+        ac.name                                         AS category_name,
+        COALESCE(fa.depreciation_method, ac.depreciation_method) AS depreciation_method,
+        COALESCE(fa.depreciation_rate,   ac.depreciation_rate)   AS depreciation_rate,
+        COALESCE(fa.useful_life_years,   ac.useful_life_years)   AS useful_life_years,
+        fa.purchase_date,
+        fa.put_to_use_date,
+        fa.purchase_cost,
+        fa.salvage_value,
+        fa.location,
+        fa.custodian_user_id,
+        fa.campus_id,
+        fa.cost_center_id,
+        fa.fund_id,
+        f.name                                          AS fund_name,
+        fa.vendor_id,
+        fa.voucher_id                                   AS purchase_voucher_id,
+        pv.voucher_display_no                           AS purchase_voucher_no,
+        fa.status,
+        COALESCE(dep.accumulated_depreciation, 0)       AS accumulated_depreciation,
+        COALESCE(dep.depreciation_entry_count, 0)       AS depreciation_entry_count,
+        dep.last_depreciation_date,
+        ad.disposal_date,
+        ad.disposal_type,
+        ad.sale_proceeds,
+        ad.gain_loss_amount,
+        -- NET BLOCK. Derived, in exactly one place in the system.
+        CASE WHEN ad.id IS NOT NULL THEN 0
+            ELSE fa.purchase_cost - COALESCE(dep.accumulated_depreciation, 0) END AS net_block,
+        ac.asset_ledger_id,
+        ac.accum_dep_ledger_id,
+        ac.depreciation_expense_ledger_id
+    FROM `acc_fixed_assets` fa
+    JOIN `acc_asset_categories` ac ON ac.id = fa.asset_category_id
+    LEFT JOIN `acc_funds`    f  ON f.id  = fa.fund_id
+    LEFT JOIN `acc_vouchers` pv ON pv.id = fa.voucher_id
+    LEFT JOIN `acc_asset_disposals` ad ON ad.fixed_asset_id = fa.id
+    LEFT JOIN (
+        SELECT `fixed_asset_id`,
+            SUM(`depreciation_amount`) AS accumulated_depreciation,
+            COUNT(*)                   AS depreciation_entry_count,
+            MAX(`depreciation_date`)   AS last_depreciation_date
+        FROM `acc_depreciation_entries`
+        WHERE `is_posted` = 1
+        GROUP BY `fixed_asset_id`
+    ) dep ON dep.fixed_asset_id = fa.id
+    WHERE fa.deleted_at IS NULL;
 
 
 -- BR-AUD-06 / AC-AUD-01: the complete history of a voucher — who did what, when — in one query.
 CREATE OR REPLACE VIEW `vw_voucher_audit_trail` AS
-SELECT
-    al.id                                           AS audit_id,
-    al.voucher_id,
-    v.voucher_display_no,
-    v.voucher_date,
-    v.status                                        AS current_voucher_status,
-    vt.code                                         AS voucher_type_code,
-    al.entity_type,
-    al.entity_id,
-    al.action,
-    al.changed_fields,
-    al.old_values,
-    al.new_values,
-    al.reason,
-    al.actor_type,
-    al.user_id,
-    al.user_name,
-    al.impersonated_by,
-    al.ip_address,
-    al.request_id,
-    al.occurred_at
-FROM `acc_audit_logs` al
-LEFT JOIN `acc_vouchers`      v  ON v.id  = al.voucher_id
-LEFT JOIN `acc_voucher_types` vt ON vt.id = v.voucher_type_id
-WHERE al.voucher_id IS NOT NULL
-   OR al.entity_type IN ('acc_vouchers','acc_voucher_items','acc_bill_allocations','acc_voucher_approvals');
+    SELECT
+        al.id                                           AS audit_id,
+        al.voucher_id,
+        v.voucher_display_no,
+        v.voucher_date,
+        v.status                                        AS current_voucher_status,
+        vt.code                                         AS voucher_type_code,
+        al.entity_type,
+        al.entity_id,
+        al.action,
+        al.changed_fields,
+        al.old_values,
+        al.new_values,
+        al.reason,
+        al.actor_type,
+        al.user_id,
+        al.user_name,
+        al.impersonated_by,
+        al.ip_address,
+        al.request_id,
+        al.occurred_at
+    FROM `acc_audit_logs` al
+    LEFT JOIN `acc_vouchers`      v  ON v.id  = al.voucher_id
+    LEFT JOIN `acc_voucher_types` vt ON vt.id = v.voucher_type_id
+    WHERE al.voucher_id IS NOT NULL
+    OR al.entity_type IN ('acc_vouchers','acc_voucher_items','acc_bill_allocations','acc_voucher_approvals');
 
 
 -- The exception dashboard (AC-EXC-01): count and value of every open exception, drillable to records.
 CREATE OR REPLACE VIEW `vw_accounting_exceptions` AS
-SELECT
-    e.id                                            AS exception_id,
-    e.rule_code,
-    r.name                                          AS rule_name,
-    r.category,
-    e.severity,
-    r.blocks_period_close,
-    e.entity_type,
-    e.entity_id,
-    e.entity_label,
-    e.ledger_id,
-    l.name                                          AS ledger_name,
-    e.voucher_id,
-    v.voucher_display_no,
-    e.financial_year_id,
-    e.period_id,
-    e.campus_id,
-    e.amount,
-    e.age_days,
-    e.message,
-    e.detail,
-    e.status,
-    e.first_detected_at,
-    e.last_detected_at,
-    e.detection_count,
-    e.acknowledged_by,
-    e.acknowledge_expires_at,
-    -- An acknowledgement that has run out puts the exception back on the dashboard (BR-EXC-03).
-    CASE WHEN e.status = 'Acknowledged'
-          AND e.acknowledge_expires_at IS NOT NULL
-          AND e.acknowledge_expires_at < NOW()
-         THEN 1 ELSE 0 END                          AS acknowledgement_expired
-FROM `acc_exceptions` e
-JOIN `acc_exception_rules` r ON r.id = e.exception_rule_id
-LEFT JOIN `acc_ledgers`  l ON l.id = e.ledger_id
-LEFT JOIN `acc_vouchers` v ON v.id = e.voucher_id
-WHERE e.status NOT IN ('Resolved','Suppressed');
+    SELECT
+        e.id                                            AS exception_id,
+        e.rule_code,
+        r.name                                          AS rule_name,
+        r.category,
+        e.severity,
+        r.blocks_period_close,
+        e.entity_type,
+        e.entity_id,
+        e.entity_label,
+        e.ledger_id,
+        l.name                                          AS ledger_name,
+        e.voucher_id,
+        v.voucher_display_no,
+        e.financial_year_id,
+        e.period_id,
+        e.campus_id,
+        e.amount,
+        e.age_days,
+        e.message,
+        e.detail,
+        e.status,
+        e.first_detected_at,
+        e.last_detected_at,
+        e.detection_count,
+        e.acknowledged_by,
+        e.acknowledge_expires_at,
+        -- An acknowledgement that has run out puts the exception back on the dashboard (BR-EXC-03).
+        CASE WHEN e.status = 'Acknowledged'
+            AND e.acknowledge_expires_at IS NOT NULL
+            AND e.acknowledge_expires_at < NOW()
+            THEN 1 ELSE 0 END                          AS acknowledgement_expired
+    FROM `acc_exceptions` e
+    JOIN `acc_exception_rules` r ON r.id = e.exception_rule_id
+    LEFT JOIN `acc_ledgers`  l ON l.id = e.ledger_id
+    LEFT JOIN `acc_vouchers` v ON v.id = e.voucher_id
+    WHERE e.status NOT IN ('Resolved','Suppressed');
 
 
 -- The Reconciliation Cockpit's module rows (Enhancement E-02): every module against the books.
 CREATE OR REPLACE VIEW `vw_module_reconciliation` AS
-SELECT
-    mr.id                                           AS reconciliation_id,
-    mr.module_key,
-    mr.financial_year_id,
-    mr.period_id,
-    p.name                                          AS period_name,
-    p.status                                        AS period_status,
-    mr.reconciliation_date,
-    mr.metric,
-    mr.source_total,
-    mr.posted_total,
-    mr.difference,
-    mr.source_count,
-    mr.posted_count,
-    mr.unposted_count,
-    mr.failed_count,
-    mr.status,
-    mr.explanation,
-    mr.difference_detail,
-    mr.reviewed_by,
-    mr.reviewed_at,
-    mr.run_at,
-    DATEDIFF(CURDATE(), mr.reconciliation_date)     AS age_days,
-    CASE WHEN mr.source_total = 0 THEN NULL
-         ELSE ROUND(100 * ABS(mr.difference) / mr.source_total, 4) END AS difference_percent
-FROM `acc_module_reconciliation` mr
-JOIN `acc_accounting_periods` p ON p.id = mr.period_id;
+    SELECT
+        mr.id                                           AS reconciliation_id,
+        mr.module_key,
+        mr.financial_year_id,
+        mr.period_id,
+        p.name                                          AS period_name,
+        p.status                                        AS period_status,
+        mr.reconciliation_date,
+        mr.metric,
+        mr.source_total,
+        mr.posted_total,
+        mr.difference,
+        mr.source_count,
+        mr.posted_count,
+        mr.unposted_count,
+        mr.failed_count,
+        mr.status,
+        mr.explanation,
+        mr.difference_detail,
+        mr.reviewed_by,
+        mr.reviewed_at,
+        mr.run_at,
+        DATEDIFF(CURDATE(), mr.reconciliation_date)     AS age_days,
+        CASE WHEN mr.source_total = 0 THEN NULL
+            ELSE ROUND(100 * ABS(mr.difference) / mr.source_total, 4) END AS difference_percent
+    FROM `acc_module_reconciliation` mr
+    JOIN `acc_accounting_periods` p ON p.id = mr.period_id;
 
 
 -- The Period Close Cockpit (Enhancement E-03): can this period close, and if not, what is stopping it.
 CREATE OR REPLACE VIEW `vw_period_close_status` AS
-SELECT
-    p.id                                            AS period_id,
-    p.financial_year_id,
-    fy.name                                         AS financial_year_name,
-    p.period_no,
-    p.name                                          AS period_name,
-    p.start_date,
-    p.end_date,
-    p.status                                        AS period_status,
-    p.closed_at,
-    p.closed_by,
-    p.reopen_count,
-    COUNT(c.id)                                     AS checklist_total,
-    SUM(CASE WHEN c.status = 'Passed'  THEN 1 ELSE 0 END) AS items_passed,
-    SUM(CASE WHEN c.status = 'Failed'  THEN 1 ELSE 0 END) AS items_failed,
-    SUM(CASE WHEN c.status = 'Pending' THEN 1 ELSE 0 END) AS items_pending,
-    SUM(CASE WHEN c.status = 'Waived'  THEN 1 ELSE 0 END) AS items_waived,
-    -- The one number that matters: blocking items not yet Passed or Waived.
-    SUM(CASE WHEN c.is_blocking = 1
-              AND c.status NOT IN ('Passed','Waived','Not_Applicable')
-             THEN 1 ELSE 0 END)                     AS blocking_items_open,
-    CASE WHEN SUM(CASE WHEN c.is_blocking = 1
-                        AND c.status NOT IN ('Passed','Waived','Not_Applicable')
-                       THEN 1 ELSE 0 END) = 0
-         THEN 1 ELSE 0 END                          AS can_close
-FROM `acc_accounting_periods` p
-JOIN `acc_financial_years` fy ON fy.id = p.financial_year_id
-LEFT JOIN `acc_period_close_checklist` c ON c.period_id = p.id
-GROUP BY p.id, p.financial_year_id, fy.name, p.period_no, p.name,
-         p.start_date, p.end_date, p.status, p.closed_at, p.closed_by, p.reopen_count;
+    SELECT
+        p.id                                            AS period_id,
+        p.financial_year_id,
+        fy.name                                         AS financial_year_name,
+        p.period_no,
+        p.name                                          AS period_name,
+        p.start_date,
+        p.end_date,
+        p.status                                        AS period_status,
+        p.closed_at,
+        p.closed_by,
+        p.reopen_count,
+        COUNT(c.id)                                     AS checklist_total,
+        SUM(CASE WHEN c.status = 'Passed'  THEN 1 ELSE 0 END) AS items_passed,
+        SUM(CASE WHEN c.status = 'Failed'  THEN 1 ELSE 0 END) AS items_failed,
+        SUM(CASE WHEN c.status = 'Pending' THEN 1 ELSE 0 END) AS items_pending,
+        SUM(CASE WHEN c.status = 'Waived'  THEN 1 ELSE 0 END) AS items_waived,
+        -- The one number that matters: blocking items not yet Passed or Waived.
+        SUM(CASE WHEN c.is_blocking = 1
+                AND c.status NOT IN ('Passed','Waived','Not_Applicable')
+                THEN 1 ELSE 0 END)                     AS blocking_items_open,
+        CASE WHEN SUM(CASE WHEN c.is_blocking = 1
+                            AND c.status NOT IN ('Passed','Waived','Not_Applicable')
+                        THEN 1 ELSE 0 END) = 0
+            THEN 1 ELSE 0 END                          AS can_close
+    FROM `acc_accounting_periods` p
+    JOIN `acc_financial_years` fy ON fy.id = p.financial_year_id
+    LEFT JOIN `acc_period_close_checklist` c ON c.period_id = p.id
+    GROUP BY p.id, p.financial_year_id, fy.name, p.period_no, p.name,
+            p.start_date, p.end_date, p.status, p.closed_at, p.closed_by, p.reopen_count;
 
 
 -- =========================================================================================================

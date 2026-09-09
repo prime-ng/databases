@@ -38,11 +38,10 @@ CREATE TABLE IF NOT EXISTS `glb_app_modules` (
 	-- ACC | 3 		  | HOSTEL				| Hostel & Boarding							| hst_ 			 | 0         | 1
 	-- 
 
-
 -- This table belongs to global_db. Here it is placed only for reference purpose.
 -- This table is to store the global Settings detail for all the Modules. This will be used in application development.
 -- Screens of this table will not be available for Tenant to modify. This will be completely managed by Super Admin.
-  CREATE TABLE IF NOT EXISTS `glb_app_config` (
+CREATE TABLE IF NOT EXISTS `glb_app_config` (
     `id`                MEDIUMINT unsigned NOT NULL AUTO_INCREMENT,
     `module_id`         VARCHAR(10) NOT NULL,         -- FK to glb_app_modules.key
     `key`               varchar(150) NOT NULL,        -- Can not changed by user (He can edit other fields only but not KEY)
@@ -62,7 +61,7 @@ CREATE TABLE IF NOT EXISTS `glb_app_modules` (
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_settings_ordinal` (`ordinal`),
     UNIQUE KEY `uq_settings_key` (`key`)
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 -- Data Seeder:
 	-- Model | Key 								| Key	Name															| Type		| Value
 	-----------------------------------------------------------------------------------------------------------------------------------------------------

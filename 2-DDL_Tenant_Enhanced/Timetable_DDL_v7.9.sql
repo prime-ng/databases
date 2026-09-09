@@ -1,14 +1,22 @@
 -- =====================================================================
--- TIMETABLE MODULE - VERSION 8.0 (PRODUCTION-GRADE)
--- Enhanced from tt_timetable_ddl_v7.9.sql
+-- TIMETABLE MODULE - VERSION 7.9 (PRODUCTION-GRADE)
+-- Enhanced from tt_timetable_ddl_v7.8.sql
 -- =====================================================================
 -- =====================================================================
 -- v8.0 CHANGELOG (from v7.9):
 -- =====================================================================
-  -- Enhancement: 
-  --   1. Make 
+  -- ISSUE: 
+  --   1. We need a capability to assign different Timetables to different class+Section(Optional) for a particuler Date Range
   --   2. Configuring day type for a particuler class+section was limited to is_exam_day, is_ptm_day, is_half_day, is_holiday, is_study_day.
-
+  --      Any new day_type can not be accomodated in existing structure
+  -- SOLUTION:
+  --   1. NEW TABLE: `tt_timetable_class_jnt`
+  --      This table will capture Class+Section was applicable Timetable for a particuler date range
+  --
+  --   2. MODIFIED: tt_class_working_days_jnt
+  --      - Removed is_exam_day, is_ptm_day, is_half_day, is_holiday, is_study_day fields
+  --      - Added day_type_id field to link with tt_day_types table. 
+  --      - This is requireed to accomodate any new day_type school wnt to create other than exam_day, ptm_day, half_day, holiday, study_day.
   --
 -- =====================================================================
 -- Timetable Master List:
@@ -1473,33 +1481,24 @@
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   -- New table to capture applicable timetime for every class+section for specific date range (from and To Date)
-  -- CREATE TABLE IF NOT EXISTS `tt_timetable_class_jnt` (
-  CREATE TABLE IF NOT EXISTS `tt_timetable_assignment` (
-    `id`                           INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `academic_session_id`          SMALLINT UNSIGNED NOT NULL,           -- FK to tt_academic_session.id
-    `academic_term_id`             INT UNSIGNED NULL,                    -- FK to sch_academic_terms.id
-    `priority`                     TINYINT UNSIGNED NOT NULL DEFAULT 1,  -- Priority of the timetable (1 is lowest priority)
-    `from_date`                    DATE NOT NULL,                  -- Simple date range
-    `to_date`                      DATE NOT NULL,                  -- Simple date range
-    `class_id`                     INT UNSIGNED NULL,              -- FK to sch_classes.id (If class is NULL then Timetable will be applicable to entire school)
-    `section_id`                   INT UNSIGNED NULL,              -- FK to sch_sections.id (If NULL, then it is applicable to all sections of the class)
-    `timetable_id`                 INT UNSIGNED NOT NULL,          -- FK to tt_timetable_types.id (Timetable applicable to the class+section for the given date range)
-    `applies_to_all_classes`       TINYINT(1) NOT NULL DEFAULT 1,  -- Whether this timetable is applicable to all sections of the class
-    `is_default_timetable`         TINYINT(1) NOT NULL DEFAULT 0,  -- Whether this timetable is the default timetable for all the class+section
-    `default_flag`                 TINYINT(1) GENERATED ALWAYS AS (CASE WHEN `is_default_timetable` = 1 THEN 1 ELSE NULL END) STORED,
-    `created_at`                   TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-    `updated_at`                   TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    `deleted_at`                   TIMESTAMP NULL DEFAULT NULL,
+  CREATE TABLE IF NOT EXISTS `tt_timetable_class_jnt` (
+    `id`                   INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `academic_session_id`  SMALLINT UNSIGNED NOT NULL,  -- FK to tt_academic_session.id
+    `from_date`            DATE NOT NULL,               -- Simple date range
+    `to_date`              DATE NOT NULL,               -- Simple date range
+    `class_id`             INT UNSIGNED NOT NULL,       -- FK to sch_classes.id
+    `section_id`           INT UNSIGNED NULL,           -- FK to sch_sections.id (If NULL, then it is applicable to all sections of the class)
+    `timetable_id`         INT UNSIGNED NOT NULL,       -- FK to tt_timetable_types.id (This is the actual timetable which is applicable to the class+section for the given date range)
+    `created_at`           TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`           TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at`           TIMESTAMP NULL DEFAULT NULL,
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_ttc_ttAssign_defaultFlag` (`academic_session_id`,`academic_term_id`,`default_flag`),
-    KEY `idx_ttc_ttAssign_class` (`class_id`),
-    KEY `idx_ttc_ttAssign_section` (`section_id`),
-    CONSTRAINT `chk_ttc_ttAssign_AllClass` CHECK ((`applies_to_all_classes` = 1 AND `class_id` IS NULL) OR (`applies_to_all_classes` = 0 AND `class_id` IS NOT NULL)),
-    CONSTRAINT `chk_ttc_ttAssign_classSection` CHECK (`section_id` IS NULL OR `class_id` IS NOT NULL),
-    CONSTRAINT `chk_ttc_ttAssign_dateRange` CHECK (`from_date` <= `to_date`),
-    CONSTRAINT `fk_ttc_ttAssign_ttType` FOREIGN KEY (`timetable_id`) REFERENCES `tt_timetable_types` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_ttc_ttAssign_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_ttc_ttAssign_section` FOREIGN KEY (`section_id`) REFERENCES `sch_sections` (`id`) ON DELETE CASCADE
+    UNIQUE KEY `uq_ttc_class_jnt` (`timetable_id`, `class_id`, `section_id`),
+    KEY `idx_ttc_class` (`class_id`),
+    KEY `idx_ttc_section` (`section_id`),
+    CONSTRAINT `fk_ttc_timetable` FOREIGN KEY (`timetable_id`) REFERENCES `tt_timetable_types` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_ttc_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_ttc_section` FOREIGN KEY (`section_id`) REFERENCES `sch_sections` (`id`) ON DELETE CASCADE
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- -------------------------------------------------
