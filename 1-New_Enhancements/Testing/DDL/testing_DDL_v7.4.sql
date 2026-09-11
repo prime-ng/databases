@@ -278,20 +278,20 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- ---------------------------------------------------------------------------------------------------------
 -- tst_app_settings  —  Application Configuration                                                    [P1]
 -- ---------------------------------------------------------------------------------------------------------
--- Typed key/value configuration, so a setting's meaning is discoverable without reading code.
---
--- THE THREE FLAGS ARE THE WHOLE DESIGN:
---   is_system      shipped with the application; a user may not delete it
---   is_local_only  NEVER travels in a catalog bundle. Paths, machine specifics and credentials stay on
---                  the machine they describe. Exporting a local path to another machine is how you get
---                  an installation that reads evidence from a directory that does not exist there.
---   is_editable    a user may change the value. 0 means changing it is a code change.
---
--- v7.2: `group_name` declared. v7.1 indexed it without declaring it, which made CREATE TABLE fail.
--- v7.2: 'schema_version' is seeded here, replacing the tst_schema_version table (BRD D-27).
+   -- Typed key/value configuration, so a setting's meaning is discoverable without reading code.
+   --
+   -- THE THREE FLAGS ARE THE WHOLE DESIGN:
+   --   is_system      shipped with the application; a user may not delete it
+   --   is_local_only  NEVER travels in a catalog bundle. Paths, machine specifics and credentials stay on
+   --                  the machine they describe. Exporting a local path to another machine is how you get
+   --                  an installation that reads evidence from a directory that does not exist there.
+   --   is_editable    a user may change the value. 0 means changing it is a code change.
+   --
+   -- v7.2: `group_name` declared. v7.1 indexed it without declaring it, which made CREATE TABLE fail.
+   -- v7.2: 'schema_version' is seeded here, replacing the tst_schema_version table (BRD D-27).
 -- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `tst_app_settings` (
-   `id`             INT UNSIGNED NOT NULL AUTO_INCREMENT,
+   `id`             SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
    `group_name`     VARCHAR(50)  NOT NULL DEFAULT 'General',  -- v7.2: declared; v7.1 indexed it undeclared
    `ordinal`        SMALLINT UNSIGNED NOT NULL DEFAULT 1,
    `key`            VARCHAR(100) NOT NULL,
@@ -310,28 +310,28 @@ CREATE TABLE IF NOT EXISTS `tst_app_settings` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Typed application configuration. is_local_only never leaves this machine.';
 -- Import / Export:
---   1. Maintained by the SuperAdmin only; distributed to other machines by seeder.
---   2. The seeder will create the row where is_local_only = 1 but it will never be exported.
---   3. For the row where is_local_only = 1, is_editable should be 1 as well.
---   4. A local user may change the value only where is_editable = 1.
+   --   1. Maintained by the SuperAdmin only; distributed to other machines by seeder.
+   --   2. The seeder will create the row where is_local_only = 1 but it will never be exported.
+   --   3. For the row where is_local_only = 1, is_editable should be 1 as well.
+   --   4. A local user may change the value only where is_editable = 1.
 
 
 -- ---------------------------------------------------------------------------------------------------------
 -- tst_environment_profiles  —  Machine Environment Profile                                          [P1]
 -- ---------------------------------------------------------------------------------------------------------
--- An environment is identified by a REPEATABLE FINGERPRINT over its material attributes, not by free text.
---
--- WHY THIS MATTERS MORE THAN IT SOUNDS.
---   "It fails on my machine" is the single most expensive sentence in testing. This table turns it into
---   "it fails on Windows with Chrome 141 and passes on Chrome 140", which is a fixable statement. A
---   result that cannot be compared to another result IN THE SAME ENVIRONMENT is not evidence of a
---   regression (BRD BR-ENV-04).
---
--- NEVER EXPORTED OR IMPORTED (Solution_Design_v3 SD-15). A fingerprint recomputes identically on any
--- machine, so importing profiles would only create duplicates that differ by id.
+   -- An environment is identified by a REPEATABLE FINGERPRINT over its material attributes, not by free text.
+   --
+   -- WHY THIS MATTERS MORE THAN IT SOUNDS.
+   --   "It fails on my machine" is the single most expensive sentence in testing. This table turns it into
+   --   "it fails on Windows with Chrome 141 and passes on Chrome 140", which is a fixable statement. A
+   --   result that cannot be compared to another result IN THE SAME ENVIRONMENT is not evidence of a
+   --   regression (BRD BR-ENV-04).
+   --
+   -- NEVER EXPORTED OR IMPORTED (Solution_Design_v3 SD-15). A fingerprint recomputes identically on any
+   -- machine, so importing profiles would only create duplicates that differ by id.
 -- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `tst_environment_profiles` (
-   `id`                INT UNSIGNED NOT NULL AUTO_INCREMENT,
+   `id`                MEDIUMINT UNSIGNED NOT NULL AUTO_INCREMENT,
    `env_fingerprint`   CHAR(64) NOT NULL,   -- sha256 over the normalised material attributes below
    `env_name`          VARCHAR(150) NULL,   -- A friendly label, assigned once the profile is recognised
    `env_type`          ENUM('Local','CI','Staging','Production_Like','Other') NOT NULL DEFAULT 'Local',
@@ -367,26 +367,25 @@ COMMENT='Environment identified by fingerprint. Never exported or imported (SD-1
 -- SECTION 2 — IDENTITY: USERS AND MACHINES                                                          [P1]
 -- =========================================================================================================
 
-
--- ---------------------------------------------------------------------------------------------------------
--- tst_users  —  User Profile Management                                                             [P1]
--- ---------------------------------------------------------------------------------------------------------
--- THE USER CODE IS THE PRIMARY KEY, and it appears in every created_by / updated_by / deleted_by column,
--- inside every machine code, and therefore inside every test case code.
---
---     Format: role letter + two digits
---             A01  Architect     Q01  QA Lead     T01  Tester
---             D02  Developer     R01  Reviewer    S01  System
---
--- NO ROLES OR PERMISSIONS TABLES (BRD D-25). The `role` enum plus an ownership check in the policy layer
--- replaces four tables of matrix administration for a team where everyone does everything.
---
--- A USER CODE IS NEVER REISSUED TO A DIFFERENT PERSON. It is embedded in every test case that person
--- authored, and MC-3 means it cannot be renamed. A user is deactivated, never deleted.
---
--- v7.2: created_by / updated_by / deleted_by DECLARED. v7.1 had foreign keys on all three and declared
---       none of them, which made CREATE TABLE fail. They are nullable because the very first row has
---       nobody to attribute itself to.
+   -- ---------------------------------------------------------------------------------------------------------
+   -- tst_users  —  User Profile Management                                                             [P1]
+   -- ---------------------------------------------------------------------------------------------------------
+   -- THE USER CODE IS THE PRIMARY KEY, and it appears in every created_by / updated_by / deleted_by column,
+   -- inside every machine code, and therefore inside every test case code.
+   --
+   --     Format: role letter + two digits
+   --             A01  Architect     Q01  QA Lead     T01  Tester
+   --             D02  Developer     R01  Reviewer    S01  System
+   --
+   -- NO ROLES OR PERMISSIONS TABLES (BRD D-25). The `role` enum plus an ownership check in the policy layer
+   -- replaces four tables of matrix administration for a team where everyone does everything.
+   --
+   -- A USER CODE IS NEVER REISSUED TO A DIFFERENT PERSON. It is embedded in every test case that person
+   -- authored, and MC-3 means it cannot be renamed. A user is deactivated, never deleted.
+   --
+   -- v7.2: created_by / updated_by / deleted_by DECLARED. v7.1 had foreign keys on all three and declared
+   --       none of them, which made CREATE TABLE fail. They are nullable because the very first row has
+   --       nobody to attribute itself to.
 -- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `tst_users` (
    `code`           VARCHAR(3)   NOT NULL,  -- Role letter + 2 digits, e.g. D02. THE primary key
@@ -413,28 +412,28 @@ CREATE TABLE IF NOT EXISTS `tst_users` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Users. The code is the primary key and is embedded in every machine and test case code.';
 -- Import / Export:
---   1. Created centrally by the SuperAdmin; distributed to other machines by seeder.
---   2. A local user may change only their own password.
+   --   1. Created centrally by the SuperAdmin; distributed to other machines by seeder.
+   --   2. A local user may change only their own password.
 
 
 -- ---------------------------------------------------------------------------------------------------------
 -- tst_machines  —  Machine Profile for every user                                                   [P1]
 -- ---------------------------------------------------------------------------------------------------------
--- machine_code = owner_user_code || machine_number.  D02A is Tarun's first machine, D02B his second.
--- Four characters that identify AN INSTALLATION AND ITS OWNER in one token.
---
--- WHY THE MACHINE PROFILE EARNS ITS PLACE (BRD BR-MACH-07):
---   It is what separates "the application is broken" from "your machine is different". A failure on
---   D02A that passes on T01A with a different browser version is an ENVIRONMENT FINDING, not a defect,
---   and without this table nobody can tell the two apart.
---
--- MC-2 APPLIES HERE. owner_user_code is a base column of the generated machine_code, so its foreign key
---   is ON DELETE RESTRICT and CANNOT be anything else. A machine is retired, never deleted, and a
---   machine is never reassigned to another user — D02A means "Tarun's first machine" permanently.
---
--- ID ASSIGNMENT: ids are issued CENTRALLY and inserted EXPLICITLY on the local machine. Never let a
---   local database auto-increment its own machine id, or every machine becomes id 1 and all consolidated
---   evidence collides.  id = 1 is the central installation; local machines start at 10.
+   -- machine_code = owner_user_code || machine_number.  D02A is Tarun's first machine, D02B his second.
+   -- Four characters that identify AN INSTALLATION AND ITS OWNER in one token.
+   --
+   -- WHY THE MACHINE PROFILE EARNS ITS PLACE (BRD BR-MACH-07):
+   --   It is what separates "the application is broken" from "your machine is different". A failure on
+   --   D02A that passes on T01A with a different browser version is an ENVIRONMENT FINDING, not a defect,
+   --   and without this table nobody can tell the two apart.
+   --
+   -- MC-2 APPLIES HERE. owner_user_code is a base column of the generated machine_code, so its foreign key
+   --   is ON DELETE RESTRICT and CANNOT be anything else. A machine is retired, never deleted, and a
+   --   machine is never reassigned to another user — D02A means "Tarun's first machine" permanently.
+   --
+   -- ID ASSIGNMENT: ids are issued CENTRALLY and inserted EXPLICITLY on the local machine. Never let a
+   --   local database auto-increment its own machine id, or every machine becomes id 1 and all consolidated
+   --   evidence collides.  id = 1 is the central installation; local machines start at 10.
 -- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `tst_machines` (
    `id`                  SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT  COMMENT 'Issued centrally; inserted explicitly',
@@ -475,31 +474,29 @@ CREATE TABLE IF NOT EXISTS `tst_machines` (
 ) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Registered installations. machine_code = owner + letter. Ids issued centrally.';
 -- Import / Export:
---   1. All rows are created centrally by the SuperAdmin; distributed by seeder.
---   2. A local user may edit only the 11 profile fields marked above.
---   3. A retired machine_code is NEVER reissued — a reused code silently merges two machines' evidence,
---      which is why the importer classifies a duplicate business code as BLOCKING (BRD D-31).
-
-
+   --   1. All rows are created centrally by the SuperAdmin; distributed by seeder.
+   --   2. A local user may edit only the 11 profile fields marked above.
+   --   3. A retired machine_code is NEVER reissued — a reused code silently merges two machines' evidence,
+   --      which is why the importer classifies a duplicate business code as BLOCKING (BRD D-31).
+   --
 -- =========================================================================================================
 -- SECTION 3 — CATALOG: MODULE -> CATEGORY -> MAIN MENU -> SUB MENU -> TAB/SCREEN                    [P1]
 -- =========================================================================================================
---     PARENTAGE IS ENFORCED TWICE, ON PURPOSE:
---
---       1. BY PREFIX.  mm_code begins with cat_code; sm_code begins with mm_code; ts_code begins with
---          sm_code where one exists. Validated by CatalogService on write. Human-readable.
---
---       2. BY COMPOSITE FOREIGN KEY.  tst_main_menus(module_code, cat_code) references
---          tst_categories(module_code, cat_code). Machine-enforced.
---
---     Neither alone is sufficient. A prefix can be typed wrong; a composite key would happily accept
---     T0104 under T02 as long as both rows agreed. v6.7 referenced cat_code ALONE, which allowed a main
---     menu to belong to a category in a different module and silently corrupted the hierarchy.
+   --     PARENTAGE IS ENFORCED TWICE, ON PURPOSE:
+   --
+   --       1. BY PREFIX.  mm_code begins with cat_code; sm_code begins with mm_code; ts_code begins with
+   --          sm_code where one exists. Validated by CatalogService on write. Human-readable.
+   --
+   --       2. BY COMPOSITE FOREIGN KEY.  tst_main_menus(module_code, cat_code) references
+   --          tst_categories(module_code, cat_code). Machine-enforced.
+   --
+   --     Neither alone is sufficient. A prefix can be typed wrong; a composite key would happily accept
+   --     T0104 under T02 as long as both rows agreed. v6.7 referenced cat_code ALONE, which allowed a main
+   --     menu to belong to a category in a different module and silently corrupted the hierarchy.
 -- =========================================================================================================
 
-
 CREATE TABLE IF NOT EXISTS `tst_modules` (
-   `id`              INT UNSIGNED NOT NULL AUTO_INCREMENT,
+   `id`              SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
    `module_code`     VARCHAR(5)  NOT NULL   COMMENT 'SLB, SCH, FIN, EXM ...',
    `name`            VARCHAR(60) NOT NULL,
    `description`     VARCHAR(500) NULL,
@@ -528,7 +525,7 @@ COMMENT='Top-level Prime-AI functional areas. Centrally governed.';
 
 
 CREATE TABLE IF NOT EXISTS `tst_categories` (
-   `id`           INT UNSIGNED NOT NULL AUTO_INCREMENT,
+   `id`           SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
    `module_code`  VARCHAR(5) NOT NULL,
    `cat_code`     VARCHAR(3) NOT NULL   COMMENT 'T01, T02 ... the ROOT of every code beneath it',
    `name`         VARCHAR(60) NOT NULL,
@@ -555,7 +552,7 @@ COMMENT='Groupings within a module. cat_code is the prefix of every code below i
 
 
 CREATE TABLE IF NOT EXISTS `tst_main_menus` (
-   `id`           INT UNSIGNED NOT NULL AUTO_INCREMENT,
+   `id`           SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
    `module_code`  VARCHAR(5) NOT NULL,
    `cat_code`     VARCHAR(3) NOT NULL,
    `mm_code`      VARCHAR(5) NOT NULL   COMMENT 'T0104 — cat_code + 2. Prefix-nested by construction',
@@ -582,7 +579,7 @@ COMMENT='Main menus. Composite FK stops a menu belonging to a category in anothe
 
 
 CREATE TABLE IF NOT EXISTS `tst_sub_menus` (
-   `id`           INT UNSIGNED NOT NULL AUTO_INCREMENT,
+   `id`           SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
    `module_code`  VARCHAR(5) NOT NULL,
    `cat_code`     VARCHAR(3) NOT NULL,
    `mm_code`      VARCHAR(5) NOT NULL,
@@ -612,21 +609,21 @@ COMMENT='Optional navigation level between main menu and screen.';
 -- ---------------------------------------------------------------------------------------------------------
 -- tst_tabs_screens  —  the smallest addressable, testable surface of Prime-AI                       [P1]
 -- ---------------------------------------------------------------------------------------------------------
--- ts_code (11 chars) is the anchor of the whole system: it is the middle segment of every test case code.
---
--- THE FIVE STATUS COLUMNS ARE THE PROJECT-MANAGEMENT VIEW OF TESTING. Together they let a QA Lead list
--- every screen whose development is complete and whose required test-case list has not been written:
---     requir_doc_status -> tc_list_status -> dev_status -> tc_creation_status -> test_run_status
---
--- sm_code IS NULLABLE. MySQL treats a composite foreign key containing a NULL as satisfied, so a screen
--- may hang directly off a main menu. The main-menu parentage is therefore a separate 3-column composite.
---
--- A SCREEN IS EXCLUDED, NEVER DELETED (BRD BR-CAT-06): is_excluded takes it out of the coverage
--- denominator, and the reason and the person who decided are recorded. Deleting it would make every
--- historical result that referenced it unreadable.
+   -- ts_code (11 chars) is the anchor of the whole system: it is the middle segment of every test case code.
+   --
+   -- THE FIVE STATUS COLUMNS ARE THE PROJECT-MANAGEMENT VIEW OF TESTING. Together they let a QA Lead list
+   -- every screen whose development is complete and whose required test-case list has not been written:
+   --     requir_doc_status -> tc_list_status -> dev_status -> tc_creation_status -> test_run_status
+   --
+   -- sm_code IS NULLABLE. MySQL treats a composite foreign key containing a NULL as satisfied, so a screen
+   -- may hang directly off a main menu. The main-menu parentage is therefore a separate 3-column composite.
+   --
+   -- A SCREEN IS EXCLUDED, NEVER DELETED (BRD BR-CAT-06): is_excluded takes it out of the coverage
+   -- denominator, and the reason and the person who decided are recorded. Deleting it would make every
+   -- historical result that referenced it unreadable.
 -- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `tst_tabs_screens` (
-   `id`                  INT UNSIGNED NOT NULL AUTO_INCREMENT,
+   `id`                  SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
    `module_code`         VARCHAR(5)  NOT NULL,
    `cat_code`            VARCHAR(3)  NOT NULL,
    `mm_code`             VARCHAR(5)  NOT NULL,
@@ -688,38 +685,37 @@ COMMENT='Screens. ts_code anchors every test case code. Excluded, never deleted.
 -- SECTION 4 — AUTHORING: TcLIST, TEST CASES, STEPS, REVIEW, VERSIONS, DUPLICATES                    [P1]
 -- =========================================================================================================
 
-
 -- ---------------------------------------------------------------------------------------------------------
 -- tst_tc_required_list  —  the TcList                                                               [P1]
 -- ---------------------------------------------------------------------------------------------------------
--- WHY THIS IS A TABLE AND NOT A MARKDOWN FILE.
---   Coverage needs a DENOMINATOR. "Fees is about half tested" is not a number. "Fees has 214 required
---   cases, 168 released, 31 in progress, 15 not started" is. A file cannot be counted, filtered,
---   assigned, or joined to the test cases that satisfy it.
---
---   Coverage of a screen  =  released test cases  /  required entries not marked Not-Required.
---
--- tcr_code = machine_code || '_' || ts_code || '_' || LPAD(tc_list_number, 4, '0')
---
---   NOTE, and it is worth knowing: the list number is padded to FOUR digits here while tc_seq_number in
---   tst_test_cases is padded to THREE. Both columns are VARCHAR(21) and both work, but the same
---   conceptual position renders as 0001 and 001, which is a trap for a human comparing the two codes
---   for one test case. Implemented as specified (BRD D-29); flagged as BRD OPEN-01.
---
--- v7.2 corrections: the UNIQUE KEY named tc_list_code, a column that does not exist (FATAL); no foreign
---   key on machine_code; no foreign keys on the audit columns.
+   -- WHY THIS IS A TABLE AND NOT A MARKDOWN FILE.
+   --   Coverage needs a DENOMINATOR. "Fees is about half tested" is not a number. "Fees has 214 required
+   --   cases, 168 released, 31 in progress, 15 not started" is. A file cannot be counted, filtered,
+   --   assigned, or joined to the test cases that satisfy it.
+   --
+   --   Coverage of a screen  =  released test cases  /  required entries not marked Not-Required.
+   --
+   -- tcr_code = machine_code || '_' || ts_code || '_' || LPAD(tc_list_number, 4, '0')
+   --
+   --   NOTE, and it is worth knowing: the list number is padded to FOUR digits here while tc_seq_number in
+   --   tst_test_cases is padded to THREE. Both columns are VARCHAR(21) and both work, but the same
+   --   conceptual position renders as 0001 and 001, which is a trap for a human comparing the two codes
+   --   for one test case. Implemented as specified (BRD D-29); flagged as BRD OPEN-01.
+   --
+   -- v7.2 corrections: the UNIQUE KEY named tc_list_code, a column that does not exist (FATAL); no foreign
+   --   key on machine_code; no foreign keys on the audit columns.
 -- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `tst_tc_required_list` (
    `id`                  INT UNSIGNED NOT NULL AUTO_INCREMENT,
-   `user_code`           VARCHAR(3)  NOT NULL   COMMENT 'Who planned it',
-   `machine_code`        VARCHAR(4)  NOT NULL   COMMENT 'FK tst_machines.machine_code — base column of tcr_code',
-   `ts_code`             VARCHAR(11) NOT NULL   COMMENT 'FK tst_tabs_screens.ts_code — base column of tcr_code',
-   `tc_list_number`      SMALLINT UNSIGNED NOT NULL  COMMENT 'Sequence within the screen for that machine',
-   `tcr_code`            VARCHAR(21) GENERATED ALWAYS AS (CONCAT(`machine_code`,'_',`ts_code`,'_',LPAD(`tc_list_number`, 4, '0'))) STORED, -- 'D02A_T0104010200_0001'
-   `text_requir_detail`  VARCHAR(1000) NULL   COMMENT 'What this test must verify, in business language',
-   `requir_steps_detail` TEXT NULL            COMMENT 'The required steps, before any code exists',
+   `user_code`           VARCHAR(3)  NOT NULL,   -- Who planned it
+   `machine_code`        VARCHAR(4)  NOT NULL,   -- FK tst_machines.machine_code — base column of tcr_code
+   `ts_code`             VARCHAR(11) NOT NULL,   -- FK tst_tabs_screens.ts_code — base column of tcr_code
+   `tc_list_number`      SMALLINT UNSIGNED NOT NULL,  -- Sequence within the screen for that machine
+   `tcr_code`            VARCHAR(20) GENERATED ALWAYS AS (CONCAT(`machine_code`,'_',`ts_code`,'_',LPAD(`tc_list_number`, 3, '0'))) STORED, -- 'D02A_T0104010200_001'
+   `text_requir_detail`  VARCHAR(1000) NULL,   -- What this test must verify, in business language,
+   `requir_steps_detail` TEXT NULL,            -- The required steps, before any code exists,
    `tc_creation_status`  ENUM('Planned','Pending','In-Progress','Ready','In_Review','Released','Error','Cancelled','Rolled_Back','Hold','Not-Required') NOT NULL DEFAULT 'Planned',
-   `not_required_reason` VARCHAR(500) NULL    COMMENT 'Mandatory when status = Not-Required; excludes it from the denominator',
+   `not_required_reason` VARCHAR(500) NULL,    -- Mandatory when status = Not-Required; excludes it from the denominator
    `created_by`          VARCHAR(3) NOT NULL,
    `updated_by`          VARCHAR(3) NOT NULL,
    `deleted_by`          VARCHAR(3) NULL,
@@ -742,70 +738,81 @@ CREATE TABLE IF NOT EXISTS `tst_tc_required_list` (
    CONSTRAINT `fk_tst_tcRequired_deletedBy` FOREIGN KEY (`deleted_by`)   REFERENCES `tst_users`(`code`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='The required test-case list. This is the DENOMINATOR of every coverage figure.';
--- Import / Export: normal evidence-direction export and import.
+-- Import / Export: 
+   -- Normal evidence-direction export and import.
 
+CREATE TABLE IF NOT EXISTS `tst_testcase_sequences_number` (
+    `id`                BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `machine_code`      VARCHAR(4)  NOT NULL,  -- Machine Code FK to tst_machines.machine_code
+    `ts_code`           VARCHAR(11) NOT NULL,  -- TS Code FK to tst_tabs_screens.ts_code
+    `last_seq_number`   INT UNSIGNED NOT NULL DEFAULT 1,
+    `created_at`        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_tcsn_mc_ts` (`machine_code`,`ts_code`),
+    CONSTRAINT `chk_tcsn_next` CHECK (`last_seq_number` >= 1),
+    CONSTRAINT `fk_tcsn_machine` FOREIGN KEY (`machine_code`) REFERENCES `tst_machines`(`machine_code`) ON DELETE CASCADE,
+    CONSTRAINT `fk_tcsn_ts` FOREIGN KEY (`ts_code`) REFERENCES `tst_tabs_screens`(`ts_code`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------------------------------------------
 -- tst_test_cases  —  the test case                                                                  [P1]
 -- ---------------------------------------------------------------------------------------------------------
--- test_case_code = machine_code || '_' || ts_code || '_' || LPAD(tc_seq_number, 3, '0')
---                  D02A_T0104010200_001
---
--- THIS COLUMN IS THE PARENT KEY OF THE ENTIRE SYSTEM. Steps, reviews, version history, duplicate links,
--- run items, results, bugs, dependencies, suite membership and path mappings all reference it.
---
--- THE CODE IS GENERATED, NEVER TYPED. tc_seq_number is allocated by CodeFactory under
--- SELECT ... FOR UPDATE on the screen row; uq_tst_testCases_tcCode is the backstop if a race is lost.
--- SEQUENCES ARE NEVER REUSED, even after a soft delete — reusing 001 attaches an old code to a new test.
---
--- MC-2 APPLIES TO machine_code AND ts_code. Both feed the generated column, so both foreign keys are
--- ON DELETE RESTRICT and cannot be anything else. This is also what makes BRD BR-TC-08 unbreakable:
--- A TEST CASE CANNOT BE MOVED TO ANOTHER SCREEN, because its code names its screen. Testing a different
--- screen is a different test case, created against that screen's TcList.
---
--- definition_hash drives two things: versioning (when it changes, the previous definition is snapshotted)
--- and duplicate detection (two cases with the same hash are the same test, authored twice).
---
--- v7.2 correction: children declared test_case_code as VARCHAR(20) while this declares VARCHAR(21).
---   MySQL accepts that and then cannot use the index properly — see MC-6. Now VARCHAR(21) everywhere.
+   -- test_case_code = machine_code || '_' || ts_code || '_' || LPAD(tc_seq_number, 3, '0')
+   --                  D02A_T0104010200_001
+   --
+   -- THIS COLUMN IS THE PARENT KEY OF THE ENTIRE SYSTEM. Steps, reviews, version history, duplicate links,
+   -- run items, results, bugs, dependencies, suite membership and path mappings all reference it.
+   --
+   -- THE CODE IS GENERATED, NEVER TYPED. tc_seq_number is allocated by CodeFactory under
+   -- SELECT ... FOR UPDATE on the screen row; uq_tst_testCases_tcCode is the backstop if a race is lost.
+   -- SEQUENCES ARE NEVER REUSED, even after a soft delete — reusing 001 attaches an old code to a new test.
+   --
+   -- MC-2 APPLIES TO machine_code AND ts_code. Both feed the generated column, so both foreign keys are
+   -- ON DELETE RESTRICT and cannot be anything else. This is also what makes BRD BR-TC-08 unbreakable:
+   -- A TEST CASE CANNOT BE MOVED TO ANOTHER SCREEN, because its code names its screen. Testing a different
+   -- screen is a different test case, created against that screen's TcList.
+   --
+   -- definition_hash drives two things: versioning (when it changes, the previous definition is snapshotted)
+   -- and duplicate detection (two cases with the same hash are the same test, authored twice).
+   --
+   -- v7.2 correction: children declared test_case_code as VARCHAR(20) while this declares VARCHAR(21).
+   --   MySQL accepts that and then cannot use the index properly — see MC-6. Now VARCHAR(21) everywhere.
 -- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `tst_test_cases` (
    `id`                     INT UNSIGNED NOT NULL AUTO_INCREMENT,
-   `tcr_code`               VARCHAR(21) NULL      COMMENT 'FK tst_tc_required_list.tcr_code — the planned entry this satisfies',
-   `user_code`              VARCHAR(3)  NOT NULL  COMMENT 'Author',
-   `machine_code`           VARCHAR(4)  NOT NULL  COMMENT 'Base column of test_case_code — RESTRICT only (MC-2)',
-   `ts_code`                VARCHAR(11) NOT NULL  COMMENT 'Base column of test_case_code — RESTRICT only (MC-2)',
-   `tc_seq_number`          SMALLINT UNSIGNED NOT NULL COMMENT 'Allocated by CodeFactory; never reused',
-   `test_case_code`         VARCHAR(21) GENERATED ALWAYS AS
-                              (CONCAT(`machine_code`,'_',`ts_code`,'_',LPAD(`tc_seq_number`, 3, '0'))) STORED
-                              COMMENT 'D02A_T0104010200_001 — the parent key of the whole system',
+   `tcr_code`               VARCHAR(20) NULL,     -- FK tst_tc_required_list.tcr_code — the planned entry this satisfies
+   `user_code`              VARCHAR(3)  NOT NULL, -- Author
+   `machine_code`           VARCHAR(4)  NOT NULL, -- Base column of test_case_code — RESTRICT only (MC-2)
+   `ts_code`                VARCHAR(11) NOT NULL, -- Base column of test_case_code — RESTRICT only (MC-2)
+   `tc_seq_number`          SMALLINT UNSIGNED NOT NULL, -- Allocated by CodeFactory; never reused
+   `test_case_code`         VARCHAR(20) GENERATED ALWAYS AS (CONCAT(`machine_code`,'_',`ts_code`,'_',LPAD(`tc_seq_number`, 3, '0'))) STORED, -- D02A_T0104010200_001 — the parent key of the whole system
    `version_no`             TINYINT UNSIGNED NOT NULL DEFAULT 1,
    -- ---- Automation coordinates. NULL for a purely manual test case --------------------------------------
-   `file_path`              VARCHAR(500) NULL     COMMENT 'tests/Browser/LoginPageTest.php',
+   `file_path`              VARCHAR(500) NULL, -- tests/Browser/LoginPageTest.php
    `namespace`              VARCHAR(255) NULL,
    `class_name`             VARCHAR(150) NULL,
    `method_name`            VARCHAR(150) NULL,
    -- ---- Definition --------------------------------------------------------------------------------------
    `display_name`           VARCHAR(255) NOT NULL,
    `description`            TEXT NULL,
-   `preconditions`          TEXT NULL             COMMENT 'What must be true before execution',
-   `test_data_note`         TEXT NULL             COMMENT 'What data state the test needs',
+   `preconditions`          TEXT NULL,         -- What must be true before execution
+   `test_data_note`         TEXT NULL,         -- What data state the test needs
    `test_case_type_code`    ENUM('Standard','Unit','Validation','Feature','Business_Condition') NULL,
    `test_method_code`       ENUM('Manual','Automated','Hybrid') NULL,
    `test_technology_code`   ENUM('Dusk','Laravel-Unit','Native') NULL,
    `test_layer_code`        ENUM('GUI','API','Unit','Integration','Performance','Security','Accessibility','Other') NULL,
    `criticality`            ENUM('Low','Medium','High','Critical') NOT NULL DEFAULT 'Medium',
    `expected_duration_sec`  DECIMAL(10,2) NULL,
-   `definition_hash`        CHAR(64) NULL         COMMENT 'sha256 over the normalised definition incl. ordered steps',
+   `definition_hash`        CHAR(64) NULL, -- sha256 over the normalised definition incl. ordered steps
    -- ---- Lifecycle ---------------------------------------------------------------------------------------
-   `creation_status_code`   ENUM('Pending','In-Progress','Ready-For-Review','In-Review','Released',
-                                 'Cancelled','Rolled-Back','Hold','Not-Required') NOT NULL DEFAULT 'Pending',
+   `creation_status_code`   ENUM('Pending','In-Progress','Ready-For-Review','In-Review','Released','Cancelled','Rolled-Back','Hold','Not-Required') NOT NULL DEFAULT 'Pending',
    `test_execution_status`  ENUM('Not-Run','Partially-Run','Fully-Run','Failing','Blocked') NOT NULL DEFAULT 'Not-Run',
-   `is_orphaned`            TINYINT(1) NOT NULL DEFAULT 0  COMMENT 'Implementation gone from source. NEVER deleted',
+   `is_orphaned`            TINYINT(1) NOT NULL DEFAULT 0, -- Implementation gone from source. NEVER deleted,
    `orphaned_at`            DATETIME NULL,
    `last_seen_in_source_at` DATETIME NULL,
-   `cloned_from_code`       VARCHAR(21) NULL      COMMENT 'v7.2: was cloned_from_id — now the code',
-   `is_active`              TINYINT(1) NOT NULL DEFAULT 1  COMMENT '0 = retired',
+   `cloned_from_code`       VARCHAR(20) NULL, -- v7.2: was cloned_from_id — now the code
+   `is_active`              TINYINT(1) NOT NULL DEFAULT 1, -- 0 = retired
    `retired_at`             DATETIME NULL,
    `retired_by`             VARCHAR(3) NULL,
    `retired_reason`         VARCHAR(500) NULL,
@@ -836,27 +843,32 @@ CREATE TABLE IF NOT EXISTS `tst_test_cases` (
    CONSTRAINT `fk_tst_testCases_deletedBy` FOREIGN KEY (`deleted_by`)   REFERENCES `tst_users`(`code`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='The test case. test_case_code is generated, globally unique, and permanent.';
--- Import / Export: normal evidence-direction export and import.
---   Under the new coding system a test case authored on another machine imports cleanly alongside this
---   machine's own — the codes differ. Whether the two are THE SAME TEST is a separate judgement,
---   recorded in tst_duplicate_test_case, never decided automatically.
-
+-- Import / Export: 
+   --   Normal evidence-direction export and import.
+   --   Under the new coding system a test case authored on another machine imports cleanly alongside this
+   --   machine's own — the codes differ. Whether the two are THE SAME TEST is a separate judgement,
+   --   recorded in tst_duplicate_test_case, never decided automatically.
+--
+-- Conditions:
+   -- 1 TestCase will allign with single Method. File Name & Class Name can be shared with other TestCases.
+   -- 1 Method will be allign with 1 TestCase only. Method can not be shared with multipal TestCases.
+   -- 1 Methods can have multipal Steps (which may test multipla things but in all the case 1 Method will be allign with 1 TestCases only)
 
 -- ---------------------------------------------------------------------------------------------------------
 -- tst_test_case_steps  —  ordered steps for manual and hybrid execution                             [P1]
 -- ---------------------------------------------------------------------------------------------------------
--- HOLDS ONLY THE CURRENT VERSION. Historical steps live in tst_test_case_versions_history.steps_json.
---
--- This is a deliberate denormalisation (Solution_Design_v3 SD-09). A manual tester executing a historical
--- run must see the steps AS THEY WERE, but keeping every version here would force the grid query to
--- filter on version on every load, on the table that is read most often during manual testing.
+   -- HOLDS ONLY THE CURRENT VERSION. Historical steps live in tst_test_case_versions_history.steps_json.
+   --
+   -- This is a deliberate denormalisation (Solution_Design_v3 SD-09). A manual tester executing a historical
+   -- run must see the steps AS THEY WERE, but keeping every version here would force the grid query to
+   -- filter on version on every load, on the table that is read most often during manual testing.
 -- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `tst_test_case_steps` (
    `id`               BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-   `test_case_code`   VARCHAR(21) NOT NULL,      -- v7.2: was VARCHAR(20) against a VARCHAR(21) parent
+   `test_case_code`   VARCHAR(20) NOT NULL,      -- against a VARCHAR(20) parent
    `step_no`          SMALLINT UNSIGNED NOT NULL,
-   `action`           TEXT NOT NULL              COMMENT 'What the tester does',
-   `expected_result`  TEXT NOT NULL              COMMENT 'What must happen',
+   `action`           TEXT NOT NULL,    -- What the tester does
+   `expected_result`  TEXT NOT NULL,    -- What must happen
    `test_data_note`   VARCHAR(1000) NULL,
    `is_optional`      TINYINT(1) NOT NULL DEFAULT 0,
    `created_by`       VARCHAR(3) NOT NULL,
@@ -879,29 +891,28 @@ COMMENT='Current-version steps only. History lives in the version snapshot (SD-0
 -- ---------------------------------------------------------------------------------------------------------
 -- tst_test_case_review  —  review, readiness and sign-off                                           [P1]
 -- ---------------------------------------------------------------------------------------------------------
--- REPLACES tst_releases (BRD D-26). The unit of release here is the TEST CASE, not a named delivery.
---
--- REVIEWER AND APPROVER ARE SEPARATE COLUMNS, and that is the point. Recording them in one field makes
--- "who signed this off?" unanswerable in exactly the case that matters: when someone reviewed their own
--- work. reviewed_by and signed_off_by may be the same person, and the record shows that they were.
---
--- version_no CARRIES NO FOREIGN KEY, AND THAT IS INTENTIONAL (Solution_Design_v3 SD-10).
---   It records the version as it stood at review time. A foreign key to tst_test_case_versions_history
---   would make reviewing version 1 impossible, because that table only holds SUPERSEDED definitions —
---   version 1's row does not exist until version 2 is written. Do not "fix" this.
---
--- A REVIEW IS RETAINED AS ISSUED (BRD BR-REV-07). ReviewService has no update path for readiness_score
---   or readiness_assessment once status = 'Completed'. Later data never retrospectively improves an
---   assessment that was made on what was known at the time.
+   -- REPLACES tst_releases (BRD D-26). The unit of release here is the TEST CASE, not a named delivery.
+   --
+   -- REVIEWER AND APPROVER ARE SEPARATE COLUMNS, and that is the point. Recording them in one field makes
+   -- "who signed this off?" unanswerable in exactly the case that matters: when someone reviewed their own
+   -- work. reviewed_by and signed_off_by may be the same person, and the record shows that they were.
+   --
+   -- version_no CARRIES NO FOREIGN KEY, AND THAT IS INTENTIONAL (Solution_Design_v3 SD-10).
+   --   It records the version as it stood at review time. A foreign key to tst_test_case_versions_history
+   --   would make reviewing version 1 impossible, because that table only holds SUPERSEDED definitions —
+   --   version 1's row does not exist until version 2 is written. Do not "fix" this.
+   --
+   -- A REVIEW IS RETAINED AS ISSUED (BRD BR-REV-07). ReviewService has no update path for readiness_score
+   --   or readiness_assessment once status = 'Completed'. Later data never retrospectively improves an
+   --   assessment that was made on what was known at the time.
 -- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `tst_test_case_review` (
    `id`                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-   `test_case_code`        VARCHAR(21) NOT NULL,
-   `version_no`            TINYINT UNSIGNED NOT NULL DEFAULT 1  COMMENT 'No FK — intentional, see SD-10',
+   `test_case_code`        VARCHAR(20) NOT NULL,
+   `version_no`            TINYINT UNSIGNED NOT NULL DEFAULT 1,  -- No FK — intentional, see SD-10
    `machine_code`          VARCHAR(4)  NOT NULL,
-   `review_date`           DATETIME NOT NULL   COMMENT 'The business date of the review',
-   `status`                ENUM('Pending','In-Progress','Completed','Released','Error','Cancelled',
-                                'Rolled-Back','Hold','Not-Required') NOT NULL DEFAULT 'Pending',
+   `review_date`           DATETIME NOT NULL, -- The business date of the review
+   `status`                ENUM('Pending','In-Progress','Completed','Released','Error','Cancelled','Rolled-Back','Hold','Not-Required','Incomplete') NOT NULL DEFAULT 'Pending',
    `released_at`           DATETIME NULL,
    -- ---- Readiness: metrics, completion checks, bug-free status, score -----------------------------------
    `readiness_score`       DECIMAL(5,2) NULL,
@@ -944,31 +955,31 @@ COMMENT='Review, readiness score and sign-off. Replaces the Release entity (D-26
 -- ---------------------------------------------------------------------------------------------------------
 -- tst_test_case_versions_history  —  immutable snapshot of a SUPERSEDED definition                  [P1]
 -- ---------------------------------------------------------------------------------------------------------
--- Written when definition_hash changes, so a historical result can still be rendered as the test case
--- stood when it ran. steps_json holds the ordered steps as they then were.
---
--- v7.2 correction: the foreign key named test_case_id, a column this table does not declare (FATAL).
---   It now references test_case_code, which is what the table actually carries.
+   -- Written when definition_hash changes, so a historical result can still be rendered as the test case
+   -- stood when it ran. steps_json holds the ordered steps as they then were.
+   --
+   -- v7.2 correction: the foreign key named test_case_id, a column this table does not declare (FATAL).
+   --   It now references test_case_code, which is what the table actually carries.
 -- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `tst_test_case_versions_history` (
    `id`                        BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-   `test_case_code`            VARCHAR(21) NOT NULL,
+   `test_case_code`            VARCHAR(20) NOT NULL,
    `version_no`                TINYINT UNSIGNED NOT NULL,
-   `definition_hash`           CHAR(64) NULL,
+   `definition_hash`           CHAR(64) NULL,      -- SHA-1
    `file_path`                 VARCHAR(500) NULL,
    `class_name`                VARCHAR(150) NULL,
    `method_name`               VARCHAR(150) NULL,
    `display_name`              VARCHAR(255) NULL,
    `description`               TEXT NULL,
    `preconditions`             TEXT NULL,
-   `steps_json`                JSON NULL      COMMENT 'The ordered steps as they were at this version',
+   `steps_json`                JSON NULL,          -- The ordered steps as they were at this version
    `test_case_type_code`       VARCHAR(30) NULL,
    `test_method_code`          VARCHAR(30) NULL,
    `test_technology_code`      VARCHAR(30) NULL,
    `test_layer_code`           VARCHAR(30) NULL,
    `criticality`               ENUM('Low','Medium','High','Critical') NULL,
    `change_summary`            VARCHAR(1000) NULL,
-   `captured_from_commit_hash` VARCHAR(40) NULL   COMMENT 'A Git SHA-1 is 40 hex chars, not 64',
+   `captured_from_commit_hash` VARCHAR(40) NULL,  -- A Git SHA-1 is 40 hex chars, not 64
    `captured_by`               VARCHAR(3) NOT NULL,
    `created_at`                TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
    PRIMARY KEY (`id`),
@@ -984,34 +995,39 @@ COMMENT='IMMUTABLE snapshots of superseded definitions. Insert-only.';
 -- ---------------------------------------------------------------------------------------------------------
 -- tst_duplicate_test_case  —  the equivalence judgement                                             [P1]
 -- ---------------------------------------------------------------------------------------------------------
--- THIS TABLE IS WHAT REPLACED tst_source_test_cases.
---
---   Under v7.0 two machines could both mint T0104010200/001, so an incoming test case had to be held in
---   quarantine until a human decided whether it was the same test. That was a question about IDENTITY,
---   and the coding system answers it: D02A_… and T01A_… are different codes, both import cleanly.
---
---   What remains is a question about EQUIVALENCE — "are these two tests verifying the same thing?" —
---   which is a matter of judgement and belongs here.
---
--- INSERT-ONLY. A reversal writes a NEW row and stamps superseded_at on the old one, so the decision
--- history survives (BRD BR-DUP-04). 'Confirmed_Different' is as valuable as 'Confirmed_Equivalent':
--- without it, the system re-proposes the same rejected match forever.
---
--- A CONFIRMED DUPLICATE IS NOT DELETED. Both test cases keep their evidence; reporting counts the primary.
+   -- THIS TABLE IS WHAT REPLACED tst_source_test_cases.
+   --
+   --   Under v7.0 two machines could both mint T0104010200/001, so an incoming test case had to be held in
+   --   quarantine until a human decided whether it was the same test. That was a question about IDENTITY,
+   --   and the coding system answers it: D02A_… and T01A_… are different codes, both import cleanly.
+   --
+   --   What remains is a question about EQUIVALENCE — "are these two tests verifying the same thing?" —
+   --   which is a matter of judgement and belongs here.
+   --
+   -- INSERT-ONLY. A reversal writes a NEW row and stamps superseded_at on the old one, so the decision
+   -- history survives (BRD BR-DUP-04). 'Confirmed_Different' is as valuable as 'Confirmed_Equivalent':
+   -- without it, the system re-proposes the same rejected match forever.
+   --
+   -- A CONFIRMED DUPLICATE IS NOT DELETED. Both test cases keep their evidence; reporting counts the primary.
 -- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `tst_duplicate_test_case` (
    `id`                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-   `test_case_code`        VARCHAR(21) NOT NULL,
-   `linked_test_case_code` VARCHAR(21) NOT NULL,
-   `link_type`             ENUM('Proposed_Equivalent','Confirmed_Equivalent','Confirmed_Different',
-                                'Duplicate_Of','Variant_Of','Supersedes') NOT NULL DEFAULT 'Proposed_Equivalent',
-   `score`                 DECIMAL(4,3) NULL   COMMENT '0.000-1.000, how strongly they match',
-   `evidence_json`         JSON NULL           COMMENT 'Why the application proposed it',
-   `proposed_by`           VARCHAR(3) NULL     COMMENT 'A person, or the system user',
-   `decided_by`            VARCHAR(3) NULL     COMMENT 'QA Lead or Architect — never automatic',
+   `test_case_code`        VARCHAR(20) NOT NULL,
+   `linked_test_case_code` VARCHAR(20) NOT NULL,
+   `link_type`             ENUM('Proposed_Equivalent','Confirmed_Equivalent','Confirmed_Different','Duplicate_Of','Variant_Of','Supersedes') NOT NULL DEFAULT 'Proposed_Equivalent',
+   `score`                 DECIMAL(4,3) NULL,  -- 0.000-1.000, how strongly they match
+   -- New Coloumn Added -----------
+   `status`                ENUM('Review-Pending','Under-Review','Resolved-Not-Duplicate','Resolved-Duplicate','Superseded') NOT NULL DEFAULT 'Review-Pending',
+   `review_note`           VARCHAR(1000) NULL,
+   `reviewed_by`           VARCHAR(3) NULL,
+   `reviewed_at`           DATETIME NULL,
+   -- ---------------------------------------
+   `evidence_json`         JSON NULL,          -- Why the application proposed it
+   `proposed_by`           VARCHAR(3) NULL,    -- A person, or the system user
+   `decided_by`            VARCHAR(3) NULL,    -- QA Lead or Architect — never automatic
    `decided_at`            DATETIME NULL,
    `note`                  VARCHAR(1000) NULL,
-   `superseded_at`         DATETIME NULL       COMMENT 'Set when a later row reverses this decision',
+   `superseded_at`         DATETIME NULL,       -- Set when a later row reverses this decision
    `created_at`            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
    PRIMARY KEY (`id`),
    INDEX `idx_tst_tcDup_case`   (`test_case_code`,`link_type`),
@@ -1030,56 +1046,55 @@ COMMENT='Equivalence judgements between test cases. Insert-only; reversals super
 -- =========================================================================================================
 -- SECTION 5 — EXECUTION                                                                             [P1]
 -- =========================================================================================================
---     tst_test_runs                one execution EVENT
---       tst_test_run_scopes        why the run exists
---       tst_test_run_items         which test cases were selected, and why each one
---         tst_test_run_results     one row per ATTEMPT — insert-only, the source of ALL statistics
---           tst_test_run_result_steps    per-step outcomes for manual execution
---           tst_run_result_artifacts     evidence
---     tst_failure_signatures       distinct normalised failures
---     tst_test_case_runs_summary   DERIVED roll-up, never authoritative
+--
+   --     tst_test_runs                one execution EVENT
+   --       tst_test_run_scopes        why the run exists
+   --       tst_test_run_items         which test cases were selected, and why each one
+   --         tst_test_run_results     one row per ATTEMPT — insert-only, the source of ALL statistics
+   --           tst_test_run_result_steps    per-step outcomes for manual execution
+   --           tst_run_result_artifacts     evidence
+   --     tst_failure_signatures       distinct normalised failures
+   --     tst_test_case_runs_summary   DERIVED roll-up, never authoritative
 -- =========================================================================================================
 
 
 -- ---------------------------------------------------------------------------------------------------------
 -- tst_test_runs  —  one execution event                                                             [P1]
 -- ---------------------------------------------------------------------------------------------------------
--- A RUN IS AN EVENT COVERING MANY TEST CASES.
 --
---   v7.1 gave this table a GENERATED test_case_code built from machine_code, ts_code and tc_seq_number.
---   That is a category error — and the generated column referenced `machine_code`, which the table does
---   not declare (it has run_machine_code), so the script would not execute at all. REMOVED in v7.2.
---   The per-test-case link belongs in tst_test_run_items.test_case_code, where it is one row per case.
---
--- WHAT A RUN ACTUALLY NEEDS:
---   machine_id + source_run_id   distributed identity. On a local database source_run_id equals id;
---                                on central, id is re-issued and the pair is preserved, which is what
---                                makes a repeated import a no-op.
---   run_machine_code             which machine executed it, as a readable code that consolidates
---   run_user_code                whose machine it was
---   initiated_by / executed_by   attribution. A scheduled run is initiated by a person and executed by
---                                the system user; recording only one of them loses the distinction.
---
--- CODE VERSION UNDER TEST (BRD BR-EXEC-03). repository_code, branch_name, commit_hash and
---   working_tree_dirty are PLAIN COLUMNS in Phase 1 with no foreign key. The Git tables arrive in
---   Phase 2 and the FK is added then (Section 30) — see THE PHASE RULE.
---   A result without a commit hash cannot be interpreted historically, so these are recorded from day 1
---   even though nothing validates them yet.
---
--- suite_id, suite_version_no, impact_analysis_id: Phase-2 columns, declared now, NULL until Phase 2.
+   -- A RUN IS AN EVENT COVERING MANY TEST CASES.
+   --
+   --   v7.1 gave this table a GENERATED test_case_code built from machine_code, ts_code and tc_seq_number.
+   --   That is a category error — and the generated column referenced `machine_code`, which the table does
+   --   not declare (it has run_machine_code), so the script would not execute at all. REMOVED in v7.2.
+   --   The per-test-case link belongs in tst_test_run_items.test_case_code, where it is one row per case.
+   --
+   -- WHAT A RUN ACTUALLY NEEDS:
+   --   machine_id + source_run_id   distributed identity. On a local database source_run_id equals id;
+   --                                on central, id is re-issued and the pair is preserved, which is what
+   --                                makes a repeated import a no-op.
+   --   run_machine_code             which machine executed it, as a readable code that consolidates
+   --   run_user_code                whose machine it was
+   --   initiated_by / executed_by   attribution. A scheduled run is initiated by a person and executed by
+   --                                the system user; recording only one of them loses the distinction.
+   --
+   -- CODE VERSION UNDER TEST (BRD BR-EXEC-03). repository_code, branch_name, commit_hash and
+   --   working_tree_dirty are PLAIN COLUMNS in Phase 1 with no foreign key. The Git tables arrive in
+   --   Phase 2 and the FK is added then (Section 30) — see THE PHASE RULE.
+   --   A result without a commit hash cannot be interpreted historically, so these are recorded from day 1
+   --   even though nothing validates them yet.
+   --
+   -- suite_id, suite_version_no, impact_analysis_id: Phase-2 columns, declared now, NULL until Phase 2.
 -- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `tst_test_runs` (
    `id`                     BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-   `machine_id`             SMALLINT UNSIGNED NOT NULL,
-   `source_run_id`          BIGINT UNSIGNED NOT NULL   COMMENT 'Equals id locally; preserved on central',
-   `run_machine_code`       VARCHAR(4) NOT NULL        COMMENT 'Which machine executed this run',
-   `run_user_code`          VARCHAR(3) NOT NULL        COMMENT 'Whose machine it is',
+   `machine_code`           VARCHAR(4)  NOT NULL,
+   `test_case_code`         VARCHAR(20) NOT NULL,      -- FK to tst_test_cases.test_case_code (e.g. D02A_T0104010200_001)
+   `test_run_seq_number`    INT UNSIGNED NOT NULL,     -- Seuence Number will be calculated by (tst_testcase_sequences_number.last_seq_number + 1)
    `entry_type`             ENUM('Local','Imported') NOT NULL DEFAULT 'Local',
    `initiated_by`           VARCHAR(3) NULL,
    `executed_by`            VARCHAR(3) NULL            COMMENT 'The system user for a scheduled run',
-   `trigger_type`           ENUM('Manual','Scheduled','Rerun','Auto_Retest','Bug_Retest','Impact_Selected',
-                                 'Enhancement','Integration','Regression','Git_Merge','Release','CI')
-                              NOT NULL DEFAULT 'Manual',
+   `trigger_type`           ENUM('Manual','Scheduled','Rerun','Auto_Retest','Bug_Retest','Impact_Selected','Enhancement','Integration','Regression','Git_Merge','Release','CI') NOT NULL DEFAULT 'Manual',
    -- ---- Phase-2 columns: declared now, foreign keys added in Section 30 ---------------------------------
    `suite_id`               INT UNSIGNED NULL          COMMENT '[P2] FK added in Section 30',
    `suite_version_no`       INT UNSIGNED NULL          COMMENT '[P2] The composition actually executed',
@@ -1097,7 +1112,7 @@ CREATE TABLE IF NOT EXISTS `tst_test_runs` (
    `base_commit_hash`       VARCHAR(40) NULL,
    `working_tree_dirty`     TINYINT(1) NOT NULL DEFAULT 0  COMMENT 'Uncommitted changes were present',
    -- ---- Environment -------------------------------------------------------------------------------------
-   `environment_profile_id` INT UNSIGNED NULL,
+   `environment_profile_id` MEDIUMINT UNSIGNED NULL,
    `environment_json`       JSON NULL                  COMMENT 'The raw capture the fingerprint came from',
    `command`                VARCHAR(2000) NULL,
    -- ---- Lifecycle ---------------------------------------------------------------------------------------
@@ -1166,17 +1181,16 @@ COMMENT='One execution event. NOT one test case — v7.1 modelled it as one (fat
 -- ---------------------------------------------------------------------------------------------------------
 -- tst_test_run_scopes  —  what the run was asked to cover                                           [P1]
 -- ---------------------------------------------------------------------------------------------------------
--- One run may have several scope rows: "the Fees module, plus these three screens, plus bug 412".
--- The 'Suite' and 'Change_Request' scope types are unreachable until Phase 2.
+   -- One run may have several scope rows: "the Fees module, plus these three screens, plus bug 412".
+   -- The 'Suite' and 'Change_Request' scope types are unreachable until Phase 2.
 -- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `tst_test_run_scopes` (
    `id`                 BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
    `run_id`             BIGINT UNSIGNED NOT NULL,
-   `scope_type`         ENUM('Module','Screen','TestCase','Suite','Bug','Change_Request','Commit',
-                             'Impact_Analysis','Release','Full') NOT NULL,
+   `scope_type`         ENUM('Module','Screen','TestCase','Suite','Bug','Change_Request','Commit','Impact_Analysis','Release','Full') NOT NULL,
    `module_code`        VARCHAR(5)  NULL,
    `ts_code`            VARCHAR(11) NULL,
-   `test_case_code`     VARCHAR(21) NULL,
+   `test_case_code`     VARCHAR(20) NULL,
    `bug_id`             BIGINT UNSIGNED NULL   COMMENT '[P1] FK added in Section 12 (bugs come later)',
    `suite_id`           INT UNSIGNED NULL      COMMENT '[P2] FK added in Section 30',
    `change_request_id`  BIGINT UNSIGNED NULL   COMMENT '[P2] FK added in Section 30',
@@ -1201,25 +1215,23 @@ COMMENT='Why the run exists. Suite and Change_Request scopes activate in Phase 2
 -- ---------------------------------------------------------------------------------------------------------
 -- tst_test_run_items  —  one test case in one run, and WHY it was selected                          [P1]
 -- ---------------------------------------------------------------------------------------------------------
--- selection_reason IS THE POINT OF THIS TABLE. A month later, "why did we run these 40 tests?" is
--- answerable from the data. This is what makes Phase-2 impact analysis explainable after the fact.
--- In Phase 1 the reachable values are Manual, Bug_Retest, Critical, Regression, Schedule and Open_Bug.
---
--- THE SNAPSHOT COLUMNS matter more than they look. display_name_snapshot, file_path_snapshot,
--- criticality_snapshot and test_case_version_no are captured AT SELECTION TIME, so a run from six months
--- ago renders as the test case then stood. Without them, renaming a test case silently rewrites history.
---
--- v7.2: source_test_case_id and the CHECK constraint that exactly one of two case references be present
---   are REMOVED, along with tst_source_test_cases itself. A test case authored on another machine now
---   simply has a different code and lives in tst_test_cases like any other.
+   -- selection_reason IS THE POINT OF THIS TABLE. A month later, "why did we run these 40 tests?" is
+   -- answerable from the data. This is what makes Phase-2 impact analysis explainable after the fact.
+   -- In Phase 1 the reachable values are Manual, Bug_Retest, Critical, Regression, Schedule and Open_Bug.
+   --
+   -- THE SNAPSHOT COLUMNS matter more than they look. display_name_snapshot, file_path_snapshot,
+   -- criticality_snapshot and test_case_version_no are captured AT SELECTION TIME, so a run from six months
+   -- ago renders as the test case then stood. Without them, renaming a test case silently rewrites history.
+   --
+   -- v7.2: source_test_case_id and the CHECK constraint that exactly one of two case references be present
+   --   are REMOVED, along with tst_source_test_cases itself. A test case authored on another machine now
+   --   simply has a different code and lives in tst_test_cases like any other.
 -- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `tst_test_run_items` (
    `id`                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
    `run_id`                BIGINT UNSIGNED NOT NULL,
-   `test_case_code`        VARCHAR(21) NOT NULL,
-   `selection_reason`      ENUM('Manual','Suite','Direct_Change','Dependency','Bug_Retest','Critical',
-                                'Regression','Full_Regression','Historical_Correlation','Open_Bug',
-                                'Schedule','Other') NOT NULL DEFAULT 'Manual',
+   `test_case_code`        VARCHAR(20) NOT NULL,
+   `selection_reason`      ENUM('Manual','Suite','Direct_Change','Dependency','Bug_Retest','Critical','Regression','Full_Regression','Historical_Correlation','Open_Bug','Schedule','Other') NOT NULL DEFAULT 'Manual',
    `selection_source`      VARCHAR(255) NULL   COMMENT 'The commit, rule or analysis that put it here',
    `selection_confidence`  DECIMAL(4,3) NULL,
    `sequence_no`           INT UNSIGNED NOT NULL DEFAULT 1,
@@ -1258,30 +1270,30 @@ COMMENT='One test case in one run, with the reason it was selected and a snapsho
 -- ---------------------------------------------------------------------------------------------------------
 -- tst_test_run_results  —  ONE ROW PER ATTEMPT. INSERT-ONLY.                                        [P1]
 -- ---------------------------------------------------------------------------------------------------------
--- THIS TABLE IS THE SINGLE SOURCE OF TRUTH FROM WHICH EVERY STATISTIC IN THE SYSTEM IS DERIVED.
---
--- NOTHING IN THE APPLICATION MAY EVER UPDATE A STATUS HERE. A re-execution is a NEW row with
--- attempt_no + 1. ExecutionService is the only writer, and it has no update path.
---
--- SIX STATUSES, AND THE TWO THAT v6.7 LACKED MATTER MOST:
---   Blocked       did not run because a prerequisite failed. RECORDING THIS AS FAILED INFLATES DEFECT
---                 COUNTS and sends someone to investigate a test that never executed.
---   Not_Executed  selected but never reached — the run was interrupted or cancelled.
---
--- triage_state (BRD R-06): A FAILURE IS NOT AUTOMATICALLY A BUG. It may be a new bug, a known bug, a
--- flaky test, an environment problem, a data problem, a defect in the test itself, or expected.
---
--- test_case_code is DENORMALISED here on purpose: every history query starts from a test case, and this
--- avoids a join to run_items across millions of rows. Maintained by ExecutionService only.
+   -- THIS TABLE IS THE SINGLE SOURCE OF TRUTH FROM WHICH EVERY STATISTIC IN THE SYSTEM IS DERIVED.
+   --
+   -- NOTHING IN THE APPLICATION MAY EVER UPDATE A STATUS HERE. A re-execution is a NEW row with
+   -- attempt_no + 1. ExecutionService is the only writer, and it has no update path.
+   --
+   -- SIX STATUSES, AND THE TWO THAT v6.7 LACKED MATTER MOST:
+   --   Blocked       did not run because a prerequisite failed. RECORDING THIS AS FAILED INFLATES DEFECT
+   --                 COUNTS and sends someone to investigate a test that never executed.
+   --   Not_Executed  selected but never reached — the run was interrupted or cancelled.
+   --
+   -- triage_state (BRD R-06): A FAILURE IS NOT AUTOMATICALLY A BUG. It may be a new bug, a known bug, a
+   -- flaky test, an environment problem, a data problem, a defect in the test itself, or expected.
+   --
+   -- test_case_code is DENORMALISED here on purpose: every history query starts from a test case, and this
+   -- avoids a join to run_items across millions of rows. Maintained by ExecutionService only.
 -- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `tst_test_run_results` (
    `id`                     BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
    `run_id`                 BIGINT UNSIGNED NOT NULL,
    `run_item_id`            BIGINT UNSIGNED NOT NULL,
-   `test_case_code`         VARCHAR(21) NULL   COMMENT 'Denormalised from the run item for query performance',
+   `test_case_code`         VARCHAR(20) NULL   COMMENT 'Denormalised from the run item for query performance',
    `machine_id`             SMALLINT UNSIGNED NOT NULL,
    `run_machine_code`       VARCHAR(4) NULL    COMMENT 'Denormalised; readable in exports and logs',
-   `environment_profile_id` INT UNSIGNED NULL,
+   `environment_profile_id` MEDIUMINT UNSIGNED NULL,
    `attempt_no`             SMALLINT UNSIGNED NOT NULL DEFAULT 1,
    `is_final_attempt`       TINYINT(1) NOT NULL DEFAULT 1,
    `status`                 ENUM('Passed','Failed','Error','Skipped','Blocked','Not_Executed') NOT NULL,
@@ -1298,8 +1310,7 @@ CREATE TABLE IF NOT EXISTS `tst_test_run_results` (
    `failure_fingerprint`    CHAR(64) NULL      COMMENT 'Normalised: no timestamps, ids, addresses or absolute paths',
    `failure_signature_id`   BIGINT UNSIGNED NULL  COMMENT 'FK added in Section 12 (signatures come later)',
    -- ---- Triage ------------------------------------------------------------------------------------------
-   `triage_state`           ENUM('Untriaged','New_Bug','Existing_Bug','Known_Issue','Flaky','Environment',
-                                 'Test_Defect','Data_Issue','Expected') NOT NULL DEFAULT 'Untriaged',
+   `triage_state`           ENUM('Untriaged','New_Bug','Existing_Bug','Known_Issue','Flaky','Environment','Test_Defect','Data_Issue','Expected') NOT NULL DEFAULT 'Untriaged',
    `triaged_by`             VARCHAR(3) NULL,
    `triaged_at`             DATETIME NULL,
    `triage_note`            VARCHAR(1000) NULL,
@@ -1357,21 +1368,20 @@ COMMENT='Per-step outcomes for manual execution. Steps are snapshotted, not refe
 -- ---------------------------------------------------------------------------------------------------------
 -- tst_run_result_artifacts  —  evidence                                                             [P1]
 -- ---------------------------------------------------------------------------------------------------------
--- v6.7 had three fixed path columns, which left video, HAR files and per-step screenshots nowhere to go
--- and no way to express that an artefact had been purged.
---
--- is_available = 0 MEANS THE FILE WAS PURGED BY RETENTION. The row stays. The result then shows
--- "evidence expired" rather than appearing never to have had any — which are different facts, and the
--- difference matters when someone is deciding whether a year-old conclusion can be re-examined.
---
--- file_sha256 lets identical artefacts be stored once and referenced many times.
+   -- v6.7 had three fixed path columns, which left video, HAR files and per-step screenshots nowhere to go
+   -- and no way to express that an artefact had been purged.
+   --
+   -- is_available = 0 MEANS THE FILE WAS PURGED BY RETENTION. The row stays. The result then shows
+   -- "evidence expired" rather than appearing never to have had any — which are different facts, and the
+   -- difference matters when someone is deciding whether a year-old conclusion can be re-examined.
+   --
+   -- file_sha256 lets identical artefacts be stored once and referenced many times.
 -- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `tst_run_result_artifacts` (
    `id`             BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
    `run_result_id`  BIGINT UNSIGNED NOT NULL,
    `step_no`        SMALLINT UNSIGNED NULL   COMMENT 'When the artefact belongs to one manual step',
-   `artifact_type`  ENUM('Screenshot','Console_Log','Page_Source','Video','Network_Log','Raw_Output',
-                         'Trace','Attachment','Other') NOT NULL,
+   `artifact_type`  ENUM('Screenshot','Console_Log','Page_Source','Video','Network_Log','Raw_Output','Trace','Attachment','Other') NOT NULL,
    `file_path`      VARCHAR(1000) NOT NULL,
    `file_sha256`    CHAR(64) NULL   COMMENT 'Identical artefacts stored once, referenced many times',
    `bytes`          BIGINT UNSIGNED NULL,
@@ -1393,13 +1403,13 @@ COMMENT='Evidence. A purged artefact stays as a row with is_available = 0.';
 -- ---------------------------------------------------------------------------------------------------------
 -- tst_failure_signatures  —  one row per DISTINCT normalised failure                                [P1]
 -- ---------------------------------------------------------------------------------------------------------
--- THIS IS WHAT TURNS FORTY FAILURES INTO ONE PROBLEM.
---
--- Without grouping, triage volume scales with test count rather than defect count, and the team stops
--- triaging — which is how a real defect ends up buried under thirty-nine duplicates of itself.
---
--- Once a signature is triaged to a bug or a known issue, later matching failures are attributed
--- automatically and never re-triaged.
+   -- THIS IS WHAT TURNS FORTY FAILURES INTO ONE PROBLEM.
+   --
+   -- Without grouping, triage volume scales with test count rather than defect count, and the team stops
+   -- triaging — which is how a real defect ends up buried under thirty-nine duplicates of itself.
+   --
+   -- Once a signature is triaged to a bug or a known issue, later matching failures are attributed
+   -- automatically and never re-triaged.
 -- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `tst_failure_signatures` (
    `id`                  BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -1429,21 +1439,21 @@ COMMENT='Distinct normalised failures. Turns forty failures into one problem.';
 -- ---------------------------------------------------------------------------------------------------------
 -- tst_test_case_runs_summary  —  DERIVED. Never a source of truth.                                  [P1]
 -- ---------------------------------------------------------------------------------------------------------
--- EVERY COLUMN HERE MUST BE REPRODUCIBLE FROM tst_test_run_results ALONE.
--- `php artisan tst:rebuild-analytics` does exactly that, and a nightly job compares the incremental
--- values against a full rebuild and REPORTS DIVERGENCE rather than silently correcting it (BRD R-13).
---
--- last_rebuilt_at and rebuild_source exist so a summary can always be shown to be current with the
--- evidence. A dashboard number whose provenance is unknown is a rumour.
---
--- FLAKINESS: the candidate is computed; CONFIRMATION IS A HUMAN DECISION (flaky_confirmed_by).
---   flaky_evidence_json retains the outcome series, the environment and the change check, so the
---   conclusion can be re-argued a year later. A confirmed flaky test is excluded from regression
---   alerting but NEVER from execution — excluding it destroys the evidence needed to fix it.
+   -- EVERY COLUMN HERE MUST BE REPRODUCIBLE FROM tst_test_run_results ALONE.
+   -- `php artisan tst:rebuild-analytics` does exactly that, and a nightly job compares the incremental
+   -- values against a full rebuild and REPORTS DIVERGENCE rather than silently correcting it (BRD R-13).
+   --
+   -- last_rebuilt_at and rebuild_source exist so a summary can always be shown to be current with the
+   -- evidence. A dashboard number whose provenance is unknown is a rumour.
+   --
+   -- FLAKINESS: the candidate is computed; CONFIRMATION IS A HUMAN DECISION (flaky_confirmed_by).
+   --   flaky_evidence_json retains the outcome series, the environment and the change check, so the
+   --   conclusion can be re-argued a year later. A confirmed flaky test is excluded from regression
+   --   alerting but NEVER from execution — excluding it destroys the evidence needed to fix it.
 -- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `tst_test_case_runs_summary` (
    `id`                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-   `test_case_code`        VARCHAR(21) NOT NULL,
+   `test_case_code`        VARCHAR(20) NOT NULL,
    `first_run_at`          DATETIME NULL,
    `last_run_id`           BIGINT UNSIGNED NULL,
    `last_run_result_id`    BIGINT UNSIGNED NULL,
@@ -1476,9 +1486,7 @@ CREATE TABLE IF NOT EXISTS `tst_test_case_runs_summary` (
    -- ---- Derived indicators ------------------------------------------------------------------------------
    `confidence_score`      DECIMAL(5,2) NULL   COMMENT 'How much to trust this green tick',
    `confidence_json`       JSON NULL           COMMENT 'The inputs, so the score is explainable',
-   `health_status`         ENUM('Healthy','Unstable','Frequently_Failing','Obsolete','Blocked',
-                                'Insufficient_History','Under_Investigation','Orphaned')
-                             NOT NULL DEFAULT 'Insufficient_History',
+   `health_status`         ENUM('Healthy','Unstable','Frequently_Failing','Obsolete','Blocked','Insufficient_History','Under_Investigation','Orphaned') NOT NULL DEFAULT 'Insufficient_History',
    `open_bug_count`        SMALLINT UNSIGNED NOT NULL DEFAULT 0,
    -- ---- Rebuild provenance ------------------------------------------------------------------------------
    `last_rebuilt_at`       DATETIME NULL,
@@ -1507,10 +1515,10 @@ COMMENT='DERIVED roll-up. Rebuildable from results alone, and checked nightly (R
 -- ---------------------------------------------------------------------------------------------------------
 -- tst_schedules  —  when to run                                                                     [P1]
 -- ---------------------------------------------------------------------------------------------------------
--- A SCHEDULE THAT DID NOT FIRE IS RECORDED AS MISSED, not silently skipped. Silence and success look
--- identical otherwise, and the first time anyone notices is when a release goes out untested.
---
--- suite_id is a Phase-2 column: in Phase 1 a schedule's content comes from tst_schedule_targets.
+   -- A SCHEDULE THAT DID NOT FIRE IS RECORDED AS MISSED, not silently skipped. Silence and success look
+   -- identical otherwise, and the first time anyone notices is when a release goes out untested.
+   --
+   -- suite_id is a Phase-2 column: in Phase 1 a schedule's content comes from tst_schedule_targets.
 -- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `tst_schedules` (
    `id`                INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -1551,14 +1559,14 @@ COMMENT='Scheduled execution. A schedule that did not fire is recorded as MISSED
 -- ---------------------------------------------------------------------------------------------------------
 -- tst_schedule_targets  —  what to run, and ON WHICH MACHINE                        [NEW IN v7.2]  [P1]
 -- ---------------------------------------------------------------------------------------------------------
--- BRD REQ-SCHED-01 asks for scheduled execution "on different machines for different modules, screens
--- or test cases". ONE machine_id column on the schedule cannot express that.
---
--- One schedule may therefore run Fees on D02A and Examination on T01A as a single nightly job.
---
--- ScheduleDispatchJob runs every minute on EVERY machine, selects the targets whose machine_code matches
--- the local machine and whose schedule is due, and creates one run per target group. A machine that is
--- switched off simply produces a missed count on its own targets — it does not block the others.
+   -- BRD REQ-SCHED-01 asks for scheduled execution "on different machines for different modules, screens
+   -- or test cases". ONE machine_id column on the schedule cannot express that.
+   --
+   -- One schedule may therefore run Fees on D02A and Examination on T01A as a single nightly job.
+   --
+   -- ScheduleDispatchJob runs every minute on EVERY machine, selects the targets whose machine_code matches
+   -- the local machine and whose schedule is due, and creates one run per target group. A machine that is
+   -- switched off simply produces a missed count on its own targets — it does not block the others.
 -- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `tst_schedule_targets` (
    `id`              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -1566,7 +1574,7 @@ CREATE TABLE IF NOT EXISTS `tst_schedule_targets` (
    `target_type`     ENUM('Module','Screen','TestCase') NOT NULL,
    `module_code`     VARCHAR(5)  NULL,
    `ts_code`         VARCHAR(11) NULL,
-   `test_case_code`  VARCHAR(21) NULL,
+   `test_case_code`  VARCHAR(20) NULL,
    `machine_code`    VARCHAR(4)  NOT NULL   COMMENT 'WHICH MACHINE executes this target',
    `sequence_no`     INT UNSIGNED NOT NULL DEFAULT 1,
    `is_active`       TINYINT(1) NOT NULL DEFAULT 1,
@@ -1602,9 +1610,9 @@ COMMENT='NEW in v7.2. What a schedule runs, and on which machine.';
 -- ---------------------------------------------------------------------------------------------------------
 -- tst_run_annotations  —  Comments Management                                                       [P1]
 -- ---------------------------------------------------------------------------------------------------------
--- Where a reviewer or a developer records what they concluded about a run or one specific result.
--- These are evidence: they consolidate with the run they belong to, and they may attribute a failure
--- to a known issue.
+   -- Where a reviewer or a developer records what they concluded about a run or one specific result.
+   -- These are evidence: they consolidate with the run they belong to, and they may attribute a failure
+   -- to a known issue.
 -- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `tst_run_annotations` (
    `id`              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -1632,14 +1640,14 @@ COMMENT='Reviewer and developer comments on runs and results. Consolidate as evi
 -- ---------------------------------------------------------------------------------------------------------
 -- tst_discovery_sync_logs  —  Discovery                                                             [P1]
 -- ---------------------------------------------------------------------------------------------------------
--- Scans the Prime-AI source tree and reconciles what it finds against the catalog:
---   new test cases found · missing modules and screens (code with no catalog entry) ·
---   orphaned test cases (catalog entries whose implementation has gone) · status synchronisation.
---
--- DISCOVERY NEVER DELETES AND NEVER WRITES CATALOG DATA. It proposes; items wait for review.
--- Otherwise a refactor that moves a directory silently retires two hundred test cases overnight.
---
--- A rescan of an unchanged tree changes nothing (idempotent).
+   -- Scans the Prime-AI source tree and reconciles what it finds against the catalog:
+   --   new test cases found · missing modules and screens (code with no catalog entry) ·
+   --   orphaned test cases (catalog entries whose implementation has gone) · status synchronisation.
+   --
+   -- DISCOVERY NEVER DELETES AND NEVER WRITES CATALOG DATA. It proposes; items wait for review.
+   -- Otherwise a refactor that moves a directory silently retires two hundred test cases overnight.
+   --
+   -- A rescan of an unchanged tree changes nothing (idempotent).
 -- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `tst_discovery_sync_logs` (
    `id`                   BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -1682,13 +1690,13 @@ COMMENT='Discovery runs. Discovery proposes; it never writes catalog data or del
 -- =========================================================================================================
 -- SECTION 8 — DEFECTS                                                                               [P1]
 -- =========================================================================================================
---     THREE DISTINCT CONCEPTS that earlier versions partly conflated:
---
---       Known Issue   an accepted, documented problem whose recurrence is EXPECTED
---       Bug           ONE problem in Prime-AI
---       Occurrence    ONE observation of that problem in ONE result   (one bug -> many occurrences)
---
---     Conflating bug and occurrence inflates defect counts and makes triage duplicate itself.
+   --     THREE DISTINCT CONCEPTS that earlier versions partly conflated:
+   --
+   --       Known Issue   an accepted, documented problem whose recurrence is EXPECTED
+   --       Bug           ONE problem in Prime-AI
+   --       Occurrence    ONE observation of that problem in ONE result   (one bug -> many occurrences)
+   --
+   --     Conflating bug and occurrence inflates defect counts and makes triage duplicate itself.
 -- =========================================================================================================
 
 
@@ -1750,13 +1758,13 @@ COMMENT='Every recurrence of a known issue stays recorded and countable.';
 -- ---------------------------------------------------------------------------------------------------------
 -- tst_bugs  —  ONE problem in Prime-AI                                                              [P1]
 -- ---------------------------------------------------------------------------------------------------------
--- FIXED DOES NOT EQUAL VERIFIED (BRD R-08). verified_result_id must point at a PASSING retest result.
--- A bug may be closed without one only through verification_override, which requires a reason and is
--- reportable — so the exception is visible rather than indistinguishable from a real verification.
---
--- release_id is REMOVED in v7.2: the Release entity is gone (BRD D-26).
--- change_request_id is a Phase-2 column, declared now, FK added in Section 30.
--- module_code is VARCHAR(5) here — v7.1 declared VARCHAR(10) against a VARCHAR(5) parent.
+   -- FIXED DOES NOT EQUAL VERIFIED (BRD R-08). verified_result_id must point at a PASSING retest result.
+   -- A bug may be closed without one only through verification_override, which requires a reason and is
+   -- reportable — so the exception is visible rather than indistinguishable from a real verification.
+   --
+   -- release_id is REMOVED in v7.2: the Release entity is gone (BRD D-26).
+   -- change_request_id is a Phase-2 column, declared now, FK added in Section 30.
+   -- module_code is VARCHAR(5) here — v7.1 declared VARCHAR(10) against a VARCHAR(5) parent.
 -- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `tst_bugs` (
    `id`                           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -1768,7 +1776,7 @@ CREATE TABLE IF NOT EXISTS `tst_bugs` (
    `first_detected_result_id`     BIGINT UNSIGNED NULL,
    `module_code`                  VARCHAR(5)  NOT NULL,   -- v7.2: was VARCHAR(10) against a VARCHAR(5) parent
    `ts_code`                      VARCHAR(11) NULL,
-   `test_case_code`               VARCHAR(21) NULL,
+   `test_case_code`               VARCHAR(20) NULL,
    `change_request_id`            BIGINT UNSIGNED NULL    COMMENT '[P2] FK added in Section 30',
    `failure_signature_id`         BIGINT UNSIGNED NULL    COMMENT 'FK added in Section 12',
    `title`                        VARCHAR(255) NOT NULL,
@@ -1778,14 +1786,11 @@ CREATE TABLE IF NOT EXISTS `tst_bugs` (
    `actual_behaviour`             TEXT NULL,
    `severity`                     ENUM('Low','Medium','High','Critical') NOT NULL DEFAULT 'Medium',
    `priority`                     ENUM('Low','Medium','High','Critical') NOT NULL DEFAULT 'Medium',
-   `status`                       ENUM('Open','Assigned','In_Progress','Fixed','Retesting','Reopened',
-                                       'Closed','Escalated','Wont_Fix','Duplicate') NOT NULL DEFAULT 'Open',
-   `resolution`                   ENUM('Fixed','Not_A_Defect','Duplicate','Cannot_Reproduce','Wont_Fix',
-                                       'Known_Issue','Test_Defect','Environment') NULL,
-   `root_cause_category`          ENUM('Logic','Validation','Data','Tenancy','Permission','Integration','UI',
-                                       'Performance','Configuration','Environment','Test_Defect','Other') NULL,
+   `status`                       ENUM('Open','Assigned','In_Progress','Fixed','Retesting','Reopened','Closed','Escalated','Wont_Fix','Duplicate') NOT NULL DEFAULT 'Open',
+   `resolution`                   ENUM('Fixed','Not_A_Defect','Duplicate','Cannot_Reproduce','Wont_Fix','Known_Issue','Test_Defect','Environment') NULL,
+   `root_cause_category`          ENUM('Logic','Validation','Data','Tenancy','Permission','Integration','UI','Performance','Configuration','Environment','Test_Defect','Other') NULL,
    `root_cause_note`              TEXT NULL,
-   `environment_profile_id`       INT UNSIGNED NULL,
+   `environment_profile_id`       MEDIUMINT UNSIGNED NULL,
    `observed_commit_hash`         VARCHAR(40) NULL,
    -- ---- Assignment and SLA ------------------------------------------------------------------------------
    `assigned_to`                  VARCHAR(3) NULL,
@@ -1856,8 +1861,7 @@ CREATE TABLE IF NOT EXISTS `tst_bug_occurrences` (
    `id`              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
    `bug_id`          BIGINT UNSIGNED NOT NULL,
    `run_result_id`   BIGINT UNSIGNED NOT NULL,
-   `occurrence_type` ENUM('First_Detected','Reproduced','Regression','Retest_Failed','Retest_Passed','Other')
-                       NOT NULL DEFAULT 'Reproduced',
+   `occurrence_type` ENUM('First_Detected','Reproduced','Regression','Retest_Failed','Retest_Passed','Other') NOT NULL DEFAULT 'Reproduced',
    `matched_by`      ENUM('Manual','Fingerprint','AI_Proposal') NOT NULL DEFAULT 'Manual',
    `confirmed_by`    VARCHAR(3) NULL,
    `note`            VARCHAR(500) NULL,
@@ -1914,8 +1918,7 @@ CREATE TABLE IF NOT EXISTS `tst_bug_links` (
    `id`            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
    `bug_id`        BIGINT UNSIGNED NOT NULL,
    `linked_bug_id` BIGINT UNSIGNED NOT NULL,
-   `link_type`     ENUM('Proposed_Duplicate','Duplicate_Of','Related','Blocks','Blocked_By',
-                        'Caused_By','Causes','Regression_Of') NOT NULL,
+   `link_type`     ENUM('Proposed_Duplicate','Duplicate_Of','Related','Blocks','Blocked_By','Caused_By','Causes','Regression_Of') NOT NULL,
    `score`         DECIMAL(4,3) NULL,
    `evidence_json` JSON NULL,
    `proposed_by`   VARCHAR(3) NULL,
@@ -1940,15 +1943,15 @@ COMMENT='Relationships between bugs. Insert-only; reversals supersede.';
 -- ---------------------------------------------------------------------------------------------------------
 -- tst_retest_cycles  —  verifying a fix                                                             [P1]
 -- ---------------------------------------------------------------------------------------------------------
--- THE RETEST NEVER OVERWRITES THE ORIGINAL FAILURE (BRD R-09). It is a new run producing new results;
--- the evidence of what went wrong survives, which is the only way a reopened bug can be argued about.
---
--- Cycles are numbered per bug and bounded by max_auto_retest_attempts, after which the bug ESCALATES
--- rather than looping. Automation with no bound is how a broken fix generates four hundred runs
--- overnight (BRD R-14).
---
--- The 'Screen_Plus_Dependencies' scope policy is selectable in Phase 1 but its dependency limb only
--- resolves once tst_test_case_dependencies exists in Phase 2; until then it behaves as 'Screen'.
+   -- THE RETEST NEVER OVERWRITES THE ORIGINAL FAILURE (BRD R-09). It is a new run producing new results;
+   -- the evidence of what went wrong survives, which is the only way a reopened bug can be argued about.
+   --
+   -- Cycles are numbered per bug and bounded by max_auto_retest_attempts, after which the bug ESCALATES
+   -- rather than looping. Automation with no bound is how a broken fix generates four hundred runs
+   -- overnight (BRD R-14).
+   --
+   -- The 'Screen_Plus_Dependencies' scope policy is selectable in Phase 1 but its dependency limb only
+   -- resolves once tst_test_case_dependencies exists in Phase 2; until then it behaves as 'Screen'.
 -- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `tst_retest_cycles` (
    `id`             BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -1958,8 +1961,7 @@ CREATE TABLE IF NOT EXISTS `tst_retest_cycles` (
    `triggered_by`   VARCHAR(3) NULL,
    `triggered_at`   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
    `run_id`         BIGINT UNSIGNED NULL,
-   `scope_policy`   ENUM('Test_Only','Screen','Screen_Plus_Dependencies','Module','Regression_Suite')
-                      NOT NULL DEFAULT 'Screen',
+   `scope_policy`   ENUM('Test_Only','Screen','Screen_Plus_Dependencies','Module','Regression_Suite') NOT NULL DEFAULT 'Screen',
    `scope_json`     JSON NULL,
    `status`         ENUM('Pending','Running','Passed','Failed','Not_Covered','Cancelled') NOT NULL DEFAULT 'Pending',
    `completed_at`   DATETIME NULL,
@@ -2041,8 +2043,7 @@ CREATE TABLE IF NOT EXISTS `tst_data_imports` (
    `source_schema_version`  VARCHAR(20) NULL,
    `version_decision`       ENUM('Same_Version','Migrated_On_Read','Rejected_Incompatible') NULL,
    `version_decision_note`  VARCHAR(500) NULL,
-   `status`                 ENUM('Received','Validating','Applying','Completed','Partial','Rejected','Reversed')
-                              NOT NULL DEFAULT 'Received',
+   `status`                 ENUM('Received','Validating','Applying','Completed','Partial','Rejected','Reversed') NOT NULL DEFAULT 'Received',
    `started_at`             DATETIME NULL,
    `finished_at`            DATETIME NULL,
    `records_created`        INT UNSIGNED NOT NULL DEFAULT 0,
@@ -2072,11 +2073,11 @@ COMMENT='Import runs. Idempotent by design; reversible via the record map.';
 -- ---------------------------------------------------------------------------------------------------------
 -- tst_import_record_map  —  what makes an import reversible                                         [P1]
 -- ---------------------------------------------------------------------------------------------------------
--- Every record an import created or matched, with its source identity and the local id it was given.
--- Without this table an import cannot be withdrawn, and a bad merge becomes permanent (BRD R-11).
---
--- source_code carries the BUSINESS CODE for catalog and test-case entities. Under the new coding system
--- most resolutions are now by code rather than by id, which is why source_id is nullable.
+   -- Every record an import created or matched, with its source identity and the local id it was given.
+   -- Without this table an import cannot be withdrawn, and a bad merge becomes permanent (BRD R-11).
+   --
+   -- source_code carries the BUSINESS CODE for catalog and test-case entities. Under the new coding system
+   -- most resolutions are now by code rather than by id, which is why source_id is nullable.
 -- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `tst_import_record_map` (
    `id`                BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -2101,20 +2102,19 @@ COMMENT='Every record an import touched. This is what makes an import reversible
 -- ---------------------------------------------------------------------------------------------------------
 -- tst_import_conflicts  —  queued, never resolved by a coin toss                                    [P1]
 -- ---------------------------------------------------------------------------------------------------------
--- BOTH VERSIONS ARE RETAINED IN FULL. Nothing is discarded, because the resolution is a judgement and
--- the person making it needs to see what they are choosing between.
---
--- 'Duplicate_Business_Code' MEANS SOMETHING NEW IN v7.2 (BRD D-31).
---   Under v7.0 two machines minting the same test-case number was ROUTINE, and the whole source/canonical
---   layer existed to absorb it. Under the new coding system it can only mean A MACHINE CODE WAS REUSED —
---   two installations registered as D02A. That silently merges two machines' evidence, so it is
---   classified BLOCKING and surfaced as an operational alert, not a data-quality note.
+   -- BOTH VERSIONS ARE RETAINED IN FULL. Nothing is discarded, because the resolution is a judgement and
+   -- the person making it needs to see what they are choosing between.
+   --
+   -- 'Duplicate_Business_Code' MEANS SOMETHING NEW IN v7.2 (BRD D-31).
+   --   Under v7.0 two machines minting the same test-case number was ROUTINE, and the whole source/canonical
+   --   layer existed to absorb it. Under the new coding system it can only mean A MACHINE CODE WAS REUSED —
+   --   two installations registered as D02A. That silently merges two machines' evidence, so it is
+   --   classified BLOCKING and surfaced as an operational alert, not a data-quality note.
 -- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `tst_import_conflicts` (
    `id`               BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
    `import_id`        BIGINT UNSIGNED NOT NULL,
-   `conflict_type`    ENUM('Missing_Catalog_Reference','Definition_Divergence','Machine_Metadata_Mismatch',
-                           'Duplicate_Business_Code','Version_Incompatible','Referential_Gap','Other') NOT NULL,
+   `conflict_type`    ENUM('Missing_Catalog_Reference','Definition_Divergence','Machine_Metadata_Mismatch', 'Duplicate_Business_Code','Version_Incompatible','Referential_Gap','Other') NOT NULL,
    `entity_type`      VARCHAR(64) NOT NULL,
    `source_identity`  VARCHAR(255) NULL   COMMENT 'How the record identified itself in the bundle',
    `local_record_id`  BIGINT UNSIGNED NULL,
@@ -2123,8 +2123,7 @@ CREATE TABLE IF NOT EXISTS `tst_import_conflicts` (
    `description`      VARCHAR(1000) NOT NULL,
    `incoming_json`    JSON NULL   COMMENT 'Retained in full; nothing is discarded',
    `existing_json`    JSON NULL,
-   `status`           ENUM('Open','Resolved_Keep_Existing','Resolved_Accept_Incoming','Resolved_Manual','Ignored')
-                        NOT NULL DEFAULT 'Open',
+   `status`           ENUM('Open','Resolved_Keep_Existing','Resolved_Accept_Incoming','Resolved_Manual','Ignored') NOT NULL DEFAULT 'Open',
    `resolved_by`      VARCHAR(3) NULL,
    `resolved_at`      DATETIME NULL,
    `resolution_note`  VARCHAR(1000) NULL,
@@ -2141,13 +2140,13 @@ COMMENT='Import conflicts. Queued for a person; both versions retained in full.'
 -- =========================================================================================================
 -- SECTION 10 — AI ANALYSES AND RECOMMENDATIONS                                                      [P1]
 -- =========================================================================================================
---     AI ASSISTS; IT DOES NOT DECIDE (BRD R-12). Nothing here mutates record data. Every output is a
---     proposal with evidence, a confidence score and a review state, and a named person accepts or
---     rejects it.
---
---     The `outcome` column on a recommendation is the part people skip and shouldn't: recording whether
---     an accepted recommendation turned out to be CORRECT is what makes the AI's usefulness measurable
---     rather than assumed (KPI K-10).
+   --     AI ASSISTS; IT DOES NOT DECIDE (BRD R-12). Nothing here mutates record data. Every output is a
+   --     proposal with evidence, a confidence score and a review state, and a named person accepts or
+   --     rejects it.
+   --
+   --     The `outcome` column on a recommendation is the part people skip and shouldn't: recording whether
+   --     an accepted recommendation turned out to be CORRECT is what makes the AI's usefulness measurable
+   --     rather than assumed (KPI K-10).
 -- =========================================================================================================
 
 
@@ -2155,9 +2154,7 @@ CREATE TABLE IF NOT EXISTS `tst_ai_analyses` (
    `id`                 BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
    `machine_id`         SMALLINT UNSIGNED NOT NULL,
    `source_analysis_id` BIGINT UNSIGNED NOT NULL,
-   `analysis_type`      ENUM('Duplicate_Test_Case','Duplicate_Bug','Failure_Cluster','Flaky_Assessment',
-                             'Regression_Assessment','Failure_Reason','Consecutive_Failure_Diagnosis',
-                             'Impact_Proposal','Coverage_Gap','Recommendation') NOT NULL,
+   `analysis_type`      ENUM('Duplicate_Test_Case','Duplicate_Bug','Failure_Cluster','Flaky_Assessment','Regression_Assessment','Failure_Reason','Consecutive_Failure_Diagnosis','Impact_Proposal','Coverage_Gap','Recommendation') NOT NULL,
    `scope_description`  VARCHAR(500) NULL,
    `scope_json`         JSON NULL,
    `provider`           VARCHAR(50) NULL,
@@ -2183,9 +2180,7 @@ COMMENT='AI analysis runs, with full provenance so a conclusion can be reproduce
 CREATE TABLE IF NOT EXISTS `tst_ai_recommendations` (
    `id`                  BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
    `analysis_id`         BIGINT UNSIGNED NOT NULL,
-   `recommendation_type` ENUM('Link_Test_Cases','Link_Bugs','Attribute_To_Bug','Attribute_To_Known_Issue',
-                              'Mark_Flaky','Mark_Regression','Create_Test_Case','Retire_Test_Case',
-                              'Select_For_Run','Investigate','Other') NOT NULL,
+   `recommendation_type` ENUM('Link_Test_Cases','Link_Bugs','Attribute_To_Bug','Attribute_To_Known_Issue','Mark_Flaky','Mark_Regression','Create_Test_Case','Retire_Test_Case','Select_For_Run','Investigate','Other') NOT NULL,
    `target_entity_type`  VARCHAR(64) NULL,
    `target_entity_id`    BIGINT UNSIGNED NULL,
    `target_entity_code`  VARCHAR(120) NULL   COMMENT 'v7.2: code-addressable targets, e.g. a test_case_code',
@@ -2221,16 +2216,13 @@ COMMENT='Proposals with evidence, confidence and a review state. AI never mutate
 -- ---------------------------------------------------------------------------------------------------------
 -- tst_notifications                                                                                 [P1]
 -- ---------------------------------------------------------------------------------------------------------
--- DEDUPLICATED BY KEY, with an occurrence count and first/last event times. Forty identical failures
--- produce ONE notification that says forty. A system that sends forty is a system people mute.
+   -- DEDUPLICATED BY KEY, with an occurrence count and first/last event times. Forty identical failures
+   -- produce ONE notification that says forty. A system that sends forty is a system people mute.
 -- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `tst_notifications` (
    `id`               BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
    `recipient_code`   VARCHAR(3) NOT NULL,
-   `event_type`       ENUM('Critical_Test_Failure','New_Critical_Bug','Bug_Assigned','Bug_Ready_For_Retest',
-                           'Retest_Failed','SLA_Breach','Schedule_Missed','Import_Conflict',
-                           'Known_Issue_Expired','Discovery_Anomaly','Export_Ready','Review_Requested',
-                           'Regression_Detected','Other') NOT NULL,
+   `event_type`       ENUM('Critical_Test_Failure','New_Critical_Bug','Bug_Assigned','Bug_Ready_For_Retest','Retest_Failed','SLA_Breach','Schedule_Missed','Import_Conflict','Known_Issue_Expired','Discovery_Anomaly','Export_Ready','Review_Requested','Regression_Detected','Other') NOT NULL,
    `severity`         ENUM('Info','Warning','Critical') NOT NULL DEFAULT 'Info',
    `entity_type`      VARCHAR(64) NULL,
    `entity_id`        BIGINT UNSIGNED NULL,
@@ -2259,12 +2251,12 @@ COMMENT='Deduplicated notifications. Forty failures produce one notification say
 -- ---------------------------------------------------------------------------------------------------------
 -- tst_audit_logs                                                                                    [P1]
 -- ---------------------------------------------------------------------------------------------------------
--- INSERT-ONLY. record_key carries the business code for code-keyed tables, which is now most of them —
--- an audit row saying "tst_test_cases id 41207 changed" is unreadable on a different machine, whereas
--- "D02A_T0104010200_001" is readable everywhere.
---
--- is_system_action distinguishes automation from a person, so "who did this?" never answers "the system"
--- when it means "the retest engine, on behalf of a rule someone configured".
+   -- INSERT-ONLY. record_key carries the business code for code-keyed tables, which is now most of them —
+   -- an audit row saying "tst_test_cases id 41207 changed" is unreadable on a different machine, whereas
+   -- "D02A_T0104010200_001" is readable everywhere.
+   --
+   -- is_system_action distinguishes automation from a person, so "who did this?" never answers "the system"
+   -- when it means "the retest engine, on behalf of a rule someone configured".
 -- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `tst_audit_logs` (
    `id`               BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -2275,8 +2267,7 @@ CREATE TABLE IF NOT EXISTS `tst_audit_logs` (
    `table_name`       VARCHAR(100) NOT NULL,
    `record_id`        BIGINT UNSIGNED NULL,
    `record_key`       VARCHAR(255) NULL   COMMENT 'The business code, for code-keyed tables',
-   `operation`        ENUM('INSERT','UPDATE','DELETE','RESTORE','PURGE','LOGIN','PERMISSION_DENIED',
-                           'EXPORT','IMPORT') NOT NULL,
+   `operation`        ENUM('INSERT','UPDATE','DELETE','RESTORE','PURGE','LOGIN','PERMISSION_DENIED','EXPORT','IMPORT') NOT NULL,
    `old_values_json`  JSON NULL,
    `new_values_json`  JSON NULL,
    `context`          VARCHAR(255) NULL   COMMENT 'The service or command responsible',
@@ -2298,14 +2289,14 @@ COMMENT='INSERT-ONLY audit. record_key carries the business code, readable on an
 -- =========================================================================================================
 -- SECTION 12 — PHASE-1 DEFERRED CONSTRAINTS                                                         [P1]
 -- =========================================================================================================
---     Foreign keys whose target table is created later in Phase 1. Each is guarded by an
---     information_schema lookup and executed through PREPARE, because MySQL has no
---     ADD CONSTRAINT IF NOT EXISTS and this whole script must stay re-runnable.
---
---     No DELIMITER directive is used, so the script also runs through tools that do not support one.
---
---     v7.2: the v7.1 block also added foreign keys to tst_releases and tst_roles, both of which had
---     been removed. Those statements are gone.
+   --     Foreign keys whose target table is created later in Phase 1. Each is guarded by an
+   --     information_schema lookup and executed through PREPARE, because MySQL has no
+   --     ADD CONSTRAINT IF NOT EXISTS and this whole script must stay re-runnable.
+   --
+   --     No DELIMITER directive is used, so the script also runs through tools that do not support one.
+   --
+   --     v7.2: the v7.1 block also added foreign keys to tst_releases and tst_roles, both of which had
+   --     been removed. Those statements are gone.
 -- =========================================================================================================
 
 -- A run may belong to a schedule (tst_schedules is created after tst_test_runs).
@@ -2377,12 +2368,12 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- =========================================================================================================
 -- SECTION 13 — PHASE-1 VIEWS                                                                        [P1]
 -- =========================================================================================================
---     Every view derives from RECORDED RESULTS, never from a current-status column alone.
---     Views for dashboards read the summary table; views for investigation read the results table and
---     are always used with a filter.
---
---     v7.2: EVERY VIEW IS REWRITTEN TO JOIN ON CODES. v7.1's views all joined tst_test_cases on tc.id,
---     which returns NOTHING after consolidation, because a central id does not match a local one.
+   --     Every view derives from RECORDED RESULTS, never from a current-status column alone.
+   --     Views for dashboards read the summary table; views for investigation read the results table and
+   --     are always used with a filter.
+   --
+   --     v7.2: EVERY VIEW IS REWRITTEN TO JOIN ON CODES. v7.1's views all joined tst_test_cases on tc.id,
+   --     which returns NOTHING after consolidation, because a central id does not match a local one.
 -- =========================================================================================================
 
 
@@ -2870,14 +2861,14 @@ LEFT JOIN `tst_machines` mc ON mc.id = i.source_machine_id;
 -- =========================================================================================================
 -- SECTION 14 — PHASE-1 SEED DATA                                                                    [P1]
 -- =========================================================================================================
---     Seeded in dependency order: users -> machines -> settings.
---     Every statement is idempotent (ON DUPLICATE KEY UPDATE), so the whole script is re-runnable.
---
---     v7.2 corrections to the v7.1 seeds:
---       - v7.1 seeded created_by = 'S1', a user code that is never created. Every FK failed.
---         All seeds now use 'S01'.
---       - The users seed relied on a self-referencing FK that only worked with checks disabled.
---         The bootstrap row is inserted with NULL and updated afterwards.
+   --     Seeded in dependency order: users -> machines -> settings.
+   --     Every statement is idempotent (ON DUPLICATE KEY UPDATE), so the whole script is re-runnable.
+   --
+   --     v7.2 corrections to the v7.1 seeds:
+   --       - v7.1 seeded created_by = 'S1', a user code that is never created. Every FK failed.
+   --         All seeds now use 'S01'.
+   --       - The users seed relied on a self-referencing FK that only worked with checks disabled.
+   --         The bootstrap row is inserted with NULL and updated afterwards.
 -- =========================================================================================================
 
 -- ---------------------------------------------------------------------------------------------------------
@@ -2981,15 +2972,15 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- =========================================================================================================
 -- SECTION 20 — CHANGE REQUESTS AND THE TEST-CASE WORK BACKLOG                                       [P2]
 -- =========================================================================================================
---     TWO DIFFERENT THINGS, DELIBERATELY KEPT APART:
---
---       tst_app_requirements        a CHANGE REQUEST — a statement about PRIME-AI.
---                                   "Fees must support part payment."
---       tst_test_case_requirements  a WORK REQUEST  — a statement about THE TEST SUITE.
---                                   "Write a test for part payment."
---
---     Conflating them makes coverage uncountable, because a backlog item about writing a test would be
---     counted as a requirement that needs covering.
+   --     TWO DIFFERENT THINGS, DELIBERATELY KEPT APART:
+   --
+   --       tst_app_requirements        a CHANGE REQUEST — a statement about PRIME-AI.
+   --                                   "Fees must support part payment."
+   --       tst_test_case_requirements  a WORK REQUEST  — a statement about THE TEST SUITE.
+   --                                   "Write a test for part payment."
+   --
+   --     Conflating them makes coverage uncountable, because a backlog item about writing a test would be
+   --     counted as a requirement that needs covering.
 -- =========================================================================================================
 
 
@@ -3033,7 +3024,7 @@ COMMENT='[P2] Change requests — statements about Prime-AI, not about the test 
 -- v7.2: keyed on test_case_code, not test_case_id.
 CREATE TABLE IF NOT EXISTS `tst_app_requirement_test_cases` (
    `requirement_id` BIGINT UNSIGNED NOT NULL,
-   `test_case_code` VARCHAR(21) NOT NULL,
+   `test_case_code` VARCHAR(20) NOT NULL,
    `coverage_type`  ENUM('Full','Partial','Negative','Boundary','Integration') NOT NULL DEFAULT 'Full',
    `mapped_by`      VARCHAR(3) NOT NULL,
    `note`           VARCHAR(500) NULL,
@@ -3068,7 +3059,7 @@ CREATE TABLE IF NOT EXISTS `tst_test_case_requirements` (
    `assigned_to`           VARCHAR(3) NULL,
    `assigned_at`           DATETIME NULL,
    `status`                ENUM('Pending','In_Progress','Completed','Cancelled','Hold') NOT NULL DEFAULT 'Pending',
-   `target_test_case_code` VARCHAR(21) NULL   COMMENT 'v7.2: the test case this request produced, by code',
+   `target_test_case_code` VARCHAR(20) NULL   COMMENT 'v7.2: the test case this request produced, by code',
    `completed_by`          VARCHAR(3) NULL,
    `completed_at`          DATETIME NULL,
    `completion_note`       VARCHAR(1000) NULL,
@@ -3097,14 +3088,12 @@ COMMENT='[P2] The test-case work backlog. NOT the same as a change request.';
 -- =========================================================================================================
 -- SECTION 21 — DEPENDENCIES                                                                         [P2]
 -- =========================================================================================================
---     This is what turns "what changed?" into "what else might it have broken?".
---
---     impact_weight DECAYS WITH DEPTH in the traversal: a second-order dependency is weaker evidence
---     than a first-order one, and treating them equally is how an impact analysis ends up proposing
---     the entire test suite.
+   --     This is what turns "what changed?" into "what else might it have broken?".
+   --
+   --     impact_weight DECAYS WITH DEPTH in the traversal: a second-order dependency is weaker evidence
+   --     than a first-order one, and treating them equally is how an impact analysis ends up proposing
+   --     the entire test suite.
 -- =========================================================================================================
-
-
 CREATE TABLE IF NOT EXISTS `tst_module_dependencies` (
    `module_code`            VARCHAR(5) NOT NULL,
    `depends_on_module_code` VARCHAR(5) NOT NULL,
@@ -3136,12 +3125,10 @@ COMMENT='[P2] Module-to-module dependencies with a weight that decays with depth
 -- not FAILED. That is why Blocked exists as a result status from Phase 1 — the status has to be there
 -- before the mechanism that produces it.
 CREATE TABLE IF NOT EXISTS `tst_test_case_dependencies` (
-   `test_case_code`            VARCHAR(21) NOT NULL,
-   `depends_on_test_case_code` VARCHAR(21) NOT NULL,
-   `dependency_type`           ENUM('Prerequisite','Functional','Data','Navigation','API','Integration',
-                                    'Shared_Component','Regression','Other') NOT NULL DEFAULT 'Functional',
-   `is_blocking`               TINYINT(1) NOT NULL DEFAULT 0
-                                 COMMENT 'Parent fails -> this test is BLOCKED, not FAILED',
+   `test_case_code`            VARCHAR(20) NOT NULL,
+   `depends_on_test_case_code` VARCHAR(20) NOT NULL,
+   `dependency_type`           ENUM('Prerequisite','Functional','Data','Navigation','API','Integration','Shared_Component','Regression','Other') NOT NULL DEFAULT 'Functional',
+   `is_blocking`               TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Parent fails -> this test is BLOCKED, not FAILED',
    `impact_weight`             TINYINT UNSIGNED NOT NULL DEFAULT 5,
    `note`                      VARCHAR(500) NULL,
    `is_active`                 TINYINT(1) NOT NULL DEFAULT 1,
@@ -3168,14 +3155,14 @@ COMMENT='[P2] Test-case dependencies. is_blocking changes a Failed into a Blocke
 -- =========================================================================================================
 -- SECTION 22 — APPLICATION PATH MAPPING                                                             [P2]
 -- =========================================================================================================
---     How a changed source path resolves to a module, a screen or a test case. Without this, impact
---     analysis requires somebody to hand-map thousands of files.
---
---     THE 'Ignore' TARGET TYPE MATTERS: vendor, build and lock-file changes must be excluded, or every
---     composer update looks like a change to the entire application.
---
---     A PATH NO RULE MATCHED IS AN UNRESOLVED FILE, and tst_impact_analyses counts them. An analysis
---     that silently ignored 40% of a change is WORSE than no analysis, because it looks complete.
+   --     How a changed source path resolves to a module, a screen or a test case. Without this, impact
+   --     analysis requires somebody to hand-map thousands of files.
+   --
+   --     THE 'Ignore' TARGET TYPE MATTERS: vendor, build and lock-file changes must be excluded, or every
+   --     composer update looks like a change to the entire application.
+   --
+   --     A PATH NO RULE MATCHED IS AN UNRESOLVED FILE, and tst_impact_analyses counts them. An analysis
+   --     that silently ignored 40% of a change is WORSE than no analysis, because it looks complete.
 -- =========================================================================================================
 CREATE TABLE IF NOT EXISTS `tst_path_mappings` (
    `id`             INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -3183,7 +3170,7 @@ CREATE TABLE IF NOT EXISTS `tst_path_mappings` (
    `target_type`    ENUM('Module','Screen','TestCase','Ignore') NOT NULL DEFAULT 'Module',
    `module_code`    VARCHAR(5)  NULL,
    `ts_code`        VARCHAR(11) NULL,
-   `test_case_code` VARCHAR(21) NULL,
+   `test_case_code` VARCHAR(20) NULL,
    `confidence`     DECIMAL(4,3) NOT NULL DEFAULT 0.800  COMMENT 'How strongly a match implies impact',
    `priority`       SMALLINT UNSIGNED NOT NULL DEFAULT 100 COMMENT 'Lower wins; most specific first',
    `note`           VARCHAR(500) NULL,
@@ -3211,11 +3198,9 @@ COMMENT='[P2] Source path -> module / screen / test case. Unmatched paths are a 
 -- =========================================================================================================
 -- SECTION 23 — TEST SUITES                                                                          [P2]
 -- =========================================================================================================
---     SUITE MEMBERSHIP IS VERSIONED, and a run records THE VERSION IT EXECUTED. Without that, a
---     historical run cannot be reproduced: "the regression suite" today is not the set it was in March.
+   --     SUITE MEMBERSHIP IS VERSIONED, and a run records THE VERSION IT EXECUTED. Without that, a
+   --     historical run cannot be reproduced: "the regression suite" today is not the set it was in March.
 -- =========================================================================================================
-
-
 CREATE TABLE IF NOT EXISTS `tst_test_suites` (
    `id`            INT UNSIGNED NOT NULL AUTO_INCREMENT,
    `suite_code`    VARCHAR(40) NOT NULL,
@@ -3245,7 +3230,7 @@ COMMENT='[P2] Named, reusable collections of test cases. Explicit or rule-based.
 
 CREATE TABLE IF NOT EXISTS `tst_test_suite_items` (
    `suite_id`       INT UNSIGNED NOT NULL,
-   `test_case_code` VARCHAR(21) NOT NULL,
+   `test_case_code` VARCHAR(20) NOT NULL,
    `priority`       ENUM('Low','Medium','High','Critical') NOT NULL DEFAULT 'Medium',
    `sequence_no`    INT UNSIGNED NOT NULL DEFAULT 1,
    `added_by`       VARCHAR(3) NOT NULL,
@@ -3255,8 +3240,7 @@ CREATE TABLE IF NOT EXISTS `tst_test_suite_items` (
    CONSTRAINT `fk_tst_suiteItems_suite` FOREIGN KEY (`suite_id`)       REFERENCES `tst_test_suites`(`id`) ON DELETE CASCADE,
    CONSTRAINT `fk_tst_suiteItems_case`  FOREIGN KEY (`test_case_code`) REFERENCES `tst_test_cases`(`test_case_code`) ON DELETE CASCADE,
    CONSTRAINT `fk_tst_suiteItems_by`    FOREIGN KEY (`added_by`)       REFERENCES `tst_users`(`code`) ON DELETE RESTRICT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-COMMENT='[P2] Explicit suite membership, by test_case_code.';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='[P2] Explicit suite membership, by test_case_code.';
 
 
 CREATE TABLE IF NOT EXISTS `tst_test_suite_versions` (
@@ -3279,8 +3263,6 @@ COMMENT='[P2] Frozen suite membership per version, so a historical run is reprod
 -- =========================================================================================================
 -- SECTION 24 — GIT INGESTION ENGINE                                                                 [P2]
 -- =========================================================================================================
-
-
 CREATE TABLE IF NOT EXISTS `tst_git_repositories` (
    `repository_code`      VARCHAR(100) NOT NULL,
    `name`                 VARCHAR(150) NOT NULL,
@@ -3297,7 +3279,6 @@ CREATE TABLE IF NOT EXISTS `tst_git_repositories` (
    CONSTRAINT `fk_tst_gitRepos_createdBy` FOREIGN KEY (`created_by`) REFERENCES `tst_users`(`code`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='[P2] Registered Git repositories.';
-
 
 -- commit_hash IS VARCHAR(40), NOT CHAR(64). A Git SHA-1 is 40 hex characters; CHAR(64) pads it, and a
 -- hash read from `git log` then never compares equal to a stored one. This was defect 11 in v6.7.
@@ -3329,7 +3310,6 @@ CREATE TABLE IF NOT EXISTS `tst_git_commits` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='[P2] Ingested commits. Author resolved to a user code so "who changed" and "who tested" share a vocabulary.';
 
-
 -- resolution_source records HOW a file was mapped. A high Module_Convention share means the explicit
 -- path-mapping rules are thin, which is actionable; without it, nobody knows why the mapping is weak.
 CREATE TABLE IF NOT EXISTS `tst_git_commit_files` (
@@ -3342,9 +3322,8 @@ CREATE TABLE IF NOT EXISTS `tst_git_commit_files` (
    `lines_removed`     INT UNSIGNED NOT NULL DEFAULT 0,
    `module_code`       VARCHAR(5)  NULL,
    `ts_code`           VARCHAR(11) NULL,
-   `test_case_code`    VARCHAR(21) NULL,
-   `resolution_source` ENUM('Test_File','Screen_Path','Path_Mapping','Module_Convention','Manual','Unresolved')
-                         NOT NULL DEFAULT 'Unresolved',
+   `test_case_code`    VARCHAR(20) NULL,
+   `resolution_source` ENUM('Test_File','Screen_Path','Path_Mapping','Module_Convention','Manual','Unresolved') NOT NULL DEFAULT 'Unresolved',
    `path_mapping_id`   INT UNSIGNED NULL,
    `impact_level`      ENUM('Low','Medium','High','Critical','Unknown') NOT NULL DEFAULT 'Unknown',
    `created_at`        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -3366,11 +3345,9 @@ COMMENT='[P2] Changed files with their resolved target AND how the resolution wa
 -- =========================================================================================================
 -- SECTION 25 — IMPACT ANALYSIS                                                                      [P2]
 -- =========================================================================================================
---     An impact analysis is a NAMED, RETAINED, REVIEWABLE PROPOSAL, not a transient list.
---     A PERSON APPROVES BEFORE ANYTHING RUNS.
+   --     An impact analysis is a NAMED, RETAINED, REVIEWABLE PROPOSAL, not a transient list.
+   --     A PERSON APPROVES BEFORE ANYTHING RUNS.
 -- =========================================================================================================
-
-
 CREATE TABLE IF NOT EXISTS `tst_impact_analyses` (
    `id`                         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
    `machine_id`                 SMALLINT UNSIGNED NOT NULL,
@@ -3419,15 +3396,13 @@ CREATE TABLE IF NOT EXISTS `tst_impact_analyses` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='[P2] A reviewable proposal. unresolved_file_count is the analysis stating its blind spot.';
 
-
 -- EXCLUDED ITEMS ARE RETAINED WITH THEIR REASON. A proposal that shows only what it included is not
 -- reviewable — the interesting question is always what it decided to leave out, and why.
 CREATE TABLE IF NOT EXISTS `tst_impact_analysis_items` (
    `id`               BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
    `analysis_id`      BIGINT UNSIGNED NOT NULL,
-   `test_case_code`   VARCHAR(21) NOT NULL,
-   `reason`           ENUM('Direct_Change','Dependency','Historical_Correlation','Open_Bug','Critical',
-                           'Regression_Policy','Manual_Addition','Flaky_Excluded','Retired_Excluded',
+   `test_case_code`   VARCHAR(20) NOT NULL,
+   `reason`           ENUM('Direct_Change','Dependency','Historical_Correlation','Open_Bug','Critical','Regression_Policy','Manual_Addition','Flaky_Excluded','Retired_Excluded',
                            'Orphaned_Excluded','Screen_Excluded','Manual_Removal') NOT NULL,
    `is_included`      TINYINT(1) NOT NULL DEFAULT 1,
    `confidence`       DECIMAL(4,3) NOT NULL DEFAULT 0.500,
@@ -3452,20 +3427,19 @@ COMMENT='[P2] One proposed test case with its reason, confidence and evidence. E
 -- =========================================================================================================
 -- SECTION 30 — PHASE-2 DEFERRED CONSTRAINTS                                                         [P2]
 -- =========================================================================================================
---     THIS IS THE WHOLE POINT OF THE PHASE RULE.
---
---     The five columns below were DECLARED in Phase 1 and left null. Their foreign keys are added HERE,
---     once the Phase-2 tables exist. Phase 2 therefore adds constraints to Phase-1 tables — it never
---     adds, modifies or drops a Phase-1 COLUMN.
---
---     By the time this runs, tst_test_runs holds hundreds of thousands of rows and
---     tst_test_run_results holds millions. ADD CONSTRAINT is an index build and a metadata lock; ADD
---     COLUMN on those tables would have been a rewrite. That difference is the reason for the rule.
---
---     Every statement is guarded, so this section is re-runnable and can be applied to a database that
---     already has some of these constraints.
+   --     THIS IS THE WHOLE POINT OF THE PHASE RULE.
+   --
+   --     The five columns below were DECLARED in Phase 1 and left null. Their foreign keys are added HERE,
+   --     once the Phase-2 tables exist. Phase 2 therefore adds constraints to Phase-1 tables — it never
+   --     adds, modifies or drops a Phase-1 COLUMN.
+   --
+   --     By the time this runs, tst_test_runs holds hundreds of thousands of rows and
+   --     tst_test_run_results holds millions. ADD CONSTRAINT is an index build and a metadata lock; ADD
+   --     COLUMN on those tables would have been a rewrite. That difference is the reason for the rule.
+   --
+   --     Every statement is guarded, so this section is re-runnable and can be applied to a database that
+   --     already has some of these constraints.
 -- =========================================================================================================
-
 -- A run may have been produced by a suite, and by a specific version of that suite's membership.
 SET @sql := (
    SELECT IF(COUNT(*) > 0,
@@ -3517,7 +3491,6 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- =========================================================================================================
 -- SECTION 31 — PHASE-2 VIEWS                                                                        [P2]
 -- =========================================================================================================
-
 
 -- Which tests cover which change request, and whether they are currently passing.
 CREATE OR REPLACE VIEW `vw_change_request_coverage` AS
@@ -3612,9 +3585,9 @@ GROUP BY s.id, s.suite_code, s.name, s.suite_type, s.is_rule_based, s.version_no
 -- =========================================================================================================
 -- SECTION 32 — PHASE-2 SEED DATA                                                                    [P2]
 -- =========================================================================================================
--- Path mappings that resolve the standard Laravel / Prime-AI tree. Priority is lowest-wins, so the
--- most specific rule is evaluated first. The Ignore rules matter as much as the resolving ones: without
--- them, every composer update reads as a change to the whole application.
+   -- Path mappings that resolve the standard Laravel / Prime-AI tree. Priority is lowest-wins, so the
+   -- most specific rule is evaluated first. The Ignore rules matter as much as the resolving ones: without
+   -- them, every composer update reads as a change to the whole application.
 -- =========================================================================================================
 INSERT INTO `tst_path_mappings` (`pattern`,`target_type`,`confidence`,`priority`,`note`,`created_by`,`updated_by`)
 VALUES
@@ -3645,90 +3618,90 @@ ON DUPLICATE KEY UPDATE
 -- =========================================================================================================
 --
 --  IDENTITY
---     tst_users        code  D02                    role letter + 2 digits
---          |
---     tst_machines     machine_code  D02A           GENERATED: user_code || machine_number
---          |
+   --     tst_users        code  D02                    role letter + 2 digits
+   --          |
+   --     tst_machines     machine_code  D02A           GENERATED: user_code || machine_number
+   --          |
 --  CATALOG (centrally governed, prefix-nested, composite-FK enforced)
---     tst_modules      module_code   SLB
---     tst_categories   cat_code      T01
---     tst_main_menus   mm_code       T0104          contains cat_code
---     tst_sub_menus    sm_code       T010401        contains mm_code
---     tst_tabs_screens ts_code       T0104010200    contains sm_code
---          |
+   --     tst_modules      module_code   SLB
+   --     tst_categories   cat_code      T01
+   --     tst_main_menus   mm_code       T0104          contains cat_code
+   --     tst_sub_menus    sm_code       T010401        contains mm_code
+   --     tst_tabs_screens ts_code       T0104010200    contains sm_code
+   --          |
 --  AUTHORING (evidence direction — travels with the machine that made it)
---     tst_tc_required_list  tcr_code        D02A_T0104010200_0001    the PLAN
---          |
---     tst_test_cases        test_case_code  D02A_T0104010200_001     the TEST
---          |                                ^^^^ ^^^^^^^^^^^ ^^^
---          |                                machine  screen   seq
---          +-- tst_test_case_steps                 (current version only)
---          +-- tst_test_case_versions_history      (superseded definitions, immutable)
---          +-- tst_test_case_review                (readiness + technical review + sign-off)
---          +-- tst_duplicate_test_case             (equivalence judgements, insert-only)
---          |
+   --     tst_tc_required_list  tcr_code        D02A_T0104010200_001    the PLAN
+   --          |
+   --     tst_test_cases        test_case_code  D02A_T0104010200_001     the TEST
+   --          |                                ^^^^ ^^^^^^^^^^^ ^^^
+   --          |                                machine  screen   seq
+   --          +-- tst_test_case_steps                 (current version only)
+   --          +-- tst_test_case_versions_history      (superseded definitions, immutable)
+   --          +-- tst_test_case_review                (readiness + technical review + sign-off)
+   --          +-- tst_duplicate_test_case             (equivalence judgements, insert-only)
+   --          |
 --  EXECUTION
---     tst_test_runs  ──▶ tst_test_run_items (test_case_code + WHY selected)
---                              |
---                              ▼
---                        tst_test_run_results   ONE ROW PER ATTEMPT, INSERT-ONLY
---                              +-- tst_test_run_result_steps
---                              +-- tst_run_result_artifacts
---                              |
---                        tst_failure_signatures  (forty failures -> one problem)
---                              |
---                        tst_test_case_runs_summary   DERIVED, rebuildable, checked nightly
---          |
+   --     tst_test_runs  ──▶ tst_test_run_items (test_case_code + WHY selected)
+   --                              |
+   --                              ▼
+   --                        tst_test_run_results   ONE ROW PER ATTEMPT, INSERT-ONLY
+   --                              +-- tst_test_run_result_steps
+   --                              +-- tst_run_result_artifacts
+   --                              |
+   --                        tst_failure_signatures  (forty failures -> one problem)
+   --                              |
+   --                        tst_test_case_runs_summary   DERIVED, rebuildable, checked nightly
+   --          |
 --  DEFECTS
---     tst_bugs  ──▶ tst_bug_occurrences ──▶ tst_retest_cycles ──▶ verified_result_id
---                                                                 (FIXED ≠ VERIFIED)
---          |
+   --     tst_bugs  ──▶ tst_bug_occurrences ──▶ tst_retest_cycles ──▶ verified_result_id
+   --                                                                 (FIXED ≠ VERIFIED)
+   --          |
 --  PHASE 2
---     tst_git_commit_files ──(tst_path_mappings)──▶ module / screen / test_case_code
---                          ──(tst_test_case_dependencies)──▶ dependent test cases
---                          ──▶ tst_impact_analyses ──▶ tst_impact_analysis_items
---                                                       (INCLUDED and EXCLUDED, both with reasons)
+   --     tst_git_commit_files ──(tst_path_mappings)──▶ module / screen / test_case_code
+   --                          ──(tst_test_case_dependencies)──▶ dependent test cases
+   --                          ──▶ tst_impact_analyses ──▶ tst_impact_analysis_items
+   --                                                       (INCLUDED and EXCLUDED, both with reasons)
 --
 -- =========================================================================================================
 -- TABLE COUNT — 58
 -- =========================================================================================================
 --   PHASE 1 — 44 tables
---     Platform      (2): tst_app_settings, tst_environment_profiles
---     Identity      (2): tst_users, tst_machines
---     Catalog       (5): tst_modules, tst_categories, tst_main_menus, tst_sub_menus, tst_tabs_screens
---     Authoring     (6): tst_tc_required_list, tst_test_cases, tst_test_case_steps,
---                        tst_test_case_review, tst_test_case_versions_history, tst_duplicate_test_case
---     Execution     (8): tst_test_runs, tst_test_run_scopes, tst_test_run_items, tst_test_run_results,
---                        tst_test_run_result_steps, tst_run_result_artifacts, tst_failure_signatures,
---                        tst_test_case_runs_summary
---     Scheduling    (2): tst_schedules, tst_schedule_targets
---     Comments/Disc (2): tst_run_annotations, tst_discovery_sync_logs
---     Defects       (9): tst_known_issues, tst_known_issue_results, tst_bugs, tst_bug_occurrences,
---                        tst_bug_status_history, tst_bug_comments, tst_bug_links, tst_retest_cycles,
---                        tst_retest_cycle_bugs
---     Sync          (4): tst_data_exports, tst_data_imports, tst_import_record_map, tst_import_conflicts
---     AI            (2): tst_ai_analyses, tst_ai_recommendations
---     Ops           (2): tst_notifications, tst_audit_logs
+   --     Platform      (2): tst_app_settings, tst_environment_profiles
+   --     Identity      (2): tst_users, tst_machines
+   --     Catalog       (5): tst_modules, tst_categories, tst_main_menus, tst_sub_menus, tst_tabs_screens
+   --     Authoring     (6): tst_tc_required_list, tst_test_cases, tst_test_case_steps,
+   --                        tst_test_case_review, tst_test_case_versions_history, tst_duplicate_test_case
+   --     Execution     (8): tst_test_runs, tst_test_run_scopes, tst_test_run_items, tst_test_run_results,
+   --                        tst_test_run_result_steps, tst_run_result_artifacts, tst_failure_signatures,
+   --                        tst_test_case_runs_summary
+   --     Scheduling    (2): tst_schedules, tst_schedule_targets
+   --     Comments/Disc (2): tst_run_annotations, tst_discovery_sync_logs
+   --     Defects       (9): tst_known_issues, tst_known_issue_results, tst_bugs, tst_bug_occurrences,
+   --                        tst_bug_status_history, tst_bug_comments, tst_bug_links, tst_retest_cycles,
+   --                        tst_retest_cycle_bugs
+   --     Sync          (4): tst_data_exports, tst_data_imports, tst_import_record_map, tst_import_conflicts
+   --     AI            (2): tst_ai_analyses, tst_ai_recommendations
+   --     Ops           (2): tst_notifications, tst_audit_logs
 --
 --   PHASE 2 — 14 tables
---     Change req    (3): tst_app_requirements, tst_app_requirement_test_cases, tst_test_case_requirements
---     Dependencies  (2): tst_module_dependencies, tst_test_case_dependencies
---     Path mapping  (1): tst_path_mappings
---     Suites        (3): tst_test_suites, tst_test_suite_items, tst_test_suite_versions
---     Git           (3): tst_git_repositories, tst_git_commits, tst_git_commit_files
---     Impact        (2): tst_impact_analyses, tst_impact_analysis_items
+   --     Change req    (3): tst_app_requirements, tst_app_requirement_test_cases, tst_test_case_requirements
+   --     Dependencies  (2): tst_module_dependencies, tst_test_case_dependencies
+   --     Path mapping  (1): tst_path_mappings
+   --     Suites        (3): tst_test_suites, tst_test_suite_items, tst_test_suite_versions
+   --     Git           (3): tst_git_repositories, tst_git_commits, tst_git_commit_files
+   --     Impact        (2): tst_impact_analyses, tst_impact_analysis_items
 --
 --   VIEWS — 21    Phase 1: 17    Phase 2: 4
 --
 --   REMOVED SINCE v7.0 — 16 tables
---     tst_roles, tst_permissions, tst_role_permissions, tst_user_roles   (owner: small team)
---     tst_releases                                                       (owner: covered by review)
---     tst_code_allocations                                               (the machine segment allocates)
---     tst_source_test_cases                                              (the coding system made it redundant)
---     tst_schema_version                                                 (one app_settings row + Laravel migrations)
---     tst_tags, tst_test_case_tags, tst_test_case_types, tst_test_case_statuses,
---     tst_testing_layers, tst_testing_methods, tst_testing_technologies,
---     tst_master_registry                                                (owner: ENUMs instead of lookups)
+   --     tst_roles, tst_permissions, tst_role_permissions, tst_user_roles   (owner: small team)
+   --     tst_releases                                                       (owner: covered by review)
+   --     tst_code_allocations                                               (the machine segment allocates)
+   --     tst_source_test_cases                                              (the coding system made it redundant)
+   --     tst_schema_version                                                 (one app_settings row + Laravel migrations)
+   --     tst_tags, tst_test_case_tags, tst_test_case_types, tst_test_case_statuses,
+   --     tst_testing_layers, tst_testing_methods, tst_testing_technologies,
+   --     tst_master_registry                                                (owner: ENUMs instead of lookups)
 -- =========================================================================================================
 -- END OF testing_DDL_v7.2.sql
 -- =========================================================================================================

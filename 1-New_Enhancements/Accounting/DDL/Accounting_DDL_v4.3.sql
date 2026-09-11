@@ -1,6 +1,6 @@
 -- ============================================================================
 -- ACCOUNTING MODULE DDL — acc_ prefix
--- Version: 4.2 — 2026-08-31
+-- Version: 4.3 — 2026-08-31
 -- Tally-Prime inspired voucher-based double-entry system
 -- Replaces old 31-table journal-based acc_* schema (unused draft)
 -- ============================================================================
@@ -75,6 +75,30 @@ CREATE TABLE IF NOT EXISTS `glb_app_config` (
 -- ----------------------------------------------------------------------------
 -- Section 1 : ACCOUNTING MASTERS
 -- ----------------------------------------------------------------------------
+
+
+-- This is the table where the Master data of Financial Years will be created. This is required to maintain the continuity of the accounting records.
+CREATE TABLE IF NOT EXISTS `acc_financial_years` (
+	`id`            SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+	`name`          VARCHAR(50) NOT NULL COMMENT 'e.g., 2025-26',
+	`start_date`    DATE NOT NULL COMMENT 'Financial year start (April 1)',
+	`end_date`      DATE NOT NULL COMMENT 'Financial year end (March 31)',
+	`is_locked`     TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Prevents edits when locked',
+	`is_active`     TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Soft active flag',
+	`created_at`    TIMESTAMP NULL DEFAULT NULL,
+	`updated_at`    TIMESTAMP NULL DEFAULT NULL,
+	`deleted_at`    TIMESTAMP NULL DEFAULT NULL,
+	PRIMARY KEY (`id`),
+	UNIQUE KEY `uq_acc_fy_name` (`name`),
+	INDEX `idx_acc_fy_active` (`is_active`),
+	INDEX `idx_acc_fy_dates` (`start_date`, `end_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Condition :
+	-- Difference between `start_date` & `end_date` is 365 days
+	-- When `is_locked` = 1, no changes can be made to the Financial Year
+	-- When `is_active` = 1, the Financial Year is active, When `is_active` = 0, the Financial Year is inactive
+	-- `is_locked` will be 0 and `is_active` will be 1 by default
+
 
 -- This is a Generic master to capture dynamic status codes across modules. 
 CREATE TABLE IF NOT EXISTS `acc_accounting_status_masters` (
@@ -184,29 +208,6 @@ CREATE TABLE IF NOT EXISTS `acc_tax_rates` (
 	INDEX `idx_acc_tax_rate_type` (`tax_type_id`,`name`),
 	CONSTRAINT `fk_tax_rate_type` FOREIGN KEY (`tax_type_id`) REFERENCES `acc_tax_types`(`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-
--- This is the table where the Master data of Financial Years will be created. This is required to maintain the continuity of the accounting records.
-CREATE TABLE IF NOT EXISTS `acc_financial_years` (
-	`id`            SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
-	`name`          VARCHAR(50) NOT NULL COMMENT 'e.g., 2025-26',
-	`start_date`    DATE NOT NULL COMMENT 'Financial year start (April 1)',
-	`end_date`      DATE NOT NULL COMMENT 'Financial year end (March 31)',
-	`is_locked`     TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Prevents edits when locked',
-	`is_active`     TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'Soft active flag',
-	`created_at`    TIMESTAMP NULL DEFAULT NULL,
-	`updated_at`    TIMESTAMP NULL DEFAULT NULL,
-	`deleted_at`    TIMESTAMP NULL DEFAULT NULL,
-	PRIMARY KEY (`id`),
-	UNIQUE KEY `uq_acc_fy_name` (`name`),
-	INDEX `idx_acc_fy_active` (`is_active`),
-	INDEX `idx_acc_fy_dates` (`start_date`, `end_date`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
--- Condition :
-	-- Difference between `start_date` & `end_date` is 365 days
-	-- When `is_locked` = 1, no changes can be made to the Financial Year
-	-- When `is_active` = 1, the Financial Year is active, When `is_active` = 0, the Financial Year is inactive
-	-- `is_locked` will be 0 and `is_active` will be 1 by default
 
 
 -- ----------------------------------------------------------------------------

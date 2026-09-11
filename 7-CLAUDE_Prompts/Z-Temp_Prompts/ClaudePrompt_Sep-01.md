@@ -152,50 +152,8 @@ Not verified: MySQL isn't installed here, so nothing was executed. Logged as OPE
 One thing worth your call: tcr_code pads the sequence to 4 digits (_0001) while test_case_code pads to 3 (_001). Both work, both are VARCHAR(21), and I implemented exactly as you specified — but the same position renders differently in the two codes for one test case. Logged as OPEN-01.
 
 -----------------------------------------------------------------------------------------------------------------------------------------------
+## Prompt:
+ In DDL "1-New_Enhancements/Accounting/DDL/Accounting_DDL_v4.5.sql" you have used "del_marker" to make record really unique. But I am ok to keep 'code' & 'name' only UNIQUE, because there is no point to have same 'account_group' code or name created  again when you already have one in deleted stage. same applicable to category, ledger, cost_center, voucher_type, tax_type etc. so rather then keeping one extra field in so many tables, I would like to go with having 'code' & 'name' alone UNIQUE. Please make this change in the DDL and save it as "Accounting_DDL_v4.6.sql" in the same folder.
 
-
-## Phase 1:
-
-| Module | Responsibility | Principal tables |
-|---|---|---|
-| `Core` | Users, roles, permissions, machines, settings, audit, schema version | `tst_users`, , `tst_machines`, `tst_app_settings`, `tst_audit_logs`, `tst_schema_version` |
-| `Catalog` | Modules → screens, test cases, steps, versions, tags, masters | `tst_modules` … `tst_test_cases`, `tst_test_case_steps`, `tst_test_case_versions` |
-| `Discovery` | Source-tree scan, reconciliation, orphan detection | `tst_discovery_sync_logs` |
-| `TC Requirements` | Register TEst Case Requirement | `tst_tc_required_list` |
-| `Execution` | Run orchestration, adapters, heartbeat, results, artefacts | `tst_test_runs`, `tst_test_run_items`, `tst_test_run_results`, `tst_run_result_artifacts` |
-| `Evidence` | Artefact storage, hashing, lifecycle, expiry | `tst_run_result_artifacts` |
-| `Defects` | Bugs, occurrences, links, comments, status history, known issues, retest cycles | `tst_bugs`, `tst_bug_occurrences`, `tst_known_issues`, `tst_retest_cycles` |
-| `Change` | Git ingest, path mapping, commit-to-screen resolution | `tst_git_repositories`, `tst_git_commits`, `tst_git_commit_files`, `tst_path_mappings` |
-| `Impact` | Impact analysis, test selection, approval | `tst_impact_analyses`, `tst_impact_analysis_items` |
-| `Analytics` | Summaries, flakiness, regression, confidence, health, debt | `tst_test_case_runs_summary`, `tst_failure_signatures` |
-| `Releases` | Releases, scope, readiness assessment | `tst_releases` |
-| `Sync` | Export, import, conflict handling, record mapping, catalog bundles | `tst_data_exports`, `tst_data_imports`, `tst_import_conflicts`, `tst_import_record_map` |
-| `Insights` | AI analyses and recommendations with review states | `tst_ai_analyses`, `tst_ai_recommendations` |
-| `Notify` | Notification generation, deduplication, delivery, digests | `tst_notifications` |
-| `Reporting` | Views, dashboards, exports, saved searches | Database views `vw_*` |
-
-## Phase 2:
-| `App Requirements` | Application requirements, coverage mapping, work-request backlog | `tst_app_requirements`, `tst_app_requirement_test_cases`, `tst_test_case_requirements` |
-| `Suites` | Suites, membership, rule-based suites, suite versions | `tst_test_suites`, `tst_test_suite_items`, `tst_test_suite_versions` |
-
-- Environment context, build profiles, profiles/fingerprints, environment-bound test results
-- Retest orchestration, cycle management, AI recommendations, regression scoring, confidence scoring
-- Commit summarization, defect-commit correlations, path-mapping updates
-- Test-failure-to-defect lifecycle, known-issue promotion, comments, attachments, activity history
-- Result storage, artefact signing, audit, retention, deletion policies
-- Bundle reconciliation, dependency validation, conflict resolution, export/import workflow
-- Standard reports, custom exports, saved searches, dashboards
-- AI-generated gap analysis, defect correlation, risk assessment
-- Notifications, digests, delivery status, suppression, silence periods
-- Flakiness, regression, confidence scores, health metrics, debt analysis
-
- | `Core` | Environment context, build profiles, profiles/fingerprints, environment-bound test results |
-| `Execution` | Retest orchestration, cycle management, AI recommendations, regression scoring, confidence scoring |
-| `Change` | Commit summarization, defect-commit correlations, path-mapping updates |
-| `Defects` | Test-failure-to-defect lifecycle, known-issue promotion, comments, attachments, activity history |
-| `Evidence` | Artefact storage, signing, audit, retention, deletion policies |
-| `Sync` | Bundle reconciliation, dependency validation, conflict resolution, export/import workflow |
-| `Reporting` | Standard reports, custom exports, saved searches, dashboards |
-| `Insights` | AI-generated gap analysis, defect correlation, risk assessment |
-| `Notify` | Notifications, digests, delivery status, suppression, silence periods |
-| `Analytics` | Flakiness, regression, confidence scores, health metrics, debt analysis |
+-----------------------------------------------------------------------------------------------------------------------------------------------
+## Prompt:

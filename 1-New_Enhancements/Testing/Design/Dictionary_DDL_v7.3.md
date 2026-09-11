@@ -133,7 +133,7 @@ This single story touches 18 tables. Follow it once and the rest of the dictiona
 | 1 | Admin registers Tarun | `tst_users` | `D02` |
 | 2 | Admin registers Tarun's laptop | `tst_machines` | `D02A` (generated) |
 | 3 | Admin loads the Fees module and its screens | `tst_modules` … `tst_tabs_screens` | `SLB` → `T01` → `T0104` → `T010401` → `T0104010200` |
-| 4 | Tarun plans 12 tests needed for that screen | `tst_tc_required_list` | `D02A_T0104010200_0001` … `_0012` |
+| 4 | Tarun plans 12 tests needed for that screen | `tst_tc_required_list` | `D02A_T0104010200_001` … `_012` |
 | 5 | He writes the first one as a Dusk test | `tst_test_cases` | `D02A_T0104010200_001` |
 | 6 | He adds 4 manual steps to it | `tst_test_case_steps` | steps 1–4 |
 | 7 | Sameer reviews it and Brijesh signs it off | `tst_test_case_review` | score 92, `Released` |

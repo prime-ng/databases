@@ -981,3 +981,49 @@ Everything else in this document is decided. These need the business owner's con
 ---
 
 **End of Solution_Design_v1.md**
+
+---
+---
+## Additional Fuctionalities
+---
+### Health Check (Sub-Menu)
+This will find all the discrepencies in the database and generate a report. This will have multipal Tabs to find Gaps in different Tables and provide fuxtionality to fix them automatically (wherever possible) OR will provide functionality to fix them manually after confirmation from user. Some Gaps which may occure because of different reasons are below:
+
+1.  **Vouchers not balanced**: These may occur because of API integrations or direct database modifications. The system should allow user to manually balance the vouchers.
+2.  **Missing tax configuration**: These may occur because of missing tax configurations or missing tax rules.
+3.  **Missing cost centre**: These may occur because of missing cost centres or missing cost centre mappings.
+4.  **Missing fund**: These may occur because of missing funds or missing fund mappings.
+5.  **Missing campus**: These may occur because of missing campuses or missing campus mappings.
+6.  **Missing voucher type**: These may occur because of missing voucher types or missing voucher type mappings.
+7.  **Missing voucher number sequence**: These may occur because of missing voucher number sequences or missing voucher number sequence mappings.
+8.  **Missing voucher reference**: These may occur because of missing voucher references or missing voucher reference mappings.
+9.  **Missing voucher approval**: These may occur because of missing voucher approvals or missing voucher approval mappings.
+10. **Missing voucher audit**: These may occur because of missing voucher audits or missing voucher audit mappings.
+11. **Missing voucher statement**: These may occur because of missing voucher statements or missing voucher statement mappings.
+12. **Missing voucher exception**: These may occur because of missing voucher exceptions or missing voucher exception mappings.
+13. **Missing voucher assertion**: These may occur because of missing voucher assertions or missing voucher assertion mappings.
+14. **Missing voucher budget**: These may occur because of missing voucher budgets or missing voucher budget mappings.
+15. **Missing voucher fixed asset**: These may occur because of missing voucher fixed assets or missing voucher fixed asset mappings.
+16. **Missing voucher depreciation**: These may occur because of missing voucher depreciations or missing voucher depreciation mappings.
+17. **Missing voucher grant**: These may occur because of missing voucher grants or missing voucher grant mappings.
+18. **Missing voucher donation**: These may occur because of missing voucher donations or missing voucher donation mappings.
+19. **Missing voucher tds**: These may occur because of missing voucher tds or missing voucher tds mappings.
+20. **Missing voucher gst**: These may occur because of missing voucher gst or missing voucher gst mappings.
+21. **Missing voucher cash**: These may occur because of missing voucher cash or missing voucher cash mappings.
+22. **Missing voucher bank**: These may occur because of missing voucher bank or missing voucher bank mappings.
+23. **Missing voucher statement**: These may occur because of missing voucher statements or missing voucher statement mappings.
+24. **Missing voucher exceptions**: These may occur because of missing voucher exceptions or missing voucher exception mappings.
+25. **Missing voucher assertions**: These may occur because of missing voucher assertions or missing voucher assertion mappings.
+26. **Missing voucher budgets**: These may occur because of missing voucher budgets or missing voucher budget mappings.
+27. **Missing voucher fixed assets**: These may occur because of missing voucher fixed assets or missing voucher fixed asset mappings.
+28. **Missing voucher depreciations**: These may occur because of missing voucher depreciations or missing voucher depreciation mappings.
+29. **Missing voucher grants**: These may occur because of missing voucher grants or missing voucher grant mappings.
+30. **Missing voucher donations**: These may occur because of missing voucher donations or missing voucher donation mappings.
+31. **Missing voucher tds**: These may occur because of missing voucher tds or missing voucher tds mappings.
+32. **Missing voucher gst**: These may occur because of missing voucher gst or missing voucher gst mappings.
+33. **Missing voucher cash**: These may occur because of missing voucher cash or missing voucher cash mappings.
+34. **Missing voucher bank**: These may occur because of missing voucher bank or missing voucher bank mappings.
+
+Above Gaps may occure because user has enabled OR disabled different fuctionalities later after entering voucher for few months OR because of API integrations OR because of direct database modifications OR because of missing data etc.
+
+

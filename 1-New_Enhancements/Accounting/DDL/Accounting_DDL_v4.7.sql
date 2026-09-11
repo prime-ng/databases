@@ -1,67 +1,28 @@
 -- =========================================================================================================
 -- PRIME-AI — ACCOUNTING MODULE DDL
 -- Prefix    : acc_
--- Version   : 4.5
--- Supersedes: Accounting_DDL_v4.4.sql  (which was truncated mid-file, after acc_bill_allocations)
+-- Version   : 4.7 (Copy of v4.6 Enhanced Mannually)
+-- Supersedes: Accounting_DDL_v4.5.sql  (identical schema, less the del_marker soft-delete column)
 -- MySQL     : 8.0.16 or later   (CHECK constraints are enforced from 8.0.16)
 -- Scope     : TENANT database only. No acc_* table ever exists in prime_db / global_master.
 -- Governed by  : Accounting_BRD_v2.md      (business requirement)
 -- Designed in  : Solution_Design_v1.md     (solution design)
 -- Screens      : ScreenDesign_v2.1.md      (voucher entry)
--- =========================================================================================================
---
+-- =============================================================================================================================================
 -- WHAT THIS SCHEMA IS
-    --     Tally-style double-entry bookkeeping for a school: voucher header + Dr/Cr lines, with everything
-    --     else derived from those lines. It is the financial record of a trust or society that collects fees,
-    --     receives restricted grants and donations, pays salaries and vendors, and must satisfy a statutory
-    --     auditor.
+    --     Tally-style double-entry bookkeeping for a school: voucher header + Dr/Cr lines, with everything else derived from those lines. 
+    --     It is the financial record of a trust or society that collects fees, receives restricted grants and donations, pays salaries and 
+    --     vendors, and must satisfy a statutory auditor.
 --
--- ---------------------------------------------------------------------------------------------------------
--- THE FOUR RULES THIS SCHEMA EXISTS TO ENFORCE   (BRD §58)
--- ---------------------------------------------------------------------------------------------------------
-    --     R-01  Debits equal credits, in every posted voucher, always.
-    --     R-02  Only POSTED transactions count. Draft, provisional and post-dated affect nothing.
-    --     R-03  Posted is immutable. Correct by reversal, never by edit.
-    --     R-05  Balances are DERIVED from acc_voucher_items, never independently asserted.
-    --
-    --     Rule R-05 is why acc_ledgers.closing_balance has been REMOVED in this version. A stored balance with
-    --     no maintenance rule is a number that will eventually disagree with the transactions behind it, and
-    --     nothing will notice. Balances now live in acc_ledger_period_balances, which is a cache with an
-    --     explicit owner (PostingService), a rebuild command (acc:rebuild-balances) and a nightly assertion
-    --     that the rebuild changes nothing.
---
--- ---------------------------------------------------------------------------------------------------------
--- TYPE DISCIPLINE  —  one width per concept, everywhere
--- ---------------------------------------------------------------------------------------------------------
-    --     v4.3 joined columns of different integer widths across 12 foreign keys. InnoDB rejects every one of
-    --     them. In v4.4 a concept has exactly one width wherever it appears:
-    --
-    --       SMALLINT UNSIGNED   config and small reference sets   voucher types, financial years, periods,
-    --                                                             tax types, currencies, campuses, categories
-    --       INT UNSIGNED        masters                           account groups, ledgers, cost centres, funds
-    --       BIGINT UNSIGNED     transactions and logs             vouchers, items, allocations, bill refs, audit
-    --       INT UNSIGNED        external tenant tables            sys_users, sys_media, std_students,
-    --                                                             sch_employees, vnd_vendors, sys_dropdown_table
---
--- ---------------------------------------------------------------------------------------------------------
--- SOFT-DELETE UNIQUENESS
--- ---------------------------------------------------------------------------------------------------------
-    --     v4.3 used UNIQUE(code, deleted_at) in six tables to make a unique key soft-delete aware. It does not
-    --     work: MySQL treats NULLs as distinct, so any number of LIVE rows may share the same code.
-    --
-    --     v4.4 uses a stored generated column:
-    --         del_marker  =  0                        while the row is live
-    --                     =  UNIX_TIMESTAMP(deleted_at)  once it is deleted
-    --         UNIQUE (code, del_marker)
-    --     One live row per code; deleted rows keep their history. (Two rows soft-deleted in the same second
-    --     with the same code would collide — which is the correct outcome, not a defect.)
---
+-- =============================================================================================================================================
+-- VERSION WISE CHANGE LOG (WHAT HAS BEEN CHANGED IN DIFFERENT VERSIONS)
+-- =============================================================================================================================================
 -- ---------------------------------------------------------------------------------------------------------
 -- DEFECTS CORRECTED FROM v4.3   (Solution_Design_v1 §17.1. Items 1-9 stop the script from executing.)
 -- ---------------------------------------------------------------------------------------------------------
-    --      1. acc_voucher_category declared FKs on debit_ledger_id / credit_ledger_id — columns that do not
+    --      1. acc_voucher_categories declared FKs on debit_ledger_id / credit_ledger_id — columns that do not
     --         exist.                                                              -> CREATE TABLE failed.
-    --      2. acc_voucher_category referenced tco_app_modules, a table that does not exist. The module
+    --      2. acc_voucher_categories referenced tco_app_modules, a table that does not exist. The module
     --         registry is glb_app_modules, keyed VARCHAR(10), and lives in the GLOBAL database.
     --                                                                             -> module_key, no cross-db FK.
     --      3. acc_cost_centers: `ON DELETE SET NUL`.                              -> syntax error; SET NULL.
@@ -75,7 +36,7 @@
     --      8. fk_acc_rtl_template / idx_acc_rtl_template declared in two tables. FK names are unique per
     --         schema in MySQL.                                                    -> distinct names.
     --      9. 12 foreign keys joined mismatched integer widths.                   -> see TYPE DISCIPLINE.
-    --     10. UNIQUE(code, deleted_at) permitted unlimited live duplicates.       -> see SOFT-DELETE.
+    --     10. UNIQUE(code, deleted_at) permitted unlimited live duplicates.       -> see UNIQUENESS above.
     --     11. One generic status table FK'd from every entity, so a voucher's status could point at an
     --         expense-claim status.                                               -> typed ENUMs.
     --     12. acc_ledgers.closing_balance stored with no maintenance rule.        -> derived (R-05).
@@ -90,38 +51,17 @@
     --     20. Header said 4.2 in the file named 4.3, and the text had drifted from the deployed schema.
 --
 -- ---------------------------------------------------------------------------------------------------------
--- EXTERNAL TABLES REFERENCED   (all in the same tenant database, all INT UNSIGNED primary keys)
+-- TYPE DISCIPLINE  —  one width per concept, everywhere
 -- ---------------------------------------------------------------------------------------------------------
-    --     sys_users · sys_media · sys_dropdown_table · std_students · sch_employees · vnd_vendors
+    --     v4.3 joined columns of different integer widths across 12 foreign keys. InnoDB rejects every one of
+    --     them. In v4.4 a concept has exactly one width wherever it appears:
     --
-    --     glb_app_modules lives in the GLOBAL database and is keyed VARCHAR(10). A cross-database foreign key
-    --     would break tenant portability, so module_key is stored as a plain, indexed VARCHAR(10) and its
-    --     integrity is enforced by the application.
---
--- ---------------------------------------------------------------------------------------------------------
--- SECTIONS
--- ---------------------------------------------------------------------------------------------------------
-    --      1  Organisation: campuses, currencies, financial years, accounting periods
-    --      2  Chart of accounts: groups, ledgers
-    --      3  Dimensions: cost categories, cost centres, funds
-    --      4  Voucher configuration: categories, types, numbering, approval policy
-    --      5  Tax configuration
-    --      6  Transactions: vouchers, items, dimensions, tax, bank, references, approvals
-    --      7  Bill-wise: references and allocations
-    --      8  Balances: ledger-period buckets, closing snapshots, opening balances, fund and bill caches,
-    --                   period-close checklist
-    --      9  Banking: cheque registers and lifecycle, reconciliation, statement import, matches
-    --     10  Recurring vouchers
-    --     11  Fixed assets, depreciation and disposal
-    --     12  Expense claims
-    --     13  Budgets, interest and credit control
-    --     14  School-specific: concessions, donations and 80G, grants
-    --     15  TDS: certificates, deductions, challans
-    --     16  Cross-module integration: events, configs, processing log, reconciliation
-    --     17  Tally export
-    --     18  Control: audit, exceptions, assertions, settings
-    --     19  Views
-    --     20  Seed data
+    --       SMALLINT UNSIGNED   config and small reference sets   voucher types, financial years, periods,
+    --                                                             tax types, currencies, campuses, categories
+    --       INT UNSIGNED        masters                           account groups, ledgers, cost centres, funds
+    --       BIGINT UNSIGNED     transactions and logs             vouchers, items, allocations, bill refs, audit
+    --       INT UNSIGNED        external tenant tables            sys_users, sys_media, std_students,
+    --                                                             sch_employees, vnd_vendors, sys_dropdown_table
 --
 -- ---------------------------------------------------------------------------------------------------------
 -- WHAT 4.5 IS
@@ -157,25 +97,187 @@
     --     acc_budget_lines, acc_event_voucher_configs, acc_ledger_mappings, acc_settings and
     --     acc_interest_computations.
 --
+-- ---------------------------------------------------------------------------------------------------------
+-- UNIQUENESS IS ABSOLUTE, NOT SOFT-DELETE AWARE      (changed in v4.6)
+-- ---------------------------------------------------------------------------------------------------------
+    --     v4.3 used UNIQUE(code, deleted_at), which does not work: MySQL treats NULLs as distinct, so any
+    --     number of LIVE rows could share the same code. v4.4/v4.5 fixed that with a stored generated
+    --     column del_marker (0 while live, UNIX_TIMESTAMP(deleted_at) once deleted) carried in 30 tables,
+    --     which permitted a code to be re-created after its first holder was soft-deleted.
+    --
+    --     v4.6 drops del_marker entirely. A code or a name is unique across the whole table, live or
+    --     deleted:
+    --         UNIQUE (code)
+    --         UNIQUE (name)
+    --
+    --     The reasoning is the business rule, not the storage: there is no reason to create a second
+    --     account group, cost category, ledger, cost centre, voucher type or tax type carrying a code or
+    --     name that a deleted row already holds. The old name still appears in reports and audit history,
+    --     so re-issuing it to a different entity is a reporting defect, not a convenience. Blocking it at
+    --     the key is cheaper than 30 generated columns and 30 wider indexes.
+    --
+    --     CONSEQUENCE FOR THE APPLICATION
+    --       * Re-creating a soft-deleted master now fails with ER_DUP_ENTRY (1062). The correct UI action
+    --         is RESTORE the deleted row, not INSERT a new one. Every create form on the tables listed
+    --         below must catch 1062 and offer "a deleted record already uses this code — restore it?".
+    --       * Codes and names are therefore permanently retired once used. Sequence-numbered documents
+    --         (claim_number, concession_no, receipt_no, challan_no) were already retired on cancellation,
+    --         so this only makes the existing rule uniform.
+--
+-- ---------------------------------------------------------------------------------------------------------
+-- THE FOUR RULES THIS SCHEMA EXISTS TO ENFORCE   (BRD §58)
+-- ---------------------------------------------------------------------------------------------------------
+    --     R-01  Debits equal credits, in every posted voucher, always.
+    --     R-02  Only POSTED transactions count. Draft, provisional and post-dated affect nothing.
+    --     R-03  Posted is immutable. Correct by reversal, never by edit.
+    --     R-05  Balances are DERIVED from acc_voucher_items, never independently asserted.
+    --
+    --     Rule R-05 is why acc_ledgers.closing_balance has been REMOVED in this version. A stored balance with
+    --     no maintenance rule is a number that will eventually disagree with the transactions behind it, and
+    --     nothing will notice. Balances now live in acc_ledger_period_balances, which is a cache with an
+    --     explicit owner (PostingService), a rebuild command (acc:rebuild-balances) and a nightly assertion
+    --     that the rebuild changes nothing.
+--
+-- ---------------------------------------------------------------------------------------------------------
+-- EXTERNAL TABLES REFERENCED   (all in the same tenant database, all INT UNSIGNED primary keys)
+-- ---------------------------------------------------------------------------------------------------------
+    --     sys_users · sys_media · sys_dropdown_table · std_students · sch_employees · vnd_vendors
+    --
+    --     glb_app_modules lives in the GLOBAL database and is keyed VARCHAR(10). A cross-database foreign key
+    --     would break tenant portability, so module_key is stored as a plain, indexed VARCHAR(10) and its
+    --     integrity is enforced by the application.
+--
+-- ---------------------------------------------------------------------------------------------------------
+-- SECTIONS
+-- ---------------------------------------------------------------------------------------------------------
+    --      1  Organisation: campuses, currencies, financial years, accounting periods
+    --      2  Chart of accounts: groups, ledgers
+    --      3  Dimensions: cost categories, cost centres, funds
+    --      4  Voucher configuration: categories, types, numbering, approval policy
+    --      5  Tax configuration
+    --      6  Transactions: vouchers, items, dimensions, tax, bank, references, approvals
+    --      7  Bill-wise: references and allocations
+    --      8  Balances: ledger-period buckets, closing snapshots, opening balances, fund and bill caches,
+    --                   period-close checklist
+    --      9  Banking: cheque registers and lifecycle, reconciliation, statement import, matches
+    --     10  Recurring vouchers
+    --     11  Fixed assets, depreciation and disposal
+    --     12  Expense claims
+    --     13  Budgets, interest and credit control
+    --     14  School-specific: concessions, donations and 80G, grants
+    --     15  TDS: certificates, deductions, challans
+    --     16  Cross-module integration: events, configs, processing log, reconciliation
+    --     17  Tally export
+    --     18  Control: audit, exceptions, assertions, settings
+    --     19  Views
+    --     20  Seed data
+--
 -- =========================================================================================================
 
 SET NAMES utf8mb4;
 SET SESSION sql_require_primary_key = 0;
 SET FOREIGN_KEY_CHECKS = 0;
 
+-- =============================================================================================================================================
+-- SECTION 0: Reference Tables
+-- (Show Masters from other Modules)
+-- =============================================================================================================================================
 
--- =========================================================================================================
--- SECTION 1: ORGANISATION, CURRENCY AND TIME
--- =========================================================================================================
+-- ---------------------------------------------------------------------------------------------------------
+-- This table belongs to global_db. Here it is placed only for reference purpose.
+-- This table will capture Modules detail of entire application, which will be used in application development.
+-- Screens of this table will not be available for Tenant to modify. This will be completely managed by Super Admin.
+-- ---------------------------------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `glb_app_modules` (
+	`key`           VARCHAR(10) NOT NULL,  -- Can not be changed by User (Tenant) e.g. 'ACC','TPT',...
+	`ordinal`       SMALLINT UNSIGNED NOT NULL DEFAULT 0, -- display order in menu
+	`code`          VARCHAR(30) NOT NULL,  -- 'ACCOUNTING', 'TRANSPORT', 'HOSTEL', 'LIBRARY', 'STUDENT_FEE' etc.
+	`name`          VARCHAR(100) NOT NULL, -- 'Accounting', 'Transport', 'Hostel & Boarding', 'Library', 'Student Fee', etc.
+	`module_prefix` VARCHAR(5) NULL, -- Source Module Tables Prefix (`tpt_`, `lib_`, etc.)
+	`is_system`     TINYINT(1) NOT NULL DEFAULT 0, -- 1 = For System use, can not be deleted/edited.
+	`is_active`     TINYINT(1) NOT NULL DEFAULT 1,
+	`created_at`    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	`updated_at`    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+	`deleted_at`    TIMESTAMP NULL,
+	PRIMARY KEY (`key`),
+	UNIQUE KEY `uq_sys_module_code` (`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Data Seeder:
+	-- Key | Ordinal | Code 				| Name											| Module_Prefix | Is_System | Is_Active
+	---------------------------------------------------------------------------------------------------------------------------
+	-- ACC | 1 		  | ACCOUNTING			| Accounting									| acc_ 			 | 1         | 1
+	-- ACC | 2 		  | TRANSPORT			| Transport										| tpt_ 			 | 0         | 1
+	-- ACC | 3 		  | HOSTEL				| Hostel & Boarding							| hst_ 			 | 0         | 1
+	-- 
 
+
+-- ---------------------------------------------------------------------------------------------------------
+-- This table belongs to global_db. Here it is placed only for reference purpose.
+-- This table is to store the global Settings detail for all the Modules. This will be used in application development.
+-- Screens of this table will not be available for Tenant to modify. This will be completely managed by Super Admin.
+-- ---------------------------------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `glb_app_config` (
+    `id`                MEDIUMINT unsigned NOT NULL AUTO_INCREMENT,
+    `module_id`         VARCHAR(10) NOT NULL,         -- FK to glb_app_modules.key
+    `key`               varchar(150) NOT NULL,        -- Can not changed by user (He can edit other fields only but not KEY)
+    `key_name`          varchar(255) NOT NULL,        -- Can be Changed by user
+    `ordinal`           SMALLINT UNSIGNED NOT NULL DEFAULT '1',
+    `value`             varchar(512) NOT NULL,        -- Can be Changed by user
+    `value_type`        ENUM('STRING', 'NUMBER', 'BOOLEAN', 'DATE', 'TIME', 'DATETIME', 'JSON') NOT NULL,
+    `description`       varchar(255) NOT NULL,
+    `additional_info`   JSON DEFAULT NULL,
+    `tenant_can_modify` tinyint(1) NOT NULL DEFAULT '0',    -- Tenant can modify only if 1
+    `mandatory`         tinyint(1) NOT NULL DEFAULT '1',    -- Is it mandatory to set this value
+    `used_by_app`       tinyint(1) NOT NULL DEFAULT '1',    -- Is it used by app
+    `is_active`         tinyint(1) NOT NULL DEFAULT '1',
+    `deleted_at`        timestamp NULL DEFAULT NULL,
+    `created_at`        timestamp NULL DEFAULT NULL,
+    `updated_at`        timestamp NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_settings_ordinal` (`ordinal`),
+    UNIQUE KEY `uq_settings_key` (`key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Data Seeder:
+	-- Model | Key 								| Key	Name															| Type		| Value
+	-----------------------------------------------------------------------------------------------------------------------------------------------------
+	-- ACC   | COST_CENTRE_APPLICABLE		| Cost centres are applicable									| Boolean 	| True / False
+	--       | IS_INTEREST_ON					| Activate Interest Calculation								| Boolean 	| True / False
+	--       | CREDIT_DAYS_CHK_ON				| Check for credit days during voucher entry				| Boolean 	| True / False
+	-- 
+
+  CREATE TABLE IF NOT EXISTS `sys_roles` (
+    `id` INT unsigned NOT NULL AUTO_INCREMENT,
+    `name` varchar(50) NOT NULL,
+    `short_name` VARCHAR(20) NOT NULL,
+    `description` VARCHAR(255) NULL,
+    `guard_name` varchar(255) NOT NULL,         -- used by Laravel routing
+    `is_system`  TINYINT(1) NOT NULL DEFAULT 0, -- if true, role belongs to PG
+    `is_active` tinyint(1) NOT NULL DEFAULT '1',
+    `created_at` timestamp NULL DEFAULT NULL,
+    `updated_at` timestamp NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_roles_name_name_guardName` (`name`,`guard_name`),
+    UNIQUE KEY `uq_roles_name_shortName_guardName` (`short_name`,`guard_name`) 
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+
+-- =============================================================================================================================================
+-- SECTION 1: Accouting Setup
+-- (ORGANISATION, CURRENCY AND TIME)
+-- =============================================================================================================================================
+
+-- ---------------------------------------------------------------------------------------------------------
 -- A school may run several campuses under one legal entity. Multi-campus reporting is Phase 4, but the
 -- dimension is carried from Phase 1: adding a dimension to posted history later is far more expensive
 -- than carrying a mostly-constant column now (Solution_Design_v1 OD-02).
 -- New Table
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_campuses` (
     `id`            SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `code`          VARCHAR(20) NOT NULL,
     `name`          VARCHAR(150) NOT NULL,
+    `ordinal`       SMALLINT UNSIGNED NOT NULL DEFAULT '1',
     `address`       VARCHAR(500) NULL,
     `is_primary`    TINYINT(1) NOT NULL DEFAULT 0,      -- exactly one campus is primary
     `is_active`     TINYINT(1) NOT NULL DEFAULT 1,
@@ -184,39 +286,42 @@ CREATE TABLE IF NOT EXISTS `acc_campuses` (
     `created_at`    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`    TIMESTAMP NULL,
-    `del_marker`    BIGINT UNSIGNED GENERATED ALWAYS AS (IFNULL(UNIX_TIMESTAMP(`deleted_at`),0)) STORED,
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_acc_campus_code` (`code`,`del_marker`),
+    UNIQUE KEY `uq_acc_campus_code` (`code`),
     INDEX `idx_acc_campus_active` (`is_active`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Physical campuses of one legal entity. A reporting dimension, not a separate set of books.';
+
 
 -- New Table
 CREATE TABLE IF NOT EXISTS `acc_currencies` (
     `id`                SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `code`              CHAR(3) NOT NULL,               -- ISO 4217: INR, USD, GBP
-    `name`              VARCHAR(60) NOT NULL,
-    `symbol`            VARCHAR(10) NOT NULL,           -- ₹, $, £ etc.
-    `decimal_places`    TINYINT UNSIGNED NOT NULL DEFAULT 2,  -- 0 for JPY, 2 for most others.
+    `name`              VARCHAR(60) NOT NULL,           -- For ex. 'Indian Rupee'
+    `symbol`            VARCHAR(10) NOT NULL,           -- For ex. '₹'
+    `decimal_places`    TINYINT UNSIGNED NOT NULL DEFAULT 2, -- Number of decimal places to be used for display and storage of currency. For ex. 2
     `is_base`           TINYINT(1) NOT NULL DEFAULT 0,  -- exactly one base currency. INR for Prime-AI.
+    `base_flag`         TINYINT(1) GENERATED ALWAYS AS ((case when (`is_base` = 1) then `1` else NULL end)) STORED,
     `is_active`         TINYINT(1) NOT NULL DEFAULT 1,
     `created_at`        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_acc_currency_code` (`code`),
-    INDEX `idx_acc_currency_base` (`is_base`)
+    UNIQUE KEY `chk_acc_base_currency` (`base_flag`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
+-- ---------------------------------------------------------------------------------------------------------
 -- The rate USED on a transaction is copied onto the voucher and never read back from here, so that a
 -- later rate change cannot alter a recorded transaction (BRD BR-FX-02, BR-FX-05).
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_exchange_rates` (
-    `id`                BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `id`                MEDIUMINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `currency_id`       SMALLINT UNSIGNED NOT NULL,
     `rate_date`         DATE NOT NULL,
-    `rate_to_base`      DECIMAL(18,8) NOT NULL,       -- 1 unit of currency = rate_to_base units of base
+    `rate_to_base`      DECIMAL(18,8) NOT NULL,         -- 1 unit of currency = rate_to_base units of base
     `rate_type`         ENUM('Standard','Selling','Buying','Custom') NOT NULL DEFAULT 'Standard',
-    `source`            VARCHAR(100) NULL,            -- Manual, ECB, RBI etc.
+    `source`            VARCHAR(100) NULL,  -- Source of the Currency rate (e.g. 'OANDA', 'Manual Entry', 'System-Generated')
     `created_by`        INT UNSIGNED NULL,
     `created_at`        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
@@ -227,20 +332,22 @@ CREATE TABLE IF NOT EXISTS `acc_exchange_rates` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
+-- ---------------------------------------------------------------------------------------------------------
 -- 1 April to 31 March in India. Fixed, not user-choosable.
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_financial_years` (
     `id`                SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `name`              VARCHAR(20) NOT NULL,           -- '2026-27'
     `start_date`        DATE NOT NULL,
     `end_date`          DATE NOT NULL,
-    -- Current: the year new vouchers default into. Exactly one at a time.
     -- Open: may still receive vouchers. More than one year may be open, to permit prior-year adjustment
     -- before finalisation (BRD BR-PERIOD-03).
-    `is_current`        TINYINT(1) NOT NULL DEFAULT 0,
+    `is_current`        TINYINT(1) NOT NULL DEFAULT 0, -- Current: the year new vouchers default into. Exactly one at a time.
+    `current_flag`      TINYINT(1) GENERATED ALWAYS AS ((case when (`is_current` = 1) then `1` else NULL end)) STORED,
     `status`            ENUM('Open','Soft_Closed','Hard_Closed') NOT NULL DEFAULT 'Open',
     `closed_at`         DATETIME NULL,
     `closed_by`         INT UNSIGNED NULL,
-    `carry_forward_at`  DATETIME NULL,                  -- when opening balances were generated for the next year
+    `carry_forward_at`  DATETIME NULL,       -- when opening balances were generated for the next year
     `carry_forward_by`  INT UNSIGNED NULL,
     `is_active`         TINYINT(1) NOT NULL DEFAULT 1,
     `created_at`        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -249,8 +356,8 @@ CREATE TABLE IF NOT EXISTS `acc_financial_years` (
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_acc_fy_name` (`name`),
     UNIQUE KEY `uq_acc_fy_start` (`start_date`),
+    UNIQUE KEY `uq_acc_fy_current` (`current_flag`),
     INDEX `idx_acc_fy_dates` (`start_date`,`end_date`),
-    INDEX `idx_acc_fy_current` (`is_current`),
     INDEX `idx_acc_fy_status` (`status`),
     -- v4.3 commented that the difference is 365 days. It is 366 in a leap year. The real rule is simply
     -- that the year ends after it starts; the 12-month span is enforced by the application.
@@ -258,28 +365,36 @@ CREATE TABLE IF NOT EXISTS `acc_financial_years` (
     CONSTRAINT `fk_acc_fy_closed_by` FOREIGN KEY (`closed_by`) REFERENCES `sys_users`(`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_acc_fy_cf_by` FOREIGN KEY (`carry_forward_by`) REFERENCES `sys_users`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Conditions:
+    -- 1. `is_current` is a generated column, that will be set to 1 if `status` is 'Open' and there is no other row with `is_current` = 1. 
+    -- 2. When user set `status` is 'Soft_Closed' or 'Hard_Closed' then app should ask to set `is_current` to 0. It is not must but ask.
+    -- 3. `current_flag` is a generated column, that will be set to 1 if `is_current` is 1. It will be set to 0 if `is_current` is 0.
+    -- 4. Warning : If `closed_at` < `end_date` then show a warning that "The financial year is closed before the end date."
+    -- 5. When user try to set another year as `is_current` = 1, App warn "1st previously set 'is_current' needs to be update to 'is_current'=0".
 
 
+-- ---------------------------------------------------------------------------------------------------------
 -- Twelve monthly periods per financial year, each independently closable. Entirely absent from v4.3,
 -- which made monthly close impossible and left BRD §9 unimplementable.
 --
 -- Open        : normal entry
 -- Soft_Closed : routine entry blocked; adjustments permitted with acc.period.adjust
 -- Hard_Closed : nothing changes, ever, without an authorised reopening
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_accounting_periods` (
     `id`                SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `financial_year_id` SMALLINT UNSIGNED NOT NULL,
-    `period_no`         TINYINT UNSIGNED NOT NULL,      -- 1..12, 1 = April
-    `name`              VARCHAR(30) NOT NULL,           -- 'Apr 2026'
-    `start_date`        DATE NOT NULL,
-    `end_date`          DATE NOT NULL,
+    `period_no`         TINYINT UNSIGNED NOT NULL,  -- 1..12, 1 = April
+    `name`              VARCHAR(30) NOT NULL,       -- 'Apr 2026'
+    `start_date`        DATE NOT NULL,              -- 1st day on month
+    `end_date`          DATE NOT NULL,              -- Last day on month
     `status`            ENUM('Open','Soft_Closed','Hard_Closed') NOT NULL DEFAULT 'Open',
     `closed_at`         DATETIME NULL,
     `closed_by`         INT UNSIGNED NULL,
     `reopened_at`       DATETIME NULL,
     `reopened_by`       INT UNSIGNED NULL,
     `reopen_reason`     VARCHAR(500) NULL,
-    `reopen_count`      SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    `reopen_count`      SMALLINT UNSIGNED NOT NULL DEFAULT 0,  -- Count, how many times it was re-opened
     `created_at`        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
@@ -293,42 +408,45 @@ CREATE TABLE IF NOT EXISTS `acc_accounting_periods` (
     CONSTRAINT `fk_acc_period_closed_by` FOREIGN KEY (`closed_by`) REFERENCES `sys_users`(`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_acc_period_reopened_by` FOREIGN KEY (`reopened_by`) REFERENCES `sys_users`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Conditions:
+-- Can not be deleted
 
 
--- =========================================================================================================
--- SECTION 2: CHART OF ACCOUNTS
--- =========================================================================================================
 
+-- =============================================================================================================================================
+-- SECTION 2: Chart of Accounts
+-- (ACCOUNT GROUPS, LEDGERS, COST CENTRES & FUNDS)
+-- =============================================================================================================================================
+
+-- ---------------------------------------------------------------------------------------------------------
 -- The classification tree. `nature` decides which statement a ledger appears in and may never change once
 -- posted transactions exist beneath it (BRD BR-GROUP-01) — enforced by the application, because MySQL
 -- cannot express "no descendant has transactions" in a CHECK.
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_account_groups` (
-    `id`                    INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `id`                    MEDIUMINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `code`                  VARCHAR(30) NOT NULL,
     `name`                  VARCHAR(120) NOT NULL,
     `alias`                 VARCHAR(120) NULL,
     `parent_id`             INT UNSIGNED NULL,
     `nature`                ENUM('Asset','Liability','Equity','Income','Expense') NOT NULL,
-    -- A school's Income & Expenditure separates direct (academic) from indirect (administrative).
-    `affects_gross_profit`  TINYINT(1) NOT NULL DEFAULT 0,
+    `affects_gross_profit`  TINYINT(1) NOT NULL DEFAULT 0,  -- A school's Income & Expenditure separates direct (academic) from indirect (administrative).
     -- Materialised path, e.g. '/1/14/57/'. Makes "every ledger under this group" one indexed LIKE
     -- instead of a recursive CTE on every statement run.
-    `path`                  VARCHAR(500) NULL,
-    `depth`                 TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    `path`                  VARCHAR(500) NULL,  -- A string representing the complete chain of ancestor Group IDs from the root down to the current group (e.g. /1/4/18/).
+    `depth`                 TINYINT UNSIGNED NOT NULL DEFAULT 0,  -- The depth/level of the group in the tree structure (Auto Caculate) Parent Depth+1
     `is_system`             TINYINT(1) NOT NULL DEFAULT 0,  -- may not be deleted or have its nature changed
-    `is_subledger`          TINYINT(1) NOT NULL DEFAULT 0,  -- party control account: Sundry Debtors, Sundry Creditors
-    `ordinal`               SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    `is_subledger`          TINYINT(1) NOT NULL DEFAULT 0,  -- Party control account: Its ledgers are individual people or vendors rather than accounts (Sundry Debtors, Sundry Creditors)
     `is_active`             TINYINT(1) NOT NULL DEFAULT 1,
     `created_by`            INT UNSIGNED NULL,
     `updated_by`            INT UNSIGNED NULL,
     `created_at`            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`            TIMESTAMP NULL,
-    `del_marker`            BIGINT UNSIGNED GENERATED ALWAYS AS (IFNULL(UNIX_TIMESTAMP(`deleted_at`),0)) STORED,
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_acc_ag_code` (`code`,`del_marker`),
-    UNIQUE KEY `uq_acc_ag_name` (`name`,`del_marker`),
-    INDEX `idx_acc_ag_parent` (`parent_id`,`ordinal`),
+    UNIQUE KEY `uq_acc_ag_code` (`code`),
+    UNIQUE KEY `uq_acc_ag_name` (`name`),
+    INDEX `idx_acc_ag_parent` (`parent_id`,`code`),
     INDEX `idx_acc_ag_nature` (`nature`,`is_active`),
     INDEX `idx_acc_ag_path` (`path`(191)),
     INDEX `idx_acc_ag_system` (`is_system`,`is_active`),
@@ -338,8 +456,30 @@ CREATE TABLE IF NOT EXISTS `acc_account_groups` (
     CONSTRAINT `fk_acc_ag_updated_by` FOREIGN KEY (`updated_by`) REFERENCES `sys_users`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Chart of accounts hierarchy. nature drives statement placement and is immutable once used.';
+-- Conditions:
+    -- `Path` & `Depth` will be calculated Automatically by System
+    -- If `is_system` = 1, then that account group cannot be deleted.
+    -- If `is_subledger` = 1, then that account group cannot be deleted.
+    -- This is for critical groups like Current Assets, Direct Expenses, etc. that are essential for system integrity.
+    -- If `parent_id` = NULL, then that account group is a root group.
+    -- If `parent_id` <> NULL, then that account group is a child group.
+    -- If `parent_id` = `id`, it's an INVALID Group, can not be saved.
+    --
+    -- The 5 Fundamental Account Natures
+    -- ---------------------------------
+    -- The basic accounting equation is:
+    -- Assets = Liabilities + Equity
+    -- Equity = Capital + Revenue − Expenses
+    -- Nature : What it represents	Examples
+    -- --------------------------------------------------------------------------
+    -- Asset : What the school owns	Cash, Bank, Fee Receivable, Furniture
+    -- Liability : What the school owes	Vendor Payables, Loans, Advance Fees
+    -- Equity : Owners' / Trustees' stake	School Capital Fund, Surplus/Deficit A/c
+    -- Income : What the school earns	Tuition Fee, Transport Fee, Donations
+    -- Expense : What the school spends	Salary, Electricity, Maintenance
 
 
+-- ---------------------------------------------------------------------------------------------------------
 -- An individual account head.
 --
 -- NOTE ON BALANCES. v4.3 carried opening_balance, closing_balance and their Dr/Cr types on this row, with
@@ -347,74 +487,66 @@ COMMENT='Chart of accounts hierarchy. nature drives statement placement and is i
 --        opening (acc_opening_balances)  +  Σ posted lines (acc_voucher_items)
 -- served through acc_ledger_period_balances, which is a maintained cache with a rebuild command and a
 -- nightly assertion that rebuilding changes nothing. See BRD BR-LEDGER-02 and R-05.
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_ledgers` (
-    `id`                        INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `id`                        MEDIUMINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `code`                      VARCHAR(30) NULL,
     `name`                      VARCHAR(150) NOT NULL,
     `alias`                     VARCHAR(150) NULL,
-    `account_group_id`          INT UNSIGNED NOT NULL,
+    `account_group_id`          MEDIUMINT UNSIGNED NOT NULL,
     `campus_id`                 SMALLINT UNSIGNED NULL,     -- NULL = shared across campuses
     `currency_id`               SMALLINT UNSIGNED NULL,     -- NULL = base currency
-
     -- ── Behavioural traits (BRD BR-LEDGER-04) ───────────────────────────────────────────────────────────
-    `ledger_type`               ENUM('General','Cash','Bank','Party','Tax','Fund','Suspense','Rounding','Control')
-                                NOT NULL DEFAULT 'General',
+    `ledger_type`               ENUM('General','Cash','Bank','Party','Tax','Fund','Suspense','Rounding','Control') NOT NULL DEFAULT 'General',
     `party_type`                ENUM('Student','Parent','Vendor','Employee','Donor','Grantor','Other') NULL,
     `is_bill_wise`              TINYINT(1) NOT NULL DEFAULT 0,  -- outstanding tracked per bill reference
-    `is_cost_centre_applicable` TINYINT(1) NOT NULL DEFAULT 0,
-    `is_fund_applicable`        TINYINT(1) NOT NULL DEFAULT 0,
-    `allow_reconciliation`      TINYINT(1) NOT NULL DEFAULT 0,
-    `is_interest_applicable`    TINYINT(1) NOT NULL DEFAULT 0,
-    `is_tds_applicable`         TINYINT(1) NOT NULL DEFAULT 0,
+    `is_cost_centre_applicable` TINYINT(1) NOT NULL DEFAULT 0,  -- for allocation of costs and revenues across different departments, projects, or events.
+    `is_fund_applicable`        TINYINT(1) NOT NULL DEFAULT 0,  -- for allocation of costs and revenues across different funds, grants, or restricted donations.
+    `allow_reconciliation`      TINYINT(1) NOT NULL DEFAULT 0,  -- allow reconciliation of bank statements with the ledger
+    `is_interest_applicable`    TINYINT(1) NOT NULL DEFAULT 0,  -- allow interest to be charged on the ledger
+    `is_tds_applicable`         TINYINT(1) NOT NULL DEFAULT 0,  -- allow TDS to be deducted on the ledger
     `tds_section`               VARCHAR(20) NULL,               -- '194C', '194J', '192'
-
     -- ── Party links. Exactly one master per party ledger (BRD BR-LEDGER-05). ────────────────────────────
-    `student_id`                INT UNSIGNED NULL,
-    `employee_id`               INT UNSIGNED NULL,
-    `vendor_id`                 INT UNSIGNED NULL,
-
+    `student_id`                INT UNSIGNED NULL,   -- FK → std_students (auto-ledger for student debtors)
+    `employee_id`               INT UNSIGNED NULL,   -- FK → sch_employees (auto-ledger for salary payable)
+    `vendor_id`                 INT UNSIGNED NULL,   -- FK → vnd_vendors (auto-ledger for vendor creditors)
     -- ── Bank identification (BRD BR-LEDGER-06) ──────────────────────────────────────────────────────────
-    `bank_name`                 VARCHAR(120) NULL,
-    `bank_branch`               VARCHAR(120) NULL,
-    `bank_account_number`       VARCHAR(50) NULL,
-    `bank_account_type`         ENUM('Savings','Current','OD','CC','FD','Other') NULL,
-    `ifsc_code`                 VARCHAR(20) NULL,
-    `swift_code`                VARCHAR(20) NULL,
-    `micr_code`                 VARCHAR(20) NULL,
-
+    `bank_name`                 VARCHAR(120) NULL,   -- If `ledger_type` is 'BANK' then this is mandatory
+    `bank_branch`               VARCHAR(120) NULL,   -- If `ledger_type` is 'BANK' then this is mandatory
+    `bank_account_number`       VARCHAR(50) NULL,    -- If `ledger_type` is 'BANK' then this is mandatory
+    `bank_account_type`         ENUM('Savings','Current','OD','CC','FD','Other') NULL, -- If `ledger_type` is 'BANK' then this is mandatory
+    `ifsc_code`                 VARCHAR(20) NULL,    -- If `ledger_type` is 'BANK' then this is mandatory
+    `swift_code`                VARCHAR(20) NULL,    -- If `ledger_type` is 'BANK' then this is mandatory
+    `micr_code`                 VARCHAR(20) NULL,    -- If `ledger_type` is 'BANK' then this is mandatory
     -- ── Party commercial terms ──────────────────────────────────────────────────────────────────────────
     `credit_limit`              DECIMAL(15,2) NULL,
     `credit_days`               SMALLINT UNSIGNED NULL,
     `credit_limit_action`       ENUM('None','Warn','Approve','Block') NOT NULL DEFAULT 'Warn',
-
     -- ── Statutory ───────────────────────────────────────────────────────────────────────────────────────
     `gst_registration_type`     ENUM('Regular','Composition','Unregistered','SEZ','Consumer','Overseas') NULL,
     `gstin`                     VARCHAR(20) NULL,
     `pan`                       VARCHAR(15) NULL,
     `tan`                       VARCHAR(15) NULL,
-    `state_code`                VARCHAR(5) NULL,                -- drives place of supply
+    `state_short_name`          VARCHAR(10) NULL,     -- FK to glb_state.short_name (In glb_state, short_code is a UNIQUE KEY)
     `address`                   VARCHAR(500) NULL,
     `contact_person`            VARCHAR(120) NULL,
     `phone`                     VARCHAR(30) NULL,
     `email`                     VARCHAR(150) NULL,
-
     `is_system`                 TINYINT(1) NOT NULL DEFAULT 0,  -- Cash, Suspense, Rounding, control accounts
     `is_active`                 TINYINT(1) NOT NULL DEFAULT 1,
     `notes`                     VARCHAR(1000) NULL,
-    `created_by`                INT UNSIGNED NULL,
-    `updated_by`                INT UNSIGNED NULL,
+    `created_by`                INT UNSIGNED NULL,  -- FK to sys_users.id
+    `updated_by`                INT UNSIGNED NULL,  -- FK to sys_users.id
     `created_at`                TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`                TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`                TIMESTAMP NULL,
-    `del_marker`                BIGINT UNSIGNED GENERATED ALWAYS AS (IFNULL(UNIX_TIMESTAMP(`deleted_at`),0)) STORED,
-
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_acc_ledger_name` (`name`,`del_marker`),
-    UNIQUE KEY `uq_acc_ledger_code` (`code`,`del_marker`),
+    UNIQUE KEY `uq_acc_ledger_name` (`name`),
+    UNIQUE KEY `uq_acc_ledger_code` (`code`),
     -- One ledger per party master (BRD BR-LEDGER-05).
-    UNIQUE KEY `uq_acc_ledger_student` (`student_id`,`del_marker`),
-    UNIQUE KEY `uq_acc_ledger_employee` (`employee_id`,`del_marker`),
-    UNIQUE KEY `uq_acc_ledger_vendor` (`vendor_id`,`del_marker`),
+    UNIQUE KEY `uq_acc_ledger_student` (`student_id`),
+    UNIQUE KEY `uq_acc_ledger_employee` (`employee_id`),
+    UNIQUE KEY `uq_acc_ledger_vendor` (`vendor_id`),
     INDEX `idx_acc_ledger_group` (`account_group_id`,`is_active`),
     INDEX `idx_acc_ledger_type` (`ledger_type`,`is_active`),
     INDEX `idx_acc_ledger_party` (`party_type`,`is_active`),
@@ -425,22 +557,28 @@ CREATE TABLE IF NOT EXISTS `acc_ledgers` (
     INDEX `idx_acc_ledger_pan` (`pan`),
     -- Ledger picker: prefix search over active ledgers.
     INDEX `idx_acc_ledger_search` (`is_active`,`name`),
-
     CONSTRAINT `fk_acc_ledger_group` FOREIGN KEY (`account_group_id`) REFERENCES `acc_account_groups`(`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_acc_ledger_campus` FOREIGN KEY (`campus_id`) REFERENCES `acc_campuses`(`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_acc_ledger_currency` FOREIGN KEY (`currency_id`) REFERENCES `acc_currencies`(`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_acc_ledger_student` FOREIGN KEY (`student_id`) REFERENCES `std_students`(`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_acc_ledger_employee` FOREIGN KEY (`employee_id`) REFERENCES `sch_employees`(`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_acc_ledger_vendor` FOREIGN KEY (`vendor_id`) REFERENCES `vnd_vendors`(`id`) ON DELETE RESTRICT,
+    CONSTRAINT `fk_acc_ledger_state` FOREIGN KEY (`state_short_name`) REFERENCES `glb_state`(`short_name`) ON DELETE RESTRICT,
     CONSTRAINT `fk_acc_ledger_created_by` FOREIGN KEY (`created_by`) REFERENCES `sys_users`(`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_acc_ledger_updated_by` FOREIGN KEY (`updated_by`) REFERENCES `sys_users`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Account heads. Balances are DERIVED (acc_ledger_period_balances), never stored here.';
+-- Conditions:
+    -- If `is_system` = 1, then that account group cannot be deleted.
+    -- If `is_subledger` = 1, then that account group cannot be deleted.
+    -- This is for critical groups like Current Assets, Direct Expenses, etc. that are essential for system integrity.
+    -- If `parent_id` = NULL, then that account group is a root group.
+    -- If `parent_id` <> NULL, then that account group is a child group.
+    -- If `parent_id` = `id`, it's an INVALID Group, can not be saved.
+    -- If `parent_id` = 1, it's an INVALID Group, can not be saved.
 
 
--- =========================================================================================================
--- SECTION 3: DIMENSIONS
---
+-- ---------------------------------------------------------------------------------------------------------
 --     Three orthogonal axes. They answer different questions and must never be collapsed into one another:
 --         Cost Centre  — WHERE did the money go?      Primary Wing, Science Dept, Annual Day
 --         Fund         — WHOSE money was it?          Corpus, CSR Grant 2026, Building Fund
@@ -448,10 +586,10 @@ COMMENT='Account heads. Balances are DERIVED (acc_ledger_period_balances), never
 --
 --     A ₹50,000 lab purchase is cost centre 'Science', fund 'CSR Grant 2026', campus 'Main' — all three at
 --     once. Collapsing them makes restricted-fund reporting impossible (BRD BR-FUND-06).
--- =========================================================================================================
-
+--
 -- Independent analysis axes. The same expense may be analysed by Wing AND by Department simultaneously;
 -- each category's allocation must total the line amount independently (BRD BR-CC-04).
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_cost_categories` (
     `id`                SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `code`              VARCHAR(20) NOT NULL,
@@ -464,13 +602,17 @@ CREATE TABLE IF NOT EXISTS `acc_cost_categories` (
     `created_at`        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`        TIMESTAMP NULL,
-    `del_marker`        BIGINT UNSIGNED GENERATED ALWAYS AS (IFNULL(UNIX_TIMESTAMP(`deleted_at`),0)) STORED,
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_acc_cc_cat_code` (`code`,`del_marker`),
-    UNIQUE KEY `uq_acc_cc_cat_name` (`name`,`del_marker`)
+    UNIQUE KEY `uq_acc_cc_cat_code` (`code`),
+    UNIQUE KEY `uq_acc_cc_cat_name` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
+-- ---------------------------------------------------------------------------------------------------------
+-- Cost centres are the functional bins into which you allocate spending: department, wing, project,
+-- event, fund-raising campaign, etc. The schema allows arbitrary nesting depth and multiple centres per
+-- ledger line (BRD BR-CC-03).
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_cost_centers` (
     `id`                INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `cost_category_id`  SMALLINT UNSIGNED NOT NULL,
@@ -478,27 +620,24 @@ CREATE TABLE IF NOT EXISTS `acc_cost_centers` (
     `name`              VARCHAR(120) NOT NULL,
     `parent_id`         INT UNSIGNED NULL,
     `campus_id`         SMALLINT UNSIGNED NULL,
-    `path`              VARCHAR(500) NULL,
-    `depth`             TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    `path`              VARCHAR(500) NULL,  -- String representing the complete chain of ancestor Group IDs from the root down to the current group (e.g. /1/4/18/).
+    `depth`             TINYINT UNSIGNED NOT NULL DEFAULT 0,  -- The depth/level of the center in the tree structure
     `incharge_user_id`  INT UNSIGNED NULL,
-    `ordinal`           SMALLINT UNSIGNED NOT NULL DEFAULT 0,
     `is_active`         TINYINT(1) NOT NULL DEFAULT 1,
     `created_by`        INT UNSIGNED NULL,
     `updated_by`        INT UNSIGNED NULL,
     `created_at`        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`        TIMESTAMP NULL,
-    `del_marker`        BIGINT UNSIGNED GENERATED ALWAYS AS (IFNULL(UNIX_TIMESTAMP(`deleted_at`),0)) STORED,
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_acc_cc_code` (`code`,`del_marker`),
-    UNIQUE KEY `uq_acc_cc_cat_name` (`cost_category_id`,`name`,`del_marker`),
-    INDEX `idx_acc_cc_parent` (`parent_id`),
+    UNIQUE KEY `uq_acc_cc_code` (`code`),
+    UNIQUE KEY `uq_acc_cc_cat_name` (`cost_category_id`,`name`),
+    INDEX `idx_acc_cc_parent` (`parent_id`,`code`),
     INDEX `idx_acc_cc_category` (`cost_category_id`,`is_active`),
     INDEX `idx_acc_cc_campus` (`campus_id`),
     INDEX `idx_acc_cc_path` (`path`(191)),
     CONSTRAINT `chk_acc_cc_not_self` CHECK (`parent_id` IS NULL OR `parent_id` <> `id`),
     CONSTRAINT `fk_acc_cc_category` FOREIGN KEY (`cost_category_id`) REFERENCES `acc_cost_categories`(`id`) ON DELETE RESTRICT,
-    -- v4.3 had `ON DELETE SET NUL` here — a syntax error that stopped the whole file parsing.
     CONSTRAINT `fk_acc_cc_parent` FOREIGN KEY (`parent_id`) REFERENCES `acc_cost_centers`(`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_acc_cc_campus` FOREIGN KEY (`campus_id`) REFERENCES `acc_campuses`(`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_acc_cc_incharge` FOREIGN KEY (`incharge_user_id`) REFERENCES `sys_users`(`id`) ON DELETE SET NULL,
@@ -507,20 +646,18 @@ CREATE TABLE IF NOT EXISTS `acc_cost_centers` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
+-- ---------------------------------------------------------------------------------------------------------
 -- A pool of money whose use is restricted by its donor, grantor or the trust deed.
 -- A school trust must be able to show what it did with restricted money. Absent from v4.3 entirely.
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_funds` (
     `id`                    INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `code`                  VARCHAR(30) NOT NULL,
     `name`                  VARCHAR(150) NOT NULL,
-    -- Unrestricted : general purpose
-    -- Restricted   : donor/grantor specified a purpose
-    -- Corpus       : permanently restricted; never income of a period (BRD BR-FUND-05)
-    -- Designated   : management earmarked; internally reversible
     `fund_type`             ENUM('Unrestricted','Restricted','Corpus','Designated') NOT NULL DEFAULT 'Unrestricted',
     `restriction_purpose`   VARCHAR(1000) NULL,
-    `grantor_ledger_id`     INT UNSIGNED NULL,          -- the donor or grantor party
-    `fund_ledger_id`        INT UNSIGNED NULL,          -- the balance-sheet ledger carrying the fund
+    `grantor_ledger_id`     MEDIUMINT UNSIGNED NULL,          -- the donor or grantor party
+    `fund_ledger_id`        MEDIUMINT UNSIGNED NULL,          -- the balance-sheet ledger carrying the fund
     `sanctioned_amount`     DECIMAL(15,2) NULL,
     `utilisation_from`      DATE NULL,
     `utilisation_to`        DATE NULL,
@@ -535,10 +672,9 @@ CREATE TABLE IF NOT EXISTS `acc_funds` (
     `created_at`            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`            TIMESTAMP NULL,
-    `del_marker`            BIGINT UNSIGNED GENERATED ALWAYS AS (IFNULL(UNIX_TIMESTAMP(`deleted_at`),0)) STORED,
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_acc_fund_code` (`code`,`del_marker`),
-    UNIQUE KEY `uq_acc_fund_name` (`name`,`del_marker`),
+    UNIQUE KEY `uq_acc_fund_code` (`code`),
+    UNIQUE KEY `uq_acc_fund_name` (`name`),
     INDEX `idx_acc_fund_type` (`fund_type`,`status`),
     INDEX `idx_acc_fund_ledger` (`fund_ledger_id`),
     INDEX `idx_acc_fund_grantor` (`grantor_ledger_id`),
@@ -551,12 +687,20 @@ CREATE TABLE IF NOT EXISTS `acc_funds` (
     CONSTRAINT `fk_acc_fund_updated_by` FOREIGN KEY (`updated_by`) REFERENCES `sys_users`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Restricted and unrestricted funds. A fund says whose money it was; a cost centre says where it went.';
+-- Conditions:
+    -- `fund_type` - Below are the Fund Type and their restriction level:
+    --      - Unrestricted : general purpose
+    --      - Restricted   : donor/grantor specified a purpose
+    --      - Corpus       : permanently restricted; never income of a period (BRD BR-FUND-05)
+    --      - Designated   : management earmarked; internally reversible
+
 
 
 -- =========================================================================================================
 -- SECTION 4: VOUCHER CONFIGURATION
 -- =========================================================================================================
 
+-- ---------------------------------------------------------------------------------------------------------
 -- Groups voucher types by the business area that produces them. v4.3 declared foreign keys here on
 -- debit_ledger_id and credit_ledger_id — columns that were never declared, so CREATE TABLE failed — and
 -- referenced tco_app_modules, a table that does not exist.
@@ -564,9 +708,11 @@ COMMENT='Restricted and unrestricted funds. A fund says whose money it was; a co
 -- The module registry is glb_app_modules, keyed VARCHAR(10), and it lives in the GLOBAL database. A
 -- cross-database foreign key would break tenant portability, so module_key is a plain indexed column
 -- whose integrity the application enforces.
-CREATE TABLE IF NOT EXISTS `acc_voucher_category` (
+-- ---------------------------------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `acc_voucher_categories` (
     `id`                SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `module_key`        VARCHAR(10) NOT NULL,           -- glb_app_modules.key: 'ACC','FEE','LIB','TPT','HST','PAY'
+    `module_key`        VARCHAR(10) NOT NULL,           -- FK to glb_app_modules.key : 'ACC','FEE','LIB','TPT','HST','PAY'
+    `cat_key`           VARCHAR(5) NOT NULL,           -- 'FINE','FEE','PANLT','CHGS','COLCT','RECD','PAID','JV','EXP',
     `code`              VARCHAR(40) NOT NULL,           -- 'ACCOUNTING','FEE_COLLECTION','LIBRARY_FINE'
     `name`              VARCHAR(120) NOT NULL,
     `event_detail`      VARCHAR(255) NULL,              -- what business event this category represents
@@ -576,73 +722,73 @@ CREATE TABLE IF NOT EXISTS `acc_voucher_category` (
     `created_at`        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`        TIMESTAMP NULL,
-    `del_marker`        BIGINT UNSIGNED GENERATED ALWAYS AS (IFNULL(UNIX_TIMESTAMP(`deleted_at`),0)) STORED,
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_acc_vcat_code` (`code`,`del_marker`),
-    INDEX `idx_acc_vcat_module` (`module_key`,`is_active`)
+    UNIQUE KEY `uq_acc_vcat_code` (`code`),
+    UNIQUE KEY `uq_acc_vcat_code` (`cat_key`),
+    INDEX `idx_acc_vcat_module` (`module_key`,`is_active`),
+    CONSTRAINT `fk_acc_vcat_module` FOREIGN KEY (`module_key`) REFERENCES `glb_app_modules`(`key`) ON DELETE RESTRICT,
+    CONSTRAINT `fk_acc_vcat_created_by` FOREIGN KEY (`created_by`) REFERENCES `sys_users`(`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_acc_vcat_updated_by` FOREIGN KEY (`updated_by`) REFERENCES `sys_users`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
+-- ---------------------------------------------------------------------------------------------------------
 -- A voucher type's rules are DATA, so that adding one needs no code (Solution_Design_v1 §4.4).
 -- The `last_number` counter that lived here in v4.3 is gone: it was a lost update waiting to happen.
 -- Numbering is now allocated from acc_voucher_number_sequences under a row lock.
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_voucher_types` (
     `id`                        SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `code`                      VARCHAR(20) NOT NULL,   -- PAYMENT, RECEIPT, CONTRA, JOURNAL, SALES, ...
     `name`                      VARCHAR(80) NOT NULL,
     `school_label`              VARCHAR(80) NULL,       -- what the UI calls it: 'Fee Demand', 'Fee Collection'
     `voucher_category_id`       SMALLINT UNSIGNED NOT NULL,
-    `base_type`                 ENUM('Payment','Receipt','Contra','Journal','Sales','Purchase',
-                                     'Credit_Note','Debit_Note','Memorandum') NOT NULL,
-
+    `base_type`                 ENUM('Payment','Receipt','Contra','Journal','Sales','Purchase','Credit_Note','Debit_Note','Memorandum') NOT NULL,
     -- ── Numbering policy (BRD §15) ──────────────────────────────────────────────────────────────────────
     `prefix`                    VARCHAR(10) NULL,
     `suffix`                    VARCHAR(10) NULL,
     `number_width`              TINYINT UNSIGNED NOT NULL DEFAULT 4,     -- PAY-0042
     `numbering_method`          ENUM('Auto','Manual','Auto_Override') NOT NULL DEFAULT 'Auto',
     `restart_policy`            ENUM('Financial_Year','Never','Monthly') NOT NULL DEFAULT 'Financial_Year',
-
     -- ── Posting rules, enforced by PostingService (Solution_Design_v1 §4.4) ─────────────────────────────
-    `requires_party`            TINYINT(1) NOT NULL DEFAULT 0,
-    `creates_bill_reference`    TINYINT(1) NOT NULL DEFAULT 0,
-    `requires_narration`        TINYINT(1) NOT NULL DEFAULT 0,
-    `requires_evidence`         TINYINT(1) NOT NULL DEFAULT 0,
-    `requires_bank_details`     TINYINT(1) NOT NULL DEFAULT 0,
-    `allow_zero_value`          TINYINT(1) NOT NULL DEFAULT 0,
-    `allow_post_dated`          TINYINT(1) NOT NULL DEFAULT 0,
+    `requires_party`            TINYINT(1) NOT NULL DEFAULT 0,  -- If "TRUE" then Party field should appear at voucher entry screen
+    `creates_bill_reference`    TINYINT(1) NOT NULL DEFAULT 0,  -- If this is "TRUE" then system will create Entry in `acc_bill_references` along with voucher entry.
+    `requires_narration`        TINYINT(1) NOT NULL DEFAULT 0,  -- If "TRUE" then Narration field should appear at voucher entry screen
+    `requires_evidence`         TINYINT(1) NOT NULL DEFAULT 0,  -- if True, Document upload option shoudl apprear at voucher entry screen
+    `requires_bank_details`     TINYINT(1) NOT NULL DEFAULT 0,  -- if True, Bank Details field should appear at voucher entry screen
+    `allow_zero_value`          TINYINT(1) NOT NULL DEFAULT 0,  -- if True, Zero value voucher should be allowed
+    `allow_post_dated`          TINYINT(1) NOT NULL DEFAULT 0,  -- if True, Post Dated voucher should be allowed
     -- CSV of acc_ledgers.ledger_type values. Empty = unrestricted.
     -- e.g. Contra: allowed 'Cash,Bank'; Journal: forbidden 'Cash,Bank'.
-    `allowed_ledger_types`      VARCHAR(200) NULL,
-    `forbidden_ledger_types`    VARCHAR(200) NULL,
+    `allowed_ledger_types`      JSON NULL,  -- Only these ledger types may appear, if empty all is allowed.
+    `forbidden_ledger_types`    JSON NULL,  -- These ledger types will not be allowed, if empty none forbidden.
     `affects_books`             TINYINT(1) NOT NULL DEFAULT 1,  -- 0 for Memorandum: never posts (BR-PROV-01)
-
     -- ── UI defaults (ScreenDesign VE-S5) ────────────────────────────────────────────────────────────────
     `default_entry_mode`        ENUM('Single','Double') NOT NULL DEFAULT 'Double',
-    `default_ledger_id`         INT UNSIGNED NULL,
-
+    `default_ledger_id`         MEDIUMINT UNSIGNED NULL,  -- If `default_entry_mode`='Single' then pre-fill on one side (FK → acc_ledgers)
     `is_system`                 TINYINT(1) NOT NULL DEFAULT 0,
     `is_active`                 TINYINT(1) NOT NULL DEFAULT 1,
-    `ordinal`                   SMALLINT UNSIGNED NOT NULL DEFAULT 0,
     `created_by`                INT UNSIGNED NULL,
     `updated_by`                INT UNSIGNED NULL,
     `created_at`                TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`                TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`                TIMESTAMP NULL,
-    `del_marker`                BIGINT UNSIGNED GENERATED ALWAYS AS (IFNULL(UNIX_TIMESTAMP(`deleted_at`),0)) STORED,
-
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_acc_vt_code` (`code`,`del_marker`),
-    UNIQUE KEY `uq_acc_vt_name` (`name`,`del_marker`),
-    UNIQUE KEY `uq_acc_vt_prefix` (`prefix`,`del_marker`),
+    UNIQUE KEY `uq_acc_vt_code` (`code`),
+    UNIQUE KEY `uq_acc_vt_name` (`name`),
+    UNIQUE KEY `uq_acc_vt_prefix` (`prefix`),
     INDEX `idx_acc_vt_category` (`voucher_category_id`),
     INDEX `idx_acc_vt_base` (`base_type`,`is_active`),
-    CONSTRAINT `fk_acc_vt_category` FOREIGN KEY (`voucher_category_id`) REFERENCES `acc_voucher_category`(`id`) ON DELETE RESTRICT,
+    CONSTRAINT `fk_acc_vt_category` FOREIGN KEY (`voucher_category_id`) REFERENCES `acc_voucher_categories`(`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_acc_vt_default_ledger` FOREIGN KEY (`default_ledger_id`) REFERENCES `acc_ledgers`(`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_acc_vt_created_by` FOREIGN KEY (`created_by`) REFERENCES `sys_users`(`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_acc_vt_updated_by` FOREIGN KEY (`updated_by`) REFERENCES `sys_users`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Conditions:
+-- For Memo Type Voucher, `affects_books` will always be 0 (False)
 
 
+-- ---------------------------------------------------------------------------------------------------------
 -- Voucher numbering under concurrency (Solution_Design_v1 §4.6).
 --
 -- v4.3 incremented acc_voucher_types.last_number. Two users posting at the same instant both read n and
@@ -651,6 +797,7 @@ CREATE TABLE IF NOT EXISTS `acc_voucher_types` (
 -- Here the row is locked FOR UPDATE inside the posting transaction, held for microseconds at the very end.
 -- The UNIQUE key on acc_vouchers(financial_year_id, voucher_type_id, voucher_number) is the backstop:
 -- even if the application is wrong, the database refuses the duplicate.
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_voucher_number_sequences` (
     `id`                BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `voucher_type_id`   SMALLINT UNSIGNED NOT NULL,
@@ -673,43 +820,57 @@ CREATE TABLE IF NOT EXISTS `acc_voucher_number_sequences` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
+-- ---------------------------------------------------------------------------------------------------------
 -- When does a voucher need approval, and from whom (BRD §28). Configuration, not code.
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_approval_policies` (
-    `id`                    SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `name`                  VARCHAR(120) NOT NULL,
-    `voucher_type_id`       SMALLINT UNSIGNED NULL,     -- NULL = every type
-    `campus_id`             SMALLINT UNSIGNED NULL,
-    `min_amount`            DECIMAL(15,2) NOT NULL DEFAULT 0.00,
-    `max_amount`            DECIMAL(15,2) NULL,         -- NULL = no ceiling
-    `ledger_group_id`       INT UNSIGNED NULL,          -- applies only to vouchers touching this group
-    `approval_level`        TINYINT UNSIGNED NOT NULL DEFAULT 1,     -- multi-level: 1, then 2, then 3
-    `approver_role_slug`    VARCHAR(60) NOT NULL,
+    `id`                     SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `name`                   VARCHAR(120) NOT NULL,
+    `voucher_type_id`        SMALLINT UNSIGNED NULL,     -- NULL = every type
+    `campus_id`              SMALLINT UNSIGNED NULL,
+    `min_amount`             DECIMAL(15,2) NOT NULL DEFAULT 0.00,
+    `max_amount`             DECIMAL(15,2) NULL,         -- NULL = no ceiling
+    `ledger_group_id`        MEDIUMINT UNSIGNED NULL,          -- applies only to vouchers touching this group
+    `require_approval_level` TINYINT UNSIGNED NOT NULL DEFAULT 1,     -- multi-level: 1, then 2, then 3
+    --`approver_role_slug`    VARCHAR(60) NOT NULL,
+    `approver1_role_id`       INT UNSIGNED NOT NULL,    -- FK to sys_roles.id (Role of Approver)
+    `approver2_role_id`       INT UNSIGNED NULL,        -- FK to sys_roles.id (Role of Approver)
+    `approver3_role_id`       INT UNSIGNED NULL,        -- FK to sys_roles.id (Role of Approver)
     -- BRD BR-APPR-04: a user may not approve their own voucher.
-    `forbid_self_approval`  TINYINT(1) NOT NULL DEFAULT 1,
-    `allow_override`        TINYINT(1) NOT NULL DEFAULT 0,
-    `escalate_after_hours`  SMALLINT UNSIGNED NULL,
-    `is_active`             TINYINT(1) NOT NULL DEFAULT 1,
-    `created_by`            INT UNSIGNED NULL,
-    `created_at`            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `updated_at`            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    `deleted_at`            TIMESTAMP NULL,
+    `forbid_self_approval`   TINYINT(1) NOT NULL DEFAULT 1,  -- Person who has created the entry can not Approve if this TRUE
+    `allow_override`         TINYINT(1) NOT NULL DEFAULT 0,  -- A senior user may override/alter this policy
+    `escalate_after_hours`   SMALLINT UNSIGNED NULL,   -- Escalate if nobody acts within this many hours
+    `is_active`              TINYINT(1) NOT NULL DEFAULT 1,
+    `created_by`             INT UNSIGNED NULL,
+    `created_at`             TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`             TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at`             TIMESTAMP NULL,
     PRIMARY KEY (`id`),
     INDEX `idx_acc_ap_type` (`voucher_type_id`,`is_active`),
     INDEX `idx_acc_ap_amount` (`min_amount`,`max_amount`),
     CONSTRAINT `chk_acc_ap_amount` CHECK (`max_amount` IS NULL OR `max_amount` >= `min_amount`),
+    CONSTRAINT `chk_acc_ap_aprovLevel` CHECK (`require_approval_level` >= 1 AND `require_approval_level` <= 3), 
     CONSTRAINT `fk_acc_ap_type` FOREIGN KEY (`voucher_type_id`) REFERENCES `acc_voucher_types`(`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_acc_ap_campus` FOREIGN KEY (`campus_id`) REFERENCES `acc_campuses`(`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_acc_ap_group` FOREIGN KEY (`ledger_group_id`) REFERENCES `acc_account_groups`(`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_acc_ap_created_by` FOREIGN KEY (`created_by`) REFERENCES `sys_users`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Conditions:
+-- IF `require_approval_level` = 1 then `approver1_role_id` NOT NULL
+-- IF `require_approval_level` = 2 then `approver1_role_id` NOT NULL AND `approver2_role_id` NOT NULL
+-- IF `require_approval_level` = 3 then `approver1_role_id` NOT NULL AND `approver2_role_id` NOT NULL AND `approver3_role_id` NOT NULL 
 
 
--- =========================================================================================================
+
+-- =============================================================================================================================================
 -- SECTION 5: TAX CONFIGURATION
 --     Effective-dated. The rate USED is copied onto acc_voucher_item_taxes at posting, so a later rate
 --     change can never rewrite a recorded transaction (BRD BR-TAX-01).
--- =========================================================================================================
+-- =============================================================================================================================================
 
+-- ---------------------------------------------------------------------------------------------------------
+-- This is the table where the Master data of Tax Types will be created.
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_tax_types` (
     `id`            SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `code`          VARCHAR(15) NOT NULL,               -- CGST, SGST, IGST, CESS, TDS, TCS
@@ -721,21 +882,23 @@ CREATE TABLE IF NOT EXISTS `acc_tax_types` (
     `created_at`    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`    TIMESTAMP NULL,
-    `del_marker`    BIGINT UNSIGNED GENERATED ALWAYS AS (IFNULL(UNIX_TIMESTAMP(`deleted_at`),0)) STORED,
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_acc_tt_code` (`code`,`del_marker`),
+    UNIQUE KEY `uq_acc_tt_code` (`code`),
     INDEX `idx_acc_tt_family` (`tax_family`,`is_active`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
+-- ---------------------------------------------------------------------------------------------------------
+-- This is the table where the Master data of Tax Rates will be created.
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_tax_rates` (
     `id`                SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `tax_type_id`       SMALLINT UNSIGNED NOT NULL,
+    `tax_type_id`       SMALLINT UNSIGNED NOT NULL,     -- FK to acc_tax_types
     `name`              VARCHAR(100) NOT NULL,          -- 'CGST 9%'
     `rate`              DECIMAL(9,4) NOT NULL,
     `hsn_sac_code`      VARCHAR(20) NULL,
     `is_interstate`     TINYINT(1) NOT NULL DEFAULT 0,
-    `tax_ledger_id`     INT UNSIGNED NULL,              -- where this tax posts
+    `tax_ledger_id`     MEDIUMINT UNSIGNED NULL,        -- FK to acc_ledgers.id (where this tax posts)
     `effective_from`    DATE NOT NULL,
     `effective_to`      DATE NULL,                      -- NULL = still in force
     `is_active`         TINYINT(1) NOT NULL DEFAULT 1,
@@ -755,34 +918,35 @@ CREATE TABLE IF NOT EXISTS `acc_tax_rates` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
+-- ---------------------------------------------------------------------------------------------------------
 -- WHEN a tax applies: nature of payment, party type, threshold, section. Read by TaxEngine at posting.
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_tax_rules` (
     `id`                    SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `code`                  VARCHAR(30) NOT NULL,       -- 'TDS_194C_COMPANY'
     `name`                  VARCHAR(150) NOT NULL,
-    `tax_type_id`           SMALLINT UNSIGNED NOT NULL,
-    `tax_rate_id`           SMALLINT UNSIGNED NULL,
+    `tax_type_id`           SMALLINT UNSIGNED NOT NULL, -- FK to acc_tax_types.id
+    `tax_rate_id`           SMALLINT UNSIGNED NULL,     -- FK to acc_tax_rates.id
     `section_code`          VARCHAR(20) NULL,           -- '194C', '194J', '192'
-    `nature_of_payment`     VARCHAR(150) NULL,
+    `nature_of_payment`     VARCHAR(150) NULL,          -- What kind of payment this covers
     `applies_to_party_type` ENUM('Any','Student','Parent','Vendor','Employee','Donor','Grantor','Other') NOT NULL DEFAULT 'Any',
-    `applies_to_group_id`   INT UNSIGNED NULL,
+    `applies_to_group_id`   MEDIUMINT UNSIGNED NULL,    -- FK to acc_account_groups.id
     -- Thresholds. Single = per transaction; annual = cumulative for the payee for the year.
-    `single_txn_threshold`  DECIMAL(15,2) NULL,
-    `annual_threshold`      DECIMAL(15,2) NULL,
-    `rate_without_pan`      DECIMAL(9,4) NULL,          -- higher rate where PAN is not furnished
-    `deduct_on`             ENUM('Credit','Payment','Earlier_Of_Both') NOT NULL DEFAULT 'Earlier_Of_Both',
-    `rounding`              ENUM('None','Nearest_Rupee','Up_Rupee','Down_Rupee') NOT NULL DEFAULT 'Nearest_Rupee',
-    `priority`              SMALLINT UNSIGNED NOT NULL DEFAULT 100,  -- lower wins; most specific first
-    `effective_from`        DATE NOT NULL,
-    `effective_to`          DATE NULL,
+    `single_txn_threshold`  DECIMAL(15,2) NULL,         -- No deduction below this on a single bill
+    `annual_threshold`      DECIMAL(15,2) NULL,         -- No deduction below this cumulatively in the year
+    `rate_without_pan`      DECIMAL(9,4) NULL,          -- The higher rate when the party has not given their PAN
+    `deduct_on`             ENUM('Credit','Payment','Earlier_Of_Both') NOT NULL DEFAULT 'Earlier_Of_Both', -- When to deduct
+    `rounding`              ENUM('None','Nearest_BaseCurrency','Up_BaseCurrency','Down_BaseCurrency') NOT NULL DEFAULT 'Nearest_BaseCurrency', -- How to round
+    `priority`              SMALLINT UNSIGNED NOT NULL DEFAULT 100,  -- Higher Wins; most specific first (1,2,3...) for selection
+    `effective_from`        DATE NOT NULL,              -- Rule starts applying from this date
+    `effective_to`          DATE NULL,                  -- NULL = rule runs until changed
     `is_active`             TINYINT(1) NOT NULL DEFAULT 1,
-    `created_by`            INT UNSIGNED NULL,
+    `created_by`            INT UNSIGNED NULL,          -- Who created the row. FK → sys_users.id
     `created_at`            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`            TIMESTAMP NULL,
-    `del_marker`            BIGINT UNSIGNED GENERATED ALWAYS AS (IFNULL(UNIX_TIMESTAMP(`deleted_at`),0)) STORED,
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_acc_txr_code` (`code`,`del_marker`),
+    UNIQUE KEY `uq_acc_txr_code` (`code`),
     INDEX `idx_acc_txr_resolve` (`tax_type_id`,`is_active`,`priority`,`effective_from`),
     INDEX `idx_acc_txr_section` (`section_code`),
     CONSTRAINT `chk_acc_txr_eff` CHECK (`effective_to` IS NULL OR `effective_to` >= `effective_from`),
@@ -793,65 +957,63 @@ CREATE TABLE IF NOT EXISTS `acc_tax_rules` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- =========================================================================================================
+
+-- =============================================================================================================================================
 -- SECTION 6: TRANSACTIONS
 --
 --     acc_vouchers        header  — one accounting transaction
 --       acc_voucher_items lines   — Dr/Cr postings. THIS TABLE IS THE LEDGER.
 --                                   Every balance, statement, outstanding and tax figure in the entire
 --                                   module derives from it, and is rebuildable from it.
--- =========================================================================================================
+-- =============================================================================================================================================
 
+-- ---------------------------------------------------------------------------------------------------------
+-- This is the table where the details of every transaction is recorded as a voucher.
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_vouchers` (
     `id`                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-
     -- ── Identity ────────────────────────────────────────────────────────────────────────────────────────
-    `voucher_type_id`       SMALLINT UNSIGNED NOT NULL,
-    `voucher_prefix`        VARCHAR(10) NULL,           -- snapshot at posting; the type may be reconfigured later
-    `voucher_number`        INT UNSIGNED NULL,          -- NULL until POSTED (BRD BR-VNO-02)
+    `voucher_type_id`       SMALLINT UNSIGNED NOT NULL, -- FK → acc_voucher_types.id
+    `voucher_prefix`        VARCHAR(10) NULL,           -- snapshot at posting; the type may be reconfigured later (FROZEN at posting)
+    `voucher_number`        INT UNSIGNED NULL,          -- NULL until POSTED, A draft never consumes a number, so cancelled drafts leave no gaps in the sequence.
+    `voucher_suffix`        VARCHAR(10) NULL,           -- snapshot at posting; the type may be reconfigured later (FROZEN at posting)
     `voucher_display_no`    VARCHAR(40) NULL,           -- 'PAY-0042', materialised for search and print
-    `financial_year_id`     SMALLINT UNSIGNED NOT NULL,
-    `period_id`             SMALLINT UNSIGNED NULL,     -- resolved from voucher_date at posting
-    `voucher_date`          DATE NOT NULL,
-    `campus_id`             SMALLINT UNSIGNED NULL,
-
+    `financial_year_id`     SMALLINT UNSIGNED NOT NULL, -- FK → acc_financial_years.id
+    `period_id`             SMALLINT UNSIGNED NULL,     -- FK → acc_accounting_periods. Resolved from voucher_date at posting
+    `voucher_date`          DATE NOT NULL,              -- The accounting date. Drives which period it lands in
+    `campus_id`             SMALLINT UNSIGNED NULL,     -- FK → acc_campuses.id
     -- ── Amounts. Base currency is the reporting currency; txn currency is what actually moved. ──────────
     `total_amount`          DECIMAL(15,2) NOT NULL DEFAULT 0.00,   -- Σ Dr = Σ Cr, in base currency
-    `currency_id`           SMALLINT UNSIGNED NULL,
-    `exchange_rate`         DECIMAL(18,8) NOT NULL DEFAULT 1.00000000,
-    `total_amount_txn_ccy`  DECIMAL(15,2) NULL,
-
+    `currency_id`           SMALLINT UNSIGNED NULL,     -- FK to acc_currencies.id (Display Currency Symbol at Amount)
+    `exchange_rate`         DECIMAL(18,8) NOT NULL DEFAULT 1.00000000, -- FROZEN at posting. Never read back from acc_exchange_rates
+    `total_amount_txn_ccy`  DECIMAL(15,2) NULL,         -- The total in the original currency
     -- ── Status. ONE source of truth for the voucher's state. v4.3 carried is_cancelled as a separate
     --    flag beside status, which allowed the two to disagree about the same fact.
     --    Only 'Posted' affects the books (BRD R-02).
-    `status`                ENUM('Draft','Pending_Approval','Rejected','Posted','Cancelled','Reversed')
-                            NOT NULL DEFAULT 'Draft',
-
+    `status`                ENUM('Draft','Pending_Approval','Rejected','Posted','Cancelled','Reversed') NOT NULL DEFAULT 'Draft',
     -- ── Nature flags ────────────────────────────────────────────────────────────────────────────────────
     -- is_provisional: a memorandum voucher. Appears in NO financial statement, ever (BRD BR-PROV-01).
     -- v4.3's comment said the opposite; it was wrong and contradicted the BRD it was built from.
-    `is_provisional`        TINYINT(1) NOT NULL DEFAULT 0,
+    `is_provisional`        TINYINT(1) NOT NULL DEFAULT 0,   -- 0=Normal Voucher; 1=Memo Voucher (Equal to is_optional)
     `is_post_dated`         TINYINT(1) NOT NULL DEFAULT 0,
-    `effective_date`        DATE NULL,                  -- when a post-dated voucher becomes effective
+    `effective_date`        DATE NULL,                       -- when a post-dated voucher becomes effective
     `is_opening`            TINYINT(1) NOT NULL DEFAULT 0,   -- opening-balance voucher
     `is_closing`            TINYINT(1) NOT NULL DEFAULT 0,   -- year-end closing journal
-    `is_system_generated`   TINYINT(1) NOT NULL DEFAULT 0,
-    `applicable_upto`       DATE NULL,                  -- reversing journal auto-reverses after this date
-
+    `is_system_generated`   TINYINT(1) NOT NULL DEFAULT 0,   -- Cross Module Voucher will be System Generated
+    `applicable_upto`       DATE NULL,                       -- reversing journal auto-reverses after this date
     -- ── Business context ────────────────────────────────────────────────────────────────────────────────
-    `party_ledger_id`       INT UNSIGNED NULL,          -- the counterparty, where there is one
+    `party_ledger_id`       MEDIUMINT UNSIGNED NULL,    -- the counterparty, where there is one
     `narration`             TEXT NULL,
     `reference_number`      VARCHAR(100) NULL,          -- external document number (vendor bill no., etc.)
-    `reference_date`        DATE NULL,
+    `reference_date`        DATE NULL,                  -- party Bill date
     `due_date`              DATE NULL,                  -- on Sales/Purchase invoices
-
     -- ── Origin (BRD BR-INT-03) ──────────────────────────────────────────────────────────────────────────
-    `source_module_key`     VARCHAR(10) NULL,           -- glb_app_modules.key
-    `source_category_id`    SMALLINT UNSIGNED NULL,
-    `source_model`          VARCHAR(100) NULL,          -- source table name
-    `source_id`             BIGINT UNSIGNED NULL,
-    `source_event_uid`      VARCHAR(100) NULL,          -- idempotency key from the source
-
+    `source_module_key`     VARCHAR(10) NULL,           -- FK → glb_app_modules.key
+    `source_category_key`   VARCHAR(5),                 -- FK → acc_voucher_categories
+    `source_model`          VARCHAR(100) NULL,          -- Internally capture the table name (e.g. fee_transactions)
+    `source_id`             BIGINT UNSIGNED NULL,       -- Internally capture the record id (e.g. 99231)
+    -- Using `source_event_uid` identify & Stop one fee payment producing two vouchers if the event is delivered twice
+    `source_event_uid`      VARCHAR(100) NULL,          -- idempotency key from the source (e.g. TPT-FINE-99231) (`source_module_key`+`source_category_key`+`source_id`)
     -- ── Lifecycle ───────────────────────────────────────────────────────────────────────────────────────
     `entered_by`            INT UNSIGNED NULL,
     `submitted_at`          DATETIME NULL,
@@ -864,19 +1026,17 @@ CREATE TABLE IF NOT EXISTS `acc_vouchers` (
     `cancelled_by`          INT UNSIGNED NULL,
     `cancelled_reason`      VARCHAR(1000) NULL,
     `rejected_reason`       VARCHAR(1000) NULL,
-
     `created_by`            INT UNSIGNED NULL,
     `updated_by`            INT UNSIGNED NULL,
     `created_at`            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`            TIMESTAMP NULL,
-
     PRIMARY KEY (`id`),
     -- The numbering backstop. Even if NumberingService is wrong, the database refuses a duplicate.
     -- voucher_number is NULL on drafts, and MySQL treats NULLs as distinct, so drafts do not collide.
     UNIQUE KEY `uq_acc_v_number` (`financial_year_id`,`voucher_type_id`,`voucher_number`),
     -- Cross-module idempotency: one source event produces at most one voucher (BRD BR-INT-02).
-    UNIQUE KEY `uq_acc_v_source_event` (`source_model`,`source_id`,`source_event_uid`),
+    UNIQUE KEY `uq_acc_v_source_event` (`source_model`, `source_event_uid`),
     INDEX `idx_acc_v_date_status` (`voucher_date`,`status`),
     INDEX `idx_acc_v_fy_period` (`financial_year_id`,`period_id`,`status`),
     INDEX `idx_acc_v_type_date` (`voucher_type_id`,`voucher_date`),
@@ -890,23 +1050,19 @@ CREATE TABLE IF NOT EXISTS `acc_vouchers` (
     INDEX `idx_acc_v_postdated` (`is_post_dated`,`effective_date`),
     INDEX `idx_acc_v_provisional` (`is_provisional`,`status`),
     INDEX `idx_acc_v_entered_by` (`entered_by`,`created_at`),
-
     CONSTRAINT `chk_acc_v_total` CHECK (`total_amount` >= 0),
     CONSTRAINT `chk_acc_v_rate` CHECK (`exchange_rate` > 0),
     -- A posted voucher must carry a number; a draft must not (BRD BR-VNO-02).
-    CONSTRAINT `chk_acc_v_number_posted` CHECK (
-        (`status` IN ('Posted','Cancelled','Reversed') AND `voucher_number` IS NOT NULL)
-     OR (`status` IN ('Draft','Pending_Approval','Rejected') AND `voucher_number` IS NULL)
-    ),
+    CONSTRAINT `chk_acc_v_number_posted` CHECK ((`status` IN ('Posted','Cancelled','Reversed') AND `voucher_number` IS NOT NULL) OR (`status` IN ('Draft','Pending_Approval','Rejected') AND `voucher_number` IS NULL)),
     CONSTRAINT `chk_acc_v_cancel_reason` CHECK (`status` <> 'Cancelled' OR `cancelled_reason` IS NOT NULL),
-
     CONSTRAINT `fk_acc_v_type` FOREIGN KEY (`voucher_type_id`) REFERENCES `acc_voucher_types`(`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_acc_v_fy` FOREIGN KEY (`financial_year_id`) REFERENCES `acc_financial_years`(`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_acc_v_period` FOREIGN KEY (`period_id`) REFERENCES `acc_accounting_periods`(`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_acc_v_campus` FOREIGN KEY (`campus_id`) REFERENCES `acc_campuses`(`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_acc_v_currency` FOREIGN KEY (`currency_id`) REFERENCES `acc_currencies`(`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_acc_v_party` FOREIGN KEY (`party_ledger_id`) REFERENCES `acc_ledgers`(`id`) ON DELETE RESTRICT,
-    CONSTRAINT `fk_acc_v_source_cat` FOREIGN KEY (`source_category_id`) REFERENCES `acc_voucher_category`(`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_acc_v_source_mod` FOREIGN KEY (`source_module_key`) REFERENCES `glb_app_modules`(`key`) ON DELETE SET NULL,
+    CONSTRAINT `fk_acc_v_source_cat` FOREIGN KEY (`source_category_id`) REFERENCES `acc_voucher_categories`(`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_acc_v_entered_by` FOREIGN KEY (`entered_by`) REFERENCES `sys_users`(`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_acc_v_submitted_by` FOREIGN KEY (`submitted_by`) REFERENCES `sys_users`(`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_acc_v_approved_by` FOREIGN KEY (`approved_by`) REFERENCES `sys_users`(`id`) ON DELETE SET NULL,
@@ -918,37 +1074,33 @@ CREATE TABLE IF NOT EXISTS `acc_vouchers` (
 COMMENT='Voucher header. Only status=Posted affects the books.';
 
 
+-- ---------------------------------------------------------------------------------------------------------
 -- THE LEDGER. Every figure the module reports is derived from these rows.
 -- Written only by PostingService, and never updated once its voucher is posted (BRD R-03).
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_voucher_items` (
     `id`                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `voucher_id`            BIGINT UNSIGNED NOT NULL,
-    `ledger_id`             INT UNSIGNED NOT NULL,
-    `sequence_no`           SMALLINT UNSIGNED NOT NULL DEFAULT 1,   -- grid order; without it, order on reopen
-                                                                    -- depends on id (ScreenDesign §16.2 #7)
+    `ledger_id`             MEDIUMINT UNSIGNED NOT NULL,
+    `sequence_no`           SMALLINT UNSIGNED NOT NULL DEFAULT 1,  -- grid order; without it, order on reopen depends on id (ScreenDesign §16.2 #7)
     `entry_type`            ENUM('Dr','Cr') NOT NULL,
-    `amount`                DECIMAL(15,2) NOT NULL,                 -- base currency; always positive
-    `amount_txn_ccy`        DECIMAL(15,2) NULL,
-
+    `amount`                DECIMAL(15,2) NOT NULL,      -- base currency; always positive
+    `amount_txn_ccy`        DECIMAL(15,2) NULL,          -- The amount in the original currency
     -- ── Denormalised from the header, for query performance. Maintained ONLY by PostingService, and never
     --    independently editable. These turn every ledger and statement query into a single-table scan.
     `voucher_date`          DATE NOT NULL,
-    `financial_year_id`     SMALLINT UNSIGNED NOT NULL,
-    `period_id`             SMALLINT UNSIGNED NULL,
-    `campus_id`             SMALLINT UNSIGNED NULL,
-    `voucher_status`        ENUM('Draft','Pending_Approval','Rejected','Posted','Cancelled','Reversed')
-                            NOT NULL DEFAULT 'Draft',
-
+    `financial_year_id`     SMALLINT UNSIGNED NOT NULL,  -- FK → acc_financial_years.id
+    `period_id`             SMALLINT UNSIGNED NULL,      -- FK → acc_accounting_periods. Resolved from voucher_date at posting
+    `campus_id`             SMALLINT UNSIGNED NULL,      -- FK → acc_campuses.id (needed for cross-campus statements)
+    `voucher_status`        ENUM('Draft','Pending_Approval','Rejected','Posted','Cancelled','Reversed') NOT NULL DEFAULT 'Draft',
     `narration`             VARCHAR(500) NULL,
     -- Bank reconciliation state of this line (BRD BR-BRS-01).
     `is_reconciled`         TINYINT(1) NOT NULL DEFAULT 0,
     `reconciled_at`         DATETIME NULL,
     `bank_value_date`       DATE NULL,                  -- the bank's own date, set at reconciliation
-
     `created_at`            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`            TIMESTAMP NULL,
-
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_acc_vi_sequence` (`voucher_id`,`sequence_no`),
     -- The balance-aggregation path: ledger + status + date, covering amount and side.
@@ -968,8 +1120,10 @@ CREATE TABLE IF NOT EXISTS `acc_voucher_items` (
 COMMENT='THE LEDGER. The only source of accounting truth. Written by PostingService alone.';
 
 
+-- ---------------------------------------------------------------------------------------------------------
 -- Cost-centre allocation. v4.3 put a single cost_center_id on the line (and then indexed a column it had
 -- not declared). A line must be splittable across centres (ScreenDesign §12.2, BRD BR-CC-02).
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_voucher_item_cost_centers` (
     `id`                BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `voucher_item_id`   BIGINT UNSIGNED NOT NULL,
@@ -995,7 +1149,9 @@ CREATE TABLE IF NOT EXISTS `acc_voucher_item_cost_centers` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
+-- ---------------------------------------------------------------------------------------------------------
 -- Fund allocation — the second, independent dimension. Answers "whose money was this?"
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_voucher_item_funds` (
     `id`                BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `voucher_item_id`   BIGINT UNSIGNED NOT NULL,
@@ -1017,9 +1173,11 @@ CREATE TABLE IF NOT EXISTS `acc_voucher_item_funds` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
+-- ---------------------------------------------------------------------------------------------------------
 -- The tax actually applied, with the rate and rule that produced it, frozen at posting.
 -- This is what makes BRD BR-TAX-01 real: a later rate change cannot rewrite history, because history
 -- does not read the rate table.
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_voucher_item_taxes` (
     `id`                BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `voucher_item_id`   BIGINT UNSIGNED NOT NULL,       -- the taxable line
@@ -1034,7 +1192,7 @@ CREATE TABLE IF NOT EXISTS `acc_voucher_item_taxes` (
     `is_input_credit`   TINYINT(1) NOT NULL DEFAULT 0,
     `is_credit_eligible` TINYINT(1) NOT NULL DEFAULT 1, -- ineligible credit is expensed, not claimed
     `hsn_sac_code`      VARCHAR(20) NULL,
-    `place_of_supply`   VARCHAR(5) NULL,
+    `place_of_supply`   VARCHAR(10) NULL,     -- FK to glb_state.short_name (In glb_state, short_code is a UNIQUE KEY)
     `created_at`        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     INDEX `idx_acc_vit_item` (`voucher_item_id`),
@@ -1046,16 +1204,19 @@ CREATE TABLE IF NOT EXISTS `acc_voucher_item_taxes` (
     CONSTRAINT `fk_acc_vit_tax_line` FOREIGN KEY (`tax_line_item_id`) REFERENCES `acc_voucher_items`(`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_acc_vit_type` FOREIGN KEY (`tax_type_id`) REFERENCES `acc_tax_types`(`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_acc_vit_rate` FOREIGN KEY (`tax_rate_id`) REFERENCES `acc_tax_rates`(`id`) ON DELETE RESTRICT,
-    CONSTRAINT `fk_acc_vit_rule` FOREIGN KEY (`tax_rule_id`) REFERENCES `acc_tax_rules`(`id`) ON DELETE RESTRICT
+    CONSTRAINT `fk_acc_vit_rule` FOREIGN KEY (`tax_rule_id`) REFERENCES `acc_tax_rules`(`id`) ON DELETE RESTRICT,
+    CONSTRAINT `fk_acc_vit_place` FOREIGN KEY (`place_of_supply`) REFERENCES `glb_state`(`short_code`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
+-- ---------------------------------------------------------------------------------------------------------
 -- Bank instrument detail. v4.3 squeezed this into reference_number/reference_date, which cannot support
 -- cheque tracking, reconciliation matching or printing (ScreenDesign §12.4, §16.2 #3).
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_voucher_bank_details` (
     `id`                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `voucher_id`            BIGINT UNSIGNED NOT NULL,
-    `bank_ledger_id`        INT UNSIGNED NOT NULL,
+    `bank_ledger_id`        MEDIUMINT UNSIGNED NOT NULL,
     `transaction_type`      ENUM('Cheque','DD','NEFT','RTGS','IMPS','UPI','Card','Cash','ECS','Other') NOT NULL,
     `instrument_no`         VARCHAR(50) NULL,           -- mandatory for Cheque and DD
     `instrument_date`       DATE NULL,                  -- a future date auto-sets is_post_dated
@@ -1081,17 +1242,19 @@ CREATE TABLE IF NOT EXISTS `acc_voucher_bank_details` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
+-- ---------------------------------------------------------------------------------------------------------
 -- Voucher-to-voucher links: which invoice a credit note adjusts, which voucher a reversal negates.
 -- v4.3 encoded this as free text in bill_reference (ScreenDesign §16.2 #5).
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_voucher_references` (
-    `id`                BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `voucher_id`        BIGINT UNSIGNED NOT NULL,       -- the adjusting / reversing voucher
+    `id`                 BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `voucher_id`         BIGINT UNSIGNED NOT NULL,       -- the adjusting / reversing voucher
     `against_voucher_id` BIGINT UNSIGNED NOT NULL,      -- the original
-    `reference_type`    ENUM('Adjusts','Reverses','Corrects','Settles','Relates_To','Replaces') NOT NULL,
-    `amount`            DECIMAL(15,2) NULL,
-    `note`              VARCHAR(500) NULL,
-    `created_by`        INT UNSIGNED NULL,
-    `created_at`        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `reference_type`     ENUM('Adjusts','Reverses','Corrects','Settles','Relates_To','Replaces') NOT NULL,
+    `amount`             DECIMAL(15,2) NULL,
+    `note`               VARCHAR(500) NULL,
+    `created_by`         INT UNSIGNED NULL,
+    `created_at`         TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_acc_vref` (`voucher_id`,`against_voucher_id`,`reference_type`),
     INDEX `idx_acc_vref_against` (`against_voucher_id`),
@@ -1102,18 +1265,21 @@ CREATE TABLE IF NOT EXISTS `acc_voucher_references` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
+-- ---------------------------------------------------------------------------------------------------------
 -- Approval history. Append-only: a re-submission adds a row, it never overwrites one (BRD BR-APPR-03).
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_voucher_approvals` (
-    `id`                BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `voucher_id`        BIGINT UNSIGNED NOT NULL,
-    `approval_level`    TINYINT UNSIGNED NOT NULL DEFAULT 1,
-    `policy_id`         SMALLINT UNSIGNED NULL,
-    `action`            ENUM('Submitted','Approved','Rejected','Escalated','Overridden','Withdrawn') NOT NULL,
-    `actioned_by`       INT UNSIGNED NULL,
-    `actioned_at`       DATETIME NOT NULL,
-    `is_self_approval`  TINYINT(1) NOT NULL DEFAULT 0,  -- flagged for the SoD report even when permitted
-    `note`              VARCHAR(1000) NULL,
-    `created_at`        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `id`                      BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `voucher_id`              BIGINT UNSIGNED NOT NULL,
+    `require_approval_level`  TINYINT UNSIGNED NOT NULL DEFAULT 1,
+    `approval_level`          ENUM('ApprovalLevel-1','ApprovalLevel-2','ApprovalLevel-3') NOT NULL DEFAULT 'ApprovalLevel-1'
+    `policy_id`               SMALLINT UNSIGNED NULL,
+    `action`                  ENUM('Submitted','Approved','Rejected','Escalated','Overridden','Withdrawn') NOT NULL DEFAULT 'Submitted',
+    `actioned_by`             INT UNSIGNED NULL,
+    `actioned_at`             DATETIME NOT NULL,
+    `is_self_approval`        TINYINT(1) NOT NULL DEFAULT 0,  -- flagged for the SoD report even when permitted
+    `note`                    VARCHAR(1000) NULL,
+    `created_at`              TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     INDEX `idx_acc_vap_voucher` (`voucher_id`,`approval_level`),
     INDEX `idx_acc_vap_by` (`actioned_by`,`actioned_at`),
@@ -1125,14 +1291,15 @@ CREATE TABLE IF NOT EXISTS `acc_voucher_approvals` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
+-- ---------------------------------------------------------------------------------------------------------
 -- Supporting evidence (BRD §31).
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_voucher_attachments` (
     `id`                BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `voucher_id`        BIGINT UNSIGNED NOT NULL,
     `media_id`          INT UNSIGNED NOT NULL,
     `file_name`         VARCHAR(255) NULL,
-    `document_type`     ENUM('Invoice','Bill','Receipt','Contract','Sanction','Bank_Advice','Challan','Other')
-                        NOT NULL DEFAULT 'Other',
+    `document_type`     ENUM('Invoice','Bill','Receipt','Contract','Sanction','Bank_Advice','Challan','Other') NOT NULL DEFAULT 'Other',
     `note`              VARCHAR(500) NULL,
     `uploaded_by`       INT UNSIGNED NULL,
     `created_at`        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -1146,7 +1313,8 @@ CREATE TABLE IF NOT EXISTS `acc_voucher_attachments` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- =========================================================================================================
+
+-- =============================================================================================================================================
 -- SECTION 7: BILL-WISE ACCOUNTING
 --
 --     BRD §17 states nine rules of bill-wise behaviour. v4.3 offered acc_voucher_items.bill_reference
@@ -1156,47 +1324,43 @@ CREATE TABLE IF NOT EXISTS `acc_voucher_attachments` (
 --
 --     Here a bill reference is an obligation, and an allocation is a settlement of it.
 --         outstanding = original_amount − Σ allocations        (DERIVED, per BRD BR-BILL-06)
--- =========================================================================================================
+-- =============================================================================================================================================
 
+-- ---------------------------------------------------------------------------------------------------------
+-- Bill-wise obligations, also called “Reference Obligations”.
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_bill_references` (
-    `id`                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `ledger_id`             INT UNSIGNED NOT NULL,      -- the party who owes or is owed
-    `reference_no`          VARCHAR(100) NOT NULL,      -- 'FEE/T2/00412', a vendor bill number
-    `reference_date`        DATE NOT NULL,
-    `due_date`              DATE NULL,
-    `bill_type`             ENUM('Sales','Purchase','Advance','On_Account','Opening','Adjustment') NOT NULL,
-    `original_amount`       DECIMAL(15,2) NOT NULL,
-    `currency_id`           SMALLINT UNSIGNED NULL,
-    `exchange_rate`         DECIMAL(18,8) NOT NULL DEFAULT 1.00000000,
-
+    `id`                     BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `ledger_id`              MEDIUMINT UNSIGNED NOT NULL,      -- the party who owes or is owed
+    `reference_no`           VARCHAR(100) NOT NULL,      -- 'FEE/T2/00412', a vendor bill number
+    `reference_date`         DATE NOT NULL,
+    `due_date`               DATE NULL,
+    `bill_type`              ENUM('Sales','Purchase','Advance','On_Account','Opening','Adjustment') NOT NULL,
+    `original_amount`        DECIMAL(15,2) NOT NULL,
+    `currency_id`            SMALLINT UNSIGNED NULL,
+    `exchange_rate`          DECIMAL(18,8) NOT NULL DEFAULT 1.00000000,
     -- Origin: the voucher line that created this obligation.
-    `source_voucher_id`     BIGINT UNSIGNED NULL,
+    `source_voucher_id`      BIGINT UNSIGNED NULL,
     `source_voucher_item_id` BIGINT UNSIGNED NULL,
-
-    `financial_year_id`     SMALLINT UNSIGNED NOT NULL,
-    `campus_id`             SMALLINT UNSIGNED NULL,
-    `fund_id`               INT UNSIGNED NULL,
-    `cost_center_id`        INT UNSIGNED NULL,
-
-    `status`                ENUM('Open','Partially_Settled','Settled','Written_Off','Disputed','Cancelled')
-                            NOT NULL DEFAULT 'Open',
-    `is_disputed`           TINYINT(1) NOT NULL DEFAULT 0,
-    `dispute_note`          VARCHAR(500) NULL,
-    `written_off_amount`    DECIMAL(15,2) NOT NULL DEFAULT 0.00,
-    `written_off_voucher_id` BIGINT UNSIGNED NULL,
-
-    `narration`             VARCHAR(500) NULL,
-    `created_by`            INT UNSIGNED NULL,
-    `updated_by`            INT UNSIGNED NULL,
-    `created_at`            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `updated_at`            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    `deleted_at`            TIMESTAMP NULL,
-    `del_marker`            BIGINT UNSIGNED GENERATED ALWAYS AS (IFNULL(UNIX_TIMESTAMP(`deleted_at`),0)) STORED,
-
+    `financial_year_id`      SMALLINT UNSIGNED NOT NULL,
+    `campus_id`              SMALLINT UNSIGNED NULL,
+    `fund_id`                INT UNSIGNED NULL,
+    `cost_center_id`         INT UNSIGNED NULL,
+    `status`                 ENUM('Open','Partially_Settled','Settled','Written_Off','Disputed','Cancelled') NOT NULL DEFAULT 'Open',  -- ('Written_Off' = Business Loss)
+    `is_disputed`            TINYINT(1) NOT NULL DEFAULT 0,  -- A disputed bill still ages but is excluded from collection chasing / reminders
+    `dispute_note`           VARCHAR(500) NULL,              
+    `written_off_amount`     DECIMAL(15,2) NOT NULL DEFAULT 0.00, -- How much was given up as uncollectable
+    `written_off_voucher_id` BIGINT UNSIGNED NULL,           -- FK → acc_vouchers. The write-off must itself be a posted voucher
+    `narration`              VARCHAR(500) NULL,
+    `created_by`             INT UNSIGNED NULL,
+    `updated_by`             INT UNSIGNED NULL,
+    `created_at`             TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`             TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at`             TIMESTAMP NULL,
     PRIMARY KEY (`id`),
     -- One reference number per party per year. This is also what stops a vendor bill being entered twice
     -- (BRD BR-DUP-04).
-    UNIQUE KEY `uq_acc_billref` (`ledger_id`,`reference_no`,`financial_year_id`,`del_marker`),
+    UNIQUE KEY `uq_acc_billref` (`ledger_id`,`reference_no`,`financial_year_id`),
     -- The ageing path: open bills for a party, oldest due first.
     INDEX `idx_acc_billref_ageing` (`ledger_id`,`status`,`due_date`),
     INDEX `idx_acc_billref_due` (`due_date`,`status`),
@@ -1205,7 +1369,6 @@ CREATE TABLE IF NOT EXISTS `acc_bill_references` (
     INDEX `idx_acc_billref_fy` (`financial_year_id`,`status`),
     INDEX `idx_acc_billref_fund` (`fund_id`),
     INDEX `idx_acc_billref_no` (`reference_no`),
-
     CONSTRAINT `chk_acc_billref_amount` CHECK (`original_amount` >= 0),
     CONSTRAINT `chk_acc_billref_wo` CHECK (`written_off_amount` >= 0 AND `written_off_amount` <= `original_amount`),
     CONSTRAINT `fk_acc_billref_ledger` FOREIGN KEY (`ledger_id`) REFERENCES `acc_ledgers`(`id`) ON DELETE RESTRICT,
@@ -1223,17 +1386,18 @@ CREATE TABLE IF NOT EXISTS `acc_bill_references` (
 COMMENT='A tracked obligation within a party ledger. Outstanding is derived from acc_bill_allocations.';
 
 
+-- ---------------------------------------------------------------------------------------------------------
 -- One settlement of one obligation. Many-to-many: one payment settles many bills, one bill is settled by
 -- many payments (BRD BR-BILL-05).
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_bill_allocations` (
     `id`                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `bill_reference_id`     BIGINT UNSIGNED NOT NULL,
-    `voucher_item_id`       BIGINT UNSIGNED NOT NULL,
-    `voucher_id`            BIGINT UNSIGNED NOT NULL,   -- denormalised: cancellation releases by voucher
-    `allocation_type`       ENUM('Against_Reference','New_Reference','Advance','On_Account','Write_Off','Adjustment')
-                            NOT NULL DEFAULT 'Against_Reference',
-    `amount`                DECIMAL(15,2) NOT NULL,
-    `allocation_date`       DATE NOT NULL,
+    `bill_reference_id`     BIGINT UNSIGNED NOT NULL,   -- FK to `acc_bill_references`. The obligation being settled/paid down.
+    `voucher_item_id`       BIGINT UNSIGNED NOT NULL,   -- The specific voucher line that caused the reduction in the outstanding amount
+    `voucher_id`            BIGINT UNSIGNED NOT NULL,   -- FK to `acc_vouchers`. The voucher that contains the `voucher_item_id`.
+    `allocation_type`       ENUM('Against_Reference','New_Reference','Advance','On_Account','Write_Off','Adjustment') NOT NULL DEFAULT 'Against_Reference', 
+    `amount`                DECIMAL(15,2) NOT NULL,     -- The amount of this specific allocation/settlement
+    `allocation_date`       DATE NOT NULL,              -- The date when this allocation/settlement occurred
     `note`                  VARCHAR(500) NULL,
     `allocated_by`          INT UNSIGNED NULL,
     `created_at`            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -1251,24 +1415,29 @@ CREATE TABLE IF NOT EXISTS `acc_bill_allocations` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- =========================================================================================================
--- SECTION 8: BALANCES, CLOSING SNAPSHOTS AND PERIOD CLOSE
---
---     Rule R-05: balances are DERIVED from acc_voucher_items, never independently asserted. But a Trial
---     Balance cannot scan six million lines on every run, so the derivation is CACHED — and a cache is
---     only honest if it has three things, all of which the v4.3 closing_balance lacked:
---
---         an owner        PostingService, and nothing else, writes these tables
---         a rebuild       php artisan acc:rebuild-balances  recomputes them from acc_voucher_items alone
---         an assertion    a nightly job rebuilds into a scratch table and asserts the result is identical
---
---     That third one is the whole point (Solution_Design_v1 §5.4). A cache nobody checks is just a number
---     that used to be right.
---
---     Sizing: one row per ledger per period. 2,000 ledgers x 12 periods x 10 years = 240,000 rows, against
---     the 1.5M-6M voucher lines they summarise (Solution_Design_v1 §14.1).
--- =========================================================================================================
 
+-- =============================================================================================================================================
+-- SECTION 8: BALANCES, CLOSING SNAPSHOTS AND PERIOD CLOSE
+-- =============================================================================================================================================
+
+-- ---------------------------------------------------------------------------------------------------------
+-- Conditions:
+--
+    --     Rule R-05: balances are DERIVED from acc_voucher_items, never independently asserted. But a Trial
+    --     Balance cannot scan six million lines on every run, so the derivation is CACHED — and a cache is
+    --     only honest if it has three things, all of which the v4.3 closing_balance lacked:
+    --         an owner        PostingService, and nothing else, writes these tables
+    --         a rebuild       php artisan acc:rebuild-balances  recomputes them from acc_voucher_items alone
+    --         an assertion    a nightly job rebuilds into a scratch table and asserts the result is identical
+    --
+    --     That third one is the whole point (Solution_Design_v1 §5.4). A cache nobody checks is just a number
+    --     that used to be right.
+    --
+    --     Sizing: one row per ledger per period. 2,000 ledgers x 12 periods x 10 years = 240,000 rows, against
+    --     the 1.5M-6M voucher lines they summarise (Solution_Design_v1 §14.1).
+
+
+-- ---------------------------------------------------------------------------------------------------------
 -- The balance cache. Every Trial Balance, Balance Sheet and Income & Expenditure figure is an aggregate
 -- of these rows; no statement scans acc_voucher_items.
 --
@@ -1276,17 +1445,16 @@ CREATE TABLE IF NOT EXISTS `acc_bill_allocations` (
 -- total for the period — that is the row statements read. Rows with a dimension set are additional,
 -- narrower slices for cost-centre and fund reporting. They are NOT summed with the total row; doing so
 -- would double count. Phase 1 maintains only the total rows (Solution_Design_v1 OD-04).
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_ledger_period_balances` (
     `id`                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `ledger_id`             INT UNSIGNED NOT NULL,
+    `ledger_id`             MEDIUMINT UNSIGNED NOT NULL,
     `financial_year_id`     SMALLINT UNSIGNED NOT NULL,
     `period_id`             SMALLINT UNSIGNED NOT NULL,
-
     -- NULL on all three = the ledger total for the period. See the note above.
     `cost_center_id`        INT UNSIGNED NULL,
     `fund_id`               INT UNSIGNED NULL,
     `campus_id`             SMALLINT UNSIGNED NULL,
-
     -- Opening = the prior period's closing. For period 1 it is the year's opening balance.
     `opening_debit`         DECIMAL(18,2) NOT NULL DEFAULT 0.00,
     `opening_credit`        DECIMAL(18,2) NOT NULL DEFAULT 0.00,
@@ -1297,12 +1465,10 @@ CREATE TABLE IF NOT EXISTS `acc_ledger_period_balances` (
     `closing_debit`         DECIMAL(18,2) NOT NULL DEFAULT 0.00,
     `closing_credit`        DECIMAL(18,2) NOT NULL DEFAULT 0.00,
     `transaction_count`     INT UNSIGNED NOT NULL DEFAULT 0,
-
     -- ── Cache provenance. Present on every cache table in this schema. ──────────────────────────────────
     `last_voucher_item_id`  BIGINT UNSIGNED NULL,       -- the newest line folded in; makes drift diagnosable
     `last_rebuilt_at`       DATETIME NULL,
-    `is_stale`              TINYINT(1) NOT NULL DEFAULT 0,  -- set by a failed assertion; cleared by rebuild
-
+    `is_stale`              TINYINT(1) NOT NULL DEFAULT 0,  -- set 1 if data is not accurate; cleared by rebuild
     -- NULL-SAFE UNIQUENESS. MySQL treats NULLs as DISTINCT in a unique key, so a key spanning a
     -- nullable column enforces nothing on the rows where that column is NULL — the same defect as
     -- v4.3's UNIQUE(code, deleted_at). These generated columns collapse NULL to 0 so the key means
@@ -1310,10 +1476,8 @@ CREATE TABLE IF NOT EXISTS `acc_ledger_period_balances` (
     `cc_marker`             INT UNSIGNED      GENERATED ALWAYS AS (IFNULL(`cost_center_id`,0)) STORED,
     `fund_marker`           INT UNSIGNED      GENERATED ALWAYS AS (IFNULL(`fund_id`,0))         STORED,
     `campus_marker`         SMALLINT UNSIGNED GENERATED ALWAYS AS (IFNULL(`campus_id`,0))       STORED,
-
     `created_at`            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-
     PRIMARY KEY (`id`),
     -- One bucket per ledger, per period, per dimension slice. The uniqueness is what makes the
     -- incremental UPDATE in PostingService safe: it can never create a second bucket for the same key.
@@ -1326,12 +1490,7 @@ CREATE TABLE IF NOT EXISTS `acc_ledger_period_balances` (
     INDEX `idx_acc_lpb_fund` (`fund_id`,`period_id`),
     INDEX `idx_acc_lpb_campus` (`campus_id`,`period_id`),
     INDEX `idx_acc_lpb_stale` (`is_stale`),
-
-    CONSTRAINT `chk_acc_lpb_signs` CHECK (
-        `opening_debit` >= 0 AND `opening_credit` >= 0 AND
-        `period_debit`  >= 0 AND `period_credit`  >= 0 AND
-        `closing_debit` >= 0 AND `closing_credit` >= 0
-    ),
+    CONSTRAINT `chk_acc_lpb_signs` CHECK (`opening_debit` >= 0 AND `opening_credit` >= 0 AND `period_debit`  >= 0 AND `period_credit`  >= 0 AND `closing_debit` >= 0 AND `closing_credit` >= 0),
     CONSTRAINT `fk_acc_lpb_ledger` FOREIGN KEY (`ledger_id`) REFERENCES `acc_ledgers`(`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_acc_lpb_fy` FOREIGN KEY (`financial_year_id`) REFERENCES `acc_financial_years`(`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_acc_lpb_period` FOREIGN KEY (`period_id`) REFERENCES `acc_accounting_periods`(`id`) ON DELETE CASCADE,
@@ -1342,19 +1501,22 @@ CREATE TABLE IF NOT EXISTS `acc_ledger_period_balances` (
 COMMENT='DERIVED balance cache. Owner: PostingService. Rebuild: acc:rebuild-balances. Asserted nightly.';
 
 
+
+-- ---------------------------------------------------------------------------------------------------------
 -- The frozen figures of a closed period. Written once, at close, and never updated.
 --
 -- This is what makes BRD AC-CLOSE-03 achievable — "a closed period's Trial Balance is byte-identical
 -- whenever it is re-run". A closed period is not served from the cache above, because the cache is a
 -- live object and a live object can change. It is served from here, where nothing can.
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_period_closing_balances` (
     `id`                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `period_id`             SMALLINT UNSIGNED NOT NULL,
     `financial_year_id`     SMALLINT UNSIGNED NOT NULL,
-    `ledger_id`             INT UNSIGNED NOT NULL,
+    `ledger_id`             MEDIUMINT UNSIGNED NOT NULL,
     -- Denormalised classification, frozen as it stood at close. If a ledger is later regrouped, the
     -- closed period's statements must not silently reclassify themselves.
-    `account_group_id`      INT UNSIGNED NOT NULL,
+    `account_group_id`      MEDIUMINT UNSIGNED NOT NULL,
     `group_nature`          ENUM('Asset','Liability','Equity','Income','Expense') NOT NULL,
     `opening_debit`         DECIMAL(18,2) NOT NULL DEFAULT 0.00,
     `opening_credit`        DECIMAL(18,2) NOT NULL DEFAULT 0.00,
@@ -1366,8 +1528,8 @@ CREATE TABLE IF NOT EXISTS `acc_period_closing_balances` (
     -- The high-water mark of the ledger at the instant of close. If a voucher is later force-posted into
     -- the period under acc.period.adjust, the snapshot and the live cache diverge — and this column is
     -- what lets the exception report say so, by name (BRD BR-EXC-02).
-    `max_voucher_item_id`   BIGINT UNSIGNED NULL,
-    `snapshot_version`      SMALLINT UNSIGNED NOT NULL DEFAULT 1,   -- incremented on an authorised re-close
+    `max_voucher_item_id`   BIGINT UNSIGNED NULL,  -- The highest line id included. Anything posted after this is a back-dated entry, and this is how you find them
+    `snapshot_version`      SMALLINT UNSIGNED NOT NULL DEFAULT 1,   -- Incremented on an authorised re-close. Version 1 and version 2 both survive.
     `frozen_at`             DATETIME NOT NULL,
     `frozen_by`             INT UNSIGNED NULL,
     `created_at`            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -1385,18 +1547,12 @@ CREATE TABLE IF NOT EXISTS `acc_period_closing_balances` (
 COMMENT='Immutable close snapshot. Serves closed-period statements so they are reproducible by construction.';
 
 
+-- ---------------------------------------------------------------------------------------------------------
 -- Opening balances: the books as they stood before the first voucher of the year.
---
--- Two sources, and the difference matters (BRD BR-OPEN-01, BR-CLOSE-07):
---     Migration   — keyed in at go-live from the previous system. source_closing_balance_id is NULL.
---     Carry_Forward — generated by year-end close. source_closing_balance_id names the exact closing row
---                   it came from, which is what makes carry-forward traceable rather than merely correct.
---
--- Party opening balances are entered bill-wise: this row carries the control total, and the bills are
--- rows in acc_bill_references with bill_type = 'Opening', so day-one ageing is right (BR-OPEN-03).
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_opening_balances` (
     `id`                        BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `ledger_id`                 INT UNSIGNED NOT NULL,
+    `ledger_id`                 MEDIUMINT UNSIGNED NOT NULL,
     `financial_year_id`         SMALLINT UNSIGNED NOT NULL,
     `campus_id`                 SMALLINT UNSIGNED NULL,
     `fund_id`                   INT UNSIGNED NULL,
@@ -1404,37 +1560,28 @@ CREATE TABLE IF NOT EXISTS `acc_opening_balances` (
     `amount`                    DECIMAL(18,2) NOT NULL,
     `currency_id`               SMALLINT UNSIGNED NULL,
     `exchange_rate`             DECIMAL(18,8) NOT NULL DEFAULT 1.00000000,
-    `amount_txn_ccy`            DECIMAL(18,2) NULL,
-
+    `amount_txn_ccy`            DECIMAL(18,2) NULL,    -- In case of Foreign-currency
     `source`                    ENUM('Migration','Carry_Forward','Correction') NOT NULL DEFAULT 'Migration',
-    `source_closing_balance_id` BIGINT UNSIGNED NULL,   -- the acc_period_closing_balances row this came from
-    -- The opening voucher. Opening balances are posted as a real, balanced voucher marked is_opening,
-    -- so that they appear in the ledger like everything else rather than as a special case nothing audits.
-    `voucher_id`                BIGINT UNSIGNED NULL,
-
-    -- Draft while the set is being keyed; Finalised once Σ Dr = Σ Cr for the year (BR-OPEN-02).
-    -- An unbalanced set may be saved. It may not be finalised.
-    `status`                    ENUM('Draft','Finalised','Superseded') NOT NULL DEFAULT 'Draft',
+    `source_closing_balance_id` BIGINT UNSIGNED NULL,  -- the acc_period_closing_balances row this came from. This is what makes carry-forward traceable rather than merely correct.
+    -- The opening voucher. Opening balances are posted as a real, balanced voucher marked is_opening = "TRUE", so they appear in ledger like other vouchers & available for Audit.
+    `voucher_id`                BIGINT UNSIGNED NULL,  -- FK → acc_vouchers. The opening journal, where one was posted
+    -- Draft while the set is being keyed; Finalised once Σ Dr = Σ Cr for the year (BR-OPEN-02). An unbalanced set may be saved but it can not not be finalised.
+    `status`                    ENUM('Draft','Finalised','Superseded') NOT NULL DEFAULT 'Draft',  -- If Σ Dr <> Σ Cr then cann't be 'Finalised'.
     `finalised_at`              DATETIME NULL,
-    `finalised_by`              INT UNSIGNED NULL,
+    `finalised_by`              INT UNSIGNED NULL,     -- FK → sys_users. The user who finalised the opening balances
     -- BR-OPEN-04: after finalisation, change is by authorised correction, which supersedes rather than edits.
-    `superseded_by_id`          BIGINT UNSIGNED NULL,
-    `correction_reason`         VARCHAR(500) NULL,
-
+    `superseded_by_id`          BIGINT UNSIGNED NULL,  -- A correction supersedes rather than overwrites. FK → acc_opening_balances
+    `correction_reason`         VARCHAR(500) NULL,     -- Mandatory if source = 'Correction'
     `notes`                     VARCHAR(500) NULL,
-    `created_by`                INT UNSIGNED NULL,
-    `updated_by`                INT UNSIGNED NULL,
+    `created_by`                INT UNSIGNED NULL,     -- FK → sys_users
+    `updated_by`                INT UNSIGNED NULL,     -- FK → sys_users
     `created_at`                TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`                TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`                TIMESTAMP NULL,
-    `del_marker`                BIGINT UNSIGNED GENERATED ALWAYS AS (IFNULL(UNIX_TIMESTAMP(`deleted_at`),0)) STORED,
     `campus_marker`             SMALLINT UNSIGNED GENERATED ALWAYS AS (IFNULL(`campus_id`,0)) STORED,
     `fund_marker`               INT UNSIGNED      GENERATED ALWAYS AS (IFNULL(`fund_id`,0))   STORED,
-
     PRIMARY KEY (`id`),
-    -- One LIVE opening balance per ledger per year per dimension. A superseded row keeps its history,
-    -- because it is soft-deleted rather than replaced in place. The markers make the key NULL-safe.
-    UNIQUE KEY `uq_acc_ob` (`ledger_id`,`financial_year_id`,`campus_marker`,`fund_marker`,`del_marker`),
+    UNIQUE KEY `uq_acc_ob` (`ledger_id`,`financial_year_id`,`campus_marker`,`fund_marker`),
     INDEX `idx_acc_ob_fy_status` (`financial_year_id`,`status`),
     INDEX `idx_acc_ob_ledger` (`ledger_id`,`financial_year_id`),
     INDEX `idx_acc_ob_source` (`source`,`financial_year_id`),
@@ -1456,30 +1603,43 @@ CREATE TABLE IF NOT EXISTS `acc_opening_balances` (
     CONSTRAINT `fk_acc_ob_updated_by` FOREIGN KEY (`updated_by`) REFERENCES `sys_users`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Year opening balances. Carry-forward rows name the closing balance they came from (BR-CLOSE-07).';
+-- Conditions:
+-- 1. Opening balances: the books as they stood before the first voucher of the year.
+--    Two sources, and the difference matters (BRD BR-OPEN-01, BR-CLOSE-07):
+--      Migration     — keyed in at go-live from the previous system. source_closing_balance_id is NULL.
+--      Carry_Forward — generated by year-end close. source_closing_balance_id names the exact closing row
+--                      it came from, which is what makes carry-forward traceable rather than merely correct.
+-- 2. The opening voucher. Opening balances are posted as a real, balanced voucher marked is_opening = "TRUE",
+--    so that they appear in the ledger like everything else rather than as a special case nothing audits.
+-- 3. Party opening balances are entered bill-wise: this row carries the control total, and the bills are
+--    rows in acc_bill_references with bill_type = 'Opening', so day-one ageing is right (BR-OPEN-03).
+-- 4. When change the 'status' to 'Finalised', check Σ Dr = Σ Cr for the year. If unbalanced set may be saved but cann't be finalised.
 
 
+-- ---------------------------------------------------------------------------------------------------------
 -- Fund utilisation cache. BRD BR-FUND-04 requires, for any fund and any period:
 --       opening + additions - utilisation = closing
 -- and AC-FUND-01 requires that identity to hold. Storing all four is only safe because the same
 -- owner/rebuild/assert discipline applies: this table is rebuilt from acc_voucher_item_funds alone.
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_fund_balances` (
     `id`                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `fund_id`               INT UNSIGNED NOT NULL,
-    `financial_year_id`     SMALLINT UNSIGNED NOT NULL,
-    `period_id`             SMALLINT UNSIGNED NOT NULL,
-    `campus_id`             SMALLINT UNSIGNED NULL,
-    `opening_balance`       DECIMAL(18,2) NOT NULL DEFAULT 0.00,
+    `fund_id`               INT UNSIGNED NOT NULL,       -- FK → acc_funds
+    `financial_year_id`     SMALLINT UNSIGNED NOT NULL,  -- FK → acc_financial_years
+    `period_id`             SMALLINT UNSIGNED NOT NULL,  -- FK → acc_periods. Zero for annual.
+    `campus_id`             SMALLINT UNSIGNED NULL,      -- FK → acc_campuses. NULL means Unassigned
+    `opening_balance`       DECIMAL(18,2) NOT NULL DEFAULT 0.00,    -- Bal of the fund at the start of period
     `additions`             DECIMAL(18,2) NOT NULL DEFAULT 0.00,    -- receipts into the fund
     `utilisation`           DECIMAL(18,2) NOT NULL DEFAULT 0.00,    -- spend from the fund
-    `transfers_in`          DECIMAL(18,2) NOT NULL DEFAULT 0.00,
-    `transfers_out`         DECIMAL(18,2) NOT NULL DEFAULT 0.00,
-    `closing_balance`       DECIMAL(18,2) NOT NULL DEFAULT 0.00,
+    `transfers_in`          DECIMAL(18,2) NOT NULL DEFAULT 0.00,    -- Incoming transfers from other funds
+    `transfers_out`         DECIMAL(18,2) NOT NULL DEFAULT 0.00,    -- Outgoing transfers to other funds
+    `closing_balance`       DECIMAL(18,2) NOT NULL DEFAULT 0.00,    -- Balance at the end of the period
     -- Sanctioned less closing, for the overspend guard at posting (BR-FUND-03, V-15).
-    `available_balance`     DECIMAL(18,2) NULL,
-    `last_voucher_item_id`  BIGINT UNSIGNED NULL,
-    `last_rebuilt_at`       DATETIME NULL,
-    `is_stale`              TINYINT(1) NOT NULL DEFAULT 0,
-    `campus_marker`         SMALLINT UNSIGNED GENERATED ALWAYS AS (IFNULL(`campus_id`,0)) STORED,
+    `available_balance`     DECIMAL(18,2) NULL,                     -- Unspent amount (sanctioned - utilisation)
+    `last_voucher_item_id`  BIGINT UNSIGNED NULL,                   -- Last voucher item that affected this balance
+    `last_rebuilt_at`       DATETIME NULL,                          -- When this balance was last rebuilt
+    `is_stale`              TINYINT(1) NOT NULL DEFAULT 0,          -- 1 if stale, 0 otherwise
+    `campus_marker`         SMALLINT UNSIGNED GENERATED ALWAYS AS (IFNULL(`campus_id`,0)) STORED, -- Marker for campus-level queries
     `created_at`            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
@@ -1495,6 +1655,7 @@ CREATE TABLE IF NOT EXISTS `acc_fund_balances` (
 COMMENT='Fund utilisation cache. Asserted: opening + additions - utilisation = closing (AC-FUND-01).';
 
 
+-- ---------------------------------------------------------------------------------------------------------
 -- Bill outstanding cache (Solution_Design_v1 §6.2).
 --
 -- outstanding = original_amount - Σ acc_bill_allocations, and that subtraction is cheap for one bill and
@@ -1503,20 +1664,21 @@ COMMENT='Fund utilisation cache. Asserted: opening + additions - utilisation = c
 --
 -- It is a CACHE. acc_bill_references and acc_bill_allocations remain the truth. If the two disagree, the
 -- assertion in Solution_Design_v1 §5.5 fires and names the bill.
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_bill_reference_balances` (
     `id`                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `bill_reference_id`     BIGINT UNSIGNED NOT NULL,
-    `ledger_id`             INT UNSIGNED NOT NULL,      -- denormalised: party ageing never joins
-    `original_amount`       DECIMAL(15,2) NOT NULL DEFAULT 0.00,
-    `allocated_amount`      DECIMAL(15,2) NOT NULL DEFAULT 0.00,
-    `written_off_amount`    DECIMAL(15,2) NOT NULL DEFAULT 0.00,
-    `outstanding_amount`    DECIMAL(15,2) NOT NULL DEFAULT 0.00,
-    `due_date`              DATE NULL,
-    `days_overdue`          INT NOT NULL DEFAULT 0,     -- recomputed nightly; negative = not yet due
-    `age_bucket`            VARCHAR(20) NULL,           -- '0-30', '31-60', ... buckets are configurable
-    `last_allocation_id`    BIGINT UNSIGNED NULL,
-    `last_rebuilt_at`       DATETIME NULL,
-    `is_stale`              TINYINT(1) NOT NULL DEFAULT 0,
+    `bill_reference_id`     BIGINT UNSIGNED NOT NULL,         -- FK → acc_bill_references
+    `ledger_id`             MEDIUMINT UNSIGNED NOT NULL,      -- denormalised: party ageing never joins
+    `original_amount`       DECIMAL(15,2) NOT NULL DEFAULT 0.00,  -- Original amount of the bill
+    `allocated_amount`      DECIMAL(15,2) NOT NULL DEFAULT 0.00,  -- Sum of all allocations against this bill
+    `written_off_amount`    DECIMAL(15,2) NOT NULL DEFAULT 0.00,  -- Sum of all write-offs against this bill
+    `outstanding_amount`    DECIMAL(15,2) NOT NULL DEFAULT 0.00,  -- Original - allocated - written_off
+    `due_date`              DATE NULL,                          -- Due date of the bill
+    `days_overdue`          INT NOT NULL DEFAULT 0,             -- recomputed nightly; negative = not yet due
+    `age_bucket`            VARCHAR(20) NULL,                   -- '0-30', '31-60', ... buckets are configurable
+    `last_allocation_id`    BIGINT UNSIGNED NULL,               -- Last allocation that affected this bill
+    `last_rebuilt_at`       DATETIME NULL,                      -- When this balance was last rebuilt
+    `is_stale`              TINYINT(1) NOT NULL DEFAULT 0,      -- 1 if stale, 0 otherwise
     `created_at`            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
@@ -1533,11 +1695,13 @@ CREATE TABLE IF NOT EXISTS `acc_bill_reference_balances` (
 COMMENT='Bill outstanding cache. Truth is acc_bill_references less acc_bill_allocations.';
 
 
+-- ---------------------------------------------------------------------------------------------------------
 -- The close checklist as data, not a wiki page (BRD BR-CLOSE-01, Enhancement E-03).
 --
 -- One row per item per period. `is_blocking` is the column that turns a checklist into a control:
 -- ClosingService refuses to close while any blocking item is not Passed or Waived, and names the ones
 -- that failed (AC-CLOSE-01).
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_period_close_checklist` (
     `id`                BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `period_id`         SMALLINT UNSIGNED NOT NULL,
@@ -1550,18 +1714,18 @@ CREATE TABLE IF NOT EXISTS `acc_period_close_checklist` (
     `is_blocking`       TINYINT(1) NOT NULL DEFAULT 1,
     -- Automatic items are evaluated by a named check in ClosingService; Manual items are ticked by a person.
     `check_type`        ENUM('Automatic','Manual') NOT NULL DEFAULT 'Automatic',
-    `checker_key`       VARCHAR(100) NULL,          -- the service check this item runs
+    `checker_key`       VARCHAR(100) NULL,          -- Which service check produces this result
     `status`            ENUM('Pending','Passed','Failed','Waived','Not_Applicable') NOT NULL DEFAULT 'Pending',
-    `owner_user_id`     INT UNSIGNED NULL,
+    `owner_user_id`     INT UNSIGNED NULL,  -- Owner User Id for Manual items
     -- What the check actually found, so a Failed item explains itself instead of merely failing.
-    `result_value`      DECIMAL(18,2) NULL,
-    `result_count`      INT UNSIGNED NULL,
-    `result_detail`     TEXT NULL,                  -- JSON: the offending record ids (BR-EXC-02)
-    `evidence_media_id` INT UNSIGNED NULL,
+    `result_value`      DECIMAL(18,2) NULL,  -- The measured figure
+    `result_count`      INT UNSIGNED NULL,  -- The measured count
+    `result_detail`     JSON NULL,          -- JSON: 7 items unreconciled" is not actionable; a list of them is
+    `evidence_media_id` INT UNSIGNED NULL,  -- Evidence (BR-EXC-02)
     -- A waiver is an authorised decision to close anyway. It is recorded with who and why, always.
-    `waived_by`         INT UNSIGNED NULL,
-    `waived_at`         DATETIME NULL,
-    `waive_reason`      VARCHAR(1000) NULL,
+    `waived_by`         INT UNSIGNED NULL,  -- FK to sys_users
+    `waived_at`         DATETIME NULL,      -- 
+    `waive_reason`      VARCHAR(1000) NULL, -- Reason
     `checked_at`        DATETIME NULL,
     `checked_by`        INT UNSIGNED NULL,
     `created_at`        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -1580,9 +1744,13 @@ CREATE TABLE IF NOT EXISTS `acc_period_close_checklist` (
     CONSTRAINT `fk_acc_pcc_checked_by` FOREIGN KEY (`checked_by`) REFERENCES `sys_users`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Period close checklist. A blocking item that is not Passed or Waived refuses the close.';
+-- Conditons;
+-- Check all the condition and checklist in section "## 8. Periods and Closing" of "Solution_Design_v1.md" Doc.
+-- Create a Service to check all the 'Automatic' items and update their status.
+-- Create a UI to show all the checklist items and allow user to tick the 'Manual' items.
 
 
--- =========================================================================================================
+-- =============================================================================================================================================
 -- SECTION 9: BANKING — CHEQUES AND RECONCILIATION
 --
 --     v4.3 had three tables here and no cheque lifecycle at all, which left BRD §20 (six rules)
@@ -1599,12 +1767,14 @@ COMMENT='Period close checklist. A blocking item that is not Passed or Waived re
 --
 --     The import staging rule (BR-BRS-02): rows in acc_bank_statement_entries affect NO balance. They are
 --     what the bank says. Only a CONFIRMED match sets acc_voucher_items.is_reconciled.
--- =========================================================================================================
+-- =============================================================================================================================================
 
+-- ---------------------------------------------------------------------------------------------------------
 -- Cheque-book stock, so a missing leaf is detectable (BRD BR-CHEQUE-05).
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_cheque_registers` (
     `id`                BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `bank_ledger_id`    INT UNSIGNED NOT NULL,
+    `bank_ledger_id`    MEDIUMINT UNSIGNED NOT NULL,
     `book_number`       VARCHAR(50) NOT NULL,
     `leaf_prefix`       VARCHAR(10) NULL,
     `start_leaf_no`     BIGINT UNSIGNED NOT NULL,
@@ -1618,9 +1788,8 @@ CREATE TABLE IF NOT EXISTS `acc_cheque_registers` (
     `created_at`        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`        TIMESTAMP NULL,
-    `del_marker`        BIGINT UNSIGNED GENERATED ALWAYS AS (IFNULL(UNIX_TIMESTAMP(`deleted_at`),0)) STORED,
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_acc_chqreg` (`bank_ledger_id`,`book_number`,`del_marker`),
+    UNIQUE KEY `uq_acc_chqreg` (`bank_ledger_id`,`book_number`),
     INDEX `idx_acc_chqreg_status` (`bank_ledger_id`,`status`),
     CONSTRAINT `chk_acc_chqreg_range` CHECK (`end_leaf_no` >= `start_leaf_no`),
     CONSTRAINT `fk_acc_chqreg_ledger` FOREIGN KEY (`bank_ledger_id`) REFERENCES `acc_ledgers`(`id`) ON DELETE RESTRICT,
@@ -1629,11 +1798,13 @@ CREATE TABLE IF NOT EXISTS `acc_cheque_registers` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
+-- ---------------------------------------------------------------------------------------------------------
 -- One row per physical leaf. Its state is what makes "which cheques are unaccounted for?" a query.
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_cheque_leaves` (
     `id`                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `cheque_register_id`    BIGINT UNSIGNED NOT NULL,
-    `bank_ledger_id`        INT UNSIGNED NOT NULL,      -- denormalised: leaf lookup never joins the register
+    `bank_ledger_id`        MEDIUMINT UNSIGNED NOT NULL,      -- denormalised: leaf lookup never joins the register
     `leaf_no`               BIGINT UNSIGNED NOT NULL,
     `status`                ENUM('Unused','Issued','Cancelled','Spoiled','Lost') NOT NULL DEFAULT 'Unused',
     `voucher_id`            BIGINT UNSIGNED NULL,       -- set when the leaf is used
@@ -1654,6 +1825,7 @@ CREATE TABLE IF NOT EXISTS `acc_cheque_leaves` (
 COMMENT='Cheque leaf stock. acc_voucher_bank_details.cheque_leaf_id points here (application-enforced).';
 
 
+-- ---------------------------------------------------------------------------------------------------------
 -- The cheque lifecycle (BRD BR-CHEQUE-01): Issued -> Presented -> Cleared, with Bounced, Stopped,
 -- Cancelled and Stale as terminal or exceptional states.
 --
@@ -1665,12 +1837,13 @@ COMMENT='Cheque leaf stock. acc_voucher_bank_details.cheque_leaf_id points here 
 --     reversal_voucher_id      the settlement being undone — which restores the bill outstanding
 --     charge_voucher_id        the bank's charge, as its own expense, never netted into the reversal
 --     replacement_voucher_id   the fresh instrument, where one is issued
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_cheque_transactions` (
     `id`                        BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `voucher_id`                BIGINT UNSIGNED NOT NULL,
     `voucher_bank_detail_id`    BIGINT UNSIGNED NULL,
-    `bank_ledger_id`            INT UNSIGNED NOT NULL,
-    `party_ledger_id`           INT UNSIGNED NULL,
+    `bank_ledger_id`            MEDIUMINT UNSIGNED NOT NULL,
+    `party_ledger_id`           MEDIUMINT UNSIGNED NULL,
     -- BR-CHEQUE-02: issued and received cheques are separately reportable.
     `direction`                 ENUM('Issued','Received') NOT NULL,
     `cheque_leaf_id`            BIGINT UNSIGNED NULL,   -- only for Issued
@@ -1679,25 +1852,20 @@ CREATE TABLE IF NOT EXISTS `acc_cheque_transactions` (
     `amount`                    DECIMAL(15,2) NOT NULL,
     `favouring_name`            VARCHAR(200) NULL,
     `counterparty_bank`         VARCHAR(150) NULL,
-
-    `status`                    ENUM('Issued','Presented','Cleared','Bounced','Stopped','Cancelled','Stale')
-                                NOT NULL DEFAULT 'Issued',
+    `status`                    ENUM('Issued','Presented','Cleared','Bounced','Stopped','Cancelled','Stale') NOT NULL DEFAULT 'Issued',
     `status_date`               DATE NOT NULL,
     `status_note`               VARCHAR(500) NULL,
     -- BR-CHEQUE-03: a post-dated cheque affects no bank balance until its date.
     `is_post_dated`             TINYINT(1) NOT NULL DEFAULT 0,
     -- Three months from instrument_date by default. AC-CHEQUE-02 reports on this.
     `stale_on`                  DATE NULL,
-
     `bounce_reason`             VARCHAR(255) NULL,
     `bounce_charge_amount`      DECIMAL(15,2) NULL,
     `reversal_voucher_id`       BIGINT UNSIGNED NULL,
     `charge_voucher_id`         BIGINT UNSIGNED NULL,
     `replacement_voucher_id`    BIGINT UNSIGNED NULL,
-
     `actioned_by`               INT UNSIGNED NULL,
     `created_at`                TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
     PRIMARY KEY (`id`),
     -- One row per state per cheque per voucher. Re-recording the same state is a no-op, not a duplicate.
     UNIQUE KEY `uq_acc_chqtxn_state` (`voucher_id`,`instrument_no`,`status`,`status_date`),
@@ -1723,20 +1891,20 @@ CREATE TABLE IF NOT EXISTS `acc_cheque_transactions` (
 COMMENT='Append-only cheque status history. The current state is the newest row (BR-CHEQUE-06).';
 
 
+-- ---------------------------------------------------------------------------------------------------------
 -- One reconciliation of one bank account to one statement.
 --
 -- BR-BRS-06 requires the statement to show, at all times: balance per books, add/less unpresented and
 -- uncredited items, balance per bank — and the last must equal the bank's own figure. Those five numbers
--- are columns here so the reconciliation can be reopened months later and still show what was reconciled
--- to what.
+-- are columns here so the reconciliation can be reopened months later and still show what was reconciled to what.
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_bank_reconciliations` (
     `id`                        BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `bank_ledger_id`            INT UNSIGNED NOT NULL,
+    `bank_ledger_id`            MEDIUMINT UNSIGNED NOT NULL,
     `financial_year_id`         SMALLINT UNSIGNED NOT NULL,
     `period_id`                 SMALLINT UNSIGNED NULL,
     `statement_from_date`       DATE NULL,
     `statement_date`            DATE NOT NULL,          -- the statement's closing date
-
     -- ── The reconciliation statement itself (BR-BRS-06) ─────────────────────────────────────────────────
     `balance_as_per_books`      DECIMAL(18,2) NOT NULL DEFAULT 0.00,
     `unpresented_amount`        DECIMAL(18,2) NOT NULL DEFAULT 0.00,  -- issued, not yet debited by the bank
@@ -1746,7 +1914,6 @@ CREATE TABLE IF NOT EXISTS `acc_bank_reconciliations` (
     `statement_closing_balance` DECIMAL(18,2) NOT NULL,               -- what the bank actually says
     -- Must be zero to complete. A non-zero difference is itemised, never absorbed (BR-BRS-04, AC-BRS-01).
     `difference`                DECIMAL(18,2) NOT NULL DEFAULT 0.00,
-
     -- ── Import ──────────────────────────────────────────────────────────────────────────────────────────
     `statement_file_name`       VARCHAR(255) NULL,
     `media_id`                  INT UNSIGNED NULL,
@@ -1755,26 +1922,21 @@ CREATE TABLE IF NOT EXISTS `acc_bank_reconciliations` (
     -- Off by default. Auto-confirmation is opt-in per school (BR-BRS-03, Solution_Design_v1 OD-08).
     `auto_confirm_exact`        TINYINT(1) NOT NULL DEFAULT 0,
     `match_tolerance_days`      TINYINT UNSIGNED NOT NULL DEFAULT 3,
-
-    `status`                    ENUM('Draft','In_Progress','Completed','Reopened','Abandoned')
-                                NOT NULL DEFAULT 'Draft',
+    `status`                    ENUM('Draft','In_Progress','Completed','Reopened','Abandoned') NOT NULL DEFAULT 'Draft',
     `completed_at`              DATETIME NULL,
     `completed_by`              INT UNSIGNED NULL,
     `reopened_at`               DATETIME NULL,
     `reopened_by`               INT UNSIGNED NULL,
     `reopen_reason`             VARCHAR(500) NULL,
     `notes`                     VARCHAR(1000) NULL,
-
     `created_by`                INT UNSIGNED NULL,
     `updated_by`                INT UNSIGNED NULL,
     `created_at`                TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`                TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`                TIMESTAMP NULL,
-    `del_marker`                BIGINT UNSIGNED GENERATED ALWAYS AS (IFNULL(UNIX_TIMESTAMP(`deleted_at`),0)) STORED,
-
     PRIMARY KEY (`id`),
     -- One live reconciliation per bank account per statement date.
-    UNIQUE KEY `uq_acc_br` (`bank_ledger_id`,`statement_date`,`del_marker`),
+    UNIQUE KEY `uq_acc_br` (`bank_ledger_id`,`statement_date`),
     INDEX `idx_acc_br_ledger_status` (`bank_ledger_id`,`status`,`statement_date`),
     INDEX `idx_acc_br_period` (`period_id`,`status`),
     INDEX `idx_acc_br_fy` (`financial_year_id`,`statement_date`),
@@ -1793,13 +1955,15 @@ CREATE TABLE IF NOT EXISTS `acc_bank_reconciliations` (
 COMMENT='Bank reconciliation. Cannot complete while difference <> 0 (BR-BRS-04).';
 
 
+-- ---------------------------------------------------------------------------------------------------------
 -- How to read this bank's statement file. Every bank exports a different shape; this is that shape as
 -- configuration, so supporting a new bank needs no code. Carried forward from v4.3, retyped.
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_bank_statement_mapping` (
     `id`                        BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     -- Reusable per bank account, not per reconciliation: the format does not change month to month.
     -- reconciliation_id is kept nullable for a one-off override of a single import.
-    `bank_ledger_id`            INT UNSIGNED NOT NULL,
+    `bank_ledger_id`            MEDIUMINT UNSIGNED NOT NULL,
     `reconciliation_id`         BIGINT UNSIGNED NULL,
     `name`                      VARCHAR(120) NULL,          -- 'HDFC current account CSV'
     `file_format`               ENUM('CSV','XLS','XLSX','MT940','OFX','Other') NOT NULL DEFAULT 'CSV',
@@ -1834,16 +1998,18 @@ CREATE TABLE IF NOT EXISTS `acc_bank_statement_mapping` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
+-- ---------------------------------------------------------------------------------------------------------
 -- What the bank says. STAGING DATA: these rows affect no balance, ever (BRD BR-BRS-02).
 --
 -- IMPORT IDEMPOTENCY (BR-BRS-07, AC-BRS-02). row_hash is a hash of the raw source row — date, description,
 -- reference, debit, credit, balance — and UNIQUE (reconciliation_id, row_hash) is what makes re-importing
 -- the same file add nothing. A bank statement genuinely can contain two identical rows on one day; when it
 -- does, row_occurrence distinguishes them, so a real duplicate is kept and an import duplicate is not.
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_bank_statement_entries` (
     `id`                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `reconciliation_id`     BIGINT UNSIGNED NOT NULL,
-    `bank_ledger_id`        INT UNSIGNED NOT NULL,
+    `bank_ledger_id`        MEDIUMINT UNSIGNED NOT NULL,
     `transaction_date`      DATE NOT NULL,
     `value_date`            DATE NULL,
     `description`           VARCHAR(500) NULL,
@@ -1857,7 +2023,6 @@ CREATE TABLE IF NOT EXISTS `acc_bank_statement_entries` (
     `source_row_no`         INT UNSIGNED NULL,
     `row_hash`              CHAR(64) NOT NULL,          -- SHA-256 of the raw source row
     `row_occurrence`        TINYINT UNSIGNED NOT NULL DEFAULT 1,
-
     -- DERIVED from acc_bank_reconciliation_matches, maintained by ReconciliationService. It exists only
     -- so "what is still unmatched?" is an index scan. The matches are the truth.
     `match_status`          ENUM('Unmatched','Proposed','Matched','Excluded') NOT NULL DEFAULT 'Unmatched',
@@ -1882,6 +2047,7 @@ CREATE TABLE IF NOT EXISTS `acc_bank_statement_entries` (
 COMMENT='Bank statement staging. Affects no balance. Re-import is a no-op (BR-BRS-07).';
 
 
+-- ---------------------------------------------------------------------------------------------------------
 -- One statement row explained by one voucher line.
 --
 -- The scoring the ReconciliationService applies (Solution_Design_v1 §11.3):
@@ -1895,6 +2061,7 @@ COMMENT='Bank statement staging. Affects no balance. Re-import is a no-op (BR-BR
 -- The workflow the schema enforces: Proposed -> Confirmed by a person -> (optionally) Undone.
 -- ONLY a Confirmed row sets acc_voucher_items.is_reconciled. A machine never finishes a reconciliation
 -- on its own unless the school has turned on auto_confirm_exact (BR-BRS-03).
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_bank_reconciliation_matches` (
     `id`                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `reconciliation_id`     BIGINT UNSIGNED NOT NULL,
@@ -1939,28 +2106,30 @@ CREATE TABLE IF NOT EXISTS `acc_bank_reconciliation_matches` (
 COMMENT='Proposed and confirmed statement-to-ledger matches. Only Confirmed reconciles a line.';
 
 
--- =========================================================================================================
--- SECTION 10: RECURRING VOUCHERS
---
---     BRD BR-RECUR-01: a recurring definition is a TEMPLATE, never a posted transaction. BR-RECUR-03: a
---     change to the template never alters vouchers already generated — which is why the generated voucher
---     is a normal acc_vouchers row, complete in itself, and not a pointer back to the template.
---
---     AC-RECUR-01 is the interesting one: "a monthly rent template generates exactly twelve vouchers in a
---     year, none duplicated even if the job runs twice in a day." That is not a job-scheduling problem, it
---     is a uniqueness problem, and it is solved below by UNIQUE (template, scheduled_date) on the run log —
---     including for runs that FAILED, so a failure is a recorded outcome rather than an invitation to try
---     again and post twice.
--- =========================================================================================================
 
+-- =============================================================================================================================================
+-- SECTION 10: RECURRING VOUCHERS
+    --     BRD BR-RECUR-01: a recurring definition is a TEMPLATE, never a posted transaction. BR-RECUR-03: a
+    --     change to the template never alters vouchers already generated — which is why the generated voucher
+    --     is a normal acc_vouchers row, complete in itself, and not a pointer back to the template.
+    --
+    --     AC-RECUR-01 is the interesting one: "a monthly rent template generates exactly twelve vouchers in a
+    --     year, none duplicated even if the job runs twice in a day." That is not a job-scheduling problem, it
+    --     is a uniqueness problem, and it is solved below by UNIQUE (template, scheduled_date) on the run log —
+    --     including for runs that FAILED, so a failure is a recorded outcome rather than an invitation to try
+    --     again and post twice.
+-- =============================================================================================================================================
+
+-- ---------------------------------------------------------------------------------------------------------
+-- Recurrence rules.
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_recurring_templates` (
     `id`                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `name`                  VARCHAR(150) NOT NULL,
     `code`                  VARCHAR(30) NULL,
     `voucher_type_id`       SMALLINT UNSIGNED NOT NULL,
     `campus_id`             SMALLINT UNSIGNED NULL,
-    `party_ledger_id`       INT UNSIGNED NULL,
-
+    `party_ledger_id`       MEDIUMINT UNSIGNED NULL,
     -- ── Schedule ────────────────────────────────────────────────────────────────────────────────────────
     `frequency`             ENUM('Daily','Weekly','Monthly','Quarterly','Half_Yearly','Yearly','Custom') NOT NULL,
     `interval_days`         SMALLINT UNSIGNED NULL,     -- only for 'Custom': every N days
@@ -1974,7 +2143,6 @@ CREATE TABLE IF NOT EXISTS `acc_recurring_templates` (
     `occurrences_generated` SMALLINT UNSIGNED NOT NULL DEFAULT 0,
     `last_generated_date`   DATE NULL,
     `next_due_date`         DATE NULL,                  -- the scheduler's index; recomputed after each run
-
     -- ── Posting behaviour ───────────────────────────────────────────────────────────────────────────────
     -- BR-RECUR-02: generated vouchers are DRAFTS unless explicitly configured otherwise, and auto-posting
     -- requires the acc.recurring.autopost permission, checked when this flag is set — not when it is used.
@@ -1989,19 +2157,14 @@ CREATE TABLE IF NOT EXISTS `acc_recurring_templates` (
     `created_at`            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`            TIMESTAMP NULL,
-    `del_marker`            BIGINT UNSIGNED GENERATED ALWAYS AS (IFNULL(UNIX_TIMESTAMP(`deleted_at`),0)) STORED,
-
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_acc_rt_name` (`name`,`del_marker`),
-    UNIQUE KEY `uq_acc_rt_code` (`code`,`del_marker`),
+    UNIQUE KEY `uq_acc_rt_name` (`name`),
+    UNIQUE KEY `uq_acc_rt_code` (`code`),
     -- The scheduler's only query: which templates are due today?
     INDEX `idx_acc_rt_due` (`status`,`next_due_date`),
     INDEX `idx_acc_rt_type` (`voucher_type_id`),
     INDEX `idx_acc_rt_party` (`party_ledger_id`),
-    CONSTRAINT `chk_acc_rt_end` CHECK (
-        (`end_date` IS NOT NULL AND `occurrence_limit` IS NULL AND `end_date` >= `start_date`)
-     OR (`end_date` IS NULL AND `occurrence_limit` IS NOT NULL)
-    ),
+    CONSTRAINT `chk_acc_rt_end` CHECK ((`end_date` IS NOT NULL AND `occurrence_limit` IS NULL AND `end_date` >= `start_date`) OR (`end_date` IS NULL AND `occurrence_limit` IS NOT NULL)),
     CONSTRAINT `chk_acc_rt_custom` CHECK (`frequency` <> 'Custom' OR `interval_days` IS NOT NULL),
     CONSTRAINT `fk_acc_rt_type` FOREIGN KEY (`voucher_type_id`) REFERENCES `acc_voucher_types`(`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_acc_rt_campus` FOREIGN KEY (`campus_id`) REFERENCES `acc_campuses`(`id`) ON DELETE RESTRICT,
@@ -2012,11 +2175,14 @@ CREATE TABLE IF NOT EXISTS `acc_recurring_templates` (
 COMMENT='Recurring voucher definitions. A template, never a transaction (BR-RECUR-01).';
 
 
+-- ---------------------------------------------------------------------------------------------------------
+-- Lines within the template.
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_recurring_template_lines` (
     `id`                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `recurring_template_id` BIGINT UNSIGNED NOT NULL,
     `sequence_no`           SMALLINT UNSIGNED NOT NULL DEFAULT 1,
-    `ledger_id`             INT UNSIGNED NOT NULL,
+    `ledger_id`             MEDIUMINT UNSIGNED NOT NULL,
     `entry_type`            ENUM('Dr','Cr') NOT NULL,
     `amount`                DECIMAL(15,2) NOT NULL,
     `narration`             VARCHAR(500) NULL,
@@ -2044,11 +2210,13 @@ CREATE TABLE IF NOT EXISTS `acc_recurring_template_lines` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
+-- ---------------------------------------------------------------------------------------------------------
 -- Every generation attempt, including the ones that failed (BRD BR-RECUR-04).
 --
 -- v4.3 named this table's foreign key fk_acc_rtl_template and its index idx_acc_rtl_template — the same
 -- names already used by acc_recurring_template_lines. Constraint names are unique per SCHEMA in MySQL, so
 -- the second table simply failed to create. Both are renamed here (Solution_Design_v1 §17.1 #8).
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_recurring_transaction_log` (
     `id`                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `recurring_template_id` BIGINT UNSIGNED NOT NULL,
@@ -2078,20 +2246,22 @@ CREATE TABLE IF NOT EXISTS `acc_recurring_transaction_log` (
 COMMENT='Recurring generation log. UNIQUE(template, scheduled_date) is the no-double-post guard.';
 
 
--- =========================================================================================================
+
+-- =============================================================================================================================================
 -- SECTION 11: FIXED ASSETS, DEPRECIATION AND DISPOSAL
 --
---     WHAT IS NOT HERE. v4.3's acc_fixed_assets stored current_value and accumulated_depreciation as
---     columns, with nothing stating when they change — the same defect as acc_ledgers.closing_balance,
---     and with the same consequence: the asset register and the asset ledgers drift apart, and BRD
---     BR-FA-07 ("the register must reconcile to the asset ledgers") quietly becomes false.
---
---     They are gone. Net block is:
---         purchase_cost  -  Σ acc_depreciation_entries.depreciation_amount  -  disposal
---     computed in vw_fixed_asset_register, which is the single place that arithmetic exists, and asserted
---     against the asset ledger balances nightly (AC-FA-01).
--- =========================================================================================================
+    --     WHAT IS NOT HERE. v4.3's acc_fixed_assets stored current_value and accumulated_depreciation as columns, with nothing stating when 
+    --     they change — the same defect as acc_ledgers.closing_balance, and with the same consequence: the asset register and the asset ledgers
+    --     drift apart, and BRD BR-FA-07 ("the register must reconcile to the asset ledgers") quietly becomes false.
+    --
+    --     They are gone. Net block is:
+    --     purchase_cost  -  Σ acc_depreciation_entries.depreciation_amount  -  disposal computed in vw_fixed_asset_register, which is the 
+    --     single place that arithmetic exists, and asserted against the asset ledger balances nightly (AC-FA-01).
+-- =============================================================================================================================================
 
+-- ---------------------------------------------------------------------------------------------------------
+-- This is the table where the Master data of Asset Categories will be created.
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_asset_categories` (
     `id`                        SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `code`                      VARCHAR(20) NOT NULL,
@@ -2102,19 +2272,18 @@ CREATE TABLE IF NOT EXISTS `acc_asset_categories` (
     `useful_life_years`         SMALLINT UNSIGNED NULL,
     -- The three ledgers every asset in this category posts to. Without them, depreciation cannot be
     -- posted as an accounting transaction, and BR-FA-03 requires that it is.
-    `asset_ledger_id`           INT UNSIGNED NULL,      -- the balance-sheet asset head
-    `accum_dep_ledger_id`       INT UNSIGNED NULL,      -- accumulated depreciation (contra-asset)
-    `depreciation_expense_ledger_id` INT UNSIGNED NULL, -- the I&E charge
+    `asset_ledger_id`           MEDIUMINT UNSIGNED NULL,      -- the balance-sheet asset head
+    `accum_dep_ledger_id`       MEDIUMINT UNSIGNED NULL,      -- accumulated depreciation (contra-asset)
+    `depreciation_expense_ledger_id` MEDIUMINT UNSIGNED NULL, -- the I&E charge
     `is_active`                 TINYINT(1) NOT NULL DEFAULT 1,
     `created_by`                INT UNSIGNED NULL,
     `created_at`                TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`                TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`                TIMESTAMP NULL,
-    `del_marker`                BIGINT UNSIGNED GENERATED ALWAYS AS (IFNULL(UNIX_TIMESTAMP(`deleted_at`),0)) STORED,
     PRIMARY KEY (`id`),
     -- v4.3 used UNIQUE(code, deleted_at) here, which permits unlimited LIVE duplicates because MySQL
-    -- treats NULLs as distinct. Fixed by the generated del_marker (Solution_Design_v1 §17.1 #10).
-    UNIQUE KEY `uq_acc_assetcat_code` (`code`,`del_marker`),
+    -- treats NULLs as distinct. v4.6: the code is unique outright, deleted rows included.
+    UNIQUE KEY `uq_acc_assetcat_code` (`code`),
     INDEX `idx_acc_assetcat_parent` (`parent_id`),
     INDEX `idx_acc_assetcat_ledger` (`asset_ledger_id`),
     CONSTRAINT `chk_acc_assetcat_rate` CHECK (`depreciation_rate` >= 0 AND `depreciation_rate` <= 100),
@@ -2126,6 +2295,9 @@ CREATE TABLE IF NOT EXISTS `acc_asset_categories` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
+-- ---------------------------------------------------------------------------------------------------------
+-- This is the table where the Master data of Fixed Assets will be created.
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_fixed_assets` (
     `id`                        BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `asset_code`                VARCHAR(50) NOT NULL,
@@ -2133,17 +2305,14 @@ CREATE TABLE IF NOT EXISTS `acc_fixed_assets` (
     `description`               VARCHAR(500) NULL,
     `asset_category_id`         SMALLINT UNSIGNED NOT NULL,
     `parent_asset_id`           BIGINT UNSIGNED NULL,   -- a capital improvement to an existing asset
-
     `purchase_date`             DATE NOT NULL,
-    `put_to_use_date`           DATE NULL,              -- when depreciation starts, which is not always
-                                                        -- the purchase date
+    `put_to_use_date`           DATE NULL,              -- when depreciation starts, which is not always the purchase date
     `purchase_cost`             DECIMAL(15,2) NOT NULL,
     `salvage_value`             DECIMAL(15,2) NOT NULL DEFAULT 0.00,
     -- Per-asset override of the category's policy, where an asset genuinely differs.
     `depreciation_method`       ENUM('SLM','WDV','None') NULL,
     `depreciation_rate`         DECIMAL(9,4) NULL,
     `useful_life_years`         SMALLINT UNSIGNED NULL,
-
     -- BR-FA-01: location and custodian. BR-FA-06: the fund it was bought from.
     `location`                  VARCHAR(150) NULL,
     `custodian_user_id`         INT UNSIGNED NULL,
@@ -2151,7 +2320,6 @@ CREATE TABLE IF NOT EXISTS `acc_fixed_assets` (
     `cost_center_id`            INT UNSIGNED NULL,
     `fund_id`                   INT UNSIGNED NULL,
     `vendor_id`                 INT UNSIGNED NULL,
-
     -- BR-FA-02: acquisition traceable to its purchase voucher. v4.3 declared an index and a foreign key
     -- on this column while the column itself was commented out, so the table would not create.
     `voucher_id`                BIGINT UNSIGNED NULL,
@@ -2160,9 +2328,7 @@ CREATE TABLE IF NOT EXISTS `acc_fixed_assets` (
     `warranty_upto`             DATE NULL,
     `insurance_policy_no`       VARCHAR(100) NULL,
     `insured_upto`              DATE NULL,
-
-    `status`                    ENUM('Active','Disposed','Written_Off','Held_For_Sale','Lost')
-                                NOT NULL DEFAULT 'Active',
+    `status`                    ENUM('Active','Disposed','Written_Off','Held_For_Sale','Lost') NOT NULL DEFAULT 'Active',
     `is_active`                 TINYINT(1) NOT NULL DEFAULT 1,
     `notes`                     VARCHAR(1000) NULL,
     `created_by`                INT UNSIGNED NULL,
@@ -2170,10 +2336,8 @@ CREATE TABLE IF NOT EXISTS `acc_fixed_assets` (
     `created_at`                TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`                TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`                TIMESTAMP NULL,
-    `del_marker`                BIGINT UNSIGNED GENERATED ALWAYS AS (IFNULL(UNIX_TIMESTAMP(`deleted_at`),0)) STORED,
-
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_acc_fa_code` (`asset_code`,`del_marker`),
+    UNIQUE KEY `uq_acc_fa_code` (`asset_code`),
     INDEX `idx_acc_fa_category_status` (`asset_category_id`,`status`),
     INDEX `idx_acc_fa_voucher` (`voucher_id`),
     INDEX `idx_acc_fa_vendor` (`vendor_id`),
@@ -2199,10 +2363,12 @@ CREATE TABLE IF NOT EXISTS `acc_fixed_assets` (
 COMMENT='Asset register. Net block is DERIVED, not stored — see vw_fixed_asset_register.';
 
 
+-- ---------------------------------------------------------------------------------------------------------
 -- One depreciation charge, for one asset, for one period.
 --
 -- BR-FA-04: depreciation is never posted twice for the same asset and period. That is not a job flag or a
 -- careful operator; it is UNIQUE (fixed_asset_id, period_id) below, so a re-run posts nothing (AC-FA-02).
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_depreciation_entries` (
     `id`                        BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `fixed_asset_id`            BIGINT UNSIGNED NOT NULL,
@@ -2237,14 +2403,16 @@ CREATE TABLE IF NOT EXISTS `acc_depreciation_entries` (
 COMMENT='Depreciation charges. UNIQUE(asset, period) makes a re-run a no-op (BR-FA-04).';
 
 
+-- ---------------------------------------------------------------------------------------------------------
 -- BR-FA-05: disposal records proceeds, computes gain or loss, and preserves the asset's history.
 -- The asset row is NOT deleted; its status becomes Disposed and this row says what happened.
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_asset_disposals` (
     `id`                        BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `fixed_asset_id`            BIGINT UNSIGNED NOT NULL,
     `disposal_date`             DATE NOT NULL,
     `disposal_type`             ENUM('Sale','Scrap','Donation','Loss','Transfer') NOT NULL,
-    `buyer_ledger_id`           INT UNSIGNED NULL,
+    `buyer_ledger_id`           MEDIUMINT UNSIGNED NULL,
     `sale_proceeds`             DECIMAL(15,2) NOT NULL DEFAULT 0.00,
     `disposal_cost`             DECIMAL(15,2) NOT NULL DEFAULT 0.00,    -- removal, brokerage
     -- The three figures the gain or loss is made of, frozen at disposal.
@@ -2272,37 +2440,41 @@ CREATE TABLE IF NOT EXISTS `acc_asset_disposals` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- =========================================================================================================
+
+-- =============================================================================================================================================
 -- SECTION 12: EXPENSE CLAIMS
 --
---     BR-EXP-02: a claim posts to the books ONLY on approval. An unapproved claim therefore appears in no
---     expenditure figure (AC-EXP-01) — which follows automatically here, because an unapproved claim has
---     no voucher, and expenditure is derived from vouchers.
---
---     v4.3 ended this section with roughly 45 lines of raw, uncommented assignment text describing the
---     posting map, which is a syntax error the moment MySQL reaches it (Solution_Design_v1 §17.1 #7).
---     That map is genuinely useful, so it is preserved below — as comments.
---
---     THE POSTING MAP, on approval:
---         voucher            type PAYMENT (or JOURNAL where payment is deferred)
---                            voucher_date        = acc_expense_claims.approved_at::date
---                            narration           = acc_expense_claims.narration
---                            total_amount        = acc_expense_claims.total_amount
---                            party_ledger_id     = the employee's ledger
---                            source_model        = 'acc_expense_claims'
---                            source_id           = acc_expense_claims.id
---                            source_event_uid    = 'claim-approved'      <- idempotency
---         Dr lines           one per claim line: ledger_id and amount from acc_expense_claim_lines
---         Cr line            one: the employee's ledger, for the claim total
---         cost centres       acc_voucher_item_cost_centers, from each line's cost_center_id
---         voucher_number     allocated by NumberingService at POSTING, never before  (BR-VNO-02)
+    -- BR-EXP-02: a claim posts to the books ONLY on approval. An unapproved claim therefore appears in no
+    -- expenditure figure (AC-EXP-01) — which follows automatically here, because an unapproved claim has
+    -- no voucher, and expenditure is derived from vouchers.
+    --
+    -- v4.3 ended this section with roughly 45 lines of raw, uncommented assignment text describing the
+    --     posting map, which is a syntax error the moment MySQL reaches it (Solution_Design_v1 §17.1 #7).
+    --     That map is genuinely useful, so it is preserved below — as comments.
+    --
+    --     THE POSTING MAP, on approval:
+    --         voucher            type PAYMENT (or JOURNAL where payment is deferred)
+    --                            voucher_date        = acc_expense_claims.approved_at::date
+    --                            narration           = acc_expense_claims.narration
+    --                            total_amount        = acc_expense_claims.total_amount
+    --                            party_ledger_id     = the employee's ledger
+    --                            source_model        = 'acc_expense_claims'
+    --                            source_id           = acc_expense_claims.id
+    --                            source_event_uid    = 'claim-approved'      <- idempotency
+    --         Dr lines           one per claim line: ledger_id and amount from acc_expense_claim_lines
+    --         Cr line            one: the employee's ledger, for the claim total
+    --         cost centres       acc_voucher_item_cost_centers, from each line's cost_center_id
+    --         voucher_number     allocated by NumberingService at POSTING, never before  (BR-VNO-02)
 -- =========================================================================================================
 
+-- ---------------------------------------------------------------------------------------------------------
+-- This is the table where the Master data of Expense Claims will be created.
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_expense_claims` (
     `id`                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `claim_number`          VARCHAR(50) NOT NULL,
     `employee_id`           INT UNSIGNED NOT NULL,
-    `employee_ledger_id`    INT UNSIGNED NULL,          -- resolved at submission; the Cr side of the posting
+    `employee_ledger_id`    MEDIUMINT UNSIGNED NULL,          -- resolved at submission; the Cr side of the posting
     `claim_date`            DATE NOT NULL,
     `financial_year_id`     SMALLINT UNSIGNED NOT NULL,
     `campus_id`             SMALLINT UNSIGNED NULL,
@@ -2311,11 +2483,9 @@ CREATE TABLE IF NOT EXISTS `acc_expense_claims` (
     `approved_amount`       DECIMAL(15,2) NULL,         -- an approver may pass less than was claimed
     `advance_adjusted`      DECIMAL(15,2) NOT NULL DEFAULT 0.00,
     `payable_amount`        DECIMAL(15,2) NULL,
-
     -- v4.3 pointed this at the generic acc_accounting_status_masters, which meant a claim's status could
     -- be a voucher status or a Tally-export status and nothing would object (§17.1 #11). Typed now.
-    `status`                ENUM('Draft','Submitted','Pending_Approval','Approved','Rejected','Paid','Cancelled')
-                            NOT NULL DEFAULT 'Draft',
+    `status`                ENUM('Draft','Submitted','Pending_Approval','Approved','Rejected','Paid','Cancelled') NOT NULL DEFAULT 'Draft',
     `submitted_at`          DATETIME NULL,
     `approved_by`           INT UNSIGNED NULL,
     `approved_at`           DATETIME NULL,
@@ -2324,16 +2494,13 @@ CREATE TABLE IF NOT EXISTS `acc_expense_claims` (
     `voucher_id`            BIGINT UNSIGNED NULL,
     `payment_voucher_id`    BIGINT UNSIGNED NULL,
     `paid_at`               DATETIME NULL,
-
     `created_by`            INT UNSIGNED NULL,
     `updated_by`            INT UNSIGNED NULL,
     `created_at`            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`            TIMESTAMP NULL,
-    `del_marker`            BIGINT UNSIGNED GENERATED ALWAYS AS (IFNULL(UNIX_TIMESTAMP(`deleted_at`),0)) STORED,
-
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_acc_ec_number` (`claim_number`,`del_marker`),
+    UNIQUE KEY `uq_acc_ec_number` (`claim_number`),
     INDEX `idx_acc_ec_employee_status` (`employee_id`,`status`),
     INDEX `idx_acc_ec_status_date` (`status`,`claim_date`),
     INDEX `idx_acc_ec_voucher` (`voucher_id`),
@@ -2356,15 +2523,16 @@ CREATE TABLE IF NOT EXISTS `acc_expense_claims` (
     CONSTRAINT `fk_acc_ec_updated_by` FOREIGN KEY (`updated_by`) REFERENCES `sys_users`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-
+-- ---------------------------------------------------------------------------------------------------------
 -- BR-EXP-03: claim lines carry their own expense head, cost centre and evidence.
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_expense_claim_lines` (
     `id`                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `expense_claim_id`      BIGINT UNSIGNED NOT NULL,
     `sequence_no`           SMALLINT UNSIGNED NOT NULL DEFAULT 1,
     `expense_date`          DATE NOT NULL,
     `reference_number`      VARCHAR(50) NULL,
-    `ledger_id`             INT UNSIGNED NOT NULL,      -- the expense head
+    `ledger_id`             MEDIUMINT UNSIGNED NOT NULL,      -- the expense head
     `cost_center_id`        INT UNSIGNED NULL,
     `cost_category_id`      SMALLINT UNSIGNED NULL,
     `fund_id`               INT UNSIGNED NULL,
@@ -2399,16 +2567,19 @@ CREATE TABLE IF NOT EXISTS `acc_expense_claim_lines` (
 
 -- =========================================================================================================
 -- SECTION 13: BUDGETS, INTEREST AND CREDIT CONTROL
---
---     v4.3's acc_budgets was one flat table keyed (financial_year, cost_center, ledger), which cannot
---     express any of BRD §34: several coexisting budgets (original / revised / forecast, BR-BUD-02),
---     budgets by group or fund or campus (BR-BUD-01), per-period phasing, or traceable revision
---     (BR-BUD-04). It is split here into a header and its lines.
---
---     BR-BUD-03 — "actuals are never affected by budgets" — is why nothing in this section is referenced
---     by anything in Section 6. A budget is a comparison, not an input.
+-- ---------------------------------------------------------------------------------------------------------
+    --     v4.3's acc_budgets was one flat table keyed (financial_year, cost_center, ledger), which cannot
+    --     express any of BRD §34: several coexisting budgets (original / revised / forecast, BR-BUD-02),
+    --     budgets by group or fund or campus (BR-BUD-01), per-period phasing, or traceable revision
+    --     (BR-BUD-04). It is split here into a header and its lines.
+    --
+    --     BR-BUD-03 — "actuals are never affected by budgets" — is why nothing in this section is referenced
+    --     by anything in Section 6. A budget is a comparison, not an input.
 -- =========================================================================================================
 
+-- ---------------------------------------------------------------------------------------------------------
+-- This is the table where the Master data of Budgets will be created.
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_budgets` (
     `id`                    INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `code`                  VARCHAR(30) NOT NULL,
@@ -2433,9 +2604,8 @@ CREATE TABLE IF NOT EXISTS `acc_budgets` (
     `created_at`            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`            TIMESTAMP NULL,
-    `del_marker`            BIGINT UNSIGNED GENERATED ALWAYS AS (IFNULL(UNIX_TIMESTAMP(`deleted_at`),0)) STORED,
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_acc_budget_code` (`code`,`version`,`del_marker`),
+    UNIQUE KEY `uq_acc_budget_code` (`code`,`version`),
     INDEX `idx_acc_budget_fy_status` (`financial_year_id`,`status`),
     INDEX `idx_acc_budget_type` (`budget_type`,`financial_year_id`),
     INDEX `idx_acc_budget_supersedes` (`supersedes_budget_id`),
@@ -2448,18 +2618,19 @@ CREATE TABLE IF NOT EXISTS `acc_budgets` (
     CONSTRAINT `fk_acc_budget_updated_by` FOREIGN KEY (`updated_by`) REFERENCES `sys_users`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-
+-- ---------------------------------------------------------------------------------------------------------
 -- One budgeted amount, for one thing, for one period.
 --
 -- The "one thing" is any of: a ledger, an account group, a cost centre, a fund, a campus, or a combination
 -- of them (BR-BUD-01). Rather than six tables or six nullable-and-mutually-exclusive columns, all six are
 -- nullable dimensions and the unique key covers the whole tuple — the same shape as the balance buckets in
 -- Section 8, and it compares to them directly.
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_budget_lines` (
     `id`                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `budget_id`             INT UNSIGNED NOT NULL,
-    `ledger_id`             INT UNSIGNED NULL,
-    `account_group_id`      INT UNSIGNED NULL,          -- budget at group level, allocated down in reporting
+    `ledger_id`             MEDIUMINT UNSIGNED NULL,
+    `account_group_id`      MEDIUMINT UNSIGNED NULL,          -- budget at group level, allocated down in reporting
     `cost_center_id`        INT UNSIGNED NULL,
     `fund_id`               INT UNSIGNED NULL,
     `campus_id`             SMALLINT UNSIGNED NULL,
@@ -2487,10 +2658,7 @@ CREATE TABLE IF NOT EXISTS `acc_budget_lines` (
     INDEX `idx_acc_bl_cc` (`cost_center_id`,`period_id`),
     INDEX `idx_acc_bl_fund` (`fund_id`,`period_id`),
     -- At least one dimension must be set; a budget line against nothing budgets nothing.
-    CONSTRAINT `chk_acc_bl_dimension` CHECK (
-        `ledger_id` IS NOT NULL OR `account_group_id` IS NOT NULL OR
-        `cost_center_id` IS NOT NULL OR `fund_id` IS NOT NULL
-    ),
+    CONSTRAINT `chk_acc_bl_dimension` CHECK (`ledger_id` IS NOT NULL OR `account_group_id` IS NOT NULL OR `cost_center_id` IS NOT NULL OR `fund_id` IS NOT NULL),
     CONSTRAINT `fk_acc_bl_budget` FOREIGN KEY (`budget_id`) REFERENCES `acc_budgets`(`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_acc_bl_ledger` FOREIGN KEY (`ledger_id`) REFERENCES `acc_ledgers`(`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_acc_bl_group` FOREIGN KEY (`account_group_id`) REFERENCES `acc_account_groups`(`id`) ON DELETE CASCADE,
@@ -2500,14 +2668,15 @@ CREATE TABLE IF NOT EXISTS `acc_budget_lines` (
     CONSTRAINT `fk_acc_bl_period` FOREIGN KEY (`period_id`) REFERENCES `acc_accounting_periods`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-
+-- ---------------------------------------------------------------------------------------------------------
 -- Interest rules (BRD §37). Phase 4, but the shape is settled now because interest computed against a
 -- rule that has since been edited is not explainable, and BR-INT-03 requires that it is.
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_interest_rules` (
     `id`                    SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `code`                  VARCHAR(30) NOT NULL,
     `name`                  VARCHAR(150) NOT NULL,
-    `ledger_id`             INT UNSIGNED NULL,          -- NULL = applies to a party type instead
+    `ledger_id`             MEDIUMINT UNSIGNED NULL,          -- NULL = applies to a party type instead
     `applies_to_party_type` ENUM('Any','Student','Parent','Vendor','Employee','Donor','Grantor','Other')
                             NOT NULL DEFAULT 'Any',
     `rate_percent`          DECIMAL(9,4) NOT NULL,
@@ -2517,7 +2686,7 @@ CREATE TABLE IF NOT EXISTS `acc_interest_rules` (
     `calculate_from`        ENUM('Due_Date','Bill_Date','Transaction_Date') NOT NULL DEFAULT 'Due_Date',
     `grace_days`            SMALLINT UNSIGNED NOT NULL DEFAULT 0,
     `minimum_amount`        DECIMAL(15,2) NULL,         -- below this, do not charge
-    `interest_ledger_id`    INT UNSIGNED NULL,          -- where the interest posts
+    `interest_ledger_id`    MEDIUMINT UNSIGNED NULL,          -- where the interest posts
     `effective_from`        DATE NOT NULL,
     `effective_to`          DATE NULL,
     `is_active`             TINYINT(1) NOT NULL DEFAULT 1,
@@ -2525,9 +2694,8 @@ CREATE TABLE IF NOT EXISTS `acc_interest_rules` (
     `created_at`            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`            TIMESTAMP NULL,
-    `del_marker`            BIGINT UNSIGNED GENERATED ALWAYS AS (IFNULL(UNIX_TIMESTAMP(`deleted_at`),0)) STORED,
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_acc_ir_code` (`code`,`del_marker`),
+    UNIQUE KEY `uq_acc_ir_code` (`code`),
     INDEX `idx_acc_ir_ledger` (`ledger_id`,`is_active`),
     INDEX `idx_acc_ir_effective` (`effective_from`,`effective_to`),
     CONSTRAINT `chk_acc_ir_rate` CHECK (`rate_percent` >= 0),
@@ -2537,15 +2705,16 @@ CREATE TABLE IF NOT EXISTS `acc_interest_rules` (
     CONSTRAINT `fk_acc_ir_created_by` FOREIGN KEY (`created_by`) REFERENCES `sys_users`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-
+-- ---------------------------------------------------------------------------------------------------------
 -- One interest computation, kept with every input that produced it.
 -- BR-INT-02: calculated interest is a PROPOSAL until posted as a voucher — hence the status column, and
 -- hence a nullable voucher_id. AC-INT-01: any interest figure can be expanded to show its computation,
 -- which is what principal / rate / days / basis, all stored, actually are.
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_interest_computations` (
     `id`                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `interest_rule_id`      SMALLINT UNSIGNED NOT NULL,
-    `ledger_id`             INT UNSIGNED NOT NULL,
+    `ledger_id`             MEDIUMINT UNSIGNED NOT NULL,
     `bill_reference_id`     BIGINT UNSIGNED NULL,
     `computed_upto`         DATE NOT NULL,
     `principal_amount`      DECIMAL(15,2) NOT NULL,
@@ -2582,12 +2751,13 @@ CREATE TABLE IF NOT EXISTS `acc_interest_computations` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Interest proposals with their full computation. Not a ledger entry until posted (BR-INT-02).';
 
-
+-- ---------------------------------------------------------------------------------------------------------
 -- BR-CRED-04: every credit-limit override is recorded with approver and reason. AC-CRED-01: a breach
 -- cannot proceed silently under any setting — so the override is a row, created before the voucher posts.
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_credit_limit_overrides` (
     `id`                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `ledger_id`             INT UNSIGNED NOT NULL,
+    `ledger_id`             MEDIUMINT UNSIGNED NOT NULL,
     `voucher_id`            BIGINT UNSIGNED NULL,
     `credit_limit`          DECIMAL(15,2) NULL,         -- the limit as it stood
     `current_exposure`      DECIMAL(15,2) NOT NULL,     -- outstanding bills at the moment of the check
@@ -2613,16 +2783,17 @@ CREATE TABLE IF NOT EXISTS `acc_credit_limit_overrides` (
 
 -- =========================================================================================================
 -- SECTION 14: SCHOOL-SPECIFIC — CONCESSIONS, DONATIONS, GRANTS
---
---     These three are what make this an accounting system for a SCHOOL TRUST rather than a generic ledger,
---     and none of them existed in v4.3.
---
---     The principle common to all three (BRD BR-CONC-01, BR-DON-01, BR-GRANT-01): the school must be able
---     to state the gross figure, the adjustment, and the net figure separately. A concession that quietly
---     reduces a demand leaves no way to answer "what did concessions cost us this year?" — which is,
---     per the BRD, usually the second-largest item in a school's accounts and the least controlled.
+-- ---------------------------------------------------------------------------------------------------------
+    -- These three are what make this an accounting system for a SCHOOL TRUST rather than a generic ledger,
+    -- and none of them existed in v4.3.
+    --
+    -- The principle common to all three (BRD BR-CONC-01, BR-DON-01, BR-GRANT-01): the school must be able
+    -- to state the gross figure, the adjustment, and the net figure separately. A concession that quietly
+    -- reduces a demand leaves no way to answer "what did concessions cost us this year?" — which is,
+    -- per the BRD, usually the second-largest item in a school's accounts and the least controlled.
 -- =========================================================================================================
 
+-- ---------------------------------------------------------------------------------------------------------
 -- A concession is recorded EXPLICITLY. It never reduces the gross demand silently (BR-CONC-01).
 --
 -- BR-CONC-04 distinguishes two cases, and the schema keeps both:
@@ -2632,38 +2803,33 @@ CREATE TABLE IF NOT EXISTS `acc_credit_limit_overrides` (
 --
 -- BR-CONC-06: a write-off is NOT a concession. A write-off lives on acc_bill_references
 -- (written_off_amount / written_off_voucher_id) and never appears here.
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_concessions` (
     `id`                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `concession_no`         VARCHAR(50) NOT NULL,
     `student_id`            INT UNSIGNED NULL,
-    `student_ledger_id`     INT UNSIGNED NOT NULL,
+    `student_ledger_id`     MEDIUMINT UNSIGNED NOT NULL,
     `financial_year_id`     SMALLINT UNSIGNED NOT NULL,
     `period_id`             SMALLINT UNSIGNED NULL,
     `campus_id`             SMALLINT UNSIGNED NULL,
     `concession_date`       DATE NOT NULL,
-
     -- BR-CONC-03: type, authoriser and sanction reference, on every concession.
-    `concession_type`       ENUM('Scholarship','Sibling','Staff_Ward','Merit','Hardship','Management',
-                                 'RTE','Alumni','Sports','Other') NOT NULL,
+    `concession_type`       ENUM('Scholarship','Sibling','Staff_Ward','Merit','Hardship','Management','RTE','Alumni','Sports','Other') NOT NULL,
     `sanction_reference`    VARCHAR(100) NULL,
     `authorised_by`         INT UNSIGNED NULL,
     `authorised_at`         DATETIME NULL,
-
     -- BR-CONC-02: gross, concession and net separately reportable.
     `gross_amount`          DECIMAL(15,2) NOT NULL,
     `concession_amount`     DECIMAL(15,2) NOT NULL,
     `net_amount`            DECIMAL(15,2) NOT NULL,
     `concession_percent`    DECIMAL(9,4) NULL,
-
     `timing`                ENUM('Before_Demand','After_Demand') NOT NULL DEFAULT 'Before_Demand',
     `bill_reference_id`     BIGINT UNSIGNED NULL,   -- the demand it relates to
     `voucher_id`            BIGINT UNSIGNED NULL,   -- the credit note, where timing = After_Demand
-    `concession_ledger_id`  INT UNSIGNED NULL,      -- the expense/contra-income head it posts to
-
+    `concession_ledger_id`  MEDIUMINT UNSIGNED NULL,      -- the expense/contra-income head it posts to
     `source_module_key`     VARCHAR(10) NULL,       -- 'FEE' where the Fees module raised it
     `source_model`          VARCHAR(100) NULL,
     `source_id`             BIGINT UNSIGNED NULL,
-
     `status`                ENUM('Draft','Approved','Posted','Cancelled') NOT NULL DEFAULT 'Draft',
     `cancelled_reason`      VARCHAR(500) NULL,
     `remarks`               VARCHAR(1000) NULL,
@@ -2672,12 +2838,10 @@ CREATE TABLE IF NOT EXISTS `acc_concessions` (
     `created_at`            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`            TIMESTAMP NULL,
-    `del_marker`            BIGINT UNSIGNED GENERATED ALWAYS AS (IFNULL(UNIX_TIMESTAMP(`deleted_at`),0)) STORED,
-
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_acc_conc_no` (`concession_no`,`del_marker`),
+    UNIQUE KEY `uq_acc_conc_no` (`concession_no`),
     -- One concession per source record. Replaying a Fees event grants nothing twice.
-    UNIQUE KEY `uq_acc_conc_source` (`source_model`,`source_id`,`del_marker`),
+    UNIQUE KEY `uq_acc_conc_source` (`source_model`,`source_id`),
     -- AC-CONC-02: by type and by authoriser, for the year.
     INDEX `idx_acc_conc_type_fy` (`concession_type`,`financial_year_id`),
     INDEX `idx_acc_conc_authoriser` (`authorised_by`,`financial_year_id`),
@@ -2685,11 +2849,7 @@ CREATE TABLE IF NOT EXISTS `acc_concessions` (
     INDEX `idx_acc_conc_bill` (`bill_reference_id`),
     INDEX `idx_acc_conc_voucher` (`voucher_id`),
     INDEX `idx_acc_conc_date` (`concession_date`,`status`),
-    CONSTRAINT `chk_acc_conc_amounts` CHECK (
-        `gross_amount` >= 0 AND `concession_amount` >= 0 AND
-        `concession_amount` <= `gross_amount` AND
-        `net_amount` = `gross_amount` - `concession_amount`
-    ),
+    CONSTRAINT `chk_acc_conc_amounts` CHECK (`gross_amount` >= 0 AND `concession_amount` >= 0 AND `concession_amount` <= `gross_amount` AND `net_amount` = `gross_amount` - `concession_amount`),
     CONSTRAINT `fk_acc_conc_student` FOREIGN KEY (`student_id`) REFERENCES `std_students`(`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_acc_conc_ledger` FOREIGN KEY (`student_ledger_id`) REFERENCES `acc_ledgers`(`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_acc_conc_conc_ledger` FOREIGN KEY (`concession_ledger_id`) REFERENCES `acc_ledgers`(`id`) ON DELETE RESTRICT,
@@ -2704,13 +2864,14 @@ CREATE TABLE IF NOT EXISTS `acc_concessions` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Explicit concessions. Gross, concession and net are all recorded (BR-CONC-02). Not write-offs.';
 
-
+-- ---------------------------------------------------------------------------------------------------------
 -- Donations, with the 80G receipt series (BRD §48).
 --
 -- BR-DON-02 requires the 80G series to be UNIQUE, GAPLESS and SEQUENTIAL per financial year. Uniqueness
 -- is the key below. Gaplessness is not something a schema can assert — a gap is an ABSENCE — so it is
 -- checked by the numbering-gap watch (Enhancement E-06) and reported, and the number is allocated under
 -- the same row lock as voucher numbers (acc_voucher_number_sequences) rather than by MAX()+1.
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_donations` (
     `id`                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `receipt_no`            VARCHAR(50) NOT NULL,       -- the 80G receipt number
@@ -2719,16 +2880,14 @@ CREATE TABLE IF NOT EXISTS `acc_donations` (
     `period_id`             SMALLINT UNSIGNED NULL,
     `campus_id`             SMALLINT UNSIGNED NULL,
     `donation_date`         DATE NOT NULL,
-
     -- BR-DON-03: anonymous donations are identified as such, because they are taxed differently.
     `is_anonymous`          TINYINT(1) NOT NULL DEFAULT 0,
-    `donor_ledger_id`       INT UNSIGNED NULL,          -- NULL only when anonymous
+    `donor_ledger_id`       MEDIUMINT UNSIGNED NULL,          -- NULL only when anonymous
     `donor_name`            VARCHAR(200) NULL,
     `donor_pan`             VARCHAR(15) NULL,
     `donor_address`         VARCHAR(500) NULL,
     `donor_email`           VARCHAR(150) NULL,
     `donor_phone`           VARCHAR(30) NULL,
-
     -- BR-DON-01: corpus or general. A corpus receipt is never income of the period (BR-FUND-05).
     `donation_nature`       ENUM('Corpus','General','Restricted') NOT NULL DEFAULT 'General',
     `fund_id`               INT UNSIGNED NULL,
@@ -2736,13 +2895,11 @@ CREATE TABLE IF NOT EXISTS `acc_donations` (
     `amount`                DECIMAL(15,2) NOT NULL,
     `mode`                  ENUM('Cash','Cheque','DD','NEFT','RTGS','UPI','Card','In_Kind','Other') NOT NULL,
     `instrument_no`         VARCHAR(50) NULL,
-
     -- BR-DON-04: donations in kind are recorded at valuation, WITH the basis of valuation.
     `is_in_kind`            TINYINT(1) NOT NULL DEFAULT 0,
     `in_kind_description`   VARCHAR(500) NULL,
     `valuation_basis`       VARCHAR(500) NULL,
     `valued_by`             VARCHAR(200) NULL,
-
     `is_80g_eligible`       TINYINT(1) NOT NULL DEFAULT 1,
     `certificate_issued_at` DATETIME NULL,
     `voucher_id`            BIGINT UNSIGNED NULL,       -- AC-DON-01: every receipt traces to a posted voucher
@@ -2754,8 +2911,6 @@ CREATE TABLE IF NOT EXISTS `acc_donations` (
     `created_at`            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`            TIMESTAMP NULL,
-    `del_marker`            BIGINT UNSIGNED GENERATED ALWAYS AS (IFNULL(UNIX_TIMESTAMP(`deleted_at`),0)) STORED,
-
     PRIMARY KEY (`id`),
     -- A cancelled receipt KEEPS its number. Reusing it would create the gap it was meant to prevent.
     UNIQUE KEY `uq_acc_don_receipt` (`financial_year_id`,`receipt_no`),
@@ -2781,57 +2936,50 @@ CREATE TABLE IF NOT EXISTS `acc_donations` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Donations and the 80G receipt series. A cancelled receipt keeps its number (BR-DON-02).';
 
-
+-- ---------------------------------------------------------------------------------------------------------
 -- Grants (BRD §49). A grant is a fund with conditions and a deadline attached.
 --
 -- Utilisation is NOT a column here. It is derived from acc_voucher_item_funds against the grant's fund_id,
 -- via acc_fund_balances — the same path, and the same rebuild guarantee, as every other fund. That is what
 -- makes the utilisation certificate (BR-GRANT-05, Enhancement E-10) a query over posted vouchers rather
 -- than a manually maintained number that has to be believed.
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_grants` (
     `id`                        BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `grant_code`                VARCHAR(30) NOT NULL,
     `name`                      VARCHAR(200) NOT NULL,
-    `grantor_ledger_id`         INT UNSIGNED NULL,
+    `grantor_ledger_id`         MEDIUMINT UNSIGNED NULL,
     `grantor_name`              VARCHAR(200) NOT NULL,
-    `grantor_type`              ENUM('Government','CSR','Trust','Foundation','Individual','International','Other')
-                                NOT NULL DEFAULT 'Other',
+    `grantor_type`              ENUM('Government','CSR','Trust','Foundation','Individual','International','Other') NOT NULL DEFAULT 'Other',
     -- The fund this grant's money lives in. Everything about utilisation flows through it.
     `fund_id`                   INT UNSIGNED NOT NULL,
-
     `sanction_reference`        VARCHAR(100) NULL,
     `sanction_date`             DATE NULL,
     `sanctioned_amount`         DECIMAL(15,2) NOT NULL,
     -- BR-GRANT-02: a grant receivable is recognised on sanction where the policy is accrual.
     `recognition_basis`         ENUM('On_Sanction','On_Receipt') NOT NULL DEFAULT 'On_Receipt',
     `receivable_voucher_id`     BIGINT UNSIGNED NULL,
-
     `purpose`                   VARCHAR(1000) NULL,
     `conditions`                TEXT NULL,
     `utilisation_from`          DATE NULL,
     `utilisation_to`            DATE NULL,
     -- BR-GRANT-04: unutilised grant at period end is a LIABILITY, not income. This names the head.
-    `unutilised_liability_ledger_id` INT UNSIGNED NULL,
+    `unutilised_liability_ledger_id` MEDIUMINT UNSIGNED NULL,
     `refundable_if_unutilised`  TINYINT(1) NOT NULL DEFAULT 1,
-
     `utilisation_cert_due_on`   DATE NULL,
     `utilisation_cert_filed_on` DATE NULL,
     `utilisation_cert_media_id` INT UNSIGNED NULL,
-
     `campus_id`                 SMALLINT UNSIGNED NULL,
     `cost_center_id`            INT UNSIGNED NULL,
-    `status`                    ENUM('Sanctioned','Active','Fully_Utilised','Closed','Cancelled','Lapsed')
-                                NOT NULL DEFAULT 'Sanctioned',
+    `status`                    ENUM('Sanctioned','Active','Fully_Utilised','Closed','Cancelled','Lapsed') NOT NULL DEFAULT 'Sanctioned',
     `notes`                     VARCHAR(1000) NULL,
     `created_by`                INT UNSIGNED NULL,
     `updated_by`                INT UNSIGNED NULL,
     `created_at`                TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`                TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`                TIMESTAMP NULL,
-    `del_marker`                BIGINT UNSIGNED GENERATED ALWAYS AS (IFNULL(UNIX_TIMESTAMP(`deleted_at`),0)) STORED,
-
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_acc_grant_code` (`grant_code`,`del_marker`),
+    UNIQUE KEY `uq_acc_grant_code` (`grant_code`),
     INDEX `idx_acc_grant_fund` (`fund_id`),
     INDEX `idx_acc_grant_grantor` (`grantor_ledger_id`),
     INDEX `idx_acc_grant_status` (`status`,`utilisation_to`),
@@ -2854,31 +3002,32 @@ COMMENT='Grants. Utilisation is derived through the grant fund, never stored her
 
 -- =========================================================================================================
 -- SECTION 15: TDS — CERTIFICATES, DEDUCTIONS, CHALLANS
---
---     BRD §46. The rate is resolved from acc_tax_rules (Section 5) at posting; this section records what
---     was actually deducted, from whom, under which section, and which challan paid it over.
---
---     BR-TDS-06 asks for deduction-to-challan reconciliation. That is a many-to-many — one challan pays
---     many deductions, and a deduction can in principle be split across challans — so it needs the
---     allocation table below, exactly as bill-wise settlement did in Section 7.
---
---     The resolution sequence (Solution_Design_v1 §9.3):
---         1  Is the ledger TDS-applicable, and under which section?
---         2  Does the payee hold a valid lower/nil certificate covering this date and amount?
---         3  Has the annual threshold for this payee and section been crossed?
---         4  Rate = certificate rate, else section rate, else the higher rate for a missing PAN
---         5  Lines: Dr Expense (gross) · Cr Party (net) · Cr TDS Payable (tds)
+-- ---------------------------------------------------------------------------------------------------------
+    --     BRD §46. The rate is resolved from acc_tax_rules (Section 5) at posting; this section records what
+    --     was actually deducted, from whom, under which section, and which challan paid it over.
+    --
+    --     BR-TDS-06 asks for deduction-to-challan reconciliation. That is a many-to-many — one challan pays
+    --     many deductions, and a deduction can in principle be split across challans — so it needs the
+    --     allocation table below, exactly as bill-wise settlement did in Section 7.
+    --
+    --     The resolution sequence (Solution_Design_v1 §9.3):
+    --         1  Is the ledger TDS-applicable, and under which section?
+    --         2  Does the payee hold a valid lower/nil certificate covering this date and amount?
+    --         3  Has the annual threshold for this payee and section been crossed?
+    --         4  Rate = certificate rate, else section rate, else the higher rate for a missing PAN
+    --         5  Lines: Dr Expense (gross) · Cr Party (net) · Cr TDS Payable (tds)
 -- =========================================================================================================
 
+-- ---------------------------------------------------------------------------------------------------------
 -- A lower- or nil-deduction certificate under s.197. Its LIMIT is consumed as it is used, which is why
 -- consumed_amount is here: a certificate for 10 lakh at 1% stops applying at 10 lakh, and nothing else
 -- in the system knows that.
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_tds_certificates` (
     `id`                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `party_ledger_id`       INT UNSIGNED NOT NULL,
+    `party_ledger_id`       MEDIUMINT UNSIGNED NOT NULL,
     `certificate_no`        VARCHAR(50) NOT NULL,
-    `certificate_type`      ENUM('Lower_Deduction','Nil_Deduction','Self_Declaration_15G','Self_Declaration_15H')
-                            NOT NULL DEFAULT 'Lower_Deduction',
+    `certificate_type`      ENUM('Lower_Deduction','Nil_Deduction','Self_Declaration_15G','Self_Declaration_15H') NOT NULL DEFAULT 'Lower_Deduction',
     `section_code`          VARCHAR(20) NOT NULL,       -- '194C', '194J', '194I'
     `pan`                   VARCHAR(15) NULL,
     `certified_rate`        DECIMAL(9,4) NOT NULL DEFAULT 0.0000,
@@ -2892,9 +3041,8 @@ CREATE TABLE IF NOT EXISTS `acc_tds_certificates` (
     `created_at`            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`            TIMESTAMP NULL,
-    `del_marker`            BIGINT UNSIGNED GENERATED ALWAYS AS (IFNULL(UNIX_TIMESTAMP(`deleted_at`),0)) STORED,
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_acc_tdscert` (`party_ledger_id`,`certificate_no`,`section_code`,`del_marker`),
+    UNIQUE KEY `uq_acc_tdscert` (`party_ledger_id`,`certificate_no`,`section_code`),
     -- The lookup at posting time: this party, this section, valid on this date.
     INDEX `idx_acc_tdscert_lookup` (`party_ledger_id`,`section_code`,`valid_from`,`valid_to`,`status`),
     INDEX `idx_acc_tdscert_pan` (`pan`),
@@ -2905,19 +3053,19 @@ CREATE TABLE IF NOT EXISTS `acc_tds_certificates` (
     CONSTRAINT `fk_acc_tdscert_created_by` FOREIGN KEY (`created_by`) REFERENCES `sys_users`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-
+-- ---------------------------------------------------------------------------------------------------------
 -- One deduction, against one voucher line. Everything needed for Form 26Q is a column here, because a
 -- return assembled from a report that was assembled from a ledger is a return nobody can check.
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_tds_deductions` (
     `id`                        BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `voucher_id`                BIGINT UNSIGNED NOT NULL,
     `voucher_item_id`           BIGINT UNSIGNED NOT NULL,   -- the party line the deduction was made from
-    `party_ledger_id`           INT UNSIGNED NOT NULL,
+    `party_ledger_id`           MEDIUMINT UNSIGNED NOT NULL,
     `financial_year_id`         SMALLINT UNSIGNED NOT NULL,
     `period_id`                 SMALLINT UNSIGNED NULL,
     `quarter`                   TINYINT UNSIGNED NOT NULL,  -- 1..4, for 26Q
     `deduction_date`            DATE NOT NULL,
-
     `section_code`              VARCHAR(20) NOT NULL,
     `nature_of_payment`         VARCHAR(150) NULL,
     `tax_rule_id`               SMALLINT UNSIGNED NULL,
@@ -2925,7 +3073,6 @@ CREATE TABLE IF NOT EXISTS `acc_tds_deductions` (
     `pan`                       VARCHAR(15) NULL,
     -- BR-TDS: no PAN means the higher rate, and the return must show why.
     `is_higher_rate_no_pan`     TINYINT(1) NOT NULL DEFAULT 0,
-
     `gross_amount`              DECIMAL(15,2) NOT NULL,
     `taxable_amount`            DECIMAL(15,2) NOT NULL,
     `rate_applied`              DECIMAL(9,4) NOT NULL,
@@ -2935,15 +3082,13 @@ CREATE TABLE IF NOT EXISTS `acc_tds_deductions` (
     -- explainable months later, when the running total has moved on.
     `cumulative_at_deduction`   DECIMAL(15,2) NULL,
     `deduct_on`                 ENUM('Credit','Payment') NOT NULL DEFAULT 'Credit',
-
-    `tds_ledger_id`             INT UNSIGNED NULL,          -- the TDS Payable head it credited
+    `tds_ledger_id`             MEDIUMINT UNSIGNED NULL,          -- the TDS Payable head it credited
     `status`                    ENUM('Deducted','Partly_Paid','Paid','Reversed') NOT NULL DEFAULT 'Deducted',
     `paid_amount`               DECIMAL(15,2) NOT NULL DEFAULT 0.00,
     `certificate_issued_no`     VARCHAR(50) NULL,           -- Form 16A number issued to the payee
     `certificate_issued_at`     DATETIME NULL,
     `created_at`                TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`                TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-
     PRIMARY KEY (`id`),
     -- One deduction per line per section. A voucher line cannot be deducted from twice under 194C.
     UNIQUE KEY `uq_acc_tdsded` (`voucher_item_id`,`section_code`),
@@ -2955,10 +3100,7 @@ CREATE TABLE IF NOT EXISTS `acc_tds_deductions` (
     INDEX `idx_acc_tdsded_cert` (`tds_certificate_id`),
     INDEX `idx_acc_tdsded_pan` (`pan`),
     CONSTRAINT `chk_acc_tdsded_quarter` CHECK (`quarter` BETWEEN 1 AND 4),
-    CONSTRAINT `chk_acc_tdsded_amounts` CHECK (
-        `gross_amount` >= 0 AND `taxable_amount` >= 0 AND `tds_amount` >= 0 AND
-        `paid_amount` >= 0 AND `paid_amount` <= `tds_amount`
-    ),
+    CONSTRAINT `chk_acc_tdsded_amounts` CHECK (`gross_amount` >= 0 AND `taxable_amount` >= 0 AND `tds_amount` >= 0 AND `paid_amount` >= 0 AND `paid_amount` <= `tds_amount`),
     CONSTRAINT `fk_acc_tdsded_voucher` FOREIGN KEY (`voucher_id`) REFERENCES `acc_vouchers`(`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_acc_tdsded_item` FOREIGN KEY (`voucher_item_id`) REFERENCES `acc_voucher_items`(`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_acc_tdsded_party` FOREIGN KEY (`party_ledger_id`) REFERENCES `acc_ledgers`(`id`) ON DELETE RESTRICT,
@@ -2970,8 +3112,9 @@ CREATE TABLE IF NOT EXISTS `acc_tds_deductions` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='One TDS deduction per voucher line per section, with every input to the computation.';
 
-
+-- ---------------------------------------------------------------------------------------------------------
 -- The challan. What was actually paid over to the government, and when.
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_tds_payments` (
     `id`                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `financial_year_id`     SMALLINT UNSIGNED NOT NULL,
@@ -2989,7 +3132,7 @@ CREATE TABLE IF NOT EXISTS `acc_tds_payments` (
     `total_amount`          DECIMAL(15,2) NOT NULL,
     -- DERIVED from acc_tds_payment_allocations; kept so an unallocated challan is an index scan.
     `allocated_amount`      DECIMAL(15,2) NOT NULL DEFAULT 0.00,
-    `bank_ledger_id`        INT UNSIGNED NULL,
+    `bank_ledger_id`        MEDIUMINT UNSIGNED NULL,
     `voucher_id`            BIGINT UNSIGNED NULL,       -- the payment voucher
     `return_filed_on`       DATE NULL,
     `return_acknowledgement` VARCHAR(50) NULL,
@@ -2999,9 +3142,8 @@ CREATE TABLE IF NOT EXISTS `acc_tds_payments` (
     `created_at`            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`            TIMESTAMP NULL,
-    `del_marker`            BIGINT UNSIGNED GENERATED ALWAYS AS (IFNULL(UNIX_TIMESTAMP(`deleted_at`),0)) STORED,
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_acc_tdspay_challan` (`challan_no`,`challan_date`,`del_marker`),
+    UNIQUE KEY `uq_acc_tdspay_challan` (`challan_no`,`challan_date`),
     INDEX `idx_acc_tdspay_fy_quarter` (`financial_year_id`,`quarter`,`status`),
     INDEX `idx_acc_tdspay_voucher` (`voucher_id`),
     INDEX `idx_acc_tdspay_deposit` (`deposit_date`),
@@ -3014,8 +3156,9 @@ CREATE TABLE IF NOT EXISTS `acc_tds_payments` (
     CONSTRAINT `fk_acc_tdspay_created_by` FOREIGN KEY (`created_by`) REFERENCES `sys_users`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-
+-- ---------------------------------------------------------------------------------------------------------
 -- Which challan paid which deduction. BR-TDS-06 becomes a join instead of a spreadsheet.
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_tds_payment_allocations` (
     `id`                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `tds_payment_id`        BIGINT UNSIGNED NOT NULL,
@@ -3036,39 +3179,39 @@ CREATE TABLE IF NOT EXISTS `acc_tds_payment_allocations` (
 -- =========================================================================================================
 -- SECTION 16: CROSS-MODULE INTEGRATION
 --
---     THE CONTRACT (Solution_Design_v1 §10.1): other modules NEVER write accounting tables. They emit
---     events. The engine converts them into vouchers, or reports that it did not.
---
---         Module event ──► acc_event_processing_log (Pending)
---                                │
---                     resolve acc_module_events → acc_event_voucher_configs
---                                │                        │
---                          not configured?           configured
---                                ▼                        ▼
---                            Skipped                 build lines from
---                          (reported)          acc_event_voucher_line_templates
---                                                         │
---                                                    PostingService::post()
---                                                         │
---                              Processed  ·  Failed (retry ≤ N, then escalate)  ·  Skipped
---
---     IDEMPOTENCY (BR-INT-02). v4.3's log explicitly had no uniqueness, on the reasoning that "the same
---     source record can legitimately fire the same event multiple times". That is true, and it is also
---     why replaying a day of events silently double-posted the whole day. Both are satisfied by
---     source_event_uid: the source names WHICH firing this is, so a genuine second firing carries a new
---     uid and posts, and a replay carries the old uid and does not.
---
---     NOTHING IS DROPPED (BR-INT-04). An event with no configuration is Skipped and REPORTED with its age
---     and count — never discarded, and never guessed at.
+    --     THE CONTRACT (Solution_Design_v1 §10.1): other modules NEVER write accounting tables. They emit
+    --     events. The engine converts them into vouchers, or reports that it did not.
+    --
+    --         Module event ──► acc_event_processing_log (Pending)
+    --                                │
+    --                     resolve acc_module_events → acc_event_voucher_configs
+    --                                │                        │
+    --                          not configured?           configured
+    --                                ▼                        ▼
+    --                            Skipped                 build lines from
+    --                          (reported)          acc_event_voucher_line_templates
+    --                                                         │
+    --                                                    PostingService::post()
+    --                                                         │
+    --                              Processed  ·  Failed (retry ≤ N, then escalate)  ·  Skipped
+    --
+    --     IDEMPOTENCY (BR-INT-02). v4.3's log explicitly had no uniqueness, on the reasoning that "the same
+    --     source record can legitimately fire the same event multiple times". That is true, and it is also
+    --     why replaying a day of events silently double-posted the whole day. Both are satisfied by
+    --     source_event_uid: the source names WHICH firing this is, so a genuine second firing carries a new
+    --     uid and posts, and a replay carries the old uid and does not.
+    --
+    --     NOTHING IS DROPPED (BR-INT-04). An event with no configuration is Skipped and REPORTED with its age
+    --     and count — never discarded, and never guessed at.
 -- =========================================================================================================
 
+-- ---------------------------------------------------------------------------------------------------------
 -- Which accounting ledger a module's entity maps to. 'Library fine income' -> ledger 412, and so on.
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_ledger_mappings` (
     `id`                INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `ledger_id`         INT UNSIGNED NOT NULL,
-    `module_key`        VARCHAR(10) NOT NULL,       -- glb_app_modules.key. v4.3 hard-coded an ENUM of
-                                                    -- seven modules here, so an eighth module needed a
-                                                    -- schema change.
+    `ledger_id`         MEDIUMINT UNSIGNED NOT NULL,
+    `module_key`        VARCHAR(10) NOT NULL,       -- glb_app_modules.key. v4.3 hard-coded an ENUM of seven modules here, so an eighth module needed a schema change.
     `source_type`       VARCHAR(100) NULL,          -- 'FeeHead', 'PayHead', 'Route', 'Stoppage'
     `source_id`         BIGINT UNSIGNED NULL,       -- NULL = a default for the whole source_type
     `campus_id`         SMALLINT UNSIGNED NULL,
@@ -3078,12 +3221,11 @@ CREATE TABLE IF NOT EXISTS `acc_ledger_mappings` (
     `created_at`        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`        TIMESTAMP NULL,
-    `del_marker`        BIGINT UNSIGNED GENERATED ALWAYS AS (IFNULL(UNIX_TIMESTAMP(`deleted_at`),0)) STORED,
     `source_type_marker` VARCHAR(100) GENERATED ALWAYS AS (IFNULL(`source_type`,'')) STORED,
     `source_id_marker`  BIGINT UNSIGNED   GENERATED ALWAYS AS (IFNULL(`source_id`,0)) STORED,
     `campus_marker`     SMALLINT UNSIGNED GENERATED ALWAYS AS (IFNULL(`campus_id`,0)) STORED,
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_acc_lm_combo` (`module_key`,`source_type_marker`,`source_id_marker`,`campus_marker`,`del_marker`),
+    UNIQUE KEY `uq_acc_lm_combo` (`module_key`,`source_type_marker`,`source_id_marker`,`campus_marker`),
     INDEX `idx_acc_lm_source` (`module_key`,`source_type`,`source_id`),
     INDEX `idx_acc_lm_ledger` (`ledger_id`,`is_active`),
     CONSTRAINT `fk_acc_lm_ledger` FOREIGN KEY (`ledger_id`) REFERENCES `acc_ledgers`(`id`) ON DELETE RESTRICT,
@@ -3091,8 +3233,9 @@ CREATE TABLE IF NOT EXISTS `acc_ledger_mappings` (
     CONSTRAINT `fk_acc_lm_created_by` FOREIGN KEY (`created_by`) REFERENCES `sys_users`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-
+-- ---------------------------------------------------------------------------------------------------------
 -- The registry of business events that can produce a voucher. Adding a module needs a row, not a release.
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_module_events` (
     `id`                BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `module_key`        VARCHAR(10) NOT NULL,       -- glb_app_modules.key: 'FEE','LIB','TPT','HST','PAY'
@@ -3105,16 +3248,16 @@ CREATE TABLE IF NOT EXISTS `acc_module_events` (
     `created_at`        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`        TIMESTAMP NULL,
-    `del_marker`        BIGINT UNSIGNED GENERATED ALWAYS AS (IFNULL(UNIX_TIMESTAMP(`deleted_at`),0)) STORED,
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_acc_me_code` (`module_key`,`event_code`,`del_marker`),
+    UNIQUE KEY `uq_acc_me_code` (`module_key`,`event_code`),
     INDEX `idx_acc_me_module` (`module_key`,`is_active`),
     INDEX `idx_acc_me_source_model` (`source_model`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Registry of cross-module events that may produce a voucher.';
 
-
+-- ---------------------------------------------------------------------------------------------------------
 -- HOW an event becomes a voucher. Opt-in: an unconfigured event creates nothing, and says so.
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_event_voucher_configs` (
     `id`                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `module_event_id`       BIGINT UNSIGNED NOT NULL,
@@ -3136,12 +3279,11 @@ CREATE TABLE IF NOT EXISTS `acc_event_voucher_configs` (
     `created_at`            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`            TIMESTAMP NULL,
-    `del_marker`            BIGINT UNSIGNED GENERATED ALWAYS AS (IFNULL(UNIX_TIMESTAMP(`deleted_at`),0)) STORED,
     `campus_marker`         SMALLINT UNSIGNED GENERATED ALWAYS AS (IFNULL(`campus_id`,0)) STORED,
     PRIMARY KEY (`id`),
-    -- One live config per event per campus. campus_marker makes the school-wide row (campus_id NULL)
-    -- singular, which a plain nullable column would not.
-    UNIQUE KEY `uq_acc_evc_event` (`module_event_id`,`campus_marker`,`del_marker`),
+    -- One config per event per campus, deleted rows included. campus_marker makes the school-wide row
+    -- (campus_id NULL) singular, which a plain nullable column would not.
+    UNIQUE KEY `uq_acc_evc_event` (`module_event_id`,`campus_marker`),
     INDEX `idx_acc_evc_type` (`voucher_type_id`),
     INDEX `idx_acc_evc_active` (`is_active`,`module_event_id`),
     CONSTRAINT `fk_acc_evc_event` FOREIGN KEY (`module_event_id`) REFERENCES `acc_module_events`(`id`) ON DELETE RESTRICT,
@@ -3152,40 +3294,39 @@ CREATE TABLE IF NOT EXISTS `acc_event_voucher_configs` (
     CONSTRAINT `fk_acc_evc_created_by` FOREIGN KEY (`created_by`) REFERENCES `sys_users`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-
--- The Dr/Cr lines the event produces.
+-- ---------------------------------------------------------------------------------------------------------
 --
---     ledger_resolver   fixed            -> use ledger_id
---                       student_ledger   -> acc_ledgers WHERE student_id  = source.student_id
---                       vendor_ledger    -> acc_ledgers WHERE vendor_id   = source.vendor_id
---                       employee_ledger  -> acc_ledgers WHERE employee_id = source.employee_id
---                       mapped_ledger    -> acc_ledger_mappings for this module and source_type
---     amount_resolver   from_source      -> read source_amount_field from the source record
---                       fixed_amount     -> use fixed_amount
---                       from_payload     -> read 'amount' from the event payload
---                       balancing        -> whatever makes the voucher balance
---
---     A library fine receipt, for instance:
---         line 1  Dr  student_ledger
---         line 2  Cr  fixed, ledger_id = Library Fine Income
+    -- The Dr/Cr lines the event produces.
+    --
+    --     ledger_resolver   fixed            -> use ledger_id
+    --                       student_ledger   -> acc_ledgers WHERE student_id  = source.student_id
+    --                       vendor_ledger    -> acc_ledgers WHERE vendor_id   = source.vendor_id
+    --                       employee_ledger  -> acc_ledgers WHERE employee_id = source.employee_id
+    --                       mapped_ledger    -> acc_ledger_mappings for this module and source_type
+    --     amount_resolver   from_source      -> read source_amount_field from the source record
+    --                       fixed_amount     -> use fixed_amount
+    --                       from_payload     -> read 'amount' from the event payload
+    --                       balancing        -> whatever makes the voucher balance
+    --
+    --     A library fine receipt, for instance:
+    --         line 1  Dr  student_ledger
+    --         line 2  Cr  fixed, ledger_id = Library Fine Income
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_event_voucher_line_templates` (
     `id`                        BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `event_voucher_config_id`   BIGINT UNSIGNED NOT NULL,
     `sequence_no`               SMALLINT UNSIGNED NOT NULL DEFAULT 1,
     `entry_type`                ENUM('Dr','Cr') NOT NULL,
-    `ledger_resolver`           ENUM('fixed','student_ledger','vendor_ledger','employee_ledger','mapped_ledger')
-                                NOT NULL DEFAULT 'fixed',
-    `ledger_id`                 INT UNSIGNED NULL,          -- required when ledger_resolver = 'fixed'
+    `ledger_resolver`           ENUM('fixed','student_ledger','vendor_ledger','employee_ledger','mapped_ledger') NOT NULL DEFAULT 'fixed',
+    `ledger_id`                 MEDIUMINT UNSIGNED NULL,          -- required when ledger_resolver = 'fixed'
     `ledger_mapping_type`       VARCHAR(100) NULL,          -- the source_type for 'mapped_ledger'
-    `amount_resolver`           ENUM('from_source','fixed_amount','from_payload','balancing')
-                                NOT NULL DEFAULT 'from_source',
+    `amount_resolver`           ENUM('from_source','fixed_amount','from_payload','balancing') NOT NULL DEFAULT 'from_source',
     `source_amount_field`       VARCHAR(100) NULL,
     `fixed_amount`              DECIMAL(15,2) NULL,
     `cost_center_id`            INT UNSIGNED NULL,
     `fund_id`                   INT UNSIGNED NULL,
     -- Where the line should create or settle a bill reference (a fee demand, a vendor bill).
-    `bill_action`               ENUM('None','New_Reference','Against_Reference','Advance','On_Account')
-                                NOT NULL DEFAULT 'None',
+    `bill_action`               ENUM('None','New_Reference','Against_Reference','Advance','On_Account') NOT NULL DEFAULT 'None',
     `narration`                 VARCHAR(500) NULL,
     `is_active`                 TINYINT(1) NOT NULL DEFAULT 1,
     `created_at`                TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -3204,8 +3345,9 @@ CREATE TABLE IF NOT EXISTS `acc_event_voucher_line_templates` (
     CONSTRAINT `fk_acc_evlt_fund` FOREIGN KEY (`fund_id`) REFERENCES `acc_funds`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-
+-- ---------------------------------------------------------------------------------------------------------
 -- Every event the engine received, and what became of it.
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_event_processing_log` (
     `id`                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `module_event_id`       BIGINT UNSIGNED NOT NULL,
@@ -3219,8 +3361,7 @@ CREATE TABLE IF NOT EXISTS `acc_event_processing_log` (
     -- what the voucher was actually built from.
     `payload_json`          JSON NULL,
     `voucher_id`            BIGINT UNSIGNED NULL,
-    `status`                ENUM('Pending','Processing','Processed','Failed','Skipped','Escalated')
-                            NOT NULL DEFAULT 'Pending',
+    `status`                ENUM('Pending','Processing','Processed','Failed','Skipped','Escalated') NOT NULL DEFAULT 'Pending',
     `skip_reason`           ENUM('No_Config','Inactive_Event','Duplicate','Zero_Amount','Period_Closed','Other') NULL,
     `error_message`         TEXT NULL,
     `retry_count`           TINYINT UNSIGNED NOT NULL DEFAULT 0,
@@ -3250,11 +3391,12 @@ CREATE TABLE IF NOT EXISTS `acc_event_processing_log` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Every cross-module event and its outcome. Nothing is dropped (BR-INT-04).';
 
-
+-- ---------------------------------------------------------------------------------------------------------
 -- THE CONTROL THAT CATCHES EVERYTHING ELSE (Solution_Design_v1 §10.3).
 --
 -- If the Fees module says Rs 42,00,000 was collected in August and Accounting says Rs 41,85,000, the
 -- difference is itemised to the receipt THAT NIGHT — not at audit. Run nightly per module per period.
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_module_reconciliation` (
     `id`                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `module_key`            VARCHAR(10) NOT NULL,
@@ -3296,6 +3438,9 @@ COMMENT='Nightly module-to-Accounting reconciliation. The control that catches e
 --     Export only, masters and vouchers, XML (Solution_Design_v1 OD-15). Phase 4.
 -- =========================================================================================================
 
+-- ---------------------------------------------------------------------------------------------------------
+-- This is the table where the Master data of Tally Export Logs will be created.
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_tally_export_logs` (
     `id`                BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `export_type`       ENUM('Ledgers','Groups','Vouchers','Cost_Centres','All') NOT NULL,
@@ -3322,10 +3467,13 @@ CREATE TABLE IF NOT EXISTS `acc_tally_export_logs` (
     CONSTRAINT `fk_acc_tel_by` FOREIGN KEY (`exported_by`) REFERENCES `sys_users`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-
+-- ---------------------------------------------------------------------------------------------------------
+-- This is the table where the Master data of Tally Ledger Mappings will be created.
+-- This table is used to map the ledgers of our application to the ledgers of Tally.
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_tally_ledger_mappings` (
     `id`                BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `ledger_id`         INT UNSIGNED NOT NULL,
+    `ledger_id`         MEDIUMINT UNSIGNED NOT NULL,
     `tally_ledger_name` VARCHAR(200) NOT NULL,
     `tally_group_name`  VARCHAR(200) NULL,
     `tally_alias`       VARCHAR(200) NULL,
@@ -3336,11 +3484,10 @@ CREATE TABLE IF NOT EXISTS `acc_tally_ledger_mappings` (
     `created_at`        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`        TIMESTAMP NULL,
-    `del_marker`        BIGINT UNSIGNED GENERATED ALWAYS AS (IFNULL(UNIX_TIMESTAMP(`deleted_at`),0)) STORED,
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_acc_tlm_ledger` (`ledger_id`,`del_marker`),
+    UNIQUE KEY `uq_acc_tlm_ledger` (`ledger_id`),
     -- Tally identifies a ledger by NAME. Two of ours mapping to one of theirs would merge two accounts.
-    UNIQUE KEY `uq_acc_tlm_tally_name` (`tally_ledger_name`,`del_marker`),
+    UNIQUE KEY `uq_acc_tlm_tally_name` (`tally_ledger_name`),
     CONSTRAINT `fk_acc_tlm_ledger` FOREIGN KEY (`ledger_id`) REFERENCES `acc_ledgers`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -3352,6 +3499,7 @@ CREATE TABLE IF NOT EXISTS `acc_tally_ledger_mappings` (
 --     them was implementable — which means the module, as designed in v4.3, could not be audited at all.
 -- =========================================================================================================
 
+-- ---------------------------------------------------------------------------------------------------------
 -- APPEND-ONLY. There is no UPDATE path and no DELETE path to this table anywhere in the application, and
 -- BR-AUD-03 / AC-AUD-02 require that no role, including Super Admin, can reach one.
 --
@@ -3364,6 +3512,7 @@ CREATE TABLE IF NOT EXISTS `acc_tally_ledger_mappings` (
 --
 -- BR-AUD-04 — a person is distinguishable from a system process — is the actor_type column. It is not
 -- inferable from a NULL user_id, because a NULL user_id also means "the user was deleted".
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_audit_logs` (
     `id`                BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `entity_type`       VARCHAR(64) NOT NULL,       -- table name: 'acc_vouchers', 'acc_ledgers'
@@ -3371,21 +3520,17 @@ CREATE TABLE IF NOT EXISTS `acc_audit_logs` (
     -- The voucher this event concerns, whatever the entity was. Lets AC-AUD-01 — the full history of a
     -- voucher, including its allocations, approvals and attachments — be ONE indexed query.
     `voucher_id`        BIGINT UNSIGNED NULL,
-    `action`            ENUM('Created','Updated','Deleted','Restored','Submitted','Approved','Rejected',
-                             'Posted','Cancelled','Reversed','Reconciled','Unreconciled','Closed',
-                             'Reopened','Allocated','Deallocated','Written_Off','Exported','Imported',
-                             'Viewed_Sensitive','Permission_Overridden','Rebuilt') NOT NULL,
+    `action`            ENUM('Created','Updated','Deleted','Restored','Submitted','Approved','Rejected','Posted','Cancelled','Reversed','Reconciled','Unreconciled','Closed',
+                             'Reopened','Allocated','Deallocated','Written_Off','Exported','Imported','Viewed_Sensitive','Permission_Overridden','Rebuilt') NOT NULL,
     -- BR-AUD-01: before-value and after-value. JSON of the changed attributes only, not the whole row —
     -- a full-row snapshot of every update would dominate the tenant's storage within a year.
     `old_values`        JSON NULL,
     `new_values`        JSON NULL,
     `changed_fields`    VARCHAR(1000) NULL,         -- CSV, for filtering without parsing the JSON
     `reason`            VARCHAR(1000) NULL,         -- required for cancel, reverse, reopen, waive, override
-
     `actor_type`        ENUM('User','System','Job','Integration','Migration') NOT NULL DEFAULT 'User',
     `user_id`           INT UNSIGNED NULL,
-    `user_name`         VARCHAR(150) NULL,          -- denormalised: the audit must read correctly even
-                                                    -- after the user record is gone
+    `user_name`         VARCHAR(150) NULL,          -- denormalised: the audit must read correctly even after the user record is gone
     `impersonated_by`   INT UNSIGNED NULL,
     `ip_address`        VARCHAR(45) NULL,           -- 45 = IPv6
     `user_agent`        VARCHAR(255) NULL,
@@ -3395,7 +3540,6 @@ CREATE TABLE IF NOT EXISTS `acc_audit_logs` (
     `period_id`         SMALLINT UNSIGNED NULL,
     `occurred_at`       DATETIME(3) NOT NULL,       -- millisecond precision: ordering within a transaction
     `created_at`        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
     PRIMARY KEY (`id`),
     -- BR-AUD-06: the complete history of any record, in one action.
     INDEX `idx_acc_audit_entity` (`entity_type`,`entity_id`,`occurred_at`),
@@ -3412,15 +3556,15 @@ CREATE TABLE IF NOT EXISTS `acc_audit_logs` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='APPEND-ONLY audit trail. The app DB user must hold no UPDATE or DELETE grant here (BR-AUD-03).';
 
-
+-- ---------------------------------------------------------------------------------------------------------
 -- What the exception rules ARE. Thresholds are configuration, per BR-EXC-01, so tuning one is a data
 -- change rather than a release.
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_exception_rules` (
     `id`                    SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `code`                  VARCHAR(50) NOT NULL,   -- 'NEGATIVE_CASH', 'AGED_SUSPENSE', 'STALE_CHEQUE'
     `name`                  VARCHAR(200) NOT NULL,
-    `category`              ENUM('Balance','Ageing','Reconciliation','Approval','Compliance','Data_Quality',
-                                 'Fraud_Risk','Budget','Numbering') NOT NULL,
+    `category`              ENUM('Balance','Ageing','Reconciliation','Approval','Compliance','Data_Quality','Fraud_Risk','Budget','Numbering') NOT NULL,
     `severity`              ENUM('Info','Warning','High','Critical') NOT NULL DEFAULT 'Warning',
     `checker_key`           VARCHAR(100) NOT NULL,  -- the ExceptionService check that produces it
     `threshold_amount`      DECIMAL(15,2) NULL,
@@ -3436,16 +3580,16 @@ CREATE TABLE IF NOT EXISTS `acc_exception_rules` (
     `created_at`            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`            TIMESTAMP NULL,
-    `del_marker`            BIGINT UNSIGNED GENERATED ALWAYS AS (IFNULL(UNIX_TIMESTAMP(`deleted_at`),0)) STORED,
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_acc_excrule_code` (`code`,`del_marker`),
+    UNIQUE KEY `uq_acc_excrule_code` (`code`),
     INDEX `idx_acc_excrule_active` (`is_active`,`run_frequency`),
     INDEX `idx_acc_excrule_blocking` (`blocks_period_close`,`is_active`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-
+-- ---------------------------------------------------------------------------------------------------------
 -- One detected exception, NAMING THE RECORD (BR-EXC-02). An exception that reports a count without
 -- naming its records cannot be acted on, and will not be.
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_exceptions` (
     `id`                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `exception_rule_id`     SMALLINT UNSIGNED NOT NULL,
@@ -3455,7 +3599,7 @@ CREATE TABLE IF NOT EXISTS `acc_exceptions` (
     `entity_type`           VARCHAR(64) NOT NULL,
     `entity_id`             BIGINT UNSIGNED NOT NULL,
     `entity_label`          VARCHAR(255) NULL,      -- 'PAY-0042', 'Sundry Debtors', 'Ravi Kumar'
-    `ledger_id`             INT UNSIGNED NULL,
+    `ledger_id`             MEDIUMINT UNSIGNED NULL,
     `voucher_id`            BIGINT UNSIGNED NULL,
     `financial_year_id`     SMALLINT UNSIGNED NULL,
     `period_id`             SMALLINT UNSIGNED NULL,
@@ -3501,29 +3645,29 @@ CREATE TABLE IF NOT EXISTS `acc_exceptions` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Detected exceptions, each naming its record (BR-EXC-02). Blocking ones refuse period close.';
 
-
+-- ---------------------------------------------------------------------------------------------------------
 -- The continuous Trial Balance assertion (BRD Enhancement E-01 — "the highest value-to-effort item in
 -- this list"). Every run of every assertion, pass or fail, is a row here.
---
--- The assertions (Solution_Design_v1 §5.5):
---     VOUCHER_BALANCED        every posted voucher: Σ Dr = Σ Cr
---     TRIAL_BALANCE           Σ Dr = Σ Cr for every period
---     LEDGER_BUCKET           bucket closing = Σ lines + opening, per ledger
---     PARTY_BILLWISE          party ledger balance = Σ its open bill outstandings
---     BALANCE_SHEET           the Balance Sheet balances at every period end
---     BILL_OVERALLOCATION     allocated ≤ original, per bill
---     FUND_IDENTITY           opening + additions − utilisation = closing, per fund
---     NUMBER_SERIES           gapless per type per year
---     ASSET_REGISTER          register net block = asset ledger balances
---     REBUILD_IDENTITY        rebuilding acc_ledger_period_balances changes nothing  <- §5.4
---
--- A failure names the offending record and raises an exception. It does not write a log line and move on.
+-- ---------------------------------------------------------------------------------------------------------
+    -- The assertions (Solution_Design_v1 §5.5):
+    --     VOUCHER_BALANCED        every posted voucher: Σ Dr = Σ Cr
+    --     TRIAL_BALANCE           Σ Dr = Σ Cr for every period
+    --     LEDGER_BUCKET           bucket closing = Σ lines + opening, per ledger
+    --     PARTY_BILLWISE          party ledger balance = Σ its open bill outstandings
+    --     BALANCE_SHEET           the Balance Sheet balances at every period end
+    --     BILL_OVERALLOCATION     allocated ≤ original, per bill
+    --     FUND_IDENTITY           opening + additions − utilisation = closing, per fund
+    --     NUMBER_SERIES           gapless per type per year
+    --     ASSET_REGISTER          register net block = asset ledger balances
+    --     REBUILD_IDENTITY        rebuilding acc_ledger_period_balances changes nothing  <- §5.4
+    --
+    -- A failure names the offending record and raises an exception. It does not write a log line and move on.
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_assertion_results` (
     `id`                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `assertion_code`        VARCHAR(50) NOT NULL,
     `assertion_name`        VARCHAR(200) NOT NULL,
-    `scope`                 ENUM('Global','Financial_Year','Period','Ledger','Fund','Party','Asset','Voucher')
-                            NOT NULL DEFAULT 'Global',
+    `scope`                 ENUM('Global','Financial_Year','Period','Ledger','Fund','Party','Asset','Voucher') NOT NULL DEFAULT 'Global',
     `financial_year_id`     SMALLINT UNSIGNED NULL,
     `period_id`             SMALLINT UNSIGNED NULL,
     `result`                ENUM('Pass','Fail','Error','Skipped') NOT NULL,
@@ -3550,12 +3694,13 @@ CREATE TABLE IF NOT EXISTS `acc_assertion_results` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Every assertion run, pass or fail. A failure names the record (Enhancement E-01).';
 
-
+-- ---------------------------------------------------------------------------------------------------------
 -- Module configuration. The BRD says "configurable" thirty-one times; this is where those settings live,
 -- so that a school's rounding tolerance or ageing buckets are a row rather than a deployment.
 --
 -- Typed, not a bare key/value blob: a tolerance stored as the string '1' and compared numerically is a
 -- defect waiting for the first school that enters '1.00'.
+-- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `acc_settings` (
     `id`                SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `setting_key`       VARCHAR(80) NOT NULL,
@@ -3590,23 +3735,23 @@ CREATE TABLE IF NOT EXISTS `acc_settings` (
 
 -- =========================================================================================================
 -- SECTION 19: VIEWS
---
---     The twenty-two views of Solution_Design_v1 §12.2.
---
---     Two rules govern every one of them, and they are the reason the views exist at all rather than the
---     same SQL being retyped in twenty controllers:
---
---     1.  STATEMENTS READ BUCKETS, REGISTERS READ LINES. Anything that aggregates — Trial Balance,
---         Balance Sheet, Income & Expenditure, cost centre, fund — reads acc_ledger_period_balances
---         (~240k rows). Anything that lists — Day Book, ledger statement, registers — reads
---         acc_voucher_items (1.5M-6M rows) and is ALWAYS date-filtered by the caller.
---
---     2.  ONLY POSTED COUNTS (BRD R-02). Every view that touches transactions filters
---         voucher_status = 'Posted' and is_provisional = 0. A provisional voucher appears in no financial
---         statement, ever (BR-PROV-01) — v4.3's comment claimed the opposite.
---
---     Closed-period statements are NOT served by these views. They are served from
---     acc_period_closing_balances, so they are reproducible by construction (AC-CLOSE-03).
+-- ---------------------------------------------------------------------------------------------------------
+    --     The twenty-two views of Solution_Design_v1 §12.2.
+    --
+    --     Two rules govern every one of them, and they are the reason the views exist at all rather than the
+    --     same SQL being retyped in twenty controllers:
+    --
+    --     1.  STATEMENTS READ BUCKETS, REGISTERS READ LINES. Anything that aggregates — Trial Balance,
+    --         Balance Sheet, Income & Expenditure, cost centre, fund — reads acc_ledger_period_balances
+    --         (~240k rows). Anything that lists — Day Book, ledger statement, registers — reads
+    --         acc_voucher_items (1.5M-6M rows) and is ALWAYS date-filtered by the caller.
+    --
+    --     2.  ONLY POSTED COUNTS (BRD R-02). Every view that touches transactions filters
+    --         voucher_status = 'Posted' and is_provisional = 0. A provisional voucher appears in no financial
+    --         statement, ever (BR-PROV-01) — v4.3's comment claimed the opposite.
+    --
+    --     Closed-period statements are NOT served by these views. They are served from
+    --     acc_period_closing_balances, so they are reproducible by construction (AC-CLOSE-03).
 -- =========================================================================================================
 
 -- Ledger balance for a financial year: opening, movement, closing. The dimension-NULL rows only —
@@ -3641,7 +3786,6 @@ CREATE OR REPLACE VIEW `vw_ledger_balances` AS
     WHERE b.cost_center_id IS NULL AND b.fund_id IS NULL AND b.campus_id IS NULL
     GROUP BY l.id, l.code, l.name, l.ledger_type, l.party_type, l.is_bill_wise,
             g.id, g.name, g.nature, g.path, b.financial_year_id;
-
 
 -- Trial Balance, one row per ledger per period. Σ debit_balance must equal Σ credit_balance — asserted
 -- hourly, not hoped for (Solution_Design_v1 §5.5).
@@ -3678,7 +3822,6 @@ CREATE OR REPLACE VIEW `vw_trial_balance` AS
     JOIN `acc_accounting_periods` p ON p.id = b.period_id
     WHERE b.cost_center_id IS NULL AND b.fund_id IS NULL AND b.campus_id IS NULL
     AND l.deleted_at IS NULL;
-
 
 -- Balance Sheet: the three permanent natures. Assets on one side, Liabilities and Equity on the other.
 CREATE OR REPLACE VIEW `vw_balance_sheet` AS
@@ -4435,8 +4578,8 @@ INSERT IGNORE INTO `acc_account_groups` (`code`,`name`,`parent_id`,`nature`,`aff
 -- ── Sub-groups. is_subledger marks a party CONTROL account: its balance must equal the sum of the
 --    bill outstandings beneath it, which is one of the standing assertions (Solution_Design_v1 §5.5). ────
 INSERT IGNORE INTO `acc_account_groups` (`code`,`name`,`parent_id`,`nature`,`affects_gross_profit`,`depth`,`is_system`,`is_subledger`,`ordinal`)
-SELECT x.code, x.name, p.id, x.nature, x.agp, 1, 1, x.sub, x.ordinal
-FROM (
+ SELECT x.code, x.name, p.id, x.nature, x.agp, 1, 1, x.sub, x.ordinal
+ FROM (
     SELECT 'BANK'      AS code,'Bank Accounts'                  AS name,'CA'     AS parent,'Asset'     AS nature,0 AS agp,0 AS sub,11 AS ordinal UNION ALL
     SELECT 'CASH',     'Cash-in-Hand',                          'CA',    'Asset',    0,0,12 UNION ALL
     SELECT 'DEBTORS',  'Sundry Debtors',                        'CA',    'Asset',    0,1,13 UNION ALL
@@ -4470,8 +4613,8 @@ FROM (
     SELECT 'CONCEXP',  'Concessions and Scholarships',          'EXPIND','Expense',  0,0,106 UNION ALL
     SELECT 'WOEXP',    'Bad Debts and Write-Offs',              'EXPIND','Expense',  0,0,107 UNION ALL
     SELECT 'ROUNDEXP', 'Rounding Off',                          'EXPIND','Expense',  0,0,108
-) x
-JOIN `acc_account_groups` p ON p.code = x.parent AND p.deleted_at IS NULL;
+ ) x
+ JOIN `acc_account_groups` p ON p.code = x.parent AND p.deleted_at IS NULL;
 
 -- The materialised `path` and `depth` columns are filled by `php artisan acc:rebuild-group-paths`,
 -- because a path is built from auto-increment ids that do not exist until these rows are inserted.
@@ -4479,8 +4622,8 @@ JOIN `acc_account_groups` p ON p.code = x.parent AND p.deleted_at IS NULL;
 -- ── System ledgers. is_system = 1: they may not be deleted, and the posting engine expects them by code.
 --    Rounding Off exists so BR-ROUND-02 has somewhere to post; Suspense so BR-SUSP-01 does. ─────────────
 INSERT IGNORE INTO `acc_ledgers` (`code`,`name`,`account_group_id`,`ledger_type`,`is_system`,`is_active`,`allow_reconciliation`,`is_bill_wise`)
-SELECT x.code, x.name, g.id, x.ledger_type, 1, 1, x.recon, 0
-FROM (
+ SELECT x.code, x.name, g.id, x.ledger_type, 1, 1, x.recon, 0
+ FROM (
     SELECT 'CASH-MAIN'  AS code,'Cash in Hand'              AS name,'CASH'     AS grp,'Cash'     AS ledger_type,0 AS recon UNION ALL
     SELECT 'PETTYCASH', 'Petty Cash',                        'CASH',    'Cash',    0 UNION ALL
     SELECT 'SUSPENSE',  'Suspense',                          'SUSPENSE','Suspense',0 UNION ALL
@@ -4502,12 +4645,12 @@ FROM (
     SELECT 'BANKCHRG',  'Bank Charges',                      'FINEXP',  'General', 0 UNION ALL
     SELECT 'DONATION',  'Donations Received',                'DONINC',  'General', 0 UNION ALL
     SELECT 'GRANTINC',  'Grant Income',                      'GRANTINC','General', 0
-) x
-JOIN `acc_account_groups` g ON g.code = x.grp AND g.deleted_at IS NULL;
+ ) x
+ JOIN `acc_account_groups` g ON g.code = x.grp AND g.deleted_at IS NULL;
 
 -- ── Voucher categories: which business area produces a voucher type. module_key is glb_app_modules.key,
 --    which lives in the GLOBAL database — hence no foreign key (§17.1 #2). ────────────────────────────────
-INSERT IGNORE INTO `acc_voucher_category` (`module_key`,`code`,`name`,`event_detail`,`module_table_name`) VALUES
+INSERT IGNORE INTO `acc_voucher_categories` (`module_key`,`code`,`name`,`event_detail`,`module_table_name`) VALUES
     ('ACC','ACCOUNTING',     'Accounting',        'Vouchers entered directly in Accounting', NULL),
     ('FEE','FEE_COLLECTION', 'Fee Collection',    'Fee demands, receipts and concessions',   'fee_transactions'),
     ('LIB','LIBRARY',        'Library',           'Library fines and charges',               'lib_fines'),
@@ -4524,11 +4667,11 @@ INSERT IGNORE INTO `acc_voucher_types`
      `numbering_method`,`restart_policy`,`requires_party`,`creates_bill_reference`,`requires_narration`,
      `requires_evidence`,`requires_bank_details`,`allow_zero_value`,`allow_post_dated`,
      `allowed_ledger_types`,`forbidden_ledger_types`,`affects_books`,`default_entry_mode`,`is_system`,`ordinal`)
-SELECT x.code, x.name, x.school_label, c.id, x.base_type, x.prefix, 5,
+ SELECT x.code, x.name, x.school_label, c.id, x.base_type, x.prefix, 5,
        'Auto','Financial_Year', x.req_party, x.creates_bill, x.req_narration,
        x.req_evidence, x.req_bank, 0, x.post_dated,
        x.allowed, x.forbidden, x.affects, x.entry_mode, 1, x.ordinal
-FROM (
+ FROM (
     SELECT 'PAYMENT'    AS code,'Payment'     AS name,'Payment'          AS school_label,'ACCOUNTING' AS cat,'Payment'     AS base_type,'PAY' AS prefix,0 AS req_party,0 AS creates_bill,1 AS req_narration,0 AS req_evidence,1 AS req_bank,1 AS post_dated,'' AS allowed,'' AS forbidden,1 AS affects,'Double' AS entry_mode,10 AS ordinal UNION ALL
     SELECT 'RECEIPT',    'Receipt',      'Receipt',          'ACCOUNTING','Receipt',    'RCP',0,0,1,0,1,1,'','',1,'Double',20 UNION ALL
     -- Contra moves money between the school's own cash and bank accounts and nothing else.
@@ -4541,8 +4684,8 @@ FROM (
     SELECT 'DEBIT_NOTE', 'Debit Note',   'Debit Note',       'ACCOUNTING','Debit_Note', 'DBN',1,0,1,0,0,0,'','',1,'Double',80 UNION ALL
     -- affects_books = 0. A memorandum voucher appears in NO financial statement, ever (BR-PROV-01).
     SELECT 'MEMORANDUM', 'Memorandum',   'Memo (not posted)','ACCOUNTING','Memorandum', 'MEM',0,0,1,0,0,0,'','',0,'Double',90
-) x
-JOIN `acc_voucher_category` c ON c.code = x.cat AND c.deleted_at IS NULL;
+ ) x
+ JOIN `acc_voucher_categories` c ON c.code = x.cat AND c.deleted_at IS NULL;
 
 -- ── Tax types (BRD §45: GST and TDS only; VAT, CST, Service Tax and Excise are dead regimes). ───────────
 INSERT IGNORE INTO `acc_tax_types` (`code`,`name`,`tax_family`,`is_input`,`ordinal`,`is_active`) VALUES
@@ -4661,68 +4804,131 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- =========================================================================================================
 -- CHANGE LOG
 -- ---------------------------------------------------------------------------------------------------------
+-- 4.6   Removes the del_marker soft-delete column. Schema is otherwise identical to v4.5.
+-- ---------------------------------------------------------------------------------------------------------
+    --       WHAT CHANGED
+    --         * Dropped the generated column
+    --               `del_marker` BIGINT UNSIGNED GENERATED ALWAYS AS (IFNULL(UNIX_TIMESTAMP(`deleted_at`),0)) STORED
+    --           from all 30 tables that carried it.
+    --         * Removed `del_marker` from the 42 unique keys that ended with it. Every one of those keys
+    --           keeps its remaining columns and its name, so no index was added or renamed:
+    --               UNIQUE (`code`,`del_marker`)  ->  UNIQUE (`code`)
+    --               UNIQUE (`name`,`del_marker`)  ->  UNIQUE (`name`)
+    --         * `deleted_at` is untouched. Soft delete still works; it simply no longer widens a key.
+    --
+    --       WHY
+    --         A code or a name that a deleted row already holds should not be handed to a new row. Keeping
+    --         one extra stored column plus a wider index in 30 tables to permit that was cost without
+    --         benefit. See UNIQUENESS IS ABSOLUTE in the file header.
+    --
+    --       TABLES AFFECTED (30)
+    --         acc_campuses · acc_account_groups · acc_ledgers · acc_cost_categories · acc_cost_centers
+    --         acc_funds · acc_voucher_categories · acc_voucher_types · acc_tax_types · acc_tax_rules
+    --         acc_bill_references · acc_opening_balances · acc_cheque_registers · acc_bank_reconciliations
+    --         acc_recurring_templates · acc_asset_categories · acc_fixed_assets · acc_expense_claims
+    --         acc_budgets · acc_interest_rules · acc_concessions · acc_donations · acc_grants
+    --         acc_tds_certificates · acc_tds_payments · acc_ledger_mappings · acc_module_events
+    --         acc_event_voucher_configs · acc_tally_ledger_mappings · acc_exception_rules
+    --         (acc_donations carried the column but no key used it — dropped as dead weight.)
+    --
+    --       STILL PRESENT, AND UNRELATED
+    --         The NULL-safe markers — period_marker, campus_marker, fund_marker, cc_marker, ledger_marker,
+    --         group_marker, bill_marker, source_type_marker, source_id_marker — are NOT soft-delete
+    --         markers. They exist because MySQL treats NULLs as distinct in a unique key, and a nullable
+    --         dimension column would otherwise permit duplicate rows. They stay.
+    --
+    --       WHERE THE APPLICATION MUST CHANGE
+    --         1. Re-creating a soft-deleted master raises ER_DUP_ENTRY (1062). Create forms must catch it
+    --            and offer to RESTORE the deleted row instead of inserting a new one. Affected: account
+    --            groups, ledgers, cost categories, cost centres, funds, voucher types, tax types, tax
+    --            rules, asset categories, recurring templates, interest rules, exception rules.
+    --         2. acc_ledgers: `uq_acc_ledger_student` / `_employee` / `_vendor` are now one ledger per
+    --            party for the life of the table. A re-admitted student reuses the restored ledger, which
+    --            is also the correct accounting outcome — the history belongs to the party.
+    --         3. acc_opening_balances: `uq_acc_ob` no longer distinguishes a superseded row from its
+    --            replacement. A BR-OPEN-04 correction must update the row in place, not insert a second
+    --            one. If supersession as a second row is required, this is the one key that needs a
+    --            version column (not del_marker) to express it.
+    --         4. Deleting and re-entering the same document is likewise blocked and must go through
+    --            restore: acc_bank_reconciliations (bank + statement_date), acc_cheque_registers (bank +
+    --            book_number), acc_tds_payments (challan_no + challan_date), acc_bill_references
+    --            (ledger + reference_no + year), acc_tds_certificates (party + certificate + section).
+    --
+    --       MIGRATION FROM AN EXISTING v4.5 DATABASE
+    --         Before dropping the column, find rows that the narrower key will reject:
+    --             SELECT code, COUNT(*) FROM acc_account_groups GROUP BY code HAVING COUNT(*) > 1;
+    --         (repeat per table and per key). Resolve each collision — hard-delete or re-code the dead
+    --         row — then, per table:
+    --             ALTER TABLE acc_account_groups DROP INDEX uq_acc_ag_code, DROP INDEX uq_acc_ag_name;
+    --             ALTER TABLE acc_account_groups DROP COLUMN del_marker;
+    --             ALTER TABLE acc_account_groups ADD UNIQUE KEY uq_acc_ag_code (code),
+    --                                            ADD UNIQUE KEY uq_acc_ag_name (name);
+    --         Order matters: the index must go before the generated column it references.
+--
 -- 4.5   Completes the v4.4 plan. Sections 1-7 carried forward unchanged; Sections 8-20 written.
---
---       New in Sections 8-20 (47 tables, 22 views; 75 tables in the module overall):
---         Balances     acc_ledger_period_balances · acc_period_closing_balances · acc_opening_balances
---                      acc_fund_balances · acc_bill_reference_balances · acc_period_close_checklist
---         Banking      acc_cheque_registers · acc_cheque_leaves · acc_cheque_transactions
---                      acc_bank_reconciliations · acc_bank_statement_mapping · acc_bank_statement_entries
---                      acc_bank_reconciliation_matches
---         Recurring    acc_recurring_templates · acc_recurring_template_lines
---                      acc_recurring_transaction_log
---         Assets       acc_asset_categories · acc_fixed_assets · acc_depreciation_entries
---                      acc_asset_disposals
---         Claims       acc_expense_claims · acc_expense_claim_lines
---         Budgets      acc_budgets · acc_budget_lines · acc_interest_rules · acc_interest_computations
---                      acc_credit_limit_overrides
---         School       acc_concessions · acc_donations · acc_grants
---         TDS          acc_tds_certificates · acc_tds_deductions · acc_tds_payments
---                      acc_tds_payment_allocations
---         Integration  acc_ledger_mappings · acc_module_events · acc_event_voucher_configs
---                      acc_event_voucher_line_templates · acc_event_processing_log
---                      acc_module_reconciliation
---         Tally        acc_tally_export_logs · acc_tally_ledger_mappings
---         Control      acc_audit_logs · acc_exception_rules · acc_exceptions · acc_assertion_results
---                      acc_settings
---
---       Defects corrected in this half of the file, beyond those v4.4 listed:
---         a. acc_fixed_assets stored current_value and accumulated_depreciation with no maintenance
---            rule — the acc_ledgers.closing_balance defect again. Derived (vw_fixed_asset_register).
---         b. acc_bank_statement_entries matched a statement row with one nullable column, which cannot
---            express propose / confirm / reject / undo. Replaced by acc_bank_reconciliation_matches.
---         c. acc_recurring_transaction_log reused fk_acc_rtl_template and idx_acc_rtl_template from
---            acc_recurring_template_lines. Constraint names are unique per schema; renamed.
---         d. acc_recurring_transaction_log had no uniqueness, so running the scheduler twice in one day
---            posted twice. UNIQUE (template, scheduled_date).
---         e. acc_event_processing_log deliberately had no idempotency key, so replaying a day of events
---            re-posted the day. UNIQUE (event, source_model, source_id, source_event_uid).
---         f. ~45 lines of raw non-comment text after acc_expense_claim_lines — a syntax error. The
---            posting map it described is preserved as comments in the Section 12 header.
---         g. acc_asset_categories, acc_fixed_assets, acc_expense_claims and acc_tally_ledger_mappings
---            used UNIQUE(code, deleted_at), which permits unlimited LIVE duplicates. del_marker.
---         h. acc_ledger_mappings hard-coded a seven-value ENUM of module names, so an eighth module
---            needed a schema change. module_key VARCHAR(10), as everywhere else.
---         i. Generic acc_accounting_status_masters foreign keys on bank reconciliations, expense claims,
---            Tally exports and the event log — a claim's status could be a voucher status. Typed ENUMs.
---         j. acc_voucher_number_sequences (carried forward) had UNIQUE(type, year, period_id) with
---            period_id NULL for non-monthly types, which MySQL does not enforce. period_marker.
---         k. Nine further unique keys spanning nullable columns made NULL-safe with generated markers.
---
---       Deliberately NOT included, per Solution_Design_v1 §17.3: triggers, stored procedures, inventory
---       tables, dead tax regimes, physical partitioning.
+-- ---------------------------------------------------------------------------------------------------------
+    --       New in Sections 8-20 (47 tables, 22 views; 75 tables in the module overall):
+    --         Balances     acc_ledger_period_balances · acc_period_closing_balances · acc_opening_balances
+    --                      acc_fund_balances · acc_bill_reference_balances · acc_period_close_checklist
+    --         Banking      acc_cheque_registers · acc_cheque_leaves · acc_cheque_transactions
+    --                      acc_bank_reconciliations · acc_bank_statement_mapping · acc_bank_statement_entries
+    --                      acc_bank_reconciliation_matches
+    --         Recurring    acc_recurring_templates · acc_recurring_template_lines
+    --                      acc_recurring_transaction_log
+    --         Assets       acc_asset_categories · acc_fixed_assets · acc_depreciation_entries
+    --                      acc_asset_disposals
+    --         Claims       acc_expense_claims · acc_expense_claim_lines
+    --         Budgets      acc_budgets · acc_budget_lines · acc_interest_rules · acc_interest_computations
+    --                      acc_credit_limit_overrides
+    --         School       acc_concessions · acc_donations · acc_grants
+    --         TDS          acc_tds_certificates · acc_tds_deductions · acc_tds_payments
+    --                      acc_tds_payment_allocations
+    --         Integration  acc_ledger_mappings · acc_module_events · acc_event_voucher_configs
+    --                      acc_event_voucher_line_templates · acc_event_processing_log
+    --                      acc_module_reconciliation
+    --         Tally        acc_tally_export_logs · acc_tally_ledger_mappings
+    --         Control      acc_audit_logs · acc_exception_rules · acc_exceptions · acc_assertion_results
+    --                      acc_settings
+    --
+    --       Defects corrected in this half of the file, beyond those v4.4 listed:
+    --         a. acc_fixed_assets stored current_value and accumulated_depreciation with no maintenance
+    --            rule — the acc_ledgers.closing_balance defect again. Derived (vw_fixed_asset_register).
+    --         b. acc_bank_statement_entries matched a statement row with one nullable column, which cannot
+    --            express propose / confirm / reject / undo. Replaced by acc_bank_reconciliation_matches.
+    --         c. acc_recurring_transaction_log reused fk_acc_rtl_template and idx_acc_rtl_template from
+    --            acc_recurring_template_lines. Constraint names are unique per schema; renamed.
+    --         d. acc_recurring_transaction_log had no uniqueness, so running the scheduler twice in one day
+    --            posted twice. UNIQUE (template, scheduled_date).
+    --         e. acc_event_processing_log deliberately had no idempotency key, so replaying a day of events
+    --            re-posted the day. UNIQUE (event, source_model, source_id, source_event_uid).
+    --         f. ~45 lines of raw non-comment text after acc_expense_claim_lines — a syntax error. The
+    --            posting map it described is preserved as comments in the Section 12 header.
+    --         g. acc_asset_categories, acc_fixed_assets, acc_expense_claims and acc_tally_ledger_mappings
+    --            used UNIQUE(code, deleted_at), which permits unlimited LIVE duplicates. del_marker
+    --            (removed again in 4.6 — the code is now unique outright).
+    --         h. acc_ledger_mappings hard-coded a seven-value ENUM of module names, so an eighth module
+    --            needed a schema change. module_key VARCHAR(10), as everywhere else.
+    --         i. Generic acc_accounting_status_masters foreign keys on bank reconciliations, expense claims,
+    --            Tally exports and the event log — a claim's status could be a voucher status. Typed ENUMs.
+    --         j. acc_voucher_number_sequences (carried forward) had UNIQUE(type, year, period_id) with
+    --            period_id NULL for non-monthly types, which MySQL does not enforce. period_marker.
+    --         k. Nine further unique keys spanning nullable columns made NULL-safe with generated markers.
+    --
+    --       Deliberately NOT included, per Solution_Design_v1 §17.3: triggers, stored procedures, inventory
+    --       tables, dead tax regimes, physical partitioning.
 --
 -- 4.4   Sections 1-7. Corrected the twenty v4.3 defects listed in the file header; introduced periods,
 --       bill-wise accounting, funds, currency, numbering sequences and typed statuses.
 -- 4.3   Prior version. Did not execute: nine defects prevented the script from running.
 -- ---------------------------------------------------------------------------------------------------------
 -- AFTER RUNNING THIS FILE
---   1. php artisan acc:rebuild-group-paths      fill acc_account_groups.path and depth
---   2. Create the financial year; PeriodService generates its twelve accounting periods
---   3. Enter opening balances, then finalise them (they must balance — BR-OPEN-02)
---   4. php artisan acc:rebuild-balances         build acc_ledger_period_balances
---   5. php artisan acc:assert --all             every assertion must pass before go-live
---   6. As DBA, per tenant:
---        REVOKE UPDATE, DELETE ON <tenant_db>.acc_audit_logs FROM '<app_user>'@'%';
---      The audit trail is append-only by GRANT, because no MySQL table type enforces it (BR-AUD-03).
+-- ---------------------------------------------------------------------------------------------------------
+    --   1. php artisan acc:rebuild-group-paths      fill acc_account_groups.path and depth
+    --   2. Create the financial year; PeriodService generates its twelve accounting periods
+    --   3. Enter opening balances, then finalise them (they must balance — BR-OPEN-02)
+    --   4. php artisan acc:rebuild-balances         build acc_ledger_period_balances
+    --   5. php artisan acc:assert --all             every assertion must pass before go-live
+    --   6. As DBA, per tenant:
+    --        REVOKE UPDATE, DELETE ON <tenant_db>.acc_audit_logs FROM '<app_user>'@'%';
+    --      The audit trail is append-only by GRANT, because no MySQL table type enforces it (BR-AUD-03).
 -- =========================================================================================================
