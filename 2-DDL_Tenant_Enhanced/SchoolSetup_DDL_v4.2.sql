@@ -47,7 +47,7 @@
 
   CREATE TABLE IF NOT EXISTS `sch_class_section_jnt` (
     `id` int unsigned NOT NULL AUTO_INCREMENT,
-    `ordinal` tinyint DEFAULT NOT NULL DEFAULT 0,                        -- will have sequence order  (Added new) (Auto Update by Drag & Drop)
+    `ordinal` tinyint DEFAULT NOT NULL DEFAULT 0,          -- will have sequence order  (Added new) (Auto Update by Drag & Drop)
     `class_id` int unsigned NOT NULL,                      -- FK to sch_classes
     `section_id` int unsigned NOT NULL,                    -- FK to sch_sections
     `code` char(10) NOT NULL,                              -- Combination of class Code + section Code i.e. '8th_A', '10h_B' (Changed from class_secton_code)
