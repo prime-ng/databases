@@ -1191,11 +1191,15 @@ A cron-driven execution schedule with an owner, a catch-up policy and a **missed
 ```
 name             : "Nightly Syllabus + Fees"
 owner_user_code  : D02
-cron_expression  : "0 2 * * *"      timezone : Asia/Kolkata
+cron_expression  : "0 2 * * *"      
+timezone         : Asia/Kolkata
 catch_up_policy  : Skip
-is_active 1 · is_suspended 0
+is_active        : 1 
+is_suspended     : 0
 next_run_at      : 2026-09-10 02:00
-last_run_id 5501 · last_run_at 2026-09-09 02:00 · last_status Success
+last_run_id      : 5501
+last_run_at      : 2026-09-09 02:00
+last_status      : Success
 missed_count     : 2
 ```
 
@@ -1220,6 +1224,16 @@ missed_count     : 2
 
 ### Keys & rules
 `UNIQUE (name)` · `CHECK` — suspension requires a reason.
+
+### Purpose & Function
+Defines Execution Frequency: It stores a standard 5-field cron syntax string (e.g., 0 2 * * * for running daily at 2:00 AM) that specifies when the scheduled test run should automatically fire.
+Timezone Evaluation: It is evaluated in combination with the adjacent timezone column (default 'Asia/Kolkata') to compute the exact trigger times regardless of server local time.
+
+### How it operates in the system architecture
+1. Schedule Dispatching (ScheduleDispatchJob): A background dispatcher job runs every minute on target test machines to evaluate active schedules against their cron_expression.
+2. Next Run Calculation: When a schedule is created or completes a run, the system uses cron_expression + timezone to calculate and populate the next_run_at timestamp column.
+3. Execution & Catch-Up: When next_run_at is reached, ScheduleDispatchJob triggers automated test runs for all targets assigned in tst_schedule_targets. If a execution was missed, it works alongside catch_up_policy (Skip, Run_Once, or Run_All) to resolve missed firings.
+
 
 ## 6.2 `tst_schedule_targets` — what to run, and on WHICH machine
 

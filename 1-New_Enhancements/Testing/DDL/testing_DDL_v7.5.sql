@@ -2,11 +2,10 @@
 -- Prime-AI Testing Application — Database Schema
 -- ============================================================================================================================================================
 -- Project       : prime_testing
--- File          : testing_DDL_v7.3.sql (Brijesh's revision of testing_DDL_v7.2.sql)
--- Version       : 7.3
--- Date          : 2026-09-09
+-- File          : testing_DDL_v7.5.sql (Brijesh's revision of testing_DDL_v7.2.sql)
+-- Version       : 7.5 (Base Version 7.3)
+-- Date          : 2026-09-12 @ 12:16am
 -- Supersedes    : testing_DDL_v7.1.sql  (Brijesh's revision of v7.0)
--- Table prefix  : tst_*   (58 tables — 44 in Phase 1, 14 in Phase 2)
 -- MySQL         : 8.0.16 or later   (CHECK constraints are only ENFORCED from 8.0.16)
 -- Engine        : InnoDB / utf8mb4 / utf8mb4_unicode_ci
 --
@@ -14,101 +13,100 @@
 -- Designed in   : Solution_Design_v3.md   (solution design       — decides HOW)
 -- ============================================================================================================================================================
 --
--- ---------------------------------------------------------------------------------------------------------
+-- -----------------------------------------------------------------------------------------------------------------------------------------
 -- THIS FILE IS IN TWO PARTS
--- ---------------------------------------------------------------------------------------------------------
-   --     PHASE 1 — RECORD AND DIAGNOSE      Sections  1 .. 14      44 tables
+-- -----------------------------------------------------------------------------------------------------------------------------------------
+--        (Table prefix  : tst_*   (63 tables — 49 in Phase 1, 14 in Phase 2))
+   --     PHASE 1 — RECORD AND DIAGNOSE      Sections  1 .. 14       49 tables
    --         A tester can plan, author, review, schedule, execute and evidence a test on their own machine;
    --         a lead can read what happened, drive a bug to verified closure, and consolidate every machine's
    --         evidence into one place.
    --
-   --     PHASE 2 — CORRELATE AND SELECT     Sections 20 .. 31      14 tables
+   --     PHASE 2 — CORRELATE AND SELECT     Sections 20 .. 31       14 tables
    --         The application can say WHICH tests a change requires, because it knows what changed in Git,
    --         which files map to which screens, what depends on what, and which tests are in which suite.
    --
    --     Phase 1 runs on its own. Stop after Section 14 and you have a complete, installable system.
    --     See "THE PHASE RULE" below for how that is guaranteed.
---
--- ---------------------------------------------------------------------------------------------------------
+-- -----------------------------------------------------------------------------------------------------------------------------------------
 -- THE CODING SYSTEM  —  the single most important thing in this schema
--- ---------------------------------------------------------------------------------------------------------
-   --     v7.0 used a surrogate integer as the relational key and carried a business code alongside for
-   --     recognition on import. v7.1 replaced that with a SELF-DESCRIBING COMPOSITE CODE. v7.2 completes
-   --     that change across every table.
-   --
-   --         user_code        VARCHAR(3)     D02                     role letter + 2 digits
-   --         machine_number   ENUM('A'..'Z') A
-   --         machine_code     VARCHAR(4)     D02A                    GENERATED  user_code || machine_number
-   --
-   --         module_code      VARCHAR(5)     SLB
-   --         cat_code         VARCHAR(3)     T01
-   --         mm_code          VARCHAR(5)     T0104                   contains cat_code as a prefix
-   --         sm_code          VARCHAR(7)     T010401                 contains mm_code  as a prefix
-   --         ts_code          VARCHAR(11)    T0104010200             contains sm_code  as a prefix
-   --
-   --         tcr_code         VARCHAR(21)    D02A_T0104010200_0001   GENERATED
-   --                                         machine_code || '_' || ts_code || '_' || LPAD(tc_list_number,4,'0')
-   --         test_case_code   VARCHAR(21)    D02A_T0104010200_0001    GENERATED
-   --                                         machine_code || '_' || ts_code || '_' || LPAD(tc_seq_number,3,'0')
-   --
-   --     TWO PROPERTIES DO ALL THE WORK
-   --
-   --       1. THE CATALOG CODES ARE POSITIONALLY NESTED.
-   --          T0104010200 IS a screen under T010401, under T0104, under T01. The hierarchy is readable from
-   --          the code, and is ALSO enforced by composite foreign keys, so the two can never disagree.
-   --
-   --       2. THE TEST CASE CODE EMBEDS THE AUTHORING MACHINE.
-   --          Two people authoring the same test on the same screen produce
-   --              D02A_T0104010200_001   and   T01A_T0104010200_001
-   --          Different codes. Both valid. Neither wrong. COLLISION IS STRUCTURALLY IMPOSSIBLE, with no
-   --          central number allocator and no UUID.
-   --
-   --     WHAT THIS REMOVES
-   --          - the id-to-code translation layer at every import boundary  (codes are identical everywhere)
-   --          - tst_source_test_cases and its entire reconciliation path   (see "REMOVED TABLES" below)
-   --          - tst_code_allocations                                       (the machine segment allocates)
-   --          - ambiguity in a log line: D02A_T0104010200_001 resolves without a database lookup
-   --
-   --     WHAT IT COSTS, HONESTLY
-   --          21 bytes per index entry instead of 4. On the 6,000,000-row results table that is roughly
-   --          100 MB of index, against artefacts occupying tens of gigabytes. At this scale the trade is
-   --          clearly worth it. At a hundred times this scale it would not be — BRD OPEN-05 records that.
+-- -----------------------------------------------------------------------------------------------------------------------------------------
 --
--- ---------------------------------------------------------------------------------------------------------
+   --  v7.0 used a surrogate integer as the relational key and carried a business code alongside for
+   --  recognition on import. v7.1 replaced that with a SELF-DESCRIBING COMPOSITE CODE. v7.2 completes
+   --  that change across every table.
+   --
+   --      user_code        VARCHAR(3)     D02                     role letter + 2 digits
+   --      machine_number   ENUM('A'..'Z') A                       1 Letter (A to Z)
+   --      machine_code     VARCHAR(4)     D02A                    GENERATED  user_code || machine_number
+   --
+   --      module_code      VARCHAR(5)     SLB                     Development Module (Must, Can Not be Null)
+   --      cat_code         VARCHAR(3)     T01                     Top Level in TestCase Catelog (Must, Can Not be Null)
+   --      mm_code          VARCHAR(5)     T0104                   contains cat_code as a prefix (Must, Can Not be Null)
+   --      sm_code          VARCHAR(7)     T010401                 contains mm_code  as a prefix (If not avalable will be '00)
+   --      ts_code          VARCHAR(11)    T0104010200             contains sm_code  as a prefix (Contain Tab+Sub-Tab Code)
+   --
+   --      tcr_code         VARCHAR(21)    D02A_T0104010200_0001   GENERATED
+   --                                      machine_code || '_' || ts_code || '_' || LPAD(tc_list_number,4,'0')
+   --      test_case_code   VARCHAR(21)    D02A_T0104010200_0001    GENERATED
+   --                                      machine_code || '_' || ts_code || '_' || LPAD(tc_seq_number,3,'0')
+   --
+   --  TWO PROPERTIES DO ALL THE WORK
+   --
+   --    1. THE CATALOG CODES ARE POSITIONALLY NESTED.
+   --       T0104010200 IS a screen under T010401(Sub-Menu), under T0104(Main Menu), under T01(Category). The hierarchy is readable from the
+   --       code, and is ALSO enforced by composite foreign keys, so the two can never disagree.
+   --
+   --    2. THE TEST CASE CODE EMBEDS THE AUTHORING MACHINE.
+   --       Two people authoring the same test on the same screen produce
+   --           D02A_T0104010200_001   and   T01A_T0104010200_001
+   --       Different codes. Both valid. Neither wrong. COLLISION IS STRUCTURALLY IMPOSSIBLE, with no central number allocator and no UUID.
+   --
+   --  WHAT THIS REMOVES
+   --       - the id-to-code translation layer at every import boundary  (codes are identical everywhere)
+   --       - tst_source_test_cases and its entire reconciliation path   (see "REMOVED TABLES" below)
+   --       - tst_code_allocations                                       (the machine segment allocates)
+   --       - ambiguity in a log line: D02A_T0104010200_001 resolves without a database lookup
+   --
+   --  WHAT IT COSTS, HONESTLY
+   --       21 bytes per index entry instead of 4. On the 6,000,000-row results table that is roughly 100 MB of index, against artefacts
+   --       occupying tens of gigabytes. At this scale the trade is clearly worth it. At a hundred times this scale it would not be
+   --       — BRD OPEN-05 records that.
+-- -----------------------------------------------------------------------------------------------------------------------------------------
 -- WHAT MySQL FORCES ON US  —  read this before changing any foreign key in this file
--- ---------------------------------------------------------------------------------------------------------
+-- -----------------------------------------------------------------------------------------------------------------------------------------
+--
    --     These are not preferences. The generated-column design makes them mandatory.
    --
-   --       MC-1  A foreign key CANNOT reference a VIRTUAL generated column.
-   --             -> machine_code, tcr_code and test_case_code are all declared STORED.
+   --    MC-1  A foreign key CANNOT reference a VIRTUAL generated column.
+   --          -> machine_code, tcr_code and test_case_code are all declared STORED.
    --
-   --       MC-2  A foreign key ON A BASE COLUMN of a stored generated column cannot use CASCADE, SET NULL
-   --             or SET DEFAULT for ON UPDATE or ON DELETE.
-   --             -> tst_test_cases.machine_code, tst_test_cases.ts_code and tst_machines.owner_user_code
-   --                are ON DELETE RESTRICT. They cannot be anything else. Do not "tidy" them.
+   --    MC-2  A foreign key ON A BASE COLUMN of a stored generated column cannot use CASCADE, SET NULL or SET DEFAULT for ON UPDATE or ON DELETE.
+   --          -> tst_test_cases.machine_code, tst_test_cases.ts_code and tst_machines.owner_user_code
+   --             are ON DELETE RESTRICT. They cannot be anything else. Do not "tidy" them.
    --
-   --       MC-3  Following MC-2, ON UPDATE CASCADE is IMPOSSIBLE on any code that feeds a generated column.
-   --             -> THERE IS NO MECHANISM BY WHICH A RENAME COULD PROPAGATE.
+   --    MC-3  Following MC-2, ON UPDATE CASCADE is IMPOSSIBLE on any code that feeds a generated column.
+   --          -> THERE IS NO MECHANISM BY WHICH A RENAME COULD PROPAGATE.
    --                This is why "a business code is permanent" (BRD R-17) is a rule and not a guideline:
    --                the database will not let anyone break it, including a data-fix script at 2am.
    --                The correct operation is always: deactivate, create new, record the relationship.
    --
-   --       MC-4  A generated column's expression must be deterministic.
-   --             -> The codes are pure CONCAT and LPAD. No NOW(), no session state.
+   --    MC-4  A generated column's expression must be deterministic.
+   --          -> The codes are pure CONCAT and LPAD. No NOW(), no session state.
    --
-   --       MC-5  The referenced side of a foreign key must be a UNIQUE index.
-   --             -> uq_tst_machines_code, uq_tst_tcRequired_code, uq_tst_testCases_tcCode.
+   --    MC-5  The referenced side of a foreign key must be a UNIQUE index.
+   --          -> uq_tst_machines_code, uq_tst_tcRequired_code, uq_tst_testCases_tcCode.
    --
-   --       MC-6  Both sides of a string foreign key must share a character set and collation, and differing
-   --             VARCHAR lengths are ACCEPTED BY MySQL — which is worse than being rejected, because the
-   --             constraint is created, the index is unusable for the intended lookups, and a value can be
-   --             silently truncated on insert into the narrower side.
-   --             -> EVERY declaration of a given code in this file has an IDENTICAL width. See corrections
-   --                9 to 12 below for what v7.1 looked like before this was fixed.
---
--- ---------------------------------------------------------------------------------------------------------
+   --    MC-6  Both sides of a string foreign key must share a character set and collation, and differing
+   --          VARCHAR lengths are ACCEPTED BY MySQL — which is worse than being rejected, because the
+   --          constraint is created, the index is unusable for the intended lookups, and a value can be
+   --          silently truncated on insert into the narrower side.
+   --          -> EVERY declaration of a given code in this file has an IDENTICAL width. See corrections
+   --             9 to 12 below for what v7.1 looked like before this was fixed.
+-- -----------------------------------------------------------------------------------------------------------------------------------------
 -- THE PHASE RULE  (Solution_Design_v3 SD-01, SD-02)
--- ---------------------------------------------------------------------------------------------------------
+-- -----------------------------------------------------------------------------------------------------------------------------------------
+--
    --     A PHASE-1 TABLE NEVER CARRIES A FOREIGN KEY TO A PHASE-2 TABLE.
    --
    --     Five Phase-1 tables hold columns that will later point at Phase-2 entities:
@@ -125,64 +123,54 @@
    --
    --     Phase 2 therefore contains CREATE TABLE, ALTER TABLE ... ADD CONSTRAINT, CREATE OR REPLACE VIEW
    --     and INSERT. It contains no ADD COLUMN, no MODIFY COLUMN and no DROP.
---
--- ---------------------------------------------------------------------------------------------------------
+-- -----------------------------------------------------------------------------------------------------------------------------------------
 -- TABLES REMOVED SINCE v7.0  (owner decisions, plus two that the coding system made redundant)
--- ---------------------------------------------------------------------------------------------------------
-   --     tst_roles, tst_permissions, tst_role_permissions, tst_user_roles
-   --         Removed by the owner (BRD D-25). Four tables of matrix administration for a team where
-   --         everyone does everything. A single `role` enum on tst_users replaces them, plus an ownership
-   --         check in the policy layer. Revisit above ~15 users or on the first external contractor.
-   --
+-- -----------------------------------------------------------------------------------------------------------------------------------------
+--
    --     tst_releases
-   --         Removed by the owner (BRD D-26). The unit of release here is the TEST CASE, not a named
-   --         delivery, and tst_test_case_review carries the readiness score, the technical review and the
-   --         sign-off. "Release" survives only as a descriptive run-trigger label with no entity behind it.
+   --         Removed by the owner (BRD D-26). The unit of release here is the TEST CASE, not a named delivery, and tst_test_case_review
+   --         carries the readiness score, the technical review and the sign-off. "Release" survives only as a descriptive run-trigger 
+   --         label with no entity behind it.
    --
    --     tst_code_allocations
-   --         Removed. Its job was to hand out unique test-case numbers across machines. The machine segment
-   --         of the code now does that, without a central service that has to be reachable.
+   --         Removed. Its job was to hand out unique test-case numbers across machines. The machine segment of the code now does that,
+   --         without a central service that has to be reachable.
    --
-   --     tst_source_test_cases                              <-- the owner asked: "is this table required?"
+   --     tst_source_test_cases                                                             <-- the owner asked: "is this table required?"
    --         REMOVED. It is not, and this is the largest simplification in v7.2.
    --
-   --         WHAT IT SOLVED. Under v7.0 a test case's identity was screen + sequence. Two machines authoring
-   --         independently would BOTH mint T0104010200/001. Importing one into the other would either
-   --         collide or silently merge two different tests. This table held the incoming one in quarantine
-   --         until a human decided whether it was the same test.
+   --         WHAT IT SOLVED. Under v7.0 a test case's identity was screen + sequence. Two machines authoring independently would BOTH mint
+   --         T0104010200/001. Importing one into the other would either collide or silently merge two different tests. This table held the
+   --         incoming one in quarantine until a human decided whether it was the same test.
    --
-   --         WHY THE PROBLEM IS GONE. The codes are now D02A_T0104010200_001 and T01A_T0104010200_001.
-   --         Both import cleanly into tst_test_cases. Neither is ambiguous, so neither needs quarantine.
+   --         WHY THE PROBLEM IS GONE. The codes are now D02A_T0104010200_001 and T01A_T0104010200_001. Both import cleanly into 
+   --         tst_test_cases. Neither is ambiguous, so neither needs quarantine.
    --
-   --         WHAT REPLACES THE JUDGEMENT. The judgement was never about IDENTITY — it was about
-   --         EQUIVALENCE, which is a different question, and it belongs in tst_duplicate_test_case
-   --         (Proposed_Equivalent / Confirmed_Equivalent / Confirmed_Different / Duplicate_Of / Variant_Of /
-   --         Supersedes), insert-only, so the decision history survives.
+   --         WHAT REPLACES THE JUDGEMENT. The judgement was never about IDENTITY — it was about EQUIVALENCE, which is a different question,
+   --         and it belongs in tst_duplicate_test_case (Proposed_Equivalent / Confirmed_Equivalent / Confirmed_Different / Duplicate_Of /
+   --         Variant_Of / Supersedes), insert-only, so the decision history survives.
    --
-   --         NET EFFECT: one table removed, plus source_test_case_id and a CHECK constraint removed from
-   --         tst_test_run_items, plus an entire reconciliation path removed from the import service.
+   --         NET EFFECT: one table removed, plus source_test_case_id and a CHECK constraint removed from tst_test_run_items, plus an entire
+   --         reconciliation path removed from the import service.
    --
-   --     tst_schema_version                                 <-- the owner wrote: "I feel this is not required"
+   --     tst_schema_version                                                              <-- the owner wrote: "I feel this is not required"
    --         REMOVED, and the owner is right. Three mechanisms already record this fact:
    --             1. Laravel's own `migrations` table holds the applied history;
    --             2. tst_app_settings holds the current version as the key 'schema_version';
-   --             3. tst_data_exports.schema_version travels in every bundle and is what the importer
-   --                actually compares against.
-   --         Two mechanisms recording the same fact will eventually disagree, and the one that disagrees
-   --         is always the one nobody is watching.
-   --
-   --     tst_tags, tst_test_case_tags, tst_test_case_types, tst_test_case_statuses,
-   --     tst_testing_layers, tst_testing_methods, tst_testing_technologies, tst_master_registry
-   --         Removed by the owner. Each was a lookup table with a handful of fixed rows; they are now
-   --         ENUMs on tst_test_cases. A join to read "Dusk" is not worth a table.
+   --             3. tst_data_exports.schema_version travels in every bundle and is what the importer actually compares against.
+   --         Two mechanisms recording the same fact will eventually disagree, and the one that disagrees is always the one nobody is watching.
+   --     
+   --     tst_tags, tst_test_case_tags, tst_test_case_types, tst_test_case_statuses, tst_testing_layers, tst_testing_methods, 
+   --      tst_testing_technologies, tst_master_registry
+   --         Removed by the owner. Each was a lookup table with a handful of fixed rows; they are now ENUMs on tst_test_cases. A join to
+   --         read "Dusk" is not worth a table.
    --
    --     tst_test_case_links, tst_test_case_versions
-   --         Renamed by the owner to tst_duplicate_test_case and tst_test_case_versions_history, which
-   --         say what they hold.
---
--- ---------------------------------------------------------------------------------------------------------
+   --         Renamed by the owner to tst_duplicate_test_case and tst_test_case_versions_history, which say what they hold.
+-- -----------------------------------------------------------------------------------------------------------------------------------------
 -- TABLES ADDED SINCE v7.0
--- ---------------------------------------------------------------------------------------------------------
+-- -----------------------------------------------------------------------------------------------------------------------------------------
+--
    --     tst_tc_required_list        [P1] The TcList as a TABLE, not a markdown file. Coverage needs a
    --                                      denominator: "Fees is about half tested" is not a number;
    --                                      "214 required, 168 released" is.
@@ -193,44 +181,49 @@
    --     tst_schedule_targets        [P1] NEW IN v7.2. "Schedule execution on different machines for
    --                                      different modules/screens/test cases" cannot be expressed by one
    --                                      machine_id column on the schedule.
---
--- ---------------------------------------------------------------------------------------------------------
+-- -----------------------------------------------------------------------------------------------------------------------------------------
 -- CORRECTIONS TO v7.1  —  8 of these prevent the script from executing
--- ---------------------------------------------------------------------------------------------------------
-   --      1. tst_app_settings declared INDEX (group_name, ordinal); group_name does not exist.  FATAL
-   --         -> group_name added. It was a good idea, just an undeclared one.
-   --      2. tst_users declared foreign keys on created_by / updated_by / deleted_by. None of the three
-   --         columns is declared.                                                              FATAL
-   --         -> Declared, nullable, self-referencing (the bootstrap row needs NULL).
-   --      3. tst_users declared INDEX (primary_role_code); the column does not exist.           FATAL
-   --         -> Indexed on `role`.
-   --      4. tst_tc_required_list declared UNIQUE KEY (tc_list_code); the column is tcr_code.   FATAL
-   --      5. tst_test_case_versions_history declared FOREIGN KEY (test_case_id); the column is
-   --         test_case_code.                                                                    FATAL
-   --      6. tst_test_runs declared a generated test_case_code built from `machine_code`, which the table
-   --         does not declare (it has run_machine_code).                                        FATAL
-   --         -> Removed. A RUN IS AN EVENT COVERING MANY TEST CASES; giving it one test-case code is a
-   --            category error. The per-case link lives in tst_test_run_items.test_case_code.
-   --      7. The deferred block added foreign keys to tst_releases and tst_roles, both removed.  FATAL
-   --      8. tst_source_test_cases and tst_schema_version were declared at the END of the file, after the
-   --         tables that reference them.                                                        FATAL
-   --         -> Both removed entirely; see above.
-   --      9. test_case_code was VARCHAR(21) on the parent and VARCHAR(20) on every child.
-   --     10. user_code and every *_by column: VARCHAR(3) in some tables, VARCHAR(10) in others.
-   --     11. ts_code: VARCHAR(11) in some tables, VARCHAR(20) in others.
-   --     12. module_code: VARCHAR(5) in some tables, VARCHAR(10) in others.
-   --         -> 9 to 12 are all broken foreign keys. See MC-6. Every code now has ONE width.
-   --     13. tst_tc_required_list had no foreign key on machine_code and none on its audit columns.
-   --     14. tst_bugs.module_code VARCHAR(10) against a VARCHAR(5) parent.
-   --     15. Every view joined tst_test_cases on tc.id. Under the new model the joining key is
-   --         test_case_code, and a view joining on id returns NOTHING after consolidation, because a
-   --         central id does not match a local one.  -> All views rewritten.
-   --     16. tst_test_case_review.version_no carries no foreign key. INTENTIONAL — see the note on that
-   --         table. Recorded here so nobody "fixes" it.
+-- -----------------------------------------------------------------------------------------------------------------------------------------
 --
--- ---------------------------------------------------------------------------------------------------------
+   --   1. tst_app_settings declared INDEX (group_name, ordinal); group_name does not exist.                                           FATAL
+   --      -> group_name added. It was a good idea, just an undeclared one.
+   --   2. tst_users declared foreign keys on created_by / updated_by / deleted_by. None of the three columns is declared.             FATAL
+   --      -> Declared, nullable, self-referencing (the bootstrap row needs NULL).
+   --   3. tst_users declared INDEX (primary_role_code); the column does not exist.                                                    FATAL
+   --      -> Indexed on `role`.
+   --   4. tst_tc_required_list declared UNIQUE KEY (tc_list_code); the column is tcr_code.                                            FATAL
+   --   5. tst_test_case_versions_history declared FOREIGN KEY (test_case_id); the column is test_case_code.                           FATAL
+   --   6. tst_test_runs declared a generated test_case_code built from `machine_code`, which the table does not declare
+   --      (it has run_machine_code).                                                                                                  FATAL
+   --      -> Removed. A RUN IS AN EVENT COVERING MANY TEST CASES; giving it one test-case code is a category error.
+   --         The per-case link lives in tst_test_run_items.test_case_code.
+   --   7. The deferred block added foreign keys to tst_releases and tst_roles, both removed.                                          FATAL
+   --   8. tst_source_test_cases and tst_schema_version were declared at the END of the file, after the tables that reference them.    FATAL
+   --      -> Both removed entirely; see above.
+   --   9. test_case_code was VARCHAR(21) on the parent and VARCHAR(20) on every child.
+   --  10. user_code and every *_by column: VARCHAR(3) in some tables, VARCHAR(10) in others.
+   --  11. ts_code: VARCHAR(11) in some tables, VARCHAR(20) in others.
+   --  12. module_code: VARCHAR(5) in some tables, VARCHAR(10) in others.
+   --      -> 9 to 12 are all broken foreign keys. See MC-6. Every code now has ONE width.
+   --  13. tst_tc_required_list had no foreign key on machine_code and none on its audit columns.
+   --  14. tst_bugs.module_code VARCHAR(10) against a VARCHAR(5) parent.
+   --  15. Every view joined tst_test_cases on tc.id. Under the new model the joining key is test_case_code, and a view joining on id 
+   --      returns NOTHING after consolidation, because a central id does not match a local one.  
+   --      -> All views rewritten.
+   --  16. tst_test_case_review.version_no carries no foreign key. INTENTIONAL — see the note on that table. Recorded here so 
+   --      nobody "fixes" it.
+-- -----------------------------------------------------------------------------------------------------------------------------------------
+-- -----------------------------------------------------------------------------------------------------------------------------------------
+-- MAJOR CHANGES FROM v7.4 TO v7.5
+-- -----------------------------------------------------------------------------------------------------------------------------------------
+--
+-- `created_by` was VARCHAR(3) in v7.4 and capturing only user_code, Now it has VARCHAR(4) capture machine_code(e.g. D02A)
+-- Added sequence number Transaction tables also into table `tst_sequence_counters` to provide a Unique code to all the Trans.Tables
+-- 
+-- -----------------------------------------------------------------------------------------------------------------------------------------
+
 -- SECTIONS
--- ---------------------------------------------------------------------------------------------------------
+-- -----------------------------------------------------------------------------------------------------------------------------------------
 --     PHASE 1
    --        1  Platform: application settings, environment profiles
    --        2  Identity: users, machines
@@ -271,7 +264,8 @@ SET FOREIGN_KEY_CHECKS = 0;
 
 
 -- ============================================================================================================================================================
--- SECTION 1 — PLATFORM: APPLICATION SETTINGS AND ENVIRONMENT PROFILES                              [P1]
+-- SUB MENU 1 — Configuration                                                                                                                        [Phase:1]
+-- Application Settings and Environment Profiles
 -- ============================================================================================================================================================
 
 -- ---------------------------------------------------------------------------------------------------------
@@ -309,10 +303,11 @@ CREATE TABLE IF NOT EXISTS `tst_app_settings` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Typed application configuration. is_local_only never leaves this machine.';
 -- Import / Export: (Not Required, will use Seeder instead)
-   --   1. Maintained by the SuperAdmin only; distributed to other machines by seeder.
-   --   2. The seeder will create the row where is_local_only = 1 but it will never be exported.
-   --   3. For the row where is_local_only = 1, is_editable should be 1 as well.
-   --   4. A local user may change the value only where is_editable = 1.
+   -- NEVER EXPORTED OR IMPORTED
+   -- Maintained by the SuperAdmin only; distributed to other machines by seeder.
+   -- The seeder will create the row where is_local_only = 1 but it will never be exported.
+   -- For the row where is_local_only = 1, is_editable should be 1 as well.
+   -- A local user may change the value only where is_editable = 1.
 -- ---------------------------------------------------------------------------------------------------------
 
 
@@ -365,12 +360,15 @@ CREATE TABLE IF NOT EXISTS `tst_environment_profiles` (
 COMMENT='Environment identified by fingerprint. Never exported or imported (SD-15).';
 -- Import / Export: (Not Required, will use Seeder instead)
    -- NEVER EXPORTED OR IMPORTED
+   -- Created centrally by the SuperAdmin; distributed to other machines by seeder.
+   
 -- ---------------------------------------------------------------------------------------------------------
 
 
 
 -- ============================================================================================================================================================
--- SECTION 2 — IDENTITY: USERS AND MACHINES                                                          [P1]
+-- SUB MENU 2 — Roles & Permissions                                                                                                                  [Phase:1]
+-- Users, Roles, Permissions and Machines
 -- ============================================================================================================================================================
 --
    -- ---------------------------------------------------------------------------------------------------------
@@ -418,8 +416,89 @@ CREATE TABLE IF NOT EXISTS `tst_users` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Users. The code is the primary key and is embedded in every machine and test case code.';
 -- Import / Export: (Not Required, will use Seeder instead)
-   --   1. Created centrally by the SuperAdmin; distributed to other machines by seeder.
-   --   2. A local user may change only their own password.
+   -- NEVER EXPORTED OR IMPORTED
+   -- Created centrally by the SuperAdmin; distributed to other machines by seeder.
+   -- A local user may change only their own password.
+-- ---------------------------------------------------------------------------------------------------------
+
+
+-- ---------------------------------------------------------------------------------------------------------
+-- This table will capture roles used in the system                                                  [P1]
+-- ---------------------------------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `tst_roles` (
+    `code`              VARCHAR(10) NOT NULL,
+    `name`              VARCHAR(50) NOT NULL,
+    `description`       VARCHAR(500) NULL,
+    `ordinal`           SMALLINT UNSIGNED NOT NULL DEFAULT 1,
+    `is_system`         TINYINT(1) NOT NULL DEFAULT 0,
+    `is_active`         TINYINT(1) NOT NULL DEFAULT 1,
+    `created_at`        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Import / Export: (Not Required, will use Seeder instead)
+   -- NEVER EXPORTED OR IMPORTED
+   -- Created centrally by the SuperAdmin; distributed to other machines by seeder.
+   -- A local user may change only their own password.
+-- ---------------------------------------------------------------------------------------------------------
+
+
+-- ---------------------------------------------------------------------------------------------------------
+-- This table will capture system permissions                                                        [P1]
+-- ---------------------------------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `tst_permissions` (
+    `code`              VARCHAR(60) NOT NULL,               -- e.g. 'bug.close', 'import.apply'
+    `name`              VARCHAR(100) NOT NULL,
+    `area`              VARCHAR(40) NOT NULL,               -- Catalog, Execution, Defects, Sync, Admin, ...
+    `description`       VARCHAR(500) NULL,
+    `is_sensitive`      TINYINT(1) NOT NULL DEFAULT 0,      -- requires re-authentication
+    `created_at`        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`code`),
+    INDEX `idx_tst_permissions_area` (`area`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Import / Export: (Not Required, will use Seeder instead)
+   -- NEVER EXPORTED OR IMPORTED
+   -- Created centrally by the SuperAdmin; distributed to other machines by seeder.
+   -- A local user may change only their own password.
+-- ---------------------------------------------------------------------------------------------------------
+
+
+-- ---------------------------------------------------------------------------------------------------------
+-- This table will capture the role-to-permission assignments                                        [P1]
+-- ---------------------------------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `tst_role_permissions` (
+    `role_code`         VARCHAR(10) NOT NULL,
+    `permission_code`   VARCHAR(60) NOT NULL,
+    `created_at`        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`role_code`,`permission_code`),
+    CONSTRAINT `fk_tst_role_perms_role` FOREIGN KEY (`role_code`) REFERENCES `tst_roles`(`code`) ON DELETE CASCADE,
+    CONSTRAINT `fk_tst_role_perms_perm` FOREIGN KEY (`permission_code`) REFERENCES `tst_permissions`(`code`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Import / Export: (Not Required, will use Seeder instead)
+   -- NEVER EXPORTED OR IMPORTED
+   -- Created centrally by the SuperAdmin; distributed to other machines by seeder.
+   -- A local user may change only their own password.
+-- ---------------------------------------------------------------------------------------------------------
+
+
+-- ---------------------------------------------------------------------------------------------------------
+-- This table will capture user-to-role assignments                                                  [P1]
+-- ---------------------------------------------------------------------------------------------------------
+-- A user may hold responsibilities beyond their primary role (BR-USER-07).
+CREATE TABLE IF NOT EXISTS `tst_user_roles` (
+    `user_code`         VARCHAR(3) NOT NULL,
+    `role_code`         VARCHAR(10) NOT NULL,
+    `granted_by`        VARCHAR(3) NULL,
+    `granted_at`        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`user_code`,`role_code`),
+    CONSTRAINT `fk_tst_user_roles_user` FOREIGN KEY (`user_code`) REFERENCES `tst_users`(`code`) ON DELETE CASCADE,
+    CONSTRAINT `fk_tst_user_roles_role` FOREIGN KEY (`role_code`) REFERENCES `tst_roles`(`code`) ON DELETE CASCADE,
+    CONSTRAINT `fk_tst_user_roles_granted_by` FOREIGN KEY (`granted_by`) REFERENCES `tst_users`(`code`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Import / Export: (Not Required, will use Seeder instead)
+   -- NEVER EXPORTED OR IMPORTED
+   -- Created centrally by the SuperAdmin; distributed to other machines by seeder.
+   -- A local user may change only their own password.
 -- ---------------------------------------------------------------------------------------------------------
 
 
@@ -453,26 +532,27 @@ CREATE TABLE IF NOT EXISTS `tst_machines` (
    -- Below are the Parameter, which we need to match at Login, If didn't match then Warning (Your Machine Profile does not match, please update Machine Profile) ----------
    -- Keep the user Logged-in and open Machine profile to be Updated by user. Once update again check all the parameter ----------------------------------------------------
    -- ---- The 14 fields a local user may edit. Everything else is administrator-controlled ----------------------
-   `machine_name`        VARCHAR(150) NOT NULL,
-   `machine_model`       VARCHAR(150) NULL,
-   `hostname`            VARCHAR(150) NULL,
-   `hardware_serial`     VARCHAR(150) NULL,
-   `architecture`        VARCHAR(30)  NULL,     -- CPU architecture (x64,arm64)
-   `os_name`             VARCHAR(80)  NULL,     -- Windows 10, Ubuntu 24.04, macOS Ventura
-   `os_version`          VARCHAR(120) NULL,
-   `php_version`         VARCHAR(30)  NULL,     -- 8.2.4
-   `laravel_version`     VARCHAR(30)  NULL,     -- 10.35.5
-   `database_engine`     VARCHAR(50)  NULL,     -- MySQL, MariaDB
-   `database_version`    VARCHAR(50)  NULL,     -- 8.0.38
-   `browser_name`        VARCHAR(50)  NULL,     -- Chrome, Firefox, Safari, Edge
-   `browser_version`     VARCHAR(50)  NULL,     -- 141
-   `driver_version`      VARCHAR(50)  NULL,     -- ChromeDriver 141.0.5524.12',
+   `machine_name`        VARCHAR(150) NOT NULL,    -- User-given name (e.g. `My Workstation`)
+   `machine_model`       VARCHAR(150) NULL,        -- Machine model (e.g. `Dell XPS 15`)
+   `hostname`            VARCHAR(150) NULL,        -- Network name (e.g. `TARUN-PC`)
+   `hardware_serial`     VARCHAR(150) NULL,        -- Hardware serial number of the machine (e.g. `CN-0123456789`)
+   `architecture`        VARCHAR(30)  NULL,        -- CPU architecture (x64,arm64)
+   -- `os_name`             VARCHAR(80)  NULL,     -- Windows 10, Ubuntu 24.04, macOS Ventura
+   -- `os_version`          VARCHAR(120) NULL,
+   -- `php_version`         VARCHAR(30)  NULL,     -- 8.2.4
+   -- `laravel_version`     VARCHAR(30)  NULL,     -- 10.35.5
+   -- `database_engine`     VARCHAR(50)  NULL,     -- MySQL, MariaDB
+   -- `database_version`    VARCHAR(50)  NULL,     -- 8.0.38
+   -- `browser_name`        VARCHAR(50)  NULL,     -- Chrome, Firefox, Safari, Edge
+   -- `browser_version`     VARCHAR(50)  NULL,     -- 141
+   -- `driver_version`      VARCHAR(50)  NULL,     -- ChromeDriver 141.0.5524.12',
    -- Match Parameter till here and then set (machine_para_match=1) if matched Else set (machine_para_match=0) -------------------------------------------------------------
    `machine_para_match`  TINYINT(1) NOT NULL DEFAULT 0, -- If match then update this to 1 else set it to 0
-   `machine_fingerprint` CHAR(64) NULL,        -- sha256(hostname + os + serial + install path), re-checked at boot
+   `machine_fingerprint` CHAR(64) NULL,            -- sha256(machine_name + machine_model + hostname + hardware_serial + architecture + mac_address), re-checked at boot
    -- Below are the Additional Information, which we need to store (not require for matching at login) ----------
-   `prime_ai_repo_path`  VARCHAR(1000) NULL,  -- Where the Prime-AI source lives on this machine
-   `screenshot_path`     VARCHAR(1000) NULL,  -- Where test Screenshot (evidence) is stored on this machine
+   `prime_ai_repo_path`  VARCHAR(1000) NULL,       -- Where the Prime-AI source lives on this machine
+   `testing_repo_path`   VARCHAR(1000) NULL,       -- Where the Testing App source lives on this machine
+   `screenshot_path`     VARCHAR(1000) NULL,       -- Primary Path where test Screenshot (evidence) is stored on this machine
    -- ---- Administrator-controlled ------------------------------------------------------------------------------
    `is_central`          TINYINT(1) NOT NULL DEFAULT 0,
    `is_active`           TINYINT(1) NOT NULL DEFAULT 1,
@@ -505,7 +585,8 @@ COMMENT='Registered installations. machine_code = owner + letter. Ids issued cen
 
 
 -- ============================================================================================================================================================
--- SECTION 3 — CATALOG: MODULE -> CATEGORY -> MAIN MENU -> SUB MENU -> TAB/SCREEN                    [P1]
+-- SUB MENU 3 — Category Masters                                                                                                                     [Phase:1]
+-- Module -> Category -> Main Menu -> Sub Menu -> Tab/Screen & Sequence Counter
 -- ============================================================================================================================================================
 --
    --     PARENTAGE IS ENFORCED TWICE, ON PURPOSE:
@@ -550,6 +631,7 @@ CREATE TABLE IF NOT EXISTS `tst_modules` (
 COMMENT='Top-level Prime-AI functional areas. Centrally governed.';
 -- Import / Export: (Not Required, will use Seeder instead)
    -- NEVER EXPORTED OR IMPORTED
+   -- Created centrally by the SuperAdmin; distributed to other machines by seeder.
 -- ---------------------------------------------------------------------------------------------------------
 
 
@@ -580,6 +662,7 @@ CREATE TABLE IF NOT EXISTS `tst_categories` (
 COMMENT='Groupings within a module. cat_code is the prefix of every code below it.';
 -- Import / Export: (Not Required, will use Seeder instead)
    -- NEVER EXPORTED OR IMPORTED
+   -- Created centrally by the SuperAdmin; distributed to other machines by seeder.
 -- ---------------------------------------------------------------------------------------------------------
 
 
@@ -610,6 +693,7 @@ CREATE TABLE IF NOT EXISTS `tst_main_menus` (
 COMMENT='Main menus. Composite FK stops a menu belonging to a category in another module.';
 -- Import / Export: (Not Required, will use Seeder instead)
    -- NEVER EXPORTED OR IMPORTED
+   -- Created centrally by the SuperAdmin; distributed to other machines by seeder.
 -- ---------------------------------------------------------------------------------------------------------
 
 
@@ -641,6 +725,7 @@ CREATE TABLE IF NOT EXISTS `tst_sub_menus` (
 COMMENT='Optional navigation level between main menu and screen.';
 -- Import / Export: (Not Required, will use Seeder instead)
    -- NEVER EXPORTED OR IMPORTED
+   -- Created centrally by the SuperAdmin; distributed to other machines by seeder.
 -- ---------------------------------------------------------------------------------------------------------
 
 
@@ -719,34 +804,45 @@ CREATE TABLE IF NOT EXISTS `tst_tabs_screens` (
 COMMENT='Screens. ts_code anchors every test case code. Excluded, never deleted.';
 -- Import / Export: (Not Required, will use Seeder instead)
    -- NEVER EXPORTED OR IMPORTED
+   -- Created centrally by the SuperAdmin; distributed to other machines by seeder.
 -- ---------------------------------------------------------------------------------------------------------
 
-
-CREATE TABLE IF NOT EXISTS `tst_testcase_sequences_number` (
+-- Old Table Name - tst_testcase_sequences_number
+CREATE TABLE IF NOT EXISTS `tst_sequence_counters` (
    `id`                    SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
    `machine_code`          VARCHAR(4)  NOT NULL,  -- Machine Code FK to tst_machines.machine_code
-   `ts_code`               VARCHAR(11) NOT NULL,  -- TS Code FK to tst_tabs_screens.ts_code
-   `last_tcr_number`       SMALLINT UNSIGNED NOT NULL DEFAULT 1,  -- Last tcr Number (Last Test Case Requirement Number created on this particuler machine (Usre+Machine))
-   `last_testcase_number`  SMALLINT UNSIGNED NOT NULL DEFAULT 1,  -- Last Test Case Number created on this particuler machine (Usre+Machine)
-   `last_schedule_number`  SMALLINT UNSIGNED NOT NULL DEFAULT 1,  -- Last Schedule Number created on this particuler machine (Usre+Machine)
+   `ts_code`               VARCHAR(11) NULL,      -- TS Code FK to tst_tabs_screens.ts_code
+   `last_tcr_number`       SMALLINT UNSIGNED NOT NULL DEFAULT 0,  -- Last tcr Number (Last Test Case Requirement Number created on this particuler machine (Usre+Machine))
+   `last_testcase_number`  SMALLINT UNSIGNED NOT NULL DEFAULT 0,  -- Last Test Case Number created on this particuler machine (Usre+Machine)
+   -- we will use 2 different way of sequencing 1-For Masters(tcr_list,testcase_list) 2-For transactions(tst_schedules,tst_test_runs)
+   -- For Masters - counter will be per Machine+per ts_code BUT for Transaction Counter will be unique for per machine only
+   `last_schedule_number`  INT UNSIGNED NOT NULL DEFAULT 0,  -- Last Schedule Number created on this particuler machine (Usre+Machine)
+   `last_test_run_number`  INT UNSIGNED NOT NULL DEFAULT 0,  -- Last Test Run Number created on this particuler machine (Usre+Machine)
+   `ts_code_marker`        VARCHAR(11) GENERATED ALWAYS AS (IFNULL(`ts_code`,'00000000000')) STORED,
    `created_at`            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
    `updated_at`            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
    PRIMARY KEY (`id`),
-   UNIQUE KEY `uq_tcsn_mc_ts` (`machine_code`,`ts_code`),
-   CONSTRAINT `chk_tcsn_tcr` CHECK (`last_tcr_number` >= 1),
-   CONSTRAINT `chk_tcsn_tc` CHECK (`last_testcase_number` >= 1),
-   CONSTRAINT `chk_tcsn_schedule` CHECK (`last_schedule_number` >= 1),
-   CONSTRAINT `fk_tcsn_machine` FOREIGN KEY (`machine_code`) REFERENCES `tst_machines`(`machine_code`) ON DELETE CASCADE,
-   CONSTRAINT `fk_tcsn_ts` FOREIGN KEY (`ts_code`) REFERENCES `tst_tabs_screens`(`ts_code`) ON DELETE CASCADE
+   UNIQUE KEY `uq_tcsn_mc_ts` (`machine_code`,`ts_code_marker`),
+   CONSTRAINT `fk_tcsn_machine` FOREIGN KEY (`machine_code`) REFERENCES `tst_machines`(`machine_code`) ON DELETE RESTRICT,
+   CONSTRAINT `fk_tcsn_ts` FOREIGN KEY (`ts_code`) REFERENCES `tst_tabs_screens`(`ts_code`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 -- Import / Export: (Not Required, will use Seeder instead)
    -- NEVER EXPORTED OR IMPORTED
+   -- Created centrally by the SuperAdmin; distributed to other machines by seeder.
+-- Data Seeder Sample:
+   -- INSERT INTO `tst_sequence_counters` (`machine_code`,`ts_code`,`last_tcr_number`,`last_testcase_number`,`last_schedule_number`,`last_test_run_number`) VALUES 
+   -- ('D02A','T0104010200','3','45','0','0'),
+   -- ('D03A','T0104010200','5','2','0','0'),
+   -- ('D02A',NULL,'0','0','123','1321'),
+   -- ('D03A',NULL,'0','0','456','4654');
+   -- 
 -- ---------------------------------------------------------------------------------------------------------
 
 
 
 -- ============================================================================================================================================================
--- SECTION 4 — GENERATING: TcLIST, TEST CASES, STEPS, REVIEW, VERSIONS, DUPLICATES                    [P1]
+-- SUB MENU 4 — TestCase Catalog                                                                                                                     [Phase:1]
+-- (Tc List, Test Cases, Steps, Review, Versions, Duplicates)                                                                                        
 -- ============================================================================================================================================================
 
 -- ---------------------------------------------------------------------------------------------------------
@@ -775,7 +871,7 @@ CREATE TABLE IF NOT EXISTS `tst_tc_required_list` (
    `user_code`           VARCHAR(3)  NOT NULL,   -- Who planned it
    `machine_code`        VARCHAR(4)  NOT NULL,   -- FK tst_machines.machine_code — base column of tcr_code
    `ts_code`             VARCHAR(11) NOT NULL,   -- FK tst_tabs_screens.ts_code — base column of tcr_code
-   `tc_list_number`      SMALLINT UNSIGNED NOT NULL,  -- Get from `tst_testcase_sequences_number` by filtering for (`machine_code`,`ts_code`) (e.g. `last_tcr_number` + 1)
+   `tc_list_number`      SMALLINT UNSIGNED NOT NULL,  -- Get from `tst_sequence_counters` by filtering for (`machine_code`,`ts_code`) (e.g. `last_tcr_number` + 1)
    `tcr_code`            VARCHAR(21) GENERATED ALWAYS AS (CONCAT(`machine_code`,'_',`ts_code`,'_',LPAD(`tc_list_number`, 4, '0'))) STORED, -- 'D02A_T0104010200_0001'
    `text_requir_detail`  VARCHAR(1000) NULL,   -- What this test must verify, in business language,
    `requir_steps_detail` TEXT NULL,            -- The required steps, before any code exists,
@@ -807,8 +903,8 @@ COMMENT='The required test-case list. This is the DENOMINATOR of every coverage 
    -- Normal evidence-direction export and import.
 --
 -- Conditions:
-   -- `tc_list_number` : To calculate next `tc_list_number`, use sequence table `tst_testcase_sequences_number` by filtering for (`machine_code`,`ts_code`)
-   -- Example : `tc_list_number` = 1 + (select last_tcr_number from tst_testcase_sequences_number where machine_code = 'D02A' and ts_code = 'T0104010200')
+   -- `tc_list_number` : To calculate next `tc_list_number`, use sequence table `tst_sequence_counters` by filtering for (`machine_code`,`ts_code`)
+   -- Example : `tc_list_number` = 1 + (select last_tcr_number from tst_sequence_counters where machine_code = 'D02A' and ts_code = 'T0104010200')
 -- ---------------------------------------------------------------------------------------------------------
 
 
@@ -842,7 +938,7 @@ CREATE TABLE IF NOT EXISTS `tst_test_cases` (
    `user_code`              VARCHAR(3)  NOT NULL, -- Author
    `machine_code`           VARCHAR(4)  NOT NULL, -- Base column of test_case_code — RESTRICT only (MC-2)
    `ts_code`                VARCHAR(11) NOT NULL, -- Base column of test_case_code — RESTRICT only (MC-2)
-   `tc_seq_number`          SMALLINT UNSIGNED NOT NULL, --  Get from `tst_testcase_sequences_number` by filtering for (`machine_code`,`ts_code`) (e.g. `last_tcr_number` + 1)
+   `tc_seq_number`          SMALLINT UNSIGNED NOT NULL, --  Get from `tst_sequence_counters` by filtering for (`machine_code`,`ts_code`) (e.g. `last_tcr_number` + 1)
    `test_case_code`         VARCHAR(21) GENERATED ALWAYS AS (CONCAT(`machine_code`,'_',`ts_code`,'_',LPAD(`tc_seq_number`, 4, '0'))) STORED, -- D02A_T0104010200_0001 — the parent key of the whole system
    `version_no`             TINYINT UNSIGNED NOT NULL DEFAULT 1,
    -- ---- Automation coordinates. NULL for a purely manual test case --------------------------------------
@@ -912,8 +1008,8 @@ COMMENT='The test case. test_case_code is generated, globally unique, and perman
       -- 1 Method will be allign with 1 TestCase only. Method can not be shared with multipal TestCases.
       -- 1 Methods can have multipal Steps (which may test multipla things but in all the case 1 Method will be allign with 1 TestCases only)
    2. How to calculate `tc_seq_number`:
-      -- `tc_seq_number` : To calculate next `tc_seq_number`, use sequence table `tst_testcase_sequences_number` by filtering for (`machine_code`,`ts_code`)
-      -- Example : `tc_seq_number` = 1 + (select last_testcase_number from tst_testcase_sequences_number where machine_code = 'D02A' and ts_code = 'T0104010200')
+      -- `tc_seq_number` : To calculate next `tc_seq_number`, use sequence table `tst_sequence_counters` by filtering for (`machine_code`,`ts_code`)
+      -- Example : `tc_seq_number` = 1 + (select last_testcase_number from tst_sequence_counters where machine_code = 'D02A' and ts_code = 'T0104010200')
 -- 
 -- ---------------------------------------------------------------------------------------------------------
 
@@ -1121,7 +1217,119 @@ COMMENT='Equivalence judgements between test cases. Insert-only; reversals super
 
 
 -- ============================================================================================================================================================
--- SECTION 5 — EXECUTION                                                                             [P1]
+-- SUB MENU 5 — Execution Scheduling                                                                                                                  [Phase:1]
+-- ============================================================================================================================================================
+
+-- ---------------------------------------------------------------------------------------------------------
+-- tst_schedules  —  when to run                                                                     [P1]
+-- ---------------------------------------------------------------------------------------------------------
+   -- A SCHEDULE THAT DID NOT FIRE IS RECORDED AS MISSED, not silently skipped. Silence and success look
+   -- identical otherwise, and the first time anyone notices is when a release goes out untested.
+   --
+   -- suite_id is a Phase-2 column: in Phase 1 a schedule's content comes from tst_schedule_targets.
+-- ---------------------------------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `tst_schedules` (
+   `id`                     INT UNSIGNED NOT NULL AUTO_INCREMENT,
+   `schedule_machine_code`  VARCHAR(4)  NOT NULL,
+   `schedule_seq_number`    INT UNSIGNED NOT NULL,   -- Seuence Number will be calculated by (tst_sequence_counters.last_schedule_number + 1)
+   `schedule_date`          DECIMAL(12,2) NOT NULL,  -- This will store Unix Timestamp upto 2 Digit Microsecond. (e.g. 1786443240.12 for )
+   `name`                   VARCHAR(150) NOT NULL,
+   `description`            VARCHAR(500) NULL,
+   `owner_user_code`        VARCHAR(3) NOT NULL, -- Answerable when it fails or is missed
+   `suite_id`               INT UNSIGNED NULL,   -- Run a suite instead of explicit targets. (Will be used in Phase-2, NULL until Phase 2)
+   `cron_expression`        VARCHAR(100) NOT NULL,  -- Standard 5-field cron syntax string (e.g., 0 2 * * * for running daily at 2:00 AM) that specifies when the scheduled test run should automatically fire)
+   `timezone`               VARCHAR(64) NOT NULL DEFAULT 'Asia/Kolkata', -- the timezone for which the cron_expression is evaluated.
+   `catch_up_policy`        ENUM('Skip','Run_Once','Run_All') NOT NULL DEFAULT 'Skip',  -- what to do about firings missed while a machine was off
+   `is_active`              TINYINT(1) NOT NULL DEFAULT 1,
+   `is_suspended`           TINYINT(1) NOT NULL DEFAULT 0  COMMENT 'Distinct from deactivated — a temporary hold',
+   `suspended_reason`       VARCHAR(500) NULL,
+   `next_run_at`            DATETIME NULL,
+   `last_run_id`            BIGINT UNSIGNED NULL,
+   `last_run_at`            DATETIME NULL,
+   `last_run_status`        ENUM('Success','Failed','Missed','Cancelled','HOLD') NULL,
+   `missed_count`           INT UNSIGNED NOT NULL DEFAULT 0,
+   `created_by`             VARCHAR(3) NOT NULL,
+   `updated_by`             VARCHAR(3) NOT NULL,
+   `deleted_by`             VARCHAR(3) NULL,
+   `created_at`             TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   `updated_at`             TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+   `deleted_at`             TIMESTAMP NULL,
+   PRIMARY KEY (`id`),
+   UNIQUE KEY `uq_tst_schedules_machineCode_SeqNo` (`schedule_machine_code`,`schedule_seq_number`),
+   INDEX `idx_tst_schedules_active` (`is_active`,`is_suspended`,`next_run_at`),
+   CONSTRAINT `chk_tst_schedules_susp` CHECK (`is_suspended` = 0 OR `suspended_reason` IS NOT NULL),
+   CONSTRAINT `fk_tst_schedules_owner`     FOREIGN KEY (`owner_user_code`) REFERENCES `tst_users`(`code`) ON DELETE RESTRICT,
+   CONSTRAINT `fk_tst_schedules_lastRun`   FOREIGN KEY (`last_run_id`)     REFERENCES `tst_test_runs`(`id`) ON DELETE SET NULL,
+   CONSTRAINT `fk_tst_schedules_createdBy` FOREIGN KEY (`created_by`)      REFERENCES `tst_users`(`code`) ON DELETE RESTRICT,
+   CONSTRAINT `fk_tst_schedules_updatedBy` FOREIGN KEY (`updated_by`)      REFERENCES `tst_users`(`code`) ON DELETE RESTRICT,
+   CONSTRAINT `fk_tst_schedules_deletedBy` FOREIGN KEY (`deleted_by`)      REFERENCES `tst_users`(`code`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Scheduled execution. A schedule that did not fire is recorded as MISSED.';
+-- Import / Export: Required
+   --   Normal export and import.
+-- ---------------------------------------------------------------------------------------------------------
+
+
+-- ---------------------------------------------------------------------------------------------------------
+-- tst_schedule_targets  —  what to run, and ON WHICH MACHINE                        [NEW IN v7.2]  [P1]
+-- ---------------------------------------------------------------------------------------------------------
+--
+   -- BRD REQ-SCHED-01 asks for scheduled execution "on different machines for different modules, screens
+   -- or test cases". ONE machine_id column on the schedule cannot express that.
+   --
+   -- One schedule may therefore run Fees on D02A and Examination on T01A as a single nightly job.
+   --
+   -- ScheduleDispatchJob runs every minute on EVERY machine, selects the targets whose machine_code matches
+   -- the local machine and whose schedule is due, and creates one run per target group. A machine that is
+   -- switched off simply produces a missed count on its own targets — it does not block the others.
+-- ---------------------------------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `tst_schedule_targets` (
+   `id`                     BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+   `schedule_machine_code`  VARCHAR(4)  NOT NULL,
+   `schedule_seq_number`    INT UNSIGNED NOT NULL,
+   `schedule_target_seq_no` MEDIUMINT UNSIGNED NOT NULL DEFAULT 1,  -- Will start from 1 on every scheduling, hence sequence_counters will not be used.
+   `target_type`            ENUM('Module','Screen','TestCase') NOT NULL,
+   `module_code`            VARCHAR(5)  NULL,
+   `ts_code`                VARCHAR(11) NULL,
+   `test_case_code`         VARCHAR(21) NULL,
+   `machine_code`           VARCHAR(4)  NOT NULL,  --'WHICH MACHINE executes this target'
+   `created_by`             VARCHAR(3) NOT NULL,
+   `updated_by`             VARCHAR(3) NOT NULL,
+   `created_at`             TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   `updated_at`             TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+   `deleted_at`             TIMESTAMP NULL,
+   PRIMARY KEY (`id`),
+   UNIQUE KEY `idx_tst_schedTargets_pk` (`schedule_machine_code`,`schedule_seq_number`,`schedule_target_seq_no`),
+   INDEX `idx_tst_schedTargets_dispatch` (`machine_code`,`schedule_machine_code`,`schedule_seq_number`,`is_active`),
+   INDEX `idx_tst_schedTargets_schedule` (`schedule_machine_code`,`schedule_seq_number`,`target_type`),
+   -- Exactly one target reference must match the declared target_type.
+   CONSTRAINT `chk_tst_schedTargets_ref` CHECK (
+        (`target_type` = 'Module'   AND `module_code` IS NOT NULL AND `ts_code` IS NULL AND `test_case_code` IS NULL)
+     OR (`target_type` = 'Screen'   AND `ts_code` IS NOT NULL AND `test_case_code` IS NULL)
+     OR (`target_type` = 'TestCase' AND `test_case_code` IS NOT NULL)),
+   CONSTRAINT `fk_tst_schedTargets_schedule`  FOREIGN KEY (`schedule_machine_code`,`schedule_seq_number`) REFERENCES `tst_schedules`(`schedule_machine_code`,`schedule_seq_number`) ON DELETE CASCADE,
+   CONSTRAINT `fk_tst_schedTargets_machine`   FOREIGN KEY (`machine_code`)   REFERENCES `tst_machines`(`machine_code`) ON DELETE RESTRICT,
+   CONSTRAINT `fk_tst_schedTargets_module`    FOREIGN KEY (`module_code`)    REFERENCES `tst_modules`(`module_code`) ON DELETE CASCADE,
+   CONSTRAINT `fk_tst_schedTargets_screen`    FOREIGN KEY (`ts_code`)        REFERENCES `tst_tabs_screens`(`ts_code`) ON DELETE CASCADE,
+   CONSTRAINT `fk_tst_schedTargets_case`      FOREIGN KEY (`test_case_code`) REFERENCES `tst_test_cases`(`test_case_code`) ON DELETE CASCADE,
+   CONSTRAINT `fk_tst_schedTargets_createdBy` FOREIGN KEY (`created_by`)     REFERENCES `tst_users`(`code`) ON DELETE RESTRICT,
+   CONSTRAINT `fk_tst_schedTargets_updatedBy` FOREIGN KEY (`updated_by`)     REFERENCES `tst_users`(`code`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='NEW in v7.2. What a schedule runs, and on which machine.';
+-- Import / Export: Required
+   --   Normal export and import.
+-- Conditions:
+-- 1. `schedule_target_seq_no` will be UNIQUE for 1 `schedule_machine_code`+`schedule_seq_number` combination.
+-- 2. `schedule_machine_code`+`schedule_seq_number`+`schedule_target_seq_no` will be the UNIQUE Primary Key.
+-- 3. ScheduleDispatchJob will run every 5/10 minutes on EVERY machine, selects the targets whose machine_code matches
+--    the local machine and whose schedule is due, and creates one run per target group. A machine that is switched
+--    off simply produces a missed count on its own targets — it does not block the others.
+-- ---------------------------------------------------------------------------------------------------------
+
+
+
+-- ============================================================================================================================================================
+-- SUB MENU 6 — TestCase Execution                                                                                                                   [Phase:1]
 -- ============================================================================================================================================================
 --
    --     tst_test_runs                one execution EVENT
@@ -1164,92 +1372,86 @@ COMMENT='Equivalence judgements between test cases. Insert-only; reversals super
 -- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `tst_test_runs` (
    `id`                     BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-   `machine_code`           VARCHAR(4)  NOT NULL,
-   `test_case_code`         VARCHAR(21) NOT NULL,      -- FK to tst_test_cases.test_case_code (e.g. D02A_T0104010200_001)
-   `test_run_seq_number`    INT UNSIGNED NOT NULL,     -- Seuence Number will be calculated by (tst_testcase_sequences_number.last_seq_number + 1)
+   -- ---- `test_case_code` VARCHAR(21) NOT NULL,      -- This is not requireed in `tst_test_runs`, as this table maintain single entry for 1 run, where 1 run may have many tests in it.
+   `test_run_machine_code`  VARCHAR(4) NOT NULL,
+   `test_run_seq_number`    INT UNSIGNED NOT NULL,     -- Seuence Number will be calculated by (tst_sequence_counters.last_test_run_number + 1)
    `entry_type`             ENUM('Local','Imported') NOT NULL DEFAULT 'Local',
    `initiated_by`           VARCHAR(3) NULL,           -- Who asked for it — a person, even for a scheduled run
    `executed_by`            VARCHAR(3) NULL,           -- Who ran it — the system user for a scheduled run
    `trigger_type`           ENUM('Manual','Scheduled','Rerun','Auto_Retest','Bug_Retest','Impact_Selected','Enhancement','Integration','Regression','Git_Merge','Release','CI') NOT NULL DEFAULT 'Manual',
-   -- ---- Phase-2 columns: declared now, foreign keys added in Section 30 ---------------------------------
-   `suite_id`               INT UNSIGNED NULL,         -- '[P2] FK added in Section 30',
-   `suite_version_no`       INT UNSIGNED NULL,         -- '[P2] The composition actually executed',
-   `impact_analysis_id`     BIGINT UNSIGNED NULL,      -- '[P2] FK added in Section 30',
-   -- ------------------------------------------------------------------------------------------------------
-   `schedule_id`            INT UNSIGNED NULL,         -- '[P1] FK added in Section 12 (schedules come later in this file)',
+   -- ---- Phase-2 columns: declared now, foreign keys added in Section 30 ----------------------------------------------------------------
+   `suite_id`               INT UNSIGNED NULL,         -- '[P2] FK will be added in Phase-2
+   `suite_version_no`       INT UNSIGNED NULL,         -- '[P2] This will be used in Phase-2
+   `impact_analysis_id`     BIGINT UNSIGNED NULL,      -- '[P2] FK will be added in Phase-2
+   -- -------------------------------------------------------------------------------------------------------------------------------------
+   `schedule_machine_code`  VARCHAR(4) NULL,           -- FK to tst_schedules.schedule_machine_code
+   `schedule_seq_number`    INT UNSIGNED NULL,         -- FK to tst_schedules.schedule_seq_number
+   `schedule_id`            INT UNSIGNED NULL,         -- '[P1] FK to tst_schedules
    `parent_run_id`          BIGINT UNSIGNED NULL,      -- 'For a rerun or retest of an earlier run',
-   `run_name`               VARCHAR(200) NULL,
-   `reason`                 VARCHAR(500) NULL,
-   -- ---- The code version under test ---------------------------------------------------------------------
-   `repository_code`        VARCHAR(100) NULL,
-   `branch_name`            VARCHAR(200) NULL,
-   `commit_hash`            VARCHAR(40) NULL           COMMENT 'A Git SHA-1 is 40 hex characters',
-   `merge_commit_hash`      VARCHAR(40) NULL,
-   `base_commit_hash`       VARCHAR(40) NULL,
-   `working_tree_dirty`     TINYINT(1) NOT NULL DEFAULT 0  COMMENT 'Uncommitted changes were present',
-   -- ---- Environment -------------------------------------------------------------------------------------
-   `environment_profile_id` MEDIUMINT UNSIGNED NULL,
-   `environment_json`       JSON NULL                  COMMENT 'The raw capture the fingerprint came from',
-   `command`                VARCHAR(2000) NULL,
+   `run_name`               VARCHAR(200) NULL,         -- Friendly name of Run (e.g. `Nightly Fees regression`)
+   `reason`                 VARCHAR(500) NULL,         -- Reason for which run was executed (e.g. `Scheduled nightly pass`)
+   -- ---- The code version under test ----------------------------------------------------------------------------------------------------
+   `repository_code`        VARCHAR(100) NULL,         -- 'Ref to tst_git_repositories.repository_code' (No Need to pass value till Phase-2)
+   `branch_name`            VARCHAR(200) NULL,         -- Ref to tst_git_branches.branch_name (No Need to pass value till Phase-2)
+   `commit_hash`            VARCHAR(40) NULL,          -- A Git SHA-1 is 40 hex characters (No Need to pass value till Phase-2)
+   `merge_commit_hash`      VARCHAR(40) NULL,          -- A Git SHA-1 is 40 hex characters (No Need to pass value till Phase-2)
+   `base_commit_hash`       VARCHAR(40) NULL,          -- A Git SHA-1 is 40 hex characters (No Need to pass value till Phase-2)
+   `working_tree_dirty`     TINYINT(1) NOT NULL DEFAULT 0,  -- Uncommitted changes were present (No Need to pass value till Phase-2)
+   -- ---- Environment --------------------------------------------------------------------------------------------------------------------
+   `environment_profile_id` MEDIUMINT UNSIGNED NULL,   -- Ref to tst_environment_profiles.id
+   `environment_json`       JSON NULL,                 -- The raw capture the fingerprint came from
+   `command`                VARCHAR(2000) NULL,        -- Command used to execute the test
    -- ---- Lifecycle ---------------------------------------------------------------------------------------
-   `status`                 ENUM('Queued','Running','Completed','Failed','Cancelled','Interrupted','Timed_Out')
-                              NOT NULL DEFAULT 'Queued',
-   `queued_at`              DATETIME NULL,
-   `started_at`             DATETIME NULL,
-   `finished_at`            DATETIME NULL,
-   `duration_seconds`       DECIMAL(12,3) NULL,
-   `exit_code`              SMALLINT NULL,
-   -- Interruption detection. A watchdog moves any Running run whose heartbeat has stopped to Interrupted,
-   -- retaining every result already recorded. Without this, a machine that loses power leaves a run
-   -- permanently Running and every in-progress count is wrong forever.
-   `heartbeat_at`           DATETIME NULL,
-   `lock_token`             CHAR(36) NULL,
-   `cancelled_by`           VARCHAR(3) NULL,
-   `cancelled_at`           DATETIME NULL,
-   `cancel_reason`          VARCHAR(500) NULL,
-   -- ---- Roll-ups over FINAL attempts only. RECOMPUTED from results, never incremented ad hoc -------------
-   `total_tc_count`         MEDIUMINT UNSIGNED NOT NULL DEFAULT 0,
-   `passed_tc_count`        MEDIUMINT UNSIGNED NOT NULL DEFAULT 0,
-   `failed_tc_count`        MEDIUMINT UNSIGNED NOT NULL DEFAULT 0,
-   `error_tc_count`         MEDIUMINT UNSIGNED NOT NULL DEFAULT 0,
-   `skipped_tc_count`       MEDIUMINT UNSIGNED NOT NULL DEFAULT 0,
-   `blocked_tc_count`       MEDIUMINT UNSIGNED NOT NULL DEFAULT 0,
-   `not_executed_tc_count`  MEDIUMINT UNSIGNED NOT NULL DEFAULT 0,
-   `total_assertion_count`  INT UNSIGNED NOT NULL DEFAULT 0,
-   `passed_assertion_count` INT UNSIGNED NOT NULL DEFAULT 0,
-   `failed_assertion_count` INT UNSIGNED NOT NULL DEFAULT 0,
-   `raw_output_path`        VARCHAR(1000) NULL,
-   `created_by`             VARCHAR(3) NOT NULL,
-   `updated_by`             VARCHAR(3) NOT NULL,
-   `deleted_by`             VARCHAR(3) NULL,
-   `created_at`             TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-   `updated_at`             TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-   `deleted_at`             TIMESTAMP NULL,
+   `status`                 ENUM('Queued','Running','Completed','Failed','Cancelled','Interrupted','Timed_Out') NOT NULL DEFAULT 'Queued',
+   `queued_at`              DATETIME NULL,       -- When the run was queued
+   `started_at`             DATETIME NULL,       -- When the run was started
+   `finished_at`            DATETIME NULL,       -- When the run was finished
+   `duration_seconds`       DECIMAL(12,3) NULL,  -- Duration of the run in seconds
+   `exit_code`              SMALLINT NULL,       -- Exit code of the run
+   -- Interruption detection --------------------------------------------------------------------------------------------------------------
+   -- Interruption detection. A watchdog moves any Running run whose heartbeat has stopped to Interrupted, retaining every result already recorded. 
+   -- Without this, a machine that loses power leaves a run permanently Running and every in-progress count is wrong forever.
+   `heartbeat_at`           DATETIME NULL,       -- A watchdog moves a run whose heartbeat stops to `Interrupted`, keeping every result already recorded
+   `lock_token`             CHAR(36) NULL,       -- Prevents two processes claiming the same run
+   `cancelled_by`           VARCHAR(3) NULL,     -- Who cancelled the run
+   `cancelled_at`           DATETIME NULL,       -- When the run was cancelled
+   `cancel_reason`          VARCHAR(500) NULL,   -- Reason for cancelling the run
+   -- ---- Roll-ups over FINAL attempts only. RECOMPUTED from results, never incremented ad hoc -------------------------------------------
+   `total_tc_count`         MEDIUMINT UNSIGNED NOT NULL DEFAULT 0,  -- Total number of test cases in the run
+   `passed_tc_count`        MEDIUMINT UNSIGNED NOT NULL DEFAULT 0,  -- Number of passed test cases
+   `failed_tc_count`        MEDIUMINT UNSIGNED NOT NULL DEFAULT 0,  -- Number of failed test cases
+   `error_tc_count`         MEDIUMINT UNSIGNED NOT NULL DEFAULT 0,  -- Number of error test cases
+   `skipped_tc_count`       MEDIUMINT UNSIGNED NOT NULL DEFAULT 0,  -- Number of skipped test cases
+   `blocked_tc_count`       MEDIUMINT UNSIGNED NOT NULL DEFAULT 0,  -- Number of blocked test cases
+   `not_executed_tc_count`  MEDIUMINT UNSIGNED NOT NULL DEFAULT 0,  -- Number of not executed test cases
+   `total_assertion_count`  INT UNSIGNED NOT NULL DEFAULT 0,        -- Total number of assertions in the run
+   `passed_assertion_count` INT UNSIGNED NOT NULL DEFAULT 0,        -- Number of passed assertions
+   `failed_assertion_count` INT UNSIGNED NOT NULL DEFAULT 0,        -- Number of failed assertions
+   `raw_output_path`        VARCHAR(1000) NULL,                 -- Path to the raw output of the run
+   `created_at`             TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,  -- When the run was created
+   `updated_at`             TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,  -- When the run was last updated
+   `deleted_at`             TIMESTAMP NULL,                     -- When the run was soft-deleted
    PRIMARY KEY (`id`),
-   UNIQUE KEY `uq_tst_testRuns_source` (`machine_id`,`source_run_id`),   -- idempotent re-import
-   INDEX `idx_tst_testRuns_machineDate`  (`machine_id`,`started_at`),
-   INDEX `idx_tst_testRuns_machineCode`  (`run_machine_code`,`started_at`),
+   UNIQUE KEY `uq_tst_testRuns_source` (`test_run_machine_code`,`test_run_seq_number`),   -- idempotent re-import
+   INDEX `idx_tst_testRuns_machineDate`  (`test_run_machine_code`,`started_at`),
    INDEX `idx_tst_testRuns_executor`     (`executed_by`,`started_at`),
    INDEX `idx_tst_testRuns_initiator`    (`initiated_by`,`started_at`),
    INDEX `idx_tst_testRuns_trigger`      (`trigger_type`,`status`),
-   INDEX `idx_tst_testRuns_commit`       (`repository_code`,`commit_hash`),
+   -- INDEX `idx_tst_testRuns_commit`       (`repository_code`,`commit_hash`),  -- Will be used in Phase-2
    INDEX `idx_tst_testRuns_parent`       (`parent_run_id`),
    INDEX `idx_tst_testRuns_suite`        (`suite_id`),
    INDEX `idx_tst_testRuns_env`          (`environment_profile_id`),
    INDEX `idx_tst_testRuns_impact`       (`impact_analysis_id`),
    INDEX `idx_tst_testRuns_schedule`     (`schedule_id`),
    INDEX `idx_tst_testRuns_watchdog`     (`status`,`heartbeat_at`),
-   CONSTRAINT `fk_tst_testRuns_machine`     FOREIGN KEY (`machine_id`)             REFERENCES `tst_machines`(`id`) ON DELETE RESTRICT,
-   CONSTRAINT `fk_tst_testRuns_machineCode` FOREIGN KEY (`run_machine_code`)       REFERENCES `tst_machines`(`machine_code`) ON DELETE RESTRICT,
-   CONSTRAINT `fk_tst_testRuns_userCode`    FOREIGN KEY (`run_user_code`)          REFERENCES `tst_users`(`code`) ON DELETE RESTRICT,
+   CONSTRAINT `fk_tst_testRuns_machine`     FOREIGN KEY (`test_run_machine_code`)  REFERENCES `tst_machines`(`machine_code`) ON DELETE RESTRICT,
+   CONSTRAINT `fk_tst_testRuns_machineCode` FOREIGN KEY (`test_run_machine_code`)  REFERENCES `tst_machines`(`machine_code`) ON DELETE RESTRICT,
+   CONSTRAINT `fk_tst_testRuns_userCode`    FOREIGN KEY (`test_run_user_code`)     REFERENCES `tst_users`(`code`) ON DELETE RESTRICT,
    CONSTRAINT `fk_tst_testRuns_initiatedBy` FOREIGN KEY (`initiated_by`)           REFERENCES `tst_users`(`code`) ON DELETE SET NULL,
    CONSTRAINT `fk_tst_testRuns_executedBy`  FOREIGN KEY (`executed_by`)            REFERENCES `tst_users`(`code`) ON DELETE SET NULL,
    CONSTRAINT `fk_tst_testRuns_cancelledBy` FOREIGN KEY (`cancelled_by`)           REFERENCES `tst_users`(`code`) ON DELETE SET NULL,
    CONSTRAINT `fk_tst_testRuns_env`         FOREIGN KEY (`environment_profile_id`) REFERENCES `tst_environment_profiles`(`id`) ON DELETE SET NULL,
    CONSTRAINT `fk_tst_testRuns_parent`      FOREIGN KEY (`parent_run_id`)          REFERENCES `tst_test_runs`(`id`) ON DELETE SET NULL,
-   CONSTRAINT `fk_tst_testRuns_createdBy`   FOREIGN KEY (`created_by`)             REFERENCES `tst_users`(`code`) ON DELETE RESTRICT,
-   CONSTRAINT `fk_tst_testRuns_updatedBy`   FOREIGN KEY (`updated_by`)             REFERENCES `tst_users`(`code`) ON DELETE RESTRICT,
-   CONSTRAINT `fk_tst_testRuns_deletedBy`   FOREIGN KEY (`deleted_by`)             REFERENCES `tst_users`(`code`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='One execution event. NOT one test case — v7.1 modelled it as one (fatal defect 6).';
 -- Import / Export: Required
@@ -1264,29 +1466,36 @@ COMMENT='One execution event. NOT one test case — v7.1 modelled it as one (fat
    -- The 'Suite' and 'Change_Request' scope types are unreachable until Phase 2.
 -- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `tst_test_run_scopes` (
-   `id`                 BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-   `run_id`             BIGINT UNSIGNED NOT NULL,
-   `scope_type`         ENUM('Module','Screen','TestCase','Suite','Bug','Change_Request','Commit','Impact_Analysis','Release','Full') NOT NULL,
-   `module_code`        VARCHAR(5)  NULL,
-   `ts_code`            VARCHAR(11) NULL,
-   `test_case_code`     VARCHAR(21) NULL,
-   `bug_id`             BIGINT UNSIGNED NULL   COMMENT '[P1] FK added in Section 12 (bugs come later)',
-   `suite_id`           INT UNSIGNED NULL      COMMENT '[P2] FK added in Section 30',
-   `change_request_id`  BIGINT UNSIGNED NULL   COMMENT '[P2] FK added in Section 30',
-   `repository_code`    VARCHAR(100) NULL,
-   `commit_hash`        VARCHAR(40) NULL,
-   `description`        VARCHAR(500) NULL,
-   `created_at`         TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   `id`                     BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+   `test_run_machine_code`  VARCHAR(4) NOT NULL,      -- FK to `tst_test_runs`(`test_run_machine_code`,`test_run_seq_number`)
+   `test_run_seq_number`    INT UNSIGNED NOT NULL,    -- FK to `tst_test_runs`(`test_run_machine_code`,`test_run_seq_number`)
+   `scope_type`             ENUM('Module','Screen','TestCase','Suite','Bug','Change_Request','Commit','Impact_Analysis','Release','Full') NOT NULL,
+   `module_code`            VARCHAR(5)  NULL,      -- FK to tst_modules.module_code
+   `ts_code`                VARCHAR(11) NULL,      -- FK to tst_tabs_screens.ts_code
+   `test_case_code`         VARCHAR(21) NULL,      -- FK to tst_test_cases.test_case_code
+   `suite_id`               INT UNSIGNED NULL,     -- [P2] FK to tst_test_suites.id (added in Section 30)
+   `bug_id`                 BIGINT UNSIGNED NULL,  -- [P1] FK to tst_bugs.id (added in Section 12 (bugs come later))
+   `change_request_id`      BIGINT UNSIGNED NULL,  -- [P2] FK to tst_change_requests.id (added in Section 30)
+   `repository_code`        VARCHAR(100) NULL,     -- For a commit-scoped run
+   `commit_hash`            VARCHAR(40) NULL,      -- For a commit-scoped run
+   `description`            VARCHAR(500) NULL,
+   `created_at`             TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   `updated_at`             TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+   `deleted_at`             TIMESTAMP NULL,
    PRIMARY KEY (`id`),
-   INDEX `idx_tst_runScopes_run`    (`run_id`),
-   INDEX `idx_tst_runScopes_module` (`module_code`),
-   INDEX `idx_tst_runScopes_screen` (`ts_code`),
+   INDEX `idx_tst_runScopes_machine_seqNo` (`test_run_machine_code`, `test_run_seq_number`),
+   INDEX `idx_tst_runScopes_module_screen` (`module_code`,`ts_code`),
    INDEX `idx_tst_runScopes_case`   (`test_case_code`),
+   INDEX `idx_tst_runScopes_suite`  (`suite_id`),
    INDEX `idx_tst_runScopes_bug`    (`bug_id`),
-   CONSTRAINT `fk_tst_runScopes_run`    FOREIGN KEY (`run_id`)         REFERENCES `tst_test_runs`(`id`) ON DELETE CASCADE,
+   INDEX `idx_tst_runScopes_changeRequest`  (`change_request_id`),
+   CONSTRAINT `fk_tst_runScopes_machine_seqNo` FOREIGN KEY (`test_run_machine_code`,`test_run_seq_number`)  REFERENCES `tst_test_runs`(`test_run_machine_code`,`test_run_seq_number`) ON DELETE CASCADE,
    CONSTRAINT `fk_tst_runScopes_module` FOREIGN KEY (`module_code`)    REFERENCES `tst_modules`(`module_code`) ON DELETE SET NULL,
    CONSTRAINT `fk_tst_runScopes_screen` FOREIGN KEY (`ts_code`)        REFERENCES `tst_tabs_screens`(`ts_code`) ON DELETE SET NULL,
-   CONSTRAINT `fk_tst_runScopes_case`   FOREIGN KEY (`test_case_code`) REFERENCES `tst_test_cases`(`test_case_code`) ON DELETE SET NULL
+   CONSTRAINT `fk_tst_runScopes_case`   FOREIGN KEY (`test_case_code`) REFERENCES `tst_test_cases`(`test_case_code`) ON DELETE SET NULL,
+   CONSTRAINT `fk_tst_runScopes_suite`  FOREIGN KEY (`suite_id`)       REFERENCES `tst_test_suites`(`id`) ON DELETE SET NULL,
+   CONSTRAINT `fk_tst_runScopes_bug`    FOREIGN KEY (`bug_id`)         REFERENCES `tst_bugs`(`id`) ON DELETE SET NULL,
+   CONSTRAINT `fk_tst_runScopes_changeRequest` FOREIGN KEY (`change_request_id`) REFERENCES `tst_change_requests`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Why the run exists. Suite and Change_Request scopes activate in Phase 2.';
 -- Import / Export: Required
@@ -1311,40 +1520,37 @@ COMMENT='Why the run exists. Suite and Change_Request scopes activate in Phase 2
 -- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `tst_test_run_items` (
    `id`                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-   `run_id`                BIGINT UNSIGNED NOT NULL,
-   `test_case_code`        VARCHAR(21) NOT NULL,
+   `test_run_machine_code` VARCHAR(4) NOT NULL,                   -- FK to `tst_test_runs`(`test_run_machine_code`,`test_run_seq_number`)
+   `test_run_seq_number`   INT UNSIGNED NOT NULL,                 -- FK to `tst_test_runs`(`test_run_machine_code`,`test_run_seq_number`)
+   `sequence_no`           SMALLINT UNSIGNED NOT NULL DEFAULT 1,  -- Execution order within the run (Will start from 1 for every Run, No sequence_counters required)
+   `test_case_code`        VARCHAR(21) NOT NULL,                  -- FK to tst_test_cases.test_case_code
    `selection_reason`      ENUM('Manual','Suite','Direct_Change','Dependency','Bug_Retest','Critical','Regression','Full_Regression','Historical_Correlation','Open_Bug','Schedule','Other') NOT NULL DEFAULT 'Manual',
-   `selection_source`      VARCHAR(255) NULL   COMMENT 'The commit, rule or analysis that put it here',
-   `selection_confidence`  DECIMAL(4,3) NULL,
-   `sequence_no`           INT UNSIGNED NOT NULL DEFAULT 1,
+   `selection_source`      VARCHAR(255) NULL,                     -- The commit, rule or analysis that put it here (e.g. schedule#3 target: module SLB)
+   `selection_confidence`  DECIMAL(4,3) NULL,                     -- How confident the selector was (Phase 2 mostly)
    -- ---- Snapshots taken at selection time ---------------------------------------------------------------
-   `test_case_version_no`  INT UNSIGNED NULL,
-   `display_name_snapshot` VARCHAR(255) NOT NULL,
-   `file_path_snapshot`    VARCHAR(500) NULL,
-   `criticality_snapshot`  ENUM('Low','Medium','High','Critical') NULL,
+   `test_case_version_no`  INT UNSIGNED NULL,                            -- Snapshotted at selection time to preserve the history
+   `display_name_snapshot` VARCHAR(255) NOT NULL,                        -- Snapshotted at selection time to preserve the history
+   `file_path_snapshot`    VARCHAR(500) NULL,                            -- Snapshotted at selection time to preserve the history
+   `criticality_snapshot`  ENUM('Low','Medium','High','Critical') NULL,  -- Snapshotted at selection time to preserve the history
    -- ---- Set when the item never ran because a blocking dependency failed [P2 semantics] ------------------
-   `blocked_by_item_id`    BIGINT UNSIGNED NULL,
-   `blocked_reason`        VARCHAR(500) NULL,
-   `attempt_count`         SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+   `blocked_by_seq_no`     SMALLINT UNSIGNED NULL,                       -- FK to tst_test_run_items (The item whose failure blocked this one, self-reference for blocking)
+   `blocked_reason`        VARCHAR(500) NULL,                            -- Why it was blocked
+   -- ---- What actually happened when it ran --------------------------------------------------------------
+   `attempt_count`         SMALLINT UNSIGNED NOT NULL DEFAULT 0,         -- How many attempts were made
    `final_status`          ENUM('Passed','Failed','Error','Skipped','Blocked','Not_Executed') NULL,
-   `created_by`            VARCHAR(3) NOT NULL,
-   `updated_by`            VARCHAR(3) NOT NULL,
-   `deleted_by`            VARCHAR(3) NULL,
+   -- ---- Audit columns -----------------------------------------------------------------------------------
    `created_at`            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
    `updated_at`            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
    `deleted_at`            TIMESTAMP NULL,
    PRIMARY KEY (`id`),
-   UNIQUE KEY `uq_tst_runItems_runCase` (`run_id`,`test_case_code`),
+   UNIQUE KEY `uq_tst_runItems_runCase` (`test_run_machine_code`,`test_run_seq_number`,`sequence_no`),
    INDEX `idx_tst_runItems_caseDate`  (`test_case_code`,`created_at`),
    INDEX `idx_tst_runItems_reason`    (`selection_reason`),
    INDEX `idx_tst_runItems_final`     (`final_status`),
-   INDEX `idx_tst_runItems_blockedBy` (`blocked_by_item_id`),
-   CONSTRAINT `fk_tst_runItems_run`       FOREIGN KEY (`run_id`)             REFERENCES `tst_test_runs`(`id`) ON DELETE CASCADE,
+   INDEX `idx_tst_runItems_blockedBy` (`test_run_machine_code`,`test_run_seq_number`,`blocked_by_seq_no`),
+   CONSTRAINT `fk_tst_runItems_run`       FOREIGN KEY (`test_run_machine_code`,`test_run_seq_number`)  REFERENCES `tst_test_runs`(`test_run_machine_code`,`test_run_seq_number`) ON DELETE CASCADE,
    CONSTRAINT `fk_tst_runItems_case`      FOREIGN KEY (`test_case_code`)     REFERENCES `tst_test_cases`(`test_case_code`) ON DELETE RESTRICT,
-   CONSTRAINT `fk_tst_runItems_blockedBy` FOREIGN KEY (`blocked_by_item_id`) REFERENCES `tst_test_run_items`(`id`) ON DELETE SET NULL,
-   CONSTRAINT `fk_tst_runItems_createdBy` FOREIGN KEY (`created_by`)         REFERENCES `tst_users`(`code`) ON DELETE RESTRICT,
-   CONSTRAINT `fk_tst_runItems_updatedBy` FOREIGN KEY (`updated_by`)         REFERENCES `tst_users`(`code`) ON DELETE RESTRICT,
-   CONSTRAINT `fk_tst_runItems_deletedBy` FOREIGN KEY (`deleted_by`)         REFERENCES `tst_users`(`code`) ON DELETE SET NULL
+   CONSTRAINT `fk_tst_runItems_blockedBy` FOREIGN KEY (`test_run_machine_code`,`test_run_seq_number`,`blocked_by_seq_no`)  REFERENCES `tst_test_run_items`(`test_run_machine_code`,`test_run_seq_number`,`sequence_no`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='One test case in one run, with the reason it was selected and a snapshot of how it looked.';
 -- Import / Export: Required
@@ -1373,13 +1579,17 @@ COMMENT='One test case in one run, with the reason it was selected and a snapsho
 -- ---------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `tst_test_run_results` (
    `id`                     BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-   `run_id`                 BIGINT UNSIGNED NOT NULL,
-   `run_item_id`            BIGINT UNSIGNED NOT NULL,
-   `test_case_code`         VARCHAR(21) NULL   COMMENT 'Denormalised from the run item for query performance',
-   `machine_id`             SMALLINT UNSIGNED NOT NULL,
-   `run_machine_code`       VARCHAR(4) NULL    COMMENT 'Denormalised; readable in exports and logs',
-   `environment_profile_id` MEDIUMINT UNSIGNED NULL,
+   -- In place of `run_item_id` I am using `test_run_machine_code`+`test_run_seq_number`+`sequence_no` as composite primary key
+   `test_run_machine_code`  VARCHAR(4) NOT NULL,             -- FK to `tst_test_runs`(`test_run_machine_code`,`test_run_seq_number`)
+   `test_run_seq_number`    INT UNSIGNED NOT NULL,           -- FK to `tst_test_runs`(`test_run_machine_code`,`test_run_seq_number`)
+   `sequence_no`           SMALLINT UNSIGNED NOT NULL DEFAULT 1,  -- Execution order within the run (Will start from 1 for every Run, No sequence_counters required)
    `attempt_no`             SMALLINT UNSIGNED NOT NULL DEFAULT 1,
+   -- `run_item_id`            BIGINT UNSIGNED NOT NULL,
+   `test_case_code`         VARCHAR(21) NULL   COMMENT 'Denormalised from the run item for query performance',
+   -- `machine_id`             SMALLINT UNSIGNED NOT NULL,
+   -- `run_machine_code`       VARCHAR(4) NULL    COMMENT 'Denormalised; readable in exports and logs',
+   `environment_profile_id` MEDIUMINT UNSIGNED NULL,
+
    `is_final_attempt`       TINYINT(1) NOT NULL DEFAULT 1,
    `status`                 ENUM('Passed','Failed','Error','Skipped','Blocked','Not_Executed') NOT NULL,
    `executed_by`            VARCHAR(3) NULL,
@@ -1408,8 +1618,8 @@ CREATE TABLE IF NOT EXISTS `tst_test_run_results` (
    `updated_at`             TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
    `deleted_at`             TIMESTAMP NULL,
    PRIMARY KEY (`id`),
-   UNIQUE KEY `uq_tst_results_attempt` (`run_item_id`,`attempt_no`),
-   INDEX `idx_tst_results_runStatus`   (`run_id`,`status`),
+   UNIQUE KEY `uq_tst_results_attempt` (`test_run_machine_code`,`test_run_seq_number`,`sequence_no`,`attempt_no`),
+   INDEX `idx_tst_results_runStatus`   (`test_run_machine_code`,`test_run_seq_number`,`status`),
    INDEX `idx_tst_results_caseDate`    (`test_case_code`,`created_at`),
    INDEX `idx_tst_results_caseFinal`   (`test_case_code`,`is_final_attempt`,`status`,`created_at`),
    INDEX `idx_tst_results_fingerprint` (`failure_fingerprint`),
@@ -1435,20 +1645,24 @@ COMMENT='One row per ATTEMPT. Insert-only. The source of every statistic in the 
 
 
 CREATE TABLE IF NOT EXISTS `tst_test_run_result_steps` (
-   `id`                BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-   `run_result_id`     BIGINT UNSIGNED NOT NULL,
-   `step_no`           SMALLINT UNSIGNED NOT NULL,
-   `action_snapshot`   TEXT NOT NULL   COMMENT 'The step AS IT WAS when executed',
-   `expected_snapshot` TEXT NOT NULL,
-   `status`            ENUM('Passed','Failed','Blocked','Skipped','Not_Executed') NOT NULL,
-   `actual_result`     TEXT NULL,
-   `note`              VARCHAR(1000) NULL,
-   `duration_seconds`  DECIMAL(10,2) NULL,
-   `created_at`        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   `id`                     BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+   `test_run_machine_code`  VARCHAR(4) NOT NULL,             -- FK to `tst_test_runs`(`test_run_machine_code`,`test_run_seq_number`)
+   `test_run_seq_number`    INT UNSIGNED NOT NULL,           -- FK to `tst_test_runs`(`test_run_machine_code`,`test_run_seq_number`)
+   `sequence_no`            SMALLINT UNSIGNED NOT NULL DEFAULT 1,  -- Execution order within the run (Will start from 1 for every Run, No sequence_counters required)
+   `attempt_no`             SMALLINT UNSIGNED NOT NULL DEFAULT 1,
+   `step_no`                SMALLINT UNSIGNED NOT NULL,
+   -- `run_result_id`       BIGINT UNSIGNED NOT NULL,
+   `action_snapshot`        TEXT NOT NULL   COMMENT 'The step AS IT WAS when executed',
+   `expected_snapshot`      TEXT NOT NULL,
+   `status`                 ENUM('Passed','Failed','Blocked','Skipped','Not_Executed') NOT NULL,
+   `actual_result`          TEXT NULL,
+   `note`                   VARCHAR(1000) NULL,
+   `duration_seconds`       DECIMAL(10,2) NULL,
+   `created_at`             TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
    PRIMARY KEY (`id`),
-   UNIQUE KEY `uq_tst_resultSteps` (`run_result_id`,`step_no`),
+   UNIQUE KEY `uq_tst_resultSteps` (`test_run_machine_code`,`test_run_seq_number`,`sequence_no`,`attempt_no`, `step_no`),
    INDEX `idx_tst_resultSteps_status` (`status`),
-   CONSTRAINT `fk_tst_resultSteps_result` FOREIGN KEY (`run_result_id`) REFERENCES `tst_test_run_results`(`id`) ON DELETE CASCADE
+   CONSTRAINT `fk_tst_resultSteps_result` FOREIGN KEY (`test_run_machine_code`,`test_run_seq_number`,`sequence_no`,`attempt_no`) REFERENCES `tst_test_run_results`(`test_run_machine_code`,`test_run_seq_number`,`sequence_no`,`attempt_no`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Per-step outcomes for manual execution. Steps are snapshotted, not referenced.';
 -- Import / Export: Required
@@ -1607,110 +1821,11 @@ COMMENT='DERIVED roll-up. Rebuildable from results alone, and checked nightly (R
 -- ---------------------------------------------------------------------------------------------------------
 
 
--- ============================================================================================================================================================
--- SECTION 6 — SCHEDULING                                                                           [P1]
--- ============================================================================================================================================================
-
--- ---------------------------------------------------------------------------------------------------------
--- tst_schedules  —  when to run                                                                     [P1]
--- ---------------------------------------------------------------------------------------------------------
-   -- A SCHEDULE THAT DID NOT FIRE IS RECORDED AS MISSED, not silently skipped. Silence and success look
-   -- identical otherwise, and the first time anyone notices is when a release goes out untested.
-   --
-   -- suite_id is a Phase-2 column: in Phase 1 a schedule's content comes from tst_schedule_targets.
--- ---------------------------------------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS `tst_schedules` (
-   `id`                    INT UNSIGNED NOT NULL AUTO_INCREMENT,
-   `schedule_machine_code` VARCHAR(4)  NOT NULL,
-   `schedule_date`         DECIMAL(12,2) NOT NULL, -- This will store Unix Timestamp upto 2 Digit Microsecond. (e.g. 1786443240.12 for )
-   `name`                  VARCHAR(150) NOT NULL,
-   `description`           VARCHAR(500) NULL,
-   `owner_user_code`       VARCHAR(3) NOT NULL   COMMENT 'Answerable when it fails or is missed',
-   `suite_id`              INT UNSIGNED NULL     COMMENT '[P2] FK added in Section 30',
-   `cron_expression`       VARCHAR(100) NOT NULL,
-   `timezone`              VARCHAR(64) NOT NULL DEFAULT 'Asia/Kolkata',
-   `catch_up_policy`       ENUM('Skip','Run_Once','Run_All') NOT NULL DEFAULT 'Skip',
-   `is_active`             TINYINT(1) NOT NULL DEFAULT 1,
-   `is_suspended`          TINYINT(1) NOT NULL DEFAULT 0  COMMENT 'Distinct from deactivated — a temporary hold',
-   `suspended_reason`      VARCHAR(500) NULL,
-   `next_run_at`           DATETIME NULL,
-   `last_run_id`           BIGINT UNSIGNED NULL,
-   `last_run_at`           DATETIME NULL,
-   `last_status`           ENUM('Success','Failed','Missed','Cancelled') NULL,
-   `missed_count`          INT UNSIGNED NOT NULL DEFAULT 0,
-   `created_by`            VARCHAR(3) NOT NULL,
-   `updated_by`            VARCHAR(3) NOT NULL,
-   `deleted_by`            VARCHAR(3) NULL,
-   `created_at`            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-   `updated_at`            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-   `deleted_at`            TIMESTAMP NULL,
-   PRIMARY KEY (`id`),
-   UNIQUE KEY `uq_tst_schedules_name` (`schedule_machine_code`,`schedule_date`),
-   INDEX `idx_tst_schedules_active` (`is_active`,`is_suspended`,`next_run_at`),
-   CONSTRAINT `chk_tst_schedules_susp` CHECK (`is_suspended` = 0 OR `suspended_reason` IS NOT NULL),
-   CONSTRAINT `fk_tst_schedules_owner`     FOREIGN KEY (`owner_user_code`) REFERENCES `tst_users`(`code`) ON DELETE RESTRICT,
-   CONSTRAINT `fk_tst_schedules_lastRun`   FOREIGN KEY (`last_run_id`)     REFERENCES `tst_test_runs`(`id`) ON DELETE SET NULL,
-   CONSTRAINT `fk_tst_schedules_createdBy` FOREIGN KEY (`created_by`)      REFERENCES `tst_users`(`code`) ON DELETE RESTRICT,
-   CONSTRAINT `fk_tst_schedules_updatedBy` FOREIGN KEY (`updated_by`)      REFERENCES `tst_users`(`code`) ON DELETE RESTRICT,
-   CONSTRAINT `fk_tst_schedules_deletedBy` FOREIGN KEY (`deleted_by`)      REFERENCES `tst_users`(`code`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-COMMENT='Scheduled execution. A schedule that did not fire is recorded as MISSED.';
-
--- ---------------------------------------------------------------------------------------------------------
-
-
--- ---------------------------------------------------------------------------------------------------------
--- tst_schedule_targets  —  what to run, and ON WHICH MACHINE                        [NEW IN v7.2]  [P1]
--- ---------------------------------------------------------------------------------------------------------
---
-   -- BRD REQ-SCHED-01 asks for scheduled execution "on different machines for different modules, screens
-   -- or test cases". ONE machine_id column on the schedule cannot express that.
-   --
-   -- One schedule may therefore run Fees on D02A and Examination on T01A as a single nightly job.
-   --
-   -- ScheduleDispatchJob runs every minute on EVERY machine, selects the targets whose machine_code matches
-   -- the local machine and whose schedule is due, and creates one run per target group. A machine that is
-   -- switched off simply produces a missed count on its own targets — it does not block the others.
--- ---------------------------------------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS `tst_schedule_targets` (
-   `id`              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-   `schedule_id`     INT UNSIGNED NOT NULL,
-   `target_type`     ENUM('Module','Screen','TestCase') NOT NULL,
-   `module_code`     VARCHAR(5)  NULL,
-   `ts_code`         VARCHAR(11) NULL,
-   `test_case_code`  VARCHAR(21) NULL,
-   `machine_code`    VARCHAR(4)  NOT NULL   COMMENT 'WHICH MACHINE executes this target',
-   `sequence_no`     INT UNSIGNED NOT NULL DEFAULT 1,
-   `is_active`       TINYINT(1) NOT NULL DEFAULT 1,
-   `created_by`      VARCHAR(3) NOT NULL,
-   `updated_by`      VARCHAR(3) NOT NULL,
-   `created_at`      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-   `updated_at`      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-   `deleted_at`      TIMESTAMP NULL,
-   PRIMARY KEY (`id`),
-   INDEX `idx_tst_schedTargets_dispatch` (`machine_code`,`schedule_id`,`is_active`),
-   INDEX `idx_tst_schedTargets_schedule` (`schedule_id`,`target_type`),
-   -- Exactly one target reference must match the declared target_type.
-   CONSTRAINT `chk_tst_schedTargets_ref` CHECK (
-        (`target_type` = 'Module'   AND `module_code` IS NOT NULL AND `ts_code` IS NULL AND `test_case_code` IS NULL)
-     OR (`target_type` = 'Screen'   AND `ts_code` IS NOT NULL AND `test_case_code` IS NULL)
-     OR (`target_type` = 'TestCase' AND `test_case_code` IS NOT NULL)),
-   CONSTRAINT `fk_tst_schedTargets_schedule`  FOREIGN KEY (`schedule_id`)    REFERENCES `tst_schedules`(`id`) ON DELETE CASCADE,
-   CONSTRAINT `fk_tst_schedTargets_machine`   FOREIGN KEY (`machine_code`)   REFERENCES `tst_machines`(`machine_code`) ON DELETE RESTRICT,
-   CONSTRAINT `fk_tst_schedTargets_module`    FOREIGN KEY (`module_code`)    REFERENCES `tst_modules`(`module_code`) ON DELETE CASCADE,
-   CONSTRAINT `fk_tst_schedTargets_screen`    FOREIGN KEY (`ts_code`)        REFERENCES `tst_tabs_screens`(`ts_code`) ON DELETE CASCADE,
-   CONSTRAINT `fk_tst_schedTargets_case`      FOREIGN KEY (`test_case_code`) REFERENCES `tst_test_cases`(`test_case_code`) ON DELETE CASCADE,
-   CONSTRAINT `fk_tst_schedTargets_createdBy` FOREIGN KEY (`created_by`)     REFERENCES `tst_users`(`code`) ON DELETE RESTRICT,
-   CONSTRAINT `fk_tst_schedTargets_updatedBy` FOREIGN KEY (`updated_by`)     REFERENCES `tst_users`(`code`) ON DELETE RESTRICT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-COMMENT='NEW in v7.2. What a schedule runs, and on which machine.';
-
--- ---------------------------------------------------------------------------------------------------------
-
 
 
 -- ============================================================================================================================================================
--- SECTION 7 — COMMENTS AND DISCOVERY                                                                [P1]
+-- SUB MENU 7 — Execution Review                                                                                                                     [Phase:1]
+-- Run Annotations, Execution Evidence
 -- ============================================================================================================================================================
 
 -- ---------------------------------------------------------------------------------------------------------
@@ -1741,7 +1856,6 @@ CREATE TABLE IF NOT EXISTS `tst_run_annotations` (
    CONSTRAINT `fk_tst_annotations_user`   FOREIGN KEY (`user_code`)     REFERENCES `tst_users`(`code`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Reviewer and developer comments on runs and results. Consolidate as evidence.';
-
 -- ---------------------------------------------------------------------------------------------------------
 
 
@@ -1793,13 +1907,13 @@ CREATE TABLE IF NOT EXISTS `tst_discovery_sync_logs` (
    CONSTRAINT `fk_tst_discovery_user`    FOREIGN KEY (`user_code`)  REFERENCES `tst_users`(`code`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Discovery runs. Discovery proposes; it never writes catalog data or deletes.';
-
 -- ---------------------------------------------------------------------------------------------------------
 
 
 
 -- ============================================================================================================================================================
--- SECTION 8 — DEFECTS                                                                               [P1]
+-- SUB MENU 8 — Defects                                                                                                                              [Phase:1]
+-- Known Issue, Bugs Registration, Occurrences, Bug Occurrence Linking
 -- ============================================================================================================================================================
 --
    --     THREE DISTINCT CONCEPTS that earlier versions partly conflated:
@@ -1849,7 +1963,6 @@ CREATE TABLE IF NOT EXISTS `tst_known_issues` (
    CONSTRAINT `fk_tst_knownIssues_deletedBy` FOREIGN KEY (`deleted_by`)      REFERENCES `tst_users`(`code`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Accepted problems whose recurrence is expected. review_due_at forces a re-judgement.';
-
 -- ---------------------------------------------------------------------------------------------------------
 
 
@@ -1866,7 +1979,6 @@ CREATE TABLE IF NOT EXISTS `tst_known_issue_results` (
    CONSTRAINT `fk_tst_kiResults_by`     FOREIGN KEY (`attributed_by`)  REFERENCES `tst_users`(`code`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Every recurrence of a known issue stays recorded and countable.';
-
 -- ---------------------------------------------------------------------------------------------------------
 
 
@@ -1970,7 +2082,6 @@ CREATE TABLE IF NOT EXISTS `tst_bugs` (
    CONSTRAINT `fk_tst_bugs_deletedBy`   FOREIGN KEY (`deleted_by`)   REFERENCES `tst_users`(`code`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='ONE problem in Prime-AI. Fixed does not equal verified (R-08).';
-
 -- ---------------------------------------------------------------------------------------------------------
 
 
@@ -1991,7 +2102,6 @@ CREATE TABLE IF NOT EXISTS `tst_bug_occurrences` (
    CONSTRAINT `fk_tst_bugOcc_confirmedBy` FOREIGN KEY (`confirmed_by`)  REFERENCES `tst_users`(`code`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='One observation of one bug in one result. NOT the same concept as the bug.';
-
 -- ---------------------------------------------------------------------------------------------------------
 
 
@@ -2014,7 +2124,6 @@ CREATE TABLE IF NOT EXISTS `tst_bug_status_history` (
    CONSTRAINT `fk_tst_bugHistory_toUser`    FOREIGN KEY (`to_assignee`)   REFERENCES `tst_users`(`code`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Every bug status transition. Insert-only.';
-
 -- ---------------------------------------------------------------------------------------------------------
 
 
@@ -2033,7 +2142,6 @@ CREATE TABLE IF NOT EXISTS `tst_bug_comments` (
    CONSTRAINT `fk_tst_bugComments_user` FOREIGN KEY (`user_code`) REFERENCES `tst_users`(`code`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Discussion on a bug.';
-
 -- ---------------------------------------------------------------------------------------------------------
 
 
@@ -2061,7 +2169,6 @@ CREATE TABLE IF NOT EXISTS `tst_bug_links` (
    CONSTRAINT `fk_tst_bugLinks_decidedBy`  FOREIGN KEY (`decided_by`)    REFERENCES `tst_users`(`code`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Relationships between bugs. Insert-only; reversals supersede.';
-
 -- ---------------------------------------------------------------------------------------------------------
 
 
@@ -2101,7 +2208,6 @@ CREATE TABLE IF NOT EXISTS `tst_retest_cycles` (
    CONSTRAINT `fk_tst_retestCycles_triggeredBy` FOREIGN KEY (`triggered_by`) REFERENCES `tst_users`(`code`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='One managed attempt to verify a fix. Bounded, so automation cannot loop.';
-
 -- ---------------------------------------------------------------------------------------------------------
 
 
@@ -2120,12 +2226,12 @@ CREATE TABLE IF NOT EXISTS `tst_retest_cycle_bugs` (
    CONSTRAINT `fk_tst_retestBugs_result` FOREIGN KEY (`verifying_result_id`) REFERENCES `tst_test_run_results`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='One retest cycle may verify several bugs.';
-
 -- ---------------------------------------------------------------------------------------------------------
 
 
 -- ============================================================================================================================================================
--- SECTION 9 — EXPORT, IMPORT, RECORD MAP AND CONFLICTS                                              [P1]
+-- SUB MENU 9 — Export & Import                                                                                                                      [Phase:1]
+-- EXPORT, IMPORT, RECORD MAP AND CONFLICTS
 -- ============================================================================================================================================================
 
 CREATE TABLE IF NOT EXISTS `tst_data_exports` (
@@ -2159,7 +2265,6 @@ CREATE TABLE IF NOT EXISTS `tst_data_exports` (
    CONSTRAINT `fk_tst_exports_user`    FOREIGN KEY (`user_code`)  REFERENCES `tst_users`(`code`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Export bundles. direction says whether this is catalog out or evidence in.';
-
 -- ---------------------------------------------------------------------------------------------------------
 
 
@@ -2198,7 +2303,6 @@ CREATE TABLE IF NOT EXISTS `tst_data_imports` (
    CONSTRAINT `fk_tst_imports_reversedBy` FOREIGN KEY (`reversed_by`)       REFERENCES `tst_users`(`code`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Import runs. Idempotent by design; reversible via the record map.';
-
 -- ---------------------------------------------------------------------------------------------------------
 
 
@@ -2229,7 +2333,6 @@ CREATE TABLE IF NOT EXISTS `tst_import_record_map` (
    CONSTRAINT `fk_tst_importMap_import` FOREIGN KEY (`import_id`) REFERENCES `tst_data_imports`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Every record an import touched. This is what makes an import reversible.';
-
 -- ---------------------------------------------------------------------------------------------------------
 
 
@@ -2269,7 +2372,6 @@ CREATE TABLE IF NOT EXISTS `tst_import_conflicts` (
    CONSTRAINT `fk_tst_conflicts_resolvedBy` FOREIGN KEY (`resolved_by`) REFERENCES `tst_users`(`code`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Import conflicts. Queued for a person; both versions retained in full.';
-
 -- ---------------------------------------------------------------------------------------------------------
 
 
@@ -2312,7 +2414,6 @@ CREATE TABLE IF NOT EXISTS `tst_ai_analyses` (
    CONSTRAINT `fk_tst_aiAnalyses_requestedBy` FOREIGN KEY (`requested_by`) REFERENCES `tst_users`(`code`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='AI analysis runs, with full provenance so a conclusion can be reproduced.';
-
 -- ---------------------------------------------------------------------------------------------------------
 
 
@@ -2345,7 +2446,6 @@ CREATE TABLE IF NOT EXISTS `tst_ai_recommendations` (
    CONSTRAINT `fk_tst_aiRec_reviewedBy` FOREIGN KEY (`reviewed_by`)  REFERENCES `tst_users`(`code`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Proposals with evidence, confidence and a review state. AI never mutates record data.';
-
 -- ---------------------------------------------------------------------------------------------------------
 
 
@@ -2387,7 +2487,6 @@ CREATE TABLE IF NOT EXISTS `tst_notifications` (
    CONSTRAINT `fk_tst_notifications_recipient` FOREIGN KEY (`recipient_code`) REFERENCES `tst_users`(`code`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Deduplicated notifications. Forty failures produce one notification saying forty.';
-
 -- ---------------------------------------------------------------------------------------------------------
 
 
@@ -2427,7 +2526,6 @@ CREATE TABLE IF NOT EXISTS `tst_audit_logs` (
    CONSTRAINT `fk_tst_audit_user`    FOREIGN KEY (`user_code`)  REFERENCES `tst_users`(`code`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='INSERT-ONLY audit. record_key carries the business code, readable on any machine.';
-
 -- ---------------------------------------------------------------------------------------------------------
 
 
@@ -2445,71 +2543,71 @@ COMMENT='INSERT-ONLY audit. record_key carries the business code, readable on an
    --     v7.2: the v7.1 block also added foreign keys to tst_releases and tst_roles, both of which had
    --     been removed. Those statements are gone.
 -- ------------------------------------------------------------------------------------------------------------------------------------------------------------
-
--- A run may belong to a schedule (tst_schedules is created after tst_test_runs).
-SET @sql := (
-   SELECT IF(COUNT(*) > 0,
-      'SELECT ''fk_tst_testRuns_schedule already present'' AS skipped',
-      'ALTER TABLE `tst_test_runs` ADD CONSTRAINT `fk_tst_testRuns_schedule` FOREIGN KEY (`schedule_id`) REFERENCES `tst_schedules`(`id`) ON DELETE SET NULL')
-   FROM information_schema.table_constraints
-   WHERE table_schema = DATABASE() AND table_name = 'tst_test_runs' AND constraint_name = 'fk_tst_testRuns_schedule');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
--- A run scope may name a bug.
-SET @sql := (
-   SELECT IF(COUNT(*) > 0,
-      'SELECT ''fk_tst_runScopes_bug already present'' AS skipped',
-      'ALTER TABLE `tst_test_run_scopes` ADD CONSTRAINT `fk_tst_runScopes_bug` FOREIGN KEY (`bug_id`) REFERENCES `tst_bugs`(`id`) ON DELETE SET NULL')
-   FROM information_schema.table_constraints
-   WHERE table_schema = DATABASE() AND table_name = 'tst_test_run_scopes' AND constraint_name = 'fk_tst_runScopes_bug');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
--- A failed result belongs to a failure-signature group.
-SET @sql := (
-   SELECT IF(COUNT(*) > 0,
-      'SELECT ''fk_tst_results_signature already present'' AS skipped',
-      'ALTER TABLE `tst_test_run_results` ADD CONSTRAINT `fk_tst_results_signature` FOREIGN KEY (`failure_signature_id`) REFERENCES `tst_failure_signatures`(`id`) ON DELETE SET NULL')
-   FROM information_schema.table_constraints
-   WHERE table_schema = DATABASE() AND table_name = 'tst_test_run_results' AND constraint_name = 'fk_tst_results_signature');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
--- A signature carries a sample result and, once triaged, its bug or known issue.
-SET @sql := (
-   SELECT IF(COUNT(*) > 0,
-      'SELECT ''fk_tst_failureSig_sample already present'' AS skipped',
-      'ALTER TABLE `tst_failure_signatures` ADD CONSTRAINT `fk_tst_failureSig_sample` FOREIGN KEY (`sample_result_id`) REFERENCES `tst_test_run_results`(`id`) ON DELETE SET NULL, ADD CONSTRAINT `fk_tst_failureSig_bug` FOREIGN KEY (`bug_id`) REFERENCES `tst_bugs`(`id`) ON DELETE SET NULL, ADD CONSTRAINT `fk_tst_failureSig_known` FOREIGN KEY (`known_issue_id`) REFERENCES `tst_known_issues`(`id`) ON DELETE SET NULL')
-   FROM information_schema.table_constraints
-   WHERE table_schema = DATABASE() AND table_name = 'tst_failure_signatures' AND constraint_name = 'fk_tst_failureSig_sample');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
--- A bug may carry a failure signature.
-SET @sql := (
-   SELECT IF(COUNT(*) > 0,
-      'SELECT ''fk_tst_bugs_signature already present'' AS skipped',
-      'ALTER TABLE `tst_bugs` ADD CONSTRAINT `fk_tst_bugs_signature` FOREIGN KEY (`failure_signature_id`) REFERENCES `tst_failure_signatures`(`id`) ON DELETE SET NULL')
-   FROM information_schema.table_constraints
-   WHERE table_schema = DATABASE() AND table_name = 'tst_bugs' AND constraint_name = 'fk_tst_bugs_signature');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
--- A known issue may be promoted to a bug, retaining its occurrence history.
-SET @sql := (
-   SELECT IF(COUNT(*) > 0,
-      'SELECT ''fk_tst_knownIssues_promotedBug already present'' AS skipped',
-      'ALTER TABLE `tst_known_issues` ADD CONSTRAINT `fk_tst_knownIssues_promotedBug` FOREIGN KEY (`promoted_bug_id`) REFERENCES `tst_bugs`(`id`) ON DELETE SET NULL')
-   FROM information_schema.table_constraints
-   WHERE table_schema = DATABASE() AND table_name = 'tst_known_issues' AND constraint_name = 'fk_tst_knownIssues_promotedBug');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
--- A note may attribute a failure to a known issue.
-SET @sql := (
-   SELECT IF(COUNT(*) > 0,
-      'SELECT ''fk_tst_annotations_knownIssue already present'' AS skipped',
-      'ALTER TABLE `tst_run_annotations` ADD CONSTRAINT `fk_tst_annotations_knownIssue` FOREIGN KEY (`known_issue_id`) REFERENCES `tst_known_issues`(`id`) ON DELETE SET NULL')
-   FROM information_schema.table_constraints
-   WHERE table_schema = DATABASE() AND table_name = 'tst_run_annotations' AND constraint_name = 'fk_tst_annotations_knownIssue');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET FOREIGN_KEY_CHECKS = 1;
+-- DEFERRED CONSTRAINTS:
+   SET @sql := (
+      SELECT IF(COUNT(*) > 0,
+         'SELECT ''fk_tst_testRuns_schedule already present'' AS skipped',
+         'ALTER TABLE `tst_test_runs` ADD CONSTRAINT `fk_tst_testRuns_schedule` FOREIGN KEY (`schedule_id`) REFERENCES `tst_schedules`(`id`) ON DELETE SET NULL')
+      FROM information_schema.table_constraints
+      WHERE table_schema = DATABASE() AND table_name = 'tst_test_runs' AND constraint_name = 'fk_tst_testRuns_schedule');
+   PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+   -- ---------------------------------------------------------------------------------------------------------
+   -- A run scope may name a bug.
+   SET @sql := (
+      SELECT IF(COUNT(*) > 0,
+         'SELECT ''fk_tst_runScopes_bug already present'' AS skipped',
+         'ALTER TABLE `tst_test_run_scopes` ADD CONSTRAINT `fk_tst_runScopes_bug` FOREIGN KEY (`bug_id`) REFERENCES `tst_bugs`(`id`) ON DELETE SET NULL')
+      FROM information_schema.table_constraints
+      WHERE table_schema = DATABASE() AND table_name = 'tst_test_run_scopes' AND constraint_name = 'fk_tst_runScopes_bug');
+   PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+   -- ---------------------------------------------------------------------------------------------------------
+   -- A failed result belongs to a failure-signature group.
+   SET @sql := (
+      SELECT IF(COUNT(*) > 0,
+         'SELECT ''fk_tst_results_signature already present'' AS skipped',
+         'ALTER TABLE `tst_test_run_results` ADD CONSTRAINT `fk_tst_results_signature` FOREIGN KEY (`failure_signature_id`) REFERENCES `tst_failure_signatures`(`id`) ON DELETE SET NULL')
+      FROM information_schema.table_constraints
+      WHERE table_schema = DATABASE() AND table_name = 'tst_test_run_results' AND constraint_name = 'fk_tst_results_signature');
+   PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+   -- ---------------------------------------------------------------------------------------------------------
+   -- A signature carries a sample result and, once triaged, its bug or known issue.
+   SET @sql := (
+      SELECT IF(COUNT(*) > 0,
+         'SELECT ''fk_tst_failureSig_sample already present'' AS skipped',
+         'ALTER TABLE `tst_failure_signatures` ADD CONSTRAINT `fk_tst_failureSig_sample` FOREIGN KEY (`sample_result_id`) REFERENCES `tst_test_run_results`(`id`) ON DELETE SET NULL, ADD CONSTRAINT `fk_tst_failureSig_bug` FOREIGN KEY (`bug_id`) REFERENCES `tst_bugs`(`id`) ON DELETE SET NULL, ADD CONSTRAINT `fk_tst_failureSig_known` FOREIGN KEY (`known_issue_id`) REFERENCES `tst_known_issues`(`id`) ON DELETE SET NULL')
+      FROM information_schema.table_constraints
+      WHERE table_schema = DATABASE() AND table_name = 'tst_failure_signatures' AND constraint_name = 'fk_tst_failureSig_sample');
+   PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+   -- ---------------------------------------------------------------------------------------------------------
+   -- A bug may carry a failure signature.
+   SET @sql := (
+      SELECT IF(COUNT(*) > 0,
+         'SELECT ''fk_tst_bugs_signature already present'' AS skipped',
+         'ALTER TABLE `tst_bugs` ADD CONSTRAINT `fk_tst_bugs_signature` FOREIGN KEY (`failure_signature_id`) REFERENCES `tst_failure_signatures`(`id`) ON DELETE SET NULL')
+      FROM information_schema.table_constraints
+      WHERE table_schema = DATABASE() AND table_name = 'tst_bugs' AND constraint_name = 'fk_tst_bugs_signature');
+   PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+   -- ---------------------------------------------------------------------------------------------------------
+   -- A known issue may be promoted to a bug, retaining its occurrence history.
+   SET @sql := (
+      SELECT IF(COUNT(*) > 0,
+         'SELECT ''fk_tst_knownIssues_promotedBug already present'' AS skipped',
+         'ALTER TABLE `tst_known_issues` ADD CONSTRAINT `fk_tst_knownIssues_promotedBug` FOREIGN KEY (`promoted_bug_id`) REFERENCES `tst_bugs`(`id`) ON DELETE SET NULL')
+      FROM information_schema.table_constraints
+      WHERE table_schema = DATABASE() AND table_name = 'tst_known_issues' AND constraint_name = 'fk_tst_knownIssues_promotedBug');
+   PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+   -- ---------------------------------------------------------------------------------------------------------
+   -- A note may attribute a failure to a known issue.
+   SET @sql := (
+      SELECT IF(COUNT(*) > 0,
+         'SELECT ''fk_tst_annotations_knownIssue already present'' AS skipped',
+         'ALTER TABLE `tst_run_annotations` ADD CONSTRAINT `fk_tst_annotations_knownIssue` FOREIGN KEY (`known_issue_id`) REFERENCES `tst_known_issues`(`id`) ON DELETE SET NULL')
+      FROM information_schema.table_constraints
+      WHERE table_schema = DATABASE() AND table_name = 'tst_run_annotations' AND constraint_name = 'fk_tst_annotations_knownIssue');
+   PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+   -- ---------------------------------------------------------------------------------------------------------
+   SET FOREIGN_KEY_CHECKS = 1;
+   -- ---------------------------------------------------------------------------------------------------------
 
 
 
@@ -2523,487 +2621,487 @@ SET FOREIGN_KEY_CHECKS = 1;
    --     v7.2: EVERY VIEW IS REWRITTEN TO JOIN ON CODES. v7.1's views all joined tst_test_cases on tc.id, which returns NOTHING after consolidation, 
    --     because a central id does not match a local one.
 -- ------------------------------------------------------------------------------------------------------------------------------------------------------------
+-- VIEWS:
+   -- The catalog with its full hierarchy, TcList position and current health. The main list screen reads this.
+   CREATE OR REPLACE VIEW `vw_test_case_catalog` AS
+   SELECT
+      tc.test_case_code,
+      tc.tcr_code,
+      m.module_code,
+      m.name                       AS module_name,
+      c.cat_code,
+      c.name                       AS category_name,
+      mm.mm_code,
+      mm.name                      AS main_menu_name,
+      sm.sm_code,
+      sm.name                      AS sub_menu_name,
+      ts.ts_code,
+      ts.name                      AS screen_name,
+      ts.criticality               AS screen_criticality,
+      ts.is_excluded               AS screen_excluded,
+      tc.machine_code,
+      tc.user_code                 AS author_code,
+      tc.display_name,
+      tc.version_no,
+      tc.test_method_code,
+      tc.test_technology_code,
+      tc.criticality,
+      tc.creation_status_code,
+      tc.is_orphaned,
+      tc.is_active,
+      cs.last_status,
+      cs.last_run_at,
+      cs.pass_rate_30d,
+      cs.consecutive_failures,
+      cs.is_flaky_confirmed,
+      cs.health_status,
+      cs.confidence_score,
+      cs.open_bug_count
+   FROM `tst_test_cases` tc
+   JOIN `tst_tabs_screens` ts ON ts.ts_code = tc.ts_code
+   JOIN `tst_modules`      m  ON m.module_code = ts.module_code
+   JOIN `tst_categories`   c  ON c.module_code = ts.module_code AND c.cat_code = ts.cat_code
+   JOIN `tst_main_menus`   mm ON mm.module_code = ts.module_code AND mm.cat_code = ts.cat_code AND mm.mm_code = ts.mm_code
+   LEFT JOIN `tst_sub_menus` sm ON sm.sm_code = ts.sm_code
+   LEFT JOIN `tst_test_case_runs_summary` cs ON cs.test_case_code = tc.test_case_code
+   WHERE tc.deleted_at IS NULL;
+   -- ---------------------------------------------------------------------------------------------------------
 
--- The catalog with its full hierarchy, TcList position and current health. The main list screen reads this.
-CREATE OR REPLACE VIEW `vw_test_case_catalog` AS
-SELECT
-    tc.test_case_code,
-    tc.tcr_code,
-    m.module_code,
-    m.name                       AS module_name,
-    c.cat_code,
-    c.name                       AS category_name,
-    mm.mm_code,
-    mm.name                      AS main_menu_name,
-    sm.sm_code,
-    sm.name                      AS sub_menu_name,
-    ts.ts_code,
-    ts.name                      AS screen_name,
-    ts.criticality               AS screen_criticality,
-    ts.is_excluded               AS screen_excluded,
-    tc.machine_code,
-    tc.user_code                 AS author_code,
-    tc.display_name,
-    tc.version_no,
-    tc.test_method_code,
-    tc.test_technology_code,
-    tc.criticality,
-    tc.creation_status_code,
-    tc.is_orphaned,
-    tc.is_active,
-    cs.last_status,
-    cs.last_run_at,
-    cs.pass_rate_30d,
-    cs.consecutive_failures,
-    cs.is_flaky_confirmed,
-    cs.health_status,
-    cs.confidence_score,
-    cs.open_bug_count
-FROM `tst_test_cases` tc
-JOIN `tst_tabs_screens` ts ON ts.ts_code = tc.ts_code
-JOIN `tst_modules`      m  ON m.module_code = ts.module_code
-JOIN `tst_categories`   c  ON c.module_code = ts.module_code AND c.cat_code = ts.cat_code
-JOIN `tst_main_menus`   mm ON mm.module_code = ts.module_code AND mm.cat_code = ts.cat_code AND mm.mm_code = ts.mm_code
-LEFT JOIN `tst_sub_menus` sm ON sm.sm_code = ts.sm_code
-LEFT JOIN `tst_test_case_runs_summary` cs ON cs.test_case_code = tc.test_case_code
-WHERE tc.deleted_at IS NULL;
+   -- NEW IN v7.2. Coverage with a real denominator: required vs written vs reviewed vs released.
+   -- This is the view that answers "how tested is Fees, actually?".
+   CREATE OR REPLACE VIEW `vw_tc_list_coverage` AS
+   SELECT
+      ts.module_code,
+      ts.ts_code,
+      ts.name                                                              AS screen_name,
+      ts.criticality,
+      ts.tc_list_status,
+      ts.dev_status,
+      COUNT(DISTINCT CASE WHEN r.tc_creation_status <> 'Not-Required'
+                           THEN r.tcr_code END)                             AS required_count,
+      COUNT(DISTINCT CASE WHEN r.tc_creation_status = 'Not-Required'
+                           THEN r.tcr_code END)                             AS not_required_count,
+      COUNT(DISTINCT tc.test_case_code)                                    AS written_count,
+      COUNT(DISTINCT CASE WHEN tc.creation_status_code = 'Released'
+                           THEN tc.test_case_code END)                      AS released_count,
+      COUNT(DISTINCT CASE WHEN rv.status = 'Released'
+                           THEN rv.test_case_code END)                      AS signed_off_count,
+      ROUND(
+         COUNT(DISTINCT CASE WHEN tc.creation_status_code = 'Released' THEN tc.test_case_code END)
+         / NULLIF(COUNT(DISTINCT CASE WHEN r.tc_creation_status <> 'Not-Required' THEN r.tcr_code END), 0)
+         * 100, 2)                                                        AS coverage_percent
+   FROM `tst_tabs_screens` ts
+   LEFT JOIN `tst_tc_required_list` r  ON r.ts_code = ts.ts_code AND r.deleted_at IS NULL
+   LEFT JOIN `tst_test_cases`       tc ON tc.tcr_code = r.tcr_code AND tc.deleted_at IS NULL
+   LEFT JOIN `tst_test_case_review` rv ON rv.test_case_code = tc.test_case_code AND rv.status = 'Released'
+   WHERE ts.is_active = 1 AND ts.is_excluded = 0
+   GROUP BY ts.module_code, ts.ts_code, ts.name, ts.criticality, ts.tc_list_status, ts.dev_status;
+   -- ---------------------------------------------------------------------------------------------------------
 
+   -- NEW IN v7.2. Review and sign-off state per test case, with reviewer and approver kept distinct.
+   CREATE OR REPLACE VIEW `vw_review_status` AS
+   SELECT
+      tc.test_case_code,
+      tc.ts_code,
+      tc.display_name,
+      tc.version_no                AS current_version,
+      rv.version_no                AS reviewed_version,
+      rv.review_date,
+      rv.status                    AS review_status,
+      rv.readiness_score,
+      rv.reviewed_by,
+      rv.reviewed_at,
+      rv.signed_off_by,
+      rv.signed_off_at,
+      rv.bug_in_testcase,
+      rv.known_issues_in_scope,
+      CASE
+         WHEN rv.id IS NULL                        THEN 'Never_Reviewed'
+         WHEN rv.version_no < tc.version_no        THEN 'Review_Stale'
+         WHEN rv.signed_off_by IS NULL             THEN 'Awaiting_Sign_Off'
+         WHEN rv.reviewed_by = rv.signed_off_by    THEN 'Self_Signed_Off'
+         ELSE 'Signed_Off'
+      END                          AS review_state
+   FROM `tst_test_cases` tc
+   LEFT JOIN `tst_test_case_review` rv
+         ON rv.test_case_code = tc.test_case_code
+         AND rv.id = (SELECT MAX(r2.id) FROM `tst_test_case_review` r2
+                     WHERE r2.test_case_code = tc.test_case_code)
+   WHERE tc.deleted_at IS NULL AND tc.is_active = 1;
+   -- ---------------------------------------------------------------------------------------------------------
 
--- NEW IN v7.2. Coverage with a real denominator: required vs written vs reviewed vs released.
--- This is the view that answers "how tested is Fees, actually?".
-CREATE OR REPLACE VIEW `vw_tc_list_coverage` AS
-SELECT
-    ts.module_code,
-    ts.ts_code,
-    ts.name                                                              AS screen_name,
-    ts.criticality,
-    ts.tc_list_status,
-    ts.dev_status,
-    COUNT(DISTINCT CASE WHEN r.tc_creation_status <> 'Not-Required'
-                        THEN r.tcr_code END)                             AS required_count,
-    COUNT(DISTINCT CASE WHEN r.tc_creation_status = 'Not-Required'
-                        THEN r.tcr_code END)                             AS not_required_count,
-    COUNT(DISTINCT tc.test_case_code)                                    AS written_count,
-    COUNT(DISTINCT CASE WHEN tc.creation_status_code = 'Released'
-                        THEN tc.test_case_code END)                      AS released_count,
-    COUNT(DISTINCT CASE WHEN rv.status = 'Released'
-                        THEN rv.test_case_code END)                      AS signed_off_count,
-    ROUND(
-        COUNT(DISTINCT CASE WHEN tc.creation_status_code = 'Released' THEN tc.test_case_code END)
-        / NULLIF(COUNT(DISTINCT CASE WHEN r.tc_creation_status <> 'Not-Required' THEN r.tcr_code END), 0)
-        * 100, 2)                                                        AS coverage_percent
-FROM `tst_tabs_screens` ts
-LEFT JOIN `tst_tc_required_list` r  ON r.ts_code = ts.ts_code AND r.deleted_at IS NULL
-LEFT JOIN `tst_test_cases`       tc ON tc.tcr_code = r.tcr_code AND tc.deleted_at IS NULL
-LEFT JOIN `tst_test_case_review` rv ON rv.test_case_code = tc.test_case_code AND rv.status = 'Released'
-WHERE ts.is_active = 1 AND ts.is_excluded = 0
-GROUP BY ts.module_code, ts.ts_code, ts.name, ts.criticality, ts.tc_list_status, ts.dev_status;
+   -- Every attempt for a test case, with run, machine and environment context.
+   CREATE OR REPLACE VIEW `vw_test_case_history` AS
+   SELECT
+      r.test_case_code,
+      tc.display_name,
+      tc.ts_code,
+      r.id                         AS result_id,
+      r.run_id,
+      r.attempt_no,
+      r.is_final_attempt,
+      r.status,
+      r.duration_seconds,
+      r.error_message,
+      r.failure_fingerprint,
+      r.triage_state,
+      r.machine_id,
+      r.run_machine_code,
+      r.environment_profile_id,
+      ep.env_name,
+      ep.browser_name,
+      ep.browser_version,
+      ep.os_name,
+      run.trigger_type,
+      run.commit_hash,
+      run.branch_name,
+      ri.selection_reason,
+      ri.test_case_version_no,
+      r.created_at
+   FROM `tst_test_run_results` r
+   JOIN `tst_test_run_items` ri ON ri.id = r.run_item_id
+   JOIN `tst_test_runs`      run ON run.id = r.run_id
+   LEFT JOIN `tst_test_cases` tc ON tc.test_case_code = r.test_case_code
+   LEFT JOIN `tst_environment_profiles` ep ON ep.id = r.environment_profile_id;
+   -- ---------------------------------------------------------------------------------------------------------
 
+   -- Run-level history with roll-ups and who ran it.
+   CREATE OR REPLACE VIEW `vw_test_run_history` AS
+   SELECT
+      run.id                       AS run_id,
+      run.machine_id,
+      run.run_machine_code,
+      run.run_user_code,
+      run.run_name,
+      run.trigger_type,
+      run.status,
+      run.started_at,
+      run.finished_at,
+      run.duration_seconds,
+      run.commit_hash,
+      run.branch_name,
+      run.working_tree_dirty,
+      ep.env_name,
+      run.total_tc_count,
+      run.passed_tc_count,
+      run.failed_tc_count,
+      run.error_tc_count,
+      run.skipped_tc_count,
+      run.blocked_tc_count,
+      run.not_executed_tc_count,
+      ROUND(run.passed_tc_count / NULLIF(run.total_tc_count,0) * 100, 2) AS pass_rate,
+      run.initiated_by,
+      run.executed_by,
+      sch.name                     AS schedule_name
+   FROM `tst_test_runs` run
+   LEFT JOIN `tst_environment_profiles` ep ON ep.id = run.environment_profile_id
+   LEFT JOIN `tst_schedules` sch ON sch.id = run.schedule_id
+   WHERE run.deleted_at IS NULL;
+   -- ---------------------------------------------------------------------------------------------------------
 
--- NEW IN v7.2. Review and sign-off state per test case, with reviewer and approver kept distinct.
-CREATE OR REPLACE VIEW `vw_review_status` AS
-SELECT
-    tc.test_case_code,
-    tc.ts_code,
-    tc.display_name,
-    tc.version_no                AS current_version,
-    rv.version_no                AS reviewed_version,
-    rv.review_date,
-    rv.status                    AS review_status,
-    rv.readiness_score,
-    rv.reviewed_by,
-    rv.reviewed_at,
-    rv.signed_off_by,
-    rv.signed_off_at,
-    rv.bug_in_testcase,
-    rv.known_issues_in_scope,
-    CASE
-      WHEN rv.id IS NULL                        THEN 'Never_Reviewed'
-      WHEN rv.version_no < tc.version_no        THEN 'Review_Stale'
-      WHEN rv.signed_off_by IS NULL             THEN 'Awaiting_Sign_Off'
-      WHEN rv.reviewed_by = rv.signed_off_by    THEN 'Self_Signed_Off'
-      ELSE 'Signed_Off'
-    END                          AS review_state
-FROM `tst_test_cases` tc
-LEFT JOIN `tst_test_case_review` rv
-       ON rv.test_case_code = tc.test_case_code
-      AND rv.id = (SELECT MAX(r2.id) FROM `tst_test_case_review` r2
-                    WHERE r2.test_case_code = tc.test_case_code)
-WHERE tc.deleted_at IS NULL AND tc.is_active = 1;
+   -- Flaky candidates and confirmations, with the evidence retained.
+   CREATE OR REPLACE VIEW `vw_flaky_tests` AS
+   SELECT
+      cs.test_case_code,
+      tc.display_name,
+      tc.ts_code,
+      ts.module_code,
+      cs.flaky_score,
+      cs.is_flaky_candidate,
+      cs.is_flaky_confirmed,
+      cs.flaky_reason,
+      cs.flaky_evidence_json,
+      cs.flaky_confirmed_by,
+      cs.flaky_confirmed_at,
+      cs.total_runs,
+      cs.pass_rate_30d,
+      cs.distinct_environments,
+      cs.last_status,
+      cs.last_run_at
+   FROM `tst_test_case_runs_summary` cs
+   JOIN `tst_test_cases`   tc ON tc.test_case_code = cs.test_case_code
+   JOIN `tst_tabs_screens` ts ON ts.ts_code = tc.ts_code
+   WHERE cs.is_flaky_candidate = 1 OR cs.is_flaky_confirmed = 1;
+   -- ---------------------------------------------------------------------------------------------------------
 
+   -- Currently failing, previously passing, not confirmed flaky.
+   CREATE OR REPLACE VIEW `vw_regression_candidates` AS
+   SELECT
+      cs.test_case_code,
+      tc.display_name,
+      tc.ts_code,
+      ts.module_code,
+      tc.criticality,
+      cs.last_status,
+      cs.last_run_at,
+      cs.last_passed_at,
+      cs.consecutive_failures,
+      cs.pass_rate_30d,
+      cs.health_status,
+      DATEDIFF(NOW(), cs.last_passed_at) AS days_since_last_pass
+   FROM `tst_test_case_runs_summary` cs
+   JOIN `tst_test_cases`   tc ON tc.test_case_code = cs.test_case_code
+   JOIN `tst_tabs_screens` ts ON ts.ts_code = tc.ts_code
+   WHERE cs.last_status IN ('Failed','Error')
+   AND cs.last_passed_at IS NOT NULL
+   AND cs.last_passed_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+   AND cs.is_flaky_confirmed = 0
+   AND tc.is_active = 1;
+   -- ---------------------------------------------------------------------------------------------------------
 
--- Every attempt for a test case, with run, machine and environment context.
-CREATE OR REPLACE VIEW `vw_test_case_history` AS
-SELECT
-    r.test_case_code,
-    tc.display_name,
-    tc.ts_code,
-    r.id                         AS result_id,
-    r.run_id,
-    r.attempt_no,
-    r.is_final_attempt,
-    r.status,
-    r.duration_seconds,
-    r.error_message,
-    r.failure_fingerprint,
-    r.triage_state,
-    r.machine_id,
-    r.run_machine_code,
-    r.environment_profile_id,
-    ep.env_name,
-    ep.browser_name,
-    ep.browser_version,
-    ep.os_name,
-    run.trigger_type,
-    run.commit_hash,
-    run.branch_name,
-    ri.selection_reason,
-    ri.test_case_version_no,
-    r.created_at
-FROM `tst_test_run_results` r
-JOIN `tst_test_run_items` ri ON ri.id = r.run_item_id
-JOIN `tst_test_runs`      run ON run.id = r.run_id
-LEFT JOIN `tst_test_cases` tc ON tc.test_case_code = r.test_case_code
-LEFT JOIN `tst_environment_profiles` ep ON ep.id = r.environment_profile_id;
+   -- Open defects with age, SLA state and occurrence count.
+   CREATE OR REPLACE VIEW `vw_open_bugs` AS
+   SELECT
+      b.id                         AS bug_id,
+      b.bug_code,
+      b.title,
+      b.module_code,
+      b.ts_code,
+      b.test_case_code,
+      tc.display_name              AS test_case_name,
+      b.severity,
+      b.priority,
+      b.status,
+      b.assigned_to,
+      b.assigned_at,
+      b.sla_due_at,
+      b.sla_breached,
+      b.occurrence_count,
+      b.reopen_count,
+      b.retest_attempt_count,
+      b.discovered_by,
+      b.created_at,
+      DATEDIFF(NOW(), b.created_at) AS age_days,
+      ep.env_name
+   FROM `tst_bugs` b
+   LEFT JOIN `tst_test_cases` tc ON tc.test_case_code = b.test_case_code
+   LEFT JOIN `tst_environment_profiles` ep ON ep.id = b.environment_profile_id
+   WHERE b.status NOT IN ('Closed','Wont_Fix','Duplicate')
+   AND b.deleted_at IS NULL;
+   -- ---------------------------------------------------------------------------------------------------------
 
+   -- Time in each status, per bug, from the recorded transitions.
+   CREATE OR REPLACE VIEW `vw_bug_lifecycle` AS
+   SELECT
+      b.id                         AS bug_id,
+      b.bug_code,
+      b.title,
+      b.severity,
+      b.status                     AS current_status,
+      b.created_at                 AS opened_at,
+      b.assigned_at,
+      b.fixed_at,
+      b.verified_at,
+      b.closed_at,
+      b.verification_override,
+      TIMESTAMPDIFF(HOUR, b.created_at, b.assigned_at) AS hours_to_assign,
+      TIMESTAMPDIFF(HOUR, b.assigned_at, b.fixed_at)   AS hours_to_fix,
+      TIMESTAMPDIFF(HOUR, b.fixed_at,    b.verified_at) AS hours_to_verify,
+      TIMESTAMPDIFF(HOUR, b.created_at,  b.closed_at)  AS hours_total,
+      (SELECT COUNT(*) FROM `tst_bug_status_history` h WHERE h.bug_id = b.id) AS transition_count
+   FROM `tst_bugs` b
+   WHERE b.deleted_at IS NULL;
+   -- ---------------------------------------------------------------------------------------------------------
 
--- Run-level history with roll-ups and who ran it.
-CREATE OR REPLACE VIEW `vw_test_run_history` AS
-SELECT
-    run.id                       AS run_id,
-    run.machine_id,
-    run.run_machine_code,
-    run.run_user_code,
-    run.run_name,
-    run.trigger_type,
-    run.status,
-    run.started_at,
-    run.finished_at,
-    run.duration_seconds,
-    run.commit_hash,
-    run.branch_name,
-    run.working_tree_dirty,
-    ep.env_name,
-    run.total_tc_count,
-    run.passed_tc_count,
-    run.failed_tc_count,
-    run.error_tc_count,
-    run.skipped_tc_count,
-    run.blocked_tc_count,
-    run.not_executed_tc_count,
-    ROUND(run.passed_tc_count / NULLIF(run.total_tc_count,0) * 100, 2) AS pass_rate,
-    run.initiated_by,
-    run.executed_by,
-    sch.name                     AS schedule_name
-FROM `tst_test_runs` run
-LEFT JOIN `tst_environment_profiles` ep ON ep.id = run.environment_profile_id
-LEFT JOIN `tst_schedules` sch ON sch.id = run.schedule_id
-WHERE run.deleted_at IS NULL;
+   -- Screen-level coverage and health.
+   CREATE OR REPLACE VIEW `vw_screen_coverage` AS
+   SELECT
+      ts.module_code,
+      ts.ts_code,
+      ts.name                      AS screen_name,
+      ts.criticality,
+      ts.is_excluded,
+      ts.dev_status,
+      ts.test_run_status,
+      COUNT(DISTINCT tc.test_case_code)                                            AS total_tests,
+      COUNT(DISTINCT CASE WHEN tc.is_active = 1 THEN tc.test_case_code END)        AS active_tests,
+      COUNT(DISTINCT CASE WHEN tc.is_orphaned = 1 THEN tc.test_case_code END)      AS orphaned_tests,
+      SUM(CASE WHEN cs.last_status = 'Passed' THEN 1 ELSE 0 END)                   AS passing,
+      SUM(CASE WHEN cs.last_status IN ('Failed','Error') THEN 1 ELSE 0 END)        AS failing,
+      SUM(CASE WHEN cs.test_case_code IS NULL THEN 1 ELSE 0 END)                   AS never_executed,
+      CASE
+         WHEN COUNT(tc.test_case_code) = 0 THEN 'No Tests'
+         WHEN SUM(CASE WHEN cs.test_case_code IS NULL THEN 1 ELSE 0 END) = COUNT(tc.test_case_code) THEN 'Never Executed'
+         WHEN SUM(CASE WHEN cs.last_status IN ('Failed','Error') THEN 1 ELSE 0 END) > 0 THEN 'Failing'
+         ELSE 'Healthy'
+      END                          AS coverage_state
+   FROM `tst_tabs_screens` ts
+   LEFT JOIN `tst_test_cases` tc ON tc.ts_code = ts.ts_code AND tc.deleted_at IS NULL
+   LEFT JOIN `tst_test_case_runs_summary` cs ON cs.test_case_code = tc.test_case_code
+   WHERE ts.is_active = 1
+   GROUP BY ts.module_code, ts.ts_code, ts.name, ts.criticality, ts.is_excluded, ts.dev_status, ts.test_run_status;
+   -- ---------------------------------------------------------------------------------------------------------
 
+   -- Module roll-up.
+   CREATE OR REPLACE VIEW `vw_module_quality_summary` AS
+   SELECT
+      m.module_code,
+      m.name                       AS module_name,
+      m.criticality,
+      COUNT(DISTINCT ts.ts_code)                                                        AS screen_count,
+      COUNT(DISTINCT CASE WHEN ts.is_excluded = 1 THEN ts.ts_code END)                  AS excluded_screens,
+      COUNT(DISTINCT tc.test_case_code)                                                 AS test_count,
+      COUNT(DISTINCT CASE WHEN cs.test_case_code IS NULL THEN tc.test_case_code END)    AS never_executed,
+      COUNT(DISTINCT CASE WHEN cs.last_status = 'Passed' THEN tc.test_case_code END)    AS passing,
+      COUNT(DISTINCT CASE WHEN cs.last_status IN ('Failed','Error') THEN tc.test_case_code END) AS failing,
+      COUNT(DISTINCT CASE WHEN cs.is_flaky_confirmed = 1 THEN tc.test_case_code END)    AS flaky,
+      ROUND(AVG(cs.pass_rate_30d), 2)                                                   AS avg_pass_rate_30d,
+      (SELECT COUNT(*) FROM `tst_bugs` b
+         WHERE b.module_code = m.module_code
+         AND b.status NOT IN ('Closed','Wont_Fix','Duplicate'))                        AS open_bugs
+   FROM `tst_modules` m
+   LEFT JOIN `tst_tabs_screens` ts ON ts.module_code = m.module_code AND ts.is_active = 1
+   LEFT JOIN `tst_test_cases`   tc ON tc.ts_code = ts.ts_code AND tc.deleted_at IS NULL
+   LEFT JOIN `tst_test_case_runs_summary` cs ON cs.test_case_code = tc.test_case_code
+   WHERE m.is_active = 1
+   GROUP BY m.module_code, m.name, m.criticality;
+   -- ---------------------------------------------------------------------------------------------------------
 
--- Flaky candidates and confirmations, with the evidence retained.
-CREATE OR REPLACE VIEW `vw_flaky_tests` AS
-SELECT
-    cs.test_case_code,
-    tc.display_name,
-    tc.ts_code,
-    ts.module_code,
-    cs.flaky_score,
-    cs.is_flaky_candidate,
-    cs.is_flaky_confirmed,
-    cs.flaky_reason,
-    cs.flaky_evidence_json,
-    cs.flaky_confirmed_by,
-    cs.flaky_confirmed_at,
-    cs.total_runs,
-    cs.pass_rate_30d,
-    cs.distinct_environments,
-    cs.last_status,
-    cs.last_run_at
-FROM `tst_test_case_runs_summary` cs
-JOIN `tst_test_cases`   tc ON tc.test_case_code = cs.test_case_code
-JOIN `tst_tabs_screens` ts ON ts.ts_code = tc.ts_code
-WHERE cs.is_flaky_candidate = 1 OR cs.is_flaky_confirmed = 1;
+   -- THE ENVIRONMENT-DIFFERENCE DETECTOR: the same test, on different machines.
+   -- This is the view that answers "is the application broken, or is your machine different?".
+   CREATE OR REPLACE VIEW `vw_machine_comparison` AS
+   SELECT
+      r.test_case_code,
+      tc.display_name,
+      r.run_machine_code,
+      mc.machine_name,
+      mc.owner_user_code,
+      COUNT(*)                                                          AS attempts,
+      SUM(CASE WHEN r.status = 'Passed' THEN 1 ELSE 0 END)              AS passed,
+      SUM(CASE WHEN r.status IN ('Failed','Error') THEN 1 ELSE 0 END)   AS failed,
+      ROUND(SUM(CASE WHEN r.status = 'Passed' THEN 1 ELSE 0 END) / COUNT(*) * 100, 2) AS pass_rate,
+      MAX(r.created_at)                                                 AS last_run_at
+   FROM `tst_test_run_results` r
+   JOIN `tst_test_cases` tc ON tc.test_case_code = r.test_case_code
+   LEFT JOIN `tst_machines` mc ON mc.machine_code = r.run_machine_code
+   WHERE r.is_final_attempt = 1
+   GROUP BY r.test_case_code, tc.display_name, r.run_machine_code, mc.machine_name, mc.owner_user_code;
+   -- ---------------------------------------------------------------------------------------------------------
 
+   -- Pass rate by environment profile — "it fails only on Chrome 141".
+   CREATE OR REPLACE VIEW `vw_environment_impact` AS
+   SELECT
+      ep.id                        AS environment_profile_id,
+      ep.env_name,
+      ep.env_type,
+      ep.os_name,
+      ep.browser_name,
+      ep.browser_version,
+      ep.php_version,
+      ep.database_version,
+      COUNT(*)                                                          AS attempts,
+      SUM(CASE WHEN r.status = 'Passed' THEN 1 ELSE 0 END)              AS passed,
+      SUM(CASE WHEN r.status IN ('Failed','Error') THEN 1 ELSE 0 END)   AS failed,
+      ROUND(SUM(CASE WHEN r.status = 'Passed' THEN 1 ELSE 0 END) / COUNT(*) * 100, 2) AS pass_rate,
+      COUNT(DISTINCT r.test_case_code)                                  AS distinct_tests
+   FROM `tst_test_run_results` r
+   JOIN `tst_environment_profiles` ep ON ep.id = r.environment_profile_id
+   WHERE r.is_final_attempt = 1
+   GROUP BY ep.id, ep.env_name, ep.env_type, ep.os_name, ep.browser_name, ep.browser_version,
+            ep.php_version, ep.database_version;
+   -- ---------------------------------------------------------------------------------------------------------
 
--- Currently failing, previously passing, not confirmed flaky.
-CREATE OR REPLACE VIEW `vw_regression_candidates` AS
-SELECT
-    cs.test_case_code,
-    tc.display_name,
-    tc.ts_code,
-    ts.module_code,
-    tc.criticality,
-    cs.last_status,
-    cs.last_run_at,
-    cs.last_passed_at,
-    cs.consecutive_failures,
-    cs.pass_rate_30d,
-    cs.health_status,
-    DATEDIFF(NOW(), cs.last_passed_at) AS days_since_last_pass
-FROM `tst_test_case_runs_summary` cs
-JOIN `tst_test_cases`   tc ON tc.test_case_code = cs.test_case_code
-JOIN `tst_tabs_screens` ts ON ts.ts_code = tc.ts_code
-WHERE cs.last_status IN ('Failed','Error')
-  AND cs.last_passed_at IS NOT NULL
-  AND cs.last_passed_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-  AND cs.is_flaky_confirmed = 0
-  AND tc.is_active = 1;
+   -- Recurrence counts per known issue, and whether its review is overdue.
+   CREATE OR REPLACE VIEW `vw_known_issue_occurrences` AS
+   SELECT
+      ki.id                        AS known_issue_id,
+      ki.issue_code,
+      ki.title,
+      ki.category,
+      ki.module_code,
+      ki.ts_code,
+      ki.status,
+      ki.owner_user_code,
+      ki.review_due_at,
+      CASE WHEN ki.review_due_at IS NOT NULL AND ki.review_due_at < CURDATE()
+            THEN 1 ELSE 0 END       AS review_overdue,
+      COUNT(kir.run_result_id)     AS occurrence_count,
+      MIN(r.created_at)            AS first_occurrence,
+      MAX(r.created_at)            AS last_occurrence,
+      COUNT(DISTINCT r.test_case_code) AS distinct_test_cases
+   FROM `tst_known_issues` ki
+   LEFT JOIN `tst_known_issue_results` kir ON kir.known_issue_id = ki.id
+   LEFT JOIN `tst_test_run_results`    r   ON r.id = kir.run_result_id
+   GROUP BY ki.id, ki.issue_code, ki.title, ki.category, ki.module_code, ki.ts_code,
+            ki.status, ki.owner_user_code, ki.review_due_at;
+   -- ---------------------------------------------------------------------------------------------------------
 
+   -- Screens with no released test case, weighted by criticality. The backlog nobody wants to look at.
+   CREATE OR REPLACE VIEW `vw_testing_debt` AS
+   SELECT
+      ts.module_code,
+      ts.ts_code,
+      ts.name                      AS screen_name,
+      ts.criticality,
+      ts.dev_status,
+      ts.tc_list_status,
+      ts.tc_creation_status,
+      COUNT(DISTINCT r.tcr_code)   AS required_count,
+      COUNT(DISTINCT tc.test_case_code) AS written_count,
+      COUNT(DISTINCT CASE WHEN tc.creation_status_code = 'Released' THEN tc.test_case_code END) AS released_count,
+      CASE ts.criticality
+         WHEN 'Critical' THEN 5 WHEN 'High' THEN 4 WHEN 'Medium' THEN 3
+         WHEN 'Low' THEN 2 ELSE 1
+      END                          AS debt_weight,
+      CASE
+         WHEN COUNT(DISTINCT r.tcr_code) = 0 THEN 'No_TcList'
+         WHEN COUNT(DISTINCT tc.test_case_code) = 0 THEN 'TcList_Only'
+         WHEN COUNT(DISTINCT CASE WHEN tc.creation_status_code = 'Released' THEN tc.test_case_code END) = 0 THEN 'Written_Not_Released'
+         ELSE 'Partially_Covered'
+      END                          AS debt_type
+   FROM `tst_tabs_screens` ts
+   LEFT JOIN `tst_tc_required_list` r  ON r.ts_code = ts.ts_code AND r.deleted_at IS NULL
+   LEFT JOIN `tst_test_cases`       tc ON tc.ts_code = ts.ts_code AND tc.deleted_at IS NULL
+   WHERE ts.is_active = 1 AND ts.is_excluded = 0
+   GROUP BY ts.module_code, ts.ts_code, ts.name, ts.criticality, ts.dev_status,
+            ts.tc_list_status, ts.tc_creation_status
+   HAVING released_count = 0;
+   -- ---------------------------------------------------------------------------------------------------------
 
--- Open defects with age, SLA state and occurrence count.
-CREATE OR REPLACE VIEW `vw_open_bugs` AS
-SELECT
-    b.id                         AS bug_id,
-    b.bug_code,
-    b.title,
-    b.module_code,
-    b.ts_code,
-    b.test_case_code,
-    tc.display_name              AS test_case_name,
-    b.severity,
-    b.priority,
-    b.status,
-    b.assigned_to,
-    b.assigned_at,
-    b.sla_due_at,
-    b.sla_breached,
-    b.occurrence_count,
-    b.reopen_count,
-    b.retest_attempt_count,
-    b.discovered_by,
-    b.created_at,
-    DATEDIFF(NOW(), b.created_at) AS age_days,
-    ep.env_name
-FROM `tst_bugs` b
-LEFT JOIN `tst_test_cases` tc ON tc.test_case_code = b.test_case_code
-LEFT JOIN `tst_environment_profiles` ep ON ep.id = b.environment_profile_id
-WHERE b.status NOT IN ('Closed','Wont_Fix','Duplicate')
-  AND b.deleted_at IS NULL;
+   -- Authorship and execution per user.
+   CREATE OR REPLACE VIEW `vw_developer_activity_summary` AS
+   SELECT
+      u.code                       AS user_code,
+      u.name                       AS user_name,
+      u.role,
+      (SELECT COUNT(*) FROM `tst_test_cases` tc WHERE tc.user_code = u.code AND tc.deleted_at IS NULL)        AS test_cases_authored,
+      (SELECT COUNT(*) FROM `tst_tc_required_list` r WHERE r.user_code = u.code AND r.deleted_at IS NULL)     AS tclist_entries_written,
+      (SELECT COUNT(*) FROM `tst_test_case_review` rv WHERE rv.reviewed_by = u.code)                          AS reviews_performed,
+      (SELECT COUNT(*) FROM `tst_test_case_review` rv WHERE rv.signed_off_by = u.code)                        AS sign_offs_given,
+      (SELECT COUNT(*) FROM `tst_test_runs` run WHERE run.executed_by = u.code AND run.deleted_at IS NULL)    AS runs_executed,
+      (SELECT COUNT(*) FROM `tst_bugs` b WHERE b.discovered_by = u.code AND b.deleted_at IS NULL)             AS bugs_raised,
+      (SELECT COUNT(*) FROM `tst_bugs` b WHERE b.assigned_to = u.code
+                                          AND b.status NOT IN ('Closed','Wont_Fix','Duplicate'))             AS open_bugs_assigned,
+      (SELECT COUNT(*) FROM `tst_bugs` b WHERE b.fixed_by = u.code)                                           AS bugs_fixed,
+      (SELECT COUNT(*) FROM `tst_machines` mc WHERE mc.owner_user_code = u.code AND mc.is_active = 1)         AS machines_owned
+   FROM `tst_users` u
+   WHERE u.is_active = 1;
+   -- ---------------------------------------------------------------------------------------------------------
 
-
--- Time in each status, per bug, from the recorded transitions.
-CREATE OR REPLACE VIEW `vw_bug_lifecycle` AS
-SELECT
-    b.id                         AS bug_id,
-    b.bug_code,
-    b.title,
-    b.severity,
-    b.status                     AS current_status,
-    b.created_at                 AS opened_at,
-    b.assigned_at,
-    b.fixed_at,
-    b.verified_at,
-    b.closed_at,
-    b.verification_override,
-    TIMESTAMPDIFF(HOUR, b.created_at, b.assigned_at) AS hours_to_assign,
-    TIMESTAMPDIFF(HOUR, b.assigned_at, b.fixed_at)   AS hours_to_fix,
-    TIMESTAMPDIFF(HOUR, b.fixed_at,    b.verified_at) AS hours_to_verify,
-    TIMESTAMPDIFF(HOUR, b.created_at,  b.closed_at)  AS hours_total,
-    (SELECT COUNT(*) FROM `tst_bug_status_history` h WHERE h.bug_id = b.id) AS transition_count
-FROM `tst_bugs` b
-WHERE b.deleted_at IS NULL;
-
-
--- Screen-level coverage and health.
-CREATE OR REPLACE VIEW `vw_screen_coverage` AS
-SELECT
-    ts.module_code,
-    ts.ts_code,
-    ts.name                      AS screen_name,
-    ts.criticality,
-    ts.is_excluded,
-    ts.dev_status,
-    ts.test_run_status,
-    COUNT(DISTINCT tc.test_case_code)                                            AS total_tests,
-    COUNT(DISTINCT CASE WHEN tc.is_active = 1 THEN tc.test_case_code END)        AS active_tests,
-    COUNT(DISTINCT CASE WHEN tc.is_orphaned = 1 THEN tc.test_case_code END)      AS orphaned_tests,
-    SUM(CASE WHEN cs.last_status = 'Passed' THEN 1 ELSE 0 END)                   AS passing,
-    SUM(CASE WHEN cs.last_status IN ('Failed','Error') THEN 1 ELSE 0 END)        AS failing,
-    SUM(CASE WHEN cs.test_case_code IS NULL THEN 1 ELSE 0 END)                   AS never_executed,
-    CASE
-      WHEN COUNT(tc.test_case_code) = 0 THEN 'No Tests'
-      WHEN SUM(CASE WHEN cs.test_case_code IS NULL THEN 1 ELSE 0 END) = COUNT(tc.test_case_code) THEN 'Never Executed'
-      WHEN SUM(CASE WHEN cs.last_status IN ('Failed','Error') THEN 1 ELSE 0 END) > 0 THEN 'Failing'
-      ELSE 'Healthy'
-    END                          AS coverage_state
-FROM `tst_tabs_screens` ts
-LEFT JOIN `tst_test_cases` tc ON tc.ts_code = ts.ts_code AND tc.deleted_at IS NULL
-LEFT JOIN `tst_test_case_runs_summary` cs ON cs.test_case_code = tc.test_case_code
-WHERE ts.is_active = 1
-GROUP BY ts.module_code, ts.ts_code, ts.name, ts.criticality, ts.is_excluded, ts.dev_status, ts.test_run_status;
-
-
--- Module roll-up.
-CREATE OR REPLACE VIEW `vw_module_quality_summary` AS
-SELECT
-    m.module_code,
-    m.name                       AS module_name,
-    m.criticality,
-    COUNT(DISTINCT ts.ts_code)                                                        AS screen_count,
-    COUNT(DISTINCT CASE WHEN ts.is_excluded = 1 THEN ts.ts_code END)                  AS excluded_screens,
-    COUNT(DISTINCT tc.test_case_code)                                                 AS test_count,
-    COUNT(DISTINCT CASE WHEN cs.test_case_code IS NULL THEN tc.test_case_code END)    AS never_executed,
-    COUNT(DISTINCT CASE WHEN cs.last_status = 'Passed' THEN tc.test_case_code END)    AS passing,
-    COUNT(DISTINCT CASE WHEN cs.last_status IN ('Failed','Error') THEN tc.test_case_code END) AS failing,
-    COUNT(DISTINCT CASE WHEN cs.is_flaky_confirmed = 1 THEN tc.test_case_code END)    AS flaky,
-    ROUND(AVG(cs.pass_rate_30d), 2)                                                   AS avg_pass_rate_30d,
-    (SELECT COUNT(*) FROM `tst_bugs` b
-      WHERE b.module_code = m.module_code
-        AND b.status NOT IN ('Closed','Wont_Fix','Duplicate'))                        AS open_bugs
-FROM `tst_modules` m
-LEFT JOIN `tst_tabs_screens` ts ON ts.module_code = m.module_code AND ts.is_active = 1
-LEFT JOIN `tst_test_cases`   tc ON tc.ts_code = ts.ts_code AND tc.deleted_at IS NULL
-LEFT JOIN `tst_test_case_runs_summary` cs ON cs.test_case_code = tc.test_case_code
-WHERE m.is_active = 1
-GROUP BY m.module_code, m.name, m.criticality;
-
-
--- THE ENVIRONMENT-DIFFERENCE DETECTOR: the same test, on different machines.
--- This is the view that answers "is the application broken, or is your machine different?".
-CREATE OR REPLACE VIEW `vw_machine_comparison` AS
-SELECT
-    r.test_case_code,
-    tc.display_name,
-    r.run_machine_code,
-    mc.machine_name,
-    mc.owner_user_code,
-    COUNT(*)                                                          AS attempts,
-    SUM(CASE WHEN r.status = 'Passed' THEN 1 ELSE 0 END)              AS passed,
-    SUM(CASE WHEN r.status IN ('Failed','Error') THEN 1 ELSE 0 END)   AS failed,
-    ROUND(SUM(CASE WHEN r.status = 'Passed' THEN 1 ELSE 0 END) / COUNT(*) * 100, 2) AS pass_rate,
-    MAX(r.created_at)                                                 AS last_run_at
-FROM `tst_test_run_results` r
-JOIN `tst_test_cases` tc ON tc.test_case_code = r.test_case_code
-LEFT JOIN `tst_machines` mc ON mc.machine_code = r.run_machine_code
-WHERE r.is_final_attempt = 1
-GROUP BY r.test_case_code, tc.display_name, r.run_machine_code, mc.machine_name, mc.owner_user_code;
-
-
--- Pass rate by environment profile — "it fails only on Chrome 141".
-CREATE OR REPLACE VIEW `vw_environment_impact` AS
-SELECT
-    ep.id                        AS environment_profile_id,
-    ep.env_name,
-    ep.env_type,
-    ep.os_name,
-    ep.browser_name,
-    ep.browser_version,
-    ep.php_version,
-    ep.database_version,
-    COUNT(*)                                                          AS attempts,
-    SUM(CASE WHEN r.status = 'Passed' THEN 1 ELSE 0 END)              AS passed,
-    SUM(CASE WHEN r.status IN ('Failed','Error') THEN 1 ELSE 0 END)   AS failed,
-    ROUND(SUM(CASE WHEN r.status = 'Passed' THEN 1 ELSE 0 END) / COUNT(*) * 100, 2) AS pass_rate,
-    COUNT(DISTINCT r.test_case_code)                                  AS distinct_tests
-FROM `tst_test_run_results` r
-JOIN `tst_environment_profiles` ep ON ep.id = r.environment_profile_id
-WHERE r.is_final_attempt = 1
-GROUP BY ep.id, ep.env_name, ep.env_type, ep.os_name, ep.browser_name, ep.browser_version,
-         ep.php_version, ep.database_version;
-
-
--- Recurrence counts per known issue, and whether its review is overdue.
-CREATE OR REPLACE VIEW `vw_known_issue_occurrences` AS
-SELECT
-    ki.id                        AS known_issue_id,
-    ki.issue_code,
-    ki.title,
-    ki.category,
-    ki.module_code,
-    ki.ts_code,
-    ki.status,
-    ki.owner_user_code,
-    ki.review_due_at,
-    CASE WHEN ki.review_due_at IS NOT NULL AND ki.review_due_at < CURDATE()
-         THEN 1 ELSE 0 END       AS review_overdue,
-    COUNT(kir.run_result_id)     AS occurrence_count,
-    MIN(r.created_at)            AS first_occurrence,
-    MAX(r.created_at)            AS last_occurrence,
-    COUNT(DISTINCT r.test_case_code) AS distinct_test_cases
-FROM `tst_known_issues` ki
-LEFT JOIN `tst_known_issue_results` kir ON kir.known_issue_id = ki.id
-LEFT JOIN `tst_test_run_results`    r   ON r.id = kir.run_result_id
-GROUP BY ki.id, ki.issue_code, ki.title, ki.category, ki.module_code, ki.ts_code,
-         ki.status, ki.owner_user_code, ki.review_due_at;
-
-
--- Screens with no released test case, weighted by criticality. The backlog nobody wants to look at.
-CREATE OR REPLACE VIEW `vw_testing_debt` AS
-SELECT
-    ts.module_code,
-    ts.ts_code,
-    ts.name                      AS screen_name,
-    ts.criticality,
-    ts.dev_status,
-    ts.tc_list_status,
-    ts.tc_creation_status,
-    COUNT(DISTINCT r.tcr_code)   AS required_count,
-    COUNT(DISTINCT tc.test_case_code) AS written_count,
-    COUNT(DISTINCT CASE WHEN tc.creation_status_code = 'Released' THEN tc.test_case_code END) AS released_count,
-    CASE ts.criticality
-      WHEN 'Critical' THEN 5 WHEN 'High' THEN 4 WHEN 'Medium' THEN 3
-      WHEN 'Low' THEN 2 ELSE 1
-    END                          AS debt_weight,
-    CASE
-      WHEN COUNT(DISTINCT r.tcr_code) = 0 THEN 'No_TcList'
-      WHEN COUNT(DISTINCT tc.test_case_code) = 0 THEN 'TcList_Only'
-      WHEN COUNT(DISTINCT CASE WHEN tc.creation_status_code = 'Released' THEN tc.test_case_code END) = 0 THEN 'Written_Not_Released'
-      ELSE 'Partially_Covered'
-    END                          AS debt_type
-FROM `tst_tabs_screens` ts
-LEFT JOIN `tst_tc_required_list` r  ON r.ts_code = ts.ts_code AND r.deleted_at IS NULL
-LEFT JOIN `tst_test_cases`       tc ON tc.ts_code = ts.ts_code AND tc.deleted_at IS NULL
-WHERE ts.is_active = 1 AND ts.is_excluded = 0
-GROUP BY ts.module_code, ts.ts_code, ts.name, ts.criticality, ts.dev_status,
-         ts.tc_list_status, ts.tc_creation_status
-HAVING released_count = 0;
-
-
--- Authorship and execution per user.
-CREATE OR REPLACE VIEW `vw_developer_activity_summary` AS
-SELECT
-    u.code                       AS user_code,
-    u.name                       AS user_name,
-    u.role,
-    (SELECT COUNT(*) FROM `tst_test_cases` tc WHERE tc.user_code = u.code AND tc.deleted_at IS NULL)        AS test_cases_authored,
-    (SELECT COUNT(*) FROM `tst_tc_required_list` r WHERE r.user_code = u.code AND r.deleted_at IS NULL)     AS tclist_entries_written,
-    (SELECT COUNT(*) FROM `tst_test_case_review` rv WHERE rv.reviewed_by = u.code)                          AS reviews_performed,
-    (SELECT COUNT(*) FROM `tst_test_case_review` rv WHERE rv.signed_off_by = u.code)                        AS sign_offs_given,
-    (SELECT COUNT(*) FROM `tst_test_runs` run WHERE run.executed_by = u.code AND run.deleted_at IS NULL)    AS runs_executed,
-    (SELECT COUNT(*) FROM `tst_bugs` b WHERE b.discovered_by = u.code AND b.deleted_at IS NULL)             AS bugs_raised,
-    (SELECT COUNT(*) FROM `tst_bugs` b WHERE b.assigned_to = u.code
-                                         AND b.status NOT IN ('Closed','Wont_Fix','Duplicate'))             AS open_bugs_assigned,
-    (SELECT COUNT(*) FROM `tst_bugs` b WHERE b.fixed_by = u.code)                                           AS bugs_fixed,
-    (SELECT COUNT(*) FROM `tst_machines` mc WHERE mc.owner_user_code = u.code AND mc.is_active = 1)         AS machines_owned
-FROM `tst_users` u
-WHERE u.is_active = 1;
-
-
--- Import outcomes and open conflicts.
-CREATE OR REPLACE VIEW `vw_import_status` AS
-SELECT
-    i.id                         AS import_id,
-    i.source_machine_id,
-    mc.machine_code              AS source_machine_code,
-    i.source_export_id,
-    i.imported_by,
-    i.status,
-    i.version_decision,
-    i.started_at,
-    i.finished_at,
-    i.records_created,
-    i.records_matched,
-    i.records_rejected,
-    i.conflict_count,
-    i.open_conflict_count,
-    (SELECT COUNT(*) FROM `tst_import_conflicts` cf
-      WHERE cf.import_id = i.id AND cf.status = 'Open' AND cf.severity = 'Blocking') AS blocking_conflicts,
-    i.reversed_at,
-    i.reversal_reason
-FROM `tst_data_imports` i
-LEFT JOIN `tst_machines` mc ON mc.id = i.source_machine_id;
-
+   -- Import outcomes and open conflicts.
+   CREATE OR REPLACE VIEW `vw_import_status` AS
+   SELECT
+      i.id                         AS import_id,
+      i.source_machine_id,
+      mc.machine_code              AS source_machine_code,
+      i.source_export_id,
+      i.imported_by,
+      i.status,
+      i.version_decision,
+      i.started_at,
+      i.finished_at,
+      i.records_created,
+      i.records_matched,
+      i.records_rejected,
+      i.conflict_count,
+      i.open_conflict_count,
+      (SELECT COUNT(*) FROM `tst_import_conflicts` cf
+         WHERE cf.import_id = i.id AND cf.status = 'Open' AND cf.severity = 'Blocking') AS blocking_conflicts,
+      i.reversed_at,
+      i.reversal_reason
+   FROM `tst_data_imports` i
+   LEFT JOIN `tst_machines` mc ON mc.id = i.source_machine_id;
+   -- ---------------------------------------------------------------------------------------------------------
 
 
 -- ============================================================================================================================================================
@@ -3017,91 +3115,89 @@ LEFT JOIN `tst_machines` mc ON mc.id = i.source_machine_id;
    --   - v7.1 seeded created_by = 'S1', a user code that is never created. Every FK failed. All seeds now use 'S01'.
    --   - The users seed relied on a self-referencing FK that only worked with checks disabled. The bootstrap row is inserted with NULL and updated afterwards.
 -- ------------------------------------------------------------------------------------------------------------------------------------------------------------
+-- DATA SEEDERS :
+   -- ---------------------------------------------------------------------------------------------------------
+   -- 14.1  Users.  The bootstrap row S01 is inserted with created_by NULL and back-filled below.
+   -- ---------------------------------------------------------------------------------------------------------
+   INSERT INTO `tst_users` (`code`,`name`,`email`,`password`,`role`,`is_superuser`,`is_system`,`is_active`,`created_by`,`updated_by`)
+   VALUES
+      ('S01','Super User','super@prime-testing.local','$2y$12$placeholder_super_hash','System',    1, 1, 1, NULL,  NULL)
+   ON DUPLICATE KEY UPDATE `name` = VALUES(`name`);
 
--- ---------------------------------------------------------------------------------------------------------
--- 14.1  Users.  The bootstrap row S01 is inserted with created_by NULL and back-filled below.
--- ---------------------------------------------------------------------------------------------------------
-INSERT INTO `tst_users` (`code`,`name`,`email`,`password`,`role`,`is_superuser`,`is_system`,`is_active`,`created_by`,`updated_by`)
-VALUES
-   ('S01','Super User','super@prime-testing.local','$2y$12$placeholder_super_hash','System',    1, 1, 1, NULL,  NULL)
-ON DUPLICATE KEY UPDATE `name` = VALUES(`name`);
+   UPDATE `tst_users` SET `created_by` = 'S01', `updated_by` = 'S01' WHERE `code` = 'S01' AND `created_by` IS NULL;
 
-UPDATE `tst_users` SET `created_by` = 'S01', `updated_by` = 'S01' WHERE `code` = 'S01' AND `created_by` IS NULL;
+   INSERT INTO `tst_users` (`code`,`name`,`email`,`password`,`role`,`is_superuser`,`is_system`,`is_active`,`created_by`,`updated_by`)
+   VALUES
+      ('S02','System','system@prime-testing.local','$2y$12$placeholder_sys_hash','System',        0, 1, 1, 'S01','S01'),
+      ('A01','Brijesh','brijesh@prime-testing.local','$2y$12$placeholder_brij_hash','Architect',  0, 0, 1, 'S01','S01'),
+      ('D02','Tarun','tarun@prime-testing.local','$2y$12$placeholder_tarun_hash','Developer',     0, 0, 1, 'S01','S01'),
+      ('D03','Shailesh','shailesh@prime-testing.local','$2y$12$placeholder_shail_hash','Developer',0,0, 1, 'S01','S01'),
+      ('T01','Sameer','sameer@prime-testing.local','$2y$12$placeholder_samer_hash','Tester',      0, 0, 1, 'S01','S01'),
+      ('T02','Gaurav','gaurav@prime-testing.local','$2y$12$placeholder_gaurav_hash','Tester',     0, 0, 1, 'S01','S01')
+   ON DUPLICATE KEY UPDATE
+      `name`      = VALUES(`name`),
+      `email`     = VALUES(`email`),
+      `role`      = VALUES(`role`),
+      `is_active` = VALUES(`is_active`);
 
-INSERT INTO `tst_users` (`code`,`name`,`email`,`password`,`role`,`is_superuser`,`is_system`,`is_active`,`created_by`,`updated_by`)
-VALUES
-   ('S02','System','system@prime-testing.local','$2y$12$placeholder_sys_hash','System',        0, 1, 1, 'S01','S01'),
-   ('A01','Brijesh','brijesh@prime-testing.local','$2y$12$placeholder_brij_hash','Architect',  0, 0, 1, 'S01','S01'),
-   ('D02','Tarun','tarun@prime-testing.local','$2y$12$placeholder_tarun_hash','Developer',     0, 0, 1, 'S01','S01'),
-   ('D03','Shailesh','shailesh@prime-testing.local','$2y$12$placeholder_shail_hash','Developer',0,0, 1, 'S01','S01'),
-   ('T01','Sameer','sameer@prime-testing.local','$2y$12$placeholder_samer_hash','Tester',      0, 0, 1, 'S01','S01'),
-   ('T02','Gaurav','gaurav@prime-testing.local','$2y$12$placeholder_gaurav_hash','Tester',     0, 0, 1, 'S01','S01')
-ON DUPLICATE KEY UPDATE
-   `name`      = VALUES(`name`),
-   `email`     = VALUES(`email`),
-   `role`      = VALUES(`role`),
-   `is_active` = VALUES(`is_active`);
+   -- ---------------------------------------------------------------------------------------------------------
+   -- 14.2  Machines.  IDS ARE INSERTED EXPLICITLY. id 1 is the central installation; locals start at 10.
+   --       machine_code is GENERATED — never insert it, and never reissue a retired one.
+   -- ---------------------------------------------------------------------------------------------------------
+   INSERT INTO `tst_machines`
+      (`id`,`owner_user_code`,`machine_number`,`machine_name`,`is_central`,`is_active`,`registration_status`,`registered_by`)
+   VALUES
+      ( 1,'A01','A','Central Consolidation Server', 1, 1, 'Registered','S01'),   -- machine_code A01A
+      (10,'A01','B','Brijesh Workstation',          0, 1, 'Registered','S01'),   -- machine_code A01B
+      (11,'D02','A','Tarun Workstation',            0, 1, 'Registered','S01'),   -- machine_code D02A
+      (12,'D03','A','Shailesh Workstation',         0, 1, 'Registered','S01'),   -- machine_code D03A
+      (13,'T01','A','Sameer Workstation',           0, 1, 'Registered','S01'),   -- machine_code T01A
+      (14,'T02','A','Gaurav Workstation',           0, 1, 'Registered','S01')    -- machine_code T02A
+   ON DUPLICATE KEY UPDATE
+      `machine_name`        = VALUES(`machine_name`),
+      `registration_status` = VALUES(`registration_status`);
 
--- ---------------------------------------------------------------------------------------------------------
--- 14.2  Machines.  IDS ARE INSERTED EXPLICITLY. id 1 is the central installation; locals start at 10.
---       machine_code is GENERATED — never insert it, and never reissue a retired one.
--- ---------------------------------------------------------------------------------------------------------
-INSERT INTO `tst_machines`
-   (`id`,`owner_user_code`,`machine_number`,`machine_name`,`is_central`,`is_active`,`registration_status`,`registered_by`)
-VALUES
-   ( 1,'A01','A','Central Consolidation Server', 1, 1, 'Registered','S01'),   -- machine_code A01A
-   (10,'A01','B','Brijesh Workstation',          0, 1, 'Registered','S01'),   -- machine_code A01B
-   (11,'D02','A','Tarun Workstation',            0, 1, 'Registered','S01'),   -- machine_code D02A
-   (12,'D03','A','Shailesh Workstation',         0, 1, 'Registered','S01'),   -- machine_code D03A
-   (13,'T01','A','Sameer Workstation',           0, 1, 'Registered','S01'),   -- machine_code T01A
-   (14,'T02','A','Gaurav Workstation',           0, 1, 'Registered','S01')    -- machine_code T02A
-ON DUPLICATE KEY UPDATE
-   `machine_name`        = VALUES(`machine_name`),
-   `registration_status` = VALUES(`registration_status`);
-
--- ---------------------------------------------------------------------------------------------------------
--- 14.3  Application settings.
---       is_local_only = 1 rows NEVER travel in a catalog bundle: a local path exported to another
---       machine produces an installation pointing at a directory that does not exist there.
--- ---------------------------------------------------------------------------------------------------------
-INSERT INTO `tst_app_settings`
-   (`group_name`,`ordinal`,`key`,`value`,`value_type`,`description`,`is_system`,`is_local_only`,`is_editable`)
-VALUES
-   ('Platform',  1,'schema_version','7.2.0','STRING','Schema version of this database. Replaces the tst_schema_version table (D-27).',1,0,0),
-   ('Platform',  2,'app_version','1.0.0','STRING','Application version installed here.',1,0,0),
-   ('Platform',  3,'central_mode','false','BOOLEAN','True when this database is the central aggregation database.',1,1,1),
-   ('Retest',   10,'max_auto_retest_attempts','5','INTEGER','Maximum automatic retest cycles before a bug escalates. Automation must be bounded (R-14).',1,0,1),
-   ('Retest',   11,'auto_retest_enabled','true','BOOLEAN','Global switch for automatic retest when a bug is marked Fixed.',1,0,1),
-   ('Defects',  20,'auto_bug_creation_enabled','true','BOOLEAN','Create a bug from a qualifying failed result automatically.',1,0,1),
-   ('Defects',  21,'bug_fix_sla_hours','48','INTEGER','Hours after assignment before a stale-bug alert.',1,0,1),
-   ('Analysis', 30,'default_regression_days','30','INTEGER','Look-back window for the regression definition (BRD BR-REG-01).',1,0,1),
-   ('Analysis', 31,'flaky_window_size','10','INTEGER','Executions examined for outcome alternation (BRD BR-FLAKY-01).',1,0,1),
-   ('Analysis', 32,'flaky_min_alternations','2','INTEGER','Alternations within the window that make a candidate.',1,0,1),
-   ('Execution',40,'run_heartbeat_timeout_seconds','300','INTEGER','A Running run with no heartbeat for this long is moved to Interrupted.',1,0,1),
-   ('Sync',     50,'allow_multi_machine_import','true','BOOLEAN','Allow execution data from registered machines to be imported.',1,0,1),
-   ('Sync',     51,'accepted_prior_schema_minor','1','INTEGER','How many prior minor schema versions an import may carry (BC-11).',1,0,1),
-   ('Retention',60,'artifact_retention_days','180','INTEGER','After this an artefact is marked unavailable. The ROW is retained.',1,0,1),
-   ('Retention',61,'audit_retention_days','1095','INTEGER','Three years. Expiry is an explicit administrative action, never a silent purge.',1,0,1),
-   ('Retention',62,'import_bundle_retention_days','90','INTEGER','How long an applied bundle file is kept.',1,0,1),
-   ('Paths',    70,'prime_ai_repo_path','','STRING','Local path to the Prime-AI source tree.',1,1,1),
-   ('Paths',    71,'evidence_root_path','','STRING','Local path to the evidence store.',1,1,1)
-ON DUPLICATE KEY UPDATE
-   `value`       = VALUES(`value`),
-   `description` = VALUES(`description`);
-
-
-
+   -- ---------------------------------------------------------------------------------------------------------
+   -- 14.3  Application settings.
+   --       is_local_only = 1 rows NEVER travel in a catalog bundle: a local path exported to another
+   --       machine produces an installation pointing at a directory that does not exist there.
+   -- ---------------------------------------------------------------------------------------------------------
+   INSERT INTO `tst_app_settings`
+      (`group_name`,`ordinal`,`key`,`value`,`value_type`,`description`,`is_system`,`is_local_only`,`is_editable`)
+   VALUES
+      ('Platform',  1,'schema_version','7.2.0','STRING','Schema version of this database. Replaces the tst_schema_version table (D-27).',1,0,0),
+      ('Platform',  2,'app_version','1.0.0','STRING','Application version installed here.',1,0,0),
+      ('Platform',  3,'central_mode','false','BOOLEAN','True when this database is the central aggregation database.',1,1,1),
+      ('Retest',   10,'max_auto_retest_attempts','5','INTEGER','Maximum automatic retest cycles before a bug escalates. Automation must be bounded (R-14).',1,0,1),
+      ('Retest',   11,'auto_retest_enabled','true','BOOLEAN','Global switch for automatic retest when a bug is marked Fixed.',1,0,1),
+      ('Defects',  20,'auto_bug_creation_enabled','true','BOOLEAN','Create a bug from a qualifying failed result automatically.',1,0,1),
+      ('Defects',  21,'bug_fix_sla_hours','48','INTEGER','Hours after assignment before a stale-bug alert.',1,0,1),
+      ('Analysis', 30,'default_regression_days','30','INTEGER','Look-back window for the regression definition (BRD BR-REG-01).',1,0,1),
+      ('Analysis', 31,'flaky_window_size','10','INTEGER','Executions examined for outcome alternation (BRD BR-FLAKY-01).',1,0,1),
+      ('Analysis', 32,'flaky_min_alternations','2','INTEGER','Alternations within the window that make a candidate.',1,0,1),
+      ('Execution',40,'run_heartbeat_timeout_seconds','300','INTEGER','A Running run with no heartbeat for this long is moved to Interrupted.',1,0,1),
+      ('Sync',     50,'allow_multi_machine_import','true','BOOLEAN','Allow execution data from registered machines to be imported.',1,0,1),
+      ('Sync',     51,'accepted_prior_schema_minor','1','INTEGER','How many prior minor schema versions an import may carry (BC-11).',1,0,1),
+      ('Retention',60,'artifact_retention_days','180','INTEGER','After this an artefact is marked unavailable. The ROW is retained.',1,0,1),
+      ('Retention',61,'audit_retention_days','1095','INTEGER','Three years. Expiry is an explicit administrative action, never a silent purge.',1,0,1),
+      ('Retention',62,'import_bundle_retention_days','90','INTEGER','How long an applied bundle file is kept.',1,0,1),
+      ('Paths',    70,'prime_ai_repo_path','','STRING','Local path to the Prime-AI source tree.',1,1,1),
+      ('Paths',    71,'evidence_root_path','','STRING','Local path to the evidence store.',1,1,1)
+   ON DUPLICATE KEY UPDATE
+      `value`       = VALUES(`value`),
+      `description` = VALUES(`description`);
+   -- ---------------------------------------------------------------------------------------------------------
 
 
--- #########################################################################################################
--- #                                                                                                       #
--- #        E N D   O F   P H A S E   1                                                                    #
--- #                                                                                                       #
--- #        Stop here and you have a complete, installable system: 44 tables, 17 views, seeded.            #
--- #        A tester can plan, author, review, schedule, execute and evidence a test; a lead can read       #
--- #        it, drive a bug to verified closure, and consolidate every machine's evidence.                  #
--- #                                                                                                       #
--- #########################################################################################################
+-- ============================================================================================================================================================
+--                                               E N D   O F   P H A S E   -   1                                                                                                         
+-- ============================================================================================================================================================
+--            Stop here and you have a complete, installable system: 49 tables, 17 views, seeded. A tester can plan, author, review, schedule,  
+--            execute and evidence a test; a lead can read it, drive a bug to verified closure, and consolidate every machine's evidence.
+-- ============================================================================================================================================================
+
+
+
 
 
 -- #########################################################################################################
@@ -3132,112 +3228,112 @@ SET FOREIGN_KEY_CHECKS = 0;
    --     Conflating them makes coverage uncountable, because a backlog item about writing a test would be
    --     counted as a requirement that needs covering.
 -- ------------------------------------------------------------------------------------------------------------------------------------------------------------
+-- Tables :
+   CREATE TABLE IF NOT EXISTS `tst_app_requirements` (
+      `id`                  BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `req_code`            VARCHAR(40) NOT NULL   COMMENT 'Stable business code, e.g. FIN-REQ-014',
+      `module_code`         VARCHAR(5)  NOT NULL,
+      `ts_code`             VARCHAR(11) NULL       COMMENT 'When the change is screen-specific',
+      `title`               VARCHAR(255) NOT NULL,
+      `description`         TEXT NULL,
+      `acceptance_criteria` TEXT NULL,
+      `source_document`     VARCHAR(1000) NULL     COMMENT 'The FRD or BRD it came from',
+      `criticality`         ENUM('Low','Medium','High','Critical') NOT NULL DEFAULT 'Medium',
+      `status`              ENUM('Draft','Approved','Implemented','Changed','Retired') NOT NULL DEFAULT 'Draft',
+      `version_no`          INT UNSIGNED NOT NULL DEFAULT 1,
+      `owner_user_code`     VARCHAR(3) NULL,
+      `is_active`           TINYINT(1) NOT NULL DEFAULT 1,
+      `created_by`          VARCHAR(3) NOT NULL,
+      `updated_by`          VARCHAR(3) NOT NULL,
+      `deleted_by`          VARCHAR(3) NULL,
+      `created_at`          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      `updated_at`          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      `deleted_at`          TIMESTAMP NULL,
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `uq_tst_appReq_code` (`req_code`),
+      INDEX `idx_tst_appReq_module`      (`module_code`,`status`),
+      INDEX `idx_tst_appReq_screen`      (`ts_code`),
+      INDEX `idx_tst_appReq_criticality` (`criticality`),
+      FULLTEXT KEY `ft_tst_appReq_text`  (`title`,`description`),
+      CONSTRAINT `fk_tst_appReq_module`    FOREIGN KEY (`module_code`)     REFERENCES `tst_modules`(`module_code`) ON DELETE RESTRICT,
+      CONSTRAINT `fk_tst_appReq_screen`    FOREIGN KEY (`ts_code`)         REFERENCES `tst_tabs_screens`(`ts_code`) ON DELETE SET NULL,
+      CONSTRAINT `fk_tst_appReq_owner`     FOREIGN KEY (`owner_user_code`) REFERENCES `tst_users`(`code`) ON DELETE SET NULL,
+      CONSTRAINT `fk_tst_appReq_createdBy` FOREIGN KEY (`created_by`)      REFERENCES `tst_users`(`code`) ON DELETE RESTRICT,
+      CONSTRAINT `fk_tst_appReq_updatedBy` FOREIGN KEY (`updated_by`)      REFERENCES `tst_users`(`code`) ON DELETE RESTRICT,
+      CONSTRAINT `fk_tst_appReq_deletedBy` FOREIGN KEY (`deleted_by`)      REFERENCES `tst_users`(`code`) ON DELETE SET NULL
+   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+   COMMENT='[P2] Change requests — statements about Prime-AI, not about the test suite.';
 
-CREATE TABLE IF NOT EXISTS `tst_app_requirements` (
-   `id`                  BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-   `req_code`            VARCHAR(40) NOT NULL   COMMENT 'Stable business code, e.g. FIN-REQ-014',
-   `module_code`         VARCHAR(5)  NOT NULL,
-   `ts_code`             VARCHAR(11) NULL       COMMENT 'When the change is screen-specific',
-   `title`               VARCHAR(255) NOT NULL,
-   `description`         TEXT NULL,
-   `acceptance_criteria` TEXT NULL,
-   `source_document`     VARCHAR(1000) NULL     COMMENT 'The FRD or BRD it came from',
-   `criticality`         ENUM('Low','Medium','High','Critical') NOT NULL DEFAULT 'Medium',
-   `status`              ENUM('Draft','Approved','Implemented','Changed','Retired') NOT NULL DEFAULT 'Draft',
-   `version_no`          INT UNSIGNED NOT NULL DEFAULT 1,
-   `owner_user_code`     VARCHAR(3) NULL,
-   `is_active`           TINYINT(1) NOT NULL DEFAULT 1,
-   `created_by`          VARCHAR(3) NOT NULL,
-   `updated_by`          VARCHAR(3) NOT NULL,
-   `deleted_by`          VARCHAR(3) NULL,
-   `created_at`          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-   `updated_at`          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-   `deleted_at`          TIMESTAMP NULL,
-   PRIMARY KEY (`id`),
-   UNIQUE KEY `uq_tst_appReq_code` (`req_code`),
-   INDEX `idx_tst_appReq_module`      (`module_code`,`status`),
-   INDEX `idx_tst_appReq_screen`      (`ts_code`),
-   INDEX `idx_tst_appReq_criticality` (`criticality`),
-   FULLTEXT KEY `ft_tst_appReq_text`  (`title`,`description`),
-   CONSTRAINT `fk_tst_appReq_module`    FOREIGN KEY (`module_code`)     REFERENCES `tst_modules`(`module_code`) ON DELETE RESTRICT,
-   CONSTRAINT `fk_tst_appReq_screen`    FOREIGN KEY (`ts_code`)         REFERENCES `tst_tabs_screens`(`ts_code`) ON DELETE SET NULL,
-   CONSTRAINT `fk_tst_appReq_owner`     FOREIGN KEY (`owner_user_code`) REFERENCES `tst_users`(`code`) ON DELETE SET NULL,
-   CONSTRAINT `fk_tst_appReq_createdBy` FOREIGN KEY (`created_by`)      REFERENCES `tst_users`(`code`) ON DELETE RESTRICT,
-   CONSTRAINT `fk_tst_appReq_updatedBy` FOREIGN KEY (`updated_by`)      REFERENCES `tst_users`(`code`) ON DELETE RESTRICT,
-   CONSTRAINT `fk_tst_appReq_deletedBy` FOREIGN KEY (`deleted_by`)      REFERENCES `tst_users`(`code`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-COMMENT='[P2] Change requests — statements about Prime-AI, not about the test suite.';
-
--- ---------------------------------------------------------------------------------------------------------
-
-
--- Coverage in BOTH directions: which tests cover this change, and which changes this test covers.
--- v7.2: keyed on test_case_code, not test_case_id.
-CREATE TABLE IF NOT EXISTS `tst_app_requirement_test_cases` (
-   `requirement_id` BIGINT UNSIGNED NOT NULL,
-   `test_case_code` VARCHAR(21) NOT NULL,
-   `coverage_type`  ENUM('Full','Partial','Negative','Boundary','Integration') NOT NULL DEFAULT 'Full',
-   `mapped_by`      VARCHAR(3) NOT NULL,
-   `note`           VARCHAR(500) NULL,
-   `created_at`     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-   PRIMARY KEY (`requirement_id`,`test_case_code`),
-   INDEX `idx_tst_reqTc_case` (`test_case_code`),
-   CONSTRAINT `fk_tst_reqTc_req`  FOREIGN KEY (`requirement_id`) REFERENCES `tst_app_requirements`(`id`) ON DELETE CASCADE,
-   CONSTRAINT `fk_tst_reqTc_case` FOREIGN KEY (`test_case_code`) REFERENCES `tst_test_cases`(`test_case_code`) ON DELETE CASCADE,
-   CONSTRAINT `fk_tst_reqTc_by`   FOREIGN KEY (`mapped_by`)      REFERENCES `tst_users`(`code`) ON DELETE RESTRICT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-COMMENT='[P2] Change request <-> test coverage, in both directions.';
-
--- ---------------------------------------------------------------------------------------------------------
+   -- ---------------------------------------------------------------------------------------------------------
 
 
--- The TEST-CASE WORK BACKLOG. "Create a test for X", "automate Y", "retire Z".
--- Carries a distributed identity because it can be raised independently on any machine.
-CREATE TABLE IF NOT EXISTS `tst_test_case_requirements` (
-   `id`                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-   `machine_id`            SMALLINT UNSIGNED NOT NULL,
-   `source_requirement_id` BIGINT UNSIGNED NOT NULL,
-   `raised_by_user_code`   VARCHAR(3) NOT NULL,
-   `request_type`          ENUM('Create','Modify','Automate','Retire','Investigate') NOT NULL DEFAULT 'Create',
-   `module_code`           VARCHAR(5)  NOT NULL,
-   `ts_code`               VARCHAR(11) NULL,
-   `proposed_tab_name`     VARCHAR(150) NULL,
-   `proposed_folder_path`  VARCHAR(1000) NULL,
-   `title`                 VARCHAR(255) NOT NULL,
-   `description`           TEXT NULL,
-   `priority`              ENUM('Low','Medium','High','Critical') NOT NULL DEFAULT 'Medium',
-   `origin_type`           ENUM('Person','Change_Request','Coverage_Gap','Bug','Discovery','AI') NOT NULL DEFAULT 'Person',
-   `origin_requirement_id` BIGINT UNSIGNED NULL,
-   `requested_by`          VARCHAR(3) NULL,
-   `assigned_to`           VARCHAR(3) NULL,
-   `assigned_at`           DATETIME NULL,
-   `status`                ENUM('Pending','In_Progress','Completed','Cancelled','Hold') NOT NULL DEFAULT 'Pending',
-   `target_test_case_code` VARCHAR(21) NULL   COMMENT 'v7.2: the test case this request produced, by code',
-   `completed_by`          VARCHAR(3) NULL,
-   `completed_at`          DATETIME NULL,
-   `completion_note`       VARCHAR(1000) NULL,
-   `created_at`            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-   `updated_at`            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-   `deleted_at`            TIMESTAMP NULL,
-   PRIMARY KEY (`id`),
-   UNIQUE KEY `uq_tst_tcReq_source` (`machine_id`,`source_requirement_id`),
-   INDEX `idx_tst_tcReq_module`   (`module_code`),
-   INDEX `idx_tst_tcReq_status`   (`status`,`priority`),
-   INDEX `idx_tst_tcReq_assigned` (`assigned_to`,`status`),
-   INDEX `idx_tst_tcReq_target`   (`target_test_case_code`),
-   CONSTRAINT `fk_tst_tcReq_machine`     FOREIGN KEY (`machine_id`)             REFERENCES `tst_machines`(`id`) ON DELETE RESTRICT,
-   CONSTRAINT `fk_tst_tcReq_raisedBy`    FOREIGN KEY (`raised_by_user_code`)    REFERENCES `tst_users`(`code`) ON DELETE RESTRICT,
-   CONSTRAINT `fk_tst_tcReq_module`      FOREIGN KEY (`module_code`)            REFERENCES `tst_modules`(`module_code`) ON DELETE RESTRICT,
-   CONSTRAINT `fk_tst_tcReq_screen`      FOREIGN KEY (`ts_code`)                REFERENCES `tst_tabs_screens`(`ts_code`) ON DELETE SET NULL,
-   CONSTRAINT `fk_tst_tcReq_originReq`   FOREIGN KEY (`origin_requirement_id`)  REFERENCES `tst_app_requirements`(`id`) ON DELETE SET NULL,
-   CONSTRAINT `fk_tst_tcReq_target`      FOREIGN KEY (`target_test_case_code`)  REFERENCES `tst_test_cases`(`test_case_code`) ON DELETE SET NULL,
-   CONSTRAINT `fk_tst_tcReq_requestedBy` FOREIGN KEY (`requested_by`)           REFERENCES `tst_users`(`code`) ON DELETE SET NULL,
-   CONSTRAINT `fk_tst_tcReq_assignedTo`  FOREIGN KEY (`assigned_to`)            REFERENCES `tst_users`(`code`) ON DELETE SET NULL,
-   CONSTRAINT `fk_tst_tcReq_completedBy` FOREIGN KEY (`completed_by`)           REFERENCES `tst_users`(`code`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-COMMENT='[P2] The test-case work backlog. NOT the same as a change request.';
+   -- Coverage in BOTH directions: which tests cover this change, and which changes this test covers.
+   -- v7.2: keyed on test_case_code, not test_case_id.
+   CREATE TABLE IF NOT EXISTS `tst_app_requirement_test_cases` (
+      `requirement_id` BIGINT UNSIGNED NOT NULL,
+      `test_case_code` VARCHAR(21) NOT NULL,
+      `coverage_type`  ENUM('Full','Partial','Negative','Boundary','Integration') NOT NULL DEFAULT 'Full',
+      `mapped_by`      VARCHAR(3) NOT NULL,
+      `note`           VARCHAR(500) NULL,
+      `created_at`     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (`requirement_id`,`test_case_code`),
+      INDEX `idx_tst_reqTc_case` (`test_case_code`),
+      CONSTRAINT `fk_tst_reqTc_req`  FOREIGN KEY (`requirement_id`) REFERENCES `tst_app_requirements`(`id`) ON DELETE CASCADE,
+      CONSTRAINT `fk_tst_reqTc_case` FOREIGN KEY (`test_case_code`) REFERENCES `tst_test_cases`(`test_case_code`) ON DELETE CASCADE,
+      CONSTRAINT `fk_tst_reqTc_by`   FOREIGN KEY (`mapped_by`)      REFERENCES `tst_users`(`code`) ON DELETE RESTRICT
+   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+   COMMENT='[P2] Change request <-> test coverage, in both directions.';
 
--- ---------------------------------------------------------------------------------------------------------
+   -- ---------------------------------------------------------------------------------------------------------
+
+
+   -- The TEST-CASE WORK BACKLOG. "Create a test for X", "automate Y", "retire Z".
+   -- Carries a distributed identity because it can be raised independently on any machine.
+   CREATE TABLE IF NOT EXISTS `tst_test_case_requirements` (
+      `id`                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `machine_id`            SMALLINT UNSIGNED NOT NULL,
+      `source_requirement_id` BIGINT UNSIGNED NOT NULL,
+      `raised_by_user_code`   VARCHAR(3) NOT NULL,
+      `request_type`          ENUM('Create','Modify','Automate','Retire','Investigate') NOT NULL DEFAULT 'Create',
+      `module_code`           VARCHAR(5)  NOT NULL,
+      `ts_code`               VARCHAR(11) NULL,
+      `proposed_tab_name`     VARCHAR(150) NULL,
+      `proposed_folder_path`  VARCHAR(1000) NULL,
+      `title`                 VARCHAR(255) NOT NULL,
+      `description`           TEXT NULL,
+      `priority`              ENUM('Low','Medium','High','Critical') NOT NULL DEFAULT 'Medium',
+      `origin_type`           ENUM('Person','Change_Request','Coverage_Gap','Bug','Discovery','AI') NOT NULL DEFAULT 'Person',
+      `origin_requirement_id` BIGINT UNSIGNED NULL,
+      `requested_by`          VARCHAR(3) NULL,
+      `assigned_to`           VARCHAR(3) NULL,
+      `assigned_at`           DATETIME NULL,
+      `status`                ENUM('Pending','In_Progress','Completed','Cancelled','Hold') NOT NULL DEFAULT 'Pending',
+      `target_test_case_code` VARCHAR(21) NULL   COMMENT 'v7.2: the test case this request produced, by code',
+      `completed_by`          VARCHAR(3) NULL,
+      `completed_at`          DATETIME NULL,
+      `completion_note`       VARCHAR(1000) NULL,
+      `created_at`            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      `updated_at`            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      `deleted_at`            TIMESTAMP NULL,
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `uq_tst_tcReq_source` (`machine_id`,`source_requirement_id`),
+      INDEX `idx_tst_tcReq_module`   (`module_code`),
+      INDEX `idx_tst_tcReq_status`   (`status`,`priority`),
+      INDEX `idx_tst_tcReq_assigned` (`assigned_to`,`status`),
+      INDEX `idx_tst_tcReq_target`   (`target_test_case_code`),
+      CONSTRAINT `fk_tst_tcReq_machine`     FOREIGN KEY (`machine_id`)             REFERENCES `tst_machines`(`id`) ON DELETE RESTRICT,
+      CONSTRAINT `fk_tst_tcReq_raisedBy`    FOREIGN KEY (`raised_by_user_code`)    REFERENCES `tst_users`(`code`) ON DELETE RESTRICT,
+      CONSTRAINT `fk_tst_tcReq_module`      FOREIGN KEY (`module_code`)            REFERENCES `tst_modules`(`module_code`) ON DELETE RESTRICT,
+      CONSTRAINT `fk_tst_tcReq_screen`      FOREIGN KEY (`ts_code`)                REFERENCES `tst_tabs_screens`(`ts_code`) ON DELETE SET NULL,
+      CONSTRAINT `fk_tst_tcReq_originReq`   FOREIGN KEY (`origin_requirement_id`)  REFERENCES `tst_app_requirements`(`id`) ON DELETE SET NULL,
+      CONSTRAINT `fk_tst_tcReq_target`      FOREIGN KEY (`target_test_case_code`)  REFERENCES `tst_test_cases`(`test_case_code`) ON DELETE SET NULL,
+      CONSTRAINT `fk_tst_tcReq_requestedBy` FOREIGN KEY (`requested_by`)           REFERENCES `tst_users`(`code`) ON DELETE SET NULL,
+      CONSTRAINT `fk_tst_tcReq_assignedTo`  FOREIGN KEY (`assigned_to`)            REFERENCES `tst_users`(`code`) ON DELETE SET NULL,
+      CONSTRAINT `fk_tst_tcReq_completedBy` FOREIGN KEY (`completed_by`)           REFERENCES `tst_users`(`code`) ON DELETE SET NULL
+   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+   COMMENT='[P2] The test-case work backlog. NOT the same as a change request.';
+
+   -- ---------------------------------------------------------------------------------------------------------
 
 
 
@@ -3251,67 +3347,67 @@ COMMENT='[P2] The test-case work backlog. NOT the same as a change request.';
    --     than a first-order one, and treating them equally is how an impact analysis ends up proposing
    --     the entire test suite.
 -- ------------------------------------------------------------------------------------------------------------------------------------------------------------
+-- Tables :
+   CREATE TABLE IF NOT EXISTS `tst_module_dependencies` (
+      `module_code`            VARCHAR(5) NOT NULL,
+      `depends_on_module_code` VARCHAR(5) NOT NULL,
+      `dependency_type`        ENUM('Functional','Data','Shared_Component','API','Integration','Navigation','Other')
+                                 NOT NULL DEFAULT 'Functional',
+      `impact_weight`          TINYINT UNSIGNED NOT NULL DEFAULT 5   COMMENT '1 (weak) .. 10 (strong); decays with depth',
+      `note`                   VARCHAR(500) NULL,
+      `is_active`              TINYINT(1) NOT NULL DEFAULT 1,
+      `created_by`             VARCHAR(3) NOT NULL,
+      `updated_by`             VARCHAR(3) NOT NULL,
+      `deleted_by`             VARCHAR(3) NULL,
+      `created_at`             TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      `updated_at`             TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      `deleted_at`             TIMESTAMP NULL,
+      PRIMARY KEY (`module_code`,`depends_on_module_code`),
+      INDEX `idx_tst_moduleDep_parent` (`depends_on_module_code`),
+      CONSTRAINT `chk_tst_moduleDep_notSelf` CHECK (`module_code` <> `depends_on_module_code`),
+      CONSTRAINT `chk_tst_moduleDep_weight`  CHECK (`impact_weight` BETWEEN 1 AND 10),
+      CONSTRAINT `fk_tst_moduleDep_module`    FOREIGN KEY (`module_code`)            REFERENCES `tst_modules`(`module_code`) ON DELETE CASCADE,
+      CONSTRAINT `fk_tst_moduleDep_parent`    FOREIGN KEY (`depends_on_module_code`) REFERENCES `tst_modules`(`module_code`) ON DELETE CASCADE,
+      CONSTRAINT `fk_tst_moduleDep_createdBy` FOREIGN KEY (`created_by`)             REFERENCES `tst_users`(`code`) ON DELETE RESTRICT,
+      CONSTRAINT `fk_tst_moduleDep_updatedBy` FOREIGN KEY (`updated_by`)             REFERENCES `tst_users`(`code`) ON DELETE RESTRICT,
+      CONSTRAINT `fk_tst_moduleDep_deletedBy` FOREIGN KEY (`deleted_by`)             REFERENCES `tst_users`(`code`) ON DELETE SET NULL
+   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+   COMMENT='[P2] Module-to-module dependencies with a weight that decays with depth.';
 
-CREATE TABLE IF NOT EXISTS `tst_module_dependencies` (
-   `module_code`            VARCHAR(5) NOT NULL,
-   `depends_on_module_code` VARCHAR(5) NOT NULL,
-   `dependency_type`        ENUM('Functional','Data','Shared_Component','API','Integration','Navigation','Other')
-                              NOT NULL DEFAULT 'Functional',
-   `impact_weight`          TINYINT UNSIGNED NOT NULL DEFAULT 5   COMMENT '1 (weak) .. 10 (strong); decays with depth',
-   `note`                   VARCHAR(500) NULL,
-   `is_active`              TINYINT(1) NOT NULL DEFAULT 1,
-   `created_by`             VARCHAR(3) NOT NULL,
-   `updated_by`             VARCHAR(3) NOT NULL,
-   `deleted_by`             VARCHAR(3) NULL,
-   `created_at`             TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-   `updated_at`             TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-   `deleted_at`             TIMESTAMP NULL,
-   PRIMARY KEY (`module_code`,`depends_on_module_code`),
-   INDEX `idx_tst_moduleDep_parent` (`depends_on_module_code`),
-   CONSTRAINT `chk_tst_moduleDep_notSelf` CHECK (`module_code` <> `depends_on_module_code`),
-   CONSTRAINT `chk_tst_moduleDep_weight`  CHECK (`impact_weight` BETWEEN 1 AND 10),
-   CONSTRAINT `fk_tst_moduleDep_module`    FOREIGN KEY (`module_code`)            REFERENCES `tst_modules`(`module_code`) ON DELETE CASCADE,
-   CONSTRAINT `fk_tst_moduleDep_parent`    FOREIGN KEY (`depends_on_module_code`) REFERENCES `tst_modules`(`module_code`) ON DELETE CASCADE,
-   CONSTRAINT `fk_tst_moduleDep_createdBy` FOREIGN KEY (`created_by`)             REFERENCES `tst_users`(`code`) ON DELETE RESTRICT,
-   CONSTRAINT `fk_tst_moduleDep_updatedBy` FOREIGN KEY (`updated_by`)             REFERENCES `tst_users`(`code`) ON DELETE RESTRICT,
-   CONSTRAINT `fk_tst_moduleDep_deletedBy` FOREIGN KEY (`deleted_by`)             REFERENCES `tst_users`(`code`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-COMMENT='[P2] Module-to-module dependencies with a weight that decays with depth.';
-
--- ---------------------------------------------------------------------------------------------------------
+   -- ---------------------------------------------------------------------------------------------------------
 
 
--- is_blocking REACHES BACK INTO PHASE 1: if the parent fails, the dependent test is recorded BLOCKED,
--- not FAILED. That is why Blocked exists as a result status from Phase 1 — the status has to be there
--- before the mechanism that produces it.
-CREATE TABLE IF NOT EXISTS `tst_test_case_dependencies` (
-   `test_case_code`            VARCHAR(21) NOT NULL,
-   `depends_on_test_case_code` VARCHAR(21) NOT NULL,
-   `dependency_type`           ENUM('Prerequisite','Functional','Data','Navigation','API','Integration','Shared_Component','Regression','Other') NOT NULL DEFAULT 'Functional',
-   `is_blocking`               TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Parent fails -> this test is BLOCKED, not FAILED',
-   `impact_weight`             TINYINT UNSIGNED NOT NULL DEFAULT 5,
-   `note`                      VARCHAR(500) NULL,
-   `is_active`                 TINYINT(1) NOT NULL DEFAULT 1,
-   `created_by`                VARCHAR(3) NOT NULL,
-   `updated_by`                VARCHAR(3) NOT NULL,
-   `deleted_by`                VARCHAR(3) NULL,
-   `created_at`                TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-   `updated_at`                TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-   `deleted_at`                TIMESTAMP NULL,
-   PRIMARY KEY (`test_case_code`,`depends_on_test_case_code`),
-   INDEX `idx_tst_tcDep_parent`   (`depends_on_test_case_code`),
-   INDEX `idx_tst_tcDep_blocking` (`is_blocking`),
-   CONSTRAINT `chk_tst_tcDep_notSelf` CHECK (`test_case_code` <> `depends_on_test_case_code`),
-   CONSTRAINT `chk_tst_tcDep_weight`  CHECK (`impact_weight` BETWEEN 1 AND 10),
-   CONSTRAINT `fk_tst_tcDep_case`      FOREIGN KEY (`test_case_code`)            REFERENCES `tst_test_cases`(`test_case_code`) ON DELETE CASCADE,
-   CONSTRAINT `fk_tst_tcDep_parent`    FOREIGN KEY (`depends_on_test_case_code`) REFERENCES `tst_test_cases`(`test_case_code`) ON DELETE CASCADE,
-   CONSTRAINT `fk_tst_tcDep_createdBy` FOREIGN KEY (`created_by`)                REFERENCES `tst_users`(`code`) ON DELETE RESTRICT,
-   CONSTRAINT `fk_tst_tcDep_updatedBy` FOREIGN KEY (`updated_by`)                REFERENCES `tst_users`(`code`) ON DELETE RESTRICT,
-   CONSTRAINT `fk_tst_tcDep_deletedBy` FOREIGN KEY (`deleted_by`)                REFERENCES `tst_users`(`code`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-COMMENT='[P2] Test-case dependencies. is_blocking changes a Failed into a Blocked.';
+   -- is_blocking REACHES BACK INTO PHASE 1: if the parent fails, the dependent test is recorded BLOCKED,
+   -- not FAILED. That is why Blocked exists as a result status from Phase 1 — the status has to be there
+   -- before the mechanism that produces it.
+   CREATE TABLE IF NOT EXISTS `tst_test_case_dependencies` (
+      `test_case_code`            VARCHAR(21) NOT NULL,
+      `depends_on_test_case_code` VARCHAR(21) NOT NULL,
+      `dependency_type`           ENUM('Prerequisite','Functional','Data','Navigation','API','Integration','Shared_Component','Regression','Other') NOT NULL DEFAULT 'Functional',
+      `is_blocking`               TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Parent fails -> this test is BLOCKED, not FAILED',
+      `impact_weight`             TINYINT UNSIGNED NOT NULL DEFAULT 5,
+      `note`                      VARCHAR(500) NULL,
+      `is_active`                 TINYINT(1) NOT NULL DEFAULT 1,
+      `created_by`                VARCHAR(3) NOT NULL,
+      `updated_by`                VARCHAR(3) NOT NULL,
+      `deleted_by`                VARCHAR(3) NULL,
+      `created_at`                TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      `updated_at`                TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      `deleted_at`                TIMESTAMP NULL,
+      PRIMARY KEY (`test_case_code`,`depends_on_test_case_code`),
+      INDEX `idx_tst_tcDep_parent`   (`depends_on_test_case_code`),
+      INDEX `idx_tst_tcDep_blocking` (`is_blocking`),
+      CONSTRAINT `chk_tst_tcDep_notSelf` CHECK (`test_case_code` <> `depends_on_test_case_code`),
+      CONSTRAINT `chk_tst_tcDep_weight`  CHECK (`impact_weight` BETWEEN 1 AND 10),
+      CONSTRAINT `fk_tst_tcDep_case`      FOREIGN KEY (`test_case_code`)            REFERENCES `tst_test_cases`(`test_case_code`) ON DELETE CASCADE,
+      CONSTRAINT `fk_tst_tcDep_parent`    FOREIGN KEY (`depends_on_test_case_code`) REFERENCES `tst_test_cases`(`test_case_code`) ON DELETE CASCADE,
+      CONSTRAINT `fk_tst_tcDep_createdBy` FOREIGN KEY (`created_by`)                REFERENCES `tst_users`(`code`) ON DELETE RESTRICT,
+      CONSTRAINT `fk_tst_tcDep_updatedBy` FOREIGN KEY (`updated_by`)                REFERENCES `tst_users`(`code`) ON DELETE RESTRICT,
+      CONSTRAINT `fk_tst_tcDep_deletedBy` FOREIGN KEY (`deleted_by`)                REFERENCES `tst_users`(`code`) ON DELETE SET NULL
+   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+   COMMENT='[P2] Test-case dependencies. is_blocking changes a Failed into a Blocked.';
 
--- ---------------------------------------------------------------------------------------------------------
+   -- ---------------------------------------------------------------------------------------------------------
 
 
 
@@ -3328,38 +3424,38 @@ COMMENT='[P2] Test-case dependencies. is_blocking changes a Failed into a Blocke
    --     A PATH NO RULE MATCHED IS AN UNRESOLVED FILE, and tst_impact_analyses counts them. An analysis
    --     that silently ignored 40% of a change is WORSE than no analysis, because it looks complete.
 -- ------------------------------------------------------------------------------------------------------------------------------------------------------------
+-- Tables :
+   CREATE TABLE IF NOT EXISTS `tst_path_mappings` (
+      `id`             INT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `pattern`        VARCHAR(500) NOT NULL   COMMENT 'Glob, e.g. Modules/Fees/**',
+      `target_type`    ENUM('Module','Screen','TestCase','Ignore') NOT NULL DEFAULT 'Module',
+      `module_code`    VARCHAR(5)  NULL,
+      `ts_code`        VARCHAR(11) NULL,
+      `test_case_code` VARCHAR(21) NULL,
+      `confidence`     DECIMAL(4,3) NOT NULL DEFAULT 0.800  COMMENT 'How strongly a match implies impact',
+      `priority`       SMALLINT UNSIGNED NOT NULL DEFAULT 100 COMMENT 'Lower wins; most specific first',
+      `note`           VARCHAR(500) NULL,
+      `is_active`      TINYINT(1) NOT NULL DEFAULT 1,
+      `created_by`     VARCHAR(3) NOT NULL,
+      `updated_by`     VARCHAR(3) NOT NULL,
+      `deleted_by`     VARCHAR(3) NULL,
+      `created_at`     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      `updated_at`     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      `deleted_at`     TIMESTAMP NULL,
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `uq_tst_pathMappings_pattern` (`pattern`),
+      INDEX `idx_tst_pathMappings_priority` (`is_active`,`priority`),
+      CONSTRAINT `chk_tst_pathMap_confidence` CHECK (`confidence` BETWEEN 0 AND 1),
+      CONSTRAINT `fk_tst_pathMap_module`    FOREIGN KEY (`module_code`)    REFERENCES `tst_modules`(`module_code`) ON DELETE CASCADE,
+      CONSTRAINT `fk_tst_pathMap_screen`    FOREIGN KEY (`ts_code`)        REFERENCES `tst_tabs_screens`(`ts_code`) ON DELETE CASCADE,
+      CONSTRAINT `fk_tst_pathMap_case`      FOREIGN KEY (`test_case_code`) REFERENCES `tst_test_cases`(`test_case_code`) ON DELETE CASCADE,
+      CONSTRAINT `fk_tst_pathMap_createdBy` FOREIGN KEY (`created_by`)     REFERENCES `tst_users`(`code`) ON DELETE RESTRICT,
+      CONSTRAINT `fk_tst_pathMap_updatedBy` FOREIGN KEY (`updated_by`)     REFERENCES `tst_users`(`code`) ON DELETE RESTRICT,
+      CONSTRAINT `fk_tst_pathMap_deletedBy` FOREIGN KEY (`deleted_by`)     REFERENCES `tst_users`(`code`) ON DELETE SET NULL
+   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+   COMMENT='[P2] Source path -> module / screen / test case. Unmatched paths are a reported blind spot.';
 
-CREATE TABLE IF NOT EXISTS `tst_path_mappings` (
-   `id`             INT UNSIGNED NOT NULL AUTO_INCREMENT,
-   `pattern`        VARCHAR(500) NOT NULL   COMMENT 'Glob, e.g. Modules/Fees/**',
-   `target_type`    ENUM('Module','Screen','TestCase','Ignore') NOT NULL DEFAULT 'Module',
-   `module_code`    VARCHAR(5)  NULL,
-   `ts_code`        VARCHAR(11) NULL,
-   `test_case_code` VARCHAR(21) NULL,
-   `confidence`     DECIMAL(4,3) NOT NULL DEFAULT 0.800  COMMENT 'How strongly a match implies impact',
-   `priority`       SMALLINT UNSIGNED NOT NULL DEFAULT 100 COMMENT 'Lower wins; most specific first',
-   `note`           VARCHAR(500) NULL,
-   `is_active`      TINYINT(1) NOT NULL DEFAULT 1,
-   `created_by`     VARCHAR(3) NOT NULL,
-   `updated_by`     VARCHAR(3) NOT NULL,
-   `deleted_by`     VARCHAR(3) NULL,
-   `created_at`     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-   `updated_at`     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-   `deleted_at`     TIMESTAMP NULL,
-   PRIMARY KEY (`id`),
-   UNIQUE KEY `uq_tst_pathMappings_pattern` (`pattern`),
-   INDEX `idx_tst_pathMappings_priority` (`is_active`,`priority`),
-   CONSTRAINT `chk_tst_pathMap_confidence` CHECK (`confidence` BETWEEN 0 AND 1),
-   CONSTRAINT `fk_tst_pathMap_module`    FOREIGN KEY (`module_code`)    REFERENCES `tst_modules`(`module_code`) ON DELETE CASCADE,
-   CONSTRAINT `fk_tst_pathMap_screen`    FOREIGN KEY (`ts_code`)        REFERENCES `tst_tabs_screens`(`ts_code`) ON DELETE CASCADE,
-   CONSTRAINT `fk_tst_pathMap_case`      FOREIGN KEY (`test_case_code`) REFERENCES `tst_test_cases`(`test_case_code`) ON DELETE CASCADE,
-   CONSTRAINT `fk_tst_pathMap_createdBy` FOREIGN KEY (`created_by`)     REFERENCES `tst_users`(`code`) ON DELETE RESTRICT,
-   CONSTRAINT `fk_tst_pathMap_updatedBy` FOREIGN KEY (`updated_by`)     REFERENCES `tst_users`(`code`) ON DELETE RESTRICT,
-   CONSTRAINT `fk_tst_pathMap_deletedBy` FOREIGN KEY (`deleted_by`)     REFERENCES `tst_users`(`code`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-COMMENT='[P2] Source path -> module / screen / test case. Unmatched paths are a reported blind spot.';
-
--- ---------------------------------------------------------------------------------------------------------
+   -- ---------------------------------------------------------------------------------------------------------
 
 
 
@@ -3370,161 +3466,160 @@ COMMENT='[P2] Source path -> module / screen / test case. Unmatched paths are a 
    --     SUITE MEMBERSHIP IS VERSIONED, and a run records THE VERSION IT EXECUTED. Without that, a
    --     historical run cannot be reproduced: "the regression suite" today is not the set it was in March.
 -- ------------------------------------------------------------------------------------------------------------------------------------------------------------
+-- Tables :
+   CREATE TABLE IF NOT EXISTS `tst_test_suites` (
+      `id`            INT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `suite_code`    VARCHAR(40) NOT NULL,
+      `name`          VARCHAR(150) NOT NULL,
+      `suite_type`    ENUM('Smoke','Regression','Integration','Critical','Full','Bug_Retest','Release','Custom') NOT NULL DEFAULT 'Custom',
+      `description`   TEXT NULL,
+      `is_rule_based` TINYINT(1) NOT NULL DEFAULT 0,
+      `rule_json`     JSON NULL   COMMENT 'e.g. {"module":["FIN"],"criticality":["Critical","High"]}',
+      `version_no`    INT UNSIGNED NOT NULL DEFAULT 1,
+      `is_active`     TINYINT(1) NOT NULL DEFAULT 1,
+      `created_by`    VARCHAR(3) NOT NULL,
+      `updated_by`    VARCHAR(3) NOT NULL,
+      `deleted_by`    VARCHAR(3) NULL,
+      `created_at`    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      `updated_at`    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      `deleted_at`    TIMESTAMP NULL,
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `uq_tst_suites_code` (`suite_code`),
+      INDEX `idx_tst_suites_type` (`suite_type`,`is_active`),
+      CONSTRAINT `fk_tst_suites_createdBy` FOREIGN KEY (`created_by`) REFERENCES `tst_users`(`code`) ON DELETE RESTRICT,
+      CONSTRAINT `fk_tst_suites_updatedBy` FOREIGN KEY (`updated_by`) REFERENCES `tst_users`(`code`) ON DELETE RESTRICT,
+      CONSTRAINT `fk_tst_suites_deletedBy` FOREIGN KEY (`deleted_by`) REFERENCES `tst_users`(`code`) ON DELETE SET NULL
+   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+   COMMENT='[P2] Named, reusable collections of test cases. Explicit or rule-based.';
 
-CREATE TABLE IF NOT EXISTS `tst_test_suites` (
-   `id`            INT UNSIGNED NOT NULL AUTO_INCREMENT,
-   `suite_code`    VARCHAR(40) NOT NULL,
-   `name`          VARCHAR(150) NOT NULL,
-   `suite_type`    ENUM('Smoke','Regression','Integration','Critical','Full','Bug_Retest','Release','Custom')
-                     NOT NULL DEFAULT 'Custom',
-   `description`   TEXT NULL,
-   `is_rule_based` TINYINT(1) NOT NULL DEFAULT 0,
-   `rule_json`     JSON NULL   COMMENT 'e.g. {"module":["FIN"],"criticality":["Critical","High"]}',
-   `version_no`    INT UNSIGNED NOT NULL DEFAULT 1,
-   `is_active`     TINYINT(1) NOT NULL DEFAULT 1,
-   `created_by`    VARCHAR(3) NOT NULL,
-   `updated_by`    VARCHAR(3) NOT NULL,
-   `deleted_by`    VARCHAR(3) NULL,
-   `created_at`    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-   `updated_at`    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-   `deleted_at`    TIMESTAMP NULL,
-   PRIMARY KEY (`id`),
-   UNIQUE KEY `uq_tst_suites_code` (`suite_code`),
-   INDEX `idx_tst_suites_type` (`suite_type`,`is_active`),
-   CONSTRAINT `fk_tst_suites_createdBy` FOREIGN KEY (`created_by`) REFERENCES `tst_users`(`code`) ON DELETE RESTRICT,
-   CONSTRAINT `fk_tst_suites_updatedBy` FOREIGN KEY (`updated_by`) REFERENCES `tst_users`(`code`) ON DELETE RESTRICT,
-   CONSTRAINT `fk_tst_suites_deletedBy` FOREIGN KEY (`deleted_by`) REFERENCES `tst_users`(`code`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-COMMENT='[P2] Named, reusable collections of test cases. Explicit or rule-based.';
-
--- ---------------------------------------------------------------------------------------------------------
-
-
-CREATE TABLE IF NOT EXISTS `tst_test_suite_items` (
-   `suite_id`       INT UNSIGNED NOT NULL,
-   `test_case_code` VARCHAR(21) NOT NULL,
-   `priority`       ENUM('Low','Medium','High','Critical') NOT NULL DEFAULT 'Medium',
-   `sequence_no`    INT UNSIGNED NOT NULL DEFAULT 1,
-   `added_by`       VARCHAR(3) NOT NULL,
-   `created_at`     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-   PRIMARY KEY (`suite_id`,`test_case_code`),
-   INDEX `idx_tst_suiteItems_case` (`test_case_code`),
-   CONSTRAINT `fk_tst_suiteItems_suite` FOREIGN KEY (`suite_id`)       REFERENCES `tst_test_suites`(`id`) ON DELETE CASCADE,
-   CONSTRAINT `fk_tst_suiteItems_case`  FOREIGN KEY (`test_case_code`) REFERENCES `tst_test_cases`(`test_case_code`) ON DELETE CASCADE,
-   CONSTRAINT `fk_tst_suiteItems_by`    FOREIGN KEY (`added_by`)       REFERENCES `tst_users`(`code`) ON DELETE RESTRICT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='[P2] Explicit suite membership, by test_case_code.';
-
--- ---------------------------------------------------------------------------------------------------------
+   -- ---------------------------------------------------------------------------------------------------------
 
 
-CREATE TABLE IF NOT EXISTS `tst_test_suite_versions` (
-   `id`             BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-   `suite_id`       INT UNSIGNED NOT NULL,
-   `version_no`     INT UNSIGNED NOT NULL,
-   `member_count`   INT UNSIGNED NOT NULL DEFAULT 0,
-   `members_json`   JSON NOT NULL   COMMENT 'Resolved membership: ["D02A_T0104010200_001", ...]',
-   `change_summary` VARCHAR(1000) NULL,
-   `captured_by`    VARCHAR(3) NOT NULL,
-   `created_at`     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-   PRIMARY KEY (`id`),
-   UNIQUE KEY `uq_tst_suiteVersions` (`suite_id`,`version_no`),
-   CONSTRAINT `fk_tst_suiteVersions_suite` FOREIGN KEY (`suite_id`)    REFERENCES `tst_test_suites`(`id`) ON DELETE CASCADE,
-   CONSTRAINT `fk_tst_suiteVersions_by`    FOREIGN KEY (`captured_by`) REFERENCES `tst_users`(`code`) ON DELETE RESTRICT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-COMMENT='[P2] Frozen suite membership per version, so a historical run is reproducible.';
+   CREATE TABLE IF NOT EXISTS `tst_test_suite_items` (
+      `suite_id`       INT UNSIGNED NOT NULL,
+      `test_case_code` VARCHAR(21) NOT NULL,
+      `priority`       ENUM('Low','Medium','High','Critical') NOT NULL DEFAULT 'Medium',
+      `sequence_no`    INT UNSIGNED NOT NULL DEFAULT 1,
+      `added_by`       VARCHAR(3) NOT NULL,
+      `created_at`     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (`suite_id`,`test_case_code`),
+      INDEX `idx_tst_suiteItems_case` (`test_case_code`),
+      CONSTRAINT `fk_tst_suiteItems_suite` FOREIGN KEY (`suite_id`)       REFERENCES `tst_test_suites`(`id`) ON DELETE CASCADE,
+      CONSTRAINT `fk_tst_suiteItems_case`  FOREIGN KEY (`test_case_code`) REFERENCES `tst_test_cases`(`test_case_code`) ON DELETE CASCADE,
+      CONSTRAINT `fk_tst_suiteItems_by`    FOREIGN KEY (`added_by`)       REFERENCES `tst_users`(`code`) ON DELETE RESTRICT
+   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='[P2] Explicit suite membership, by test_case_code.';
 
--- ---------------------------------------------------------------------------------------------------------
+   -- ---------------------------------------------------------------------------------------------------------
+
+
+   CREATE TABLE IF NOT EXISTS `tst_test_suite_versions` (
+      `id`             BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `suite_id`       INT UNSIGNED NOT NULL,
+      `version_no`     INT UNSIGNED NOT NULL,
+      `member_count`   INT UNSIGNED NOT NULL DEFAULT 0,
+      `members_json`   JSON NOT NULL   COMMENT 'Resolved membership: ["D02A_T0104010200_001", ...]',
+      `change_summary` VARCHAR(1000) NULL,
+      `captured_by`    VARCHAR(3) NOT NULL,
+      `created_at`     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `uq_tst_suiteVersions` (`suite_id`,`version_no`),
+      CONSTRAINT `fk_tst_suiteVersions_suite` FOREIGN KEY (`suite_id`)    REFERENCES `tst_test_suites`(`id`) ON DELETE CASCADE,
+      CONSTRAINT `fk_tst_suiteVersions_by`    FOREIGN KEY (`captured_by`) REFERENCES `tst_users`(`code`) ON DELETE RESTRICT
+   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+   COMMENT='[P2] Frozen suite membership per version, so a historical run is reproducible.';
+
+   -- ---------------------------------------------------------------------------------------------------------
 
 
 -- ============================================================================================================================================================
 -- SECTION 24 — GIT INGESTION ENGINE                                                                 [P2]
 -- ============================================================================================================================================================
+-- Tables :
+   CREATE TABLE IF NOT EXISTS `tst_git_repositories` (
+      `repository_code`      VARCHAR(100) NOT NULL,
+      `name`                 VARCHAR(150) NOT NULL,
+      `local_path`           VARCHAR(1000) NULL,
+      `remote_url`           VARCHAR(500) NULL,
+      `default_branch`       VARCHAR(200) NULL DEFAULT 'main',
+      `last_ingested_commit` VARCHAR(40) NULL   COMMENT 'Ingestion is incremental from here',
+      `last_ingested_at`     DATETIME NULL,
+      `is_active`            TINYINT(1) NOT NULL DEFAULT 1,
+      `created_by`           VARCHAR(3) NOT NULL,
+      `created_at`           TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      `updated_at`           TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY (`repository_code`),
+      CONSTRAINT `fk_tst_gitRepos_createdBy` FOREIGN KEY (`created_by`) REFERENCES `tst_users`(`code`) ON DELETE RESTRICT
+   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+   COMMENT='[P2] Registered Git repositories.';
 
-CREATE TABLE IF NOT EXISTS `tst_git_repositories` (
-   `repository_code`      VARCHAR(100) NOT NULL,
-   `name`                 VARCHAR(150) NOT NULL,
-   `local_path`           VARCHAR(1000) NULL,
-   `remote_url`           VARCHAR(500) NULL,
-   `default_branch`       VARCHAR(200) NULL DEFAULT 'main',
-   `last_ingested_commit` VARCHAR(40) NULL   COMMENT 'Ingestion is incremental from here',
-   `last_ingested_at`     DATETIME NULL,
-   `is_active`            TINYINT(1) NOT NULL DEFAULT 1,
-   `created_by`           VARCHAR(3) NOT NULL,
-   `created_at`           TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-   `updated_at`           TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-   PRIMARY KEY (`repository_code`),
-   CONSTRAINT `fk_tst_gitRepos_createdBy` FOREIGN KEY (`created_by`) REFERENCES `tst_users`(`code`) ON DELETE RESTRICT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-COMMENT='[P2] Registered Git repositories.';
-
--- ---------------------------------------------------------------------------------------------------------
-
-
--- commit_hash IS VARCHAR(40), NOT CHAR(64). A Git SHA-1 is 40 hex characters; CHAR(64) pads it, and a
--- hash read from `git log` then never compares equal to a stored one. This was defect 11 in v6.7.
-CREATE TABLE IF NOT EXISTS `tst_git_commits` (
-   `id`                 BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-   `repository_code`    VARCHAR(100) NOT NULL,
-   `commit_hash`        VARCHAR(40) NOT NULL,
-   `short_hash`         VARCHAR(12) NULL,
-   `branch_name`        VARCHAR(200) NULL,
-   `parent_commit_hash` VARCHAR(40) NULL,
-   `merge_commit_hash`  VARCHAR(40) NULL,
-   `author_user_code`   VARCHAR(3) NULL   COMMENT 'Resolved to a Testing Application user where possible',
-   `author_name`        VARCHAR(150) NULL,
-   `author_email`       VARCHAR(200) NULL,
-   `commit_message`     TEXT NULL,
-   `is_merge_commit`    TINYINT(1) NOT NULL DEFAULT 0,
-   `files_changed`      INT UNSIGNED NOT NULL DEFAULT 0,
-   `lines_added`        INT UNSIGNED NOT NULL DEFAULT 0,
-   `lines_removed`      INT UNSIGNED NOT NULL DEFAULT 0,
-   `committed_at`       DATETIME NULL,
-   `ingested_at`        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-   PRIMARY KEY (`id`),
-   UNIQUE KEY `uq_tst_gitCommits_repoHash` (`repository_code`,`commit_hash`),
-   INDEX `idx_tst_gitCommits_date`   (`committed_at`),
-   INDEX `idx_tst_gitCommits_author` (`author_user_code`),
-   INDEX `idx_tst_gitCommits_branch` (`branch_name`),
-   CONSTRAINT `fk_tst_gitCommits_repo`   FOREIGN KEY (`repository_code`)  REFERENCES `tst_git_repositories`(`repository_code`) ON DELETE CASCADE,
-   CONSTRAINT `fk_tst_gitCommits_author` FOREIGN KEY (`author_user_code`) REFERENCES `tst_users`(`code`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-COMMENT='[P2] Ingested commits. Author resolved to a user code so "who changed" and "who tested" share a vocabulary.';
-
--- ---------------------------------------------------------------------------------------------------------
+   -- ---------------------------------------------------------------------------------------------------------
 
 
--- resolution_source records HOW a file was mapped. A high Module_Convention share means the explicit
--- path-mapping rules are thin, which is actionable; without it, nobody knows why the mapping is weak.
-CREATE TABLE IF NOT EXISTS `tst_git_commit_files` (
-   `id`                INT UNSIGNED NOT NULL AUTO_INCREMENT,
-   `commit_id`         BIGINT UNSIGNED NOT NULL,
-   `file_path`         VARCHAR(1000) NOT NULL,
-   `old_file_path`     VARCHAR(1000) NULL,
-   `change_type`       ENUM('Added','Modified','Deleted','Renamed','Copied','Unknown') NOT NULL DEFAULT 'Modified',
-   `lines_added`       INT UNSIGNED NOT NULL DEFAULT 0,
-   `lines_removed`     INT UNSIGNED NOT NULL DEFAULT 0,
-   `module_code`       VARCHAR(5)  NULL,
-   `ts_code`           VARCHAR(11) NULL,
-   `test_case_code`    VARCHAR(21) NULL,
-   `resolution_source` ENUM('Test_File','Screen_Path','Path_Mapping','Module_Convention','Manual','Unresolved') NOT NULL DEFAULT 'Unresolved',
-   `path_mapping_id`   INT UNSIGNED NULL,
-   `impact_level`      ENUM('Low','Medium','High','Critical','Unknown') NOT NULL DEFAULT 'Unknown',
-   `created_at`        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-   PRIMARY KEY (`id`),
-   UNIQUE KEY `uq_tst_gitFiles` (`commit_id`,`file_path`(500)),
-   INDEX `idx_tst_gitFiles_module`     (`module_code`),
-   INDEX `idx_tst_gitFiles_screen`     (`ts_code`),
-   INDEX `idx_tst_gitFiles_case`       (`test_case_code`),
-   INDEX `idx_tst_gitFiles_resolution` (`resolution_source`),
-   CONSTRAINT `fk_tst_gitFiles_commit`  FOREIGN KEY (`commit_id`)       REFERENCES `tst_git_commits`(`id`) ON DELETE CASCADE,
-   CONSTRAINT `fk_tst_gitFiles_module`  FOREIGN KEY (`module_code`)     REFERENCES `tst_modules`(`module_code`) ON DELETE SET NULL,
-   CONSTRAINT `fk_tst_gitFiles_screen`  FOREIGN KEY (`ts_code`)         REFERENCES `tst_tabs_screens`(`ts_code`) ON DELETE SET NULL,
-   CONSTRAINT `fk_tst_gitFiles_case`    FOREIGN KEY (`test_case_code`)  REFERENCES `tst_test_cases`(`test_case_code`) ON DELETE SET NULL,
-   CONSTRAINT `fk_tst_gitFiles_mapping` FOREIGN KEY (`path_mapping_id`) REFERENCES `tst_path_mappings`(`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-COMMENT='[P2] Changed files with their resolved target AND how the resolution was reached.';
+   -- commit_hash IS VARCHAR(40), NOT CHAR(64). A Git SHA-1 is 40 hex characters; CHAR(64) pads it, and a
+   -- hash read from `git log` then never compares equal to a stored one. This was defect 11 in v6.7.
+   CREATE TABLE IF NOT EXISTS `tst_git_commits` (
+      `id`                 BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `repository_code`    VARCHAR(100) NOT NULL,
+      `commit_hash`        VARCHAR(40) NOT NULL,
+      `short_hash`         VARCHAR(12) NULL,
+      `branch_name`        VARCHAR(200) NULL,
+      `parent_commit_hash` VARCHAR(40) NULL,
+      `merge_commit_hash`  VARCHAR(40) NULL,
+      `author_user_code`   VARCHAR(3) NULL   COMMENT 'Resolved to a Testing Application user where possible',
+      `author_name`        VARCHAR(150) NULL,
+      `author_email`       VARCHAR(200) NULL,
+      `commit_message`     TEXT NULL,
+      `is_merge_commit`    TINYINT(1) NOT NULL DEFAULT 0,
+      `files_changed`      INT UNSIGNED NOT NULL DEFAULT 0,
+      `lines_added`        INT UNSIGNED NOT NULL DEFAULT 0,
+      `lines_removed`      INT UNSIGNED NOT NULL DEFAULT 0,
+      `committed_at`       DATETIME NULL,
+      `ingested_at`        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `uq_tst_gitCommits_repoHash` (`repository_code`,`commit_hash`),
+      INDEX `idx_tst_gitCommits_date`   (`committed_at`),
+      INDEX `idx_tst_gitCommits_author` (`author_user_code`),
+      INDEX `idx_tst_gitCommits_branch` (`branch_name`),
+      CONSTRAINT `fk_tst_gitCommits_repo`   FOREIGN KEY (`repository_code`)  REFERENCES `tst_git_repositories`(`repository_code`) ON DELETE CASCADE,
+      CONSTRAINT `fk_tst_gitCommits_author` FOREIGN KEY (`author_user_code`) REFERENCES `tst_users`(`code`) ON DELETE SET NULL
+   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+   COMMENT='[P2] Ingested commits. Author resolved to a user code so "who changed" and "who tested" share a vocabulary.';
 
--- ---------------------------------------------------------------------------------------------------------
+   -- ---------------------------------------------------------------------------------------------------------
+
+
+   -- resolution_source records HOW a file was mapped. A high Module_Convention share means the explicit
+   -- path-mapping rules are thin, which is actionable; without it, nobody knows why the mapping is weak.
+   CREATE TABLE IF NOT EXISTS `tst_git_commit_files` (
+      `id`                INT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `commit_id`         BIGINT UNSIGNED NOT NULL,
+      `file_path`         VARCHAR(1000) NOT NULL,
+      `old_file_path`     VARCHAR(1000) NULL,
+      `change_type`       ENUM('Added','Modified','Deleted','Renamed','Copied','Unknown') NOT NULL DEFAULT 'Modified',
+      `lines_added`       INT UNSIGNED NOT NULL DEFAULT 0,
+      `lines_removed`     INT UNSIGNED NOT NULL DEFAULT 0,
+      `module_code`       VARCHAR(5)  NULL,
+      `ts_code`           VARCHAR(11) NULL,
+      `test_case_code`    VARCHAR(21) NULL,
+      `resolution_source` ENUM('Test_File','Screen_Path','Path_Mapping','Module_Convention','Manual','Unresolved') NOT NULL DEFAULT 'Unresolved',
+      `path_mapping_id`   INT UNSIGNED NULL,
+      `impact_level`      ENUM('Low','Medium','High','Critical','Unknown') NOT NULL DEFAULT 'Unknown',
+      `created_at`        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `uq_tst_gitFiles` (`commit_id`,`file_path`(500)),
+      INDEX `idx_tst_gitFiles_module`     (`module_code`),
+      INDEX `idx_tst_gitFiles_screen`     (`ts_code`),
+      INDEX `idx_tst_gitFiles_case`       (`test_case_code`),
+      INDEX `idx_tst_gitFiles_resolution` (`resolution_source`),
+      CONSTRAINT `fk_tst_gitFiles_commit`  FOREIGN KEY (`commit_id`)       REFERENCES `tst_git_commits`(`id`) ON DELETE CASCADE,
+      CONSTRAINT `fk_tst_gitFiles_module`  FOREIGN KEY (`module_code`)     REFERENCES `tst_modules`(`module_code`) ON DELETE SET NULL,
+      CONSTRAINT `fk_tst_gitFiles_screen`  FOREIGN KEY (`ts_code`)         REFERENCES `tst_tabs_screens`(`ts_code`) ON DELETE SET NULL,
+      CONSTRAINT `fk_tst_gitFiles_case`    FOREIGN KEY (`test_case_code`)  REFERENCES `tst_test_cases`(`test_case_code`) ON DELETE SET NULL,
+      CONSTRAINT `fk_tst_gitFiles_mapping` FOREIGN KEY (`path_mapping_id`) REFERENCES `tst_path_mappings`(`id`) ON DELETE SET NULL
+   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+   COMMENT='[P2] Changed files with their resolved target AND how the resolution was reached.';
+
+   -- ---------------------------------------------------------------------------------------------------------
 
 
 
@@ -3535,86 +3630,86 @@ COMMENT='[P2] Changed files with their resolved target AND how the resolution wa
    --     An impact analysis is a NAMED, RETAINED, REVIEWABLE PROPOSAL, not a transient list.
    --     A PERSON APPROVES BEFORE ANYTHING RUNS.
 -- ------------------------------------------------------------------------------------------------------------------------------------------------------------
+-- Tables :
+   CREATE TABLE IF NOT EXISTS `tst_impact_analyses` (
+      `id`                         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `machine_id`                 SMALLINT UNSIGNED NOT NULL,
+      `source_analysis_id`         BIGINT UNSIGNED NOT NULL,
+      `analysis_name`              VARCHAR(200) NOT NULL,
+      `source_type`                ENUM('Commit_Range','Single_Commit','Bug_Fix','Manual','Change_Request') NOT NULL,
+      `repository_code`            VARCHAR(100) NULL,
+      `from_commit_hash`           VARCHAR(40) NULL,
+      `to_commit_hash`             VARCHAR(40) NULL,
+      `bug_id`                     BIGINT UNSIGNED NULL,
+      `change_request_id`          BIGINT UNSIGNED NULL,
+      `requested_by`               VARCHAR(3) NOT NULL,
+      `status`                     ENUM('Draft','Proposed','Approved','Rejected','Executed','Superseded')
+                                    NOT NULL DEFAULT 'Draft',
+      `approved_by`                VARCHAR(3) NULL,
+      `approved_at`                DATETIME NULL,
+      `executed_run_id`            BIGINT UNSIGNED NULL,
+      `changed_file_count`         INT UNSIGNED NOT NULL DEFAULT 0,
+      `unresolved_file_count`      INT UNSIGNED NOT NULL DEFAULT 0
+                                    COMMENT 'PATHS NO RULE MATCHED. This is the analysis stating its own blind spot',
+      `affected_module_count`      INT UNSIGNED NOT NULL DEFAULT 0,
+      `affected_screen_count`      INT UNSIGNED NOT NULL DEFAULT 0,
+      `proposed_test_count`        INT UNSIGNED NOT NULL DEFAULT 0,
+      `included_test_count`        INT UNSIGNED NOT NULL DEFAULT 0,
+      `excluded_test_count`        INT UNSIGNED NOT NULL DEFAULT 0,
+      -- Measured AFTER the fact: this is how the selection's usefulness becomes measurable (KPI K-11)
+      -- rather than assumed.
+      `defects_found_in_scope`     INT UNSIGNED NOT NULL DEFAULT 0,
+      `defects_found_out_of_scope` INT UNSIGNED NOT NULL DEFAULT 0,
+      `parameters_json`            JSON NULL   COMMENT 'The algorithm settings used, so the result is reproducible',
+      `summary`                    TEXT NULL,
+      `created_at`                 TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      `updated_at`                 TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      `deleted_at`                 TIMESTAMP NULL,
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `uq_tst_impact_source` (`machine_id`,`source_analysis_id`),
+      INDEX `idx_tst_impact_status` (`status`,`created_at`),
+      INDEX `idx_tst_impact_commit` (`repository_code`,`to_commit_hash`),
+      INDEX `idx_tst_impact_bug`    (`bug_id`),
+      CONSTRAINT `fk_tst_impact_machine`     FOREIGN KEY (`machine_id`)        REFERENCES `tst_machines`(`id`) ON DELETE RESTRICT,
+      CONSTRAINT `fk_tst_impact_bug`         FOREIGN KEY (`bug_id`)            REFERENCES `tst_bugs`(`id`) ON DELETE SET NULL,
+      CONSTRAINT `fk_tst_impact_changeReq`   FOREIGN KEY (`change_request_id`) REFERENCES `tst_app_requirements`(`id`) ON DELETE SET NULL,
+      CONSTRAINT `fk_tst_impact_run`         FOREIGN KEY (`executed_run_id`)   REFERENCES `tst_test_runs`(`id`) ON DELETE SET NULL,
+      CONSTRAINT `fk_tst_impact_requestedBy` FOREIGN KEY (`requested_by`)      REFERENCES `tst_users`(`code`) ON DELETE RESTRICT,
+      CONSTRAINT `fk_tst_impact_approvedBy`  FOREIGN KEY (`approved_by`)       REFERENCES `tst_users`(`code`) ON DELETE SET NULL
+   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+   COMMENT='[P2] A reviewable proposal. unresolved_file_count is the analysis stating its blind spot.';
 
-CREATE TABLE IF NOT EXISTS `tst_impact_analyses` (
-   `id`                         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-   `machine_id`                 SMALLINT UNSIGNED NOT NULL,
-   `source_analysis_id`         BIGINT UNSIGNED NOT NULL,
-   `analysis_name`              VARCHAR(200) NOT NULL,
-   `source_type`                ENUM('Commit_Range','Single_Commit','Bug_Fix','Manual','Change_Request') NOT NULL,
-   `repository_code`            VARCHAR(100) NULL,
-   `from_commit_hash`           VARCHAR(40) NULL,
-   `to_commit_hash`             VARCHAR(40) NULL,
-   `bug_id`                     BIGINT UNSIGNED NULL,
-   `change_request_id`          BIGINT UNSIGNED NULL,
-   `requested_by`               VARCHAR(3) NOT NULL,
-   `status`                     ENUM('Draft','Proposed','Approved','Rejected','Executed','Superseded')
-                                  NOT NULL DEFAULT 'Draft',
-   `approved_by`                VARCHAR(3) NULL,
-   `approved_at`                DATETIME NULL,
-   `executed_run_id`            BIGINT UNSIGNED NULL,
-   `changed_file_count`         INT UNSIGNED NOT NULL DEFAULT 0,
-   `unresolved_file_count`      INT UNSIGNED NOT NULL DEFAULT 0
-                                  COMMENT 'PATHS NO RULE MATCHED. This is the analysis stating its own blind spot',
-   `affected_module_count`      INT UNSIGNED NOT NULL DEFAULT 0,
-   `affected_screen_count`      INT UNSIGNED NOT NULL DEFAULT 0,
-   `proposed_test_count`        INT UNSIGNED NOT NULL DEFAULT 0,
-   `included_test_count`        INT UNSIGNED NOT NULL DEFAULT 0,
-   `excluded_test_count`        INT UNSIGNED NOT NULL DEFAULT 0,
-   -- Measured AFTER the fact: this is how the selection's usefulness becomes measurable (KPI K-11)
-   -- rather than assumed.
-   `defects_found_in_scope`     INT UNSIGNED NOT NULL DEFAULT 0,
-   `defects_found_out_of_scope` INT UNSIGNED NOT NULL DEFAULT 0,
-   `parameters_json`            JSON NULL   COMMENT 'The algorithm settings used, so the result is reproducible',
-   `summary`                    TEXT NULL,
-   `created_at`                 TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-   `updated_at`                 TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-   `deleted_at`                 TIMESTAMP NULL,
-   PRIMARY KEY (`id`),
-   UNIQUE KEY `uq_tst_impact_source` (`machine_id`,`source_analysis_id`),
-   INDEX `idx_tst_impact_status` (`status`,`created_at`),
-   INDEX `idx_tst_impact_commit` (`repository_code`,`to_commit_hash`),
-   INDEX `idx_tst_impact_bug`    (`bug_id`),
-   CONSTRAINT `fk_tst_impact_machine`     FOREIGN KEY (`machine_id`)        REFERENCES `tst_machines`(`id`) ON DELETE RESTRICT,
-   CONSTRAINT `fk_tst_impact_bug`         FOREIGN KEY (`bug_id`)            REFERENCES `tst_bugs`(`id`) ON DELETE SET NULL,
-   CONSTRAINT `fk_tst_impact_changeReq`   FOREIGN KEY (`change_request_id`) REFERENCES `tst_app_requirements`(`id`) ON DELETE SET NULL,
-   CONSTRAINT `fk_tst_impact_run`         FOREIGN KEY (`executed_run_id`)   REFERENCES `tst_test_runs`(`id`) ON DELETE SET NULL,
-   CONSTRAINT `fk_tst_impact_requestedBy` FOREIGN KEY (`requested_by`)      REFERENCES `tst_users`(`code`) ON DELETE RESTRICT,
-   CONSTRAINT `fk_tst_impact_approvedBy`  FOREIGN KEY (`approved_by`)       REFERENCES `tst_users`(`code`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-COMMENT='[P2] A reviewable proposal. unresolved_file_count is the analysis stating its blind spot.';
-
--- ---------------------------------------------------------------------------------------------------------
+   -- ---------------------------------------------------------------------------------------------------------
 
 
--- EXCLUDED ITEMS ARE RETAINED WITH THEIR REASON. A proposal that shows only what it included is not
--- reviewable — the interesting question is always what it decided to leave out, and why.
-CREATE TABLE IF NOT EXISTS `tst_impact_analysis_items` (
-   `id`               BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-   `analysis_id`      BIGINT UNSIGNED NOT NULL,
-   `test_case_code`   VARCHAR(21) NOT NULL,
-   `reason`           ENUM('Direct_Change','Dependency','Historical_Correlation','Open_Bug','Critical','Regression_Policy','Manual_Addition','Flaky_Excluded','Retired_Excluded',
-                           'Orphaned_Excluded','Screen_Excluded','Manual_Removal') NOT NULL,
-   `is_included`      TINYINT(1) NOT NULL DEFAULT 1,
-   `confidence`       DECIMAL(4,3) NOT NULL DEFAULT 0.500,
-   `dependency_depth` TINYINT UNSIGNED NOT NULL DEFAULT 0   COMMENT 'Confidence decays with this',
-   `evidence_json`    JSON NULL   COMMENT 'The changed files, commits and prior failures relied upon',
-   `decided_by`       VARCHAR(3) NULL   COMMENT 'Set when a person overrode the algorithm',
-   `decided_at`       DATETIME NULL,
-   `decision_note`    VARCHAR(500) NULL,
-   `created_at`       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-   PRIMARY KEY (`id`),
-   UNIQUE KEY `uq_tst_impactItems` (`analysis_id`,`test_case_code`),
-   INDEX `idx_tst_impactItems_case`   (`test_case_code`),
-   INDEX `idx_tst_impactItems_reason` (`analysis_id`,`is_included`,`reason`),
-   CONSTRAINT `chk_tst_impactItems_conf` CHECK (`confidence` BETWEEN 0 AND 1),
-   CONSTRAINT `fk_tst_impactItems_analysis`  FOREIGN KEY (`analysis_id`)    REFERENCES `tst_impact_analyses`(`id`) ON DELETE CASCADE,
-   CONSTRAINT `fk_tst_impactItems_case`      FOREIGN KEY (`test_case_code`) REFERENCES `tst_test_cases`(`test_case_code`) ON DELETE CASCADE,
-   CONSTRAINT `fk_tst_impactItems_decidedBy` FOREIGN KEY (`decided_by`)     REFERENCES `tst_users`(`code`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-COMMENT='[P2] One proposed test case with its reason, confidence and evidence. Exclusions retained.';
+   -- EXCLUDED ITEMS ARE RETAINED WITH THEIR REASON. A proposal that shows only what it included is not
+   -- reviewable — the interesting question is always what it decided to leave out, and why.
+   CREATE TABLE IF NOT EXISTS `tst_impact_analysis_items` (
+      `id`               BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      `analysis_id`      BIGINT UNSIGNED NOT NULL,
+      `test_case_code`   VARCHAR(21) NOT NULL,
+      `reason`           ENUM('Direct_Change','Dependency','Historical_Correlation','Open_Bug','Critical','Regression_Policy','Manual_Addition','Flaky_Excluded','Retired_Excluded',
+                              'Orphaned_Excluded','Screen_Excluded','Manual_Removal') NOT NULL,
+      `is_included`      TINYINT(1) NOT NULL DEFAULT 1,
+      `confidence`       DECIMAL(4,3) NOT NULL DEFAULT 0.500,
+      `dependency_depth` TINYINT UNSIGNED NOT NULL DEFAULT 0   COMMENT 'Confidence decays with this',
+      `evidence_json`    JSON NULL   COMMENT 'The changed files, commits and prior failures relied upon',
+      `decided_by`       VARCHAR(3) NULL   COMMENT 'Set when a person overrode the algorithm',
+      `decided_at`       DATETIME NULL,
+      `decision_note`    VARCHAR(500) NULL,
+      `created_at`       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `uq_tst_impactItems` (`analysis_id`,`test_case_code`),
+      INDEX `idx_tst_impactItems_case`   (`test_case_code`),
+      INDEX `idx_tst_impactItems_reason` (`analysis_id`,`is_included`,`reason`),
+      CONSTRAINT `chk_tst_impactItems_conf` CHECK (`confidence` BETWEEN 0 AND 1),
+      CONSTRAINT `fk_tst_impactItems_analysis`  FOREIGN KEY (`analysis_id`)    REFERENCES `tst_impact_analyses`(`id`) ON DELETE CASCADE,
+      CONSTRAINT `fk_tst_impactItems_case`      FOREIGN KEY (`test_case_code`) REFERENCES `tst_test_cases`(`test_case_code`) ON DELETE CASCADE,
+      CONSTRAINT `fk_tst_impactItems_decidedBy` FOREIGN KEY (`decided_by`)     REFERENCES `tst_users`(`code`) ON DELETE SET NULL
+   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+   COMMENT='[P2] One proposed test case with its reason, confidence and evidence. Exclusions retained.';
 
--- ---------------------------------------------------------------------------------------------------------
+   -- ---------------------------------------------------------------------------------------------------------
 
 
 -- ============================================================================================================================================================
@@ -3634,156 +3729,155 @@ COMMENT='[P2] One proposed test case with its reason, confidence and evidence. E
    --     Every statement is guarded, so this section is re-runnable and can be applied to a database that
    --     already has some of these constraints.
 -- ------------------------------------------------------------------------------------------------------------------------------------------------------------
-
 -- A run may have been produced by a suite, and by a specific version of that suite's membership.
-SET @sql := (
-   SELECT IF(COUNT(*) > 0,
-      'SELECT ''fk_tst_testRuns_suite already present'' AS skipped',
-      'ALTER TABLE `tst_test_runs` ADD CONSTRAINT `fk_tst_testRuns_suite` FOREIGN KEY (`suite_id`) REFERENCES `tst_test_suites`(`id`) ON DELETE SET NULL')
-   FROM information_schema.table_constraints
-   WHERE table_schema = DATABASE() AND table_name = 'tst_test_runs' AND constraint_name = 'fk_tst_testRuns_suite');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+--
+   SET @sql := (
+      SELECT IF(COUNT(*) > 0,
+         'SELECT ''fk_tst_testRuns_suite already present'' AS skipped',
+         'ALTER TABLE `tst_test_runs` ADD CONSTRAINT `fk_tst_testRuns_suite` FOREIGN KEY (`suite_id`) REFERENCES `tst_test_suites`(`id`) ON DELETE SET NULL')
+      FROM information_schema.table_constraints
+      WHERE table_schema = DATABASE() AND table_name = 'tst_test_runs' AND constraint_name = 'fk_tst_testRuns_suite');
+   PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
--- A run may have been selected by an impact analysis.
-SET @sql := (
-   SELECT IF(COUNT(*) > 0,
-      'SELECT ''fk_tst_testRuns_impact already present'' AS skipped',
-      'ALTER TABLE `tst_test_runs` ADD CONSTRAINT `fk_tst_testRuns_impact` FOREIGN KEY (`impact_analysis_id`) REFERENCES `tst_impact_analyses`(`id`) ON DELETE SET NULL')
-   FROM information_schema.table_constraints
-   WHERE table_schema = DATABASE() AND table_name = 'tst_test_runs' AND constraint_name = 'fk_tst_testRuns_impact');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+   -- A run may have been selected by an impact analysis.
+   SET @sql := (
+      SELECT IF(COUNT(*) > 0,
+         'SELECT ''fk_tst_testRuns_impact already present'' AS skipped',
+         'ALTER TABLE `tst_test_runs` ADD CONSTRAINT `fk_tst_testRuns_impact` FOREIGN KEY (`impact_analysis_id`) REFERENCES `tst_impact_analyses`(`id`) ON DELETE SET NULL')
+      FROM information_schema.table_constraints
+      WHERE table_schema = DATABASE() AND table_name = 'tst_test_runs' AND constraint_name = 'fk_tst_testRuns_impact');
+   PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
--- A run scope may name a suite or a change request.
-SET @sql := (
-   SELECT IF(COUNT(*) > 0,
-      'SELECT ''fk_tst_runScopes_suite already present'' AS skipped',
-      'ALTER TABLE `tst_test_run_scopes` ADD CONSTRAINT `fk_tst_runScopes_suite` FOREIGN KEY (`suite_id`) REFERENCES `tst_test_suites`(`id`) ON DELETE SET NULL, ADD CONSTRAINT `fk_tst_runScopes_changeReq` FOREIGN KEY (`change_request_id`) REFERENCES `tst_app_requirements`(`id`) ON DELETE SET NULL')
-   FROM information_schema.table_constraints
-   WHERE table_schema = DATABASE() AND table_name = 'tst_test_run_scopes' AND constraint_name = 'fk_tst_runScopes_suite');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+   -- A run scope may name a suite or a change request.
+   SET @sql := (
+      SELECT IF(COUNT(*) > 0,
+         'SELECT ''fk_tst_runScopes_suite already present'' AS skipped',
+         'ALTER TABLE `tst_test_run_scopes` ADD CONSTRAINT `fk_tst_runScopes_suite` FOREIGN KEY (`suite_id`) REFERENCES `tst_test_suites`(`id`) ON DELETE SET NULL, ADD CONSTRAINT `fk_tst_runScopes_changeReq` FOREIGN KEY (`change_request_id`) REFERENCES `tst_app_requirements`(`id`) ON DELETE SET NULL')
+      FROM information_schema.table_constraints
+      WHERE table_schema = DATABASE() AND table_name = 'tst_test_run_scopes' AND constraint_name = 'fk_tst_runScopes_suite');
+   PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
--- A schedule may run a suite.
-SET @sql := (
-   SELECT IF(COUNT(*) > 0,
-      'SELECT ''fk_tst_schedules_suite already present'' AS skipped',
-      'ALTER TABLE `tst_schedules` ADD CONSTRAINT `fk_tst_schedules_suite` FOREIGN KEY (`suite_id`) REFERENCES `tst_test_suites`(`id`) ON DELETE SET NULL')
-   FROM information_schema.table_constraints
-   WHERE table_schema = DATABASE() AND table_name = 'tst_schedules' AND constraint_name = 'fk_tst_schedules_suite');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+   -- A schedule may run a suite.
+   SET @sql := (
+      SELECT IF(COUNT(*) > 0,
+         'SELECT ''fk_tst_schedules_suite already present'' AS skipped',
+         'ALTER TABLE `tst_schedules` ADD CONSTRAINT `fk_tst_schedules_suite` FOREIGN KEY (`suite_id`) REFERENCES `tst_test_suites`(`id`) ON DELETE SET NULL')
+      FROM information_schema.table_constraints
+      WHERE table_schema = DATABASE() AND table_name = 'tst_schedules' AND constraint_name = 'fk_tst_schedules_suite');
+   PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
--- A bug may relate to a change request.
-SET @sql := (
-   SELECT IF(COUNT(*) > 0,
-      'SELECT ''fk_tst_bugs_changeReq already present'' AS skipped',
-      'ALTER TABLE `tst_bugs` ADD CONSTRAINT `fk_tst_bugs_changeReq` FOREIGN KEY (`change_request_id`) REFERENCES `tst_app_requirements`(`id`) ON DELETE SET NULL')
-   FROM information_schema.table_constraints
-   WHERE table_schema = DATABASE() AND table_name = 'tst_bugs' AND constraint_name = 'fk_tst_bugs_changeReq');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+   -- A bug may relate to a change request.
+   SET @sql := (
+      SELECT IF(COUNT(*) > 0,
+         'SELECT ''fk_tst_bugs_changeReq already present'' AS skipped',
+         'ALTER TABLE `tst_bugs` ADD CONSTRAINT `fk_tst_bugs_changeReq` FOREIGN KEY (`change_request_id`) REFERENCES `tst_app_requirements`(`id`) ON DELETE SET NULL')
+      FROM information_schema.table_constraints
+      WHERE table_schema = DATABASE() AND table_name = 'tst_bugs' AND constraint_name = 'fk_tst_bugs_changeReq');
+   PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
-SET FOREIGN_KEY_CHECKS = 1;
+   SET FOREIGN_KEY_CHECKS = 1;
+-- ------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
 
 -- ============================================================================================================================================================
 -- SECTION 31 — PHASE-2 VIEWS                                                                        [P2]
 -- ============================================================================================================================================================
-
--- Which tests cover which change request, and whether they are currently passing.
-CREATE OR REPLACE VIEW `vw_change_request_coverage` AS
-SELECT
-    ar.id                        AS requirement_id,
-    ar.req_code,
-    ar.title,
-    ar.module_code,
-    ar.ts_code,
-    ar.criticality,
-    ar.status,
-    COUNT(DISTINCT rtc.test_case_code)                                              AS mapped_test_count,
-    COUNT(DISTINCT CASE WHEN cs.last_status = 'Passed' THEN rtc.test_case_code END) AS passing_test_count,
-    COUNT(DISTINCT CASE WHEN cs.last_status IN ('Failed','Error') THEN rtc.test_case_code END) AS failing_test_count,
-    COUNT(DISTINCT CASE WHEN cs.test_case_code IS NULL THEN rtc.test_case_code END) AS never_executed_count,
-    CASE
-      WHEN COUNT(rtc.test_case_code) = 0 THEN 'Uncovered'
-      WHEN COUNT(DISTINCT CASE WHEN cs.last_status IN ('Failed','Error') THEN rtc.test_case_code END) > 0 THEN 'Failing'
-      WHEN COUNT(DISTINCT CASE WHEN cs.test_case_code IS NULL THEN rtc.test_case_code END) > 0 THEN 'Partially_Verified'
-      ELSE 'Verified'
-    END                          AS coverage_state
-FROM `tst_app_requirements` ar
-LEFT JOIN `tst_app_requirement_test_cases` rtc ON rtc.requirement_id = ar.id
-LEFT JOIN `tst_test_case_runs_summary`     cs  ON cs.test_case_code = rtc.test_case_code
-WHERE ar.is_active = 1
-GROUP BY ar.id, ar.req_code, ar.title, ar.module_code, ar.ts_code, ar.criticality, ar.status;
-
--- ---------------------------------------------------------------------------------------------------------
-
-
--- Which selection reasons actually find defects. This is how test selection stops being a guess.
-CREATE OR REPLACE VIEW `vw_run_test_selection_analysis` AS
-SELECT
-    ri.selection_reason,
-    COUNT(*)                                                             AS selected_count,
-    SUM(CASE WHEN ri.final_status = 'Passed' THEN 1 ELSE 0 END)          AS passed_count,
-    SUM(CASE WHEN ri.final_status IN ('Failed','Error') THEN 1 ELSE 0 END) AS failed_count,
-    ROUND(SUM(CASE WHEN ri.final_status IN ('Failed','Error') THEN 1 ELSE 0 END)
-          / NULLIF(COUNT(*),0) * 100, 2)                                 AS defect_find_rate,
-    AVG(ri.selection_confidence)                                         AS avg_confidence
-FROM `tst_test_run_items` ri
-WHERE ri.final_status IS NOT NULL
-GROUP BY ri.selection_reason;
-
--- ---------------------------------------------------------------------------------------------------------
+-- 
+   -- Which tests cover which change request, and whether they are currently passing.
+   CREATE OR REPLACE VIEW `vw_change_request_coverage` AS
+   SELECT
+      ar.id                        AS requirement_id,
+      ar.req_code,
+      ar.title,
+      ar.module_code,
+      ar.ts_code,
+      ar.criticality,
+      ar.status,
+      COUNT(DISTINCT rtc.test_case_code)                                              AS mapped_test_count,
+      COUNT(DISTINCT CASE WHEN cs.last_status = 'Passed' THEN rtc.test_case_code END) AS passing_test_count,
+      COUNT(DISTINCT CASE WHEN cs.last_status IN ('Failed','Error') THEN rtc.test_case_code END) AS failing_test_count,
+      COUNT(DISTINCT CASE WHEN cs.test_case_code IS NULL THEN rtc.test_case_code END) AS never_executed_count,
+      CASE
+         WHEN COUNT(rtc.test_case_code) = 0 THEN 'Uncovered'
+         WHEN COUNT(DISTINCT CASE WHEN cs.last_status IN ('Failed','Error') THEN rtc.test_case_code END) > 0 THEN 'Failing'
+         WHEN COUNT(DISTINCT CASE WHEN cs.test_case_code IS NULL THEN rtc.test_case_code END) > 0 THEN 'Partially_Verified'
+         ELSE 'Verified'
+      END                          AS coverage_state
+   FROM `tst_app_requirements` ar
+   LEFT JOIN `tst_app_requirement_test_cases` rtc ON rtc.requirement_id = ar.id
+   LEFT JOIN `tst_test_case_runs_summary`     cs  ON cs.test_case_code = rtc.test_case_code
+   WHERE ar.is_active = 1
+   GROUP BY ar.id, ar.req_code, ar.title, ar.module_code, ar.ts_code, ar.criticality, ar.status;
+  -- ---------------------------------------------------------------------------------------------------------
 
 
--- Did the tests we selected actually catch the defects, or did they escape?
-CREATE OR REPLACE VIEW `vw_impact_analysis_effectiveness` AS
-SELECT
-    ia.id                        AS analysis_id,
-    ia.analysis_name,
-    ia.source_type,
-    ia.status,
-    ia.from_commit_hash,
-    ia.to_commit_hash,
-    ia.changed_file_count,
-    ia.unresolved_file_count,
-    ROUND(ia.unresolved_file_count / NULLIF(ia.changed_file_count,0) * 100, 2) AS unresolved_percent,
-    ia.proposed_test_count,
-    ia.included_test_count,
-    ia.excluded_test_count,
-    ia.defects_found_in_scope,
-    ia.defects_found_out_of_scope,
-    ROUND(ia.defects_found_in_scope
-          / NULLIF(ia.defects_found_in_scope + ia.defects_found_out_of_scope, 0) * 100, 2) AS hit_rate_percent,
-    ia.requested_by,
-    ia.approved_by,
-    ia.approved_at,
-    ia.executed_run_id
-FROM `tst_impact_analyses` ia
-WHERE ia.deleted_at IS NULL;
-
--- ---------------------------------------------------------------------------------------------------------
+   -- Which selection reasons actually find defects. This is how test selection stops being a guess.
+   CREATE OR REPLACE VIEW `vw_run_test_selection_analysis` AS
+   SELECT
+      ri.selection_reason,
+      COUNT(*)                                                             AS selected_count,
+      SUM(CASE WHEN ri.final_status = 'Passed' THEN 1 ELSE 0 END)          AS passed_count,
+      SUM(CASE WHEN ri.final_status IN ('Failed','Error') THEN 1 ELSE 0 END) AS failed_count,
+      ROUND(SUM(CASE WHEN ri.final_status IN ('Failed','Error') THEN 1 ELSE 0 END)
+            / NULLIF(COUNT(*),0) * 100, 2)                                 AS defect_find_rate,
+      AVG(ri.selection_confidence)                                         AS avg_confidence
+   FROM `tst_test_run_items` ri
+   WHERE ri.final_status IS NOT NULL
+   GROUP BY ri.selection_reason;
+   -- ---------------------------------------------------------------------------------------------------------
 
 
--- Current and versioned suite membership.
-CREATE OR REPLACE VIEW `vw_suite_composition` AS
-SELECT
-    s.id                         AS suite_id,
-    s.suite_code,
-    s.name                       AS suite_name,
-    s.suite_type,
-    s.is_rule_based,
-    s.version_no                 AS current_version,
-    COUNT(DISTINCT si.test_case_code) AS explicit_member_count,
-    COUNT(DISTINCT CASE WHEN cs.last_status = 'Passed' THEN si.test_case_code END)            AS passing,
-    COUNT(DISTINCT CASE WHEN cs.last_status IN ('Failed','Error') THEN si.test_case_code END) AS failing,
-    COUNT(DISTINCT CASE WHEN cs.is_flaky_confirmed = 1 THEN si.test_case_code END)            AS flaky,
-    (SELECT COUNT(*) FROM `tst_test_suite_versions` sv WHERE sv.suite_id = s.id)              AS version_count
-FROM `tst_test_suites` s
-LEFT JOIN `tst_test_suite_items` si ON si.suite_id = s.id
-LEFT JOIN `tst_test_case_runs_summary` cs ON cs.test_case_code = si.test_case_code
-WHERE s.is_active = 1
-GROUP BY s.id, s.suite_code, s.name, s.suite_type, s.is_rule_based, s.version_no;
+   -- Did the tests we selected actually catch the defects, or did they escape?
+   CREATE OR REPLACE VIEW `vw_impact_analysis_effectiveness` AS
+   SELECT
+      ia.id                        AS analysis_id,
+      ia.analysis_name,
+      ia.source_type,
+      ia.status,
+      ia.from_commit_hash,
+      ia.to_commit_hash,
+      ia.changed_file_count,
+      ia.unresolved_file_count,
+      ROUND(ia.unresolved_file_count / NULLIF(ia.changed_file_count,0) * 100, 2) AS unresolved_percent,
+      ia.proposed_test_count,
+      ia.included_test_count,
+      ia.excluded_test_count,
+      ia.defects_found_in_scope,
+      ia.defects_found_out_of_scope,
+      ROUND(ia.defects_found_in_scope
+            / NULLIF(ia.defects_found_in_scope + ia.defects_found_out_of_scope, 0) * 100, 2) AS hit_rate_percent,
+      ia.requested_by,
+      ia.approved_by,
+      ia.approved_at,
+      ia.executed_run_id
+   FROM `tst_impact_analyses` ia
+   WHERE ia.deleted_at IS NULL;
+   -- ---------------------------------------------------------------------------------------------------------
 
--- ---------------------------------------------------------------------------------------------------------
+
+   -- Current and versioned suite membership.
+   CREATE OR REPLACE VIEW `vw_suite_composition` AS
+   SELECT
+      s.id                         AS suite_id,
+      s.suite_code,
+      s.name                       AS suite_name,
+      s.suite_type,
+      s.is_rule_based,
+      s.version_no                 AS current_version,
+      COUNT(DISTINCT si.test_case_code) AS explicit_member_count,
+      COUNT(DISTINCT CASE WHEN cs.last_status = 'Passed' THEN si.test_case_code END)            AS passing,
+      COUNT(DISTINCT CASE WHEN cs.last_status IN ('Failed','Error') THEN si.test_case_code END) AS failing,
+      COUNT(DISTINCT CASE WHEN cs.is_flaky_confirmed = 1 THEN si.test_case_code END)            AS flaky,
+      (SELECT COUNT(*) FROM `tst_test_suite_versions` sv WHERE sv.suite_id = s.id)              AS version_count
+   FROM `tst_test_suites` s
+   LEFT JOIN `tst_test_suite_items` si ON si.suite_id = s.id
+   LEFT JOIN `tst_test_case_runs_summary` cs ON cs.test_case_code = si.test_case_code
+   WHERE s.is_active = 1
+   GROUP BY s.id, s.suite_code, s.name, s.suite_type, s.is_rule_based, s.version_no;
+   -- ---------------------------------------------------------------------------------------------------------
+-- ============================================================================================================================================================
+
 
 
 -- ============================================================================================================================================================
@@ -3824,125 +3918,151 @@ ON DUPLICATE KEY UPDATE
 -- ============================================================================================================================================================
 -- QUICK REFERENCE — how the coding system flows through the schema
 -- ============================================================================================================================================================
+-- (IDENTITY, PERMISSION, CATALOG, AUTHORING, EXECUTION, DEFECTS, PHASE 2)
+   --  IDENTITY
+      --     tst_users        code          D02            role letter + 2 digits
+      --          |
+      --     tst_machines     machine_code  D02A           GENERATED: user_code || machine_number
+      --          |
+   --  PERMISSION
+      --     tst_users        code          D02            role letter + 2 digits
+      --     tst_permissions  perm_code     P_Code         (e.g. 01_01)
+      --     tst_roles        role_code     R_01           contains perm_code
+      --     tst_user_roles   user_code     D02            role_code  R_01
+   --  CATALOG (centrally governed, prefix-nested, composite-FK enforced)
+      --     tst_modules      module_code   SLB
+      --     tst_categories   cat_code      T01
+      --     tst_main_menus   mm_code       T0104          contains cat_code
+      --     tst_sub_menus    sm_code       T010401        contains mm_code
+      --     tst_tabs_screens ts_code       T0104010200    contains sm_code
+      --          |
+   --  AUTHORING (evidence direction — travels with the machine that made it)
+      --     tst_tc_required_list  tcr_code        D02A_T0104010200_0001    the PLAN
+      --          |                                ^^^^ ^^^^^^^^^^^ ^^^^
+      --     tst_test_cases        test_case_code  D02A_T0104010200_0001    the TEST
+      --          |                                ^^^^ ^^^^^^^^^^^ ^^^^
+      --          |                                machine  screen   seq
+      --          +-- tst_test_case_steps                 (current version only)
+      --          +-- tst_test_case_versions_history      (superseded definitions, immutable)
+      --          +-- tst_test_case_review                (readiness + technical review + sign-off)
+      --          +-- tst_duplicate_test_case             (equivalence judgements, insert-only)
+      --          |
+   --  EXECUTION
+      --     tst_test_runs  ──▶ tst_test_run_items (test_case_code + WHY selected)
+      --                              |
+      --                              ▼
+      --                        tst_test_run_results   ONE ROW PER ATTEMPT, INSERT-ONLY
+      --                              +-- tst_test_run_result_steps
+      --                              +-- tst_run_result_artifacts
+      --                              |
+      --                        tst_failure_signatures  (forty failures -> one problem)
+      --                              |
+      --                        tst_test_case_runs_summary   DERIVED, rebuildable, checked nightly
+      --          |
+   --  DEFECTS
+      --     tst_bugs  ──▶ tst_bug_occurrences ──▶ tst_retest_cycles ──▶ verified_result_id
+      --                                                                 (FIXED ≠ VERIFIED)
+      --          |
+   --  PHASE 2
+      --     tst_git_commit_files ──(tst_path_mappings)──▶ module / screen / test_case_code
+      --                          ──(tst_test_case_dependencies)──▶ dependent test cases
+      --                          ──▶ tst_impact_analyses ──▶ tst_impact_analysis_items
+      --                                                       (INCLUDED and EXCLUDED, both with reasons)
 --
---  IDENTITY
-   --     tst_users        code  D02                    role letter + 2 digits
-   --          |
-   --     tst_machines     machine_code  D02A           GENERATED: user_code || machine_number
-   --          |
---  CATALOG (centrally governed, prefix-nested, composite-FK enforced)
-   --     tst_modules      module_code   SLB
-   --     tst_categories   cat_code      T01
-   --     tst_main_menus   mm_code       T0104          contains cat_code
-   --     tst_sub_menus    sm_code       T010401        contains mm_code
-   --     tst_tabs_screens ts_code       T0104010200    contains sm_code
-   --          |
---  AUTHORING (evidence direction — travels with the machine that made it)
-   --     tst_tc_required_list  tcr_code        D02A_T0104010200_0001    the PLAN
-   --          |
-   --     tst_test_cases        test_case_code  D02A_T0104010200_0001     the TEST
-   --          |                                ^^^^ ^^^^^^^^^^^ ^^^
-   --          |                                machine  screen   seq
-   --          +-- tst_test_case_steps                 (current version only)
-   --          +-- tst_test_case_versions_history      (superseded definitions, immutable)
-   --          +-- tst_test_case_review                (readiness + technical review + sign-off)
-   --          +-- tst_duplicate_test_case             (equivalence judgements, insert-only)
-   --          |
---  EXECUTION
-   --     tst_test_runs  ──▶ tst_test_run_items (test_case_code + WHY selected)
-   --                              |
-   --                              ▼
-   --                        tst_test_run_results   ONE ROW PER ATTEMPT, INSERT-ONLY
-   --                              +-- tst_test_run_result_steps
-   --                              +-- tst_run_result_artifacts
-   --                              |
-   --                        tst_failure_signatures  (forty failures -> one problem)
-   --                              |
-   --                        tst_test_case_runs_summary   DERIVED, rebuildable, checked nightly
-   --          |
---  DEFECTS
-   --     tst_bugs  ──▶ tst_bug_occurrences ──▶ tst_retest_cycles ──▶ verified_result_id
-   --                                                                 (FIXED ≠ VERIFIED)
-   --          |
---  PHASE 2
-   --     tst_git_commit_files ──(tst_path_mappings)──▶ module / screen / test_case_code
-   --                          ──(tst_test_case_dependencies)──▶ dependent test cases
-   --                          ──▶ tst_impact_analyses ──▶ tst_impact_analysis_items
-   --                                                       (INCLUDED and EXCLUDED, both with reasons)
+-- ============================================================================================================================================================
+-- TABLE COUNT — 63
+-- ============================================================================================================================================================
+--   PHASE-1 : 49 tables
+   --     Configuration          (2): tst_app_settings, tst_environment_profiles, 
+   --     Roles & Permissions    (6): tst_users, tst_machines, tst_roles, tst_permissions, tst_role_permissions, tst_user_roles
+   --     Category Masters       (6): tst_modules, tst_categories, tst_main_menus, tst_sub_menus, tst_tabs_screens, tst_sequence_counters
+   --     TestCase Catalog       (6): tst_tc_required_list, tst_test_cases, tst_test_case_steps, tst_test_case_review, tst_test_case_versions_history, 
+   --                                 tst_duplicate_test_case
+   --     Execution Scheduling   (2): tst_schedules, tst_schedule_targets
+   --     TestCase Execution     (8): tst_test_runs, tst_test_run_scopes, tst_test_run_items, tst_test_run_results, tst_test_run_result_steps, 
+   --                                 tst_run_result_artifacts, tst_failure_signatures, tst_test_case_runs_summary
+   --     Execution Review       (2): tst_run_annotations, tst_discovery_sync_logs
+   --     Defects                (9): tst_known_issues, tst_known_issue_results, tst_bugs, tst_bug_occurrences, tst_bug_status_history, tst_bug_comments,
+   --                                 tst_bug_links, tst_retest_cycles, tst_retest_cycle_bugs
+   --     Export / Import        (4): tst_data_exports, tst_data_imports, tst_import_record_map, tst_import_conflicts
+   --     AI Analysis & Logs     (4): tst_ai_analyses, tst_ai_recommendations, tst_notifications, tst_audit_logs
 --
--- =========================================================================================================
--- TABLE COUNT — 58
--- =========================================================================================================
---   PHASE 1 — 44 tables
-   --     Platform      (2): tst_app_settings, tst_environment_profiles
-   --     Identity      (2): tst_users, tst_machines
-   --     Catalog       (5): tst_modules, tst_categories, tst_main_menus, tst_sub_menus, tst_tabs_screens
-   --     Authoring     (6): tst_tc_required_list, tst_test_cases, tst_test_case_steps,
-   --                        tst_test_case_review, tst_test_case_versions_history, tst_duplicate_test_case
-   --     Execution     (8): tst_test_runs, tst_test_run_scopes, tst_test_run_items, tst_test_run_results,
-   --                        tst_test_run_result_steps, tst_run_result_artifacts, tst_failure_signatures,
-   --                        tst_test_case_runs_summary
-   --     Scheduling    (2): tst_schedules, tst_schedule_targets
-   --     Comments/Disc (2): tst_run_annotations, tst_discovery_sync_logs
-   --     Defects       (9): tst_known_issues, tst_known_issue_results, tst_bugs, tst_bug_occurrences,
-   --                        tst_bug_status_history, tst_bug_comments, tst_bug_links, tst_retest_cycles,
-   --                        tst_retest_cycle_bugs
-   --     Sync          (4): tst_data_exports, tst_data_imports, tst_import_record_map, tst_import_conflicts
-   --     AI            (2): tst_ai_analyses, tst_ai_recommendations
-   --     Ops           (2): tst_notifications, tst_audit_logs
+--   PHASE-2 : 14 tables
+   --     Suites                 (3): tst_test_suites, tst_test_suite_items, tst_test_suite_versions
+   --     Impact                 (2): tst_impact_analyses, tst_impact_analysis_items
+   --
+   --     Change req             (3): tst_app_requirements, tst_app_requirement_test_cases, tst_test_case_requirements
+   --     Dependencies           (2): tst_module_dependencies, tst_test_case_dependencies
+   --     Path mapping           (1): tst_path_mappings
+   --     Git                    (3): tst_git_repositories, tst_git_commits, tst_git_commit_files
+-- 
+--   VIEWS — 21    Phase-1: 17    Phase-2: 4
 --
---   PHASE 2 — 14 tables
-   --     Change req    (3): tst_app_requirements, tst_app_requirement_test_cases, tst_test_case_requirements
-   --     Dependencies  (2): tst_module_dependencies, tst_test_case_dependencies
-   --     Path mapping  (1): tst_path_mappings
-   --     Suites        (3): tst_test_suites, tst_test_suite_items, tst_test_suite_versions
-   --     Git           (3): tst_git_repositories, tst_git_commits, tst_git_commit_files
-   --     Impact        (2): tst_impact_analyses, tst_impact_analysis_items
---
---   VIEWS — 21    Phase 1: 17    Phase 2: 4
---
---   REMOVED SINCE v7.0 — 16 tables
-   --     tst_roles, tst_permissions, tst_role_permissions, tst_user_roles   (owner: small team)
-   --     tst_releases                                                       (owner: covered by review)
-   --     tst_code_allocations                                               (the machine segment allocates)
-   --     tst_source_test_cases                                              (the coding system made it redundant)
-   --     tst_schema_version                                                 (one app_settings row + Laravel migrations)
-   --     tst_tags, tst_test_case_tags, tst_test_case_types, tst_test_case_statuses,
-   --     tst_testing_layers, tst_testing_methods, tst_testing_technologies,
-   --     tst_master_registry                                                (owner: ENUMs instead of lookups)
--- =========================================================================================================
--- END OF testing_DDL_v7.2.sql
--- =========================================================================================================
+-- ============================================================================================================================================================
+--   REMOVED SINCE v7.5 — 16 tables
+   --     tst_releases                                                                                            (owner: covered by review)
+   --     tst_code_allocations                                                                                    (the machine segment allocates)
+   --     tst_source_test_cases                                                                                   (the coding system made it redundant)
+   --     tst_schema_version                                                                                      (one app_settings row + Laravel migrations)
+   --     tst_tags, tst_test_case_tags, tst_test_case_types, tst_test_case_statuses, tst_testing_layers, 
+   --     tst_testing_methods, tst_testing_technologies, tst_master_registry                                      (owner: ENUMs instead of lookups)
+-- ============================================================================================================================================================
+-- END OF testing_DDL_v7.5.sql
+-- ============================================================================================================================================================
 
 
 -- HOW TO STORE & READ UNIX TIMESTAMP
+-- ----------------------------------
+   -- php<?php
+   -- // Secure database connection
+   -- $pdo = new PDO('mysql:host=localhost;dbname=your_database', 'username', 'password');
 
--- php<?php
--- // Secure database connection
--- $pdo = new PDO('mysql:host=localhost;dbname=your_database', 'username', 'password');
+   -- // --- EXAMPLE A: Storing a specific future date (e.g., in 2030) ---
+   -- $targetDate = new DateTime('2030-05-15 14:30:00.123456');
 
--- // --- EXAMPLE A: Storing a specific future date (e.g., in 2030) ---
--- $targetDate = new DateTime('2030-05-15 14:30:00.123456');
+   -- // Combine seconds and 2-digit fractional seconds
+   -- $timestamp = $targetDate->format('U') . '.' . $targetDate->format('v'); 
+   -- // $timestamp is now a string/float like: 1905085800.12
 
--- // Combine seconds and 2-digit fractional seconds
--- $timestamp = $targetDate->format('U') . '.' . $targetDate->format('v'); 
--- // $timestamp is now a string/float like: 1905085800.12
-
--- // Insert into MySQL
--- $stmt = $pdo->prepare("INSERT INTO appointments (title, schedule_date) VALUES (:title, :schedule_date)");
--- $stmt->execute([
---     'title' => 'Important 2030 Meeting',
---     'schedule_date' => $timestamp
--- ]);
+   -- // Insert into MySQL
+   -- $stmt = $pdo->prepare("INSERT INTO appointments (title, schedule_date) VALUES (:title, :schedule_date)");
+   -- $stmt->execute([
+   --     'title' => 'Important 2030 Meeting',
+   --     'schedule_date' => $timestamp
+   -- ]);
 
 
--- // --- EXAMPLE B: Storing the exact current time "Right Now" ---
--- // microtime(true) returns a float (e.g., 1786443240.1234)
--- $nowTimestamp = round(microtime(true), 2); 
+   -- // --- EXAMPLE B: Storing the exact current time "Right Now" ---
+   -- // microtime(true) returns a float (e.g., 1786443240.1234)
+   -- $nowTimestamp = round(microtime(true), 2); 
 
--- $stmt = $pdo->prepare("INSERT INTO appointments (title, schedule_date) VALUES (:title, :schedule_date)");
--- $stmt->execute([
---     'title' => 'Live Log Entry',
---     'schedule_date' => $nowTimestamp
--- ]);
--- ?>
+   -- $stmt = $pdo->prepare("INSERT INTO appointments (title, schedule_date) VALUES (:title, :schedule_date)");
+   -- $stmt->execute([
+   --     'title' => 'Live Log Entry',
+   --     'schedule_date' => $nowTimestamp
+   -- ]);
+   -- ?>
+-- ---------------------------------------------------------------------------------------------------------
+
+
+-- HOW TO WORK WITH ENUM COLUMNS IN LARAVEL
+-- "MySQL ENUMs are just integers, so they map naturally to Eloquent attributes, but you should use the
+   -- helpers to avoid accidental assignment of invalid string values. Laravel provides methods to get,
+   -- set, and validate ENUM values in a type-safe way."
+
+   -- To get or set an ENUM
+   -- $user->role = 'admin';          // set ENUM 'admin' — uses the ENUM value 'admin', not its integer index
+   -- $roleName = $user->role;          // get ENUM → returns 'admin', not 1.
+
+   -- -- You CANNOT set using integers (and you shouldn't)
+   -- $user->role = 1;              // ❌ INVALID: causes PHP warnings and potential type errors.
+   -- $user->role = 'Moderator';      // ❌ INVALID: the string 'Moderator' does not exist in the ENUM.
+   -- $user->role = null;             // ✅ VALID: if the column allows NULL.
+
+   -- -- IMPORTANT: Eloquent automatically casts ENUM attributes to strings.
+
+   -- -- To check for a specific ENUM value, use strict equality
+   -- if ($user->role === 'admin') {   // check using the string value, not the integer
+   --     // user is admin
+   -- }
+-- ---------------------------------------------------------------------------------------------------------
