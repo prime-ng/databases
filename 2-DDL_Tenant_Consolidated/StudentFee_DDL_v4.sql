@@ -33,7 +33,7 @@
 -- Table 1: fee_head_master
 -- Purpose: Core fee components (Tuition, Transport, Hostel, etc.)
 -- --------------------------------------------------------------------------------------------------------
-	CREATE TABLE IF NOT EXISTS `fee_head_master` (
+CREATE TABLE IF NOT EXISTS `fee_head_master` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `code` VARCHAR(30) NOT NULL,                        -- Unique code (TUIT, TRAN, HOST, LIB, SPRT, EXAM, ACTV, LAB, DEV, OTH)
     `name` VARCHAR(100) NOT NULL,                       -- Display name (Tuition, Transport, Hostel, etc.)
@@ -52,14 +52,14 @@
     UNIQUE INDEX `uq_fee_head_code` (`code`),
     INDEX `idx_fee_head_type` (`head_type_id`),
     INDEX `idx_fee_head_active` (`is_active`)
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
-	-- --------------------------------------------------------------------------------------------------------
-	-- Table 2: fee_group_master
-	-- Purpose: Logical grouping of fee heads (e.g., "Academic Package")
-	-- --------------------------------------------------------------------------------------------------------
-	CREATE TABLE IF NOT EXISTS `fee_group_master` (
+-- --------------------------------------------------------------------------------------------------------
+-- Table 2: fee_group_master
+-- Purpose: Logical grouping of fee heads (e.g., "Academic Package")
+-- --------------------------------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `fee_group_master` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `code` VARCHAR(50) NOT NULL UNIQUE,
     `name` VARCHAR(100) NOT NULL,
@@ -71,14 +71,14 @@
     `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at` TIMESTAMP NULL,
     INDEX `idx_fee_group_active` (`is_active`)
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
-	-- --------------------------------------------------------------------------------------------------------
-	-- Table 3: fee_group_heads_jnt
-	-- Purpose: Maps fee heads to groups with optional/mandatory flag per head
-	-- --------------------------------------------------------------------------------------------------------
-	CREATE TABLE IF NOT EXISTS `fee_group_heads_jnt` (
+-- --------------------------------------------------------------------------------------------------------
+-- Table 3: fee_group_heads_jnt
+-- Purpose: Maps fee heads to groups with optional/mandatory flag per head
+-- --------------------------------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `fee_group_heads_jnt` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `group_id` INT UNSIGNED NOT NULL,
     `head_id` INT UNSIGNED NOT NULL,
@@ -90,15 +90,15 @@
     UNIQUE INDEX `uq_fee_group_head` (`group_id`, `head_id`),
     CONSTRAINT `fk_fgh_group` FOREIGN KEY (`group_id`) REFERENCES `fee_group_master` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_fgh_head` FOREIGN KEY (`head_id`) REFERENCES `fee_head_master` (`id`) ON DELETE CASCADE
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
-	-- --------------------------------------------------------------------------------------------------------
-	-- Table 4: fee_structure_master
-	-- Purpose: Defines fee structure for class + academic session + category
-	-- [BUG-FIX] academic_session_id changed from INT to SMALLINT UNSIGNED
-	-- --------------------------------------------------------------------------------------------------------
-	CREATE TABLE IF NOT EXISTS `fee_structure_master` (
+-- --------------------------------------------------------------------------------------------------------
+-- Table 4: fee_structure_master
+-- Purpose: Defines fee structure for class + academic session + category
+-- [BUG-FIX] academic_session_id changed from INT to SMALLINT UNSIGNED
+-- --------------------------------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `fee_structure_master` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `academic_session_id` SMALLINT UNSIGNED NOT NULL COMMENT 'FK to sch_org_academic_sessions_jnt',
     `class_id` INT UNSIGNED NOT NULL COMMENT 'FK to sch_classes',
@@ -118,14 +118,14 @@
     CONSTRAINT `fk_fs_session` FOREIGN KEY (`academic_session_id`) REFERENCES `sch_org_academic_sessions_jnt` (`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_fs_class` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_fs_category` FOREIGN KEY (`student_category_id`) REFERENCES `sys_dropdown_table` (`id`) ON DELETE SET NULL
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
-	-- --------------------------------------------------------------------------------------------------------
-	-- Table 5: fee_structure_details
-	-- Purpose: Line items of fee structure (head-wise amounts)
-	-- --------------------------------------------------------------------------------------------------------
-	CREATE TABLE IF NOT EXISTS `fee_structure_details` (
+-- --------------------------------------------------------------------------------------------------------
+-- Table 5: fee_structure_details
+-- Purpose: Line items of fee structure (head-wise amounts)
+-- --------------------------------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `fee_structure_details` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `fee_structure_id` INT UNSIGNED NOT NULL,
     `head_id` INT UNSIGNED NOT NULL,
@@ -139,14 +139,14 @@
     CONSTRAINT `fk_fsd_structure` FOREIGN KEY (`fee_structure_id`) REFERENCES `fee_structure_master` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_fsd_head` FOREIGN KEY (`head_id`) REFERENCES `fee_head_master` (`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_fsd_group` FOREIGN KEY (`group_id`) REFERENCES `fee_group_master` (`id`) ON DELETE SET NULL
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
-	-- --------------------------------------------------------------------------------------------------------
-	-- Table 6: fee_installments
-	-- Purpose: Defines installment schedules for fee structures
-	-- --------------------------------------------------------------------------------------------------------
-	CREATE TABLE IF NOT EXISTS `fee_installments` (
+-- --------------------------------------------------------------------------------------------------------
+-- Table 6: fee_installments
+-- Purpose: Defines installment schedules for fee structures
+-- --------------------------------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `fee_installments` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `fee_structure_id` INT UNSIGNED NOT NULL,
     `installment_no` INT NOT NULL,
@@ -160,15 +160,15 @@
     `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE INDEX `uq_fee_installment_structure_no` (`fee_structure_id`, `installment_no`),
     CONSTRAINT `fk_fi_structure` FOREIGN KEY (`fee_structure_id`) REFERENCES `fee_structure_master` (`id`) ON DELETE CASCADE
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
-	-- --------------------------------------------------------------------------------------------------------
-	-- Table 7: fee_fine_rules
-	-- Purpose: Defines late payment fine rules (tiered structure)
-	-- [ENHANCE] Added fine_calculation_mode (PerDay vs FlatPerTier)
-	-- --------------------------------------------------------------------------------------------------------
-	CREATE TABLE IF NOT EXISTS `fee_fine_rules` (
+-- --------------------------------------------------------------------------------------------------------
+-- Table 7: fee_fine_rules
+-- Purpose: Defines late payment fine rules (tiered structure)
+-- [ENHANCE] Added fine_calculation_mode (PerDay vs FlatPerTier)
+-- --------------------------------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `fee_fine_rules` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `rule_name` VARCHAR(100) NOT NULL,
     `applicable_on` ENUM('Fee Structure', 'Installment', 'Head') NOT NULL DEFAULT 'Installment',
@@ -190,15 +190,15 @@
     `deleted_at` TIMESTAMP NULL,
     INDEX `idx_fine_applicable` (`applicable_on`, `applicable_id`),
     INDEX `idx_fine_active` (`is_active`)
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
-	-- --------------------------------------------------------------------------------------------------------
-	-- Table 8: fee_concession_types
-	-- Purpose: Types of concessions/discounts
-	-- [ENHANCE] Renamed concession_code->code, concession_name->name
-	-- --------------------------------------------------------------------------------------------------------
-	CREATE TABLE IF NOT EXISTS `fee_concession_types` (
+-- --------------------------------------------------------------------------------------------------------
+-- Table 8: fee_concession_types
+-- Purpose: Types of concessions/discounts
+-- [ENHANCE] Renamed concession_code->code, concession_name->name
+-- --------------------------------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `fee_concession_types` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `code` VARCHAR(50) NOT NULL UNIQUE,
     `name` VARCHAR(100) NOT NULL,
@@ -215,18 +215,18 @@
     `deleted_at` TIMESTAMP NULL,
     INDEX `idx_concession_category` (`concession_category_id`),
     CONSTRAINT `fk_concession_category` FOREIGN KEY (`concession_category_id`) REFERENCES `sys_dropdown_table` (`id`) ON DELETE RESTRICT
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
-	-- --------------------------------------------------------------------------------------------------------
-	-- Table 9: fee_concession_applicable_heads
-	-- Purpose: Maps concessions to specific heads or groups (mutually exclusive per row)
-	-- [ENHANCE] Added 'group_id' to support group-level concessions
-	-- [ENHANCE] Added CHECK constraint 'chk_cah_head_or_group' to ensure only one of head_id or group_id is set for each record
-	-- [BUG-FIX] Changed head_id and group_id from NOT NULL to NULL (CHECK requires one NULL)
+-- --------------------------------------------------------------------------------------------------------
+-- Table 9: fee_concession_applicable_heads
+-- Purpose: Maps concessions to specific heads or groups (mutually exclusive per row)
+-- [ENHANCE] Added 'group_id' to support group-level concessions
+-- [ENHANCE] Added CHECK constraint 'chk_cah_head_or_group' to ensure only one of head_id or group_id is set for each record
+-- [BUG-FIX] Changed head_id and group_id from NOT NULL to NULL (CHECK requires one NULL)
 	-- [ENHANCE] Added uq_concession_group unique index for group path
 	-- --------------------------------------------------------------------------------------------------------
-	CREATE TABLE IF NOT EXISTS `fee_concession_applicable_heads` (
+CREATE TABLE IF NOT EXISTS `fee_concession_applicable_heads` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `concession_type_id` INT UNSIGNED NOT NULL,
     `head_id` INT UNSIGNED NULL COMMENT 'FK to fee_head_master (when applicable_on = Specific Heads)',
@@ -237,18 +237,18 @@
     CONSTRAINT `fk_cah_concession` FOREIGN KEY (`concession_type_id`) REFERENCES `fee_concession_types` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_cah_head` FOREIGN KEY (`head_id`) REFERENCES `fee_head_master` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_cah_group` FOREIGN KEY (`group_id`) REFERENCES `fee_group_master` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `chk_cah_head_or_group` CHECK ((`head_id` IS NOT NULL AND `group_id` IS NULL) OR (`head_id` IS NULL AND `group_id` IS NOT NULL))    )
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    CONSTRAINT `chk_cah_head_or_group` CHECK ((`head_id` IS NOT NULL AND `group_id` IS NULL) OR (`head_id` IS NULL AND `group_id` IS NOT NULL))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
+-- --------------------------------------------------------------------------------------------------------
+-- Table 10: fee_student_assignments
+-- Purpose: Fee structure assigned to individual students for an academic session
+-- [BUG-FIX] academic_session_id changed from INT to SMALLINT UNSIGNED
+-- [ENHANCE] Added proration columns (join_in_mid-year, fee_start_date, proration_percentage)
+-- [ENHANCE] Added class_id & section_id for quick access (denormalization) to avoid joins during fee calculation and invoice generation
 	-- --------------------------------------------------------------------------------------------------------
-	-- Table 10: fee_student_assignments
-	-- Purpose: Fee structure assigned to individual students for an academic session
-	-- [BUG-FIX] academic_session_id changed from INT to SMALLINT UNSIGNED
-	-- [ENHANCE] Added proration columns (join_in_mid-year, fee_start_date, proration_percentage)
-	-- [ENHANCE] Added class_id & section_id for quick access (denormalization) to avoid joins during fee calculation and invoice generation
-	-- --------------------------------------------------------------------------------------------------------
-	CREATE TABLE IF NOT EXISTS `fee_student_assignments` (
+CREATE TABLE IF NOT EXISTS `fee_student_assignments` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `student_id` INT UNSIGNED NOT NULL,
     `class_id` INT UNSIGNED NOT NULL,   -- FK to sch_classes for quick access (denormalization)
@@ -273,14 +273,14 @@
     CONSTRAINT `fk_fsa_section` FOREIGN KEY (`section_id`) REFERENCES `sch_sections` (`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_fsa_session` FOREIGN KEY (`academic_session_id`) REFERENCES `sch_org_academic_sessions_jnt` (`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_fsa_structure` FOREIGN KEY (`fee_structure_id`) REFERENCES `fee_structure_master` (`id`) ON DELETE RESTRICT
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
-	-- --------------------------------------------------------------------------------------------------------
-	-- Table 11: fee_student_concessions
-	-- Purpose: Concessions applied to specific students
-	-- --------------------------------------------------------------------------------------------------------
-	CREATE TABLE IF NOT EXISTS `fee_student_concessions` (
+-- --------------------------------------------------------------------------------------------------------
+-- Table 11: fee_student_concessions
+-- Purpose: Concessions applied to specific students
+-- --------------------------------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `fee_student_concessions` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `student_assignment_id` INT UNSIGNED NOT NULL,
     `concession_type_id` INT UNSIGNED NOT NULL,
@@ -297,15 +297,15 @@
     CONSTRAINT `fk_fsc_assignment` FOREIGN KEY (`student_assignment_id`) REFERENCES `fee_student_assignments` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_fsc_concession` FOREIGN KEY (`concession_type_id`) REFERENCES `fee_concession_types` (`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_fsc_approver` FOREIGN KEY (`approved_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
-	-- --------------------------------------------------------------------------------------------------------
-	-- Table 12: fee_invoices
-	-- Purpose: Generated invoices for students (installment based)
-	-- [ENHANCE] Added tax_amount column
-	-- --------------------------------------------------------------------------------------------------------
-	CREATE TABLE IF NOT EXISTS `fee_invoices` (
+-- --------------------------------------------------------------------------------------------------------
+-- Table 12: fee_invoices
+-- Purpose: Generated invoices for students (installment based)
+-- [ENHANCE] Added tax_amount column
+-- --------------------------------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `fee_invoices` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `invoice_no` VARCHAR(50) NOT NULL UNIQUE,
     `student_assignment_id` INT UNSIGNED NOT NULL,
@@ -333,14 +333,14 @@
     CONSTRAINT `fk_finv_assignment` FOREIGN KEY (`student_assignment_id`) REFERENCES `fee_student_assignments` (`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_finv_installment` FOREIGN KEY (`installment_id`) REFERENCES `fee_installments` (`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_finv_generator` FOREIGN KEY (`generated_by`) REFERENCES `sys_users` (`id`) ON DELETE RESTRICT
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
-	-- --------------------------------------------------------------------------------------------------------
-	-- Table 13: fee_transactions
-	-- Purpose: Master record of each payment transaction
-	-- --------------------------------------------------------------------------------------------------------
-	CREATE TABLE IF NOT EXISTS `fee_transactions` (
+-- --------------------------------------------------------------------------------------------------------
+-- Table 13: fee_transactions
+-- Purpose: Master record of each payment transaction
+-- --------------------------------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `fee_transactions` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `transaction_no` VARCHAR(50) NOT NULL UNIQUE,
     `student_id` INT UNSIGNED NOT NULL,
@@ -370,14 +370,14 @@
     CONSTRAINT `fk_ft_invoice` FOREIGN KEY (`invoice_id`) REFERENCES `fee_invoices` (`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_ft_guardian` FOREIGN KEY (`guardian_id`) REFERENCES `std_guardians` (`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_ft_collector` FOREIGN KEY (`collected_by`) REFERENCES `sys_users` (`id`) ON DELETE RESTRICT
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
-	-- --------------------------------------------------------------------------------------------------------
-	-- Table 14: fee_transaction_details
-	-- Purpose: Split of transaction across fee heads
-	-- --------------------------------------------------------------------------------------------------------
-	CREATE TABLE IF NOT EXISTS `fee_transaction_details` (
+-- --------------------------------------------------------------------------------------------------------
+-- Table 14: fee_transaction_details
+-- Purpose: Split of transaction across fee heads
+-- --------------------------------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `fee_transaction_details` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `transaction_id` INT UNSIGNED NOT NULL,
     `head_id` INT UNSIGNED NOT NULL,
@@ -388,14 +388,14 @@
     UNIQUE INDEX `uq_trans_detail` (`transaction_id`, `head_id`),
     CONSTRAINT `fk_ftd_transaction` FOREIGN KEY (`transaction_id`) REFERENCES `fee_transactions` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_ftd_head` FOREIGN KEY (`head_id`) REFERENCES `fee_head_master` (`id`) ON DELETE RESTRICT
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
-	-- --------------------------------------------------------------------------------------------------------
-	-- Table 15: fee_receipts
-	-- Purpose: Official receipts generated after payment
-	-- --------------------------------------------------------------------------------------------------------
-	CREATE TABLE IF NOT EXISTS `fee_receipts` (
+-- --------------------------------------------------------------------------------------------------------
+-- Table 15: fee_receipts
+-- Purpose: Official receipts generated after payment
+-- --------------------------------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `fee_receipts` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `receipt_no` VARCHAR(50) NOT NULL UNIQUE,
     `transaction_id` INT UNSIGNED NOT NULL UNIQUE,
@@ -409,14 +409,15 @@
     `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX `idx_receipt_date` (`receipt_date`),
     CONSTRAINT `fk_fr_transaction` FOREIGN KEY (`transaction_id`) REFERENCES `fee_transactions` (`id`) ON DELETE RESTRICT
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
-	-- --------------------------------------------------------------------------------------------------------
-	-- Table 16: fee_fine_transactions
-	-- Purpose: Tracks fines applied to students
-	-- --------------------------------------------------------------------------------------------------------
-	CREATE TABLE IF NOT EXISTS `fee_fine_transactions` (
+
+-- --------------------------------------------------------------------------------------------------------
+-- Table 16: fee_fine_transactions
+-- Purpose: Tracks fines applied to students
+-- --------------------------------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `fee_fine_transactions` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `student_id` INT UNSIGNED NOT NULL,
     `invoice_id` INT UNSIGNED NOT NULL,
@@ -438,14 +439,15 @@
     CONSTRAINT `fk_fft_invoice` FOREIGN KEY (`invoice_id`) REFERENCES `fee_invoices` (`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_fft_rule` FOREIGN KEY (`fine_rule_id`) REFERENCES `fee_fine_rules` (`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_fft_waiver` FOREIGN KEY (`waived_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
-	-- --------------------------------------------------------------------------------------------------------
-	-- Table 17: fee_payment_gateway_logs
-	-- Purpose: Logs all online payment gateway transactions
-	-- --------------------------------------------------------------------------------------------------------
-	CREATE TABLE IF NOT EXISTS `fee_payment_gateway_logs` (
+
+-- --------------------------------------------------------------------------------------------------------
+-- Table 17: fee_payment_gateway_logs
+-- Purpose: Logs all online payment gateway transactions
+-- --------------------------------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `fee_payment_gateway_logs` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `transaction_id` INT UNSIGNED NULL,
     `gateway_name` ENUM('Razorpay', 'Paytm', 'CCAvenue', 'BillDesk', 'Other') NOT NULL,
@@ -465,15 +467,16 @@
     INDEX `idx_gateway_order` (`order_id`),
     INDEX `idx_gateway_status` (`status`),
     CONSTRAINT `fk_fpgl_transaction` FOREIGN KEY (`transaction_id`) REFERENCES `fee_transactions` (`id`) ON DELETE SET NULL
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
-	-- --------------------------------------------------------------------------------------------------------
-	-- Table 18: fee_scholarships
-	-- Purpose: Scholarship/fund definitions
-	-- [ENHANCE] Renamed scholarship_code->code, scholarship_name->name
-	-- --------------------------------------------------------------------------------------------------------
-	CREATE TABLE IF NOT EXISTS `fee_scholarships` (
+
+-- --------------------------------------------------------------------------------------------------------
+-- Table 18: fee_scholarships
+-- Purpose: Scholarship/fund definitions
+-- [ENHANCE] Renamed scholarship_code->code, scholarship_name->name
+-- --------------------------------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `fee_scholarships` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `code` VARCHAR(50) NOT NULL UNIQUE,
     `name` VARCHAR(100) NOT NULL,
@@ -493,17 +496,17 @@
     `deleted_at` TIMESTAMP NULL,
     INDEX `idx_scholarship_active` (`is_active`),
     INDEX `idx_scholarship_dates` (`application_start_date`, `application_end_date`)
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
+-- --------------------------------------------------------------------------------------------------------
+-- Table 19: fee_scholarship_applications
+-- Purpose: Student applications for scholarships
+-- [ENHANCE] Added academic_session_id; UNIQUE changed to (scholarship_id, student_id, academic_session_id)
+-- [ENHANCE] Added fk_fschapp_session
+-- [ENHANCE] Renamed FK from fk_fsa_student to fk_fschapp_scholarship & fk_fsa_student to fk_fschapp_student
 	-- --------------------------------------------------------------------------------------------------------
-	-- Table 19: fee_scholarship_applications
-	-- Purpose: Student applications for scholarships
-	-- [ENHANCE] Added academic_session_id; UNIQUE changed to (scholarship_id, student_id, academic_session_id)
-	-- [ENHANCE] Added fk_fschapp_session
-	-- [ENHANCE] Renamed FK from fk_fsa_student to fk_fschapp_scholarship & fk_fsa_student to fk_fschapp_student
-	-- --------------------------------------------------------------------------------------------------------
-	CREATE TABLE IF NOT EXISTS `fee_scholarship_applications` (
+CREATE TABLE IF NOT EXISTS `fee_scholarship_applications` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `scholarship_id` INT UNSIGNED NOT NULL,
     `student_id` INT UNSIGNED NOT NULL,
@@ -526,14 +529,15 @@
     CONSTRAINT `fk_fschapp_scholarship` FOREIGN KEY (`scholarship_id`) REFERENCES `fee_scholarships` (`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_fschapp_student` FOREIGN KEY (`student_id`) REFERENCES `std_students` (`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_fschapp_session` FOREIGN KEY (`academic_session_id`) REFERENCES `sch_org_academic_sessions_jnt` (`id`) ON DELETE RESTRICT
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
-	-- --------------------------------------------------------------------------------------------------------
-	-- Table 20: fee_scholarship_approval_history
-	-- Purpose: Tracks approval workflow for scholarships
-	-- --------------------------------------------------------------------------------------------------------
-	CREATE TABLE IF NOT EXISTS `fee_scholarship_approval_history` (
+
+-- --------------------------------------------------------------------------------------------------------
+-- Table 20: fee_scholarship_approval_history
+-- Purpose: Tracks approval workflow for scholarships
+-- --------------------------------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `fee_scholarship_approval_history` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `application_id` INT UNSIGNED NOT NULL,
     `stage` INT NOT NULL,
@@ -543,16 +547,17 @@
     `action_date` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT `fk_fsah_application` FOREIGN KEY (`application_id`) REFERENCES `fee_scholarship_applications` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_fsah_action_by` FOREIGN KEY (`action_by`) REFERENCES `sys_users` (`id`) ON DELETE RESTRICT
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
-	-- --------------------------------------------------------------------------------------------------------
-	-- Table 21: fee_name_removal_log
-	-- Purpose: Logs when student names are removed due to non-payment
-	-- [BUG-FIX] academic_session_id changed from INT to SMALLINT UNSIGNED
-	-- [ENHANCE] Added re_admission_fee_head_id, removed_by, re_admitted_by
-	-- --------------------------------------------------------------------------------------------------------
-	CREATE TABLE IF NOT EXISTS `fee_name_removal_log` (
+
+-- --------------------------------------------------------------------------------------------------------
+-- Table 21: fee_name_removal_log
+-- Purpose: Logs when student names are removed due to non-payment
+-- [BUG-FIX] academic_session_id changed from INT to SMALLINT UNSIGNED
+-- [ENHANCE] Added re_admission_fee_head_id, removed_by, re_admitted_by
+-- --------------------------------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `fee_name_removal_log` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `student_id` INT UNSIGNED NOT NULL,
     `academic_session_id` SMALLINT UNSIGNED NOT NULL,
@@ -578,19 +583,20 @@
     CONSTRAINT `fk_frl_removed_by` FOREIGN KEY (`removed_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_frl_readmission_head` FOREIGN KEY (`re_admission_fee_head_id`) REFERENCES `fee_head_master` (`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_frl_readmitted_by` FOREIGN KEY (`re_admitted_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
-	-- ========================================================================================================
-	-- NEW TABLES (v3)
-	-- ========================================================================================================
+-- ========================================================================================================
+-- NEW TABLES (v3)
+-- ========================================================================================================
 
 
-	-- --------------------------------------------------------------------------------------------------------
-	-- Table 22: fee_refunds [NEW in v3]
-	-- Purpose: Tracks refund details when payments are reversed or students withdraw
-	-- --------------------------------------------------------------------------------------------------------
-	CREATE TABLE IF NOT EXISTS `fee_refunds` (
+
+-- --------------------------------------------------------------------------------------------------------
+-- Table 22: fee_refunds [NEW in v3]
+-- Purpose: Tracks refund details when payments are reversed or students withdraw
+-- --------------------------------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `fee_refunds` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `refund_no` VARCHAR(50) NOT NULL UNIQUE,
     `original_transaction_id` INT UNSIGNED NOT NULL,
@@ -617,14 +623,15 @@
     CONSTRAINT `fk_fref_student` FOREIGN KEY (`student_id`) REFERENCES `std_students` (`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_fref_approver` FOREIGN KEY (`approved_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_fref_processor` FOREIGN KEY (`processed_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
-	-- --------------------------------------------------------------------------------------------------------
-	-- Table 23: fee_cheque_clearance [NEW in v3]
-	-- Purpose: Tracks cheque/DD lifecycle (deposit -> clearance/bounce)
-	-- --------------------------------------------------------------------------------------------------------
-	CREATE TABLE IF NOT EXISTS `fee_payment_reconciliation` (
+
+-- --------------------------------------------------------------------------------------------------------
+-- Table 23: fee_cheque_clearance [NEW in v3]
+-- Purpose: Tracks cheque/DD lifecycle (deposit -> clearance/bounce)
+-- --------------------------------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `fee_payment_reconciliation` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `transaction_id` INT UNSIGNED NOT NULL UNIQUE,
     `cheque_no` VARCHAR(50) NOT NULL,
@@ -644,14 +651,15 @@
     INDEX `idx_cheque_status` (`status`),
     INDEX `idx_cheque_date` (`cheque_date`),
     CONSTRAINT `fk_fcc_transaction` FOREIGN KEY (`transaction_id`) REFERENCES `fee_transactions` (`id`) ON DELETE RESTRICT
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
-	-- --------------------------------------------------------------------------------------------------------
-	-- Table 24: fee_defaulter_history [NEW in v3]
-	-- Purpose: Per-student-per-session summary for defaulter pattern analysis and AI prediction
-	-- --------------------------------------------------------------------------------------------------------
-	CREATE TABLE IF NOT EXISTS `fee_defaulter_history` (
+
+-- --------------------------------------------------------------------------------------------------------
+-- Table 24: fee_defaulter_history [NEW in v3]
+-- Purpose: Per-student-per-session summary for defaulter pattern analysis and AI prediction
+-- --------------------------------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `fee_defaulter_history` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `student_id` INT UNSIGNED NOT NULL,
     `academic_session_id` SMALLINT UNSIGNED NOT NULL,
@@ -671,7 +679,7 @@
     INDEX `idx_defaulter_score` (`defaulter_score`),
     CONSTRAINT `fk_fdh_student` FOREIGN KEY (`student_id`) REFERENCES `std_students` (`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_fdh_session` FOREIGN KEY (`academic_session_id`) REFERENCES `sch_org_academic_sessions_jnt` (`id`) ON DELETE RESTRICT
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 -- ========================================================================================================
