@@ -1,4 +1,4 @@
--- =============================================================================
+-- ======================================================================================================================================
 -- ADM — Admission Management Module DDL
 -- Module: Admission (Modules\Admission)
 -- Table Prefix: adm_* (20 tables)
@@ -10,26 +10,32 @@
 --              Alumni & TC, Behavior Incidents
 -- IMPORTANT: EnrollmentService WRITES to sys_users, std_students,
 --            std_student_academic_sessions, std_siblings_jnt on enrollment.
--- =============================================================================
+-- ======================================================================================================================================
 
--- =============================================================================
--- LAYER 1 — No adm_* dependencies (references sys_*/sch_* only)
--- =============================================================================
+-- ======================================================================================================================================
+-- ADMISSION MASTERS :
+-- ======================================================================================================================================
+
+-- Annual admission cycle configuration — one per academic year per school
+-- (No adm_* dependencies (references sys_*/sch_* only)
+-- -------------------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `adm_admission_cycles` (
-  `id`                    BIGINT UNSIGNED     NOT NULL AUTO_INCREMENT,          -- Primary key
-  `academic_session_id`   INT UNSIGNED        NOT NULL,                         -- FK → sch_org_academic_sessions_jnt.id; target academic year
+  `id`                    SMALLINT UNSIGNED   NOT NULL AUTO_INCREMENT,          -- Primary key
+  `academic_session_id`   SMALLINT UNSIGNED   NOT NULL,                         -- FK → sch_org_academic_sessions_jnt.id; target academic year
   `name`                  VARCHAR(100)        NOT NULL,                         -- e.g., "Main Admission 2026-27"
   `cycle_code`            VARCHAR(20)         NOT NULL,                         -- Unique cycle identifier e.g., ADM-2627-M
   `start_date`            DATE                NOT NULL,                         -- Enquiry open date
   `end_date`              DATE                NOT NULL,                         -- Enquiry close date; must be > start_date
   `application_fee`       DECIMAL(10,2)       NOT NULL DEFAULT 0.00,            -- Application processing fee in INR
   `admission_no_format`   VARCHAR(100)        NULL     DEFAULT '{YEAR}/{SEQ}',  -- Admission number format used at the time of admission enrollment.
-  `sibling_bonus_score`   TINYINT UNSIGNED    NOT NULL DEFAULT 5,               -- Merit score bonus for confirmed sibling applicants
+  `sibling_bonus_score`   TINYINT UNSIGNED    NOT NULL DEFAULT 5,               -- Merit score bonus for confirmed sibling applicants (Range 0-100)
+  `age_cut_off_date`      DATE                NOT NULL,                         -- Age cut-off date for admission(i.e, For 2026-27 it is 31st December 2026)
   `age_rules_json`        JSON                NULL,                             -- Min/max age per class on cut-off date e.g., {"1":{"min":5,"max":7}}
   `refund_policy_json`    JSON                NULL,                             -- Refund % tiers by days since payment e.g., {"7":100,"30":50,"999":0}
   `application_form_url`  VARCHAR(255)        NULL,                             -- Public form slug e.g., "admission-2627"; used in /apply/{slug}
-  `status`                ENUM('Draft','Active','Closed','Archived') NOT NULL DEFAULT 'Draft', -- Lifecycle: Draft → Active → Closed → Archived; only one Active per academic_session_id
+  `status`                ENUM('Draft','Open','Closed','Archived') NOT NULL DEFAULT 'Draft', -- Lifecycle: Draft → Active → Closed → Archived; only one Active per academic_session_id
   `is_active`             TINYINT(1)          NOT NULL DEFAULT 1,               -- Soft enable/disable
+  `active_flag`           TINYINT(1)          NOT NULL DEFAULT 1,               -- Active flag - will be set to 1 when status is Open and is_active is 1, and will be set to 0 when status is Closed or is_active is 0
   -- `created_by`            BIGINT UNSIGNED     NOT NULL,                         -- sys_users.id — creator
   -- `updated_by`            BIGINT UNSIGNED     NOT NULL,                         -- sys_users.id — last editor
   `created_at`            TIMESTAMP           NULL,                             -- Record creation timestamp
@@ -37,20 +43,20 @@ CREATE TABLE IF NOT EXISTS `adm_admission_cycles` (
   `deleted_at`            TIMESTAMP           NULL,                             -- Soft delete timestamp; NULL = not deleted
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_adm_cyc_code` (`cycle_code`),
-  KEY `idx_adm_cyc_session`    (`academic_session_id`),
-  KEY `idx_adm_cyc_status`     (`status`),
+  UNIQUE KEY `uq_adm_cyc_active` (`academic_session_id`, `is_active`),
   CONSTRAINT `fk_adm_cyc_session_id` FOREIGN KEY (`academic_session_id`) REFERENCES `sch_org_academic_sessions_jnt` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Annual admission cycle configuration — one per academic year per school';
 -- Enhancement for V2:
 -- - Can create child tables to capture refunc_policy & age_rules_json in seprate table with proper constraints and validation
 
 
--- =============================================================================
--- LAYER 2 — Depends on adm_admission_cycles + sch_classes
--- =============================================================================
+-- -------------------------------------------------------------------------------------------------------------------------------------
+-- Required document definitions per admission cycle; NULL cycle_id = global template
+-- Depends on adm_admission_cycles + sch_classes
+-- -------------------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `adm_document_checklist` (
-  `id`                 BIGINT UNSIGNED  NOT NULL AUTO_INCREMENT,          -- Primary key
-  `admission_cycle_id` BIGINT UNSIGNED  NULL,                             -- FK → adm_admission_cycles; NULL = global template row (is_system=1)
+  `id`                 MEDIUMINT UNSIGNED  NOT NULL AUTO_INCREMENT,        -- Primary key
+  `admission_cycle_id` SMALLINT UNSIGNED  NULL,                           -- FK → adm_admission_cycles; NULL = global template row (is_system=1)
   `class_id`           INT UNSIGNED     NULL,                             -- FK → sch_classes; NULL = applies to all classes in cycle
   `document_name`      VARCHAR(100)     NOT NULL,                         -- e.g., "Birth Certificate"
   `document_code`      VARCHAR(30)      NOT NULL,                         -- e.g., "BIRTH_CERT" — used for programmatic lookup
@@ -72,11 +78,14 @@ CREATE TABLE IF NOT EXISTS `adm_document_checklist` (
   CONSTRAINT `fk_adm_chk_class_id` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Required document definitions per admission cycle; NULL cycle_id = global template';
 
--- -----------------------------------------------------------------------------
 
+-- -------------------------------------------------------------------------------------------------------------------------------------
+-- Quota configuration per class per admission cycle — defines seat allocation per category (General, Management, RTE, NRI, etc.)
+-- (No adm_* dependencies (references sch_classes only)
+-- -------------------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `adm_quota_config` (
-  `id`                 BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,  -- Primary key
-  `admission_cycle_id` BIGINT UNSIGNED NOT NULL,             -- FK → adm_admission_cycles
+  `id`                 SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,  -- Primary key
+  `admission_cycle_id` SMALLINT UNSIGNED NOT NULL,             -- FK → adm_admission_cycles
   `class_id`           INT UNSIGNED NOT NULL,                -- FK → sch_classes
   `quota_type`         ENUM('General','Government','Management','RTE','NRI','Staff_Ward','Sibling','EWS') NOT NULL, -- Quota category
   `total_seats`        SMALLINT UNSIGNED NOT NULL,           -- Total seats for this quota in this class
@@ -95,19 +104,22 @@ CREATE TABLE IF NOT EXISTS `adm_quota_config` (
   CONSTRAINT `fk_adm_qcfg_class_id` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Quota type settings per class per admission cycle (fee waiver, reserved seats)';
 
--- -----------------------------------------------------------------------------
 
+-- -------------------------------------------------------------------------------------------------------------------------------------
+-- Seat capacity budgets per class per admission cycle — total allowed seats per quota
+-- Depends on adm_admission_cycles + sch_classes + adm_quota_config (optional reference)
+-- -------------------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `adm_seat_capacity` (
-  `id`                 BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, -- Primary key
-  `admission_cycle_id` BIGINT UNSIGNED NOT NULL,             -- FK → adm_admission_cycles
+  `id`                 SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT, -- Primary key
+  `admission_cycle_id` SMALLINT UNSIGNED NOT NULL,             -- FK → adm_admission_cycles
   `class_id`           INT UNSIGNED NOT NULL,                -- FK → sch_classes
   `quota_type`         ENUM('General','Government','Management','RTE','NRI','Staff_Ward','Sibling','EWS') NOT NULL, -- Quota category for this seat budget
   `total_seats`        SMALLINT UNSIGNED NOT NULL,           -- Configured total seat budget for this quota + class
   `seats_allotted`     SMALLINT UNSIGNED NOT NULL DEFAULT 0, -- Running count; incremented by MeritListService::allotSeat() (BR-ADM-013)
   `seats_enrolled`     SMALLINT UNSIGNED NOT NULL DEFAULT 0, -- Running count; incremented by EnrollmentService::enrollStudent()
   `is_active`          TINYINT(1) NOT NULL DEFAULT 1,        -- Soft enable/disable
-  `created_by`         BIGINT UNSIGNED NOT NULL,             -- sys_users.id — creator
-  `updated_by`         BIGINT UNSIGNED NOT NULL,             -- sys_users.id — last editor
+  -- `created_by`         BIGINT UNSIGNED NOT NULL,             -- sys_users.id — creator
+  -- `updated_by`         BIGINT UNSIGNED NOT NULL,             -- sys_users.id — last editor
   `created_at`         TIMESTAMP NULL,                       -- Record creation timestamp
   `updated_at`         TIMESTAMP NULL,                       -- Record update timestamp
   `deleted_at`         TIMESTAMP NULL,                       -- Soft delete timestamp
@@ -118,50 +130,59 @@ CREATE TABLE IF NOT EXISTS `adm_seat_capacity` (
   CONSTRAINT `fk_adm_sc_cycle_id` FOREIGN KEY (`admission_cycle_id`) REFERENCES `adm_admission_cycles` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `fk_adm_sc_class_id` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Per-class per-quota seat budget with running allotted/enrolled counters';
+-- Enhancement for V2:
+-- Table `adm_quota_config` & `adm_seat_capacity` can be merged into 1.
+--  - Only 2 field from Quota_config are required to be add into seat_capacity:
+--    1. `reserved_seats`
+--    2. `application_fee_waiver`
+-- 
 
--- -----------------------------------------------------------------------------
 
+-- -------------------------------------------------------------------------------------------------------------------------------------
+-- Entrance test schedule by class per admission cycle — defines test dates/times for different classes
+-- Depends on adm_admission_cycles + sch_classes
+-- -------------------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `adm_entrance_tests` (
-  `id`                 BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, -- 'Primary key',
-  `admission_cycle_id` BIGINT UNSIGNED NOT NULL,     -- 'FK → adm_admission_cycles',
-  `class_id`           INT UNSIGNED NOT NULL,        -- 'FK → sch_classes; warning emitted if class ordinal ≤ 2 (NEP 2020, BR-ADM-011)',
-  `test_name`          VARCHAR(100) NOT NULL,        -- 'e.g., "Aptitude Test - Class 3"',
-  `test_date`          DATE NOT NULL,                -- 'Date of test',
-  `start_time`         TIME NOT NULL,                -- 'Test start time; must be < end_time',
-  `end_time`           TIME NOT NULL,                -- 'Test end time; must be > start_time',
-  `venue`              VARCHAR(100) NULL,            -- 'Test venue / room description',
-  `max_marks`          DECIMAL(6,2) NOT NULL,        -- 'Maximum marks for the test',
-  `passing_marks`      DECIMAL(6,2) NULL,            -- 'Minimum passing marks; NULL = no pass/fail threshold',
-  `subjects_json`      JSON NULL,                    -- 'Subject areas with individual max marks e.g., [{"name":"Maths","max":50}]',
-  `status`             ENUM('Scheduled','Completed','Cancelled') NOT NULL DEFAULT 'Scheduled', -- 'Test lifecycle status',
-  `is_active`          TINYINT(1) NOT NULL DEFAULT 1, -- 'Soft enable/disable',
-  `created_by`         BIGINT UNSIGNED NOT NULL,     -- 'sys_users.id — creator',
-  `updated_by`         BIGINT UNSIGNED NOT NULL,     -- 'sys_users.id — last editor',
-  `created_at`         TIMESTAMP NULL,               -- 'Record creation timestamp',
-  `updated_at`         TIMESTAMP NULL,               -- 'Record update timestamp',
-  `deleted_at`         TIMESTAMP NULL,               -- 'Soft delete timestamp',
+  `id`                       MEDIUMINT UNSIGNED NOT NULL AUTO_INCREMENT, -- 'Primary key',
+  `admission_cycle_id`       SMALLINT UNSIGNED NOT NULL,     -- 'FK → adm_admission_cycles',
+  `class_id`                 INT UNSIGNED NOT NULL,        -- 'FK → sch_classes; warning emitted if class ordinal ≤ 2 (NEP 2020, BR-ADM-011)',
+  `test_name`                VARCHAR(100) NOT NULL,        -- 'e.g., "Aptitude Test - Class 3"',
+  `test_date`                DATE NOT NULL,                -- 'Date of test',
+  `start_time`               TIME NOT NULL,                -- 'Test start time; must be < end_time',
+  `end_time`                 TIME NOT NULL,                -- 'Test end time; must be > start_time',
+  `venue`                    VARCHAR(100) NULL,            -- 'Test venue / room description',
+  `test_type`                ENUM('Online','Offline') NOT NULL DEFAULT 'Offline', -- 'Online or Offline',
+  `online_test_link`         VARCHAR(255) NULL,            -- 'Online test link',
+  `offline_test_media_id`    INT UNSIGNED NULL,            -- 'Offline test media id',
+  `max_marks`                DECIMAL(6,2) NOT NULL,        -- 'Maximum marks for the test',
+  `passing_marks`            DECIMAL(6,2) NULL,            -- 'Minimum passing marks; NULL = no pass/fail threshold',
+  `subjects_json`            JSON NULL,                    -- 'Subject areas with individual max marks e.g., [{"name":"Maths","max":50}]',
+  `status`                   ENUM('Scheduled','Completed','Cancelled') NOT NULL DEFAULT 'Scheduled', -- 'Test lifecycle status',
+  `is_active`                TINYINT(1) NOT NULL DEFAULT 1, -- 'Soft enable/disable',
+  -- `created_by`               BIGINT UNSIGNED NOT NULL,     -- 'sys_users.id — creator',
+  -- `updated_by`               BIGINT UNSIGNED NOT NULL,     -- 'sys_users.id — last editor',
+  `created_at`               TIMESTAMP NULL,               -- 'Record creation timestamp',
+  `updated_at`               TIMESTAMP NULL,               -- 'Record update timestamp',
+  `deleted_at`               TIMESTAMP NULL,               -- 'Soft delete timestamp',
   PRIMARY KEY (`id`),
   KEY `idx_adm_et_cycle_class` (`admission_cycle_id`, `class_id`),
   KEY `idx_adm_et_date`        (`test_date`),
   KEY `idx_adm_et_status`      (`status`),
-  CONSTRAINT `fk_adm_et_cycle_id`
-    FOREIGN KEY (`admission_cycle_id`)
-    REFERENCES `adm_admission_cycles` (`id`)
-    ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `fk_adm_et_class_id`
-    FOREIGN KEY (`class_id`)
-    REFERENCES `sch_classes` (`id`)
-    ON DELETE RESTRICT ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Entrance/aptitude test sessions per class per admission cycle';
+  CONSTRAINT `fk_adm_et_cycle_id` FOREIGN KEY (`admission_cycle_id`) REFERENCES `adm_admission_cycles` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_adm_et_class_id` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Entrance/aptitude test sessions per class per admission cycle';
+-- Enhancement for V2:
+--  - Entrance Test can be conducted online or offline. Add new Enum in `test_type`: 'Online','Offline'
+--  - Add new field `test_link` in `adm_entrance_tests` table.
+
 
 -- =============================================================================
 -- LAYER 3 — Depends on Layer 1 + cross-module (std_students, sys_users)
 -- =============================================================================
 
 CREATE TABLE IF NOT EXISTS `adm_enquiries` (
-  `id`                 BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, -- 'Primary key',
-  `admission_cycle_id` BIGINT UNSIGNED NOT NULL, -- 'FK → adm_admission_cycles',
+  `id`                 MEDIUMINT UNSIGNED NOT NULL AUTO_INCREMENT, -- 'Primary key',
+  `admission_cycle_id` SMALLINT UNSIGNED NOT NULL, -- 'FK → adm_admission_cycles',
   `enquiry_no`         VARCHAR(20)     NOT NULL, -- 'Auto-generated unique number: ENQ-YYYY-NNNNN',
   `student_name`       VARCHAR(100)    NOT NULL, -- 'Prospective student full name',
   `student_dob`        DATE            NULL,     -- 'Date of birth; used for age eligibility check (BR-ADM-001)',
@@ -181,8 +202,8 @@ CREATE TABLE IF NOT EXISTS `adm_enquiries` (
   `notes`              TEXT            NULL,               -- 'Staff or parent notes',
   `source_reference`   VARCHAR(100)    NULL,               -- 'Campaign code or referral name',
   `is_active`          TINYINT(1)      NOT NULL DEFAULT 1, -- 'Soft enable/disable',
-  `created_by`         BIGINT UNSIGNED NOT NULL,           -- 'sys_users.id — creator',
-  `updated_by`         BIGINT UNSIGNED NOT NULL,           -- 'sys_users.id — last editor',
+  -- `created_by`         BIGINT UNSIGNED NOT NULL,           -- 'sys_users.id — creator',
+  -- `updated_by`         BIGINT UNSIGNED NOT NULL,           -- 'sys_users.id — last editor',
   `created_at`         TIMESTAMP       NULL,               -- 'Record creation timestamp',
   `updated_at`         TIMESTAMP       NULL,               -- 'Record update timestamp',
   `deleted_at`         TIMESTAMP       NULL                -- 'Soft delete timestamp',
@@ -200,25 +221,30 @@ CREATE TABLE IF NOT EXISTS `adm_enquiries` (
   CONSTRAINT `fk_adm_enq_sibling_student_id` FOREIGN KEY (`sibling_student_id`) REFERENCES `std_students` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Raw leads captured online, walk-in, or via campaign; entry point to admission funnel';
 
--- -----------------------------------------------------------------------------
 
+-- -----------------------------------------------------------------------------
+-- Merit List is 
 CREATE TABLE IF NOT EXISTS `adm_merit_lists` (
-  `id`                  BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, -- Primary key
-  `admission_cycle_id`  BIGINT UNSIGNED NOT NULL,            -- FK → adm_admission_cycles
-  `class_id`            INT UNSIGNED NOT NULL,               -- FK → sch_classes
-  `quota_type`          ENUM('General','Government','Management','RTE','NRI','Staff_Ward','Sibling','EWS') NOT NULL, -- Quota for which this merit list is generated
-  `generated_at`        TIMESTAMP NULL,                      -- Timestamp when generation completed; NULL = not yet generated
-  `generated_by`        INT UNSIGNED NULL,                   -- FK → sys_users.id; staff who triggered generation
-  `status`              ENUM('Draft','Published','Finalized') NOT NULL DEFAULT 'Draft', -- Draft = working; Published = visible to parents; Finalized = allotments done
-  `criteria_json`       JSON NULL,                           -- Scoring weightage: {"test_pct":40,"interview_pct":30,"academic_pct":30}; must sum to 100
-  `sibling_bonus_score` TINYINT UNSIGNED NOT NULL DEFAULT 5, -- Bonus score for confirmed sibling applicants; copied from adm_admission_cycles at generation
-  `cutoff_score`        DECIMAL(6,2) NULL,                   -- Minimum composite score; below cutoff → Rejected
-  `is_active`           TINYINT(1) NOT NULL DEFAULT 1,       -- Soft enable/disable
-  `created_by`          BIGINT UNSIGNED NOT NULL,            -- sys_users.id — creator
-  `updated_by`          BIGINT UNSIGNED NOT NULL,            -- sys_users.id — last editor
-  `created_at`          TIMESTAMP NULL,                      -- Record creation timestamp
-  `updated_at`          TIMESTAMP NULL,                      -- Record update timestamp
-  `deleted_at`          TIMESTAMP NULL,                      -- Soft delete timestamp
+  `id`                        MEDIUMINT UNSIGNED NOT NULL AUTO_INCREMENT, -- Primary key
+  `admission_cycle_id`        SMALLINT UNSIGNED NOT NULL,            -- FK → adm_admission_cycles
+  `class_id`                  INT UNSIGNED NOT NULL,               -- FK → sch_classes
+  `quota_type`                ENUM('General','Government','Management','RTE','NRI','Staff_Ward','Sibling','EWS') NOT NULL, -- Quota for which this merit list is generated
+  `generated_at`              TIMESTAMP NULL,                      -- Timestamp when generation completed; NULL = not yet generated
+  `generated_by`              INT UNSIGNED NULL,                   -- FK → sys_users.id; staff who triggered generation
+  `status`                    ENUM('Draft','Published','Finalized') NOT NULL DEFAULT 'Draft', -- Draft = working; Published = visible to parents; Finalized = allotments done
+  `academic_percentge`        DECIMAL(5,2) NOT NULL DEFAULT 0,    -- Last Class Percentge
+  `test_percentge`            DECIMAL(5,2) NOT NULL DEFAULT 0,    -- Test Score
+  `interview_percentge`       DECIMAL(5,2) NOT NULL DEFAULT 0,    -- Interview Score
+  `total_score`               DECIMAL(5,2) NOT NULL DEFAULT 0,    -- Total Score
+  `additional_criteria_json`  JSON NULL,                           -- Scoring weightage: {"test_pct":40,"interview_pct":30,"academic_pct":30}; must sum to 100
+  `sibling_bonus_score`       TINYINT UNSIGNED NOT NULL DEFAULT 5, -- Bonus score for confirmed sibling applicants; copied from adm_admission_cycles at generation
+  `cutoff_score`              DECIMAL(6,2) NULL,                   -- Minimum composite score; below cutoff → Rejected
+  `is_active`                 TINYINT(1) NOT NULL DEFAULT 1,       -- Soft enable/disable
+  -- `created_by`              INT UNSIGNED NOT NULL,               -- sys_users.id — creator
+  -- `updated_by`              INT UNSIGNED NOT NULL,               -- sys_users.id — last editor
+  `created_at`                TIMESTAMP NULL,                      -- Record creation timestamp
+  `updated_at`                TIMESTAMP NULL,                      -- Record update timestamp
+  `deleted_at`                TIMESTAMP NULL,                      -- Soft delete timestamp
   PRIMARY KEY (`id`),
   KEY `idx_adm_ml_cycle_class_quota` (`admission_cycle_id`, `class_id`, `quota_type`),
   KEY `idx_adm_ml_status`            (`status`),
@@ -228,13 +254,13 @@ CREATE TABLE IF NOT EXISTS `adm_merit_lists` (
   CONSTRAINT `fk_adm_ml_generated_by` FOREIGN KEY (`generated_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Merit list header per cycle + class + quota with criteria configuration';
 
+
 -- =============================================================================
 -- LAYER 4 — Depends on Layer 3 + cross-module
 -- =============================================================================
-
 CREATE TABLE IF NOT EXISTS `adm_follow_ups` (
-  `id`             BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, -- Primary key
-  `enquiry_id`     BIGINT UNSIGNED NOT NULL,                -- FK → adm_enquiries
+  `id`             MEDIUMINT UNSIGNED NOT NULL AUTO_INCREMENT, -- Primary key
+  `enquiry_id`     MEDIUMINT UNSIGNED NOT NULL,                -- FK → adm_enquiries
   `follow_up_type` ENUM('Call','Meeting','Email','SMS','Walk-in') NOT NULL, -- Type of follow-up activity
   `scheduled_at`   DATETIME        NOT NULL,                -- Scheduled date and time for follow-up
   `completed_at`   DATETIME        NULL,                    -- Actual completion time; NULL = pending
@@ -243,8 +269,8 @@ CREATE TABLE IF NOT EXISTS `adm_follow_ups` (
   `done_by`        INT UNSIGNED    NULL,                    -- FK → sys_users.id; staff who completed the follow-up
   `reminder_sent`  TINYINT(1)      NOT NULL DEFAULT 0,        -- 1 = NTF reminder already dispatched before scheduled_at
   `is_active`      TINYINT(1)      NOT NULL DEFAULT 1,        -- Soft enable/disable
-  `created_by`     BIGINT UNSIGNED NOT NULL,                -- sys_users.id — creator
-  `updated_by`     BIGINT UNSIGNED NOT NULL,                -- sys_users.id — last editor
+  -- `created_by`     BIGINT UNSIGNED NOT NULL,                -- sys_users.id — creator
+  -- `updated_by`     BIGINT UNSIGNED NOT NULL,                -- sys_users.id — last editor
   `created_at`     TIMESTAMP       NULL,                    -- Record creation timestamp
   `updated_at`     TIMESTAMP       NULL,                    -- Record update timestamp
   `deleted_at`     TIMESTAMP       NULL,                    -- Soft delete timestamp
@@ -257,73 +283,81 @@ CREATE TABLE IF NOT EXISTS `adm_follow_ups` (
   CONSTRAINT `fk_adm_fu_done_by` FOREIGN KEY (`done_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Follow-up activity log per enquiry — calls, meetings, emails, SMS';
 
+
 -- -----------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `adm_applications` (
-  `id`                     BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `admission_cycle_id`     BIGINT UNSIGNED NOT NULL, -- FK → adm_admission_cycles
-  `enquiry_id`             BIGINT UNSIGNED NULL,     -- FK → adm_enquiries; source enquiry if converted; NULL for direct applications
-  `application_no`         VARCHAR(20) NOT NULL,     -- 'Auto-generated unique: APP-YYYY-NNNNN',
-  `class_applied_id`       INT UNSIGNED NOT NULL,    -- FK → sch_classes; class applied for
-  `quota_type`             ENUM('General','Government','Management','RTE','NRI','Staff_Ward','Sibling','EWS') NOT NULL DEFAULT 'General', -- 'Quota selected by applicant',
-  `is_sibling`             TINYINT(1) NOT NULL DEFAULT 0, -- '1 = staff-confirmed sibling; MUST be 1 for sibling merit bonus (BR-ADM-015)',
-  `sibling_student_id`     INT UNSIGNED NULL,             -- FK → std_students.id; staff-confirmed sibling reference (nullable),
-  `is_staff_ward`          TINYINT(1) NOT NULL DEFAULT 0, -- '1 = parent is current staff member',
+  `id`                        MEDIUMINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `admission_cycle_id`        SMALLINT UNSIGNED NOT NULL, -- FK → adm_admission_cycles
+  `enquiry_id`                MEDIUMINT UNSIGNED NULL,     -- FK → adm_enquiries; source enquiry if converted; NULL for direct applications
+  `application_no`            VARCHAR(20) NOT NULL,     -- 'Auto-generated unique: APP-YYYY-NNNNN',
+  `class_applied_id`          INT UNSIGNED NOT NULL,    -- FK → sch_classes; class applied for
+  `quota_type`                ENUM('General','Government','Management','RTE','NRI','Staff_Ward','Sibling','EWS') NOT NULL DEFAULT 'General', -- 'Quota selected by applicant',
+  `is_sibling`                TINYINT(1) NOT NULL DEFAULT 0, -- '1 = staff-confirmed sibling; MUST be 1 for sibling merit bonus (BR-ADM-015)',
+  `sibling_student_id`        INT UNSIGNED NULL,             -- FK → std_students.id; staff-confirmed sibling reference (nullable),
+  `is_staff_ward`             TINYINT(1) NOT NULL DEFAULT 0, -- '1 = parent is current staff member',
   -- Student Details
-  `student_first_name`     VARCHAR(50) NOT NULL, -- 'Student first name',
-  `student_middle_name`    VARCHAR(50) NULL,     -- 'Student middle name',
-  `student_last_name`      VARCHAR(50) NULL,     -- 'Student last name',
-  `student_dob`            DATE NOT NULL,        -- 'Student date of birth',
-  `student_gender`         ENUM('Male','Female','Transgender','Prefer Not to Say') NOT NULL, -- 'Student gender',
-  `student_religion`       VARCHAR(50) NULL,     -- 'Student religion',
-  `student_caste_category` ENUM('General','OBC','SC','ST','EWS','Other') NULL, -- 'Caste/social category for quota verification',
-  `student_nationality`    VARCHAR(50) NULL DEFAULT 'Indian', -- 'Student nationality',
-  `student_mother_tongue`  VARCHAR(50) NULL, -- 'Student mother tongue',
-  `aadhar_no`              VARCHAR(20) NULL, -- 'Aadhar number; optional; uniqueness enforced at SERVICE LAYER ONLY (not DB UNIQUE)',
-  `birth_cert_no`          VARCHAR(50) NULL, -- 'Birth certificate number',
-  `blood_group`            ENUM('A+','A-','B+','B-','AB+','AB-','O+','O-','Unknown') NULL, -- 'Blood group',
-  `known_allergies`        TEXT NULL, -- 'Known allergies (free text)',
+  `student_first_name`        VARCHAR(50) NOT NULL, -- 'Student first name',
+  `student_middle_name`       VARCHAR(50) NULL,     -- 'Student middle name',
+  `student_last_name`         VARCHAR(50) NULL,     -- 'Student last name',
+  `student_dob`               DATE NOT NULL,        -- 'Student date of birth',
+  `student_gender`            ENUM('Male','Female','Transgender','Prefer Not to Say') NOT NULL, -- 'Student gender',
+  `student_religion_id`       INT UNSIGNED DEFAULT NULL,     -- 'Student religion', -- FK to sys_dropdown_table (Same as std_stundet_profiles.religion)
+  `student_caste_category_id` INT UNSIGNED DEFAULT NULL, -- 'Caste/social category for quota verification', -- FK to sys_dropdown_table (Same as std_stundet_profiles.caste_category)
+  `student_nationality_id`    INT UNSIGNED DEFAULT NULL, -- 'Student nationality', -- FK to sys_dropdown_table (Same as std_stundet_profiles.nationality)
+  `student_mother_tongue_id`  INT UNSIGNED DEFAULT NULL, -- 'Student mother tongue', -- FK to sys_dropdown_table (Same as std_stundet_profiles.mother_tongue)
+  `aadhar_no`                 VARCHAR(20) NULL, -- 'Aadhar number; optional; uniqueness enforced at SERVICE LAYER ONLY (not DB UNIQUE)',
+  `apaar_id`                  VARCHAR(100) DEFAULT NULL, -- Academic Bank of Credits ID
+  `birth_cert_no`             VARCHAR(50) NULL, -- 'Birth certificate number',
+  `blood_group`               ENUM('A+','A-','B+','B-','AB+','AB-','O+','O-','Unknown') NULL, -- 'Blood group',
+  `known_allergies`           TEXT NULL, -- 'Known allergies (free text)',
   -- Previous School
-  `prev_school_name`       VARCHAR(100) NULL, -- 'Previous school name',
-  `prev_class_passed`      VARCHAR(20) NULL, -- 'Class passed at previous school e.g., "Class 5"',
-  `prev_marks_percent`     DECIMAL(5,2) NULL, -- 'Previous school marks %; used in merit composite score',
-  `prev_tc_no`             VARCHAR(50) NULL, -- 'Previous school transfer certificate number',
+  `prev_school_name`          VARCHAR(100) NULL, -- 'Previous school name',
+  `prev_class_passed`         VARCHAR(20) NULL, -- 'Class passed at previous school e.g., "Class 5"',
+  `prev_marks_percent`        DECIMAL(5,2) NULL, -- 'Previous school marks %; used in merit composite score',
+  `prev_tc_no`                VARCHAR(50) NULL, -- 'Previous school transfer certificate number',
   -- Guardian Details
-  `father_name`            VARCHAR(100) NULL, -- 'Father full name',
-  `father_mobile`          VARCHAR(15) NULL, -- 'Father mobile number',
-  `father_email`           VARCHAR(100) NULL, -- 'Father email address',
-  `father_occupation`      VARCHAR(100) NULL, -- 'Father occupation',
-  `mother_name`            VARCHAR(100) NULL, -- 'Mother full name',
-  `mother_mobile`          VARCHAR(15) NULL, -- 'Mother mobile number',
-  `mother_email`           VARCHAR(100) NULL, -- 'Mother email address',
-  `guardian_name`          VARCHAR(100) NULL, -- 'Alternate guardian full name',
-  `guardian_mobile`        VARCHAR(15) NULL, -- 'Alternate guardian mobile',
-  `guardian_relation`      VARCHAR(50) NULL, -- 'Relation of alternate guardian to student',
+  `father_name`               VARCHAR(100) NULL, -- 'Father full name',
+  `father_user_id`            INT UNSIGNED NULL, -- FK → std_students.id; if 'is_sibling' true then system will find parent id of sibling and populate here
+  `father_mobile`             VARCHAR(15) NULL, -- 'Father mobile number',
+  `father_email`              VARCHAR(100) NULL, -- 'Father email address',
+  `father_occupation`         VARCHAR(100) NULL, -- 'Father occupation',
+  `mother_name`               VARCHAR(100) NULL, -- 'Mother full name',
+  `mother_user_id`            INT UNSIGNED NULL, -- FK → std_students.id; if 'is_sibling' true then system will find parent id of sibling and populate here
+  `mother_mobile`             VARCHAR(15) NULL, -- 'Mother mobile number',
+  `mother_email`              VARCHAR(100) NULL, -- 'Mother email address',
+  `guardian_name`             VARCHAR(100) NULL, -- 'Alternate guardian full name',
+  `guardian_mobile`           VARCHAR(15) NULL, -- 'Alternate guardian mobile',
+  `guardian_relation`         VARCHAR(50) NULL, -- 'Relation of alternate guardian to student',
   -- Address
-  `address_line1`          VARCHAR(150) NULL, -- 'Address line 1',
-  `address_line2`          VARCHAR(150) NULL, -- 'Address line 2',
-  `city`                   VARCHAR(50) NULL, -- 'City',
-  `state`                  VARCHAR(50) NULL, -- 'State',
-  `pincode`                VARCHAR(10) NULL, -- 'PIN code',
+  `address_line1`             VARCHAR(150) NULL, -- 'Address line 1',
+  `address_line2`             VARCHAR(150) NULL, -- 'Address line 2',
+  `city`                      INT UNSIGNED DEFAULT NULL, -- FK to glb_cities
+  `state`                     INT UNSIGNED DEFAULT NULL, -- FK to glb_states
+  `pincode`                   VARCHAR(10) NULL, -- 'PIN code',
   -- Fee
-  `application_fee_paid`   TINYINT(1) NOT NULL DEFAULT 0, -- '1 = application fee confirmed; PAY webhook sets this',
-  `application_fee_amount` DECIMAL(10,2) NULL, -- 'Application fee amount paid',
-  `application_fee_date`   DATE NULL, -- 'Date fee was paid',
+  `application_fee_paid`      TINYINT(1) NOT NULL DEFAULT 0, -- '1 = application fee confirmed; PAY webhook sets this',
+  `application_fee_amount`    DECIMAL(12,2) NULL, -- 'Application fee amount paid',
+  `application_fee_date`      DATE NULL, -- 'Date fee was paid',
+  -- StudntFee Module Details
+  `fee_transactions_id`       INT UNSIGNED DEFAULT NULL, -- FK → fee_transactions.id
+  `fee_receipts_id`           INT UNSIGNED DEFAULT NULL, -- FK → fee_receipts.id
+  `fee_payment_gateway_logs_id` INT UNSIGNED DEFAULT NULL, -- FK → fee_payment_gateway_logs.id
   -- Interview
-  `interview_scheduled_at` DATETIME NULL, -- 'Interview date and time',
-  `interview_venue`        VARCHAR(100) NULL, -- 'Interview venue / room',
-  `interview_notes`        TEXT NULL, -- 'Post-interview remarks by interviewer',
-  `interview_score`        DECIMAL(5,2) NULL, -- 'Interview score; used in merit composite calculation',
+  `interview_scheduled_at`    DATETIME NULL, -- 'Interview date and time',
+  `interview_venue`           VARCHAR(100) NULL, -- 'Interview venue / room',
+  `interview_notes`           TEXT NULL, -- 'Post-interview remarks by interviewer',
+  `interview_score`           DECIMAL(5,2) NULL, -- 'Interview score; used in merit composite calculation',
   -- Status
-  `status`                 ENUM('Draft','Submitted','Under_Review','Verified','Shortlisted','Rejected','Waitlisted','Allotted','Enrolled','Withdrawn') NOT NULL DEFAULT 'Draft', -- 'Application lifecycle status; all transitions logged to adm_application_stages',
-  `rejection_reason`       TEXT NULL, -- 'Reason for rejection; required when status = Rejected',
-  `processed_by`           INT UNSIGNED NULL, -- 'FK → sys_users.id; staff who last processed this application',
-  `is_active`              TINYINT(1) NOT NULL DEFAULT 1, -- 'Soft enable/disable',
-  `created_by`             BIGINT UNSIGNED NOT NULL, -- 'sys_users.id — creator',
-  `updated_by`             BIGINT UNSIGNED NOT NULL, -- 'sys_users.id — last editor',
-  `created_at`             TIMESTAMP NULL, -- 'Record creation timestamp',
-  `updated_at`             TIMESTAMP NULL, -- 'Record update timestamp',
-  `deleted_at`             TIMESTAMP NULL, -- 'Soft delete timestamp',
+  `status`                    ENUM('Draft','Submitted','Under_Review','Verified','Shortlisted','Rejected','Waitlisted','Allotted','Enrolled','Withdrawn') NOT NULL DEFAULT 'Draft', -- 'Application lifecycle status; all transitions logged to adm_application_stages_log',
+  `rejection_reason`          TEXT NULL, -- 'Reason for rejection; required when status = Rejected',
+  `processed_by`              INT UNSIGNED NULL, -- 'FK → sys_users.id; staff who last processed this application',
+  `is_active`                 TINYINT(1) NOT NULL DEFAULT 1, -- 'Soft enable/disable',
+  -- `created_by`             BIGINT UNSIGNED NOT NULL, -- 'sys_users.id — creator',
+  -- `updated_by`             BIGINT UNSIGNED NOT NULL, -- 'sys_users.id — last editor',
+  `created_at`                TIMESTAMP NULL, -- 'Record creation timestamp',
+  `updated_at`                TIMESTAMP NULL, -- 'Record update timestamp',
+  `deleted_at`                TIMESTAMP NULL, -- 'Soft delete timestamp',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_adm_app_no`(`application_no`),
   -- NOTE: aadhar_no is NOT UNIQUE at DB level; service-layer uniqueness check only
@@ -333,14 +367,29 @@ CREATE TABLE IF NOT EXISTS `adm_applications` (
   KEY `idx_adm_app_enquiry`(`enquiry_id`),
   KEY `idx_adm_app_sibling`(`sibling_student_id`),
   KEY `idx_adm_app_processed_by`(`processed_by`),
-  KEY `idx_adm_app_aadhar`(`aadhar_no`),
   CONSTRAINT `fk_adm_app_cycle_id` FOREIGN KEY (`admission_cycle_id`) REFERENCES `adm_admission_cycles` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT `fk_adm_app_enquiry_id` FOREIGN KEY (`enquiry_id`) REFERENCES `adm_enquiries` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `fk_adm_app_class_id` FOREIGN KEY (`class_applied_id`) REFERENCES `sch_classes` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT `fk_adm_app_sibling_student_id` FOREIGN KEY (`sibling_student_id`) REFERENCES `std_students` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `fk_adm_app_student_religion` FOREIGN KEY (`student_religion`) REFERENCES `sys_dropdown_table` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `fk_adm_app_student_caste_category` FOREIGN KEY (`student_caste_category`) REFERENCES `sys_dropdown_table` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `fk_adm_app_student_nationality` FOREIGN KEY (`student_nationality`) REFERENCES `sys_dropdown_table` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `fk_adm_app_student_mother_tongue` FOREIGN KEY (`student_mother_tongue`) REFERENCES `sys_dropdown_table` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `fk_adm_app_city_id` FOREIGN KEY (`city`) REFERENCES `glb_cities` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `fk_adm_app_state_id` FOREIGN KEY (`state`) REFERENCES `glb_states` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `fk_adm_app_processed_by` FOREIGN KEY (`processed_by`) REFERENCES `sys_users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   COMMENT='Full admission application records — multi-step wizard data with status FSM';
+-- Conditions:
+-- Fee payment will be posted in Accounting Module also
+-- we need to capture Fee Payment ID from (Payment Module)
+-- If 'is_sibling' true then system will find parent id of sibling and populate (father_user_id, mother_user_id) from std_guardians table
+-- When status is selected as 'Enrolled' then this should transfer all the data to std_students and std_student_profiles table and move the user to 
+--     the Student Profile Screen to complete all the entries required to Register a New Student.
+--
+-- Changes for V2:
+-- Convert all Enums into FK to sys_dropdown_table
+
 
 -- =============================================================================
 -- LAYER 5 — Depends on Layer 4 + adm_entrance_tests + adm_merit_lists
@@ -357,10 +406,11 @@ CREATE TABLE IF NOT EXISTS `adm_application_documents` (
   `verified_by`            INT UNSIGNED NULL, -- 'FK → sys_users.id; staff who verified the document',
   `verified_at`            TIMESTAMP NULL, -- 'Timestamp of verification',
   `is_physically_received` TINYINT(1) NOT NULL DEFAULT 0, -- '1 = original physical document collected at front desk',
-  `physical_received_at`   DATE NULL, -- 'Date physical document was received',
+  `physically_received_at` DATE NULL, -- 'Date physical document was received',
+  `physically_received_by` BIGINT UNSIGNED NULL, -- 'FK → sys_users.id; staff who verified the document',
   `is_active`              TINYINT(1) NOT NULL DEFAULT 1, -- 'Soft enable/disable',
-  `created_by`             BIGINT UNSIGNED NOT NULL, -- 'sys_users.id — creator',
-  `updated_by`             BIGINT UNSIGNED NOT NULL, -- 'sys_users.id — last editor',
+  -- `created_by`             BIGINT UNSIGNED NOT NULL, -- 'sys_users.id — creator',
+  -- `updated_by`             BIGINT UNSIGNED NOT NULL, -- 'sys_users.id — last editor',
   `created_at`             TIMESTAMP NULL, -- 'Record creation timestamp',
   `updated_at`             TIMESTAMP NULL, -- 'Record update timestamp',
   `deleted_at`             TIMESTAMP NULL, -- 'Soft delete timestamp',
@@ -378,8 +428,9 @@ CREATE TABLE IF NOT EXISTS `adm_application_documents` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Uploaded documents per application mapped to document checklist items';
 
 -- -----------------------------------------------------------------------------
-
-CREATE TABLE IF NOT EXISTS `adm_application_stages` (
+-- Immutable audit trail of every application status transition
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `adm_application_stages_log` (
   `id`             BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, -- Primary key
   `application_id` BIGINT UNSIGNED NOT NULL, -- FK → adm_applications
   `from_status`    VARCHAR(50) NOT NULL, -- Previous status value (free text to accommodate future statuses)
@@ -387,12 +438,12 @@ CREATE TABLE IF NOT EXISTS `adm_application_stages` (
   `remarks`        TEXT NULL, -- Staff comment or system-generated reason for transition
   `changed_by`     INT UNSIGNED NULL, -- FK → sys_users.id; NULL = system-triggered transition
   `changed_at`     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `is_active`      TINYINT(1) NOT NULL DEFAULT 1, -- Soft enable/disable
-  `created_by`     BIGINT UNSIGNED NOT NULL, -- sys_users.id — creator
-  `updated_by`     BIGINT UNSIGNED NOT NULL, -- sys_users.id — last editor
+  -- `is_active`      TINYINT(1) NOT NULL DEFAULT 1, -- Soft enable/disable
+  -- `created_by`     BIGINT UNSIGNED NOT NULL, -- sys_users.id — creator
+  -- `updated_by`     BIGINT UNSIGNED NOT NULL, -- sys_users.id — last editor
   `created_at`     TIMESTAMP NULL, -- Record creation timestamp
   `updated_at`     TIMESTAMP NULL, -- Record update timestamp
-  `deleted_at`     TIMESTAMP NULL, -- Soft delete timestamp
+  -- `deleted_at`     TIMESTAMP NULL, -- Soft delete timestamp
   PRIMARY KEY (`id`),
   KEY `idx_adm_stage_app` (`application_id`),
   KEY `idx_adm_stage_changed_at` (`changed_at`),
@@ -411,9 +462,9 @@ CREATE TABLE IF NOT EXISTS `adm_entrance_test_candidates` (
   `marks_obtained`        DECIMAL(6,2)        NULL, -- Total marks; NULL until marks entered after test
   `result`                ENUM('Pass','Fail','Absent','Pending') NOT NULL DEFAULT 'Pending', -- Test result; Pending until marks entered
   `subject_marks_json`    JSON                NULL, -- Per-subject breakdown e.g., [{"subject":"Maths","marks":45}]
-  `is_active`             TINYINT(1)          NOT NULL DEFAULT 1, -- Soft enable/disable
-  `created_by`            BIGINT UNSIGNED     NOT NULL, -- sys_users.id — creator
-  `updated_by`            BIGINT UNSIGNED     NOT NULL, -- sys_users.id — last editor
+  -- `is_active`             TINYINT(1)          NOT NULL DEFAULT 1, -- Soft enable/disable
+  -- `created_by`            BIGINT UNSIGNED     NOT NULL, -- sys_users.id — creator
+  -- `updated_by`            BIGINT UNSIGNED     NOT NULL, -- sys_users.id — last editor
   `created_at`            TIMESTAMP           NULL, -- Record creation timestamp
   `updated_at`            TIMESTAMP           NULL, -- Record update timestamp
   `deleted_at`            TIMESTAMP           NULL, -- Soft delete timestamp
@@ -422,22 +473,15 @@ CREATE TABLE IF NOT EXISTS `adm_entrance_test_candidates` (
   KEY `idx_adm_etc_test`       (`entrance_test_id`),
   KEY `idx_adm_etc_app`        (`application_id`),
   KEY `idx_adm_etc_result`     (`result`),
-  CONSTRAINT `fk_adm_etc_test_id`
-    FOREIGN KEY (`entrance_test_id`)
-    REFERENCES `adm_entrance_tests` (`id`)
-    ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `fk_adm_etc_application_id`
-    FOREIGN KEY (`application_id`)
-    REFERENCES `adm_applications` (`id`)
-    ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Candidate registration and mark entry per entrance test session';
+  CONSTRAINT `fk_adm_etc_test_id` FOREIGN KEY (`entrance_test_id`) REFERENCES `adm_entrance_tests` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_adm_etc_application_id` FOREIGN KEY (`application_id`) REFERENCES `adm_applications` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Candidate registration and mark entry per entrance test session';
 
 -- -----------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `adm_merit_list_entries` (
   `id`                    BIGINT UNSIGNED     NOT NULL AUTO_INCREMENT, -- Primary key
-  `merit_list_id`         BIGINT UNSIGNED     NOT NULL, -- FK → adm_merit_lists
+  `merit_list_id`         BIGINT UNSIGNED     NOT NULL, -- FK → adm_merit_lists.id
   `application_id`        BIGINT UNSIGNED     NOT NULL, -- FK → adm_applications
   `merit_rank`            SMALLINT UNSIGNED   NOT NULL, -- 1 = top-ranked applicant in this merit list
   `composite_score`       DECIMAL(6,2)        NULL, -- Final composite score after sibling bonus; used for ranking
@@ -458,16 +502,9 @@ CREATE TABLE IF NOT EXISTS `adm_merit_list_entries` (
   KEY `idx_adm_mle_app`        (`application_id`),
   KEY `idx_adm_mle_status`     (`merit_status`),
   KEY `idx_adm_mle_score`      (`composite_score`),
-  CONSTRAINT `fk_adm_mle_merit_list_id`
-    FOREIGN KEY (`merit_list_id`)
-    REFERENCES `adm_merit_lists` (`id`)
-    ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `fk_adm_mle_application_id`
-    FOREIGN KEY (`application_id`)
-    REFERENCES `adm_applications` (`id`)
-    ON DELETE RESTRICT ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Individual applicant entries in a merit list with composite scores and ranking';
+  CONSTRAINT `fk_adm_mle_merit_list_id` FOREIGN KEY (`merit_list_id`) REFERENCES `adm_merit_lists` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_adm_mle_application_id` FOREIGN KEY (`application_id`) REFERENCES `adm_applications` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Individual applicant entries in a merit list with composite scores and ranking';
 
 -- =============================================================================
 -- LAYER 6 — Depends on Layer 5 + sch_sections, sch_org_academic_sessions_jnt
@@ -805,7 +842,7 @@ CREATE TABLE IF NOT EXISTS `adm_behavior_actions` (
 -- Layer 2: adm_document_checklist, adm_quota_config, adm_seat_capacity, adm_entrance_tests (4)
 -- Layer 3: adm_enquiries, adm_merit_lists (2)
 -- Layer 4: adm_follow_ups, adm_applications (2)
--- Layer 5: adm_application_documents, adm_application_stages,
+-- Layer 5: adm_application_documents, adm_application_stages_log,
 --           adm_entrance_test_candidates, adm_merit_list_entries (4)
 -- Layer 6: adm_allotments, adm_promotion_batches (2)
 -- Layer 7: adm_withdrawals, adm_promotion_records (2)
