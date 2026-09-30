@@ -657,7 +657,7 @@ CREATE TABLE IF NOT EXISTS `tst_categories` (
    UNIQUE KEY `uq_tst_categories_moduleName` (`name`),
    -- UNIQUE KEY `uq_tst_categories_moduleCat`  (`module_code`,`cat_code`),  -- parent key of the composite FK below
    -- UNIQUE KEY `uq_tst_categories_moduleName` (`module_code`,`name`),
-   CONSTRAINT `fk_tst_categories_module`    FOREIGN KEY (`module_code`) REFERENCES `tst_modules`(`module_code`) ON DELETE RESTRICT,
+   CONSTRAINT `fk_tst_categories_module`    FOREIGN KEY (`module_code`) REFERENCES `tst_modules`(`module_code`) ON DELETE RESTRICT ON UPDATE CASCADE,
    CONSTRAINT `fk_tst_categories_createdBy` FOREIGN KEY (`created_by`)  REFERENCES `tst_users`(`code`) ON DELETE RESTRICT,
    CONSTRAINT `fk_tst_categories_updatedBy` FOREIGN KEY (`updated_by`)  REFERENCES `tst_users`(`code`) ON DELETE RESTRICT,
    CONSTRAINT `fk_tst_categories_deletedBy` FOREIGN KEY (`deleted_by`)  REFERENCES `tst_users`(`code`) ON DELETE SET NULL
@@ -685,8 +685,8 @@ CREATE TABLE IF NOT EXISTS `tst_main_menus` (
    `deleted_at`   TIMESTAMP NULL,
    PRIMARY KEY (`mm_code`),
    UNIQUE KEY `uq_tst_mainMenus_parent` (`cat_code`,`mm_code`),  -- parent key for children
-   CONSTRAINT `fk_tst_mainMenus_module`  FOREIGN KEY (`module_code`) REFERENCES `tst_modules`(`module_code`) ON DELETE RESTRICT,
-   CONSTRAINT `fk_tst_mainMenus_category`  FOREIGN KEY (`cat_code`) REFERENCES `tst_categories`(`cat_code`) ON DELETE RESTRICT,
+   CONSTRAINT `fk_tst_mainMenus_module`  FOREIGN KEY (`module_code`) REFERENCES `tst_modules`(`module_code`) ON DELETE RESTRICT ON UPDATE CASCADE,
+   CONSTRAINT `fk_tst_mainMenus_category`  FOREIGN KEY (`cat_code`) REFERENCES `tst_categories`(`cat_code`) ON DELETE RESTRICT ON UPDATE CASCADE,
    CONSTRAINT `fk_tst_mainMenus_createdBy` FOREIGN KEY (`created_by`) REFERENCES `tst_users`(`code`) ON DELETE RESTRICT,
    CONSTRAINT `fk_tst_mainMenus_updatedBy` FOREIGN KEY (`updated_by`) REFERENCES `tst_users`(`code`) ON DELETE RESTRICT,
    CONSTRAINT `fk_tst_mainMenus_deletedBy` FOREIGN KEY (`deleted_by`) REFERENCES `tst_users`(`code`) ON DELETE SET NULL
@@ -715,8 +715,8 @@ CREATE TABLE IF NOT EXISTS `tst_sub_menus` (
    `deleted_at`   TIMESTAMP NULL,
    PRIMARY KEY (`sm_code`),
    UNIQUE KEY `uq_tst_subMenus_parent` (`cat_code`,`mm_code`,`sm_code`),
-   CONSTRAINT `fk_tst_subMenus_module` FOREIGN KEY (`module_code`) REFERENCES `tst_modules`(`module_code`) ON DELETE RESTRICT,
-   CONSTRAINT `fk_tst_subMenus_mainMenu`  FOREIGN KEY (`cat_code`,`mm_code`) REFERENCES `tst_main_menus`(`cat_code`,`mm_code`) ON DELETE RESTRICT,
+   CONSTRAINT `fk_tst_subMenus_module` FOREIGN KEY (`module_code`) REFERENCES `tst_modules`(`module_code`) ON DELETE RESTRICT ON UPDATE CASCADE,
+   CONSTRAINT `fk_tst_subMenus_mainMenu`  FOREIGN KEY (`cat_code`,`mm_code`) REFERENCES `tst_main_menus`(`cat_code`,`mm_code`) ON DELETE RESTRICT ON UPDATE CASCADE,
    CONSTRAINT `fk_tst_subMenus_createdBy` FOREIGN KEY (`created_by`) REFERENCES `tst_users`(`code`) ON DELETE RESTRICT,
    CONSTRAINT `fk_tst_subMenus_updatedBy` FOREIGN KEY (`updated_by`) REFERENCES `tst_users`(`code`) ON DELETE RESTRICT,
    CONSTRAINT `fk_tst_subMenus_deletedBy` FOREIGN KEY (`deleted_by`) REFERENCES `tst_users`(`code`) ON DELETE SET NULL
@@ -788,9 +788,9 @@ CREATE TABLE IF NOT EXISTS `tst_tabs_screens` (
    INDEX `idx_tst_tabsScreens_criticality` (`criticality`),
    INDEX `idx_tst_tabsScreens_pipeline`    (`dev_status`,`tc_list_status`,`tc_creation_status`),
    FULLTEXT KEY `ft_tst_tabsScreens_name`  (`name`,`description`),
-   CONSTRAINT `fk_tst_tabsScreens_module`     FOREIGN KEY (`module_code`)     REFERENCES `tst_modules`(`module_code`) ON DELETE RESTRICT,
-   CONSTRAINT `fk_tst_tabsScreens_mainMenu`   FOREIGN KEY (`cat_code`,`mm_code`) REFERENCES `tst_main_menus`(`cat_code`,`mm_code`) ON DELETE RESTRICT,
-   CONSTRAINT `fk_tst_tabsScreens_subMenu`    FOREIGN KEY (`sm_code`)         REFERENCES `tst_sub_menus`(`sm_code`) ON DELETE RESTRICT,
+   CONSTRAINT `fk_tst_tabsScreens_module`     FOREIGN KEY (`module_code`)     REFERENCES `tst_modules`(`module_code`) ON DELETE RESTRICT ON UPDATE CASCADE,
+   CONSTRAINT `fk_tst_tabsScreens_mainMenu`   FOREIGN KEY (`cat_code`,`mm_code`) REFERENCES `tst_main_menus`(`cat_code`,`mm_code`) ON DELETE RESTRICT ON UPDATE CASCADE,
+   CONSTRAINT `fk_tst_tabsScreens_subMenu`    FOREIGN KEY (`sm_code`)         REFERENCES `tst_sub_menus`(`sm_code`) ON DELETE RESTRICT ON UPDATE CASCADE,
    CONSTRAINT `fk_tst_tabsScreens_owner`      FOREIGN KEY (`owner_user_code`) REFERENCES `tst_users`(`code`) ON DELETE SET NULL,
    CONSTRAINT `fk_tst_tabsScreens_excludedBy` FOREIGN KEY (`excluded_by`)     REFERENCES `tst_users`(`code`) ON DELETE SET NULL,
    CONSTRAINT `fk_tst_tabsScreens_reviewedBy` FOREIGN KEY (`reviewed_by`)     REFERENCES `tst_users`(`code`) ON DELETE SET NULL,
@@ -821,7 +821,7 @@ CREATE TABLE IF NOT EXISTS `tst_sequence_counters` (
    PRIMARY KEY (`machine_code`, `counter_scope`, `ts_code`),
    UNIQUE KEY `uq_tcsn_mc_ts` (`machine_code`,`ts_code_marker`),
    CONSTRAINT `fk_tcsn_machine` FOREIGN KEY (`machine_code`) REFERENCES `tst_machines`(`machine_code`) ON DELETE RESTRICT,
-   CONSTRAINT `fk_tcsn_ts` FOREIGN KEY (`ts_code`) REFERENCES `tst_tabs_screens`(`ts_code`) ON DELETE RESTRICT
+   CONSTRAINT `fk_tcsn_ts` FOREIGN KEY (`ts_code`) REFERENCES `tst_tabs_screens`(`ts_code`) ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 -- Import / Export: (Not Required, will use Seeder instead)
    -- NEVER EXPORTED OR IMPORTED
@@ -887,7 +887,7 @@ CREATE TABLE IF NOT EXISTS `tst_tc_required_list` (
    CONSTRAINT `chk_tst_tcRequired_notReq` CHECK (`tc_creation_status` <> 'Not-Required' OR `not_required_reason` IS NOT NULL),
    -- MC-2: machine_code and ts_code feed the generated tcr_code, so these MUST be RESTRICT.
    CONSTRAINT `fk_tst_tcRequired_machine`   FOREIGN KEY (`machine_code`) REFERENCES `tst_machines`(`machine_code`) ON DELETE RESTRICT,
-   CONSTRAINT `fk_tst_tcRequired_screen`    FOREIGN KEY (`ts_code`)      REFERENCES `tst_tabs_screens`(`ts_code`)  ON DELETE RESTRICT,
+   CONSTRAINT `fk_tst_tcRequired_screen`    FOREIGN KEY (`ts_code`)      REFERENCES `tst_tabs_screens`(`ts_code`)  ON DELETE RESTRICT ON UPDATE CASCADE,
    CONSTRAINT `fk_tst_tcRequired_user`      FOREIGN KEY (`user_code`)    REFERENCES `tst_users`(`code`) ON DELETE RESTRICT,
    CONSTRAINT `fk_tst_tcRequired_createdBy` FOREIGN KEY (`created_by`)   REFERENCES `tst_users`(`code`) ON DELETE RESTRICT,
    CONSTRAINT `fk_tst_tcRequired_updatedBy` FOREIGN KEY (`updated_by`)   REFERENCES `tst_users`(`code`) ON DELETE RESTRICT,
@@ -980,8 +980,8 @@ CREATE TABLE IF NOT EXISTS `tst_test_cases` (
    CONSTRAINT `chk_tst_testCases_retired` CHECK (`is_active` = 1 OR `retired_reason` IS NOT NULL),
    -- MC-2: machine_code and ts_code feed test_case_code. RESTRICT is the only legal action.
    CONSTRAINT `fk_tst_testCases_machine`   FOREIGN KEY (`machine_code`) REFERENCES `tst_machines`(`machine_code`) ON DELETE RESTRICT,
-   CONSTRAINT `fk_tst_testCases_screen`    FOREIGN KEY (`ts_code`)      REFERENCES `tst_tabs_screens`(`ts_code`)  ON DELETE RESTRICT,
-   CONSTRAINT `fk_tst_testCases_tcr`       FOREIGN KEY (`tcr_code`)     REFERENCES `tst_tc_required_list`(`tcr_code`) ON DELETE RESTRICT,
+   CONSTRAINT `fk_tst_testCases_screen`    FOREIGN KEY (`ts_code`)      REFERENCES `tst_tabs_screens`(`ts_code`)  ON DELETE RESTRICT ON UPDATE CASCADE,
+   CONSTRAINT `fk_tst_testCases_tcr`       FOREIGN KEY (`tcr_code`)     REFERENCES `tst_tc_required_list`(`tcr_code`) ON DELETE RESTRICT ON UPDATE CASCADE,
    CONSTRAINT `fk_tst_testCases_user`      FOREIGN KEY (`user_code`)    REFERENCES `tst_users`(`code`) ON DELETE RESTRICT,
    CONSTRAINT `fk_tst_testCases_retiredBy` FOREIGN KEY (`retired_by`)   REFERENCES `tst_users`(`code`) ON DELETE SET NULL,
    CONSTRAINT `fk_tst_testCases_createdBy` FOREIGN KEY (`created_by`)   REFERENCES `tst_users`(`code`) ON DELETE RESTRICT,

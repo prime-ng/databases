@@ -13,10 +13,10 @@
 
   CREATE TABLE IF NOT EXISTS `sch_sections` (
     `id`         int unsigned NOT NULL AUTO_INCREMENT,
-    `ordinal`    tinyint unsigned NOT NULL DEFAULT 0,   -- will have sequence order for Sections (Auto Update by Drag & Drop)
-    `code`       CHAR(5) NOT NULL,                      -- e.g., 'A','B','C','D' and so on (This will be used for Timetable)
-    `short_name` varchar(20) NOT NULL,                  -- e.g. 'SEC-A' or 'SEC-B' (NEW)
-    `name`       varchar(50) NOT NULL,                  -- e.g. 'Section - A', 'Section - B'
+    `ordinal`    tinyint unsigned NOT NULL DEFAULT 0,       -- will have sequence order for Sections (Auto Update by Drag & Drop)
+    `code`       CHAR(5) NOT NULL,                    -- e.g., 'A','B','C','D' and so on (This will be used for Timetable)
+    `short_name` varchar(20) NOT NULL,          -- e.g. 'SEC-A' or 'SEC-B' (NEW)
+    `name`       varchar(50) NOT NULL,                -- e.g. 'Section - A', 'Section - B'
     `is_active`  tinyint(1) NOT NULL DEFAULT 1,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -179,6 +179,8 @@
     `subject_study_format_id` int unsigned NOT NULL,          -- FK to 'sch_subject_study_format_jnt'
     `subject_studyformat_option_code` varchar(20) NOT NULL,   -- e.g. 'Football', 'Basketball', 'Volleyball' etc.
     `subject_studyformat_option_name` varchar(50) NOT NULL,   -- e.g. 'Football', 'Basketball', 'Volleyball' etc.
+    `required_room_type_id` INT UNSIGNED NOT NULL,      -- FK to sch_rooms_type.id (Required)
+    `required_room_id` INT UNSIGNED DEFAULT NULL,      -- FK to sch_rooms.id (Optional)
     `is_active` tinyint(1) NOT NULL DEFAULT '1',
     `deleted_at` timestamp NULL DEFAULT NULL,
     `created_at` timestamp NULL DEFAULT NULL,
@@ -196,7 +198,7 @@
     `id` INT unsigned NOT NULL AUTO_INCREMENT,
     `class_id` int unsigned NOT NULL,             -- FK to 'sch_classes'
     `section_id` int unsigned NULL,           -- FK to 'sch_sections' (Optional) If Null then will be applicable to all thr sections
-    `subject_Study_format_id` INT unsigned NOT NULL,  -- FK to 'sch_subject_study_format_jnt'
+    `subject_study_format_id` INT unsigned NOT NULL,  -- FK to 'sch_subject_study_format_jnt'
     `subject_type_id` int unsigned NOT NULL,      -- FK to 'sch_subject_types'
     `code` CHAR(50) NOT NULL, -- Combination of (Class+Section+Subject+StudyFormat+SubjType) e.g., '10h_A_SCI_LAC_MAJ','8th_MAT_LAC_OPT' (This will be used for Timetable)
     `name` varchar(100) NOT NULL,                 -- 10th-A Science Lacture Major
@@ -223,10 +225,10 @@
     `updated_at` timestamp NULL DEFAULT NULL,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_classGroups_subStdformatCode` (`code`), 
-    UNIQUE KEY `uq_classGroups_cls_Sec_subStdFmt_SubTyp` (`class_id`,`section_id`,`subject_Study_format_id`),
+    UNIQUE KEY `uq_classGroups_cls_Sec_subStdFmt_SubTyp` (`class_id`,`section_id`,`subject_study_format_id`),
     CONSTRAINT `fk_classGroups_classId` FOREIGN KEY (`class_id`) REFERENCES `sch_classes` (`id`),
     CONSTRAINT `fk_classGroups_sectionId` FOREIGN KEY (`section_id`) REFERENCES `sch_sections` (`id`),
-    CONSTRAINT `fk_classGroups_subjStudyFormatId` FOREIGN KEY (`subject_Study_format_id`) REFERENCES `sch_subject_study_format_jnt` (`id`),
+    CONSTRAINT `fk_classGroups_subjStudyFormatId` FOREIGN KEY (`subject_study_format_id`) REFERENCES `sch_subject_study_format_jnt` (`id`),
     CONSTRAINT `fk_classGroups_subTypeId` FOREIGN KEY (`subject_type_id`) REFERENCES `sch_subject_types` (`id`),
     CONSTRAINT `fk_classGroups_roomTypeId` FOREIGN KEY (`required_room_type_id`) REFERENCES `sch_rooms_type` (`id`),
     CONSTRAINT `fk_classGroups_roomId` FOREIGN KEY (`required_room_id`) REFERENCES `sch_rooms` (`id`),
@@ -293,42 +295,42 @@
   -- 2.1 : LEAVE CONFIGURATION TABLES
   -- ===========================================================================
   -- we need to create a table to annual session for leave which will start from Jan and will end in Dec. This table will be used to link the leave with the annual session and also to calculate the leave balance for the employees. This table will be linked with the sch_employee_leave_balance table and sch_employee_leave_applications table.
-  CREATE TABLE IF NOT EXISTS `sch_annual_leave_sessions` (
-    `id`                    INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
-    `name`                  VARCHAR(100) NOT NULL,  -- e.g. "2024 Calendar Year", "2024-25 Academic Year"
-    `start_date`            DATE NOT NULL,
-    `end_date`              DATE NOT NULL,
-    `description`           VARCHAR(255) DEFAULT NULL,
-    `is_active`             TINYINT(1) NOT NULL DEFAULT 1,
-    `created_at`            TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    `updated_at`            TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    `deleted_at`            TIMESTAMP NULL,
-    UNIQUE KEY `uq_session_name` (`name`)
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  COMMENT='Defines annual sessions for leave tracking (e.g., calendar year, academic year).';
+    CREATE TABLE IF NOT EXISTS `sch_annual_leave_sessions` (
+      `id`                    INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+      `name`                  VARCHAR(100) NOT NULL,  -- e.g. "2024 Calendar Year", "2024-25 Academic Year"
+      `start_date`            DATE NOT NULL,
+      `end_date`              DATE NOT NULL,
+      `description`           VARCHAR(255) DEFAULT NULL,
+      `is_active`             TINYINT(1) NOT NULL DEFAULT 1,
+      `created_at`            TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      `updated_at`            TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      `deleted_at`            TIMESTAMP NULL,
+      UNIQUE KEY `uq_session_name` (`name`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    COMMENT='Defines annual sessions for leave tracking (e.g., calendar year, academic year).';
 
-  CREATE TABLE IF NOT EXISTS `sch_staff_attendance_types` (
-    `id`                    INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
-    `code`                  VARCHAR(10) NOT NULL,  -- e.g. 'PR', 'AB', 'LV', 'LT', 'HD'
-    `name`                  VARCHAR(100) NOT NULL,  -- e.g. 'Present', 'Absent', 'Leave', 'Late', 'Holiday'
-    `category`              ENUM('Attendance','Leave','Holiday','Other') NOT NULL DEFAULT 'Attendance',  -- Grouping for reports
-    `is_present`            TINYINT(1) NOT NULL DEFAULT 0,  -- 0: Absent, 1: Present (core logic flag)
-    `can_be_half_day`       TINYINT(1) NOT NULL DEFAULT 0,  -- 1: Allows half-day marking (e.g., Late, Leave)
-    `affects_payroll`       TINYINT(1) NOT NULL DEFAULT 1,  -- 1: Counts toward payroll calculation, 0: Excluded (e.g., Holiday)
-    `payroll_percentage`    DECIMAL(5,2) NOT NULL DEFAULT 100.00,  -- % of daily pay (100.00 = full, 50.00 = half, 0.00 = none)
-    `requires_approval`     TINYINT(1) NOT NULL DEFAULT 0,  -- 1: Requires supervisor approval (e.g., Absent, Late)
-    `color_hex`             VARCHAR(7) DEFAULT NULL,  -- #FF5733 for calendar/UI display
-    `icon_class`            VARCHAR(50) DEFAULT NULL,  -- CSS class for icon (e.g., 'fas fa-check', 'fas fa-times')
-    `display_order`         INT NOT NULL DEFAULT 0,
-    `is_system`             TINYINT(1) NOT NULL DEFAULT 0,  -- 1: Built-in, cannot be deleted/modified by users
-    `is_active`             TINYINT(1) NOT NULL DEFAULT 1,
-    `created_at`            TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    `updated_at`            TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    `deleted_at`            TIMESTAMP NULL,
-    UNIQUE KEY `uq_attendance_code` (`code`),
-    INDEX `idx_attendance_active` (`is_active`, `deleted_at`),
-    INDEX `idx_attendance_category` (`category`, `is_active`)
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    CREATE TABLE IF NOT EXISTS `sch_staff_attendance_types` (
+      `id`                    INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+      `code`                  VARCHAR(10) NOT NULL,  -- e.g. 'PR', 'AB', 'LV', 'LT', 'HD'
+      `name`                  VARCHAR(100) NOT NULL,  -- e.g. 'Present', 'Absent', 'Leave', 'Late', 'Holiday'
+      `category`              ENUM('Attendance','Leave','Holiday','Other') NOT NULL DEFAULT 'Attendance',  -- Grouping for reports
+      `is_present`            TINYINT(1) NOT NULL DEFAULT 0,  -- 0: Absent, 1: Present (core logic flag)
+      `can_be_half_day`       TINYINT(1) NOT NULL DEFAULT 0,  -- 1: Allows half-day marking (e.g., Late, Leave)
+      `affects_payroll`       TINYINT(1) NOT NULL DEFAULT 1,  -- 1: Counts toward payroll calculation, 0: Excluded (e.g., Holiday)
+      `payroll_percentage`    DECIMAL(5,2) NOT NULL DEFAULT 100.00,  -- % of daily pay (100.00 = full, 50.00 = half, 0.00 = none)
+      `requires_approval`     TINYINT(1) NOT NULL DEFAULT 0,  -- 1: Requires supervisor approval (e.g., Absent, Late)
+      `color_hex`             VARCHAR(7) DEFAULT NULL,  -- #FF5733 for calendar/UI display
+      `icon_class`            VARCHAR(50) DEFAULT NULL,  -- CSS class for icon (e.g., 'fas fa-check', 'fas fa-times')
+      `display_order`         INT NOT NULL DEFAULT 0,
+      `is_system`             TINYINT(1) NOT NULL DEFAULT 0,  -- 1: Built-in, cannot be deleted/modified by users
+      `is_active`             TINYINT(1) NOT NULL DEFAULT 1,
+      `created_at`            TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      `updated_at`            TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      `deleted_at`            TIMESTAMP NULL,
+      UNIQUE KEY `uq_attendance_code` (`code`),
+      INDEX `idx_attendance_active` (`is_active`, `deleted_at`),
+      INDEX `idx_attendance_category` (`category`, `is_active`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   -- ---------------------------------------------------------------------------
   -- sch_holidays   (NEW in v4)
@@ -591,28 +593,29 @@
   -- Note: name should be plural per convention; deferred to v5.
   -- ---------------------------------------------------------------------------
   CREATE TABLE IF NOT EXISTS `sch_employee_leave_balance` (
-    `id`                    INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `employee_id`           INT UNSIGNED NOT NULL,
-    `academic_year`         VARCHAR(9)   NOT NULL,
-    `leave_type_id`         INT UNSIGNED NOT NULL,
-    `opening_balance`       DECIMAL(5,2) NOT NULL DEFAULT 0.00,
-    `carry_forward`         DECIMAL(5,2) NOT NULL DEFAULT 0.00,
-    `total_used`            DECIMAL(5,2) NOT NULL DEFAULT 0.00,
-    `total_pending`         DECIMAL(5,2) NOT NULL DEFAULT 0.00,
-    `available_balance`     DECIMAL(5,2) GENERATED ALWAYS AS (opening_balance + carry_forward - total_used) STORED,
-    `manual_adjustment`     DECIMAL(5,2) NOT NULL DEFAULT 0.00,
-    `adjustment_reason`     VARCHAR(255) DEFAULT NULL,
-    `is_active`             TINYINT(1)   NOT NULL DEFAULT 1,
-    `created_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-    `updated_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    `deleted_at`            TIMESTAMP NULL DEFAULT NULL,
+    `id`                       INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `employee_id`              INT UNSIGNED NOT NULL,
+    `annual_leave_sessions_id` INT UNSIGNED NOT NULL,
+    `leave_type_id`            INT UNSIGNED NOT NULL,
+    `opening_balance`          DECIMAL(5,2) NOT NULL DEFAULT 0.00,
+    `carry_forward`            DECIMAL(5,2) NOT NULL DEFAULT 0.00,
+    `total_used`               DECIMAL(5,2) NOT NULL DEFAULT 0.00,
+    `total_pending`            DECIMAL(5,2) NOT NULL DEFAULT 0.00,
+    `available_balance`        DECIMAL(5,2) GENERATED ALWAYS AS (opening_balance + carry_forward - total_used) STORED,
+    `manual_adjustment`        DECIMAL(5,2) NOT NULL DEFAULT 0.00,
+    `adjustment_reason`        VARCHAR(255) DEFAULT NULL,
+    `is_active`                TINYINT(1)   NOT NULL DEFAULT 1,
+    `created_at`               TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`               TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at`               TIMESTAMP NULL DEFAULT NULL,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_leave_balance` (`employee_id`, `academic_year`, `leave_type_id`),
     INDEX `idx_elb_employee`      (`employee_id`, `academic_year`),
     INDEX `idx_elb_leave_type`    (`leave_type_id`),
     INDEX `idx_elb_active`        (`is_active`),
     CONSTRAINT `fk_elb_employee`   FOREIGN KEY (`employee_id`)  REFERENCES `sch_employees` (`id`)   ON DELETE RESTRICT,
-    CONSTRAINT `fk_elb_leave_type` FOREIGN KEY (`leave_type_id`) REFERENCES `sch_staff_leave_types` (`id`) ON DELETE RESTRICT
+    CONSTRAINT `fk_elb_leave_type` FOREIGN KEY (`leave_type_id`) REFERENCES `sch_staff_leave_types` (`id`) ON DELETE RESTRICT,
+    CONSTRAINT `fk_elb_leave_session` FOREIGN KEY (`annual_leave_sessions_id`) REFERENCES `sch_annual_leave_sessions` (`id`) ON DELETE RESTRICT
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   COMMENT='Live leave-balance ledger per employee per leave type per academic year';
 
