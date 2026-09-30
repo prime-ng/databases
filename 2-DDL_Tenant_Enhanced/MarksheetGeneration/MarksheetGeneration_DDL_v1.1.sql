@@ -7,39 +7,40 @@
 -- Database     : tenant_db (one per tenant, no tenant_id columns)
 -- Based on     : MSG_RequirementSpec.md v1.0
 -- =============================================================================
---
 -- PURPOSE:
---   Provides configuration and result storage for school marksheet generation.
---   Aggregates marks from LmsExam, LmsHomework, LmsQuiz, LmsQuest, and
---   BehaviouralAssessment into subject-wise, exam-wise result matrices.
 --
--- CROSS-MODULE DEPENDENCIES (READ ONLY — MSG never modifies these):
---   ┌────────────────────────────────────┬──────────────┐
---   │ Table                              │ PK Type      │
---   ├────────────────────────────────────┼──────────────┤
---   │ sch_classes                        │ INT UNSIGNED │
---   │ sch_sections                       │ INT UNSIGNED │
---   │ sch_class_section_jnt              │ INT UNSIGNED │
---   │ sch_subjects                       │ INT UNSIGNED │
---   │ sch_org_academic_sessions_jnt      │ SMALLINT UNS │
---   │ std_students                       │ INT UNSIGNED │
---   │ sys_users                          │ INT UNSIGNED │
---   │ sys_dropdown_table                 │ INT UNSIGNED │
---   │ slb_grade_division_master          │ INT UNSIGNED │
---   │ lms_exam_types                     │ INT UNSIGNED │
---   │ lms_exams                          │ INT UNSIGNED │
---   │ lms_exam_papers                    │ INT UNSIGNED │
---   │ lms_exam_results                   │ INT UNSIGNED │
---   └────────────────────────────────────┴──────────────┘
---
+  --   Provides configuration and result storage for school marksheet generation.
+  --   Aggregates marks from LmsExam, LmsHomework, LmsQuiz, LmsQuest, and
+  --   BehaviouralAssessment into subject-wise, exam-wise result matrices.
+  --
+  -- CROSS-MODULE DEPENDENCIES (READ ONLY — MSG never modifies these):
+  --   ┌────────────────────────────────────┬──────────────┐
+  --   │ Table                              │ PK Type      │
+  --   ├────────────────────────────────────┼──────────────┤
+  --   │ sch_classes                        │ INT UNSIGNED │
+  --   │ sch_sections                       │ INT UNSIGNED │
+  --   │ sch_class_section_jnt              │ INT UNSIGNED │
+  --   │ sch_subjects                       │ INT UNSIGNED │
+  --   │ sch_org_academic_sessions_jnt      │ SMALLINT UNS │
+  --   │ std_students                       │ INT UNSIGNED │
+  --   │ sys_users                          │ INT UNSIGNED │
+  --   │ sys_dropdown_table                 │ INT UNSIGNED │
+  --   │ slb_grade_division_master          │ INT UNSIGNED │
+  --   │ lms_exam_types                     │ INT UNSIGNED │
+  --   │ lms_exams                          │ INT UNSIGNED │
+  --   │ lms_exam_papers                    │ INT UNSIGNED │
+  --   │ lms_exam_results                   │ INT UNSIGNED │
+  --   └────────────────────────────────────┴──────────────┘
+-- -----------------------------------------------------------------------------
 -- KEY DESIGN DECISIONS:
---   D-MSG-001: No tenant_id — stancl/tenancy v3.9 database-per-tenant
---   D-MSG-002: No ENUMs — all status/type fields use sys_dropdown_table or lookup tables
---   D-MSG-003: msh_class_groups is separate from sch_class_groups_jnt (timetable-specific)
---   D-MSG-004: Online/Offline transparent — both read from lms_exam_results
---   D-MSG-005: Subject-wise result is the core table; overall result is aggregation
---   D-MSG-006: IA marks owned by this module (teacher entry via UI)
---   D-MSG-007: Co-Scholastic grades owned by this module (teacher entry via UI)
+--
+  --   D-MSG-001: No tenant_id — stancl/tenancy v3.9 database-per-tenant
+  --   D-MSG-002: No ENUMs — all status/type fields use sys_dropdown_table or lookup tables
+  --   D-MSG-003: msh_class_groups is separate from sch_class_groups_jnt (timetable-specific)
+  --   D-MSG-004: Online/Offline transparent — both read from lms_exam_results
+  --   D-MSG-005: Subject-wise result is the core table; overall result is aggregation
+  --   D-MSG-006: IA marks owned by this module (teacher entry via UI)
+  --   D-MSG-007: Co-Scholastic grades owned by this module (teacher entry via UI)
 -- =============================================================================
 
 
@@ -127,7 +128,6 @@ CREATE TABLE IF NOT EXISTS `msh_ia_component_types` (
 -- SECTION 2: CONFIGURATION TABLES (10 tables)
 -- School admin sets these up before marksheet generation.
 -- =========================================================================
-
 
 -- -------------------------------------------------------------------------
 -- TABLE 4: msh_class_groups
