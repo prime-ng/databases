@@ -27,9 +27,9 @@
 	],
 	"settings": {
 		"search.exclude": {
-		"**/node_modules": true,
-		"**/vendor": true,
-		"**/storage": true
+			"**/node_modules": true,
+			"**/vendor": true,
+			"**/storage": true
 		}
 	}
 }

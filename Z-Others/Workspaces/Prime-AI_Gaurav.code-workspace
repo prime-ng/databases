@@ -1,9 +1,9 @@
 {
 	"folders": [
 		{
-			"name": "databases",
-			"path": "/Users/bkwork/WorkFolder/1-Development/0-Git_Work/prime-ai_db/databases"
-		}
+			"name": "old_db",
+			"path": "/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db"
+		},
 		{
 			"name": "pgdatabase",
 			"path": "/Users/bkwork/WorkFolder/2-New_Primedb/pgdatabase"
@@ -12,12 +12,24 @@
 			"name": "prime_ai_gaurav",
 			"path": "/Users/bkwork/Herd/prime_ai_gaurav"
 		},
+		{
+			"name": "local_workspace",
+			"path": "/Users/bkwork/WorkFolder/3-Local_Workspace"
+		},
+		{
+			"name": "tarun_prime_context",
+			"path": "/Users/bkwork/Herd/tarun_prime_context"
+		},
+		{
+			"name": "prime_testing",
+			"path": "/Users/bkwork/Herd/prime_testing"
+		}
 	],
 	"settings": {
 		"search.exclude": {
-		"**/node_modules": true,
-		"**/vendor": true,
-		"**/storage": true
+			"**/node_modules": true,
+			"**/vendor": true,
+			"**/storage": true
 		}
 	}
 }
