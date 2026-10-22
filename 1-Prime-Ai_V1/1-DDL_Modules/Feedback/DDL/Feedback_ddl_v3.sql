@@ -438,13 +438,13 @@ CREATE TABLE IF NOT EXISTS `fbk_questions` (
   `help_text`             VARCHAR(500) DEFAULT NULL,
   `display_order`         SMALLINT UNSIGNED NOT NULL DEFAULT 1,
   -- Type & config
-  `question_type_id`      INT UNSIGNED NOT NULL COMMENT 'FK → sys_dropdown_table.id; key=fbk_questions.question_type',
+  `question_type_id`      INT UNSIGNED NOT NULL, -- 'FK → sys_dropdown_table.id; key=fbk_questions.question_type (e.g. Rating_5 / Likert_5 / Emoji_5 / Yes_No)
   `is_required`           TINYINT(1) NOT NULL DEFAULT 1,
-  `is_reverse_scored`     TINYINT(1) NOT NULL DEFAULT 0 COMMENT '1 = higher rating is worse (used for "How often does X happen?" questions about negative behaviour)',
+  `is_reverse_scored`     TINYINT(1) NOT NULL DEFAULT 0, -- '1 = higher rating is worse (used for "How often does X happen?" questions about negative behaviour)',
   `weight`                DECIMAL(4,2) NOT NULL DEFAULT 1.00,
-  `options_json`          JSON DEFAULT NULL COMMENT 'For Multi_Choice: [{"code":"A","label":"Always","value":5}, {"code":"S","label":"Sometimes","value":3}, {"code":"N","label":"Never","value":1}]',
+  `options_json`          JSON DEFAULT NULL, -- 'For Multi_Choice: [{"code":"A","label":"Always","value":5}, {"code":"S","label":"Sometimes","value":3}, {"code":"N","label":"Never","value":1}]',
   -- Respondent filter (use the "Any" dropdown row for no restriction)
-  `respondent_kind_id`    INT UNSIGNED NOT NULL COMMENT 'FK → sys_dropdown_table.id; key=fbk_questions.respondent_kind',
+  `respondent_kind_id`    INT UNSIGNED NOT NULL, -- 'FK → sys_dropdown_table.id; key=fbk_questions.respondent_kind',
   -- Audit
   `is_active`             TINYINT(1) NOT NULL DEFAULT 1,
   `created_at`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
@@ -477,9 +477,9 @@ COMMENT='Questions inside a template — grouped by category, typed and weighted
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `fbk_cycles` (
   `id`                                   INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `code`                                 VARCHAR(50) NOT NULL,
-  `name`                                 VARCHAR(200) NOT NULL,
-  `description`                          VARCHAR(500) DEFAULT NULL,
+  `code`                                 VARCHAR(50) NOT NULL,  -- feedback cycle code (e.g. 2026_Q1_STF, 2026_Q1_P2T)
+  `name`                                 VARCHAR(200) NOT NULL,  -- feedback cycle name
+  `description`                          VARCHAR(500) DEFAULT NULL,  -- feedback cycle description
   -- Academic context
   `academic_session_id`                  INT UNSIGNED NOT NULL COMMENT 'FK → sch_org_academic_sessions_jnt.id',
   `term_label`                           VARCHAR(50) DEFAULT NULL COMMENT 'Q1, Q2, Mid-Term, Annual, Adhoc, etc.',
@@ -487,15 +487,15 @@ CREATE TABLE IF NOT EXISTS `fbk_cycles` (
   `start_date`                           DATE NOT NULL,
   `end_date`                             DATE NOT NULL,
   -- Lifecycle
-  `status_id`                            INT UNSIGNED NOT NULL COMMENT 'FK → sys_dropdown_table.id; key=fbk_cycles.status (Draft/Active/Closed/Published/Cancelled)',
-  `is_published_to_targets`              TINYINT(1) NOT NULL DEFAULT 0,
+  `status_id`                            INT UNSIGNED NOT NULL,  -- 'FK → sys_dropdown_table.id; key=fbk_cycles.status (Draft/Active/Closed/Published/Cancelled)',
+  `is_published_to_targets`              TINYINT(1) NOT NULL DEFAULT 0,  -- whether Cycle is Published to Targets for feedback collection. When this = 1, Targets can view responses.
   `published_at`                         TIMESTAMP NULL DEFAULT NULL,
   `published_by`                         INT UNSIGNED DEFAULT NULL,
   -- Defaults applied to all cycle feedback types (each can override)
-  `default_is_anonymous_to_target`       TINYINT(1) NOT NULL DEFAULT 1,
-  `default_min_responses_for_visibility` TINYINT UNSIGNED NOT NULL DEFAULT 3 COMMENT 'Minimum response count before teacher/target can view aggregate (protects anonymity for small groups)',
+  `default_is_anonymous_to_target`       TINYINT(1) NOT NULL DEFAULT 1,  -- Whether default value will be 'Anonymous to Target' i.e.1 = target will be shown 'Anonymous' instead of respondent name
+  `default_min_responses_for_visibility` TINYINT UNSIGNED NOT NULL DEFAULT 3,  -- 'Minimum response count before teacher/target can view aggregate (protects anonymity for small groups)',
   -- Instructions
-  `instructions`                         TEXT DEFAULT NULL,
+  `instructions`                         TEXT DEFAULT NULL,  -- General instructions to respondents for the cycle
   -- Audit
   `is_active`                            TINYINT(1) NOT NULL DEFAULT 1,
   `created_by`                           INT UNSIGNED DEFAULT NULL,
@@ -534,19 +534,19 @@ COMMENT='Feedback collection cycle — defines a window during which one or more
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `fbk_cycle_feedback_types` (
   `id`                              INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `cycle_id`                        INT UNSIGNED NOT NULL,
-  `relationship_type_id`            SMALLINT UNSIGNED NOT NULL,
-  `template_id`                     INT UNSIGNED NOT NULL,
+  `cycle_id`                        INT UNSIGNED NOT NULL,  -- FK to fbk_cycles
+  `relationship_type_id`            SMALLINT UNSIGNED NOT NULL,  -- FK to fbk_relationship_types (e.g. STUDENT_TO_CLASS_TEACHER / STUDENT_TO_SUBJECT_TEACHER / STUDENT_TO_PEER_STUDENT / TEACHER_TO_STUDENT / PARENT_TO_CLASS_TEACHER / STUDENT_TO_TRANSPORT_DRIVER / STUDENT_TO_CANTEEN_STAFF / STUDENT_TO_LIBRARY_STAFF)
+  `template_id`                     INT UNSIGNED NOT NULL,  -- FK to fbk_templates
   -- Overrides for cycle defaults
-  `is_anonymous_to_target`          TINYINT(1) NOT NULL DEFAULT 1,
-  `min_responses_for_visibility`    TINYINT UNSIGNED NOT NULL DEFAULT 3,
-  `allow_draft_save`                TINYINT(1) NOT NULL DEFAULT 1,
-  `allow_withdrawal`                TINYINT(1) NOT NULL DEFAULT 1,
+  `is_anonymous_to_target`          TINYINT(1) NOT NULL DEFAULT 1,  -- Whether target can view respondent names (1 = Anonymous to target, 0 = Not anonymous to target)
+  `min_responses_for_visibility`    TINYINT UNSIGNED NOT NULL DEFAULT 3,  -- Minimum responses before target can view aggregate feedback
+  `allow_draft_save`                TINYINT(1) NOT NULL DEFAULT 1,  -- Whether User is allowed to save feedback in draft (1 = Allowed, 0 = do not allow)
+  `allow_withdrawal`                TINYINT(1) NOT NULL DEFAULT 1,  -- Whether User is allowed to withdraw feedback (1 = Allowed, 0 = do not allow)
   -- Scope filter (optional — restricts which targets are in this feedback type)
   `scope_type_id`                   INT UNSIGNED NOT NULL COMMENT 'FK → sys_dropdown_table.id; key=fbk_cycle_feedback_types.scope_type (All/Specific_Classes/Specific_Departments/Specific_Targets/Custom)',
   `scope_filter_json`               JSON DEFAULT NULL COMMENT 'Flexible filter: {"class_section_ids":[1,2], "department_ids":[3], "target_user_ids":[10,20]}',
   -- Target population strategy (truly binary — kept as boolean flag, not a dropdown)
-  `is_auto_populated_targets`       TINYINT(1) NOT NULL DEFAULT 1 COMMENT '1 = app auto-populates fbk_cycle_targets from relationships; 0 = admin enters targets manually',
+  `is_auto_populated_targets`       TINYINT(1) NOT NULL DEFAULT 1,  -- '1 = app auto-populates fbk_cycle_targets from relationships; 0 = admin enters targets manually',
   -- Audit
   `is_active`                       TINYINT(1) NOT NULL DEFAULT 1,
   `created_at`                      TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
@@ -580,21 +580,21 @@ CREATE TABLE IF NOT EXISTS `fbk_cycle_targets` (
   `id`                            INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `cycle_id`                      INT UNSIGNED NOT NULL,
   `cycle_feedback_type_id`        INT UNSIGNED NOT NULL,
-  `target_type_id`                SMALLINT UNSIGNED NOT NULL COMMENT 'Denormalised from fbk_cycle_feedback_types → fbk_relationship_types.target_type_id',
+  `target_type_id`                SMALLINT UNSIGNED NOT NULL,  -- 'Denormalised from fbk_cycle_feedback_types → fbk_relationship_types.target_type_id'
   -- Target identity (exactly ONE of these populated based on target_type.linked_entity_table)
-  `target_user_id`                INT UNSIGNED DEFAULT NULL COMMENT 'FK → sys_users.id',
-  `target_student_id`             INT UNSIGNED DEFAULT NULL COMMENT 'FK → std_students.id',
-  `target_employee_id`            INT UNSIGNED DEFAULT NULL COMMENT 'FK → sch_employees.id',
-  `target_department_id`          INT UNSIGNED DEFAULT NULL COMMENT 'FK → sch_departments.id',
+  `target_user_id`                INT UNSIGNED DEFAULT NULL,  -- 'FK → sys_users.id'
+  `target_student_id`             INT UNSIGNED DEFAULT NULL,  -- 'FK → std_students.id'
+  `target_employee_id`            INT UNSIGNED DEFAULT NULL,  -- 'FK → sch_employees.id'
+  `target_department_id`          INT UNSIGNED DEFAULT NULL,  -- 'FK → sch_departments.id'
   -- Context (if the target has a specific context in this cycle)
-  `class_section_id`              INT UNSIGNED DEFAULT NULL COMMENT 'FK → sch_class_section_jnt.id',
-  `subject_id`                    INT UNSIGNED DEFAULT NULL COMMENT 'FK → sch_subjects.id',
-  `tt_activity_id`                INT UNSIGNED DEFAULT NULL COMMENT 'FK → tt_activity.id (for subject-teacher context)',
-  `context_json`                  JSON DEFAULT NULL COMMENT 'Flexible context e.g., {"transport_route_id":42, "hostel_id":5}',
+  `class_section_id`              INT UNSIGNED DEFAULT NULL,  -- 'FK → sch_class_section_jnt.id'
+  `subject_id`                    INT UNSIGNED DEFAULT NULL,  -- 'FK → sch_subjects.id'
+  `tt_activity_id`                INT UNSIGNED DEFAULT NULL,  -- 'FK → tt_activity.id (for subject-teacher context)'
+  `context_json`                  JSON DEFAULT NULL,          -- 'Flexible context e.g., {"transport_route_id":42, "hostel_id":5}'
   -- Participation tracking (maintained by app on every response submit)
   `expected_response_count`       INT UNSIGNED NOT NULL DEFAULT 0,
   `received_response_count`       INT UNSIGNED NOT NULL DEFAULT 0,
-  `submitted_response_count`      INT UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Only count status=Submitted',
+  `submitted_response_count`      INT UNSIGNED NOT NULL DEFAULT 0,  -- 'Only count status=Submitted'
   -- Audit
   `is_active`                     TINYINT(1) NOT NULL DEFAULT 1,
   `created_at`                    TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
@@ -665,12 +665,12 @@ CREATE TABLE IF NOT EXISTS `fbk_responses` (
   `tt_activity_id`                INT UNSIGNED DEFAULT NULL COMMENT 'FK → tt_activity.id — for precise subject-teacher match',
   `context_json`                  JSON DEFAULT NULL COMMENT 'Flexible context (transport_route_id, hostel_id, etc.)',
   -- DEDUP GENERATED COLUMNS (required for UNIQUE index with nullable FKs)
-  `target_user_id_uq`             INT UNSIGNED GENERATED ALWAYS AS (COALESCE(`target_user_id`,       0)) STORED,
-  `target_student_id_uq`          INT UNSIGNED GENERATED ALWAYS AS (COALESCE(`target_student_id`,    0)) STORED,
-  `target_employee_id_uq`         INT UNSIGNED GENERATED ALWAYS AS (COALESCE(`target_employee_id`,   0)) STORED,
-  `target_department_id_uq`       INT UNSIGNED GENERATED ALWAYS AS (COALESCE(`target_department_id`, 0)) STORED,
-  `subject_id_uq`                 INT UNSIGNED GENERATED ALWAYS AS (COALESCE(`subject_id`,           0)) STORED,
-  `class_section_id_uq`           INT UNSIGNED GENERATED ALWAYS AS (COALESCE(`class_section_id`,     0)) STORED,
+  `target_user_id_uq`             INT UNSIGNED GENERATED ALWAYS AS (COALESCE(`target_user_id`,0)) STORED,
+  `target_student_id_uq`          INT UNSIGNED GENERATED ALWAYS AS (COALESCE(`target_student_id`,0)) STORED,
+  `target_employee_id_uq`         INT UNSIGNED GENERATED ALWAYS AS (COALESCE(`target_employee_id`,0)) STORED,
+  `target_department_id_uq`       INT UNSIGNED GENERATED ALWAYS AS (COALESCE(`target_department_id`,0)) STORED,
+  `subject_id_uq`                 INT UNSIGNED GENERATED ALWAYS AS (COALESCE(`subject_id`,0)) STORED,
+  `class_section_id_uq`           INT UNSIGNED GENERATED ALWAYS AS (COALESCE(`class_section_id`,0)) STORED,
   `respondent_student_id_uq`      INT UNSIGNED GENERATED ALWAYS AS (COALESCE(`respondent_student_id`,0)) STORED,
   -- RATINGS & COMMENTS
   `overall_rating`                DECIMAL(4,2) DEFAULT NULL COMMENT 'Computed from answers per template.overall_rating_method',

@@ -5,8 +5,8 @@
 
 composer dump-autoload
 php artisan optimize
-php artisan migrate: fresh --seed ---> [reset prime , global + create tenant + create tenant migration ]
-run server : php artisan serve
+php artisan migrate:fresh --seed    [---> reset prime , global + create tenant + create tenant migration ]
+php artisan serve                   [run server]
 test.localhost:8000/seeder  --> run seeder 
 
 

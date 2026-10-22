@@ -1,0 +1,3 @@
+I want to create Agents & other AI related inforamation for OpenCode as I have created previously for Claude in Folder "/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/AI_Brain". Create Structure for that in the folder "/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/OpenCode_Brain". This will work as a foundational information for Opencode. Read all the files from Claude AI_Brain (/old_db/AI_Brain) and generate appropritly usefull files for Opencode in Folder (old_db/OpenCode_Brain)
+
+----------------------------------------------------------------------------------------------------------------------------------------------------

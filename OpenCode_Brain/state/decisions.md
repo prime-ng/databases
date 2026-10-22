@@ -1,0 +1,542 @@
+# Architectural Decisions Log
+
+## Confirmed Decisions
+
+### D1: Multi-Tenancy — stancl/tenancy v3.9 with Database-per-Tenant
+- **Why:** Complete data isolation for each school. Regulatory compliance for Indian schools (data sovereignty). Simpler backup/restore per tenant. No risk of cross-tenant data leakage.
+- **Trade-off:** Higher infrastructure cost (one DB per school), more complex migration management.
+- **Alternative considered:** Shared DB with `tenant_id` column — rejected due to data isolation requirements.
+
+### D2: Modular Architecture — nwidart/laravel-modules v12.0
+- **Why:** ~40 planned modules. Each module is self-contained with its own models, controllers, routes, migrations. Enables independent development and testing. Clear separation of concerns.
+- **Trade-off:** Slightly more boilerplate per module, module interdependency management needed.
+
+### D3: 3-Layer Database Architecture
+- **Why:** Separation of shared reference data (global_db), SaaS management (prime_db), and school data (tenant_db). Global masters shared without duplication. Central billing independent of tenant databases.
+- **global_db:** Countries, states, boards, languages, menus, modules
+- **prime_db:** Tenants, plans, billing, central users/roles
+- **tenant_db:** Per-school everything (students, teachers, timetable, fees, etc.)
+
+### D4: RBAC — Spatie Laravel Permission v6.21
+- **Why:** Mature, well-documented, polymorphic role/permission assignment. Supports both central and tenant-scoped roles. Gate and middleware integration.
+- **Implementation:** Roles and permissions exist in BOTH central (prime_db) and tenant (tenant_db) databases.
+
+### D5: UUID-based Tenant Identification
+- **Why:** Prevents enumeration attacks, globally unique across all environments, no conflicts during tenant migration.
+- **Generator:** `Stancl\Tenancy\UUIDGenerator`
+
+### D6: Domain-based Tenant Routing
+- **Why:** Each school gets its own subdomain (e.g., `schoolname.prime-ai.com`). Clean URL structure, easy to manage with DNS.
+- **Middleware:** `InitializeTenancyByDomain`
+
+### D7: Table Prefix Convention
+- **Why:** With 368+ tables in tenant_db, prefixes provide immediate module identification. `tt_` for timetable, `std_` for students, `sch_` for school setup, etc.
+- **Junction tables:** Suffixed with `_jnt` for easy identification.
+
+### D8: Soft Deletes Everywhere
+- **Why:** Audit trail requirements. Schools need to recover accidentally deleted records. Regulatory compliance for attendance and exam records.
+- **Implementation:** `is_active` boolean + `deleted_at` timestamp on every table.
+
+### D9: DomPDF for PDF Generation
+- **Why:** No external service dependency, works server-side, sufficient for report cards, fee receipts, and HPC documents.
+- **Package:** `barryvdh/laravel-dompdf` v3.1
+
+### D10: Razorpay for Payment Processing
+- **Why:** Most popular payment gateway in India. Supports UPI, cards, net banking, wallets. Well-documented PHP SDK.
+- **Package:** `razorpay/razorpay` v2.9
+
+### D11: SmartTimetable — FET-inspired Solver
+- **Why:** FET (Free Timetabling Software) algorithm is proven for school timetabling. CSP backtracking with greedy fallback, rescue pass, and forced placement. Handles complex constraints.
+- **Architecture:** Activity-based scheduling with 10-stage implementation plan.
+
+### D13: HPC PDF — Merged Single-File DomPDF Template Pattern
+- **Why:** DomPDF cannot resolve Blade components (`<x-hpc-form.*>`), Bootstrap classes, flexbox/grid, or JavaScript. A single self-contained Blade file with all logic inlined is required.
+- **Pattern:** One merged `*_pdf.blade.php` per HPC template form. Contains: `$css` array, helper closures (`$getStudentValue`, `$shouldCheckGrade`, `$renderItem`), full `<!DOCTYPE html>` document, `@foreach($sortedParts as $part)` main loop, per-page `@if($part->page_no == N)` blocks, page breaks via `<div style="{{ $css['page'] }}"></div>`.
+- **Components location:** `resources/views/components/hpc-form/` (6 components: activity-tab, student-self-reflection, peer-feedback, tab-eight-teacher-feedback, performance-card, self-assessment)
+- **Emoji:** `asset('emoji/happy.png')`, `asset('emoji/no.png')`, `asset('emoji/not_sure.png')`, `asset('emoji/sometimes.png')` — local public folder files
+- **Layout rule:** Use `<table>` for all multi-column layouts (no flexbox/grid in DomPDF)
+- **Files created:** first_pdf (Template 1, Grades 3-5 — DomPDF-fixed R1+R2 2026-03-14/15), second_pdf (Template 2, Grades 3-5 variant — DomPDF-fixed R1+R2 2026-03-14/15), third_pdf (Template 3, Grades 6-8, 46 pages — DomPDF-fixed 2026-03-14), fourth_pdf (Template 4, Grades 9-12, 44 pages — DomPDF-fixed 2026-03-14)
+- **HPC shared tabbed index pattern:** All 15 HPC controllers render the same `hpc::hpc.index` view with different active tabs. Each controller's `index()` loads data for ALL tabs (~15 queries per request). This is an intentional design choice for the tab-based UI but causes significant performance overhead. Should be refactored to AJAX-loaded tabs.
+- **HPC report save pattern:** `HpcReportService::saveReport()` uses a delete-then-reinsert strategy inside a DB transaction — it force-deletes ALL existing HpcReportItem and HpcReportTable rows for a report, then bulk-inserts fresh rows from form data (batches of 200 with per-row retry). This is intentional to avoid complex merge logic but means partial saves are all-or-nothing.
+
+**DomPDF Hard Constraints (enforced — do NOT violate in any `*_pdf.blade.php`):**
+1. **CRASH** — `display:inline` on `<table>` → *"Min/max width is undefined for table rows"*. Remove it; use parent `<td style="text-align:right">` for alignment.
+2. **CRASH** — Nested `<table>` without `width="100%"` HTML attribute inside `<td>` → same crash. Every `<table>` must have `<table width="100%" ...>`.
+3. **CRASH** — Wrong closing tag (`</div>` where `</td>` expected) inside `<table><tr>` → *"Parent table not found for table cell"*. Always verify table cell closing tags.
+4. **STRUCTURAL** — `<div class="page-container">` opened in `@foreach` but never closed before `@endforeach` → all pages nest. Must add `</div>{{-- close page-container --}}` before `@endforeach`.
+5. **STRUCTURAL** — Duplicate `@if($part->page_no == N)` blocks (orphan outside loop) → page renders twice. Search for all occurrences before writing any new page block.
+6. **IMAGE** — `getFirstMediaUrl()` / `tenant_asset()` / HTTP URLs in `<img src>` → blank (DomPDF blocks remote). Must use base64 data URIs via `file_get_contents(getPath())`.
+7. **LAYOUT** — `overflow:hidden` on `<div>` → silently ignored or mis-clips. Remove from all containers; use padding instead.
+8. **LAYOUT** — `display:inline-block` on `<div>` → silently ignored. Use `<table>` for side-by-side layouts.
+9. **LAYOUT** — `<ol>/<ul>` inside `<td>` → unreliable markers/overflow. Replace with manual `{{ $idx+1 }}. {{ $item }}` divs or inner `<table width="100%">`.
+10. **LAYOUT** — `page-break-inside:avoid` on containers taller than one page → overridden by DomPDF. Only use on small atomic units; remove from full-section wrappers.
+11. **JAVASCRIPT** — Any `<script>` block in the template is ignored by DomPDF. Remove `window.onload` / `window.print()` scripts.
+
+### D15: DB Schema — v2 Enhanced DDLs as Single Source of Truth
+- **Why:** Original DDLs had syntax errors, missing FKs, inconsistent naming, duplicate columns. Engineering audit identified 51+ issues in tenant_db alone. Consolidated + corrected into 3 v2 files.
+- **Canonical files:** `global_db_v2.sql`, `prime_db_v2.sql`, `tenant_db_v2.sql` in `{DDL_DIR}/`
+- **NEVER use:** Any other DDL file — `Old_DDLs/`, `2-Prime_Modules/`, `2-Tenant_Modules/`, `Working/`, or non-v2 root files
+- **CHANGELOG:** Was in `{DDL_DIR}/CHANGELOG.md` (now archived) — documented all changes from v1 → v2
+
+### D14: SmartTimetable Parallel Periods — Anchor-Based Solver Pattern
+- **Why:** Activities across sections (Hobby, Skill, Optional) must run simultaneously. FETSolver needs to treat these as atomic units.
+- **Pattern:** One activity in the group is the "anchor" (`is_anchor=1` in `tt_parallel_group_activity`). When the anchor is placed during backtracking, all non-anchor siblings are immediately placed at the same day+period. Non-anchor members encountered in the ordering are skipped until their anchor is placed (force-assigned to anchor's slot).
+- **Tables:** `tt_parallel_group` (group config) + `tt_parallel_group_activity` (junction with `is_anchor` flag)
+- **Solver changes:** `orderActivitiesByDifficulty()` boosts parallel members +20000 (anchors +5000 extra); `backtrack()` handles anchor→sibling atomic placement with rollback; `generateGreedySolution()` places siblings immediately after anchor.
+- **Full implementation complete (2026-03-14):** Constraint Engine (ParallelPeriodConstraint, ConstraintFactory, ConstraintTypeSeeder), Pre-Gen Validation in SmartTimetableController, Post-Gen Verification + session key `generated_parallel_violations`, soft constraint wiring (see D18), bug fix in TimetableSolution::remove(), 9 unit tests passing.
+
+### D18: SmartTimetable — Soft Constraint Wiring in FETSolver
+- **Why:** `ConstraintManager::evaluateSoftConstraints()` was fully implemented but never called — soft preferences (preferred times, preferred rooms, etc.) had zero effect on slot scoring.
+- **Pattern:** Called inside `scoreSlotForActivity()` after all spread/distribution logic. Returns 0–100 sum of satisfied soft constraint weights. Applied at 0.5× multiplier (`$score += (int) round($softScore * 0.5)`) so soft constraints influence but never dominate the existing [-50, +40] hard score range.
+- **Safety:** Wrapped in `try/catch(\Throwable)` so any ConstraintManager exception degrades gracefully (logs warning, skips contribution). Verbose-logged when `$verboseLogging` is enabled.
+- **File:** `FETSolver::scoreSlotForActivity()` (after spread_evenly block, before `return $score`).
+
+### D12: Database Queue Driver (Current)
+- **Why:** Simpler infrastructure for initial deployment. No Redis dependency needed.
+- **Future:** Will migrate to Redis queue driver when scaling requires it.
+
+### D17: SmartTimetable Constraint Model/Migration Mismatches — Audit & Fix Strategy
+- **Mismatch A:** `ConstraintCategory::$table` pointed to `tt_constraint_categories` and `ConstraintScope::$table` pointed to `tt_constraint_scopes` — neither table exists. The actual migration created one shared table `tt_constraint_category_scope` with a `type` ENUM. **Fix:** Both models now point to `tt_constraint_category_scope` with `addGlobalScope` filtering by `type`. `ConstraintCategoryScope` model remains as the raw combined-table model.
+- **Mismatch B:** `ConstraintType` model had `is_hard_capable`, `is_soft_capable`, `parameter_schema`, `applicable_target_types`, `constraint_level` in fillable — none existed in DB. **Fix:** Migration 1 adds these columns additively. Model unchanged (already correct for post-migration state). Old columns `is_hard_constraint` and `param_schema` kept.
+- **Mismatch C:** `Constraint` model had `academic_term_id`/`effective_from_date`/`effective_to_date`/`applicable_days_json`/`target_type_id` — DB has `academic_session_id`/`effective_from`/`effective_to`/`applies_to_days_json`/`target_type`. **Fix (model-side):** Updated model fillable/casts/scopes/helpers to use actual DB column names. Migration 2 adds the original model-named alias columns for backward compat.
+- **Rule:** All corrective migrations are additive only (no drops, no renames) to protect existing tenant data.
+
+### D16: SmartTimetable Constraint Management — Full CRUD with Category-Specific Views (UPDATED)
+- **Why:** Constraint management page shows live DB data per category. All configurable constraints write to one table `tt_constraints`, differentiated by `constraintType.category.code` relationship chain.
+- **Index pattern:** `constraintManagement()` runs 6 paginated queries (teacher/class/room/db/global/inter-activity), each filtered by `whereHas('constraintType.category', code)`. Activity tab shows Activity records (`$activityConstraintSummary`), not Constraint records.
+- **CRUD routing:** Two extra routes before `Route::resource('constraint', ...)`: `GET /constraint/category/{categoryCode}/create` → `createByCategory()`, `GET /constraint/{constraint}/category-edit` → `editByCategory()`. These must come BEFORE the resource to avoid route conflicts.
+- **Category-specific views:** `createByCategory()` / `editByCategory()` resolve view via `match($categoryCode)` → `constraint-management/{slug}/create|edit.blade.php`. Each view loads category-relevant dropdowns (teachers/classes/rooms/activities). All store/update goes to same `ConstraintController::store()` / `update()` endpoint.
+- **Hidden fields pattern:** All category forms pass `<input type="hidden" name="category_code" value="...">` and `<input type="hidden" name="target_type" value="...">` so the controller knows which anchor to redirect to and which target validation to apply.
+- **PHP Class column (db-constraints tab):** Badge `Registered` (bg-primary) if `constraintType->parameter_schema` is non-null; `Not wired` (bg-warning) otherwise.
+- **Engine rules tab:** Info alert + no Add/Trash/Action buttons — always-on hardcoded rules.
+- **Activity constraints tab:** Read-only list (link to activity edit) — fields on `tt_activities`, not separate constraint records.
+- **Redirect anchors:** After store/update, redirect to `constraint-management#{category}-pane` using `match($category_code)` anchor map.
+
+### D19: SmartTimetable — Full Constraint Architecture (P09–P13, 2026-03-17)
+- **Why:** Previous constraint system had only 13 PHP classes and ~30/155 rules enforced. FETSolver scored slots with only spread/distribution heuristics. No registry, no evaluator, no formal context.
+- **Architecture (implemented in P01–P21):**
+  - `ConstraintRegistry` — plugin system for registering constraint classes by code. Three-step resolution: Registry → CONSTRAINT_CLASS_MAP → infer → Generic fallback.
+  - `ConstraintEvaluator` — parallel evaluation engine with group support (MUTEX/CONCURRENT/ORDERED). **WARNING:** Not yet wired into generation path — `FETSolver` still uses `ConstraintManager` directly.
+  - `ConstraintContext` — value object for evaluation context (occupied, teacherOccupied, periods, days). **WARNING:** Only used in `FETConstraintBridge`, not in actual `ConstraintManager` calls which use raw `\stdClass`.
+  - `ConstraintFactory` — creates constraint instances from DB records with JSON parameter validation.
+  - `TimetableConstraint` interface — `passes(Slot, Activity, $context): bool`, `getDescription()`, `getWeight()`, `isRelevant()`.
+  - 22 Hard constraint classes in `Constraints/Hard/` (teacher, class, room, activity, global, inter-activity).
+  - 55+ Soft constraint classes in `Constraints/Soft/` (teacher, class, room, inter-activity preferences).
+  - `SmartTimetableServiceProvider` registers all constraints via `registerConstraints()` method.
+  - `ConstraintTypeSeeder` expanded to 212 entries with full parameter schemas.
+- **Known issues:** FETConstraintBridge passes bare context (BUG-TT-002); gap calculations mix period_id/index (BUG-TT-003); ConstraintManager and ConstraintEvaluator duplicate logic (CODE-TT-002); legacy interfaces orphaned (CODE-TT-001).
+
+### D20: SmartTimetable — Service Layer Decomposition (P14–P17, 2026-03-17)
+- **Why:** SmartTimetableController was 3037 lines. New dedicated services and controllers extract analytics, refinement, substitution, and API concerns.
+- **Pattern:** Each feature area gets its own Controller+Service pair. Controllers handle auth (Gate::authorize) and validation. Services contain business logic.
+  - `AnalyticsController` + `AnalyticsService` — workload, utilization, violations, CSV exports
+  - `RefinementController` + `RefinementService` — swap/move/lock cells, impact analysis, change logs
+  - `SubstitutionController` + `SubstitutionService` — absence reporting, candidate scoring, auto-assignment
+  - `TimetableApiController` — REST API (auth:sanctum) for external integrations
+  - `GenerateTimetableJob` — async generation with status polling
+  - `RoomChangeTrackingService` — room/building change violation detection
+- **Known issues:** SubstitutionService crashes (BUG-TT-004/005), Job missing tenant context (BUG-TT-006), API zero auth (BUG-TT-001).
+
+### D21: SmartTimetable — Comprehensive Reverse-Engineering Documentation (2026-03-31)
+- **Why:** Module had grown to 449 files across 20 controllers, 63 models, 108 services, and 176 views with no centralized documentation. New developers and AI agents needed a complete reference to understand the module without reading source code.
+- **Output:** `5-Work-In-Progress/2-In-Progress/SmartTimetable/SmartTimetable_Module_Documentation.md` — 4,621 lines, 31 sections covering: terminology (30+ terms), design intent (from 19 design docs), file inventory, routes (60+ web + 11 API), user workflow (11 phases), screen walkthroughs (15 screens), database schema (43+ tables with column details), data flows (24 operations), FET algorithm (complete pseudocode), constraint engine (24 hard + 60 soft classes), conflict detection, refinement, substitution, gap analysis.
+- **Key findings:** Module at ~60% completion. 125/155 designed constraints not yet implemented. 17/20 controllers lack authorization. Phases 6-8 (Analytics/Publish/Substitution) mostly unstarted. 0 module-level tests.
+- **Reference:** Generated from DDL v7.6 + 19 design documents + full code read of all 449 module files.
+
+### D26: Employee Leave Management — Schema Design (2026-04-08)
+- **File:** `1-DDL_Tenant_Modules/12-SchoolSetup/DDL/Employee_setup_ddl_v2.sql`
+- **Pattern basis:** Modelled on `std_leave_*` tables (StudentProfile v1.5), extended for multi-level approval.
+- **8 new tables (all `sch_*` prefix, tenant DB):**
+  - `sch_leave_approval_policies` — Named policy matched by role/dept/designation/leave-type (nullable = wildcard); `priority` field breaks ties (higher = more specific wins).
+  - `sch_leave_approval_policy_levels` — Ordered approval levels (L1→L2→…) with `approval_mode` (ANY_ONE | ALL) and `escalation_after_hours` per level.
+  - `sch_leave_approval_level_approvers` — Authorised approvers per level via `approver_type` ENUM: USER / ROLE / DESIGNATION / DEPARTMENT_HEAD / REPORTING_TO. REPORTING_TO resolved at runtime from `sch_employees_profile.reporting_to`.
+  - `sch_employee_leave_applications` — Core request; `approval_policy_id` + `current_level_number` locked at submission (policy changes mid-flight don't affect open apps).
+  - `sch_employee_leave_approvals` — Per-level per-approver action trail; `escalation_deadline` indexed for scheduler queries; `action` ENUM: Pending / Approved / Rejected / Info_Requested / Doc_Requested / Escalated / Skipped.
+  - `sch_employee_leave_application_docs` — Supporting documents; `is_in_response_to_request` + `request_remark_id` link uploads to specific Doc_Request remarks.
+  - `sch_employee_leave_application_remarks` — Threaded communication (Approver ↔ Employee) + automatic FSM audit log (Status_Change type auto-inserted on every state transition). Threaded via `parent_remark_id`, resolved via `is_resolved`.
+  - `sch_employee_leave_balance` — Live balance ledger; `available_balance` is a `GENERATED ALWAYS AS` computed column (opening + carry_forward − used). `total_pending` tracks in-flight applications. Application layer deducts on Approved, releases on Rejected/Cancelled.
+- **Leave balance source:** `sch_leave_config` (existing v1 table) drives `opening_balance` on year initialization; `max_carry_forward` from `sch_leave_config` caps carry-forward at year-end.
+- **Status FSM:** Draft → Submitted → Under Review → Info Requested | Doc Requested | Escalated → Approved / Rejected / Cancelled.
+- **Multi-level escalation:** `sch_employee_leave_approvals.escalation_deadline` is set at routing time. A scheduler job queries `WHERE action = 'Pending' AND escalation_deadline < NOW()`, fires escalation: marks row as Escalated, routes to next level.
+- **Trade-offs:** Policy snapshot at submission (not live policy) means stable audit trail. Approved_days can differ from total_days (partial approval). `sch_employee_leave_balance` has `manual_adjustment` for admin corrections without breaking the computed column.
+
+### D27: Generic Feedback Module — Schema Design (2026-04-09)
+- **Module:** `39-Feedback` (new dedicated module folder, moved out of StudentProfile on 2026-04-09)
+- **Prefix:** `fbk_*` (tenant DB)
+- **Files:**
+  - `1-DDL_Tenant_Modules/39-Feedback/StudentFeedback_ddl_v1.sql` — Student/Parent → Teacher only (initial scope)
+  - `1-DDL_Tenant_Modules/39-Feedback/StudentFeedback_ddl_v2.sql` — Generic cross-entity module (superseded by v3)
+  - `{DB_REPO}/1-Module_DDLs/Feedback/StudentFeedback_ddl_v3.sql` — ENUM-free rebuild of v2 using sys_dropdown_table (current; see D29)
+- **Evolution:** v1 was hardcoded to Student/Parent → Teacher (using `std_teacher_feedback_*` prefix). User asked to generalise it to support (a) any non-teaching staff (Transport, Canteen, Library, Hostel, Security, Lab, Sports, Admin) and (b) NEP 2020 mandated flows (Teacher → Student evaluation, Student → Peer Student). v2 replaces v1.
+- **v2 architecture — 11 tables:**
+  - **Reference masters (3):** `fbk_target_types`, `fbk_relationship_types`, `fbk_categories`
+  - **Template layer (2):** `fbk_templates`, `fbk_questions`
+  - **Cycle layer (3):** `fbk_cycles`, `fbk_cycle_feedback_types` (one cycle = many flows), `fbk_cycle_targets`
+  - **Transactional (3):** `fbk_responses`, `fbk_answers`, `fbk_summary`
+- **Polymorphic pattern:** Target identity uses 4 nullable FKs (`target_user_id`, `target_student_id`, `target_employee_id`, `target_department_id`) driven by `fbk_target_types.linked_entity_table`. Respondent identity uses 3 nullable FKs (`respondent_student_id`, `respondent_guardian_id`, `respondent_employee_id`) plus always-populated `respondent_user_id`. Preserves FK integrity vs. traditional `(type,id)` polymorphic.
+- **Dedup with nullable FKs:** 7 generated `_uq` columns on `fbk_responses` (`COALESCE(col, 0)`) make the UNIQUE index work across nullable polymorphic pointers. Same pattern on `fbk_summary` (6 cols).
+- **Reference-table-driven types:** `fbk_target_types` and `fbk_relationship_types` are master tables (not ENUMs) so schools can add new kinds without schema changes.
+- **NEP 2020 support:**
+  - `TEACHER_TO_STUDENT` relationship (teacher rates each student they teach; context via `tt_activity_id`)
+  - `STUDENT_TO_PEER_STUDENT` relationship (peer feedback within same class-section) with **hardcoded anonymity** — rules R7-R8 block admins from disabling peer anonymity (child safety)
+  - `nep_2020_mandated` flag on `fbk_relationship_types` for compliance reporting
+- **k-Anonymity enforcement:** `min_responses_for_visibility` (default 3) on `fbk_cycle_feedback_types` — summary withheld from target if response count below threshold (prevents deanonymization of small groups).
+- **Template reuse:** One "Teacher Evaluation Template" can serve `STUDENT_TO_CLASS_TEACHER`, `STUDENT_TO_SUBJECT_TEACHER`, `PARENT_TO_CLASS_TEACHER`, `PARENT_TO_SUBJECT_TEACHER` via `applicable_relationship_codes_json`.
+- **Snapshot strategy:** `fbk_answers` snapshots `question_type`, `category_id`, `weight` at submission time so template edits post-submission don't corrupt analytics.
+- **22 business rules documented** in file footer covering: eligibility resolution, anonymity enforcement, rating calculation (Weighted_Average/Simple_Average/Manual_Only/None), reverse scoring, cycle FSM (Draft→Active→Closed→Published→Cancelled), response FSM (Draft→Submitted→Withdrawn), template locking, incremental summary recomputation, and integrity checks.
+- **12 use cases mapped** in file footer including NEP 2020 Teacher→Student, Peer feedback, Transport/Canteen/Library/Hostel staff, Admin→Teacher performance review, Teacher peer 360°, and Self-Reflection.
+
+### D28: LMS Cloud Storage Path Configuration — Design Advisory (2026-04-09)
+- **Context:** User is planning a separate cloud storage server for LMS file uploads (Quest answer images, Exam answer sheets 15-20 pages, Homework submissions). Scale estimate: ~430,000 files/year/tenant.
+- **No file created** — advisory/design discussion only. Implementation to follow.
+- **Recommended folder hierarchy:** `{TENANT_UUID}/{module}/{session_code}/{class_section_id}/{assessment_id}/{student_id}/{uploader}/`
+  - **Session first, student later** — optimises for the dominant access pattern (teacher reviewing all submissions for one assessment in one LIST call)
+  - **`student_id` (not `sas_id`)** — stable across years for student portfolio
+  - **`session_code` like `2025-26`** (not integer session_id) — human-readable for storage browsing, year-end archival
+  - **`{uploader}`** = `student` or `teacher` subfolder — separates original submission from checked copy
+- **Config storage pattern:**
+  - **`.env`:** server infrastructure (`LMS_STORAGE_DRIVER`, `LMS_STORAGE_ENDPOINT`, `LMS_STORAGE_BUCKET`, credentials)
+  - **`sch_config` keys** (path templates with `{placeholders}`):
+    - `lms_quest_upload_path` = `lms-quest/{session_code}/{class_section_id}/{quest_id}/{student_id}/{uploader}`
+    - `lms_exam_online_upload_path` = `lms-exam-online/{session_code}/{class_section_id}/{exam_id}/{student_id}/{uploader}`
+    - `lms_exam_offline_upload_path` = `lms-exam-offline/{session_code}/{class_section_id}/{exam_id}/{student_id}/{uploader}`
+    - `lms_homework_upload_path` = `lms-homework/{session_code}/{class_section_id}/{homework_id}/{student_id}/{uploader}`
+  - **Tenant UUID is prepended by app code** from `tenant()->id`, not stored in the template
+
+### D29: Avoid MySQL ENUM — Use sys_dropdown_table for Semi-Open Value Sets (2026-04-09)
+- **Rule:** MySQL `ENUM(...)` is allowed ONLY when the option set is genuinely fixed by code and can never be extended without an application release. Every other "pick-from-a-list" column must FK to `sys_dropdown_table` via an `_id` column.
+- **Why:** ENUM locks option sets at the DDL level. Any addition/rename requires a schema migration against every tenant DB, code changes to validate the new value, and cannot be done by PG-Admin or school admins at runtime. The generic dropdown system (`sys_dropdown_needs` + `sys_dropdown_table` + `sys_dropdown_need_table_jnt`, already in `tenant_db_v2.sql`) was built exactly for this — it gives each (table, column) pair a registered "need" and a value set that is extensible without touching DDL.
+- **Decision criteria:**
+  - ✅ **Use ENUM:** Binary flags that are code-gated (even then, `TINYINT(1)` boolean is preferred). E.g. truly inviolable sentinels.
+  - ✅ **Use TINYINT(1) boolean:** Any Auto/Manual, On/Off, Yes/No pair. Don't make a 2-row dropdown.
+  - ✅ **Use sys_dropdown_table FK:** Status FSMs, actor kinds, question types, scope/context resolvers, rating methods, category-like lookups — anything that a PM, PG-Admin, or future release might want to extend without a schema migration. Even status FSMs qualify: the DB shouldn't constrain what the app's state machine chooses to support.
+- **Naming convention:**
+  - Column: `{logical_name}_id` (e.g. `respondent_kind_id`, not `respondent_kind`)
+  - Dropdown `key`: `{table_name}.{column_name}` using the *logical* column name without the `_id` suffix (e.g. key `fbk_responses.respondent_kind` for column `fbk_responses.respondent_kind_id`). Matches existing tenant_db_v2 examples (`tpt_vehicle.vehicle_type`, `cmp_complaint_actions.action_type`, etc.).
+  - Add one `sys_dropdown_needs` row per (db_type, table, column).
+  - FK constraint: `REFERENCES sys_dropdown_table (id) ON DELETE RESTRICT`
+  - Index the `_id` column if it appears in WHERE/JOIN paths.
+- **Snapshot columns:** Tables that snapshot a typed value at submission time (e.g. `fbk_answers.question_type_id_snapshot`) also FK to `sys_dropdown_table`. Dropdown rows referenced by snapshots must NEVER be hard-deleted — soft-deactivate with `is_active = 0` only, so historical rows remain resolvable.
+- **Form Request validation rule (app-level):** For any `*_id` column that points to `sys_dropdown_table`, validate that the selected row has the expected `key`. Otherwise two columns with different semantic meanings could accept each other's values.
+- **Reference implementation:** `StudentFeedback_ddl_v3.sql` — rebuilds v2's Feedback module with all 13 ENUMs converted. Only 1 of the 13 became a TINYINT boolean (`target_population_mode` → `is_auto_populated_targets`); the other 12 became FK to sys_dropdown_table. See SECTION 0 of that file for a complete seed manifest.
+- **Supersedes:** Prior convention in `OpenCode_Brain/memory/db-schema.md` line 268 (`Enums: ENUM() for fixed sets`) — that line has been updated to reflect D29.
+
+---
+
+## Future Decisions (Pending)
+
+### Pending: Event Engine Architecture
+- Need to decide: Event-driven vs scheduled polling for cross-module communication
+- Status: Module at 20% completion
+
+### Pending: Analytics Pipeline
+- Need to decide: Real-time vs batch processing for student analytics
+- Options: Laravel Jobs + Cache vs dedicated analytics service
+
+### Pending: Student/Parent Portal
+- Need to decide: Same Laravel app with role-based views vs separate SPA
+- Options: Blade views vs Vue.js/React SPA
+
+### Pending: Accounting Module
+- Need to decide: Build custom vs integrate with existing accounting software
+- Double-entry bookkeeping requirements
+
+### Pending: Redis Migration
+- When to move queue, cache, and session drivers from database to Redis
+- Dependent on production traffic patterns
+
+---
+
+## Architectural Issues Discovered — Deep Audit 2026-04-02
+
+### D22: Route Registration Architecture — Module-Owned Routes (RESOLVED 2026-04-02)
+- **Discovery (2026-04-02):** 3 routing layers overlapped: `routes/tenant.php` (tenancy middleware), module `routes/web.php` (loaded by module RSP, often without tenancy middleware), central `routes/web.php`.
+- **Resolution:** Migration prompt `databases/5-Work-In-Progress/1-Completed/Update_Route_Permission_AllModules/migrate-module-routes-policies_v2.md` executed on `prime_ai_shailesh` 2026-04-02.
+- **New canonical architecture:**
+  - **Tenant module routes:** `Modules/{ModuleName}/routes/web.php` — each module owns its routes entirely
+  - **Gate policies:** `Modules/{ModuleName}/app/Providers/{ModuleName}ServiceProvider.php` → `registerPolicies()` method
+  - **`routes/tenant.php`** (224 lines): auth routes only + 1 cross-module route + seeder routes (still P0 SEC-RTG-001) + tenancy middleware wrapper
+  - **`AppServiceProvider.php`** (127 lines): module policy blocks removed; cross-module-only policies remain
+- **Status:** ✅ RESOLVED in `prime_ai_shailesh`. Remaining risk: module RSP tenancy middleware (D23 still open).
+
+### D23: RSP Tenancy Middleware — 2 Modules Missing Entirely
+- **Discovery:** Scheduler and EventEngine RSPs apply only `Route::middleware('web')` — no `InitializeTenancyByDomain`, no `PreventAccessFromCentralDomains`. SmartTimetable RSP missing tenancy on ParallelGroupController.
+- **Impact:** All routes served by these RSPs operate without tenant DB context — queries hit central database or fail.
+- **Decision needed:** Add full tenancy middleware stack (`InitializeTenancyByDomain`, `PreventAccessFromCentralDomains`, `EnsureTenantIsActive`) to all tenant module RSPs.
+- **Status:** Identified, not yet fixed.
+
+### D24: Permission Naming Taxonomy — 5 Conflicting Prefixes
+- **Discovery:** Five different Gate permission prefixes coexist: `tenant.*` (standard), `prime.*` (Notification module — wrong context), `global-master.*` (GlobalMaster Language), `vendor.*` (VndUsageLog/VendorPayment), `transport.*` (TripController). Additionally, `tested.*` in Transport AttendanceDevice is a typo.
+- **Impact:** Policies defined under one prefix are invisible to Gates checking another. Auth silently fails (403) or silently passes depending on how `Gate::authorize()` handles missing policies.
+- **Decision needed:** Standardize to `tenant.*` for all tenant-scoped modules and `prime.*` for all central modules. No exceptions.
+- **Status:** Identified, not yet fixed.
+
+### D25: $request->all() vs $request->validated() — Systemic Pattern
+- **Discovery:** 30+ controllers across 12+ modules inject FormRequest classes but call `$request->all()` instead of `$request->validated()`, bypassing the validation result entirely. This is the single most widespread vulnerability pattern.
+- **Impact:** Extra fields submitted in the request body bypass validation rules and flow directly into `Model::create()` / `->update()`, enabling mass-assignment attacks even with FormRequests in place.
+- **Decision needed:** Project-wide find-and-replace of `$request->all()` with `$request->validated()` in all controllers that inject FormRequest types. Add a custom PHPStan/Larastan rule to flag this pattern.
+- **Status:** Identified, not yet fixed.
+
+### D30: FormRequest authorize() returning hardcoded `true` — Second Systemic Pattern (2026-04-09)
+- **Discovery (Phase 2, 2026-04-09):** FormRequest `authorize()` methods returning hardcoded `return true` (or bare `auth()->check()` with no resource ownership check) is the second platform-wide vulnerability pattern, parallel to D25. Confirmed across:
+  - **Inventory:** ALL 18 FormRequests (SEC-INV-001) — financial requests (StorePurchaseOrderRequest, StoreGrnRequest, StoreStockIssueRequest, StoreStockAdjustmentRequest, StoreQuotationRequest, etc.) all relay on controller Gate checks only.
+  - **LmsExam:** PaperSetQuestionRequest (SEC-EXM-006).
+  - **StudentPortal:** StartAttemptRequest returns bare `auth()->check()` without validating student owns the assessment_id (SEC-STP-010).
+  - **Hpc (FIXED earlier):** Previously had 7 FormRequests returning true — sprint fixed 2026-03-17.
+  - **Complaint, Notification, Syllabus** — prior audits identified similar patterns (still open).
+- **Impact:** Defense-in-depth collapses to a single layer. If controller-side `Gate::authorize()` is ever commented out, skipped, or bypassed (e.g. via a new controller method that forgets to re-add it), the FormRequest provides zero safety net. Several modules already have commented Gates (Vendor SEC-VND-005, LmsQuests SEC-QZT-002, HPC BUG-HPC-016) — the FormRequest fallback has silently been the only protection layer, and in these cases there is no protection at all.
+- **Rule:** Every FormRequest `authorize()` method MUST return a `Gate::allows()` / `Gate::check()` call that matches the route's permission string. Controllers must still keep their `Gate::authorize()` calls — this is defense-in-depth, not either/or.
+- **Decision:** Project-wide sweep required. Add a custom Larastan rule to flag any FormRequest where `authorize()` returns a boolean literal. **Status:** Identified platform-wide, not yet fixed.
+
+### D32: MarksheetGeneration Module — Architecture & Schema Design (2026-04-13)
+- **Context:** Prime-AI has 5 independent scoring modules (LmsExam, LmsHomework, LmsQuiz, LmsQuest, BehaviouralAssessment) but no consolidated marksheet engine. Indian K-12 schools require CBSE/ICSE/State Board-compliant report cards with subject-wise, exam-wise mark matrices, theory-practical splits, Internal Assessment, Co-Scholastic grades, attendance, rank, division, and promotion status.
+- **Decision:** New tenant module `Modules\MarksheetGeneration` with prefix `msh_*` (23 tables). Read-only integration with all 5 source modules — MSG never writes to `lms_*`, `ba_*`, `sch_*`, or `std_*` tables.
+- **Key design choices:**
+  - D-MSG-001: No `tenant_id` column (database-per-tenant, standard)
+  - D-MSG-002: No ENUMs anywhere — all status/type fields use `sys_dropdown_table` (per D29)
+  - D-MSG-003: `msh_class_groups` is a NEW table separate from `sch_class_groups_jnt` (which is timetable-specific, not simple class grouping)
+  - D-MSG-004: Online/Offline exam distinction transparent at marksheet level — both paper modes produce `lms_exam_results`, paper mode (`lms_exam_papers.mode`) is irrelevant for marks aggregation
+  - D-MSG-005: Absent flag read from `lms_exam_results.result_status = 'ABSENT'` (NOT from `lms_exam_marks_entry` which has no such flag)
+  - D-MSG-006: IA marks (Notebook, Subject Enrichment) owned by MSG module (teacher entry via UI), not sourced from other modules
+  - D-MSG-007: Co-Scholastic grades (Work Ed, Art, Health & PE) owned by MSG module; Discipline grade auto-populated from BA module if configured
+  - D-MSG-008: Theory vs Practical paper identification — no `is_practical` flag on `lms_exam_papers`. Resolution: match by `total_marks` against `msh_subject_practical_configs.theory_max_marks` / `practical_max_marks` (Open Question Q-13)
+- **Schema:** 3 masters + 10 config + 2 schedule + 6 result + 1 audit = 23 tables. Core table: `msh_student_subject_exam_marks` (highest volume: ~60K-400K rows/school/year)
+- **Output files:** `{OLD_REPO}/1-DDL_Tenant_Modules/55h-MarksheetGeneration/` → `MSG_RequirementSpec.md`, `MSG_DDL_v1.sql`, `MSG_DataDictionary.md`, `MSG_Dev_Plan.md`
+- **Sprint plan:** 5 sprints / ~9.5 weeks. Sprint 3 (Computation Engine) is critical path.
+- **Open Questions (13):** Listed in MSG_RequirementSpec.md Section 11. Q-13 (theory/practical paper identification) is the highest-risk item.
+
+### D31: QuestionBank `qns_question_statistics` — Formal Calculation Specification (2026-04-10)
+- **Context:** The `qns_question_statistics` table (`1-DDL_Tenant_Modules/51-QuestionBank/DDL/Question_Bank_ddl_v1.2.sql:209`) holds 6 computed metrics (`difficulty_index`, `discrimination_index`, `guessing_factor`, `min/max/avg_time_taken_seconds`, `total_attempts`) with only one-line inline comments and a header note *"Required a backend Service to calculate the statistics"*. No psychometric formula was specified. This left the backend service owner with no contract.
+- **Decision:** Formal calculation spec written to **`1-DDL_Tenant_Modules/51-QuestionBank/DDL/statistics_help.md`** as the authoritative backend-service contract. Any change to the DDL or to the spec must move in lockstep.
+- **Formulas chosen (CTT / IRT conventions):**
+  - `difficulty_index` = `100 × Σ(correct) / n` (p-value, stored as 0–100 percent)
+  - `discrimination_index` = `100 × (p_upper27 − p_lower27)` (Kelley D-index; negative value = mis-keyed question → auto-flag for review)
+  - `guessing_factor` (**MCQ only**) = empirical `100 × p_lower27` when `total_attempts ≥ 30`, else baseline `100 / k` where `k = active option count`. IRT 3PL c-parameter analogue.
+  - `min_time_taken_seconds` = `MIN(time_spent) WHERE is_correct=1 AND t>0` — topper's time, anti-cheat floor
+  - `max_time_taken_seconds` = `MAX(time_spent) WHERE t>0 AND t < 3×expected_time` — outlier-guarded
+  - `avg_time_taken_seconds` = `ROUND(AVG(time_spent))` — same outlier guard
+  - `total_attempts` = `COUNT(evaluated, non-null is_correct)`
+  - `last_computed_at` = `NOW()` (unconditional on every upsert, even no-op ones)
+- **Source tables (unified via view `v_qns_answer_feed`):** `lms_quiz_quest_attempt_answers` + `lms_quiz_quest_results` UNION `lms_exam_attempt_answers` + `lms_exam_results`, filtered by `is_evaluated=1 AND is_correct IS NOT NULL AND is_active=1`. `lms_exam_marks_entry` (BULK_TOTAL offline mode) is **excluded** — no per-question data exists.
+- **27% Kelley cut-point** used for both `discrimination_index` and `guessing_factor` so one ranked pass serves both metrics.
+- **MCQ gate for guessing_factor:** only compute when `qns_questions_bank.question_type_id` resolves to `SINGLE_MCQ` or `MULTI_MCQ` in `slb_question_types`. For all other question types, leave `guessing_factor = NULL`.
+- **Upsert semantics:** table has `UNIQUE KEY uq_qstats_q (question_bank_id)` — service MUST `INSERT ... ON DUPLICATE KEY UPDATE` (or Eloquent `updateOrCreate`), never blind INSERT.
+- **DDL inconsistency flagged:** `max_time_taken_seconds` column name says "maximum" but inline comment says "average time" — the column name is authoritative; the comment should be corrected in the next DDL revision (v1.3).
+- **Feed-forward hook:** after computation, the service writes `qns_question_performance_category_jnt` rows (`recommendation_type = REVISION | PRACTICE | CHALLENGE`) based on the interpretation bands — closes the loop into the Recommendation module per `Question_Bank_ddl_v1.2.sql:243–245`.
+- **Owner:** `Modules\QuestionBank\Services\QuestionStatisticsService` (not yet implemented — module currently at ~75% per known-issues.md, with AI controller auth issues still open).
+- **Scheduling:** nightly job via `Modules\Scheduler`; delta-check `last_computed_at` against `MAX(evaluated_at)` from both answer tables to avoid recomputing untouched questions.
+- **Transactionality:** wrap each question's 6-metric computation in a single `START TRANSACTION WITH CONSISTENT SNAPSHOT` read so all metrics reflect the same row set — prevents drift when students submit mid-computation.
+
+### D33: Employee Setup DDL v3 → v4 — Bug Fixes + 12 New HR Tables (2026-05-04)
+- **File:** `1-DDL_Tenant_Modules/2-SchoolSetup/DDL/Employee_setup_ddl_v4.sql` (1,328 lines, 25 tables; v3 had 649 lines, 13 tables)
+- **CREATE-time bugs fixed in v3 that would have failed on a fresh tenant:**
+  - `sch_employee_attendance` line 618 — missing closing quote on COMMENT clause.
+  - `sch_teacher_capabilities` lines 170/187 — typo `competancy_level` → `competency_level`.
+  - `sch_employees_profile` UNIQUE on `(employee_id, role_id, effective_to)` — replaced with `active_flag` GENERATED COLUMN pattern (NULLs in MySQL UNIQUE are distinct, so the v3 form allowed multiple active rows). Mirrors the working pattern already in `sch_teacher_capabilities`.
+- **Convention compliance:** added missing `is_active` / `created_by` / `deleted_at` on 7 tables (per `db-architect.md` required-columns rule).
+- **Resolved dangling FKs:** v3 referenced `sch_leave_types` (4 tables) and `sch_leave_config` (in comments) but never defined either. Both added in v4 Section 5 (`sch_leave_types` master + `sch_leave_config` per-(role × leave_type) entitlement / accrual).
+- **12 new tables (HR coverage gaps):** `sch_employee_addresses`, `sch_employee_emergency_contacts`, `sch_employee_bank_details`, `sch_employee_documents`, `sch_employee_role_history` (promotion/transfer audit), `sch_employee_separations` (resignation/termination workflow), `sch_leave_types`, `sch_leave_config`, `sch_holidays`, `sch_employee_shifts`, `sch_employee_shift_assignments`, `sch_employee_attendance_punches` (raw biometric), `sch_employee_attendance_corrections`.
+- **Field expansions:** `sch_employees` +19 fields (gender, DOB, marital_status, blood_group, contact, identity numbers — Aadhaar/PAN/PF/ESI/UAN, employment_status, employment_type, branch_id); `sch_employee_attendance` +13 fields (shift_id, source, device_id, geo lat/lng, late/early/overtime metrics); `sch_employee_leave_applications` +5 (cancellation trio + `pending_with_user_id` for "leaves pending with me" dashboard + `is_emergency`); `sch_teacher_profile` +3 class-teacher assignment fields; `sch_employee_leave_application_remarks` +2 read-tracking fields.
+- **Additive principle:** strictly additive over v3 — no renames, no type changes on existing columns. Renames flagged for v5 (e.g. `sch_employees_profile` → plural; `sch_employee_attendance` → plural; `sch_employee_leave_balance` → plural) — deferred until app code migration.
+- **Deferred to v5:** rename non-conformant table names; normalize JSON columns (qualifications/experiences/certifications) to first-class tables; review `sch_employees.user_id ON DELETE CASCADE` (likely should be RESTRICT — a user delete shouldn't wipe the employee record); encryption-at-rest for Aadhaar/PAN/account numbers.
+
+### D35: PTM (Parent-Teacher Meeting) Module DDL v1 → v2 — Convention Rebuild + 6 New Tables (2026-05-07)
+- **File:** `1-DDL_Tenant_Modules/2-SchoolSetup/PTM/Ptm_Setup_ddl_v2.sql` (10 tables; v1 had 5 stub tables with no convention compliance).
+- **Source requirement:** `1-DDL_Tenant_Modules/2-SchoolSetup/PTM/Ptm_Requirement.md` (3 sections: Core Functional Reqs, Slot Allocation System, Business Rules — Teacher/Staff Constraints + Batch/Slot Logic).
+- **Convention rebuild over v1:** v1 used Postgres `SERIAL`, no engine/charset, no audit columns, no FKs to `sch_*`/`sys_users`/`std_students`. v2 conforms to PrimeDB rules — InnoDB / utf8mb4_unicode_ci, snake_case plural names, `_jnt` for junctions, full audit (`is_active`, `created_by`, `created_at`, `updated_at`, `deleted_at`), `_json` suffix for JSON columns. Loose `class_section_id INT` replaced with FK to `sch_class_section_jnt(id)`; loose `teacher_id INT` replaced with FK to `sys_users(id)`; bookings now FK to `std_students(id)`.
+- **FK alignment with later conventions (post-D33):** Event header references `sch_academic_sessions(id)` and `sch_academic_terms(id)` rather than free-text `academic_year`/`term` strings — keeps PTM events anchored to canonical session/term masters.
+- **10 tables:**
+  - **Event scope:** `ptm_events` (master event), `ptm_event_settings` (1:1 policy: booking window, cancel lead-time, defaults, notify flags), `ptm_event_class_section_jnt` (which class+sections participate, on what date, in what room/link).
+  - **Template layer:** `ptm_batches` (reusable teacher batch template — window, slot duration, buffer, capacity), `ptm_batch_slot_definitions` (time-grid rows of a batch incl. `is_break` markers).
+  - **Allocation:** `ptm_assignments` (applies a batch to event+class+section, holds `allocation_mode = 'SCHOOL_ALLOCATED' | 'PARENT_PICK'`, `is_published`, override fields for buffer/capacity), `ptm_assignment_teacher_jnt` (multi-teacher splits of one class+section into parallel sub-batches per Req §3 — Multi-Teacher Assignment).
+  - **Constraints:** `ptm_blockouts` (teacher's global unavailability inside the event — lunch / staff meeting; honoured during slot generation and booking).
+  - **Concrete & bookings:** `ptm_slots` (wall-clock bookable slots; UNIQUE `(teacher_id, slot_start)` enforces "no double-booking" cross-class at DB level — Req §3), `ptm_slot_bookings` (separated from slots so group slots with capacity > 1 hold N bookings; cancel preserves history; generated `active_booking_key` enforces "1 confirmed booking per student per teacher per event" while permitting re-book after cancel).
+- **Key design choices:**
+  - D-PTM-001: ENUM-free per D29 — `allocation_mode`, `meeting_mode`, `status` are short VARCHARs at v2 (sentinel values controlled by app code). Future v3 should migrate these to `sys_dropdown_table` FKs once dropdown seed is registered.
+  - D-PTM-002: `ptm_event_settings` split out from `ptm_events` so policy can grow new flags without ALTERing the event header.
+  - D-PTM-003: Buffer captured at BOTH batch level (`ptm_batches.buffer_min`) and assignment level (`ptm_assignments.override_buffer_min`) — assignment override wins. Same pattern for `max_participants_per_slot`.
+  - D-PTM-004: `teacher_id` denormalized onto `ptm_slots` so the cross-class double-booking unique key works without joining through assignment / sub-batch.
+  - D-PTM-005: `ptm_slot_bookings.active_booking_key` is a VIRTUAL generated column = `student_id` only when `status='CONFIRMED'` (else NULL). This lets a CANCELLED booking coexist with a fresh CONFIRMED re-book under the same UNIQUE `(event, teacher, active_booking_key)`.
+  - D-PTM-006: Audit trail preserved by status FSM on bookings (`CONFIRMED → CANCELLED → CONFIRMED` allowed via re-insert), not by row deletion.
+- **Implementation notes (app layer, not DDL-enforced):** documented in file footer — slot generation algorithm (read batch_slot_defs, intersect with blockouts, write ptm_slots), booking flow (`SELECT … FOR UPDATE` on slot, increment `booked_count`, flip `status` to FULL when capacity reached), cancellation flow (verify `NOW + cancellation_lead_time_hrs <= slot_start`), and cross-class teacher conflict enforcement (DB unique handles same-start collisions; app must additionally check `slot_end` overlap when batch durations differ).
+- **Deferred to v3:** migrate `allocation_mode` / `meeting_mode` / `status` VARCHARs to `sys_dropdown_table` FKs (D29 compliance); add `(teacher_id, slot_end)` overlap CHECK or a trigger for unequal-duration batches; consider partitioning `ptm_slots` / `ptm_slot_bookings` by event for tenants running multiple terms per year.
+
+### D34: Hostel Module DDL v2 → v3 — Convention Fix + 15 New Tables (2026-05-04)
+- **File:** `1-DDL_Tenant_Modules/Hostel/DDL/HST_DDL_v3.sql` (1,386 lines, 36 tables; v2 had 601 lines, 21 tables).
+- **Convention fix (systematic across all 21 v2 tables):** `created_by` and `updated_by` columns added. v2's own header comment (line 20) declared them as `INT UNSIGNED → sys_users.id` but the CREATEs never defined them — every v2 table failed the project's own DB convention.
+- **15 new tables organized by domain:**
+  - **Warden duty:** `hst_warden_duty_roster` — daily on-duty (distinct from role-level posting in `hst_warden_assignments`).
+  - **Maintenance:** `hst_bed_maintenance_log` (replaces v2's flag-only `status='maintenance'` with full ticket lifecycle + before/after photos), `hst_housekeeping_log`.
+  - **Laundry:** `hst_laundry_tickets` — submission → wash → ready → collected, with weight/count-based billing pushed via `hst_fee_demands`.
+  - **Mess:** `hst_mess_opt_outs` (per-meal opt-outs, optionally recurring — finer-grained than full-day leave), `hst_mess_bills` (monthly bill summary, `total_amount` GENERATED column).
+  - **Fee:** `hst_fee_demands` — local audit of every charge raised against `fin_*` (v2 said "service call only — no FK", which left no audit trail).
+  - **Discipline masters:** `hst_incident_types` (replaces `hst_incidents.incident_type` VARCHAR free-text — file even mentioned `HstIncidentTypeSeeder` but no master existed), `hst_incident_warnings` (warning-letter audit with content/template/signer/delivery/acknowledgment).
+  - **Reservation:** `hst_room_reservations` — pre-allotment hold during admission flow (supports `prospective_name` when student record doesn't exist yet).
+  - **Emergency:** `hst_emergency_contacts` — hostel-level (doctor, ambulance, hospital, police, fire, plumber, electrician), priority-ordered.
+  - **Security:** `hst_visitor_media` — multiple photos per visit (selfie at gate, ID scan, signature).
+  - **Sick bay:** `hst_sick_bay_vitals` (structured: temperature, pulse, BP, SpO2, weight, pain-score with `is_alarm` flag), `hst_sick_bay_medications` (per-medication audit: name, dose, route, prescriber, administrator).
+  - **Cross-cutting:** `hst_audit_log` (generic before/after change trail with `field_diff_json`, IP, user-agent, request-correlation-ID), `hst_notification_log` (every notification dispatch — channel, status FSM, retries, vendor message ID).
+- **Field additions on v2 tables:** 14 new fields across 11 v2 tables, all nullable / additive. Notable: `hst_incidents.incident_type_id` (FK to new master, old VARCHAR retained for back-compat); `hst_visitor_log.visitor_photo_media_id`; `hst_movement_log.is_overnight + parent_consent_received + consent_media_id`; `hst_allotments.transfer_from_allotment_id + vacation_reason + vacated_by + is_emergency`; `hst_leave_passes.guardian_name + guardian_relation + parent_consent_received + consent_media_id + is_overnight`; `hst_complaints.acknowledged_at + satisfaction_score`; `hst_sick_bay_log.medical_consent_received`; `hst_rooms.block_code + windows_facing + accessibility_features_json + status='reserved'`; `hst_beds.bed_type + status='reserved'`; `hst_room_inventory.photo_media_id`.
+- **New indexes (7):** dashboard / SLA / overdue queries — `hst_rooms.idx_hst_room_status`, `hst_beds.idx_hst_bed_status`, `hst_allotments.idx_hst_allot_date + transfer_from`, `hst_movement_log.idx_hst_ml_expected_return`, `hst_complaints.idx_hst_cmp_status_sla`, `hst_leave_passes.idx_hst_lp_dates + status`, `hst_sick_bay_log.idx_hst_sb_hospital_ref`, `hst_incidents.idx_hst_inc_type_id`.
+- **Strictly additive — no breaking changes:** every v2 column type and constraint preserved. v2 callers continue to work.
+- **Deferred to v4:** drop `hst_incidents.incident_type` VARCHAR once callers migrated; normalize `facilities_json` / `amenities_json` to master + junction tables; visitor blacklist; vendor coverage (likely belongs in `vnd_*`); partition `hst_audit_log` and `hst_notification_log` by month (both append-heavy).
+
+### D36: MySQL GENERATED Columns Degraded to Plain Columns in Migrations — Systemic (2026-06-29)
+- **Pattern:** The DDL masters define a column as MySQL `GENERATED ALWAYS AS (<expr>) STORED|VIRTUAL`, but the Laravel tenant migration that actually ships created it as an **ordinary writable column** (or omitted it) — the generated expression is silently dropped. Discovered independently in Hostel (DAT-HST-001, MIG-HST-001) and Inventory (MIG-INV-001) on 2026-06-29, then a Mode D sweep showed it is **platform-wide**.
+- **Sweep result (2026-06-29):** Of every `GENERATED ALWAYS` column across the DDL masters, **exactly ONE is correctly implemented as generated in the live tenant migrations** — `sys_users.super_admin_flag` (`->storedAs(...)`). Only **2** of ~700 tenant migrations use `storedAs/virtualAs` at all (the other is a template). Every other generated column checked is a plain column or absent.
+- **Three failure modes (by the column's role):**
+  1. **Uniqueness key degraded → constraint enforces nothing.** A `GENERATED … UNIQUE` partial-key column (the "only one active/current/confirmed" pattern) becomes a plain always-NULL column → UNIQUE on all-NULL enforces nothing → concurrent duplicates. *(hst_allotments double-allotment P0; ptm_slot_bookings double-booking; current_flag "one current session"; active_flag "one active row".)*
+  2. **Computed total degraded → wrong/uninitialised value.** A `GENERATED` total/balance becomes a plain column the code must populate but often doesn't → `NOT NULL` insert fails (SQLSTATE 1364) or the value silently drifts. *(hst_mess_bills.total_amount; fee_invoices.balance_amount; vnd_invoices.balance_due; sch_employee_leave_balance.available_balance.)*
+  3. **Derived/read-only column degraded → plain-writable.** A `GENERATED` derived value (e.g. `variance_qty = physical − system`, `duration_minutes = TIMESTAMPDIFF(...)`) becomes writable → integrity drift. *(inv_stock_adjustment_items.variance_qty; tt_period_set.total_periods; tt duration/availability.)*
+- **Confirmed degraded instances (DDL=GENERATED, migration=plain), per module:** Hostel `hst_allotments.gen_active_bed_id`, `gen_active_student_id`, `hst_mess_bills.total_amount`; Inventory `inv_stock_adjustment_items.variance_qty`; PTM `ptm_slot_bookings.active_booking_key`; StudentFee `fee_invoices.balance_amount`; Vendor `vnd_invoices.balance_due`; SchoolSetup/Student `sch_academic_term.current_flag`, `sch_org_academic_sessions_jnt.current_flag`, `std_student_academic_sessions.current_flag`; EmployeeSetup `sch_employees_profile.active_flag`, `sch_employee_shift_assignments.active_flag`, `sch_teacher_capabilities.active_flag`, `sch_employee_leave_balance.available_balance`; Timetable `tt_period_set.total_periods`, `tt_room_availability.available_for_full_timetable_duration`, plus a TIMESTAMPDIFF `duration_minutes`. **Absent entirely:** CommonChat `cht_*.dm_pair_hash` (module likely unbuilt), Timetable `no_of_days_not_available`.
+- **Guardrail (avoid false positives):** the column-name sweep collides on common names. `total_amount` appears plain in 11 migrations but is only a defect where that table's OWN DDL declares it GENERATED (confirmed: hst_mess_bills only; acc_/caf_/inv_ `total_amount` are legitimately plain). `duration_minutes` is a user-input field in lms_/slb_ DDLs (not generated) — only the Timetable TIMESTAMPDIFF one is a degradation. Always re-confirm against the column's own module DDL before flagging.
+- **Detector (Mode D):**
+  ```bash
+  # 1) generated columns in the DDL masters:
+  grep -rinE "GENERATED ALWAYS AS|AS \(.*\) (STORED|VIRTUAL)" {DEV_MODULE_DDL_DIR}/*.sql {DEV_TENANT_DDL}
+  # 2) migrations that actually implement generated columns (expect very few):
+  grep -rlE "storedAs|virtualAs" {TENANT_MIGRATIONS}
+  # 3) per column: confirm the migration line for that column uses storedAs/virtualAs, else it is degraded
+  ```
+- **Fix:** in the create migration, restore `->storedAs('<expr>')` / `->virtualAs('<expr>')` for each column (matching the DDL expression); for uniqueness-key columns keep the UNIQUE index on the generated column; never add the column to `$fillable`. Where a generated column is impractical in Laravel, the owning Service must compute and persist it inside the same locked transaction (and the model must guard it). Sweep all modules — do not fix only the two that surfaced first.
+- **Severity guidance:** failure-mode 1 on a money/seat/bed/booking table = P0 (DAT). Failure-mode 2 on a financial balance = P1 (MIG/DAT). Failure-mode 3 = P2 (MIG).
+
+### D37: "Status-master FK declared in DDL but code uses string literals" — code/schema status divergence (2026-06-29)
+- **Discovered:** Accounting Mode X audit. The DDL models status columns as `INT UNSIGNED` FK → a generic status master (`acc_accounting_status_masters`) on 5 tables (D4 pattern), but **every model casts `status` to `string` and all services/controllers/scopes write and compare string literals** (`'draft'/'posted'/'cancelled'/'Completed'/'Approved'/'Skipped'/...`). Same for `acc_vouchers.source_module` (BIGINT FK used as a string).
+- **Why it matters:** under the DDL schema, writing a label into an INT FK column errors (strict mode) or coerces to `0` (FK violation `errno 1452`), and `WHERE status = 'posted'` coerces the column to `0` — so status filtering silently matches the wrong rows. With 0 migrations the DDL IS the schema-of-record, making this a functional P0, not cosmetic.
+- **Generalises beyond Accounting:** the "generic status master FK" (D4) pattern is attractive in DDL but is frequently NOT implemented in code. Any module that declares an INT FK status against a status-master table must be checked: does the model cast it to int and resolve labels via the master, or does it cheat with string literals? Audit detector: grep models for `'status' => 'string'` alongside a DDL `status INT ... FK`.
+- **Fix guidance:** pick ONE source of truth — either resolve status IDs from the master (add `status_id` int + a string accessor, seed the master, refactor scopes), or, if a VARCHAR/ENUM status is actually intended, correct the DDL to match and document it. Do not ship the contradiction. Sibling to D17 (fillable references missing column) and D36 (generated column degraded).
+- **Severity:** P0 when it breaks a posting/balance/report path (Accounting); P1/P2 for peripheral status fields.
+
+### D38: "SoftDeletes/default-timestamps declared against tables lacking deleted_at/timestamps" — model-trait vs DDL divergence (2026-06-29)
+- **Discovered:** Billing Mode X audit (MIG-BIL-001). Every Billing model uses `SoftDeletes` + default `$timestamps`, but `prm_billing_cycles` has no created_at/updated_at/deleted_at, `bil_tenant_invoices`/`_payments` have no `deleted_at`, and `bil_tenant_invoicing_audit_logs` has `created_at` only.
+- **Why it matters:** SoftDeletes silently appends `WHERE deleted_at IS NULL` to every query and default timestamps write created_at/updated_at on insert/update — so on a schema-of-record (DDL, 0 migrations) the whole module's CRUD throws `SQLSTATE 42S22 Unknown column`. This is a DISTINCT failure mode from D17 ($fillable references a missing column): here the breaking columns are added by the trait/base-model, not by the developer's array, so a $fillable-only reconcile misses it.
+- **Audit detector:** for each model, check `use SoftDeletes` ⇒ table has `deleted_at`; and `$timestamps !== false` ⇒ table has BOTH created_at AND updated_at. Add to the Layer-2 three-way reconcile.
+- **Severity:** P0 when it breaks core CRUD against the schema authority (Billing); degrade to P1 only if the live DB was hand-patched out-of-band. Sibling to D17 / D36 / D37.
+
+---
+
+### D39 — "Permission referenced but never seeded" → effectively super-admin-only (cross-module pattern)
+
+**Observed (2026-06-29, Technical Auditor):** controllers gate with `can:<ability>` / `Gate::authorize('<ability>')`
+where the ability is **never defined by any seeder**. Combined with the `Gate::before` super-admin bypass
+(`app/Providers/AppServiceProvider.php:65-67`, returns true for `is_super_admin && super_admin_flag`), the result is
+that the entire feature surface is reachable **only by super-admins** — every intended role (Admin/Principal/Teacher/
+Staff) silently receives 403. Confirmed in **Feedback** (SEC-FBK-004: `tenant.feedback.*`, `tenant.consent-forms.*`)
+and **Dashboard** (SEC-DSH-009: `tenant.dashboard.viewAny`). Likely present in other recently-built modules.
+
+**Rule for auditors:** a `can:`/`Gate::authorize` string is NOT proof of working authorization — grep the seeders
+(`database/seeders/TenantRolePermissionSeeder.php`, `Modules/*/database/seeders/*Permission*`) for the ability before
+clearing Layer 5. If undefined → P1 (module non-functional for intended roles), not "secured".
+**Rule for developers:** every new module must ship a permission seeder defining its abilities and mapping them to roles.
+
+### D23 reconciliation — EventEngine RSP tenancy is FIXED (2026-06-29, Technical Auditor, EVT Mode X)
+- D23 (line ~263) lists EventEngine's RSP as missing tenancy middleware. **Live code disproves this for EVT:** `Modules/EventEngine/app/Providers/RouteServiceProvider.php:41-48` applies the full stack (`InitializeTenancyByDomain` + `PreventAccessFromCentralDomains` + `EnsureTenantIsActive` + `auth` + `verified`). D23 is **RESOLVED for EventEngine** (and per the auditor baseline, also for Scheduler). Consequently `known-issues.md` **SEC-EVT-002 is STALE/RESOLVED** and `progress.md`'s "runs on wrong DB" for EVT is corrected. EVT's real blocker is schema, not tenancy: DATA-EVT-001 (0 migrations + 0 DDL for `lms_trigger_event`/`lms_action_type`/`lms_rule_engine_configs`). No new systemic pattern — module-local schema gap (sibling to the Layer-2.5 missing-FK-target class).
+
+### D39 — Platform audit trail is hard-coupled to GlobalMaster's ActivityLog model (observation, 2026-06-29 | Technical Auditor)
+The global helper `app/Helpers/activityLog.php` does `use Modules\GlobalMaster\Models\ActivityLog;` and writes every module's audit entry through that concrete class. Consequence: **every module's auditing depends on GLB's `ActivityLog` staying present, named, and stable** — a module-boundary inversion (a cross-cutting concern owned by a feature module). The GLB Mode-X audit surfaced how brittle GLB's class-name resolution already is (the `AcademicSession` model is referenced by two controllers but does not exist → guaranteed 500s; the `activity_logs` migration vs `sys_activity_logs` model drift). Recommendation when remediating: bind the audit writer behind an interface (e.g. `App\Contracts\ActivityLogger`) resolved from the container, so the helper does not hard-depend on a feature module's concrete model. Tracked as ARCH-GLB-001 / RISK-GLB-008. No code change made (read-only audit).
+
+---
+
+### D-PPT-001: PPT Leave Feature Delegates to StudentProfile.LeaveService — Not a PPT-owned Table (2026-06-29, pa-technical-auditor, Mode X)
+**Context:** The BA phase module-knowledge flagged `ppt_leave_applications` as a P0 missing table. The DDL v2 does not include this table. `ParentLeaveController` imports `Modules\StudentProfile\Models\LeaveApplication` and `Modules\StudentProfile\Services\LeaveService`, operating on `std_leave_applications`.
+**Decision:** ppt_leave_applications is intentionally deferred. Parent leave applications are stored in the shared `std_leave_applications` table (StudentProfile module), making leave visible to both parent portal and admin views without data duplication. `ppt_leave_applications` was a planning artifact that was superseded by this cross-module delegation approach.
+**Impact:** ParentLeaveController will work correctly given a functioning StudentProfile module with `std_leave_applications`. GAP-PPT-P0-02 (missing table) is a false alarm. No migration needed.
+**Follow-up:** Document this in the cross-module dependency table. Ensure LeaveService and its tests cover parent-initiated submissions.
+
+### D-PPT-002: PPT FormRequest BaseClass Uses resolveChild() in authorize() — Positive Architecture Decision (2026-06-29, pa-technical-auditor, Mode X)
+**Context:** All 22 PPT FormRequests extend `ParentPortalBaseRequest` whose `authorize()` calls `ParentContextService::resolveChild()`. This was initially evaluated as D30 (bare-true authorize) pattern.
+**Decision:** This is NOT a D30 instance. `resolveChild()` validates that (a) the user is authenticated, (b) a guardian record exists for the user, (c) at least one active child is linked with `can_access_parent_portal=1`. If any check fails, a 403 redirect is thrown. This provides real per-request authorization at the FormRequest layer, which is better than the platform's typical bare-true D30.
+**Recommendation:** Keep this pattern. Consider extending it in specific FormRequests that also need resource-level IDOR checks (e.g., `BookParentPtmRequest` should also verify the slot's class-section scope).
+
+## D-MSH-008: wipePreviousResults uses hard-delete for soft-deletable tables (2026-06-29)
+**Context:** MarksheetComputationService::wipePreviousResults() hard-deletes rows from msh_student_results, msh_student_subject_results, msh_student_subject_exam_marks, msh_student_coscholastic_results — all of which have soft-delete columns.
+**Rationale in code:** "unique keys on these tables do not include deleted_at, so soft-deleting leaves rows that block re-insertion on recompute."
+**Decision:** Hard-delete is intentional. Recomputation permanently removes prior computed data. Computation logs retain audit trail.
+**Risk:** No rollback possible after recompute. If recompute fails mid-way, partial results are written with no recovery path to pre-recompute state.
+**Recommendation:** Consider adding unique constraints that include deleted_at, or taking a snapshot log before wiping.
+
+## D-MSH-009: sys_dropdowns IS a tenant table (2026-06-29, clarification)
+**Context:** known-issues.md platform baseline says "Tenant FKs → sys_dropdowns (central-only table) | 52 | P0". MSH has a FK from msh_marksheet_schedules.status_id → sys_dropdowns.id.
+**Verification:** Migration `2026_06_15_145407_rename_sys_dropdown_table_to_sys_dropdowns.php` confirms sys_dropdowns is in the tenant DB (renamed from sys_dropdown_table).
+**Decision:** The MSH FK to sys_dropdowns is NOT a cross-DB violation. The platform-wide P0 note in known-issues.md may refer to a different table or an older architecture state. MSH-specific FK is clean.
+**Note:** The "52 tenant FKs → sys_dropdowns (central-only)" claim in known-issues.md should be re-verified against the current tenant migration set — the table may now be tenant-side.
+
+## QST observation — Cross-Layer AcademicSession usage is a recurring multi-module pattern (2026-06-29)
+**Context:** LmsQuests (QST) `LmsQuestController` and `Quest` model import `Modules\Prime\Models\AcademicSession` for use in tenant context. The `lms_quests` migration creates a FK to `global_db.glb_academic_sessions`. `Prime\Models\AcademicSession` resolves through prime_db, not global_db — a cross-layer mismatch (TEN-QST-001). The same pattern was previously observed in SyllabusBooks (`BookController queries Prime\AcademicSession from tenant context` — V2 finding 2026-03-26). Two modules confirmed; others may be affected.
+**Implication:** Any module that needs to display or enforce academic session context in tenant scope should resolve through `GlobalMaster\Models\AcademicSession` (global_db) or a tenant-local denormalized copy — NOT through `Prime\Models\AcademicSession` (prime_db). The correct FK target (`glb_academic_sessions` in migrations) is already consistent; only the model resolution in PHP code is wrong.
+**Status:** No platform-wide D-number assigned (module-specific finding so far). If confirmed in 3+ additional modules, create D40.
+
+## PRM-D-001: Policy overwrite via duplicate Gate::policy() for aliased class (2026-06-29)
+**Context:** PrimeServiceProvider registers `Gate::policy(AcademicSession::class, AcademicSessionPolicy::class)` then later registers `Gate::policy(PrimeAcademicSession::class, SessionBoardSetupPolicy::class)` where `PrimeAcademicSession` is an alias of `AcademicSession`. Laravel's Gate uses the class name as key; the second call overwrites the first. `AcademicSessionPolicy` is dead.
+**Pattern:** Using a `use` alias for a model class does not create a new class — it is still the same FQCN. Two `Gate::policy()` calls for the same FQCN result in the last one winning silently with no error or warning.
+**Decision:** When a ServiceProvider must register two different policies for conceptually similar models, use distinct concrete classes rather than aliases. If the same model truly needs two different policies for different contexts, gate-define one and policy-register the other, or consolidate into a single policy with method-level branching.
+**Recommendation:** Audit all other module ServiceProviders for duplicate `Gate::policy()` registrations with aliased classes.
+
+## PRM-D-002: STORED generated column in $fillable causes MySQL 3105 error (2026-06-29)
+**Context:** `sys_users.super_admin_flag` is a STORED generated column (`storedAs` in migration). The User model includes `'super_admin_flag'` in `$fillable`. Eloquent will attempt to INSERT/UPDATE this column if it appears in the data array, triggering MySQL error 3105 ("The value specified for generated column is not allowed").
+**Decision:** Generated columns (both STORED and VIRTUAL) must NEVER appear in `$fillable`. They are computed by MySQL and cannot be written by PHP. Remove from fillable; they are readable via Eloquent but not writable.
+**Rule:** Audit all models with `storedAs`/`virtualAs` migration columns — ensure none of those column names appear in `$fillable`.
+
+## PRM-D-003: Migration down() naming inconsistency — table name must match up() (2026-06-29)
+**Context:** `create_tenants_table.php` creates `prm_tenant` in `up()` but calls `Schema::dropIfExists('tenants')` in `down()`. This is a copy-paste error from the stancl/tenancy default migration template where the table was originally named `tenants`.
+**Decision:** Always verify that `down()` references the exact same table name as `up()`. The stancl/tenancy package uses `tenants` as its default; this project renames to `prm_tenant`. The `down()` must be updated when the table name is changed.
+**Rule:** After renaming any table in `up()`, immediately update all references in `down()` to match.
+
+## NTF-D-001: ShouldQueue listeners in tenant context must explicitly re-initialize tenancy (2026-06-29)
+**Context:** `Modules/Notification/Listeners/ProcessSystemNotification.php` implements `ShouldQueue`. When the event is fired synchronously, tenancy context is active. When the listener is dequeued by a queue worker, tenancy context is lost. The listener calls `NotificationService::trigger()` which queries `ntf_notifications` (a tenant table) against the wrong DB.
+**Decision:** Any class implementing `ShouldQueue` that touches tenant tables must either: (1) use a TenancyAwareJob trait that re-initializes tenancy from a serialized `$tenantId` constructor argument, OR (2) explicitly call `tenancy()->initialize(Tenant::find($this->tenantId))` at the top of `handle()` and `tenancy()->end()` in a `finally` block.
+**Affected:** `ProcessSystemNotification` listener; grep for `implements ShouldQueue` across all modules to verify coverage.
+**Rule:** Every ShouldQueue class must serialize tenant ID and re-initialize tenancy in handle().
+
+## NTF-D-002: NOT NULL FK columns in append-only log tables must match nullable service call sites (2026-06-29)
+**Context:** `ntf_delivery_logs.provider_id` is NOT NULL with FK to `ntf_provider_master`. `NotificationService::logDelivery()` accepts `?int $providerId = null` because in-app delivery has no external provider. When `$providerId` is null, MySQL throws errno 1048 and the delivery log row is silently lost.
+**Decision:** For any append-only log table, FK columns that can be legitimately absent for some delivery paths must be NULLABLE in the migration. Apply to `ntf_delivery_logs.provider_id`, `ntf_delivery_logs.resolved_use_id`, and any similar columns in other modules' log tables.
+**Rule:** Before marking an FK NOT NULL in an append-only table, verify every code path that inserts into that table provides a non-null value. If any path can omit it, make the column nullable.
+
+## D40: forceDelete() on parent tables with onDelete('cascade') FKs permanently destroys child records (2026-06-29)
+**Context (PTM):** `PtmSlotService::generateFromAssignment()` calls `PtmSlot::where('assignment_id', $id)->forceDelete()` before regenerating slots. `ptm_slot_bookings.slot_id` FK has `onDelete('cascade')`. On every publish/republish, all booking records for that assignment are permanently destroyed with no warning. Same pattern: `PtmAssignmentService::delete()` calls `slots()->forceDelete()` which cascades to destroy booking history. Neither checks for confirmed bookings first.
+**Decision (DAT-PTM-003, DAT-PTM-004):**
+1. **Never call `forceDelete()` on a parent record when the FK has `onDelete('cascade')` and child records carry business value** (bookings, financial records, audit trails). Use `delete()` (soft-delete) instead.
+2. **Always guard before hard-delete of parent:** query for confirmed/active child records; throw if any exist (enforce BR-PTM-013 pattern).
+3. **For slot regeneration (republish):** first soft-delete existing slots, then generate new ones. If confirmed bookings exist, abort regeneration and require admin to cancel bookings first.
+**Rule:** Any service method that calls `forceDelete()` on a record with `onDelete('cascade')` child tables must (a) verify no business-critical children exist or (b) use `delete()` (soft-delete) and document why hard-delete is safe (e.g., no cascade children, or they are purely derived/re-creatable). Apply platform-wide grep: `forceDelete()` calls in service classes where child tables have booking/payment/financial data.
+**Affected modules confirmed:** PTM (slots, bookings). **Check:** Hostel (allotments → bed logs?), LmsExam (paper → student results?), StudentFee (fee demand → receipts?).
+
+## D41: session('tenant_id') is unreliable — use tenant()->id for cross-tenant notification inserts (2026-06-29)
+**Context (PTM, PPT):** Multiple PTM services use `session('tenant_id') ?? 1` when creating `Notification` records inside `DB::transaction()` blocks. The session is tied to the HTTP request lifecycle and is unreliable in: (a) queued jobs (session unavailable), (b) concurrent async requests (session may return null), (c) tests (no session). Fallback `?? 1` hardcodes tenant 1 and creates notifications on the wrong tenant.
+**Decision:** Replace all `session('tenant_id') ?? 1` usages with `tenant()->id` (stancl/tenancy current-tenant accessor, always correct within tenancy-initialized context) when writing to any tenant-scoped table that requires a `tenant_id` column. Move notification inserts outside `DB::transaction()` or dispatch as queued jobs with `->afterCommit()`.
+**Rule:** Never use `session('tenant_id')` as the source of tenant identity for DB inserts. Use `tenant()->id`. Grep platform-wide: `session('tenant_id')` — should return zero hits after remediation.
+**Affected modules confirmed:** PTM (`PtmSlotBookingService`, `PtmAssignmentService`); PPT (`ParentPortalNotificationService`). Platform-wide count: TBD.
+
+## NTF-D-002 Extension: QuestionBank Confirms Pattern on Computed Metrics Table (2026-06-29)
+**Context (QNS, MIG-QNS-001):** `qns_question_statistics.discrimination_index`, `.guessing_factor`, `.avg_time_taken_seconds` are NOT NULL in the migration, but `QuestionStatisticsService::computeAndPersist()` correctly sets them to `null` per D31 spec (fewer than 4 attempts per group → discrimination = null; non-MCQ → guessing = null; no valid telemetry → avg = null). The `updateOrCreate()` call with null values throws MySQL SQLSTATE 1048 at runtime, blocking statistics computation for newly-added questions and non-MCQ types.
+**Extension to NTF-D-002:** NTF-D-002 covered FK columns in append-only log tables. This confirms the same pattern applies to **non-FK DECIMAL/INT columns in computed-metrics tables**: if the service layer can legitimately produce null (per spec edge cases), the corresponding DDL column must be NULLABLE. Verify all computed-metrics columns in statistics/analytics tables across the platform for NOT NULL / nullable mismatch.
+**Rule extension:** Before declaring a non-FK column NOT NULL in any statistics/metrics table, verify that ALL code paths that insert or update that table can ALWAYS produce a non-null value. If any spec edge case produces null (e.g., insufficient data, wrong question type, empty feed), the column must be NULLABLE.
+**Affected modules confirmed:** QNS (discrimination_index, guessing_factor, avg_time_taken_seconds in qns_question_statistics). Check: LmsExam (exam statistics tables), LmsQuiz (quiz analytics tables), any other _statistics or _analytics tables.
+
+## TEN-D-002: Central modules must use only ['web', 'auth', 'verified'] in their RSP — no tenancy middleware (2026-06-29)
+**Context (SDL, TEN-SDL-001):** The Scheduler RSP was modified to include `InitializeTenancyByDomain`, `PreventAccessFromCentralDomains`, and `EnsureTenantIsActive` — the full tenancy stack used by tenant modules. Scheduler is a central-only (prime_db) module. Result: `PreventAccessFromCentralDomains` blocks the central domain (where Platform Admins operate), making all RSP-registered routes (/schedulers/*) inaccessible from the correct domain. From a tenant domain, the routes are reachable but crash with SQL errors (schedules table does not exist in tenant_db).
+**Contrast with D23:** D23 identified TENANT modules that were MISSING tenancy middleware. TEN-D-002 is the INVERSE: a CENTRAL module that INCORRECTLY HAS tenant middleware.
+**Decision:** Every central module (prime_db or global_db, not multi-tenant) must use ONLY `['web', 'auth', 'verified']` in its RSP middleware group. NEVER add InitializeTenancyByDomain, PreventAccessFromCentralDomains, or EnsureTenantIsActive to a central module's RSP. EnsureTenantHasModule is also not applicable.
+**Central modules affected (verify each RSP):** Prime (PRM), Billing (BIL), SystemConfig (SYS), Documentation (DOC), GlobalMaster (GLB), Scheduler (SDL), Dashboard (DSH).
+**Rule:** When scaffolding a new module, the RSP middleware list must reflect the module's DB layer:
+- Tenant module RSP: `['web', InitializeTenancyByDomain::class, PreventAccessFromCentralDomains::class, EnsureTenantIsActive::class, EnsureTenantHasModule::class, 'auth', 'verified']`
+- Central module RSP: `['web', 'auth', 'verified']`
+Never copy a tenant-module RSP to scaffold a central module (or vice versa) without adjusting the middleware list.
+**Stale note correction:** D23 note "Scheduler RSP fixed" was INCORRECT. The live RSP was CHANGED to add wrong middleware, not fixed. See TEN-SDL-001.
+
+## STATUS-D-001: Module completeness scoring is now the 10-Dimension v2 formula (2026-07-02)
+**Context:** The prior Status_Analyzer used an opaque 3-layer A/B/C score; its own audit (`12-ModuleCompletionCalculationFormula_v2.md`) admitted the number was intuition, not calculation, and not reproducible. Users needed each lifecycle stage as its own defensible, module-wise percentage.
+**Decision:** Completeness is scored with the **10-Dimension evidence-anchored model** in `OpenCode_Brain/config/completion-formula-v2.md` (the SSOT). Dimensions + weights: D1 Requirement Doc 5% · D2 DDL/Schema 10% · D3 Dev Coverage 25% · D4 Impl Quality 18% · D5 Security 15% · D6 Coding Standard 5% · D7 Bug-Fix 8% · D8 Tests 4% · D9 Deployment 8% · D10 Performance 2%. Overall = min(Σ Dᵢ×wᵢ, P0_Cap), weights renormalized when a dimension is ⚠️ unmeasured.
+**Reliability rules (non-negotiable):** (1) every % must come from a COUNT (numerator/denominator) in an Evidence Ledger; (2) every dimension cites its source file; (3) never anchor to the prior number; same inputs → same score. Per-dim caps: D2≤40 on P0 schema, D5≤50 on P0 security. Global P0 caps unchanged (load-fail 20 / DDL-P0 50 / core-500 55 / write-no-Gate 60 / reports-unguarded-or-PII 65).
+**File resolution:** Resolve every module's files via `0-Prime_Ai_Detail/module_list.md` (MODULE_NAME · CODE · PREFIX · FOLDER_NAME · DDL_FILE_NAME) — never fuzzy-match. Sources: code `/Users/bkwork/Herd/prime_ai/Modules/{FOLDER}`; DDL `2-DDL_Tenant_Consolidated` or `0-DDL_Masters` (N/A = code-only); **tests `/Users/bkwork/Herd/prime_testing/tests/Browser/Modules/{FOLDER}`** (NOT `Modules/{M}/tests`); FRD `{CODE}_FRD*`; requirements `2-Module_Requirement_V1/{FOLDER}_v*`.
+**Output convention:** Reports → `/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/6-Dev_Gap_Analysis_Status/Progress_Status/`. Filenames: all-module `{YYYY-MM-DD}_Progress_Status_All-Module.md`; single `{YYYY-MM-DD}_Progress_Status_{Module_Name}.md`.
+**Depth levels:** Quick (D1/D2/D3/D9) · Standard (structural, D1–D5+D9 from counts) · Full (audit-grade — parses FRD register + reads bodies + verifies policy registration + applies P0 caps).
+**Note:** A single mechanical/Standard pass produces STRUCTURAL scores that read optimistically (D3=non-stub proxy, D5 counts Gates that may be dead). It is an upper bound; audit-grade numbers require Full depth. First all-module Standard run: `6-Dev_Gap_Analysis_Status/Progress_Status/2026-07-02_Progress_Status_All-Module.md` (structural avg 82%, reconciled against documented deep-audit 55–68%).
+
+## MNT-D-001: SystemConfig backup subsystem extracted into standalone Maintenance module; TenantCore introduced (discovered 2026-07-24, branch `main`)
+**Context:** Two new modules appeared on `main` (47 total, +2 vs 2026-06-21). (1) **Maintenance** — the Backup/Restore/Schedule subsystem was moved OUT of SystemConfig into its own module (`sys_backup_runs`, `sys_backup_schedules`, `sys_restore_logs`; models on `protected $connection='mysql'`; module-local migrations → central DB). This resolves the old SystemConfig P0s SEC-SYS-28/29/30 — `BackupController` and `BackupScheduleController` now carry full `Gate::authorize`. RSP uses `web`-only middleware, correctly per **TEN-D-002** (central subsystem, no tenancy stack). (2) **TenantCore** — intended to centralize the tenant `ActivityLog` (functional `ActivityLogController`), but currently a `module:make` skeleton: only the empty stub `TenantCoreController` is routed; `ActivityLogController` is unrouted.
+**Decision / open issue:** The move left **`RestoreController` with ZERO authorization** (SEC-MNT-001, P0) — restore is the most destructive verb and accepts an arbitrary `target_db_name`. Permission strings stayed `system-config.backup.*` (PERM-MNT-001 — confirm the seeder namespace). TenantCore's functional controller must be wired up (GAP-TNC-001) before the module counts as anything past skeleton.
+**Rule (governance):** When a CRUD/action controller group is authorization-gated, EVERY sibling — especially the destructive verbs (restore/destroy/forceDelete/import)  — must carry the same `Gate::authorize`. When EXTRACTING a subsystem into a new module, re-verify auth on each moved endpoint; a move is a common place for a gate to be dropped. Central subsystems still need role/permission gates even though they skip tenancy middleware — "central" is not "unauthenticated-safe".
+**Affected:** Maintenance (SEC-MNT-001 P0, PERM-MNT-001 P2, DEAD-MNT-001 P3); TenantCore (DEAD-TNC-001 P3, GAP-TNC-001 P2, TEN-TNC-001 P2). Full detail: `lessons/known-issues.md` § "Phase 2 — Full-Scan Deep Audit (2026-07-24)".

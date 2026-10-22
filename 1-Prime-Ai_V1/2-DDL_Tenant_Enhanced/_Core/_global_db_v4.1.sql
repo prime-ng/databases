@@ -245,9 +245,9 @@ CREATE TABLE IF NOT EXISTS `glb_app_modules` (
 -- Data Seeder:
 -- Key | Ordinal | Code 				| Name											| Module_Prefix | Is_System | Is_Active
 ---------------------------------------------------------------------------------------------------------------------------
--- ACC | 1 		  | ACCOUNTING			| Accounting									| acc_ 			 | 1         | 1
--- ACC | 2 		  | TRANSPORT			| Transport										| tpt_ 			 | 0         | 1
--- ACC | 3 		  | HOSTEL				| Hostel & Boarding							| hst_ 			 | 0         | 1
+-- ACC | 1 		  | ACCOUNTING		| Accounting							  |    acc_  		  | 1         | 1
+-- ACC | 2 		  | TRANSPORT			| Transport									|    tpt_ 			| 0         | 1
+-- ACC | 3 		  | HOSTEL				| Hostel & Boarding					|    hst_ 			| 0         | 1
 -- 
 
 
