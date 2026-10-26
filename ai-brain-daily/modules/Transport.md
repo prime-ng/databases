@@ -1,0 +1,45 @@
+
+## 2026-10-24 — Vehicle/Route Enhancements, Student Allocation & Fee Fixes
+- **Agents:** antigravity
+- **Work done:**
+  - Added new form fields and request validation for Vehicle and Route CRUD (`VehicleRequest`, `RouteRequest`, blade forms).
+  - Fixed incomplete student route allocation display, breadcrumbs, and fee calculation logic in `StudentAllocationController` and `StudentRouteFeesController`.
+  - Updated `TransportModuleSeeder` and tenant migration schema.
+- **Files changed:**
+  - `Modules/Transport/app/Http/Controllers/StudentAllocationController.php` (M)
+  - `Modules/Transport/app/Http/Controllers/StudentRouteFeesController.php` (M)
+  - `Modules/Transport/app/Http/Requests/RouteRequest.php` (M)
+  - `Modules/Transport/app/Http/Requests/VehicleRequest.php` (M)
+  - `Modules/Transport/app/Models/TptStudentAllocationJnt.php` (M)
+  - `Modules/Transport/database/seeders/TransportModuleSeeder.php` (M)
+  - `Modules/Transport/resources/views/route/*.blade.php` (M)
+  - `Modules/Transport/resources/views/student-allocation/*.blade.php` (A/M/D)
+  - `Modules/Transport/resources/views/tab_module/stdroutefeesmgmt.blade.php` (M)
+  - `Modules/Transport/resources/views/vehicle/*.blade.php` (M)
+  - `Modules/Transport/routes/web.php` (M)
+  - `database/migrations/tenant/2026_06_16_140622_create_tpt_student_route_allocation_jnt_table.php` (M)
+- **Commits:** `e2fce6771`, `ba4046606`, `14a82a2bf`, `68d1c561e`, `71a015396`, `43e267dad`
+- **Status:** Done
+- **Open items:** None.
+- **Evidence:** [daily/2026-10-24.md](../daily/2026-10-24.md)
+
+## 2026-10-25 — All 13 insight details on report tabs + Staff Attendance rebuild
+- **Agents:** opencode, antigravity
+- **Work done:**
+  - TPT-01..TPT-13 summary cards/lists added to cost-maintenance, route-performance, trip-execution, driver-attendant, transport-finance and student-boarding tabs (all from existing tenant schema).
+  - Student Boarding report now shows real class/section and route name.
+  - Driver Attendance rebuilt: KPI cards, status donut + 7-day trend (Chart.js), create modal, sub-tabs (Table / Analytics), server-side driver/date/status filters, per-page pagination, dropdown-ID status handling.
+  - Fixed undefined `Route->vehicle` relation, missing `TptIncidentType`, negative days-open formatting.
+  - Added "Staff Management" submenu via `MenuSyncController` (sort_order 4); menu sync created 311 tenant menus.
+- **Files changed:**
+  - `Modules/Transport/app/Http/Controllers/DriverAttendanceController.php` (M)
+  - `Modules/Transport/app/Http/Controllers/StaffMgmtController.php` (M)
+  - `Modules/Transport/app/Http/Controllers/TransportReportController.php` (M)
+  - `Modules/Transport/resources/views/driver-attendance/{index,edit,show}.blade.php` (M)
+  - `Modules/Transport/resources/views/report/{cost-maintenance,driver-attendant,route-performance,student-boarding-unboarding,transport-finance,trip-execution-discipline}/index.blade.php` (M)
+  - `Modules/Transport/resources/views/report/route-performance/js.blade.php` (M)
+  - `Modules/Transport/resources/views/tab_module/staffmgmt.blade.php` (M)
+- **Commits:** `a206bde1a`, `f0fb225fb`, `047639c07`
+- **Status:** Done (browser verification pending)
+- **Open items:** User browser testing of Staff Attendance and Route Performance.
+- **Evidence:** [daily/2026-10-25.md](../daily/2026-10-25.md)

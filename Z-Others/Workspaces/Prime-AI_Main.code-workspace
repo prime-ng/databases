@@ -10,7 +10,11 @@
 		},
 		{
 			"name": "prime_ai_main",
-			"path": "/Users/bkwork/Herd/prime_ai"
+			"path": "/Users/bkwork/Herd/prime_ai_main"
+		},
+		{
+			"name": "prime_ai_dev",
+			"path": "/Users/bkwork/Herd/prime_ai_dev"
 		},
 		{
 			"name": "local_workspace",
@@ -19,6 +23,10 @@
 		{
 			"name": "tarun_prime_context",
 			"path": "/Users/bkwork/Herd/tarun_prime_context"
+		},
+		{
+			"name": "tarun_prime_info",
+			"path": "/Users/bkwork/Herd/prime_info"
 		},
 		{
 			"name": "prime_testing",

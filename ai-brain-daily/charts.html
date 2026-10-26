@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Brain — Charts & Progress</title>
+<script>
+(function () {
+  try {
+    var p = new URLSearchParams(location.search).get("theme");
+    var t = p || localStorage.getItem("brain-theme") || "dark";
+    document.documentElement.setAttribute("data-theme", t === "light" ? "light" : "dark");
+  } catch (e) {}
+})();
+</script>
+<style>
+  :root {
+    --bg: #0d1117; --bg2: #131a23; --bg3: #1a2330; --line: #263244;
+    --text: #dbe4ef; --muted: #8b9bb0; --label: #c3d0e0;
+    --grid: #223044; --track: #1d2836;
+    --commit: #58a6ff; --add: #3fb950; --del: #f85149; --task: #f0b429; --pdf: #bc8cff;
+    --tip-bg: #1b2635; --tip-line: #35465e;
+    --glow: #16283f; --radius: 12px;
+    --bg-grad: radial-gradient(1200px 600px at 10% -10%, var(--glow) 0%, var(--bg) 55%);
+  }
+  html[data-theme="light"] {
+    --bg: #f6f8fb; --bg2: #ffffff; --bg3: #eef2f7; --line: #d8e0ea;
+    --text: #1c2733; --muted: #5f7085; --label: #2b3a4b;
+    --grid: #e4eaf1; --track: #e9eef4;
+    --commit: #1f6feb; --add: #1a7f37; --del: #cf222e; --task: #9a6700; --pdf: #8250df;
+    --tip-bg: #ffffff; --tip-line: #d8e0ea;
+    --glow: #e8f1ff;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; color: var(--text); min-height: 100vh; background: var(--bg-grad);
+    font: 14px/1.5 "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+    transition: background-color .2s, color .2s;
+  }
+  .top { display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: center; padding: 16px 24px; border-bottom: 1px solid var(--line); }
+  .top h1 { margin: 0; font-size: 19px; font-weight: 600; }
+  .top .meta { color: var(--muted); font-size: 12px; display: flex; flex-wrap: wrap; gap: 14px; margin-left: auto; }
+  .top .meta b { color: var(--text); font-weight: 500; }
+  .btn {
+    background: var(--bg2); border: 1px solid var(--line); color: var(--text);
+    border-radius: 8px; padding: 7px 11px; font-size: 12px; cursor: pointer;
+    text-decoration: none; display: inline-flex; align-items: center; gap: 4px;
+    font-family: inherit;
+  }
+  .btn:hover { border-color: var(--commit); }
+  .btn.primary { border-color: var(--commit); }
+  .wrap { padding: 16px 24px 44px; max-width: 1540px; margin: 0 auto; }
+
+  .filters {
+    display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+    background: var(--bg2); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 10px 12px; margin-bottom: 14px;
+  }
+  .filters select {
+    background: var(--bg3); border: 1px solid var(--line); color: var(--text);
+    border-radius: 8px; padding: 7px 9px; outline: none; font-family: inherit; font-size: 12px;
+    max-width: 220px;
+  }
+  .filters select:focus, .filters input:focus { border-color: var(--commit); }
+  .filters .lab { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .5px; }
+  .filters .sum { margin-left: auto; color: var(--muted); font-size: 11.5px; }
+  .filters .sep { width: 1px; height: 22px; background: var(--line); margin: 0 2px; }
+
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 14px; }
+  .kpi { background: var(--bg2); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; min-width: 0; }
+  .kpi .k { color: var(--muted); font-size: 10.5px; text-transform: uppercase; letter-spacing: .6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .kpi .v { font-size: 23px; font-weight: 650; margin-top: 3px; }
+  .kpi .s { color: var(--muted); font-size: 10.5px; margin-top: 1px; }
+  .kpi.c { border-top: 2px solid var(--commit); }
+  .kpi.g { border-top: 2px solid var(--add); }
+  .kpi.r { border-top: 2px solid var(--del); }
+  .kpi.y { border-top: 2px solid var(--task); }
+  .kpi.p { border-top: 2px solid var(--pdf); }
+
+  .section-title { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; margin: 20px 0 10px; }
+  .section-title h2 { margin: 0; font-size: 15px; font-weight: 600; }
+  .section-title span { color: var(--muted); font-size: 11.5px; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(520px, 1fr)); gap: 14px; }
+  .card { background: var(--bg2); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px 10px; min-width: 0; }
+  .card.wide { grid-column: 1 / -1; }
+  .card h3 { margin: 0 0 3px; font-size: 13.5px; font-weight: 600; }
+  .card .sub { color: var(--muted); font-size: 11.5px; margin-bottom: 8px; }
+  .card svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .card svg text { pointer-events: none; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; color: var(--muted); font-size: 11px; margin: 4px 0 6px; }
+  .legend i { width: 9px; height: 9px; border-radius: 2px; display: inline-block; margin-right: 5px; }
+  .empty { color: var(--muted); padding: 18px 4px; font-size: 12px; }
+
+  #tip {
+    position: fixed; z-index: 100; pointer-events: none; opacity: 0;
+    background: var(--tip-bg); border: 1px solid var(--tip-line); color: var(--text);
+    padding: 7px 9px; border-radius: 8px; font-size: 11.5px; line-height: 1.45;
+    white-space: pre-line; max-width: 300px; box-shadow: 0 10px 30px rgba(0,0,0,.28);
+    transition: opacity .08s ease;
+  }
+  #tip.show { opacity: 1; }
+
+  .gauges { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+  .gauge { text-align: center; padding: 6px 4px 2px; }
+  .gauge svg { width: 132px; height: 132px; margin: 0 auto; }
+  .gauge .gl { font-size: 12px; font-weight: 600; margin-top: 2px; }
+  .gauge .gs { color: var(--muted); font-size: 11px; }
+  .mp { display: flex; flex-direction: column; gap: 9px; margin-top: 4px; }
+  .mp-row { display: grid; grid-template-columns: 170px 1fr 64px; gap: 10px; align-items: center; font-size: 12px; }
+  .mp-row > span:first-child { color: var(--label); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mp-row b { text-align: right; font-weight: 600; color: var(--muted); font-size: 11.5px; }
+  .track { height: 8px; border-radius: 99px; background: var(--track); overflow: hidden; }
+  .track i { display: block; height: 100%; border-radius: 99px; background: var(--commit); }
+
+  .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 6px 0 10px; }
+  .toolbar input {
+    flex: 1 1 240px; background: var(--bg3); border: 1px solid var(--line); color: var(--text);
+    border-radius: 8px; padding: 7px 10px; outline: none; font-family: inherit;
+  }
+  .toolbar input:focus { border-color: var(--commit); }
+  .muted { color: var(--muted); }
+  .table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .table th { text-align: left; color: var(--muted); font-weight: 500; padding: 6px 8px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--bg2); z-index: 1; }
+  .table td { padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .table .date { white-space: nowrap; color: var(--muted); font-family: ui-monospace, monospace; font-size: 11px; }
+  .clamp { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .st { display: inline-block; border-radius: 999px; padding: 1px 8px; font-size: 10.5px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+  .st.Done { color: #1a7f37; border-color: #9bd3a8; background: rgba(26,127,55,.08); }
+  .st-ip { color: #9a6700; border-color: #d9c07a; background: rgba(154,103,0,.08); }
+  .st-Logged { color: #1f6feb; border-color: #a7c4ee; background: rgba(31,111,235,.06); }
+  html[data-theme="dark"] .st.Done { color: #7ee08a; border-color: #23552d; background: rgba(63,185,80,.08); }
+  html[data-theme="dark"] .st-ip { color: #f3c969; border-color: #6b5320; background: rgba(240,180,41,.07); }
+  html[data-theme="dark"] .st-Logged { color: #9ecbff; border-color: #2f5f9e; background: rgba(88,166,255,.06); }
+  .codes { display: flex; flex-wrap: wrap; gap: 3px; }
+  .codes span { font-family: ui-monospace, monospace; font-size: 10px; color: #0b4f9c; background: #e8f1fd; border: 1px solid #c7dcf7; border-radius: 4px; padding: 0 4px; }
+  html[data-theme="dark"] .codes span { color: #9ecbff; background: #16233a; border-color: #253a5a; }
+  .pager { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; margin: 12px 0 2px; }
+  .pager .btn { min-width: 30px; justify-content: center; padding: 4px 8px; }
+  .pager .btn.active { background: var(--commit); border-color: var(--commit); color: #fff; }
+  .pager .btn:disabled { opacity: .35; cursor: default; }
+  .scroll { max-height: 560px; overflow: auto; border-radius: 8px; }
+  @media (max-width: 640px) {
+    .wrap { padding: 14px; } .top { padding: 14px; }
+    .grid { grid-template-columns: 1fr; }
+    .mp-row { grid-template-columns: 110px 1fr 56px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="top">
+  <a class="btn" href="index.html">← Calendar</a>
+  <h1>AI Brain — Charts & Progress</h1>
+  <div class="meta">
+    <span>Person <b id="mPerson">—</b></span>
+    <span>Branch <b id="mBranch">—</b></span>
+    <span>Built <b id="mBuilt">—</b></span>
+  </div>
+  <button class="btn" id="themeBtn" title="Toggle light/dark mode">☀ Light</button>
+</div>
+
+<div class="wrap">
+  <form class="filters" id="filters" autocomplete="off">
+    <label class="lab" for="fAuthor">Author</label>
+    <select id="fAuthor"><option value="">All authors</option></select>
+    <label class="lab" for="fModule">Module</label>
+    <select id="fModule"><option value="">All modules</option></select>
+    <span class="sep"></span>
+    <label class="lab" for="fFrom">From</label>
+    <select id="fFrom"><option value="">Any month</option></select>
+    <label class="lab" for="fTo">To</label>
+    <select id="fTo"><option value="">Any month</option></select>
+    <button class="btn" type="button" id="fReset">Reset</button>
+    <span class="sum" id="fSummary">—</span>
+  </form>
+
+  <section class="kpis" id="kpis"></section>
+
+  <div class="section-title"><h2>Git activity</h2><span>Filters above apply to every chart in this section</span></div>
+  <section class="grid">
+    <article class="card"><h3>Commits per month</h3><div class="sub" id="sMonthly"></div><div id="cMonthly"></div></article>
+    <article class="card"><h3>Code churn per month</h3><div class="legend"><span><i style="background:var(--add)"></i>Added</span><span><i style="background:var(--del)"></i>Deleted</span></div><div id="cChurn"></div></article>
+    <article class="card"><h3>Commits by author</h3><div class="sub">Top contributors under the current filter</div><div id="cAuthors"></div></article>
+    <article class="card"><h3>Commits by module</h3><div class="sub">A commit counts once per module it touches</div><div id="cModules"></div></article>
+    <article class="card wide"><h3>Daily commits — last 45 days</h3><div class="sub" id="sDaily"></div><div id="cDaily"></div></article>
+    <article class="card"><h3>Commit heatmap — last 17 weeks</h3><div class="sub">Hover a cell for that day's numbers</div><div id="cHeatmap"></div><div class="legend"><span>Less</span><span><i style="background:var(--commit);opacity:.25"></i><i style="background:var(--commit);opacity:.55"></i><i style="background:var(--commit);opacity:.85"></i></span><span>More</span></div></article>
+    <article class="card"><h3>Commits by weekday</h3><div class="sub">All commits in the current filter</div><div id="cWeekday"></div></article>
+    <article class="card"><h3>Commits by hour of day</h3><div class="sub">Commit timestamp hour (Asia/Kolkata)</div><div id="cHour"></div></article>
+    <article class="card"><h3>Commit size distribution</h3><div class="sub">Lines changed per commit (added + deleted)</div><div id="cSize"></div></article>
+    <article class="card wide"><h3>Author mix per month</h3><div class="sub">Top 6 authors by commits under the current filter</div><div class="legend" id="lStacked"></div><div id="cStacked"></div></article>
+  </section>
+
+  <div class="section-title"><h2>Attendance, work log & personal log</h2><span>Month range applies to the PDF-derived data</span></div>
+  <section class="grid">
+    <article class="card"><h3>Attendance hours</h3><div class="sub" id="sAtt"></div><div id="cAtt"></div></article>
+    <article class="card"><h3>Attendance summary</h3><div class="sub" id="sAttDonut"></div><div id="cAttDonut"></div></article>
+    <article class="card"><h3>Work log entries per month</h3><div class="sub">September–October 2026 tracker</div><div id="cWorkMonths"></div></article>
+    <article class="card"><h3>Work log status</h3><div class="sub" id="sWorkStatus"></div><div id="cWorkStatus"></div></article>
+    <article class="card"><h3>Personal log per month</h3><div class="sub">Gurukul sheet, Nov–Dec 2025</div><div id="cGuruMonths"></div></article>
+    <article class="card"><h3>Personal log status</h3><div class="sub" id="sGuruStatus"></div><div id="cGuruStatus"></div></article>
+    <article class="card wide"><h3>Top task categories</h3><div class="sub">Gurukul sheet, by number of entries</div><div id="cGuruCats"></div></article>
+  </section>
+
+  <div class="section-title"><h2>Progress</h2><span>Completion from the filtered data</span></div>
+  <section class="card wide">
+    <div class="gauges" id="gauges"></div>
+    <div style="margin-top:18px"><div class="sub" style="margin-bottom:6px">Module focus — commits per module</div><div class="mp" id="moduleProgress"></div></div>
+  </section>
+
+  <section class="card wide" style="margin-top:14px">
+    <h3>Shailesh — work log</h3>
+    <div class="sub" id="workSub"></div>
+    <div class="toolbar"><input id="workQ" type="search" placeholder="Search work description, status, date…" autocomplete="off"><span class="muted" id="workCount"></span></div>
+    <div class="scroll" id="workTable"></div>
+    <div class="pager" id="workPager"></div>
+  </section>
+
+  <section class="card wide" style="margin-top:14px">
+    <h3>Source PDFs</h3>
+    <div class="sub">Cleaned into AI Brain — Shailesh rows only, counts reflect the current month filter</div>
+    <div id="sources"></div>
+  </section>
+</div>
+
+<div id="tip" role="tooltip"></div>
+
+<script src="charts-data.js"></script>
+<script>
+(function () {
+  "use strict";
+  var D = window.CHARTS_DATA;
+  var $ = function (id) { return document.getElementById(id); };
+  if (!D) {
+    $("kpis").innerHTML = '<div class="card">charts-data.js missing — run <code>php build.php</code>.</div>';
+    return;
+  }
+
+  var REPO = D.repo || { authors: [], modules: [], rows: [] };
+  var TEAM = D.team || { attendance: [], work: [], gurukul: [], sources: {} };
+  var GIT = D.git || { totals: {} };
+  var AUTHORS = REPO.authors || [];
+  var MODULES = REPO.modules || [];
+  var MODULE_IX = {};
+  MODULES.forEach(function (m, i) { MODULE_IX[m] = i; });
+  var MONTH_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
+  function fmt(n) {
+    n = Number(n) || 0;
+    if (Math.abs(n) >= 1000000) return (n / 1000000).toFixed(1) + "M";
+    if (Math.abs(n) >= 1000) return (n / 1000).toFixed(1) + "k";
+    return String(Math.round(n));
+  }
+  function monthLabel(m) {
+    var p = String(m || "").split("-");
+    if (p.length < 2) return m;
+    return MONTH_SHORT[(+p[1] || 1) - 1] + " " + p[0].slice(2);
+  }
+  function dayLabel(d) {
+    var p = String(d || "").split("-");
+    return (+p[2] || 0) + " " + (MONTH_SHORT[(+p[1] || 1) - 1] || "");
+  }
+  function fullDay(d) {
+    var dt = parseYmd(d);
+    return ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][dt.getDay()] + ", " + dt.getDate() + " " +
+      MONTH_SHORT[dt.getMonth()] + " " + dt.getFullYear();
+  }
+  function sum(arr, fn) { return arr.reduce(function (n, x) { return n + (fn ? fn(x) : x); }, 0); }
+  function pad(n) { return n < 10 ? "0" + n : "" + n; }
+  function parseYmd(s) { var p = String(s).split("-"); return new Date(+p[0], +p[1] - 1, +p[2]); }
+  function ymd(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+  function addDays(d, n) { return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n); }
+  function tipAttr(lines) {
+    return ' data-tip="' + esc(Array.isArray(lines) ? lines.join("\n") : lines) + '"';
+  }
+  function svgWrap(w, h, inner) {
+    return '<svg viewBox="0 0 ' + w + " " + h + '" preserveAspectRatio="xMidYMid meet" role="img">' + inner + "</svg>";
+  }
+  function trunc(s, n) { s = String(s || ""); return s.length > n ? s.slice(0, n - 1) + "…" : s; }
+  function pct(a, b) { return b ? Math.round((a / b) * 100) : 0; }
+
+  /* --------------------------------------------------------------- theme --- */
+
+  var themeBtn = $("themeBtn");
+  function paintTheme() {
+    var light = document.documentElement.getAttribute("data-theme") === "light";
+    themeBtn.textContent = light ? "🌙 Dark" : "☀ Light";
+    themeBtn.title = "Switch to " + (light ? "dark" : "light") + " mode";
+  }
+  themeBtn.addEventListener("click", function () {
+    var light = document.documentElement.getAttribute("data-theme") === "light";
+    var next = light ? "dark" : "light";
+    document.documentElement.setAttribute("data-theme", next);
+    try { localStorage.setItem("brain-theme", next); } catch (e) {}
+    paintTheme();
+    syncUrl();
+  });
+  paintTheme();
+
+  /* ---------------------------------------------------------- filter state --- */
+
+  var F = { author: "", module: "", from: "", to: "" };
+  var ROWS = REPO.rows || [];
+  var MONTHS = [];
+  (function () {
+    var seen = {};
+    ROWS.forEach(function (r) { seen[String(r[0]).slice(0, 7)] = 1; });
+    MONTHS = Object.keys(seen).sort();
+  })();
+  var moduleIx = -1;
+
+  (function initFromUrl() {
+    var p = new URLSearchParams(location.search);
+    ["author", "module", "from", "to"].forEach(function (k) { F[k] = p.get(k) || ""; });
+    if (F.author && AUTHORS.indexOf(F.author) === -1) F.author = "";
+    if (F.module && MODULES.indexOf(F.module) === -1) F.module = "";
+    if (F.from && MONTHS.indexOf(F.from) === -1) F.from = "";
+    if (F.to && MONTHS.indexOf(F.to) === -1) F.to = "";
+  })();
+
+  function fillSelect(sel, items, allLabel) {
+    var html = '<option value="">' + esc(allLabel) + "</option>";
+    items.forEach(function (it) { html += '<option value="' + esc(it) + '">' + esc(it) + "</option>"; });
+    sel.innerHTML = html;
+  }
+  fillSelect($("fAuthor"), AUTHORS.slice().sort(), "All authors");
+  fillSelect($("fModule"), MODULES.slice().sort(), "All modules");
+  (function () {
+    var html = '<option value="">Any month</option>' + MONTHS.map(function (m) {
+      return '<option value="' + esc(m) + '">' + esc(monthLabel(m)) + "</option>";
+    }).join("");
+    $("fFrom").innerHTML = html;
+    $("fTo").innerHTML = html;
+  })();
+  $("fAuthor").value = F.author;
+  $("fModule").value = F.module;
+  $("fFrom").value = F.from;
+  $("fTo").value = F.to;
+
+  function syncUrl() {
+    try {
+      var p = new URLSearchParams();
+      ["author", "module", "from", "to"].forEach(function (k) { if (F[k]) p.set(k, F[k]); });
+      var theme = document.documentElement.getAttribute("data-theme");
+      if (theme === "light") p.set("theme", "light");
+      history.replaceState(null, "", location.pathname + (p.toString() ? "?" + p.toString() : ""));
+    } catch (e) {}
+  }
+
+  function applyFilters() {
+    F.author = $("fAuthor").value;
+    F.module = $("fModule").value;
+    F.from = $("fFrom").value;
+    F.to = $("fTo").value;
+    moduleIx = F.module ? (MODULE_IX[F.module] == null ? -1 : MODULE_IX[F.module]) : -1;
+    workPage = 1;
+    syncUrl();
+    renderAll();
+  }
+  ["fAuthor", "fModule", "fFrom", "fTo"].forEach(function (id) {
+    $(id).addEventListener("change", applyFilters);
+  });
+  $("fReset").addEventListener("click", function () {
+    $("fAuthor").value = ""; $("fModule").value = ""; $("fFrom").value = ""; $("fTo").value = "";
+    applyFilters();
+  });
+  $("filters").addEventListener("submit", function (e) { e.preventDefault(); });
+
+  function inRange(month) {
+    if (F.from && month < F.from) return false;
+    if (F.to && month > F.to) return false;
+    return true;
+  }
+
+  /* ------------------------------------------------------------- aggregate --- */
+
+  function filteredRows() {
+    return ROWS.filter(function (r) {
+      if (F.author && AUTHORS[r[1]] !== F.author) return false;
+      if (moduleIx >= 0 && (r[2] || []).indexOf(moduleIx) === -1) return false;
+      var m = String(r[0]).slice(0, 7);
+      return inRange(m);
+    });
+  }
+
+  function aggregate(rows) {
+    var A = {
+      daily: {}, monthly: {}, authors: {}, modules: {},
+      weekdays: [0, 0, 0, 0, 0, 0, 0], hours: [],
+      totals: { commits: 0, files: 0, add: 0, del: 0 },
+      activeDays: 0, rows: rows, dates: [], primary: {}, sizes: [0, 0, 0, 0, 0, 0]
+    };
+    for (var h = 0; h < 24; h++) A.hours.push(0);
+
+    rows.forEach(function (r) {
+      var date = r[0], ai = r[1], mods = r[2] || [], add = r[3] || 0, del = r[4] || 0, files = r[5] || 0, hour = r[6];
+      var month = date.slice(0, 7);
+      var d = A.daily[date] || (A.daily[date] = { date: date, commits: 0, files: 0, add: 0, del: 0 });
+      d.commits++; d.files += files; d.add += add; d.del += del;
+      var mo = A.monthly[month] || (A.monthly[month] = { date: month, commits: 0, files: 0, add: 0, del: 0 });
+      mo.commits++; mo.files += files; mo.add += add; mo.del += del;
+      var an = AUTHORS[ai] || "Unknown";
+      A.authors[an] = (A.authors[an] || 0) + 1;
+      mods.forEach(function (mi) {
+        var name = MODULES[mi] || "Other";
+        A.modules[name] = (A.modules[name] || 0) + 1;
+      });
+      if (mods.length) {
+        var pn = MODULES[mods[0]] || "Other";
+        A.primary[pn] = (A.primary[pn] || 0) + 1;
+      }
+      var wd = parseYmd(date).getDay();
+      A.weekdays[wd]++;
+      if (hour >= 0 && hour < 24) A.hours[hour]++;
+      var lines = add + del;
+      A.sizes[lines === 0 ? 0 : lines <= 10 ? 1 : lines <= 50 ? 2 : lines <= 200 ? 3 : lines <= 500 ? 4 : 5]++;
+      A.totals.commits++; A.totals.files += files; A.totals.add += add; A.totals.del += del;
+    });
+
+    A.activeDays = Object.keys(A.daily).length;
+    A.dates = Object.keys(A.daily).sort();
+    A.months = Object.keys(A.monthly).sort().map(function (m) {
+      var x = A.monthly[m];
+      return { label: m, short: monthLabel(m), value: x.commits, add: x.add, del: x.del, files: x.files,
+        tip: [monthLabel(m), x.commits + " commits", fmt(x.files) + " files", "+" + fmt(x.add) + " / −" + fmt(x.del)] };
+    });
+    A.authorRows = Object.keys(A.authors).map(function (n) {
+      return { label: n, value: A.authors[n], tip: [n, A.authors[n] + " commits", pct(A.authors[n], A.totals.commits) + "% of filtered commits"] };
+    }).sort(function (a, b) { return b.value - a.value; });
+    A.moduleRows = Object.keys(A.modules).map(function (n) {
+      return { label: n, value: A.modules[n], tip: [n, A.modules[n] + " commits touch this module", pct(A.modules[n], A.totals.commits) + "% of filtered commits"] };
+    }).sort(function (a, b) { return b.value - a.value; });
+    return A;
+  }
+
+  function filterTeam() {
+    var t = TEAM;
+    return {
+      att: (t.attendance || []).filter(function (a) { return inRange(String(a.date).slice(0, 7)); }),
+      work: (t.work || []).filter(function (w) { return inRange(String(w.month || String(w.date).slice(0, 7))); }),
+      guru: (t.gurukul || []).filter(function (g) { return inRange(String(g.month || String(g.date).slice(0, 7))); })
+    };
+  }
+
+  /* --------------------------------------------------------------- charts --- */
+
+  function vbar(rows, opts) {
+    opts = opts || {};
+    if (!rows.length) return '<div class="empty">No data under this filter.</div>';
+    var W = 760, H = opts.height || 270;
+    var m = { t: 18, r: 12, b: 44, l: 44 };
+    var pw = W - m.l - m.r, ph = H - m.t - m.b;
+    var max = Math.max(1, Math.max.apply(null, rows.map(function (r) { return r.value; })));
+    var color = opts.color || "var(--commit)";
+    var out = "";
+    for (var t = 0; t <= 4; t++) {
+      var y = m.t + ph - (ph * t / 4);
+      out += '<line x1="' + m.l + '" y1="' + y + '" x2="' + (W - m.r) + '" y2="' + y + '" stroke="var(--grid)" stroke-width="1"/>';
+      out += '<text x="' + (m.l - 7) + '" y="' + (y + 4) + '" fill="var(--muted)" font-size="11" text-anchor="end">' + fmt(max * t / 4) + "</text>";
+    }
+    var step = pw / Math.max(1, rows.length);
+    var bw = Math.max(3, Math.min(30, step * 0.62));
+    var every = Math.ceil(rows.length / 14);
+    rows.forEach(function (r, i) {
+      var x = m.l + i * step + (step - bw) / 2;
+      var bh = ph * (r.value / max);
+      var y = m.t + ph - bh;
+      var tip = r.tip || [r.label, fmt(r.value) + (opts.suffix || "")];
+      out += '<rect x="' + x + '" y="' + y + '" width="' + bw + '" height="' + Math.max(1, bh) + '" rx="2" fill="' + (r.color || color) + '"' + tipAttr(tip) + "></rect>";
+      if (i % every === 0) {
+        out += '<text x="' + (x + bw / 2) + '" y="' + (H - m.b + 16) + '" fill="var(--muted)" font-size="11" text-anchor="end" transform="rotate(-32 ' + (x + bw / 2) + " " + (H - m.b + 16) + ')">' + esc(r.short || r.label) + "</text>";
+      }
+    });
+    return svgWrap(W, H, out);
+  }
+
+  function groupedBars(rows, series) {
+    if (!rows.length) return '<div class="empty">No data under this filter.</div>';
+    var W = 760, H = 280, m = { t: 18, r: 12, b: 44, l: 48 };
+    var pw = W - m.l - m.r, ph = H - m.t - m.b;
+    var max = 1;
+    rows.forEach(function (r) { series.forEach(function (s) { max = Math.max(max, r[s.key] || 0); }); });
+    var out = "";
+    for (var t = 0; t <= 4; t++) {
+      var y = m.t + ph - (ph * t / 4);
+      out += '<line x1="' + m.l + '" y1="' + y + '" x2="' + (W - m.r) + '" y2="' + y + '" stroke="var(--grid)" stroke-width="1"/>';
+      out += '<text x="' + (m.l - 7) + '" y="' + (y + 4) + '" fill="var(--muted)" font-size="11" text-anchor="end">' + fmt(max * t / 4) + "</text>";
+    }
+    var step = pw / Math.max(1, rows.length);
+    var bw = Math.max(2, Math.min(12, step * 0.32));
+    var every = Math.ceil(rows.length / 14);
+    rows.forEach(function (r, i) {
+      var gx = m.l + i * step + step / 2;
+      series.forEach(function (s, si) {
+        var val = r[s.key] || 0;
+        var bh = ph * (val / max);
+        var x = gx - (series.length * bw) / 2 + si * bw;
+        out += '<rect x="' + x + '" y="' + (m.t + ph - bh) + '" width="' + bw + '" height="' + Math.max(1, bh) + '" rx="1" fill="' + s.color + '"' +
+          tipAttr([monthLabel(r.label), s.name + ": " + fmt(val), "Files: " + fmt(r.files)]) + "></rect>";
+      });
+      if (i % every === 0) {
+        out += '<text x="' + gx + '" y="' + (H - m.b + 16) + '" fill="var(--muted)" font-size="11" text-anchor="end" transform="rotate(-32 ' + gx + " " + (H - m.b + 16) + ')">' + esc(r.short || r.label) + "</text>";
+      }
+    });
+    return svgWrap(W, H, out);
+  }
+
+  function hbar(rows, opts) {
+    opts = opts || {};
+    if (!rows.length) return '<div class="empty">No data under this filter.</div>';
+    var W = 760;
+    var rowH = opts.rowH || 26;
+    var H = Math.max(60, rows.length * rowH + 24);
+    var labelW = opts.labelW || 200;
+    var m = { t: 8, r: 46, l: labelW };
+    var pw = W - m.l - m.r;
+    var max = Math.max(1, Math.max.apply(null, rows.map(function (r) { return r.value; })));
+    var out = "";
+    rows.forEach(function (r, i) {
+      var y = m.t + i * rowH;
+      var bw = pw * (r.value / max);
+      out += '<text x="' + (m.l - 8) + '" y="' + (y + rowH / 2 + 4) + '" fill="var(--label)" font-size="11.5" text-anchor="end">' + esc(trunc(r.label, 30)) + "</text>";
+      out += '<rect x="' + m.l + '" y="' + (y + 5) + '" width="' + Math.max(2, bw) + '" height="' + (rowH - 12) + '" rx="3" fill="' + (r.color || opts.color || "var(--commit)") + '"' +
+        tipAttr(r.tip || [r.label, fmt(r.value) + (opts.suffix || "")]) + "></rect>";
+      out += '<text x="' + (m.l + bw + 6) + '" y="' + (y + rowH / 2 + 4) + '" fill="var(--muted)" font-size="11">' + fmt(r.value) + "</text>";
+    });
+    return svgWrap(W, H, out);
+  }
+
+  function lineChart(points, opts) {
+    opts = opts || {};
+    if (!points.length) return '<div class="empty">No data under this filter.</div>';
+    var W = 760, H = opts.height || 270;
+    var m = { t: 18, r: 14, b: 40, l: 44 };
+    var pw = W - m.l - m.r, ph = H - m.t - m.b;
+    var vals = points.map(function (p) { return p.value; });
+    var max = Math.max(1, Math.max.apply(null, vals));
+    var color = opts.color || "var(--commit)";
+    var out = "";
+    for (var t = 0; t <= 4; t++) {
+      var y = m.t + ph - (ph * t / 4);
+      out += '<line x1="' + m.l + '" y1="' + y + '" x2="' + (W - m.r) + '" y2="' + y + '" stroke="var(--grid)" stroke-width="1"/>';
+      out += '<text x="' + (m.l - 7) + '" y="' + (y + 4) + '" fill="var(--muted)" font-size="11" text-anchor="end">' + fmt(max * t / 4) + "</text>";
+    }
+    var n = Math.max(1, points.length - 1);
+    function px(i) { return m.l + (pw * i) / n; }
+    function py(v) { return m.t + ph - ph * (v / max); }
+    var path = "", area = "";
+    points.forEach(function (p, i) {
+      var x = px(i), y = py(p.value);
+      path += (i ? " L" : " M") + x.toFixed(1) + " " + y.toFixed(1);
+      area += (i ? " L" : " M" + x.toFixed(1) + " " + (m.t + ph) + " L") + x.toFixed(1) + " " + y.toFixed(1);
+    });
+    area += " L" + px(points.length - 1).toFixed(1) + " " + (m.t + ph) + " Z";
+    out += '<path d="' + area + '" fill="' + color + '" opacity=".12"/>';
+    out += '<path d="' + path + '" fill="none" stroke="' + color + '" stroke-width="2"/>';
+    var every = Math.ceil(points.length / 12);
+    points.forEach(function (p, i) {
+      if (p.value > 0 || points.length < 20) {
+        out += '<circle cx="' + px(i) + '" cy="' + py(p.value) + '" r="2.6" fill="' + color + '"' + tipAttr(p.tip || [p.label, p.value]) + "></circle>";
+      }
+      if (i % every === 0) {
+        out += '<text x="' + px(i) + '" y="' + (H - m.b + 16) + '" fill="var(--muted)" font-size="11" text-anchor="middle">' + esc(p.short || p.label) + "</text>";
+      }
+    });
+    return svgWrap(W, H, out);
+  }
+
+  function heatmap(dailyMap, endDate, weeks) {
+    if (!endDate) return '<div class="empty">No commits under this filter.</div>';
+    weeks = weeks || 17;
+    var cell = 18, gap = 4, left = 34, top = 20;
+    var W = left + weeks * (cell + gap), H = top + 7 * (cell + gap) + 6;
+    var end = parseYmd(endDate);
+    var dow = (end.getDay() + 6) % 7;
+    var start = addDays(end, -((weeks - 1) * 7 + dow));
+    var max = 1;
+    Object.keys(dailyMap).forEach(function (k) { max = Math.max(max, dailyMap[k].commits); });
+    var out = "";
+    ["Mon", "", "Wed", "", "Fri", "", "Sun"].forEach(function (d, i) {
+      if (d) out += '<text x="' + (left - 8) + '" y="' + (top + i * (cell + gap) + cell / 2 + 4) + '" fill="var(--muted)" font-size="9.5" text-anchor="end">' + d + "</text>";
+    });
+    var lastMonth = "", lastMonthWeek = -99;
+    for (var w = 0; w < weeks; w++) {
+      for (var d2 = 0; d2 < 7; d2++) {
+        var dt = addDays(start, w * 7 + d2);
+        var ds = ymd(dt);
+        var x = left + w * (cell + gap), y = top + d2 * (cell + gap);
+        if (dt > end) { out += '<rect x="' + x + '" y="' + y + '" width="' + cell + '" height="' + cell + '" rx="3" fill="var(--track)" opacity=".35"/>'; continue; }
+        var rec = dailyMap[ds];
+        var v = rec ? rec.commits : 0;
+        var op = v ? (0.25 + 0.75 * (v / max)) : 0;
+        var tip = rec
+          ? [fullDay(ds), v + " commits", fmt(rec.files) + " files", "+" + fmt(rec.add) + " / −" + fmt(rec.del)]
+          : [fullDay(ds), "No commits"];
+        out += '<rect x="' + x + '" y="' + y + '" width="' + cell + '" height="' + cell + '" rx="3" fill="' + (v ? "var(--commit)" : "var(--track)") + '" opacity="' + op.toFixed(2) + '"' + tipAttr(tip) + "></rect>";
+      }
+      var mlabel = monthLabel(ymd(addDays(start, w * 7)).slice(0, 7));
+      if (mlabel !== lastMonth && w - lastMonthWeek >= 4) {
+        out += '<text x="' + (left + w * (cell + gap)) + '" y="12" fill="var(--muted)" font-size="9.5">' + esc(mlabel) + "</text>";
+        lastMonth = mlabel; lastMonthWeek = w;
+      }
+    }
+    return svgWrap(W, H, out);
+  }
+
+  function stackedBars(months, series) {
+    if (!months.length) return '<div class="empty">No data under this filter.</div>';
+    var W = 760, H = 290, m = { t: 20, r: 12, b: 44, l: 44 };
+    var pw = W - m.l - m.r, ph = H - m.t - m.b;
+    var max = 1;
+    months.forEach(function (r) {
+      r.total = sum(series, function (s) { return (s.values[r.label] || 0); });
+      max = Math.max(max, r.total);
+    });
+    var out = "";
+    for (var t = 0; t <= 4; t++) {
+      var y = m.t + ph - (ph * t / 4);
+      out += '<line x1="' + m.l + '" y1="' + y + '" x2="' + (W - m.r) + '" y2="' + y + '" stroke="var(--grid)" stroke-width="1"/>';
+      out += '<text x="' + (m.l - 7) + '" y="' + (y + 4) + '" fill="var(--muted)" font-size="11" text-anchor="end">' + fmt(max * t / 4) + "</text>";
+    }
+    var step = pw / Math.max(1, months.length);
+    var bw = Math.max(8, Math.min(34, step * 0.6));
+    var every = Math.ceil(months.length / 14);
+    months.forEach(function (r, i) {
+      var x = m.l + i * step + (step - bw) / 2;
+      var acc = 0;
+      series.forEach(function (s) {
+        var v = s.values[r.label] || 0;
+        if (!v) return;
+        var bh = ph * (v / max);
+        var y = m.t + ph - ph * ((acc + v) / max);
+        out += '<rect x="' + x + '" y="' + y + '" width="' + bw + '" height="' + Math.max(1, bh) + '" fill="' + s.color + '"' +
+          tipAttr([monthLabel(r.label), s.name + ": " + v + " commits", "Share: " + pct(v, r.total) + "%", "Month total: " + r.total]) + "></rect>";
+        acc += v;
+      });
+      if (i % every === 0) {
+        out += '<text x="' + (x + bw / 2) + '" y="' + (H - m.b + 16) + '" fill="var(--muted)" font-size="11" text-anchor="end" transform="rotate(-32 ' + (x + bw / 2) + " " + (H - m.b + 16) + ')">' + esc(r.short || r.label) + "</text>";
+      }
+    });
+    return svgWrap(W, H, out);
+  }
+
+  var DONUT_COLORS = ["var(--add)", "var(--task)", "var(--commit)", "var(--pdf)", "var(--del)", "var(--muted)"];
+
+  function donut(rows, opts) {
+    opts = opts || {};
+    if (!rows.length) return '<div class="empty">No data under this filter.</div>';
+    var total = sum(rows, function (r) { return r.value; });
+    if (!total) return '<div class="empty">No data under this filter.</div>';
+    var size = 200, cx = size / 2, cy = size / 2, r = 72, sw = 26;
+    var circ = 2 * Math.PI * r;
+    var out = '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="var(--track)" stroke-width="' + sw + '"/>';
+    var off = 0;
+    rows.forEach(function (row, i) {
+      if (!row.value) return;
+      var len = circ * (row.value / total);
+      var tip = [row.label, row.value + (opts.suffix || " entries"), "Share: " + pct(row.value, total) + "%"];
+      out += '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="' + (row.color || DONUT_COLORS[i % DONUT_COLORS.length]) + '" stroke-width="' + sw + '"' +
+        ' stroke-dasharray="' + len.toFixed(1) + " " + (circ - len).toFixed(1) + '" stroke-dashoffset="' + (-off).toFixed(1) + '" transform="rotate(-90 ' + cx + " " + cy + ')"' + tipAttr(tip) + "></circle>";
+      off += len;
+    });
+    out += '<text x="' + cx + '" y="' + (cy - 2) + '" fill="var(--text)" font-size="22" font-weight="600" text-anchor="middle">' + total + "</text>";
+    out += '<text x="' + cx + '" y="' + (cy + 16) + '" fill="var(--muted)" font-size="10" text-anchor="middle">' + esc(opts.unit || "entries") + "</text>";
+    var legend = rows.map(function (row, i) {
+      return '<span><i style="background:' + (row.color || DONUT_COLORS[i % DONUT_COLORS.length]) + '"></i>' + esc(row.label) + " " + row.value + "</span>";
+    }).join("");
+    return '<div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">' +
+      '<div style="max-width:210px;flex:0 0 auto">' + svgWrap(size, size, out) + "</div>" +
+      '<div class="legend" style="flex-direction:column;align-items:flex-start;gap:5px">' + legend + "</div></div>";
+  }
+
+  function gauge(label, value, total, color, note) {
+    var p = pct(value, total);
+    var R = 50, C = 2 * Math.PI * R, len = C * (p / 100);
+    var out = '<circle cx="75" cy="75" r="' + R + '" fill="none" stroke="var(--track)" stroke-width="13"/>' +
+      '<circle cx="75" cy="75" r="' + R + '" fill="none" stroke="' + color + '" stroke-width="13" stroke-linecap="round"' +
+      ' stroke-dasharray="' + len.toFixed(1) + " " + (C - len).toFixed(1) + '" transform="rotate(-90 75 75)"' +
+      tipAttr([label, value + " / " + total, p + "% complete"]) + "></circle>" +
+      '<text x="75" y="72" fill="var(--text)" font-size="22" font-weight="650" text-anchor="middle">' + p + "%</text>" +
+      '<text x="75" y="90" fill="var(--muted)" font-size="10" text-anchor="middle">' + esc(note || "") + "</text>";
+    return '<div class="gauge">' + svgWrap(150, 150, out) + '<div class="gl">' + esc(label) + '</div><div class="gs">' + esc(value + " / " + total) + "</div></div>";
+  }
+
+  /* --------------------------------------------------------------- KPIs --- */
+
+  function kpi(cls, k, v, s) {
+    return '<div class="kpi ' + cls + '"><div class="k">' + esc(k) + '</div><div class="v">' + esc(v) + '</div><div class="s">' + esc(s || "") + "</div></div>";
+  }
+
+  /* ------------------------------------------------------------- render --- */
+
+  var workPage = 1, workPageSize = 8;
+
+  function renderAll() {
+    var rows = filteredRows();
+    var A = aggregate(rows);
+    var T = filterTeam();
+    var attPresent = T.att.filter(function (a) { return a.status === "Present"; });
+    var attHoliday = T.att.filter(function (a) { return a.status === "Holiday"; });
+    var attHours = sum(attPresent, function (a) { return a.hours || 0; });
+    var doneWork = T.work.filter(function (w) { return w.status === "Done"; }).length;
+    var doneGuru = T.guru.filter(function (g) { return g.status === "Done"; }).length;
+
+    var active = !!(F.author || F.module || F.from || F.to);
+    $("fSummary").textContent = fmt(A.totals.commits) + " commits · " + fmt(A.totals.files) + " files · +" + fmt(A.totals.add) + " / −" + fmt(A.totals.del) +
+      (active ? " · " + pct(A.totals.commits, ROWS.length) + "% of " + fmt(ROWS.length) : "");
+
+    $("kpis").innerHTML =
+      kpi("c", "Commits", fmt(A.totals.commits), active ? "filtered" : "current branch") +
+      kpi("c", "Files changed", fmt(A.totals.files), "in matched commits") +
+      kpi("g", "Lines added", "+" + fmt(A.totals.add), "in matched commits") +
+      kpi("r", "Lines removed", "−" + fmt(A.totals.del), "in matched commits") +
+      kpi("y", "Active days", fmt(A.activeDays), A.dates.length ? A.dates[0] + " → " + A.dates[A.dates.length - 1] : "no commits") +
+      kpi("p", "PDF records", fmt(T.att.length + T.work.length + T.guru.length), "attendance + work + log") +
+      kpi("g", "Present days", attPresent.length, attHours.toFixed(1) + " h tracked") +
+      kpi("p", "Work completed", doneWork + " / " + T.work.length, "tracker entries");
+
+    /* Git charts */
+    $("sMonthly").textContent = A.months.length + " months · " + fmt(A.totals.commits) + " commits";
+    $("cMonthly").innerHTML = vbar(A.months, { height: 270, tip: null });
+    $("cChurn").innerHTML = groupedBars(A.months, [
+      { key: "add", name: "Added", color: "var(--add)" },
+      { key: "del", name: "Deleted", color: "var(--del)" }
+    ]);
+    $("cAuthors").innerHTML = hbar(A.authorRows.slice(0, 10), { color: "var(--commit)" });
+    $("cModules").innerHTML = hbar(A.moduleRows.slice(0, 12), { color: "var(--pdf)" });
+
+    var endDate = A.dates.length ? A.dates[A.dates.length - 1] : null;
+    var daily = [];
+    if (endDate) {
+      var end = parseYmd(endDate);
+      for (var i = 44; i >= 0; i--) {
+        var dt = addDays(end, -i);
+        var ds = ymd(dt);
+        var rec = A.daily[ds];
+        daily.push({
+          label: ds, short: dayLabel(ds), value: rec ? rec.commits : 0,
+          tip: rec ? [dayLabel(ds) + ", " + ds, rec.commits + " commits", fmt(rec.files) + " files", "+" + fmt(rec.add) + " / −" + fmt(rec.del)] : [dayLabel(ds) + ", " + ds, "No commits"]
+        });
+      }
+    }
+    $("sDaily").textContent = endDate ? "Window ends " + endDate : "No commits under this filter";
+    $("cDaily").innerHTML = lineChart(daily, { height: 270 });
+    $("cHeatmap").innerHTML = heatmap(A.daily, endDate, 17);
+    $("cWeekday").innerHTML = vbar(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map(function (d, ix) {
+      var v = A.weekdays[(ix + 1) % 7];
+      return { label: d, value: v, short: d, tip: [d, v + " commits", pct(v, A.totals.commits) + "% of filtered commits"] };
+    }), { height: 240 });
+    $("cHour").innerHTML = vbar(A.hours.map(function (v, h) {
+      var to = pad((h + 1) % 24);
+      return { label: pad(h) + ":00", short: pad(h), value: v, tip: [pad(h) + ":00–" + to + ":00", v + " commits", pct(v, A.totals.commits) + "% of filtered commits"] };
+    }), { height: 250 });
+    $("cSize").innerHTML = vbar([
+      { label: "0", short: "0", value: A.sizes[0], tip: ["No line changes", A.sizes[0] + " commits"] },
+      { label: "1–10", short: "1–10", value: A.sizes[1], tip: ["1–10 lines", A.sizes[1] + " commits"] },
+      { label: "11–50", short: "11–50", value: A.sizes[2], tip: ["11–50 lines", A.sizes[2] + " commits"] },
+      { label: "51–200", short: "51–200", value: A.sizes[3], tip: ["51–200 lines", A.sizes[3] + " commits"] },
+      { label: "201–500", short: "201–500", value: A.sizes[4], tip: ["201–500 lines", A.sizes[4] + " commits"] },
+      { label: "500+", short: "500+", value: A.sizes[5], tip: ["500+ lines", A.sizes[5] + " commits"] }
+    ], { height: 250, color: "var(--task)" });
+
+    var topMods = A.authorRows.slice(0, 6).map(function (r) { return r.label; });
+    var series = topMods.map(function (name) {
+      return { name: name, color: "var(--commit)", values: {} };
+    });
+    var other = { name: "Other", color: "var(--muted)", values: {} };
+    var colors = ["var(--commit)", "var(--add)", "var(--task)", "var(--pdf)", "var(--del)", "#2a9d8f"];
+    series.forEach(function (s, i) { s.color = colors[i % colors.length]; });
+    rows.forEach(function (r) {
+      var name = AUTHORS[r[1]] || "Other";
+      var m = String(r[0]).slice(0, 7);
+      var target = series.filter(function (s) { return s.name === name; })[0];
+      if (!target) target = other;
+      target.values[m] = (target.values[m] || 0) + 1;
+    });
+    var stackedSeries = series.concat([other]);
+    $("lStacked").innerHTML = stackedSeries.filter(function (s) { return sum(Object.keys(s.values).map(function (k) { return s.values[k]; })); })
+      .map(function (s) { return '<span><i style="background:' + s.color + '"></i>' + esc(s.name) + "</span>"; }).join("");
+    $("cStacked").innerHTML = stackedBars(A.months.map(function (m) { return { label: m.label, short: m.short }; }), stackedSeries);
+
+    /* Team charts */
+    $("sAtt").textContent = T.att.length
+      ? attPresent.length + " present · " + attHoliday.length + " holidays · " + attHours.toFixed(1) + " h" + (attPresent.length ? " · ends " + attPresent.map(function (a) { return a.date; }).sort().pop() : "")
+      : "No attendance in this month range";
+    var attLast = attPresent.map(function (a) { return a.date; }).sort().pop();
+    var attDaily = attLast ? T.att.filter(function (a) { return a.date <= attLast; }).map(function (a) {
+      return { label: a.date, short: a.date.slice(8), value: a.hours || 0, tip: [a.date, (a.status || "No status"), a.hours == null ? "—" : a.hours + " h", a.in ? "In " + a.in + " · Out " + a.out : ""] };
+    }) : [];
+    $("cAtt").innerHTML = vbar(attDaily, { height: 250, color: "var(--add)", suffix: " h" });
+
+    var attRows = [];
+    if (attPresent.length) attRows.push({ label: "Present", value: attPresent.length, color: "var(--add)" });
+    if (attHoliday.length) attRows.push({ label: "Holiday", value: attHoliday.length, color: "var(--task)" });
+    $("sAttDonut").textContent = attRows.length ? "Shailesh only" : "No records in range";
+    $("cAttDonut").innerHTML = donut(attRows, { unit: "days" });
+
+    var workMonthsMap = {};
+    T.work.forEach(function (w) { workMonthsMap[w.month] = (workMonthsMap[w.month] || 0) + 1; });
+    var workMonths = Object.keys(workMonthsMap).sort().map(function (m) {
+      return { label: m, short: monthLabel(m), value: workMonthsMap[m], tip: [monthLabel(m), workMonthsMap[m] + " entries"] };
+    });
+    $("cWorkMonths").innerHTML = vbar(workMonths, { height: 240, color: "var(--task)" });
+
+    var workStatus = {};
+    T.work.forEach(function (w) { var s = w.status || "Logged"; workStatus[s] = (workStatus[s] || 0) + 1; });
+    var workStatusRows = Object.keys(workStatus).sort(function (a, b) { return workStatus[b] - workStatus[a]; })
+      .map(function (s) { return { label: s, value: workStatus[s] }; });
+    $("sWorkStatus").textContent = T.work.length + " entries · " + doneWork + " done";
+    $("cWorkStatus").innerHTML = donut(workStatusRows);
+
+    var guruMonthsMap = {};
+    T.guru.forEach(function (g) { guruMonthsMap[g.month] = (guruMonthsMap[g.month] || 0) + 1; });
+    var guruMonths = Object.keys(guruMonthsMap).sort().map(function (m) {
+      return { label: m, short: monthLabel(m), value: guruMonthsMap[m], tip: [monthLabel(m), guruMonthsMap[m] + " entries"] };
+    });
+    $("cGuruMonths").innerHTML = vbar(guruMonths, { height: 240, color: "var(--pdf)" });
+
+    var guruStatus = {};
+    T.guru.forEach(function (g) { var s = g.status || "Logged"; guruStatus[s] = (guruStatus[s] || 0) + 1; });
+    var guruStatusRows = Object.keys(guruStatus).sort(function (a, b) { return guruStatus[b] - guruStatus[a]; })
+      .map(function (s) { return { label: s, value: guruStatus[s] }; });
+    $("sGuruStatus").textContent = T.guru.length + " entries · " + doneGuru + " done";
+    $("cGuruStatus").innerHTML = donut(guruStatusRows);
+
+    var guruCats = {};
+    T.guru.forEach(function (g) { var c = (g.category || "Uncategorized").trim(); guruCats[c] = (guruCats[c] || 0) + 1; });
+    $("cGuruCats").innerHTML = hbar(Object.keys(guruCats).map(function (c) { return { label: c, value: guruCats[c] }; })
+      .sort(function (a, b) { return b.value - a.value; }).slice(0, 10), { color: "var(--pdf)" });
+
+    /* Progress */
+    var marked = T.att.filter(function (a) { return a.status === "Present" || a.status === "Holiday"; }).length;
+    var windowDays = 45;
+    var active45 = 0;
+    if (endDate) {
+      var end2 = parseYmd(endDate);
+      for (var j = 0; j < windowDays; j++) {
+        if (A.daily[ymd(addDays(end2, -j))]) active45++;
+      }
+    }
+    $("gauges").innerHTML =
+      gauge("Work log done", doneWork, T.work.length, "var(--add)", "tracker") +
+      gauge("Personal log done", doneGuru, T.guru.length, "var(--pdf)", "gurukul") +
+      gauge("Attendance present", attPresent.length, marked, "var(--commit)", "marked days") +
+      gauge("Commit-active days", active45, windowDays, "var(--task)", "last 45 days");
+
+    var mpRows = A.moduleRows.slice(0, 8);
+    var mpMax = mpRows.length ? mpRows[0].value : 1;
+    $("moduleProgress").innerHTML = mpRows.length ? mpRows.map(function (r) {
+      var tip = [r.label, r.value + " commits", pct(r.value, A.totals.commits) + "% of filtered commits"];
+      return '<div class="mp-row" data-tip="' + esc(tip.join("\n")) + '"><span>' + esc(r.label) + "</span>" +
+        '<div class="track"><i style="width:' + Math.max(2, Math.round(100 * r.value / mpMax)) + '%"></i></div><b>' + fmt(r.value) + "</b></div>";
+    }).join("") : '<div class="empty">No commits under this filter.</div>';
+
+    renderWork(T.work);
+    renderSources(T);
+    $("mPerson").textContent = TEAM.person || "Shailesh";
+    $("mBranch").textContent = D.branch || "—";
+    $("mBuilt").textContent = D.generated_at || "—";
+  }
+
+  /* ----------------------------------------------------------- work table --- */
+
+  var workSorted = [];
+  var lastWork = [];
+  function renderWork(work) {
+    workSorted = work.slice().sort(function (a, b) { return String(b.date).localeCompare(String(a.date)); });
+    lastWork = workSorted;
+    var q = ($("workQ").value || "").trim().toLowerCase();
+    var terms = q ? q.split(/\s+/) : [];
+    var rows = workSorted.filter(function (w) {
+      if (!terms.length) return true;
+      var hay = [w.date, w.status, w.description, w.time_spent, w.remark, (w.commits || []).join(" ")].join(" ").toLowerCase();
+      return terms.every(function (t) { return hay.indexOf(t) !== -1; });
+    });
+    var pages = Math.max(1, Math.ceil(rows.length / workPageSize));
+    if (workPage > pages) workPage = pages;
+    var slice = rows.slice((workPage - 1) * workPageSize, workPage * workPageSize);
+    $("workSub").textContent = workSorted.length + " entries from the September and October 2026 trackers" +
+      (F.from || F.to ? " (month filter: " + (F.from ? monthLabel(F.from) : "any") + " → " + (F.to ? monthLabel(F.to) : "any") + ")" : "");
+    $("workCount").textContent = rows.length + " entries";
+
+    var html = '<table class="table"><thead><tr><th>Date</th><th>Status</th><th>Work</th><th>Commits</th><th>Logged</th></tr></thead><tbody>';
+    slice.forEach(function (w) {
+      var st = (w.status || "").indexOf("Progress") !== -1 ? "st-ip" : ("st " + (w.status || ""));
+      html += "<tr>" +
+        '<td class="date">' + esc(w.date) + "</td>" +
+        '<td><span class="' + esc(st) + '">' + esc(w.status || "—") + "</span></td>" +
+        '<td><div class="clamp" title="' + esc(w.description) + '">' + esc(w.description) + "</div></td>" +
+        '<td><div class="codes">' + (w.commits || []).slice(0, 3).map(function (h) { return "<span>" + esc(h) + "</span>"; }).join("") +
+          ((w.commits || []).length > 3 ? "<span>+" + (w.commits.length - 3) + "</span>" : "") + "</div></td>" +
+        '<td class="muted">' + esc(w.time_spent || "") + "</td>" +
+        "</tr>";
+    });
+    html += "</tbody></table>";
+    $("workTable").innerHTML = rows.length ? html : '<div class="muted" style="padding:20px">No matching entries.</div>';
+
+    var pg = "";
+    if (pages > 1) {
+      var start = Math.max(1, workPage - 2), end = Math.min(pages, workPage + 2);
+      pg += '<button class="btn" data-wpage="' + (workPage - 1) + '"' + (workPage <= 1 ? " disabled" : "") + ">‹</button>";
+      if (start > 1) pg += '<button class="btn" data-wpage="1">1</button>' + (start > 2 ? '<span class="muted">…</span>' : "");
+      for (var i = start; i <= end; i++) pg += '<button class="btn' + (i === workPage ? " active" : "") + '" data-wpage="' + i + '">' + i + "</button>";
+      if (end < pages) pg += (end < pages - 1 ? '<span class="muted">…</span>' : "") + '<button class="btn" data-wpage="' + pages + '">' + pages + "</button>";
+      pg += '<button class="btn" data-wpage="' + (workPage + 1) + '"' + (workPage >= pages ? " disabled" : "") + ">›</button>";
+    }
+    $("workPager").innerHTML = pg;
+  }
+
+  $("workQ").addEventListener("input", function () { workPage = 1; renderWork(lastWork); });
+  $("workPager").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-wpage]");
+    if (!b || b.disabled) return;
+    workPage = parseInt(b.getAttribute("data-wpage"), 10) || 1;
+    renderWork(lastWork);
+  });
+  /* -------------------------------------------------------------- sources --- */
+
+  function renderSources(T) {
+    var sources = TEAM.sources || {};
+    var counts = { attendance: T.att.length, work_oct: 0, work_sep: 0, gurukul: T.guru.length };
+    T.work.forEach(function (w) {
+      if (w.source === "work_oct") counts.work_oct++;
+      else if (w.source === "work_sep") counts.work_sep++;
+    });
+    var rows = Object.keys(sources).map(function (k) {
+      var s = sources[k];
+      return "<tr><td>" + esc(s.title || k) + "</td><td>" + esc(String(s.type || k).replace("_", " ")) + "</td><td>" + esc(s.pages || "") + "</td><td>" + esc(counts[k] == null ? "" : counts[k]) + "</td><td class=\"muted\">" + esc(s.file || "") + "</td></tr>";
+    }).join("");
+    $("sources").innerHTML = '<div class="scroll"><table class="table"><thead><tr><th>Document</th><th>Type</th><th>Pages</th><th>Shailesh records</th><th>File</th></tr></thead><tbody>' +
+      rows + "</tbody></table></div>";
+  }
+
+  /* -------------------------------------------------------------- tooltip --- */
+
+  var tipEl = $("tip");
+  function hideTip() { tipEl.classList.remove("show"); }
+  document.addEventListener("pointermove", function (e) {
+    var el = e.target && e.target.closest ? e.target.closest("[data-tip]") : null;
+    if (!el) { hideTip(); return; }
+    tipEl.textContent = el.getAttribute("data-tip");
+    tipEl.classList.add("show");
+    var pad = 14;
+    var x = e.clientX + pad, y = e.clientY + pad;
+    var w = tipEl.offsetWidth, h = tipEl.offsetHeight;
+    if (x + w > window.innerWidth - 8) x = e.clientX - w - pad;
+    if (y + h > window.innerHeight - 8) y = e.clientY - h - pad;
+    if (x < 8) x = 8;
+    if (y < 8) y = 8;
+    tipEl.style.left = x + "px";
+    tipEl.style.top = y + "px";
+  });
+  document.addEventListener("pointerdown", hideTip);
+  window.addEventListener("blur", hideTip);
+
+  /* ---------------------------------------------------------------- start --- */
+
+  renderAll();
+})();
+</script>
+</body>
+</html>

@@ -18,7 +18,7 @@
         `capacity` INT UNSIGNED NOT NULL DEFAULT 40,    -- Seating capacity
         `max_capacity` INT UNSIGNED NOT NULL DEFAULT 40, -- Maximum allowed capacity including standing
         `ownership_type_id` INT UNSIGNED NOT NULL,   -- fk to sys_dropdown_table ('Owned','Leased','Rented')
-        `vendor_id` INT UNSIGNED NOT NULL,           -- fk to tpt_vendor
+        `vendor_id` INT UNSIGNED NULL,           -- fk to tpt_vendor
         `fitness_valid_upto` DATE NOT NULL,             -- Fitness certificate expiry date
         `insurance_valid_upto` DATE NOT NULL,           -- Insurance expiry date
         `pollution_valid_upto` DATE NOT NULL,           -- Pollution certificate expiry date

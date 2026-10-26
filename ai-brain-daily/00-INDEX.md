@@ -1,0 +1,12 @@
+# AI Brain Daily — Master Index
+
+One row per closed day. Rows are added during the evening closeout.
+
+| Date | Day | Agents | Developer | Modules | Files | Commits | Result | Log |
+|---|---|---|---|---|---|---|---|---|
+| 2026-10-20 | Tue | opencode, tarun, shailesh | shailesh, tarun | prime_ai: Dashboard, StudentFee, Notification, Vendor, StudentPortal, Prime, Payment, SchoolSetup — prime_testing: TestExecution, PlatformConfig, BugTracking, Core | prime_ai 87 authored + 268 merged; prime_testing 14 | 12 (prime_ai 4 [3 authored + 1 merge] + prime_testing 8) | PARTIAL (backfilled) | [2026-10-20.md](daily/2026-10-20.md) |
+| 2026-10-21 | Wed | opencode, antigravity | shailesh, tarun, gaurav | prime_ai: SmartTransport, Tenant Migrations, Dashboard, Prime, StudentPortal, Payment, TeacherPortal, TenantCore, GlobalMaster, PrimeCore, Admission, Complaint, SchoolSetup, Library, SyllabusBooks, LmsQuiz, LmsQuests, LmsHomework, Recommendation, Syllabus, Transport, Final Audit Reports | 1,195 non-merge entries / 1,438 unique paths | 45 (40 non-merge + 5 merge) | PARTIAL (backfilled) | [2026-10-21.md](daily/2026-10-21.md) |
+| 2026-10-22 | Thu | antigravity, opencode | shailesh, tarun, gaurav | prime_ai: SmartTransport, Transport, Syllabus, LmsQuiz, PrimeCore, Tenant Migrations, Dashboard, ParentPortal, CommonChat, BehaviouralAssessment, Accounting, Admission, Cafeteria, Complaint, TenantCore, Student | 791 non-merge entries / 698 unique paths (Shailesh: 70 entries / 32 files) | 29 (24 non-merge + 5 merge) | PASS | [2026-10-22.md](daily/2026-10-22.md) |
+| 2026-10-23 | Fri | antigravity, opencode | shailesh, tarun, gaurav | prime_ai: SmartTransport, Syllabus, SchoolSetup, TimetableFoundation, LmsQuiz, LmsQuests, LmsExam, LmsHomework, QuestionBank, PrimeTransport, FrontOffice, Cafeteria, Admission, Accounting | 317 unique paths across all branches (Shailesh: 115 unique files) | 42 (36 non-merge + 6 merge; Shailesh: 28 [27 non-merge + 1 merge]) | PASS | [2026-10-23.md](daily/2026-10-23.md) |
+| 2026-10-24 | Sat | antigravity | shailesh | prime_ai: SchoolSetup, Transport, Database, Final Audit Reports | 96 | 9 | PASS | [2026-10-24](daily/2026-10-24.md) |
+| 2026-10-25 | Sun | opencode, antigravity | shailesh | prime_ai: Transport, Vendor, Syllabus, LmsExam, LmsHomework, LmsQuests, LmsQuiz, Library, Ptm, PrimeCore, Admission | 44 unique (52 change entries across 11 commits) | 11 | PASS | [2026-10-25.md](daily/2026-10-25.md) |

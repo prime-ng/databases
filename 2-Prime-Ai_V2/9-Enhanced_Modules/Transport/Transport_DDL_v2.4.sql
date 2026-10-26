@@ -349,24 +349,26 @@
 
 	CREATE TABLE IF NOT EXISTS `tpt_student_route_allocation_jnt` (
 		`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-		`student_session_id` INT UNSIGNED NOT NULL,
+		`student_session_id` INT UNSIGNED NOT NULL,    -- Student Academic Session ID
 		`student_id` INT UNSIGNED NOT NULL,
 		`transport_use_type` ENUM('Pickup','Drop','Both') NOT NULL,
 		`pickup_route_id` INT UNSIGNED NULL,  -- fk to tpt_route
 		`pickup_stop_id` INT UNSIGNED NULL,
 		`drop_route_id` INT UNSIGNED NULL,
 		`drop_stop_id` INT UNSIGNED NULL,
-		`fare` DECIMAL(10,2) NOT NULL,
+		`fare` DECIMAL(10,2) NULL,
 		`effective_from` DATE NOT NULL,
 		`active_status` TINYINT(1) NOT NULL DEFAULT 1,
 		`created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 		`updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-		`deleted_at` TIMESTAMP NULL DEFAULT NULL,
 		CONSTRAINT `fk_sa_studentSession` FOREIGN KEY (`student_session_id`) REFERENCES `std_student_academic_sessions`(`id`) ON DELETE RESTRICT,
 		CONSTRAINT `fk_sa_route` FOREIGN KEY (`route_id`) REFERENCES `tpt_route`(`id`) ON DELETE RESTRICT,
 		CONSTRAINT `fk_sa_pickup` FOREIGN KEY (`pickup_stop_id`) REFERENCES `tpt_pickup_points`(`id`) ON DELETE RESTRICT,
 		CONSTRAINT `fk_sa_drop` FOREIGN KEY (`drop_stop_id`) REFERENCES `tpt_pickup_points`(`id`) ON DELETE RESTRICT
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    -- Changes :
+    -- Removed deleted_at fiedl, as record is must for historical Billing detail.
+	-- Made fare = Null (previously not Null), because when user will create Profile, he does not have fare infor to add. can be added later.
 
 	CREATE TABLE IF NOT EXISTS `tpt_fine_category` (
 		`id` TINYINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,

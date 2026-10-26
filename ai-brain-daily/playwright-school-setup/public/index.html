@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>School Setup Test Suite Runner</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f8fafc;
+      color: #334155;
+      min-height: 100vh;
+      padding: 16px;
+    }
+    header {
+      max-width: 1560px;
+      margin: 0 auto 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    header h1 {
+      font-size: 19px;
+      font-weight: 700;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    header p {
+      color: #64748b;
+      font-size: 12px;
+      margin-top: 2px;
+    }
+    .top-controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .toggle-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: #475569;
+      cursor: pointer;
+      user-select: none;
+    }
+    .toolbar {
+      max-width: 1560px;
+      margin: 0 auto 12px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .btn {
+      padding: 6px 14px;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 13px;
+      transition: all 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      line-height: 1.4;
+    }
+    .btn:disabled { opacity: 0.55; cursor: not-allowed; }
+    .btn-primary { background: #2563eb; color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: #1d4ed8; }
+    .btn-success { background: #16a34a; color: #fff; box-shadow: 0 1px 3px rgba(22, 163, 74, 0.3); }
+    .btn-success:hover:not(:disabled) { background: #15803d; }
+    .btn-ghost { background: #fff; color: #334155; border-color: #cbd5e1; }
+    .btn-ghost:hover:not(:disabled) { background: #f1f5f9; }
+    .btn-sm { padding: 3px 8px; font-size: 11px; }
+
+    .layout {
+      max-width: 1560px;
+      margin: 0 auto;
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+    }
+    .main {
+      flex: 1;
+      min-width: 0;
+    }
+    .sidebar {
+      width: 440px;
+      flex-shrink: 0;
+      position: sticky;
+      top: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .table-wrap {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    th {
+      background: #f1f5f9;
+      text-align: left;
+      padding: 8px 10px;
+      font-weight: 600;
+      color: #475569;
+      border-bottom: 1px solid #e2e8f0;
+      position: sticky;
+      top: 0;
+      white-space: nowrap;
+    }
+    td {
+      padding: 8px 10px;
+      border-bottom: 1px solid #f1f5f9;
+      vertical-align: middle;
+    }
+    tr:nth-child(even) td { background: #fafafa; }
+    tr:hover td { background: #f8fafc; }
+    tr.running td { background: #eff6ff !important; }
+    tr.success td { background: #f0fdf4 !important; }
+    tr.error td { background: #fef2f2 !important; }
+
+    .module-badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: #e0f2fe;
+      color: #0369a1;
+      white-space: nowrap;
+    }
+    .tab-name {
+      font-weight: 600;
+      color: #0f172a;
+      font-size: 13px;
+    }
+    .tab-desc {
+      font-size: 11px;
+      color: #64748b;
+      margin-top: 2px;
+    }
+    .ddl-tag {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
+      font-size: 10px;
+      color: #6366f1;
+      background: #eef2ff;
+      padding: 1px 5px;
+      border-radius: 3px;
+      display: inline-block;
+      margin-top: 3px;
+    }
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .status-dot.idle { background: #94a3b8; }
+    .status-dot.running { background: #2563eb; animation: pulse 1s infinite; }
+    .status-dot.success { background: #16a34a; }
+    .status-dot.error { background: #dc2626; }
+
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+    .card {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .card-header {
+      padding: 10px 12px;
+      background: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
+      font-size: 12px;
+      font-weight: 700;
+      color: #0f172a;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .card-body { padding: 10px 12px; }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      text-align: center;
+    }
+    .summary-item {
+      padding: 8px;
+      border-radius: 6px;
+      background: #f8fafc;
+      border: 1px solid #edf2f7;
+    }
+    .summary-val {
+      font-size: 16px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .summary-lbl {
+      font-size: 10px;
+      color: #64748b;
+      margin-top: 2px;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .log-terminal {
+      background: #0f172a;
+      color: #cbd5e1;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 11px;
+      padding: 12px;
+      height: 480px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div>
+      <h1><i class="fa-solid fa-list-check" style="color: #2563eb;"></i> School Setup Test Runner Panel</h1>
+      <p>Continuous sequential test automation for <code>SchoolSetup_DDL_v4.6.sql</code> on <code>http://test.localhost:8000/school-setup/school-class</code></p>
+    </div>
+    <div class="top-controls">
+      <label class="toggle-label">
+        <input type="checkbox" id="openTabToggle">
+        <span><i class="fa-solid fa-arrow-up-right-from-square"></i> Open Tab in Browser on Run</span>
+      </label>
+      <label class="toggle-label">
+        <input type="checkbox" id="headedToggle" checked>
+        <span><i class="fa-solid fa-desktop"></i> Visible Playwright Chrome</span>
+      </label>
+    </div>
+  </header>
+
+  <div class="toolbar">
+    <button id="runAllBtn" class="btn btn-success" onclick="runSequentialAllTabs()">
+      <i class="fa-solid fa-play"></i> Run All 9 Tabs Sequential Flow
+    </button>
+    <a href="http://test.localhost:8000/school-setup/school-class?tab=sections#sections" target="_blank" class="btn btn-ghost">
+      <i class="fa-solid fa-arrow-up-right-from-square"></i> Open School Setup In New Tab
+    </a>
+    <button class="btn btn-ghost" onclick="resetAllStatuses()">
+      <i class="fa-solid fa-rotate-left"></i> Reset
+    </button>
+  </div>
+
+  <div class="layout">
+    <div class="main">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 40px; text-align: center;">#</th>
+              <th style="width: 140px;">Module</th>
+              <th>Tab &amp; Test Flow Details</th>
+              <th style="width: 180px;">DDL Target Table</th>
+              <th style="width: 130px;">Status</th>
+              <th style="width: 150px; text-align: right;">Action</th>
+            </tr>
+          </thead>
+          <tbody id="tabsTableBody">
+            <!-- Populated by JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="sidebar">
+      <div class="card">
+        <div class="card-header">
+          <span><i class="fa-solid fa-chart-pie"></i> Audit Execution Summary</span>
+        </div>
+        <div class="card-body">
+          <div class="summary-grid">
+            <div class="summary-item">
+              <div class="summary-val" id="totalTabsCount">9</div>
+              <div class="summary-lbl">Total Tabs</div>
+            </div>
+            <div class="summary-item">
+              <div class="summary-val" style="color: #2563eb;" id="runningCount">0</div>
+              <div class="summary-lbl">Running</div>
+            </div>
+            <div class="summary-item">
+              <div class="summary-val" style="color: #16a34a;" id="passedCount">0</div>
+              <div class="summary-lbl">Passed</div>
+            </div>
+            <div class="summary-item">
+              <div class="summary-val" style="color: #dc2626;" id="failedCount">0</div>
+              <div class="summary-lbl">Failed</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span><i class="fa-solid fa-terminal"></i> Live Output Console</span>
+          <button class="btn btn-ghost btn-sm" onclick="clearTerminal()">Clear</button>
+        </div>
+        <div class="log-terminal" id="terminal">Ready. Click "Run" on any tab or "Run All 9 Tabs Sequential Flow".</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const tabRows = [
+      {
+        id: 'sections',
+        name: 'Sections',
+        icon: 'fa-th-list',
+        url: 'http://test.localhost:8000/school-setup/school-class?tab=sections#sections',
+        file: 'tests/01_sections.spec.js',
+        table: 'sch_sections',
+        cases: 'CRUD (Create/Edit/Soft Delete), Form Validation, Code Len CHAR(4), Code & Name Uniqueness'
+      },
+      {
+        id: 'class',
+        name: 'Class',
+        icon: 'fa-sitemap',
+        url: 'http://test.localhost:8000/school-setup/school-class?tab=class-sections#class-sections',
+        file: 'tests/02_class.spec.js',
+        table: 'sch_classes',
+        cases: 'CRUD Flow, Section Mapping, Code Len CHAR(5), Empty Validation, Code & Name Uniqueness'
+      },
+      {
+        id: 'subject-type',
+        name: 'Subject Type',
+        icon: 'fa-tags',
+        url: 'http://test.localhost:8000/school-setup/school-class?tab=subject-type#subject-type',
+        file: 'tests/03_subject_type.spec.js',
+        table: 'sch_subject_types',
+        cases: 'CRUD Create, Status Toggle, Code Len CHAR(5), Empty Form Validation, Code Uniqueness'
+      },
+      {
+        id: 'study-format',
+        name: 'Study Format',
+        icon: 'fa-chalkboard',
+        url: 'http://test.localhost:8000/school-setup/school-class?tab=study-format#study-format',
+        file: 'tests/04_study_format.spec.js',
+        table: 'sch_study_formats',
+        cases: 'CRUD Flow, System Flag verification, Code Len CHAR(5), Empty Form Check, Duplicate Code Check'
+      },
+      {
+        id: 'subject',
+        name: 'Subject',
+        icon: 'fa-book-reader',
+        url: 'http://test.localhost:8000/school-setup/school-class?tab=subject#subject',
+        file: 'tests/05_subject.spec.js',
+        table: 'sch_subjects',
+        cases: 'CRUD Create/Edit, Mandatory Fields, Code Len CHAR(10), Subject Code Uniqueness'
+      },
+      {
+        id: 'subject-study-format',
+        name: 'Subject + Study Format',
+        icon: 'fa-layer-group',
+        url: 'http://test.localhost:8000/school-setup/school-class?tab=subject-study-format#subject-study-format',
+        file: 'tests/06_subject_study_format.spec.js',
+        table: 'sch_subject_study_format_jnt',
+        cases: 'Junction Table Rendering, Search & Filters, Triple Unique Mapping (subject, format, type)'
+      },
+      {
+        id: 'subject-class-mapping',
+        name: 'Class Group',
+        icon: 'fa-project-diagram',
+        url: 'http://test.localhost:8000/school-setup/school-class?tab=subject-class-mapping#subject-class-mapping',
+        file: 'tests/07_class_group.spec.js',
+        table: 'sch_class_groups_jnt',
+        cases: 'Class Group Listing, Keyword Search, Class Section Junction Mapping, Filter Verification'
+      },
+      {
+        id: 'subject-group',
+        name: 'Subject Group',
+        icon: 'fa-cubes',
+        url: 'http://test.localhost:8000/school-setup/school-class?tab=subject-group#subject-group',
+        file: 'tests/08_subject_group.spec.js',
+        table: 'sch_subject_groups',
+        cases: 'Subject Group Table Verify, Keyword Search, Filters & Pagination verification'
+      },
+      {
+        id: 'class-stream',
+        name: 'Stream',
+        icon: 'fa-graduation-cap',
+        url: 'http://test.localhost:8000/school-setup/school-class?tab=class-stream#class-stream',
+        file: 'tests/09_stream.spec.js',
+        table: 'sch_class_streams',
+        cases: 'CRUD Create Stream, Class Linkage, Code Len CHAR(5), Empty Form Validation, Table Rendering'
+      }
+    ];
+
+    let rowStatuses = {};
+
+    function renderRows() {
+      const tbody = document.getElementById('tabsTableBody');
+      tbody.innerHTML = tabRows.map((t, idx) => {
+        const state = rowStatuses[t.id] || { status: 'idle', label: 'Ready' };
+        let dotClass = 'idle';
+        let rowClass = '';
+        if (state.status === 'running') { dotClass = 'running'; rowClass = 'running'; }
+        if (state.status === 'passed') { dotClass = 'success'; rowClass = 'success'; }
+        if (state.status === 'failed') { dotClass = 'error'; rowClass = 'error'; }
+
+        return `
+          <tr id="row-${t.id}" class="${rowClass}">
+            <td style="text-align: center; color: #64748b; font-weight: 600;">${idx + 1}</td>
+            <td><span class="module-badge">Class Setup</span></td>
+            <td>
+              <div class="tab-name"><i class="fa-solid ${t.icon}" style="color: #3b82f6; margin-right: 4px;"></i> ${t.name}</div>
+              <div class="tab-desc">${t.cases}</div>
+            </td>
+            <td><span class="ddl-tag">${t.table}</span></td>
+            <td>
+              <div class="status">
+                <span class="status-dot ${dotClass}"></span>
+                <span id="label-${t.id}">${state.label}</span>
+              </div>
+            </td>
+            <td style="text-align: right;">
+              <div style="display: inline-flex; gap: 4px;">
+                <button class="btn btn-ghost btn-sm" title="Open this tab in new browser window" onclick="window.open('${t.url}', '_blank')">
+                  <i class="fa-solid fa-arrow-up-right-from-square"></i> Open
+                </button>
+                <button class="btn btn-primary btn-sm" id="btn-${t.id}" onclick="runSingleTab('${t.id}')">
+                  <i class="fa-solid fa-play"></i> Run
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+      updateSummary();
+    }
+
+    function updateSummary() {
+      let passed = 0, failed = 0, running = 0;
+      Object.values(rowStatuses).forEach(s => {
+        if (s.status === 'passed') passed++;
+        if (s.status === 'failed') failed++;
+        if (s.status === 'running') running++;
+      });
+      document.getElementById('runningCount').textContent = running;
+      document.getElementById('passedCount').textContent = passed;
+      document.getElementById('failedCount').textContent = failed;
+    }
+
+    function setRowStatus(id, status, label) {
+      rowStatuses[id] = { status, label };
+      const row = document.getElementById(`row-${id}`);
+      const lbl = document.getElementById(`label-${id}`);
+      if (row && lbl) {
+        row.className = status === 'passed' ? 'success' : (status === 'failed' ? 'error' : (status === 'running' ? 'running' : ''));
+        const dot = row.querySelector('.status-dot');
+        if (dot) {
+          dot.className = `status-dot ${status === 'passed' ? 'success' : (status === 'failed' ? 'error' : (status === 'running' ? 'running' : 'idle'))}`;
+        }
+        lbl.textContent = label;
+      }
+      updateSummary();
+    }
+
+    function resetAllStatuses() {
+      tabRows.forEach(t => {
+        rowStatuses[t.id] = { status: 'idle', label: 'Ready' };
+      });
+      renderRows();
+      clearTerminal();
+    }
+
+    function clearTerminal() {
+      document.getElementById('terminal').textContent = '';
+    }
+
+    function appendTerminal(text) {
+      const term = document.getElementById('terminal');
+      term.textContent += text;
+      term.scrollTop = term.scrollHeight;
+    }
+
+    async function runTestFile(file, tabId) {
+      const headed = document.getElementById('headedToggle').checked;
+      setRowStatus(tabId, 'running', 'Running...');
+      appendTerminal(`\n[RUNNING] Starting ${tabId} suite (${file})...\n`);
+
+      const res = await fetch('/api/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ file, headed })
+      });
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let isPassed = false;
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const msg = JSON.parse(line.slice(6));
+              if (msg.type === 'log' || msg.type === 'error') {
+                appendTerminal(msg.text);
+              } else if (msg.type === 'done') {
+                isPassed = msg.passed;
+              }
+            } catch(e) {}
+          }
+        }
+      }
+
+      if (isPassed) {
+        setRowStatus(tabId, 'passed', 'Passed');
+        appendTerminal(`[SUCCESS] Tab ${tabId} tests finished successfully!\n`);
+      } else {
+        setRowStatus(tabId, 'failed', 'Failed');
+        appendTerminal(`[FAILED] Tab ${tabId} tests had failures.\n`);
+      }
+      return isPassed;
+    }
+
+    async function runSingleTab(tabId) {
+      const t = tabRows.find(x => x.id === tabId);
+      if (!t) return;
+      const btn = document.getElementById(`btn-${tabId}`);
+      if (btn) btn.disabled = true;
+
+      // Only open tab in separate window if user explicitly checked the toggle
+      if (document.getElementById('openTabToggle').checked) {
+        window.open(t.url, '_blank');
+      }
+
+      try {
+        await runTestFile(t.file, t.id);
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    }
+
+    async function runSequentialAllTabs() {
+      const allBtn = document.getElementById('runAllBtn');
+      allBtn.disabled = true;
+      allBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Running All 9 Tabs Sequential...';
+
+      clearTerminal();
+      appendTerminal('[INFO] Initiating Sequential Flow Run for all 9 tabs of Class Setup...\n');
+
+      if (document.getElementById('openTabToggle').checked) {
+        window.open(tabRows[0].url, '_blank');
+      }
+
+      for (let i = 0; i < tabRows.length; i++) {
+        const t = tabRows[i];
+        appendTerminal(`\n>>> [STEP ${i+1}/9] Executing Tab: ${t.name} (Table: ${t.table}) <<<\n`);
+        await runTestFile(t.file, t.id);
+      }
+
+      appendTerminal('\n[COMPLETED] All 9 tabs executed in sequence.\n');
+      allBtn.disabled = false;
+      allBtn.innerHTML = '<i class="fa-solid fa-play"></i> Run All 9 Tabs Sequential Flow';
+    }
+
+    renderRows();
+  </script>
+</body>
+</html>

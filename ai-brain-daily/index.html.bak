@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Brain — Activity Calendar</title>
+<script>
+(function () {
+  try {
+    var p = new URLSearchParams(location.search).get("theme");
+    var t = p || localStorage.getItem("brain-theme") || "dark";
+    document.documentElement.setAttribute("data-theme", t === "light" ? "light" : "dark");
+  } catch (e) {}
+})();
+</script>
+<style>
+  :root {
+    --bg: #0d1117;
+    --bg2: #131a23;
+    --bg3: #1a2330;
+    --line: #263244;
+    --text: #dbe4ef;
+    --muted: #8b9bb0;
+    --accent: #58a6ff;
+    --commit: #58a6ff;
+    --task: #f0b429;
+    --report: #3fb950;
+    --danger: #f85149;
+    --glow: #16283f;
+    --radius: 10px;
+  }
+  html[data-theme="light"] {
+    --bg: #f6f8fb;
+    --bg2: #ffffff;
+    --bg3: #eef2f7;
+    --line: #d8e0ea;
+    --text: #1c2733;
+    --muted: #5f7085;
+    --accent: #1f6feb;
+    --commit: #1f6feb;
+    --task: #9a6700;
+    --report: #1a7f37;
+    --danger: #cf222e;
+    --glow: #e8f1ff;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: radial-gradient(1200px 600px at 15% -10%, var(--glow) 0%, var(--bg) 55%);
+    color: var(--text);
+    font: 14px/1.5 "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+    min-height: 100vh;
+  }
+  a { color: var(--accent); }
+  code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+  header {
+    padding: 20px 24px 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 20px;
+    align-items: baseline;
+    border-bottom: 1px solid var(--line);
+  }
+  header h1 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: .2px; }
+  #themeBtn { margin-left: auto; }
+  .meta { color: var(--muted); font-size: 12px; display: flex; flex-wrap: wrap; gap: 14px; }
+  .meta b { color: var(--text); font-weight: 500; }
+
+  .toolbar {
+    display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+    padding: 12px 24px; border-bottom: 1px solid var(--line);
+    position: sticky; top: 0; z-index: 20;
+    background: rgba(13,17,23,.92); backdrop-filter: blur(6px);
+  }
+  .toolbar input[type="search"] {
+    flex: 1 1 260px; min-width: 200px;
+    background: var(--bg2); border: 1px solid var(--line); color: var(--text);
+    border-radius: 8px; padding: 8px 11px; outline: none;
+  }
+  .toolbar input[type="search"]:focus { border-color: var(--accent); }
+  select {
+    background: var(--bg2); border: 1px solid var(--line); color: var(--text);
+    border-radius: 8px; padding: 8px 9px; outline: none; max-width: 220px;
+  }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    border: 1px solid var(--line); background: var(--bg2);
+    border-radius: 999px; padding: 6px 11px; cursor: pointer; user-select: none;
+    color: var(--muted); font-size: 12px;
+  }
+  .chip input { accent-color: var(--accent); margin: 0; }
+  .chip.on { color: var(--text); border-color: #35517a; }
+  .chip .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .btn {
+    background: var(--bg2); border: 1px solid var(--line); color: var(--text);
+    border-radius: 8px; padding: 7px 11px; cursor: pointer; font-size: 12px;
+    text-decoration: none; display: inline-flex; align-items: center; gap: 4px;
+  }
+  .pager { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; margin: 14px 0 6px; }
+  .pager .btn { min-width: 30px; justify-content: center; padding: 5px 8px; }
+  .pager .btn.active { background: #16304f; border-color: var(--accent); color: #fff; }
+  .pager .btn:disabled { opacity: .35; cursor: default; }
+  .ft-wrap { max-height: 340px; overflow: auto; border-radius: 6px; margin-top: 7px; }
+  .commit-body {
+    white-space: pre-wrap; color: #b9c6d6; font-size: 12px; margin-top: 8px;
+    border-left: 2px solid #2b3b52; padding-left: 10px; max-height: 260px; overflow: auto;
+  }
+  details.body { margin-top: 8px; }
+  details.body > summary { cursor: pointer; color: var(--muted); font-size: 11.5px; list-style: none; user-select: none; }
+  details.body > summary::-webkit-details-marker { display: none; }
+  details.body > summary::before { content: "▸ "; color: var(--accent); }
+  details.body[open] > summary::before { content: "▾ "; }
+  .case.pdf { color: #bc8cff; border-color: #4b3570; }
+  .badge.tm { background: rgba(188,140,255,.15); color: #d2b4ff; }
+  .codes { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 7px; }
+  .codes .mono {
+    font-size: 10.5px; color: #9ecbff; background: #16233a; border: 1px solid #253a5a;
+    border-radius: 4px; padding: 1px 5px;
+  }
+  .btn:hover { border-color: var(--accent); }
+  .btn.primary { border-color: #2f5f9e; background: #16304f; }
+  .result-count { color: var(--muted); font-size: 12px; margin-left: auto; }
+
+  main {
+    display: grid; grid-template-columns: minmax(320px, 400px) 1fr;
+    gap: 20px; padding: 20px 24px 40px; align-items: start;
+  }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+
+  .panel {
+    background: linear-gradient(180deg, rgba(255,255,255,.02), transparent), var(--bg2);
+    border: 1px solid var(--line); border-radius: var(--radius);
+  }
+
+  .cal-head {
+    display: flex; align-items: center; gap: 6px; padding: 14px 14px 8px;
+  }
+  .cal-head h2 { margin: 0; font-size: 15px; font-weight: 600; flex: 1; }
+  .icon-btn {
+    width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--line);
+    background: var(--bg3); color: var(--text); cursor: pointer; font-size: 15px; line-height: 1;
+  }
+  .icon-btn:hover { border-color: var(--accent); }
+
+  .weekdays, .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
+  .weekdays {
+    padding: 0 10px; color: var(--muted); font-size: 10px;
+    text-transform: uppercase; letter-spacing: .8px; text-align: center;
+  }
+  .weekdays span { padding: 6px 0; }
+  .cal-grid { padding: 4px 10px 12px; gap: 4px; }
+
+  .day {
+    position: relative; min-height: 58px; border-radius: 8px;
+    border: 1px solid transparent; background: var(--bg3);
+    color: var(--text); cursor: pointer; text-align: left;
+    padding: 5px 6px; display: flex; flex-direction: column; gap: 4px;
+    transition: border-color .12s, transform .12s;
+  }
+  .day:hover { border-color: #3a4d68; transform: translateY(-1px); }
+  .day.other { opacity: .35; }
+  .day.today { border-color: #2f5f9e; }
+  .day.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+  .day .dnum { font-size: 12px; font-weight: 600; color: var(--muted); }
+  .day.today .dnum { color: var(--accent); }
+  .day.selected .dnum { color: #fff; }
+  .day .badges { display: flex; flex-wrap: wrap; gap: 3px; margin-top: auto; }
+  .badge {
+    font-size: 9px; line-height: 1; padding: 3px 4px; border-radius: 4px;
+    background: rgba(88,166,255,.16); color: #9ecbff; font-weight: 600;
+  }
+  .badge.t { background: rgba(240,180,41,.15); color: #f3c969; }
+  .badge.r { background: rgba(63,185,80,.15); color: #7ee08a; }
+  .day[data-level="1"] { background: #1b2736; }
+  .day[data-level="2"] { background: #1e2f43; }
+  .day[data-level="3"] { background: #223850; }
+  .day[data-level="4"] { background: #27425f; }
+  .legend { display: flex; gap: 14px; padding: 0 16px 14px; color: var(--muted); font-size: 11px; }
+  .legend i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+
+  .detail-head { padding: 16px 18px 10px; border-bottom: 1px solid var(--line); }
+  .detail-head h2 { margin: 0 0 4px; font-size: 17px; }
+  .detail-sub { color: var(--muted); font-size: 12px; display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; }
+  #detailSub { display: inline-flex; flex-wrap: wrap; gap: 4px 12px; }
+  .detail-body { padding: 12px 18px 22px; }
+
+  .day-group { margin-bottom: 26px; }
+  .day-group > h3 {
+    margin: 0 0 4px; font-size: 14px; color: #c8d6e8; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap;
+  }
+  .day-group > h3 .n { color: var(--muted); font-weight: 400; font-size: 11px; }
+  .group-sum { color: var(--muted); font-size: 11.5px; margin-bottom: 10px; }
+
+  .item {
+    border: 1px solid var(--line); border-radius: 9px; padding: 11px 13px;
+    background: rgba(255,255,255,.015); margin-bottom: 9px;
+  }
+  .item:hover { border-color: #33445c; }
+  .item-top { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; }
+  .item-title { font-weight: 600; font-size: 13.5px; word-break: break-word; }
+  .item-time { color: var(--muted); font-size: 11px; }
+  .item-author { color: var(--muted); font-size: 11.5px; }
+  .case { font-size: 10px; text-transform: uppercase; letter-spacing: .5px; color: var(--accent); border: 1px solid #2f5f9e; border-radius: 4px; padding: 1px 5px; }
+  .case.task { color: var(--task); border-color: #6b5320; }
+  .hash { color: var(--muted); font-size: 11px; cursor: pointer; border-bottom: 1px dotted #3b4b60; }
+  .hash:hover { color: var(--accent); }
+  .pill { font-size: 10.5px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 1px 7px; }
+  .merge { color: var(--danger); border-color: #5f2b2a; }
+
+  .item .req { margin: 7px 0 0; color: #b9c6d6; font-size: 12.5px; }
+  .fields { margin-top: 8px; display: grid; grid-template-columns: 92px 1fr; gap: 3px 10px; font-size: 12px; }
+  .fields dt { color: var(--muted); }
+  .fields dd { margin: 0; word-break: break-word; }
+
+  details.files { margin-top: 9px; }
+  details.files > summary {
+    cursor: pointer; color: var(--muted); font-size: 11.5px; list-style: none; user-select: none;
+  }
+  details.files > summary::-webkit-details-marker { display: none; }
+  details.files > summary::before { content: "▸ "; color: var(--accent); }
+  details.files[open] > summary::before { content: "▾ "; }
+  .ftable { width: 100%; border-collapse: collapse; margin-top: 7px; font-size: 11.5px; }
+  .ftable th { text-align: left; color: var(--muted); font-weight: 500; padding: 4px 6px; border-bottom: 1px solid var(--line); }
+  .ftable td { padding: 4px 6px; border-bottom: 1px solid rgba(38,50,68,.5); vertical-align: top; }
+  .ftable td.p { font-family: ui-monospace, monospace; word-break: break-all; }
+  .ftable td.a { color: #3fb950; white-space: nowrap; text-align: right; }
+  .ftable td.d { color: #f85149; white-space: nowrap; text-align: right; }
+  .st { display: inline-block; min-width: 16px; text-align: center; border-radius: 3px; font-size: 10px; font-weight: 700; padding: 1px 4px; background: #223049; color: #9ecbff; }
+  .st.A { background: #16351f; color: #7ee08a; }
+  .st.D { background: #3a1d1d; color: #ff9a93; }
+  .st.R { background: #3a2f16; color: #f3c969; }
+
+  .empty { color: var(--muted); text-align: center; padding: 50px 10px; }
+  .empty b { color: var(--text); display: block; margin-bottom: 6px; }
+  .report-link {
+    display: inline-flex; align-items: center; gap: 8px; margin-top: 10px;
+    border: 1px solid #23552d; background: rgba(63,185,80,.08); color: #7ee08a;
+    border-radius: 8px; padding: 7px 11px; text-decoration: none; font-size: 12px;
+  }
+  .report-link:hover { border-color: var(--report); }
+  .note { color: var(--muted); font-size: 11px; }
+  footer { color: var(--muted); font-size: 11px; padding: 0 24px 26px; }
+  .toast {
+    position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
+    background: #1f6feb; color: #fff; padding: 7px 14px; border-radius: 7px;
+    font-size: 12px; opacity: 0; pointer-events: none; transition: opacity .2s;
+  }
+  .toast.show { opacity: 1; }
+
+  html[data-theme="light"] .toolbar { background: rgba(246,248,251,.94); }
+  html[data-theme="light"] .btn.primary { background: #1f6feb; border-color: #1f6feb; color: #fff; }
+  html[data-theme="light"] .chip.on { border-color: #a9c2e2; }
+  html[data-theme="light"] .panel { background: linear-gradient(180deg, rgba(0,0,0,.012), transparent), var(--bg2); }
+  html[data-theme="light"] .day:hover { border-color: #b8c8dc; }
+  html[data-theme="light"] .day.today { border-color: #8fb5e6; }
+  html[data-theme="light"] .day.selected .dnum { color: #0b4f9c; }
+  html[data-theme="light"] .day[data-level="1"] { background: #eef4fc; }
+  html[data-theme="light"] .day[data-level="2"] { background: #e3eefb; }
+  html[data-theme="light"] .day[data-level="3"] { background: #d6e7fa; }
+  html[data-theme="light"] .day[data-level="4"] { background: #c7dcf7; }
+  html[data-theme="light"] .badge { background: rgba(31,111,235,.12); color: #0b4f9c; }
+  html[data-theme="light"] .badge.t { background: rgba(154,103,0,.12); color: #7a5200; }
+  html[data-theme="light"] .badge.r { background: rgba(26,127,55,.12); color: #14602a; }
+  html[data-theme="light"] .badge.tm { background: rgba(130,80,223,.12); color: #5b34a8; }
+  html[data-theme="light"] .day-group > h3 { color: #2b3a4b; }
+  html[data-theme="light"] .item { background: rgba(0,0,0,.012); }
+  html[data-theme="light"] .item:hover { border-color: #b8c8dc; }
+  html[data-theme="light"] .item .req { color: #3b4a5c; }
+  html[data-theme="light"] .commit-body { color: #3b4a5c; border-left-color: #c9d6e6; }
+  html[data-theme="light"] .codes .mono { color: #0b4f9c; background: #e8f1fd; border-color: #c7dcf7; }
+  html[data-theme="light"] .case { border-color: #8fb5e6; }
+  html[data-theme="light"] .case.task { border-color: #d9c07a; }
+  html[data-theme="light"] .merge { border-color: #e5a9a5; }
+  html[data-theme="light"] .st { background: #e8f1fd; color: #0b4f9c; }
+  html[data-theme="light"] .st.A { background: #e6f4ea; color: #14602a; }
+  html[data-theme="light"] .st.D { background: #fdeceb; color: #a40e26; }
+  html[data-theme="light"] .st.R { background: #fdf3d8; color: #7a5200; }
+  html[data-theme="light"] .report-link { border-color: #9bd3a8; background: rgba(26,127,55,.07); color: #14602a; }
+  html[data-theme="light"] .hash { border-bottom-color: #c3d2e5; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>AI Brain — Activity Calendar</h1>
+  <div class="meta">
+    <span>Branch <b id="mBranch">—</b></span>
+    <span>Repo <b id="mRepo">—</b></span>
+    <span>Built <b id="mBuilt">—</b></span>
+    <span>Commits <b id="mCommits">0</b></span>
+    <span>Journal entries <b id="mTasks">0</b></span>
+  </div>
+  <button class="btn" id="themeBtn" title="Toggle light/dark mode">☀ Light</button>
+</header>
+
+<div class="toolbar">
+  <input id="q" type="search" placeholder="Search commit message, author, file, task, module…" autocomplete="off">
+  <select id="author"><option value="">All authors</option></select>
+  <select id="module"><option value="">All modules</option></select>
+  <label class="chip on"><input type="checkbox" id="fCommits" checked><span class="dot" style="background:var(--commit)"></span>Commits</label>
+  <label class="chip on"><input type="checkbox" id="fTasks" checked><span class="dot" style="background:var(--task)"></span>Journal</label>
+  <label class="chip on"><input type="checkbox" id="fReports" checked><span class="dot" style="background:var(--report)"></span>Reports</label>
+  <label class="chip on"><input type="checkbox" id="fTeam" checked><span class="dot" style="background:#bc8cff"></span>PDF log</label>
+  <button class="btn" id="clear">Clear</button>
+  <a class="btn primary" href="charts.html" target="_blank" rel="noopener">Charts ↗</a>
+  <span class="result-count" id="resultCount"></span>
+</div>
+
+<main>
+  <section class="panel">
+    <div class="cal-head">
+      <button class="icon-btn" id="prev" aria-label="Previous month">‹</button>
+      <h2 id="monthLabel">—</h2>
+      <button class="icon-btn" id="next" aria-label="Next month">›</button>
+      <button class="btn" id="todayBtn">Today</button>
+    </div>
+    <div class="weekdays">
+      <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+    <div class="legend">
+      <span><i style="background:var(--commit)"></i>Commits</span>
+      <span><i style="background:var(--task)"></i>Journal</span>
+      <span><i style="background:var(--report)"></i>Report</span>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="detail-head">
+      <h2 id="detailTitle">—</h2>
+      <div class="detail-sub">
+        <span id="detailSub"></span>
+        <button class="btn" id="modeBtn" hidden></button>
+      </div>
+    </div>
+    <div class="detail-body" id="detailBody"></div>
+  </section>
+</main>
+
+<footer>
+  Data source: current branch Git history + <code>live/</code> journals + <code>daily/</code> reports. Refresh with
+  <code>php /home/shailesh/shailesh/ai-brain-daily/build.php</code>.
+</footer>
+<div class="toast" id="toast"></div>
+
+<script src="data.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  var DATA = window.BRAIN_DATA;
+  var $ = function (id) { return document.getElementById(id); };
+
+  if (!DATA) {
+    $("detailBody").innerHTML = '<div class="empty"><b>data.js is missing</b>Run <code>php build.php</code> in the AI Brain folder.</div>';
+    return;
+  }
+
+  var MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  var DAYS = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+
+  function esc(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
+  function pad(n) { return n < 10 ? "0" + n : "" + n; }
+  function ymd(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+  function parseYmd(s) { var p = s.split("-"); return new Date(+p[0], +p[1] - 1, +p[2]); }
+  function todayStr() { return ymd(new Date()); }
+  function fmtDate(dateStr) {
+    var d = parseYmd(dateStr);
+    return DAYS[d.getDay()] + ", " + d.getDate() + " " + MONTHS[d.getMonth()] + " " + d.getFullYear();
+  }
+  function daysInMonth(y, m) { return new Date(y, m + 1, 0).getDate(); }
+
+  /* ------------------------------------------------------------ indexes --- */
+
+  var commits = DATA.commits || [];
+  var tasks = DATA.tasks || [];
+  var reports = DATA.reports || [];
+
+  var commitsByDate = Object.create(null);
+  var tasksByDate = Object.create(null);
+  var reportsByDate = Object.create(null);
+
+  function push(map, key, val) { (map[key] || (map[key] = [])).push(val); }
+
+  commits.forEach(function (c) {
+    push(commitsByDate, c.date, c);
+  });
+  tasks.forEach(function (t) { push(tasksByDate, t.date, t); });
+  reports.forEach(function (r) { push(reportsByDate, r.date, r); });
+
+  var teamData = (DATA.team && DATA.team.person) ? DATA.team : null;
+  var teamByDate = Object.create(null);
+  if (teamData) {
+    (teamData.attendance || []).forEach(function (a) {
+      push(teamByDate, a.date, Object.assign({ kind: "attendance" }, a));
+    });
+    (teamData.work || []).forEach(function (w) {
+      push(teamByDate, w.date, Object.assign({ kind: "work" }, w));
+    });
+    (teamData.gurukul || []).forEach(function (g) {
+      push(teamByDate, g.date, Object.assign({ kind: "gurukul" }, g));
+    });
+  }
+
+  function moduleOfPath(p) {
+    if (!p) return "Other";
+    if (p.indexOf("Modules/") === 0) {
+      var a = p.split("/");
+      return a[1] || "Modules";
+    }
+    if (p.indexOf("final-audit-reports/") === 0) {
+      var b = p.split("/");
+      if (b.length >= 4) return b[2];
+      return "Audit reports";
+    }
+    var map = {
+      "database/": "Database", "app/": "App", "config/": "Config",
+      "routes/": "Routes", "resources/": "Resources", "bootstrap/": "Bootstrap",
+      "public/": "Public", "tests/": "Tests", "storage/": "Storage"
+    };
+    for (var k in map) { if (p.indexOf(k) === 0) return map[k]; }
+    return p.split("/")[0] || "Other";
+  }
+
+  function commitModules(c) {
+    if (c._mods) return c._mods;
+    var set = {};
+    c.files.forEach(function (f) { set[moduleOfPath(f.path)] = 1; });
+    return (c._mods = Object.keys(set).sort());
+  }
+
+  function buildCommitSearch(c) {
+    if (c._q != null) return c._q;
+    var paths = c.files.map(function (f) { return f.path; });
+    c._q = [c.subject, c.author, c.hash, c.short, c.body, commitModules(c).join(" "), paths.join(" ")]
+      .join(" ").toLowerCase();
+    return c._q;
+  }
+
+  function buildTaskSearch(t) {
+    if (t._q != null) return t._q;
+    var paths = (t.files || []).map(function (f) { return f.path + " " + f.what + " " + f.why; });
+    t._q = [t.title, t.request, t.agent, t.developer, t.module, t.commands, t.commit, t.notes, t.next, paths.join(" ")]
+      .join(" ").toLowerCase();
+    return t._q;
+  }
+
+  function buildTeamSearch(t) {
+    if (t._q != null) return t._q;
+    t._q = [t.kind, t.date, t.status, t.description, t.category, t.notes,
+      t.time_spent, t.remark, (t.commits || []).join(" ")]
+      .join(" ").toLowerCase();
+    return t._q;
+  }
+
+  /* ------------------------------------------------------------ filters --- */
+
+  var filters = { q: "", author: "", module: "", commits: true, tasks: true, reports: true, team: true };
+
+  function textMatch(haystack) {
+    var terms = filters.q.toLowerCase().split(/\s+/).filter(Boolean);
+    for (var i = 0; i < terms.length; i++) {
+      if (haystack.indexOf(terms[i]) === -1) return false;
+    }
+    return true;
+  }
+
+  function commitMatches(c) {
+    if (!filters.commits) return false;
+    if (filters.author && c.author !== filters.author) return false;
+    if (filters.module && commitModules(c).indexOf(filters.module) === -1) return false;
+    if (filters.q && !textMatch(buildCommitSearch(c))) return false;
+    return true;
+  }
+
+  function taskMatches(t) {
+    if (!filters.tasks) return false;
+    if (filters.author && t.agent !== filters.author) return false;
+    if (filters.module && (t.module || "") !== filters.module) return false;
+    if (filters.q && !textMatch(buildTaskSearch(t))) return false;
+    return true;
+  }
+
+  function reportMatches(r) {
+    if (!filters.reports) return false;
+    if (filters.author || filters.module) return false;
+    if (filters.q && !textMatch((r.title + " " + r.date).toLowerCase())) return false;
+    return true;
+  }
+
+  function teamMatches(t) {
+    if (!filters.team || !teamData) return false;
+    if (t.kind === "attendance" && !t.status && t.hours == null && !t.in) return false;
+    if (filters.author && filters.author !== teamData.person) return false;
+    if (filters.module) {
+      if (t.kind !== "gurukul" || (t.category || "") !== filters.module) return false;
+    }
+    if (filters.q && !textMatch(buildTeamSearch(t))) return false;
+    return true;
+  }
+
+  function countsFor(date) {
+    var list = commitsByDate[date] || [];
+    var c = 0, t = 0, r = 0, pdf = 0, files = 0;
+    for (var i = 0; i < list.length; i++) {
+      if (commitMatches(list[i])) { c++; files += list[i].files.length; }
+    }
+    var tl = tasksByDate[date] || [];
+    for (var j = 0; j < tl.length; j++) if (taskMatches(tl[j])) t++;
+    var rl = reportsByDate[date] || [];
+    for (var k = 0; k < rl.length; k++) if (reportMatches(rl[k])) r++;
+    var pl = teamByDate[date] || [];
+    for (var q = 0; q < pl.length; q++) if (teamMatches(pl[q])) pdf++;
+    return { commits: c, tasks: t, reports: r, team: pdf, files: files, total: c + t + r + pdf };
+  }
+
+  /* --------------------------------------------------------- filter opts --- */
+
+  function uniqueSorted(values) {
+    var seen = {};
+    var out = [];
+    values.forEach(function (v) {
+      if (v && !seen[v]) { seen[v] = 1; out.push(v); }
+    });
+    return out.sort(function (a, b) { return a.localeCompare(b); });
+  }
+
+  var authors = uniqueSorted(
+    commits.map(function (c) { return c.author; })
+      .concat(tasks.map(function (t) { return t.agent; }))
+      .concat(teamData ? [teamData.person] : [])
+  );
+  var modules = uniqueSorted(
+    tasks.map(function (t) { return t.module; })
+      .concat(commits.map(function (c) { return commitModules(c); }).flat())
+  );
+
+  authors.forEach(function (a) {
+    var o = document.createElement("option");
+    o.value = a; o.textContent = a;
+    $("author").appendChild(o);
+  });
+  modules.forEach(function (m) {
+    var o = document.createElement("option");
+    o.value = m; o.textContent = m;
+    $("module").appendChild(o);
+  });
+
+  /* ------------------------------------------------------------ calendar --- */
+
+  var latest = (function () {
+    var all = Object.keys(commitsByDate).concat(Object.keys(tasksByDate)).concat(Object.keys(reportsByDate));
+    all.sort();
+    return all.length ? all[all.length - 1] : todayStr();
+  })();
+
+  var selectedDate = latest;
+  var requestedDate = new URLSearchParams(location.search).get("date");
+  if (requestedDate && /^\d{4}-\d{2}-\d{2}$/.test(requestedDate)) {
+    selectedDate = requestedDate;
+  }
+  var viewYear, viewMonth;
+  (function initView() {
+    var d = parseYmd(selectedDate);
+    viewYear = d.getFullYear();
+    viewMonth = d.getMonth();
+  })();
+
+  function renderCalendar() {
+    $("monthLabel").textContent = MONTHS[viewMonth] + " " + viewYear;
+    var grid = $("calGrid");
+    grid.innerHTML = "";
+
+    var first = new Date(viewYear, viewMonth, 1);
+    var offset = (first.getDay() + 6) % 7;
+    var start = new Date(viewYear, viewMonth, 1 - offset);
+    var today = todayStr();
+
+    for (var i = 0; i < 42; i++) {
+      var d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
+      var ds = ymd(d);
+      var cnt = countsFor(ds);
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "day";
+      if (d.getMonth() !== viewMonth) b.classList.add("other");
+      if (ds === today) b.classList.add("today");
+      if (ds === selectedDate) b.classList.add("selected");
+      b.dataset.date = ds;
+      b.dataset.level = String(Math.min(4, cnt.total === 0 ? 0 : Math.ceil(cnt.total / 2)));
+      b.title = fmtDate(ds) + " — " + cnt.commits + " commits, " + cnt.tasks + " journal entries";
+      var badges = "";
+      if (cnt.commits) badges += '<span class="badge">' + cnt.commits + " c</span>";
+      if (cnt.tasks) badges += '<span class="badge t">' + cnt.tasks + " j</span>";
+      if (cnt.team) badges += '<span class="badge tm">' + cnt.team + " T</span>";
+      if (cnt.reports) badges += '<span class="badge r">R</span>';
+      b.innerHTML = '<span class="dnum">' + d.getDate() + "</span>" +
+        '<span class="badges">' + badges + "</span>";
+      b.addEventListener("click", function (ev) {
+        var date = ev.currentTarget.dataset.date;
+        var dd = parseYmd(date);
+        viewYear = dd.getFullYear();
+        viewMonth = dd.getMonth();
+        selectedDate = date;
+        detailPage = 1;
+        renderAll();
+      });
+      grid.appendChild(b);
+    }
+  }
+
+  /* -------------------------------------------------------------- detail --- */
+
+  var detailPage = 1;
+  var COMMIT_PAGE_SIZE = 8;
+  var GROUP_PAGE_SIZE = 6;
+
+  function pagerHtml(totalPages, current) {
+    if (totalPages <= 1) return "";
+    var out = '<div class="pager">';
+    out += '<button class="btn" data-page="' + (current - 1) + '"' + (current <= 1 ? " disabled" : "") + ">‹</button>";
+    var start = Math.max(1, current - 2);
+    var end = Math.min(totalPages, current + 2);
+    if (start > 1) out += '<button class="btn" data-page="1">1</button>' + (start > 2 ? '<span class="note">…</span>' : "");
+    for (var i = start; i <= end; i++) {
+      out += '<button class="btn' + (i === current ? " active" : "") + '" data-page="' + i + '">' + i + "</button>";
+    }
+    if (end < totalPages) out += (end < totalPages - 1 ? '<span class="note">…</span>' : "") + '<button class="btn" data-page="' + totalPages + '">' + totalPages + "</button>";
+    out += '<button class="btn" data-page="' + (current + 1) + '"' + (current >= totalPages ? " disabled" : "") + ">›</button>";
+    out += "</div>";
+    return out;
+  }
+
+  function statusClass(s) { return /^[ADRMCTUXB]/.test(s || "") ? s[0] : "M"; }
+
+  function fileTable(files) {
+    var rows = files.map(function (f) {
+      var add = f.add == null ? "" : "+" + f.add;
+      var del = f.del == null ? "" : "−" + f.del;
+      return '<tr><td class="p">' + esc(f.path) + "</td>" +
+        '<td><span class="st ' + statusClass(f.status) + '">' + esc(statusClass(f.status)) + "</span></td>" +
+        '<td class="a">' + add + '</td><td class="d">' + del + "</td></tr>";
+    }).join("");
+    return '<div class="ft-wrap"><table class="ftable"><thead><tr><th>File</th><th>St</th><th style="text-align:right">+</th><th style="text-align:right">−</th></tr></thead><tbody>' +
+      rows + "</tbody></table></div>";
+  }
+
+  function taskFileTable(files) {
+    var rows = files.map(function (f) {
+      return '<tr><td class="p">' + esc(f.path) + "</td>" +
+        '<td><span class="st ' + statusClass(f.status) + '">' + esc(f.status || "?") + "</span></td>" +
+        '<td colspan="2">' + esc(f.what) + (f.why ? '<div class="note">' + esc(f.why) + "</div>" : "") + "</td></tr>";
+    }).join("");
+    return '<div class="ft-wrap"><table class="ftable"><thead><tr><th>File</th><th>St</th><th>What / why</th></tr></thead><tbody>' +
+      rows + "</tbody></table></div>";
+  }
+
+  function commitCard(c) {
+    var adds = 0, dels = 0;
+    c.files.forEach(function (f) { adds += f.add || 0; dels += f.del || 0; });
+    var fileBadge = c.files.length
+      ? '<span class="pill">' + c.files.length + " file" + (c.files.length === 1 ? "" : "s") + "</span>" +
+        '<span class="pill" style="color:#7ee08a">+' + adds + '</span><span class="pill" style="color:#ff9a93">−' + dels + "</span>"
+      : "";
+    var filesBlock = c.files.length
+      ? '<details class="files"><summary>Files (' + c.files.length + ")</summary>" + fileTable(c.files) + "</details>"
+      : (c.merge ? '<div class="note" style="margin-top:8px">Merge commit — file changes are represented by its parent commits.</div>' : "");
+    var bodyBlock = "";
+    if (c.body) {
+      bodyBlock = c.body.length > 220
+        ? '<details class="body"><summary>Description</summary><div class="commit-body">' + esc(c.body) + "</div></details>"
+        : '<div class="commit-body">' + esc(c.body) + "</div>";
+    }
+    return '<article class="item">' +
+      '<div class="item-top">' +
+        '<span class="item-time mono">' + esc(c.time) + "</span>" +
+        '<span class="item-title">' + esc(c.subject) + "</span>" +
+        (c.merge ? '<span class="case merge">merge</span>' : "") +
+      "</div>" +
+      '<div class="item-top" style="margin-top:5px">' +
+        '<span class="hash mono" data-copy="' + esc(c.hash) + '" title="Copy full hash">' + esc(c.short) + "</span>" +
+        '<span class="item-author">' + esc(c.author) + "</span>" +
+        fileBadge +
+      "</div>" +
+      bodyBlock +
+      filesBlock +
+    "</article>";
+  }
+
+  function taskCard(t) {
+    var rows = "";
+    function field(label, val) {
+      if (!val) return "";
+      return "<dt>" + esc(label) + "</dt><dd>" + esc(val) + "</dd>";
+    }
+    rows += field("Request", t.request);
+    rows += field("Developer", t.developer);
+    rows += field("Module", t.module);
+    rows += field("Verify", t.commands);
+    rows += field("Commit", t.commit);
+    rows += field("Notes", t.notes);
+    rows += field("Next", t.next);
+    var filesBlock = (t.files && t.files.length)
+      ? '<details class="files" open><summary>Files changed (' + t.files.length + ")</summary>" + taskFileTable(t.files) + "</details>"
+      : "";
+    return '<article class="item">' +
+      '<div class="item-top">' +
+        '<span class="item-time mono">' + esc(t.time) + "</span>" +
+        '<span class="item-title">' + esc(t.title) + "</span>" +
+        '<span class="case task">journal</span>' +
+      "</div>" +
+      '<div class="item-top" style="margin-top:5px">' +
+        '<span class="item-author">' + esc(t.agent) + "</span>" +
+        (t.module ? '<span class="pill">' + esc(t.module) + "</span>" : "") +
+      "</div>" +
+      (rows ? '<dl class="fields">' + rows + "</dl>" : "") +
+      filesBlock +
+    "</article>";
+  }
+
+  function teamCard(t) {
+    var title = "";
+    var tag = "PDF";
+    var fields = "";
+
+    function field(label, val) {
+      if (!val && val !== 0) return "";
+      return "<dt>" + esc(label) + "</dt><dd>" + esc(val) + "</dd>";
+    }
+
+    if (t.kind === "attendance") {
+      tag = "attendance";
+      title = t.status || "Attendance";
+      fields += field("Check-in", t.in);
+      fields += field("Check-out", t.out);
+      fields += field("Hours", t.hours == null ? "" : t.hours + " h");
+      fields += field("Remark", t.remark);
+      if (t.anomaly) fields += field("Flag", "unusual duration — verify in source PDF");
+    } else if (t.kind === "work") {
+      tag = "work log";
+      title = t.status || "Work log";
+      fields += field("Work", t.description);
+      fields += field("Logged", t.time_spent);
+      fields += field("Remark", t.remark);
+    } else {
+      tag = "personal log";
+      title = t.category || "Task log";
+      fields += field("Work", t.description);
+      fields += field("Output", t.output);
+      fields += field("Duration", t.duration_raw ? t.duration_raw + " h" : "");
+      fields += field("Week", t.week + (t.month_label ? " · " + t.month_label : ""));
+      fields += field("Notes", t.notes);
+    }
+
+    var codes = "";
+    if (t.commits && t.commits.length) {
+      codes = '<div class="codes">' + t.commits.slice(0, 14).map(function (h) {
+        return '<span class="mono" data-copy="' + esc(h) + '" title="Copy hash">' + esc(h) + "</span>";
+      }).join("") + (t.commits.length > 14 ? '<span class="note">+' + (t.commits.length - 14) + " more</span>" : "") + "</div>";
+    }
+
+    return '<article class="item">' +
+      '<div class="item-top">' +
+        '<span class="item-time mono">' + esc(t.date) + "</span>" +
+        '<span class="item-title">' + esc(title) + "</span>" +
+        '<span class="case pdf">' + esc(tag) + "</span>" +
+      "</div>" +
+      '<div class="item-top" style="margin-top:5px">' +
+        '<span class="item-author">' + esc((teamData && teamData.person) || "Shailesh") + "</span>" +
+        (t.kind === "gurukul" && t.status ? '<span class="pill">' + esc(t.status) + "</span>" : "") +
+      "</div>" +
+      (fields ? '<dl class="fields">' + fields + "</dl>" : "") +
+      codes +
+    "</article>";
+  }
+
+  function reportCard(r) {
+    return '<article class="item">' +
+      '<div class="item-top"><span class="case" style="color:var(--report);border-color:#23552d">report</span>' +
+      '<span class="item-title">' + esc(r.title) + "</span>" +
+      (r.backfilled ? '<span class="pill">backfilled</span>' : "") + "</div>" +
+      '<a class="report-link" href="' + esc(r.file) + '">Open ' + esc(r.file) + " →</a>" +
+    "</article>";
+  }
+
+  function dateSection(date, withHeading) {
+    var css = (commitsByDate[date] || []).filter(commitMatches);
+    var tss = (tasksByDate[date] || []).filter(taskMatches);
+    var rss = (reportsByDate[date] || []).filter(reportMatches);
+    var pss = (teamByDate[date] || []).filter(teamMatches);
+    if (!css.length && !tss.length && !rss.length && !pss.length) return "";
+
+    var fileCount = css.reduce(function (n, c) { return n + c.files.length; }, 0);
+    var sum = css.length + " commit" + (css.length === 1 ? "" : "s") +
+      " · " + tss.length + " journal entr" + (tss.length === 1 ? "y" : "ies") +
+      " · " + pss.length + " PDF" +
+      " · " + fileCount + " file" + (fileCount === 1 ? "" : "s");
+
+    var html = '<div class="day-group">';
+    if (withHeading !== false) {
+      html += "<h3>" + esc(fmtDate(date)) + '<span class="n mono">' + esc(date) + "</span></h3>";
+      html += '<div class="group-sum">' + esc(sum) + "</div>";
+    }
+    css.forEach(function (c) { html += commitCard(c); });
+    pss.forEach(function (t) { html += teamCard(t); });
+    tss.forEach(function (t) { html += taskCard(t); });
+    rss.forEach(function (r) { html += reportCard(r); });
+    html += "</div>";
+    return html;
+  }
+
+  function renderDetail() {
+    var body = $("detailBody");
+    var modeBtn = $("modeBtn");
+
+    if (selectedDate) {
+      $("detailTitle").textContent = fmtDate(selectedDate);
+      var dayCommits = (commitsByDate[selectedDate] || []).filter(commitMatches);
+      var dayTasks = (tasksByDate[selectedDate] || []).filter(taskMatches);
+      var dayReports = (reportsByDate[selectedDate] || []).filter(reportMatches);
+      var dayTeam = (teamByDate[selectedDate] || []).filter(teamMatches);
+      var totalF = dayCommits.reduce(function (n, c) { return n + c.files.length; }, 0);
+      var totalP = dayTeam.length;
+
+      $("detailSub").innerHTML =
+        "<span>" + dayCommits.length + " commits</span>" +
+        "<span>" + dayTasks.length + " journal</span>" +
+        "<span>" + totalP + " PDF</span>" +
+        "<span>" + dayReports.length + " report" + (dayReports.length === 1 ? "" : "s") + "</span>" +
+        "<span>" + totalF + " files</span>";
+      modeBtn.hidden = false;
+      modeBtn.textContent = "Show whole month";
+
+      var pages = Math.max(1, Math.ceil(dayCommits.length / COMMIT_PAGE_SIZE));
+      if (detailPage > pages) detailPage = pages;
+      var from = (detailPage - 1) * COMMIT_PAGE_SIZE;
+      var slice = dayCommits.slice(from, from + COMMIT_PAGE_SIZE);
+
+      var html = slice.map(commitCard).join("");
+      html += pagerHtml(pages, detailPage);
+      html += dayTeam.map(teamCard).join("");
+      html += dayTasks.map(taskCard).join("");
+      html += dayReports.map(reportCard).join("");
+
+      body.innerHTML = html || '<div class="empty"><b>No activity on this day</b>Try another day or clear the filters.</div>';
+      $("resultCount").textContent = dayCommits.length + " commits · " + totalP + " PDF · " + dayTasks.length + " journal · " + dayReports.length + " reports";
+      return;
+    }
+
+    $("detailTitle").textContent = MONTHS[viewMonth] + " " + viewYear;
+    var dim = daysInMonth(viewYear, viewMonth);
+    var totalC = 0, totalT = 0, totalR = 0, totalP = 0;
+    var sections = [];
+    for (var d = dim; d >= 1; d--) {
+      var ds = viewYear + "-" + pad(viewMonth + 1) + "-" + pad(d);
+      totalC += (commitsByDate[ds] || []).filter(commitMatches).length;
+      totalT += (tasksByDate[ds] || []).filter(taskMatches).length;
+      totalR += (reportsByDate[ds] || []).filter(reportMatches).length;
+      totalP += (teamByDate[ds] || []).filter(teamMatches).length;
+      var section = dateSection(ds, true);
+      if (section) sections.push(section);
+    }
+    $("detailSub").innerHTML =
+      "<span>" + totalC + " commits</span><span>" + totalT + " journal</span>" +
+      "<span>" + totalP + " PDF</span><span>" + totalR + " report" + (totalR === 1 ? "" : "s") + "</span>";
+    modeBtn.hidden = true;
+
+    var groupPages = Math.max(1, Math.ceil(sections.length / GROUP_PAGE_SIZE));
+    if (detailPage > groupPages) detailPage = groupPages;
+    var gFrom = (detailPage - 1) * GROUP_PAGE_SIZE;
+    var html = sections.slice(gFrom, gFrom + GROUP_PAGE_SIZE).join("");
+    html += pagerHtml(groupPages, detailPage);
+    html = html || '<div class="empty"><b>No activity in this month</b>Try another month or clear the filters.</div>';
+    body.innerHTML = html;
+    $("resultCount").textContent = totalC + " commits · " + totalP + " PDF · " + totalT + " journal · " + totalR + " reports";
+  }
+
+  function renderAll() {
+    renderCalendar();
+    renderDetail();
+  }
+
+  /* ------------------------------------------------------------- events --- */
+
+  var qTimer = null;
+  $("q").addEventListener("input", function (e) {
+    var v = e.target.value;
+    clearTimeout(qTimer);
+    qTimer = setTimeout(function () {
+      filters.q = v.trim();
+      detailPage = 1;
+      renderAll();
+    }, 140);
+  });
+
+  $("author").addEventListener("change", function (e) { filters.author = e.target.value; detailPage = 1; renderAll(); });
+  $("module").addEventListener("change", function (e) { filters.module = e.target.value; detailPage = 1; renderAll(); });
+
+  function bindChip(id, key) {
+    $(id).addEventListener("change", function (e) {
+      filters[key] = e.target.checked;
+      e.target.parentElement.classList.toggle("on", e.target.checked);
+      detailPage = 1;
+      renderAll();
+    });
+  }
+  bindChip("fCommits", "commits");
+  bindChip("fTasks", "tasks");
+  bindChip("fReports", "reports");
+  bindChip("fTeam", "team");
+
+  $("clear").addEventListener("click", function () {
+    filters = { q: "", author: "", module: "", commits: true, tasks: true, reports: true, team: true };
+    $("q").value = ""; $("author").value = ""; $("module").value = "";
+    ["fCommits", "fTasks", "fReports", "fTeam"].forEach(function (id) {
+      $(id).checked = true;
+      $(id).parentElement.classList.add("on");
+    });
+    detailPage = 1;
+    renderAll();
+  });
+
+  $("prev").addEventListener("click", function () {
+    viewMonth--;
+    if (viewMonth < 0) { viewMonth = 11; viewYear--; }
+    selectedDate = null;
+    detailPage = 1;
+    renderAll();
+  });
+  $("next").addEventListener("click", function () {
+    viewMonth++;
+    if (viewMonth > 11) { viewMonth = 0; viewYear++; }
+    selectedDate = null;
+    detailPage = 1;
+    renderAll();
+  });
+  $("todayBtn").addEventListener("click", function () {
+    var d = new Date();
+    viewYear = d.getFullYear();
+    viewMonth = d.getMonth();
+    selectedDate = ymd(d);
+    detailPage = 1;
+    renderAll();
+  });
+  $("modeBtn").addEventListener("click", function () {
+    selectedDate = null;
+    detailPage = 1;
+    renderAll();
+  });
+
+  $("detailBody").addEventListener("click", function (e) {
+    var btn = e.target.closest("[data-page]");
+    if (!btn || btn.disabled) return;
+    detailPage = parseInt(btn.getAttribute("data-page"), 10) || 1;
+    renderDetail();
+    var panel = document.querySelector(".detail-head");
+    if (panel) panel.scrollIntoView({ block: "start", behavior: "smooth" });
+  });
+
+  document.addEventListener("click", function (e) {
+    var el = e.target.closest("[data-copy]");
+    if (!el) return;
+    var val = el.getAttribute("data-copy");
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(val).then(function () { toast("Copied " + val.slice(0, 10) + "…"); });
+    } else {
+      toast(val);
+    }
+  });
+
+  var toastTimer = null;
+  function toast(msg) {
+    var t = $("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.classList.remove("show"); }, 1400);
+  }
+
+  /* ------------------------------------------------------------- header --- */
+
+  $("mBranch").textContent = DATA.branch || "—";
+  $("mRepo").textContent = DATA.repo || "—";
+  $("mBuilt").textContent = DATA.generated_at || "—";
+  $("mCommits").textContent = commits.length;
+  $("mTasks").textContent = tasks.length;
+
+  var themeBtn = $("themeBtn");
+  function paintTheme() {
+    var light = document.documentElement.getAttribute("data-theme") === "light";
+    themeBtn.textContent = light ? "🌙 Dark" : "☀ Light";
+    themeBtn.title = "Switch to " + (light ? "dark" : "light") + " mode";
+  }
+  themeBtn.addEventListener("click", function () {
+    var light = document.documentElement.getAttribute("data-theme") === "light";
+    var next = light ? "dark" : "light";
+    document.documentElement.setAttribute("data-theme", next);
+    try { localStorage.setItem("brain-theme", next); } catch (e) {}
+    try {
+      var p = new URLSearchParams(location.search);
+      p.delete("theme");
+      history.replaceState(null, "", location.pathname + (p.toString() ? "?" + p.toString() : ""));
+    } catch (e) {}
+    paintTheme();
+  });
+  paintTheme();
+
+  renderAll();
+})();
+</script>
+</body>
+</html>

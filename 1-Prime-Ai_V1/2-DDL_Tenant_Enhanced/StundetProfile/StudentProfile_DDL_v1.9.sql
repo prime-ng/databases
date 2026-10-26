@@ -31,6 +31,34 @@
   --   - sys_dropdown_table (Lookups)
 -- ========================================================================================================
 
+  -- Main Student Entity, linked to System User for Login/Auth
+  CREATE TABLE IF NOT EXISTS `std_student_services` (
+    `id` TINYINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `key` VARCHAR(10) NOT NULL,  -- unique key for service (this will be saved as service_key in sys_user table)
+    `code` VARCHAR(20) NOT NULL,  -- FK to sys_dropdown_table ('TRANSPORT','HOSTEL','SWIMMING_POOL','LIBRARY','TUTION','SPORTS_ACADEMY','FIELD_TRIP','ACTIVITY_BUS','EXTRA_CURRICULAR')
+    `name` VARCHAR(100) NOT NULL, -- 
+    `description` VARCHAR(255) NOT NULL,
+    `service_status` ENUM('Active', 'Inactive', 'Cancelled', 'Suspended','Closed') NOT NULL DEFAULT 'Active',
+    `note` VARCHAR(500) DEFAULT NULL,
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+    `is_system` TINYINT(1) NOT NULL DEFAULT 1,
+    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    UNIQUE KEY `uq_std_student_services_key` (`key`),
+    UNIQUE KEY `uq_std_student_services_code` (`code`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  -- Conditions:
+  -- user can not change Key.
+  -- If 'is-system' = True, then user can only update name & Description & change is-active.
+  -- If 'is-system' = False, then user can update all fields other then 'key'.
+
+-- Data Seeder
+-- Insert into `std_student_services` (`key`, `code`, `name`, `description`, `is_active`, `is_system`) VALUES 
+-- ('TPT', 'TRANSPORT', 'Transport', 'Transport Service', 1, 1), 
+-- ('HST', 'HOSTEL', 'Hostel', 'Hostel Service', 1, 1), 
+-- ('LIB', 'LIBRARY', 'Library', 'Library Service', 1, 1);
+
 
 -- --------------------------------------------------------------------------------------------------------
 -- Screen - 1 : Tab Name (Registration) User Creation & Login
@@ -132,6 +160,12 @@
     `address` VARCHAR(512) NOT NULL,
     `city_id` INT UNSIGNED NOT NULL,  -- FK to glb_cities
     `pincode` VARCHAR(10) NOT NULL,
+    `is_pickup_location` TINYINT(1) DEFAULT 0,  -- Is this address is Pickup location for Transport
+    `is_drop_location` TINYINT(1) DEFAULT 0,    -- Is this address is Drop location for Transport
+		`pickup_latitude` DECIMAL(10,7) DEFAULT NULL,  -- Latitude of Pickup location for Transport
+		`pickup_longitude` DECIMAL(10,7) DEFAULT NULL, -- Longitude of Pickup location for Transport
+		`drop_latitude` DECIMAL(10,7) DEFAULT NULL,   -- Latitude of Drop location for Transport
+		`drop_longitude` DECIMAL(10,7) DEFAULT NULL,  -- Longitude of Drop location for Transport
     `is_primary` TINYINT(1) DEFAULT 0, -- To mark primary communication address
     `is_active` TINYINT(1) DEFAULT 1, -- To mark address as active
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
@@ -139,7 +173,8 @@
     CONSTRAINT `fk_std_addr_studentId` FOREIGN KEY (`student_id`) REFERENCES `std_students` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_std_addr_cityId` FOREIGN KEY (`city_id`) REFERENCES `glb_cities` (`id`) ON DELETE RESTRICT
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
+  -- Conditions :
+  -- Only 1 Location can be True 
   -- --------------------------------------------------------------------------------------------------------
   -- Screen - 3 : Tab Name (Parents)
   -- --------------------------------------------------------------------------------------------------------
@@ -220,10 +255,6 @@
     `house` INT UNSIGNED DEFAULT NULL,             -- FK to sys_dropdown_table
     `is_current` TINYINT(1) NOT NULL DEFAULT 0,                -- Only one active record per student
     `current_flag` INT GENERATED ALWAYS AS ((case when (`is_current` = 1) then `student_id` else NULL end)) STORED,
-    -- Current Service Opt Status
-    `current_transport_status` ENUM('Opted', 'Not_Opted') NOT NULL DEFAULT 'Opted',
-    `current_hostel_status` ENUM('Opted', 'Not_Opted') NOT NULL DEFAULT 'Opted',
-    `current_library_status` ENUM('Opted', 'Not_Opted') NOT NULL DEFAULT 'Opted',
     -- Session Status
     `session_status_id` INT UNSIGNED NOT NULL DEFAULT 1,    -- FK to sys_dropdown_table (PROMOTED, ACTIVE, LEFT, SUSPENDED, ALUMNI, WITHDRAWN)
     `count_for_timetable` TINYINT(1) NOT NULL DEFAULT 1,      -- Can we count this record for Timetable
@@ -245,32 +276,66 @@
     CONSTRAINT `fk_sas_status` FOREIGN KEY (`session_status_id`) REFERENCES `sys_dropdown_table` (`id`) ON DELETE RESTRICT
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+
+-- --------------------------------------------------------------------------------------------------------
+-- Screen - 6 : Tab Name Services (Facilities) 
+-- --------------------------------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `std_student_adopted_service` (
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `student_academic_session_id` INT UNSIGNED NOT NULL,  -- FK to `std_student_academic_sessions`
+    `student_id` INT UNSIGNED NOT NULL,           -- FK to `std_students`
+    `service_id` TINYINT UNSIGNED NOT NULL,       -- FK to std_student_services ('TRANSPORT','HOSTEL','LIBRARY','ACADEMY')
+    `additional_info` JSON NULL,                  -- {"route_id":1,"stop_id":1,"vehicle_id":1},{"room_id":1,"dormitory_id":1},{"library_id":1},{"academic_id":1}
+    `note` VARCHAR(255) DEFAULT NULL,
+    `current_status` ENUM('Active', 'Inactive', 'Cancelled', 'Suspended','Closed') NOT NULL DEFAULT 'Active',
+    `cancellation_date` DATE DEFAULT NULL,
+    `cancellation_reason` VARCHAR(500) DEFAULT NULL,  -- free text
+    `cancelled_by` INT UNSIGNED DEFAULT NULL,         -- FK to sys_users
+    `suspension_date` DATE DEFAULT NULL,
+    `suspension_reason` VARCHAR(500) DEFAULT NULL,    -- free text
+    `suspended_by` INT UNSIGNED DEFAULT NULL,         -- FK to sys_users
+    `reactivation_date` DATE DEFAULT NULL,
+    `reactivation_reason` VARCHAR(500) DEFAULT NULL,  -- free text
+    `reactivated_by` INT UNSIGNED DEFAULT NULL,       -- FK to sys_users
+    `is_chargeable` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1, -- 0: Not Chargeable, 1: Chargeable
+    `is_auto_service_renewal` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1, -- 0: Not Auto Renewal, 1: Auto Renewal
+    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    UNIQUE KEY `uq_std_student_adopted_service` (`student_academic_session_id`, `service_id`),
+    CONSTRAINT `fk_std_student_adopted_service_student_academic_session` FOREIGN KEY (`student_academic_session_id`) REFERENCES `std_student_academic_sessions` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_std_student_service_selection_student` FOREIGN KEY (`student_id`) REFERENCES `std_students` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_std_student_service_selection_service` FOREIGN KEY (`service_id`) REFERENCES `std_student_services` (`id`) ON DELETE CASCADE
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- This table will capture the detail of the Student who have opted Tarnsport, Hostel, Library for a particuler periods.
 -- The info will be captured for every Academic Session (std_student_academic_sessions).
- CREATE TABLE IF NOT EXISTS `std_student_facilities_registration_log` (
-  `id` INT UNSIGNED AUTO_INCREMENT,
-  `student_id` INT UNSIGNED NOT NULL,  -- FK to `std_students`
-  `student_academic_session_id` INT UNSIGNED NOT NULL,
-  -- Transport
-  `tpt_registration_type` ENUM('Opted_In', 'Opted_Out') NOT NULL DEFAULT 'Opted_In',
-  `tpt_reg_from_date` date NOT NULL,  -- Date should not be less than academic_sessions start_date (glb_academic_sessions)
-  `tpt_reg_to_date` date DEFAULT NULL,    -- Date should not be greater than std_student_academic_sessions end_date
-  -- Hostel
-  `hst_registration_type` ENUM('Opted_In', 'Opted_Out') NOT NULL DEFAULT 'Opted_In',
-  `hst_reg_from_date` date NOT NULL,     -- Date should not be less than std_student_academic_sessions start_date
-  `hst_reg_to_date` date DEFAULT NULL,       -- Date should not be greater than std_student_academic_sessions end_date
-  -- Library
-  `lib_registration_type` ENUM('Opted_In', 'Opted_Out') NOT NULL DEFAULT 'Opted_In',
-  `lib_reg_from_date` date DEFAULT NULL,   -- date should be within std_student_academic_sessions (start_date, end_date) range
-  `lib_reg_to_date` date DEFAULT NULL,     -- date should be within std_student_academic_sessions (start_date, end_date) range
-  `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  CONSTRAINT `fk_sfo_student_session` FOREIGN KEY (`student_academic_session_id`) REFERENCES `std_student_academic_sessions` (`id`) ON DELETE CASCADE
- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  CREATE TABLE IF NOT EXISTS `std_student_adopted_service_requests` (
+    `id` INT UNSIGNED AUTO_INCREMENT,
+    `student_adopted_service_id` INT UNSIGNED NOT NULL,  -- FK to `std_student_adopted_service`
+    `student_academic_session_id` INT UNSIGNED NOT NULL,  -- FK to `std_student_academic_sessions`
+    `student_id` INT UNSIGNED NOT NULL,           -- FK to `std_students`
+    `service_id` TINYINT UNSIGNED NOT NULL,       -- FK to std_student_services ('TRANSPORT','HOSTEL','LIBRARY','ACADEMY')
+    `start_date` DATE NOT NULL,                   -- Start date of service
+    `end_date` DATE DEFAULT NULL,                 -- End date of service
+    `service_detail` JSON NULL,                   -- {"route_id":1,"stop_id":1,"vehicle_id":1},{"room_id":1,"dormitory_id":1},{"library_id":1},{"academic_id":1}
+    `request_type` ENUM('Opted_In', 'Opted_Out','Cancelled','Suspended','Reactivated','Closed') NOT NULL DEFAULT 'Opted_In',
+    `note` VARCHAR(255) DEFAULT NULL,
+    `is_current` TINYINT(1) NOT NULL DEFAULT 0,                -- Only one active record per student
+    `current_flag` INT GENERATED ALWAYS AS ((case when (`is_current` = 1) then `student_id` else NULL end)) STORED,
+    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_std_student_adopted_service_requests` (`student_academic_session_id`, `service_id`, `current_flag`),
+    CONSTRAINT `fk_sfr_student_adopted_service` FOREIGN KEY (`student_adopted_service_id`) REFERENCES `std_student_adopted_service` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_sfr_academic_session` FOREIGN KEY (`student_academic_session_id`) REFERENCES `std_student_academic_sessions` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_sfr_student` FOREIGN KEY (`student_id`) REFERENCES `std_students` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_sfr_service` FOREIGN KEY (`service_id`) REFERENCES `std_student_services` (`id`) ON DELETE CASCADE
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
  -- Conditions:
- -- When a Student Opted out of any Facility (Transport/Hostel/Library) then the `transport_opted_to` of previous entry will be the date 
- -- when he has opted out of the Facility and the `transport_opted_from`
+ -- When a Student start/End any Service (Transport/Hostel/Library) then the `end_date` of current entry will be 1 day before the (start_date) of new entry.
+ -- For Example he wanted to stop Transport form 01-11-2026 then (end_date) for current record will be 31-10-2026 and (start_date) for new record will be 01-11-2026.
+ -- Previous Entry `is_current` need to be update to False(0) before making same filed True(1) for the New Entry.
  
 
 -- we need to create table which will capture all the Subjects opted by the student in that session, because in case of optional subjects, different students can opt different 

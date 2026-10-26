@@ -1,0 +1,1211 @@
+{
+  "config": {
+    "argv": [
+      "/home/shailesh/.local/node/bin/node",
+      "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/node_modules/.bin/playwright",
+      "test",
+      "tests/02_class.spec.js",
+      "--headed"
+    ],
+    "configFile": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/playwright.config.js",
+    "rootDir": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/tests",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 90000
+      }
+    ],
+    "filteredProjects": [
+      {
+        "grep": {},
+        "grepInvert": null,
+        "outputDir": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "name": "chromium",
+        "testDir": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/tests",
+        "snapshotDir": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/tests",
+        "testIgnore": [],
+        "testMatch": "**/*.@(spec|test).?(c|m)[jt]s?(x)",
+        "timeout": 90000,
+        "use": {
+          "baseURL": "http://test.localhost:8000",
+          "storageState": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/tests/.auth/adminStorageState.json",
+          "trace": "on-first-retry",
+          "screenshot": "on",
+          "video": "on-first-retry",
+          "headless": false,
+          "viewport": {
+            "width": 1280,
+            "height": 720
+          },
+          "ignoreHTTPSErrors": true,
+          "launchOptions": {
+            "slowMo": 500
+          },
+          "actionTimeout": 15000,
+          "navigationTimeout": 30000,
+          "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36",
+          "screen": {
+            "width": 1920,
+            "height": 1080
+          },
+          "deviceScaleFactor": 1,
+          "isMobile": false,
+          "hasTouch": false,
+          "defaultBrowserType": "chromium"
+        },
+        "dependencies": [],
+        "ignoreSnapshots": false,
+        "__projectId": "chromium"
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "test-results/results.json"
+        }
+      ],
+      [
+        "html",
+        {
+          "outputFolder": "playwright-report",
+          "open": "never"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "default",
+    "updateSourceMethod": "patch",
+    "version": "1.64.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "02_class.spec.js",
+      "file": "02_class.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "02 — School Setup: Class Tab",
+          "file": "02_class.spec.js",
+          "line": 25,
+          "column": 15,
+          "specs": [
+            {
+              "title": "TC-CLS-01: Navigate to Class tab — pane visible",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/tests/02_class.spec.js",
+                        "line": 25,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 9111,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "[TC-CLS-01] ✅ Class tab visible\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-24T14:29:20.900Z",
+                      "annotations": [
+                        {
+                          "type": "serial",
+                          "location": {
+                            "file": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/tests/02_class.spec.js",
+                            "line": 25,
+                            "column": 15
+                          }
+                        }
+                      ],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/test-results/02_class-02-—-School-Setup-ca017-to-Class-tab-—-pane-visible-chromium/test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "2a4c386df4cd0f4095c5-a5cb74038415cc51a42d",
+              "file": "02_class.spec.js",
+              "line": 41,
+              "column": 3
+            },
+            {
+              "title": "TC-CLS-02: Breadcrumb shows \"Class & Section Management\"",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/tests/02_class.spec.js",
+                        "line": 25,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 8475,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "[TC-CLS-02] ✅ Breadcrumb correct\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-24T14:29:36.153Z",
+                      "annotations": [
+                        {
+                          "type": "serial",
+                          "location": {
+                            "file": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/tests/02_class.spec.js",
+                            "line": 25,
+                            "column": 15
+                          }
+                        }
+                      ],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/test-results/02_class-02-—-School-Setup-3e5d6-s-Class-Section-Management--chromium/test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "2a4c386df4cd0f4095c5-60e1b6f3344b7f73ef07",
+              "file": "02_class.spec.js",
+              "line": 53,
+              "column": 3
+            },
+            {
+              "title": "TC-CLS-03: Direct URL ?tab=class-sections activates class pane",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/tests/02_class.spec.js",
+                        "line": 25,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 7829,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "[TC-CLS-03] ✅ Class tab redirect works\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-24T14:29:44.639Z",
+                      "annotations": [
+                        {
+                          "type": "serial",
+                          "location": {
+                            "file": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/tests/02_class.spec.js",
+                            "line": 25,
+                            "column": 15
+                          }
+                        }
+                      ],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/test-results/02_class-02-—-School-Setup-c9639-ctions-activates-class-pane-chromium/test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "2a4c386df4cd0f4095c5-bd065231174c3f18f7ae",
+              "file": "02_class.spec.js",
+              "line": 60,
+              "column": 3
+            },
+            {
+              "title": "TC-CLS-04: Search filter — filters results by text",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/tests/02_class.spec.js",
+                        "line": 25,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 15740,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "[TC-CLS-04] ✅ Search filter works\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-24T14:29:52.485Z",
+                      "annotations": [
+                        {
+                          "type": "serial",
+                          "location": {
+                            "file": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/tests/02_class.spec.js",
+                            "line": 25,
+                            "column": 15
+                          }
+                        }
+                      ],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/test-results/02_class-02-—-School-Setup-9cb35-r-—-filters-results-by-text-chromium/test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "2a4c386df4cd0f4095c5-5134fd0528787a02c385",
+              "file": "02_class.spec.js",
+              "line": 70,
+              "column": 3
+            },
+            {
+              "title": "TC-CLS-05: Status filter — Active",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/tests/02_class.spec.js",
+                        "line": 25,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 8350,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "[TC-CLS-05] ✅ Active filter applied\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-24T14:30:08.249Z",
+                      "annotations": [
+                        {
+                          "type": "serial",
+                          "location": {
+                            "file": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/tests/02_class.spec.js",
+                            "line": 25,
+                            "column": 15
+                          }
+                        }
+                      ],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/test-results/02_class-02-—-School-Setup-92aec-S-05-Status-filter-—-Active-chromium/test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "2a4c386df4cd0f4095c5-53a80002bc376d88fb62",
+              "file": "02_class.spec.js",
+              "line": 89,
+              "column": 3
+            },
+            {
+              "title": "TC-CLS-06: Status filter — Inactive",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/tests/02_class.spec.js",
+                        "line": 25,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 7967,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "[TC-CLS-06] ✅ Inactive filter applied\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-24T14:30:16.631Z",
+                      "annotations": [
+                        {
+                          "type": "serial",
+                          "location": {
+                            "file": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/tests/02_class.spec.js",
+                            "line": 25,
+                            "column": 15
+                          }
+                        }
+                      ],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/test-results/02_class-02-—-School-Setup-84aab-06-Status-filter-—-Inactive-chromium/test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "2a4c386df4cd0f4095c5-3951cbe3d0f1f3ca5f28",
+              "file": "02_class.spec.js",
+              "line": 97,
+              "column": 3
+            },
+            {
+              "title": "TC-CLS-07: Clear filters resets to all",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/tests/02_class.spec.js",
+                        "line": 25,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 16140,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "[TC-CLS-07] ✅ Clear filters works\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-24T14:30:24.615Z",
+                      "annotations": [
+                        {
+                          "type": "serial",
+                          "location": {
+                            "file": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/tests/02_class.spec.js",
+                            "line": 25,
+                            "column": 15
+                          }
+                        }
+                      ],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/test-results/02_class-02-—-School-Setup-54f1e-Clear-filters-resets-to-all-chromium/test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "2a4c386df4cd0f4095c5-d2035325a3dc0f69fac4",
+              "file": "02_class.spec.js",
+              "line": 104,
+              "column": 3
+            },
+            {
+              "title": "TC-CLS-08: Create validation — empty form shows error",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/tests/02_class.spec.js",
+                        "line": 25,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 11595,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "[TC-CLS-08] ✅ Empty form validation works\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-24T14:30:40.774Z",
+                      "annotations": [
+                        {
+                          "type": "serial",
+                          "location": {
+                            "file": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/tests/02_class.spec.js",
+                            "line": 25,
+                            "column": 15
+                          }
+                        }
+                      ],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/test-results/02_class-02-—-School-Setup-d13d3-on-—-empty-form-shows-error-chromium/test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "2a4c386df4cd0f4095c5-558111870587331dae0e",
+              "file": "02_class.spec.js",
+              "line": 113,
+              "column": 3
+            },
+            {
+              "title": "TC-CLS-09: Create class — success",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/tests/02_class.spec.js",
+                        "line": 25,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 22799,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "[TC-CLS-09] Creating class: AutoClass 60856 / C0856\n"
+                        },
+                        {
+                          "text": "[TC-CLS-09] STATUS: \u001b[33m200\u001b[39m BODY: {\"success\":true,\"message\":\"Class created successfully\",\"data\":{\"name\":\"AutoClass 60856\",\"short_name\":\"AC56\",\"ordinal\":18,\"code\":\"C0856\",\"is_active\":true,\"updated_at\":\"2026-10-24T14:31:06.000000Z\",\"created_at\":\"2026-10-24T14:31:06.000000Z\",\"id\":21,\"class_sections\":[{\"id\":49,\"ordinal\":46,\"code\":\"S_856\",\"name\":\"AutoClass 60856 - A\",\"capacity\":40,\"actual_total_student\":0,\"min_required_student\":10,\"max_allowed_student\":50,\"total_periods_daily\":0,\"is_active\":true,\"created_at\":\"2026-10-24T14:31:06.000000Z\",\"updated_at\":\"2026-10-24T14:31:06.000000Z\",\"class_id\":21,\"section_id\":1,\"class_teacher_id\":6,\"assistance_class_teacher_id\":null,\"rooms_type_id\":1,\"class_house_room_id\":46,\"section\":{\"id\":1,\"ordinal\":1,\"code\":\"A\",\"short_name\":\"A\",\"name\":\"A\",\"is_active\":true,\"created_at\":\"2026-10-24T11:02:25.000000Z\",\"updated_at\":\"2026-10-24T11:02:25.000000Z\",\"deleted_at\":null}}]}}\n"
+                        },
+                        {
+                          "text": "[TC-CLS-09] ✅ Class created\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-24T14:30:52.385Z",
+                      "annotations": [
+                        {
+                          "type": "serial",
+                          "location": {
+                            "file": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/tests/02_class.spec.js",
+                            "line": 25,
+                            "column": 15
+                          }
+                        }
+                      ],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/test-results/02_class-02-—-School-Setup-578bd-S-09-Create-class-—-success-chromium/test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "2a4c386df4cd0f4095c5-1921d9aeb111fa5e60ab",
+              "file": "02_class.spec.js",
+              "line": 135,
+              "column": 3
+            },
+            {
+              "title": "TC-CLS-10: Duplicate code rejected",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/tests/02_class.spec.js",
+                        "line": 25,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 21228,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "[TC-CLS-10] ✅ Duplicate code rejected\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-24T14:31:15.200Z",
+                      "annotations": [
+                        {
+                          "type": "serial",
+                          "location": {
+                            "file": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/tests/02_class.spec.js",
+                            "line": 25,
+                            "column": 15
+                          }
+                        }
+                      ],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/test-results/02_class-02-—-School-Setup-7d1fe--10-Duplicate-code-rejected-chromium/test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "2a4c386df4cd0f4095c5-a359703cae6aba306b5c",
+              "file": "02_class.spec.js",
+              "line": 202,
+              "column": 3
+            },
+            {
+              "title": "TC-CLS-11: View class detail page",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/tests/02_class.spec.js",
+                        "line": 25,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 21587,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "[TC-CLS-11] ✅ View class works\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-24T14:31:36.448Z",
+                      "annotations": [
+                        {
+                          "type": "serial",
+                          "location": {
+                            "file": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/tests/02_class.spec.js",
+                            "line": 25,
+                            "column": 15
+                          }
+                        }
+                      ],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/test-results/02_class-02-—-School-Setup-6a9ad-S-11-View-class-detail-page-chromium/test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "2a4c386df4cd0f4095c5-bee9a5818667a2ca5a4d",
+              "file": "02_class.spec.js",
+              "line": 239,
+              "column": 3
+            },
+            {
+              "title": "TC-CLS-12: Edit class — change name and save",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/tests/02_class.spec.js",
+                        "line": 25,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 26015,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "[TC-CLS-12] ✅ Class updated\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-24T14:31:58.058Z",
+                      "annotations": [
+                        {
+                          "type": "serial",
+                          "location": {
+                            "file": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/tests/02_class.spec.js",
+                            "line": 25,
+                            "column": 15
+                          }
+                        }
+                      ],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/test-results/02_class-02-—-School-Setup-17f05-lass-—-change-name-and-save-chromium/test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "2a4c386df4cd0f4095c5-38ff919f4117008eabc3",
+              "file": "02_class.spec.js",
+              "line": 256,
+              "column": 3
+            },
+            {
+              "title": "TC-CLS-13: Toggle class active/inactive status",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/tests/02_class.spec.js",
+                        "line": 25,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 15628,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "[TC-CLS-13] ✅ Status toggle works\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-24T14:32:24.091Z",
+                      "annotations": [
+                        {
+                          "type": "serial",
+                          "location": {
+                            "file": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/tests/02_class.spec.js",
+                            "line": 25,
+                            "column": 15
+                          }
+                        }
+                      ],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/test-results/02_class-02-—-School-Setup-21f7a-lass-active-inactive-status-chromium/test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "2a4c386df4cd0f4095c5-c41d336632e021d43329",
+              "file": "02_class.spec.js",
+              "line": 292,
+              "column": 3
+            },
+            {
+              "title": "TC-CLS-14: Soft delete class",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/tests/02_class.spec.js",
+                        "line": 25,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 20307,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "[TC-CLS-14] ✅ Class soft-deleted\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-24T14:32:39.736Z",
+                      "annotations": [
+                        {
+                          "type": "serial",
+                          "location": {
+                            "file": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/tests/02_class.spec.js",
+                            "line": 25,
+                            "column": 15
+                          }
+                        }
+                      ],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/test-results/02_class-02-—-School-Setup-2eab1-TC-CLS-14-Soft-delete-class-chromium/test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "2a4c386df4cd0f4095c5-72abf60b58b767b15790",
+              "file": "02_class.spec.js",
+              "line": 318,
+              "column": 3
+            },
+            {
+              "title": "TC-CLS-15: Trash view — deleted class appears",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/tests/02_class.spec.js",
+                        "line": 25,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 6781,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "[TC-CLS-15] ✅ Class appears in trash\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-24T14:33:00.060Z",
+                      "annotations": [
+                        {
+                          "type": "serial",
+                          "location": {
+                            "file": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/tests/02_class.spec.js",
+                            "line": 25,
+                            "column": 15
+                          }
+                        }
+                      ],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/test-results/02_class-02-—-School-Setup-c6d9b-iew-—-deleted-class-appears-chromium/test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "2a4c386df4cd0f4095c5-ffc02b101b46f1ad0cce",
+              "file": "02_class.spec.js",
+              "line": 347,
+              "column": 3
+            },
+            {
+              "title": "TC-CLS-16: Restore class from trash",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/tests/02_class.spec.js",
+                        "line": 25,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 23642,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "[TC-CLS-16] ✅ Class restored\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-24T14:33:06.861Z",
+                      "annotations": [
+                        {
+                          "type": "serial",
+                          "location": {
+                            "file": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/tests/02_class.spec.js",
+                            "line": 25,
+                            "column": 15
+                          }
+                        }
+                      ],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/test-results/02_class-02-—-School-Setup-25a21-16-Restore-class-from-trash-chromium/test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "2a4c386df4cd0f4095c5-c2404d32b69d59bc48fa",
+              "file": "02_class.spec.js",
+              "line": 354,
+              "column": 3
+            },
+            {
+              "title": "TC-CLS-17: Force delete class permanently",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [
+                    {
+                      "type": "serial",
+                      "location": {
+                        "file": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/tests/02_class.spec.js",
+                        "line": 25,
+                        "column": 15
+                      }
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 30034,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "[TC-CLS-17] ✅ Class permanently deleted\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-24T14:33:30.518Z",
+                      "annotations": [
+                        {
+                          "type": "serial",
+                          "location": {
+                            "file": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/tests/02_class.spec.js",
+                            "line": 25,
+                            "column": 15
+                          }
+                        }
+                      ],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/home/shailesh/shailesh/ai-brain-daily/playwright-school-setup/test-results/02_class-02-—-School-Setup-b2d81-ce-delete-class-permanently-chromium/test-finished-1.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "2a4c386df4cd0f4095c5-6d4036bc3f8cee2a6b8c",
+              "file": "02_class.spec.js",
+              "line": 379,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-24T14:29:19.696Z",
+    "duration": 281081.10500000004,
+    "expected": 17,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}
