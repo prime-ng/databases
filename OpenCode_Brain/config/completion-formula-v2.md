@@ -27,7 +27,7 @@ stem (may be `N/A` for code-only modules; `global_db_/prime_db_/tenant_db_` = a 
 
 **Fixed source folders (this machine):**
 ```
-DEV_CODE          = /Users/bkwork/Herd/prime_ai/Modules/{FOLDER_NAME}
+DEV_CODE          = /Users/bkwork/Herd/prime_ai_dev/Modules/{FOLDER_NAME}
 MODULE_DATABASES  = /Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/2-DDL_Tenant_Consolidated   (per-module {DDL_FILE_NAME}*.sql)
 MASTER_DATABASES  = /Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db/0-DDL_Masters                 (global_db_/prime_db_/tenant_db_ v4)
 TESTCASE_FOLDER   = /Users/bkwork/Herd/prime_testing/tests/Browser/Modules/{FOLDER_NAME}         (real Browser tests — NOT Modules/{M}/tests)

@@ -24,7 +24,7 @@ OpenCode_Brain/
 ├── setup.sh               Validate brain / optional deploy (writes nothing by default)
 │
 ├── .opencode/             OpenCode-native layer, auto-discovered when cwd = OpenCode_Brain
-│   ├── agents/             16 role agents (mode: all, inherit model)
+│   ├── agents/             17 role agents (mode: all, inherit model)
 │   ├── commands/           Slash commands (/agent /test /review /schema /lint /module-status /frontend)
 │   └── skills/             Model-invoked skills (6 module rules + prime-context)
 │
@@ -86,6 +86,7 @@ Each role is one OpenCode agent (`mode: all`, no model pin — it inherits the s
 | Agent | What it does |
 |-------|--------------|
 | `technical-auditor` | Read-only 12-layer audit; security/tenancy/perf/quality; FRD gap & business rules; diff/PR review (Modes A–X) |
+| `code-auditor` | Module-level Final Audit: every controller's `01-report.md` + `02-fix-plan.md`, module index/summary, plus a read-only module-wide status re-check |
 | `business-analyst` | FRDs and 24 other analysis artifacts (BRD, SRS, RTM, user stories, FSM, NFR, …) |
 | `testing-architect` | Test strategy, test writing, coverage-gap analysis, CI automation (Domains 1–4) |
 | `status-analyzer` | Development-completeness / gap status reports (10-Dimension v2) |

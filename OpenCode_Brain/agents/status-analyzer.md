@@ -69,7 +69,7 @@ Full rubrics: `OpenCode_Brain/config/completion-formula-v2.md`. Weights/caps are
 
 Then, per module in scope, load the 11 input sources listed in §1 of the formula file, resolving each
 via `module_list.md`:
-- **App code** → `/Users/bkwork/Herd/prime_ai/Modules/{FOLDER_NAME}`
+- **App code** → `/Users/bkwork/Herd/prime_ai_dev/Modules/{FOLDER_NAME}`
 - **DDL** → `.../2-DDL_Tenant_Consolidated/{DDL_FILE_NAME}*.sql` (or `.../0-DDL_Masters` for global_db_/prime_db_/tenant_db_; `N/A` = code-only, D2 excluded)
 - **Tests** → `/Users/bkwork/Herd/prime_testing/tests/Browser/Modules/{FOLDER_NAME}/` (⚠️ NOT `Modules/{M}/tests`)
 - **FRD** → `.../0-FRD_Documents/{CODE}_FRD*.md`; **Requirements V1** → `.../2-Module_Requirement_V1/{FOLDER_NAME}_v*/`

@@ -16,9 +16,36 @@
 DB_REPO          = /Users/bkwork/WorkFolder/2-New_Primedb/pgdatabase/
 OLD_REPO         = /Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db
 OPENCODE_BRAIN   = {OLD_REPO}/OpenCode_Brain
-LARAVEL_REPO     = /Users/bkwork/Herd/prime_ai
+LARAVEL_REPO     = /Users/bkwork/Herd/prime_ai_dev
 LARAVEL_OPENCODE = {OPENCODE_BRAIN}/instructions
 ```
+
+> **Application repo:** `{LARAVEL_REPO}` is `/Users/bkwork/Herd/prime_ai_dev` on this machine.
+> `/Users/bkwork/Herd/prime_ai` exists but is empty and must not be used.
+
+## Final Audit (Code Auditor)
+
+```
+AUDIT_REPO          = /Users/bkwork/Herd/prime_testing
+AUDIT_REPORTS       = {AUDIT_REPO}/final-audit-reports
+AUDIT_INFO          = {AUDIT_REPORTS}/_Info
+AUDIT_CONFIG        = {AUDIT_REPORTS}/_config/audit_path.md
+AUDIT_TEMPLATES     = {AUDIT_REPORTS}/_templates
+AUDIT_TOOLS         = {AUDIT_REPORTS}/_tools
+AUDIT_PROTOCOL      = {AUDIT_REPO}/.claude/rules/final-audit.md
+AUDIT_PROTOCOL_COPY = {AUDIT_INFO}/FINAL-AUDIT-PROTOCOL.md
+AUDIT_RULEBOOK      = {AUDIT_TOOLS}/00-RULEBOOK.md
+AUDIT_CLASS_OWNERS  = {AUDIT_INFO}/00-CLASS-OWNERS.md
+AUDIT_README        = {AUDIT_INFO}/README.md
+AUDIT_DEVELOPERS    = tarun | shailesh | gaurav
+AUDIT_APP_ROOT      = {LARAVEL_REPO}
+AUDIT_MODULE_DIR    = {LARAVEL_REPO}/Modules
+```
+
+> **Rule:** the auditor starts in `{AUDIT_REPO}`. Report paths (`final-audit-reports/…`) are
+> relative to it; application paths (`Modules/…`, `app/…`, `config/…`) and every
+> `php artisan` command run from `{LARAVEL_REPO}`. Never create a developer folder.
+> `<Module>` may exist as `<Module>-done` after a fix pass — check both.
 
 ## OpenCode Configuration (this brain)
 

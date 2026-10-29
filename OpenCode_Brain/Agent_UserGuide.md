@@ -53,11 +53,12 @@ context, then report back. Examples:
 
 ---
 
-## 4. Agent roster (all 16)
+## 4. Agent roster (all 17)
 
 | Agent (`<name>`) | What it does | Has modes? |
 |------------------|--------------|:----------:|
 | **technical-auditor** | Read-only 12-layer audit; security/tenancy/perf/quality; FRD gap & business-rule checks; **diff/PR review** | ✅ A–X |
+| **code-auditor** | Module-level Final Audit: per-controller `01-report.md` + `02-fix-plan.md`, `00-INDEX.md`, `00-SUMMARY.md`, plus a read-only `00-STATUS.md` re-check | ✅ Audit / Status |
 | **business-analyst** | FRDs and 24 other analysis artifacts (BRD, SRS, RTM, user stories, FSM, NFR, etc.) | ✅ Catalog of 24 |
 | **testing-architect** | Test strategy, test writing, coverage-gap analysis, CI automation | ✅ Domains 1–4 |
 | **status-analyzer** | Development-completeness / gap status reports per module | ✅ Steps 1–6 |
@@ -73,6 +74,17 @@ context, then report back. Examples:
 | **module-agent** | nwidart/laravel-modules v12 module creation/structure/registration | — single role |
 | **school-agent** | K-12 school-domain business rules and logic | — single role |
 | **devops-deployer** | CI/CD, provisioning, containers, SSL, domains, production ops | — single role |
+
+**Module-level Final Audit (`code-auditor`):** give it exactly two parameters plus the mode:
+
+```text
+Code Auditor, Audit,  BehaviouralAssessment, tarun
+Code Auditor, Status, BehaviouralAssessment, tarun
+```
+
+`Audit` writes per-controller `01-report.md` + `02-fix-plan.md` and the module index/summary.
+`Status` is a read-only re-check of every plan item and writes a module-wide `00-STATUS.md`.
+No keyword → it asks. Full guide: `agents/code-auditor.md`.
 
 ---
 

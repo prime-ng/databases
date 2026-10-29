@@ -1,5 +1,5 @@
 -- =======================================================================
--- TRANSPORT MODULE v2.6 for MySQL 8.x
+-- TRANSPORT MODULE v2.7 for MySQL 8.x
 -- Strategy: Enhanced v1.9 with Vendor Lease, Billing, and Payment tables.
 -- Changes in v2.7, Enhanced from v2.6
    -- Add Timings in tpt_shift table

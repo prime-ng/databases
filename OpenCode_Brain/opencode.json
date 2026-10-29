@@ -4,5 +4,10 @@
   "permissions": [
     { "action": "edit", "resource": "**/.env", "effect": "deny" },
     { "action": "edit", "resource": "**/.env.*", "effect": "deny" }
-  ]
+  ],
+  "permission": {
+    "external_directory": {
+      "*": "allow"
+    }
+  }
 }

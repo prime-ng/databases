@@ -293,7 +293,7 @@ test('tenant A admin cannot see tenant B students', function () {
 php artisan route:list --json | jq '.[].name' | sort > /tmp/all_routes.txt
 
 # Step 2: List all existing test files
-find /Users/bkwork/Herd/prime_ai/tests -name "*Test.php" | sort > /tmp/test_files.txt
+find /Users/bkwork/Herd/prime_ai_dev/tests -name "*Test.php" | sort > /tmp/test_files.txt
 
 # Step 3: Count routes per module
 php artisan route:list | grep "{module_prefix}" | wc -l

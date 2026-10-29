@@ -18,7 +18,7 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 BRAIN="$SCRIPT_DIR"
 
-LARAVEL_DIR="/Users/bkwork/Herd/prime_ai"
+LARAVEL_DIR="/Users/bkwork/Herd/prime_ai_dev"
 GLOBAL_DIR="$HOME/.config/opencode"
 
 echo "=========================================="

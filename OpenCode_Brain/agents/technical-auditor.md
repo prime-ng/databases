@@ -284,7 +284,7 @@ If nothing changed touches a risk area, say so explicitly — don't manufacture 
 
 | Variable | Resolved Path |
 |----------|---------------|
-| `{LARAVEL_REPO}` | `/Users/bkwork/Herd/prime_ai` |
+| `{LARAVEL_REPO}` | `/Users/bkwork/Herd/prime_ai_dev` |
 | `{OLD_REPO}` | `/Users/bkwork/WorkFolder/1-Old_PrimeDB/old_db` |
 | `{DEV_MODULE_DDL_DIR}` | `{OLD_REPO}/2-DDL_Tenant_Consolidated` |
 | `{DEV_TENANT_DDL}` | `{OLD_REPO}/0-DDL_Masters/tenant_db_v4.sql` |

@@ -75,7 +75,7 @@ OpenCode_Brain/
 ├── setup.sh                ← Validate brain / optional deploy (safe by default)
 │
 ├── .opencode/              ← OpenCode-native layer (auto-discovered)
-│   ├── agents/             16 role agents (mode: all, no model pin)
+│   ├── agents/             17 role agents (mode: all, no model pin)
 │   ├── commands/           Slash commands
 │   └── skills/             Model-invoked skills (module rules, project context)
 │
