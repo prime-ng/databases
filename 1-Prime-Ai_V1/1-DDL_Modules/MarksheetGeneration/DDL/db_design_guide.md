@@ -54,9 +54,9 @@
 │             │    │  ~3-6 rows/session                                                                     │
 │             │    │                                                                                        │
 │             │    │  FK → sch_org_academic_sessions_jnt.id (academic_session_id)                           │
-│             ├───>│  FK → msh_marksheet_types.id          (marksheet_type_id)                              │
+│             ├───>│  FK → msh_marksheet_types.id           (marksheet_type_id)                             │
 │             │    │  FK → msh_exam_groups.id               (exam_group_id)                                 │
-│             │    │  FK → slb_grade_division_master.id      (grading_schema_id)                            │
+│             │    │  FK → slb_grade_division_master.id     (grading_schema_id)                             │
 │             │    │                                                                                        │
 │             │    │  Fields: code, name, board_code, passing_percentage,                                   │
 │             │    │  compartment_max_failures, is_best_of_n_enabled, best_of_n_count,                      │

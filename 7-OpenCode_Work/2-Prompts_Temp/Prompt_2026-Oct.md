@@ -179,100 +179,6 @@ audit the SyllabusBooks module for gaurav. Do not assume anything, ask questions
 
 
 
-
-
----
-*.log
-.DS_Store
-.env
-.env.backup
-.env.production
-.env.dusk.local
-.env.dusk*
-.phpactor.json
-.env.testing
-.phpunit.result.cache
-
-/.codex
-/.cursor/
-/.idea
-/.nova
-/.phpunit.cache
-/.vscode
-/.zed
-/auth.json
-/node_modules
-/public/build
-/public/fonts-manifest.dev.json
-/public/hot
-/public/storage
-/storage/*.key
-/storage/pail
-storage/
-**/chrome-profile-*
-**/framework/testing/dusk/
-
-/vendor
-/composer.lock
-/.kilo
-_ide_helper.php
-Homestead.json
-Homestead.yaml
-Thumbs.db
-/storage/tenant*
-phpunit.xml
-phpunit.dusk.xml
-
-# Dusk test artifacts (screenshots, reports, proof)
-tests/Browser/**/dusk-report/
-tests/Browser/**/screenshots/
-tests/Browser/**/proof/
-
-# Project screenshots
-project-info/screenshots/
-
-# Nested node_modules (should not be tracked)
-project-info/node_modules/
-
-# Agent context file (local, not for repo)
-AGENTS.md
-
-# Modified Doc Analysis MD reports
-Doc_Analysis/5-Audit_Report/**/*.md
-Doc_Analysis/5-FRD_Reports/**/*.md
-Doc_Analysis/5-Production_Readiness_Report/**/*.md
-
-# Local testing configuration overrides
-/config/template.php
-
-# Rule book (local reference only, not for repo)
-/RULES_BOOK.md
-__pycache__/
-
-# Brij - Local Referece, should not upload on Git)
-/final-audit-reports/_Info/
-/final-audit-reports/_templates/
-/final-audit-reports/_tools/
-<<<<<<< HEAD
-/final-audit-reports/00-CLASS-OWNERS.md
-/final-audit-reports/FINAL-AUDIT-PROTOCOL.md
-/final-audit-reports/PATH-REPAIR-2026-10-27.md
-/final-audit-reports/README.md
-
-
-# Brij - below should be upload / download on Git (For All)
-/.claude/
-/.opencode/
-opencode.json
-.gitignore
-composer.json
-GEMINI.md
-modules_statuses.json
-opencode.json
-package.json
-README.md
-
-
 ----------------------------------------------------------------------------------------------------------------------------------------------------
 ## Prompt:
 My Team Members have creating similer Audit Report which I have created using code_auditor Agent in folder (final-audit-reports/gaurav, final-audit-reports/shailesh & final-audit-reports/tarun). I noticed 1 issue in all the reports created in these folders. These reports are having some reference path hard coded into the files. Now the problem is, if file is created by one person and solution implementation (code fixing) is being done by someone else then AI is getting different path (As everyone has different folder structure in their system) and need to correct it. Now again that code is getting upload on Git, which will be downloaded by someone else and same problem will be faced by other team members. So ultimatly all the team members are wasting their AI tokans to correcting path everytime they are taking pull from Git.
@@ -290,3 +196,22 @@ I want you to perform below action to achive this:
 
 **DO NOT CHANGE** anything other hard coded paths in files under folders (final-audit-reports/gaurav, final-audit-reports/shailesh & final-audit-reports/tarun)
 Create a Summary of all the changes you have made during this process and saved it as "prime_testing/final-audit-reports/_Info/Variables_update_log.md"
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------
+## Prompt:
+
+## Importtant Queries in Transport Modulle :
+1. When performing Invoicing for Student
+   - If System find more then 2 Price for a single Month for a Student then how it will decide which one needs to be used for Invoicing?
+2. Invoicing for other Transport facilities (e.g. Transport for Sports Academy, Transport for Extra Class etc.)
+   - Student needs to be registered for those Activities
+   - Provision for Rate Master for that Activity on distance basis
+   - Saperate Billing for the Spacial Transport Facility
+3. In 01-Consolidated_Requirement_Document.md, Section - #### FND-027 — Billing run and invoice :
+   - In Acceptance : 3. Mid-month plan change with daily prorata; invoice reflects days.
+		It should be configurable, School can choose to charge same old Price for change month and New Charges will be applicable from Next Month onward. To capture this Info we can add a field `new_fare_effective_from` into table `tpt_student_stop_change_request`.
+4. In Accounting There should be a Screen where Accountant can see all the due on a Student :
+   - When Accountant will enter Today's Date to pay the charges, system will fetch all the due on the student and also calculate late charges (if applicable) and will provide final amount to be paid.
+	- System will also show the detail of other child of same Parent (if any) will all due + Charges.
+	
