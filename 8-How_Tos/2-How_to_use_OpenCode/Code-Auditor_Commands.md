@@ -45,36 +45,18 @@ Code Auditor, Audit,  BehaviouralAssessment, tarun
 Code Auditor, Status, BehaviouralAssessment, tarun
 
 ---
-audit the SchoolSetup module for shailesh. DO NOT Recreate files for the controllers which has been created already and create Audit only for pending Controllers. DO NOT change anything in prime_ai_dev repository.
+audit the Cafeteria module for gaurav. DO NOT Recreate files for the controllers which has been created already and create Audit only for pending Controllers. DO NOT change anything in prime_ai_dev repository.
 
 ```
 
 =============================================================================================================================================================
 
-audit the LmsQuiz module for shailesh by executing below command 
-(cd /Users/bkwork/Herd/prime_testing && opencode run --standalone --agent code-auditor --model opencode-go/deepseek-v4.1-flash "Code Auditor, Audit, LmsQuiz, shailesh")
+audit the Library module for shailesh by executing below command 
+(cd /Users/bkwork/Herd/prime_testing && opencode run --standalone --agent code-auditor --model opencode-go/deepseek-v4.1-flash "Code Auditor, Audit, Library, shailesh")
 Do not assume anything, ask questions if you need any info.
 
-audit the Recommendation module for gaurav by executing below command 
-(cd /Users/bkwork/Herd/prime_testing && opencode run --standalone --agent code-auditor --model opencode-go/deepseek-v4.1-flash "Code Auditor, Audit, Recommendation, gaurav")
+audit the Library module for gaurav by executing below command 
+(cd /Users/bkwork/Herd/prime_testing && opencode run --standalone --agent code-auditor --model opencode-go/deepseek-v4.1-flash "Code Auditor, Audit, Cafeteria, gaurav")
 Do not assume anything, ask questions if you need any info.
 
 =============================================================================================================================================================
-### Module Already Processed by Team
-------------------------------------
-#### Tarun
-
-
-#### Shailesh
-
-
-
-#### Gaurav
-
-
-
-### Modules Processed By Me:
-----------------------------
-audit the Syllabus module for shailesh. Do not assume anything, ask questions if you need any info.
-
-
